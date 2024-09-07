@@ -392,6 +392,10 @@ class MEDDLY::copy_EV_fast : public unary_operation {
 
     protected:
 
+        // Recursive implementation
+        void _compute(int L, unsigned in,
+                node_handle ap, node_handle &cp);
+
         /*
            Recursive copy.
 
@@ -406,7 +410,7 @@ class MEDDLY::copy_EV_fast : public unary_operation {
            @param   cv  on output: edge value for copy
            @param   cp  on output: target node for copy
         */
-        void _compute(node_handle A, node_handle &cp);
+        // void _compute(node_handle A, node_handle &cp);
 
         void traceout(const edge_value &v, node_handle p)
         {
@@ -461,18 +465,159 @@ void MEDDLY::copy_EV_fast::compute(int L, unsigned in,
     out.indentation(0);
 #endif
     MEDDLY_DCASSERT(!av.isVoid());
-    _compute(ap, cp);
+    _compute(L, in, ap, cp);
+    cv = edge_value(resF->getEdgeType(), av);
 
+    /*
     int aplevel = argF->getNodeLevel(ap);
     if (argF->isIdentityReduced()) {
         cp = resF->makeIdentitiesTo(cp, aplevel, L, -1);
     } else {
         cp = resF->makeRedundantsTo(cp, aplevel, L);
     }
-
-    cv = edge_value(resF->getEdgeType(), av);
+    */
 }
 
+void MEDDLY::copy_EV_fast::_compute(int L, unsigned in,
+        node_handle A, node_handle &cp)
+{
+    //
+    // Terminal case
+    //
+    if (argF->isTerminalNode(A)) {
+        //
+        // TBD: will we ever need to translate terminal nodes?
+        //
+        cp = A;
+        return;
+    } // A is terminal
+
+    //
+    // Determine level information
+    //
+    const int Alevel = argF->getNodeLevel(A);
+#ifdef TRACE
+    out << "copy_EV_fast::_compute(" << A << ")\n";
+#endif
+
+
+    //
+    // Check compute table
+    //
+    ct_vector key(1);
+    ct_vector res(1);
+    key[0].setN(A);
+    if (ct->findCT(key, res)) {
+        //
+        // compute table 'hit'
+        //
+        cp = resF->linkNode(res[0].getN());
+#ifdef TRACE
+        out << "  CT hit " << cp << "\n";
+        out << "  at level " << resF->getNodeLevel(cp) << "\n";
+#endif
+        //
+        // done: compute table 'hit'
+        //
+    } else {
+        //
+        // compute table 'miss'; do computation
+        //
+
+        //
+        // Initialize unpacked nodes
+        //
+        unpacked_node* Au = argF->newUnpacked(A, SPARSE_ONLY);
+        unpacked_node* Cu = unpacked_node::newSparse(resF, Alevel, Au->getSize());
+#ifdef TRACE
+        out << "A: ";
+        Au->show(out, true);
+        out.indent_more();
+        out.put('\n');
+#endif
+        const int Cnextlevel = resF->isForRelations()
+            ? MXD_levels::downLevel(Alevel)
+            : MDD_levels::downLevel(Alevel);
+
+        //
+        // Recurse over child edges
+        //
+        for (unsigned z=0; z<Cu->getSize(); z++) {
+            node_handle d;
+            _compute(Cnextlevel, Au->index(z), Au->down(z), d);
+            edge_value v(resF->getEdgeType(), Au->edgeval(z));
+            Cu->setSparse(z, Au->index(z), v, d);
+        }
+
+#ifdef TRACE
+        out.indent_less();
+        out.put('\n');
+        out << "copy_EV_fast::_compute(" << A << ") done\n";
+        out << "A: ";
+        Au->show(out, true);
+        out << "\nC: ";
+        Cu->show(out, true);
+        out << "\n";
+#endif
+
+        //
+        // Reduce
+        //
+        edge_value cv;
+        resF->createReducedNode(Cu, cv, cp);
+#ifdef TRACE
+        out << "reduced to ";
+        traceout(cv, cp);
+        out << ": ";
+        resF->showNode(out, cp, SHOW_DETAILS);
+        out << "\n";
+#endif
+        MEDDLY_DCASSERT(cv == resF->getNoOpEdge());
+
+        //
+        // Add to CT
+        //
+        res[0].setN(cp);
+        ct->addCT(key, res);
+
+        //
+        // Cleanup
+        //
+        unpacked_node::Recycle(Au);
+        // Cu is recycled when we reduce it :)
+
+        //
+        // done: compute table 'miss'
+        //
+    }
+
+    //
+    // Adjust result for singletons, added identities/redundants.
+    // Do this for both CT hits and misses.
+    //
+    const int Clevel = resF->getNodeLevel(cp);
+    if (Clevel == L) {
+        //
+        // We don't need to add identities or redundants;
+        // just check if we need to avoid a singleton.
+        //
+        cp = resF->redirectSingleton(in, cp);
+        return;
+    }
+
+    //
+    // Add nodes but only from Alevel;
+    // if Clevel is below Alevel it means nodes were eliminated
+    // in the result forest.
+    //
+    if (argF->isIdentityReduced()) {
+        cp = resF->makeIdentitiesTo(cp, Alevel, L, in);
+    } else {
+        cp = resF->makeRedundantsTo(cp, Alevel, L);
+    }
+}
+
+/*
 void MEDDLY::copy_EV_fast::_compute(node_handle A, node_handle &cp)
 {
     //
@@ -588,7 +733,7 @@ void MEDDLY::copy_EV_fast::_compute(node_handle A, node_handle &cp)
     //
     unpacked_node::Recycle(Au);
 }
-
+*/
 
 // ******************************************************************
 // *                                                                *

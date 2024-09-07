@@ -64,7 +64,7 @@ generic EV 'operator' for edges should provide:
 Completely reimplemented operations
 ======================================================================
 
-cardinality.cc      YES
+cardinality.cc      yes
 complement.cc       YES
 copy                YES
 
