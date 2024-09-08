@@ -58,20 +58,6 @@ class MEDDLY::compl_mt : public unary_operation {
         void _compute(int L, unsigned in, node_handle A, node_handle &C);
 
         /*
-           Recursive complement.
-
-           This will correctly build the complement of node A,
-           at the same level as node A, in the result forest.
-           It is the caller's responsibility to add any nodes
-           above A, or to check if it is a singleton node
-           (if the target forest is identity reduced).
-
-           @param   A   Source node
-           @param   C   on output: complement of A
-        */
-        // void _compute(node_handle A, node_handle &C);
-
-        /*
             Build a complemented identity pattern:
                 [ p 1 1 ... 1 ]
                 [ 1 p 1 ... 1 ]
@@ -139,17 +125,6 @@ void MEDDLY::compl_mt::compute(int L, unsigned in,
     MEDDLY_DCASSERT(av.isVoid());
     cv.set();
     _compute(L, in, ap, cp);
-
-    /*
-    MEDDLY_DCASSERT(L>=0);
-
-    int aplevel = argF->getNodeLevel(ap);
-    if (argF->isIdentityReduced()) {
-        cp = identity_complement(cp, aplevel, L, 0);
-    } else {
-        cp = resF->makeRedundantsTo(cp, aplevel, L);
-    }
-    */
 }
 
 void MEDDLY::compl_mt::_compute(int L, unsigned in,
@@ -293,121 +268,6 @@ void MEDDLY::compl_mt::_compute(int L, unsigned in,
         cp = resF->makeRedundantsTo(cp, Alevel, L);
     }
 }
-
-#if 0
-
-void MEDDLY::compl_mt::_compute(node_handle A, node_handle &C)
-{
-    //
-    // Terminal cases.
-    //
-    if (argF->isTerminalNode(A)) {
-        bool ta;
-        argF->getValueFromHandle(A, ta);
-        C = resF->handleForValue(!ta);
-        return;
-    }
-
-    //
-    // Determine level information
-    //
-#ifdef TRACE
-    out << "compl_mt::_compute(" << A << ")\n";
-#endif
-
-    //
-    // Check compute table
-    //
-    ct_vector key(1);
-    ct_vector res(1);
-    key[0].setN(A);
-    if (ct->findCT(key, res)) {
-        C = resF->linkNode(res[0].getN());
-#ifdef TRACE
-        out << "CT hit " << res[0].getN() << "\n";
-        out << "  at level " << resF->getNodeLevel(C) << "\n";
-#endif
-        return;
-    }
-
-    //
-    // Initialize unpacked nodes
-    //
-    unpacked_node* Au = argF->newUnpacked(A, FULL_ONLY);
-    const int Alevel = argF->getNodeLevel(A);
-    unpacked_node* Cu = unpacked_node::newFull(resF, Alevel, Au->getSize());
-#ifdef TRACE
-    out << "A: ";
-    Au->show(out, true);
-#endif
-
-    //
-    // Build result node
-    //
-#ifdef TRACE
-    out.indent_more();
-    out.put('\n');
-#endif
-    const int Cnextlevel = resF->isForRelations()
-            ? MXD_levels::downLevel(Alevel)
-            : MDD_levels::downLevel(Alevel);
-
-    for (unsigned i=0; i<Cu->getSize(); i++) {
-        int Audlevel = argF->getNodeLevel(Au->down(i));
-        node_handle d;
-        _compute(Au->down(i), d);
-        node_handle dc;
-        if (argF->isIdentityReduced()) {
-            dc = identity_complement(d, Audlevel, Cnextlevel, i);
-        } else {
-            dc = resF->makeRedundantsTo(d, Audlevel, Cnextlevel);
-        }
-#ifdef TRACE
-        if (dc != d) {
-            out << "built chain from " << d << " to " << dc << "\n";
-        }
-#endif
-        d = resF->redirectSingleton(
-                i, dc
-        );
-        Cu->setFull(i, d);
-    } // for i
-
-#ifdef TRACE
-    out.indent_less();
-    out.put('\n');
-    out << "compl_mt::_compute(" << A << ") done\n";
-    out << "A: ";
-    Au->show(out, true);
-    out << "\nC: ";
-    Cu->show(out, true);
-    out << "\n";
-#endif
-
-    //
-    // Reduce
-    //
-    edge_value v;
-    resF->createReducedNode(Cu, v, C);
-#ifdef TRACE
-    out << "reduced to " << C << ": ";
-    resF->showNode(out, C, SHOW_DETAILS);
-    out << "\n";
-#endif
-
-    //
-    // Save result in CT
-    //
-    res[0].setN(C);
-    ct->addCT(key, res);
-
-    //
-    // Cleanup
-    //
-    unpacked_node::Recycle(Au);
-}
-
-#endif
 
 MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
     int K, int L, unsigned in)

@@ -65,13 +65,13 @@ Completely reimplemented operations
 ======================================================================
 
 cardinality.cc      yes
-complement.cc       YES
+complement.cc       yes
 copy.cc             yes
 
-difference.cc       yes*
-intersection.cc     yes*
+difference.cc       Yes*
+intersection.cc     Yes*
 maxmin_range.cc     YES
-union.cc            yes*
+union.cc            Yes*
 
 ======================================================================
 Operations that need updating
