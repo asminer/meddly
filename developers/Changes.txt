@@ -70,7 +70,7 @@ copy.cc             yes
 
 difference.cc       Yes*
 intersection.cc     Yes*
-maxmin_range.cc     YES
+maxmin_range.cc     yes
 union.cc            Yes*
 
 ======================================================================
