@@ -178,20 +178,32 @@ class MEDDLY::binary_operation : public operation {
 
         /**
             New virtual compute method.
-                @param  av      Edge value for operand 1
-                @param  ap      Node for operand 1
-                @param  bv      Edge value for operand 2
-                @param  bp      Node for operand 2
-                @param  L       Level we want the result to be at.
+
+                @param  L       Recursion level.
+                                If all forests are quasi-reduced,
+                                then this is the top level of the
+                                operand and result.
                                 Ignored for some reduction rules (e.g.,
                                 fully reduced) but important for others
                                 (e.g., quasi reduced).
+
+                @param  in      Incoming edge index.
+                                Important only for identity-reduced
+                                relations when L is positive.
+                                Use ~0 if there is no edge index.
+
+                @param  av      Edge value for operand 1
+                @param  ap      Node for operand 1, must be below L.
+
+                @param  bv      Edge value for operand 2
+                @param  bp      Node for operand 2, must be below L.
+
                 @param  cv      Edge value of result
-                @param  cp      Node for result
+                @param  cp      Node for result, will be below L.
          */
-        virtual void compute(const edge_value &av, node_handle ap,
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp)
 #ifndef ALLOW_DEPRECATED_0_17_6
                 = 0

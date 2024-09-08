@@ -86,9 +86,9 @@ void MEDDLY::binary_operation::compute(const dd_edge &ar1,
 #ifdef ALLOW_DEPRECATED_0_17_6
     if (new_style) {
         node_handle resp;
-        compute(ar1.getEdgeValue(), ar1.getNode(),
+        compute(resF->getMaxLevelIndex(), ~0,
+                ar1.getEdgeValue(), ar1.getNode(),
                 ar2.getEdgeValue(), ar2.getNode(),
-                resF->getMaxLevelIndex(),
                 res.setEdgeValue(), resp);
         res.set(resp);
     } else {
@@ -96,9 +96,9 @@ void MEDDLY::binary_operation::compute(const dd_edge &ar1,
    }
 #else
     node_handle resp;
-    compute(ar1.getEdgeValue(), ar1.getNode(),
+    compute(resF->getMaxLevelIndex(), ~0,
+            ar1.getEdgeValue(), ar1.getNode(),
             ar2.getEdgeValue(), ar2.getNode(),
-            resF->getMaxLevelIndex(),
             res.setEdgeValue(), resp);
     res.set(resp);
 #endif
@@ -114,9 +114,13 @@ void MEDDLY::binary_operation::computeTemp(const dd_edge &ar1,
     }
     if (new_style) {
         node_handle resp;
-        compute(ar1.getEdgeValue(), ar1.getNode(),
+        // THIS vvvvv is an ugly hack
+        int toplevel = arg1F->isForRelations()
+            ?  MXD_levels::topUnprimed(ar1.getLevel(), ar2.getLevel())
+            :  MDD_levels::topLevel(ar1.getLevel(), ar2.getLevel());
+        compute(toplevel, ~0,
+                ar1.getEdgeValue(), ar1.getNode(),
                 ar2.getEdgeValue(), ar2.getNode(),
-                0,
                 res.setEdgeValue(), resp);
         res.set(resp);
     } else {
@@ -135,8 +139,9 @@ void MEDDLY::binary_operation::computeDDEdge(const dd_edge &ar1,
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-void MEDDLY::binary_operation::compute(const edge_value &av, node_handle ap,
-        const edge_value &bv, node_handle bp, int L,
+void MEDDLY::binary_operation::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap,
+        const edge_value &bv, node_handle bp,
         edge_value &cv, node_handle &cp)
 {
 #ifdef DEBUG_THROWS

@@ -46,9 +46,9 @@ class MEDDLY::inter_mdd : public binary_operation {
         inter_mdd(forest* arg1, forest* arg2, forest* res);
         virtual ~inter_mdd();
 
-        virtual void compute(const edge_value &av, node_handle ap,
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp);
 
     protected:
@@ -80,9 +80,9 @@ MEDDLY::inter_mdd::~inter_mdd()
     ct->markForDestroy();
 }
 
-void MEDDLY::inter_mdd::compute(const edge_value &av, node_handle ap,
+void MEDDLY::inter_mdd::compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(av.isVoid());
@@ -238,9 +238,9 @@ class MEDDLY::inter_mxd : public binary_operation {
         inter_mxd(forest* arg1, forest* arg2, forest* res);
         virtual ~inter_mxd();
 
-        virtual void compute(const edge_value &av, node_handle ap,
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp);
 
     protected:
@@ -302,9 +302,9 @@ MEDDLY::inter_mxd::~inter_mxd()
     ct->markForDestroy();
 }
 
-void MEDDLY::inter_mxd::compute(const edge_value &av, node_handle ap,
+void MEDDLY::inter_mxd::compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(av.isVoid());

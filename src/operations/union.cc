@@ -60,22 +60,22 @@ class MEDDLY::union_mt : public binary_operation {
         union_mt(forest* arg1, forest* arg2, forest* res);
         virtual ~union_mt();
 
-        virtual void compute(const edge_value &av, node_handle ap,
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp);
 
     private:
         /*
             Recursively compute.
 
-                @param  in  Incoming edge label. Used ONLY when we skip
-                            a primed level in an identity reduced forest.
-                            And if that happens, we CANNOT cache the result.
-
                 @param  L   Level to process.
                             If by_levels is false, then this parameter
                             is ignored.
+
+                @param  in  Incoming edge label. Used ONLY when we skip
+                            a primed level in an identity reduced forest.
+                            And if that happens, we CANNOT cache the result.
 
                 @param  A   First argument node
                 @param  B   Second argument node
@@ -89,7 +89,7 @@ class MEDDLY::union_mt : public binary_operation {
                             C = A u B.
 
          */
-        void _compute(unsigned in, int L, node_handle A, node_handle B,
+        void _compute(int L, unsigned in, node_handle A, node_handle B,
                 int &creqlev, node_handle &C);
 
     private:
@@ -214,9 +214,9 @@ MEDDLY::union_mt::~union_mt()
     ct->markForDestroy();
 }
 
-void MEDDLY::union_mt::compute(const edge_value &av, node_handle ap,
+void MEDDLY::union_mt::compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp)
 {
 #ifdef TRACE
@@ -226,7 +226,7 @@ void MEDDLY::union_mt::compute(const edge_value &av, node_handle ap,
     MEDDLY_DCASSERT(bv.isVoid());
     cv.set();
     int ablevel;
-    _compute(0, L, ap, bp, ablevel, cp);
+    _compute(L, in, ap, bp, ablevel, cp);
     if (both_fully) {
         cp = resF->makeRedundantsTo(cp, ablevel, L);
     }
@@ -235,7 +235,7 @@ void MEDDLY::union_mt::compute(const edge_value &av, node_handle ap,
     }
 }
 
-void MEDDLY::union_mt::_compute(unsigned in, int L,
+void MEDDLY::union_mt::_compute(int L, unsigned in,
         node_handle A, node_handle B, int &Clevel, node_handle &C)
 {
     //
@@ -457,9 +457,9 @@ class MEDDLY::union_mdd : public binary_operation {
         union_mdd(forest* arg1, forest* arg2, forest* res);
         virtual ~union_mdd();
 
-        virtual void compute(const edge_value &av, node_handle ap,
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp);
 
     protected:
@@ -491,9 +491,9 @@ MEDDLY::union_mdd::~union_mdd()
     ct->markForDestroy();
 }
 
-void MEDDLY::union_mdd::compute(const edge_value &av, node_handle ap,
+void MEDDLY::union_mdd::compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(av.isVoid());
@@ -630,9 +630,9 @@ class MEDDLY::union_mxd : public binary_operation {
         union_mxd(forest* arg1, forest* arg2, forest* res);
         virtual ~union_mxd();
 
-        virtual void compute(const edge_value &av, node_handle ap,
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp);
 
     protected:
@@ -734,9 +734,9 @@ MEDDLY::union_mxd::~union_mxd()
     ct->markForDestroy();
 }
 
-void MEDDLY::union_mxd::compute(const edge_value &av, node_handle ap,
+void MEDDLY::union_mxd::compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(av.isVoid());

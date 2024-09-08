@@ -86,9 +86,9 @@ namespace MEDDLY {
             compare_op(forest* arg1, forest* arg2, forest* res);
             virtual ~compare_op();
 
-            virtual void compute(const edge_value &av, node_handle ap,
+            virtual void compute(int L, unsigned in,
+                    const edge_value &av, node_handle ap,
                     const edge_value &bv, node_handle bp,
-                    int L,
                     edge_value &cv, node_handle &cp);
 
         protected:
@@ -152,10 +152,9 @@ MEDDLY::compare_op<CTYPE>::~compare_op()
 }
 
 template <class CTYPE>
-void MEDDLY::compare_op<CTYPE>::compute(
+void MEDDLY::compare_op<CTYPE>::compute(int L, unsigned in,
         const edge_value &av, node_handle ap,
         const edge_value &bv, node_handle bp,
-        int L,
         edge_value &cv, node_handle &cp)
 {
 #ifdef TRACE

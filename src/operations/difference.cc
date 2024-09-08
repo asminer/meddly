@@ -46,9 +46,9 @@ class MEDDLY::diffr_mdd : public binary_operation {
         diffr_mdd(forest* arg1, forest* arg2, forest* res);
         virtual ~diffr_mdd();
 
-        virtual void compute(const edge_value &av, node_handle ap,
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp);
 
     protected:
@@ -80,9 +80,9 @@ MEDDLY::diffr_mdd::~diffr_mdd()
     ct->markForDestroy();
 }
 
-void MEDDLY::diffr_mdd::compute(const edge_value &av, node_handle ap,
+void MEDDLY::diffr_mdd::compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(av.isVoid());
@@ -208,9 +208,9 @@ class MEDDLY::diffr_mxd : public binary_operation {
         diffr_mxd(forest* arg1, forest* arg2, forest* res);
         virtual ~diffr_mxd();
 
-        virtual void compute(const edge_value &av, node_handle ap,
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp);
 
     protected:
@@ -319,9 +319,9 @@ MEDDLY::diffr_mxd::~diffr_mxd()
     ct->markForDestroy();
 }
 
-void MEDDLY::diffr_mxd::compute(const edge_value &av, node_handle ap,
+void MEDDLY::diffr_mxd::compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
-                int L,
                 edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(av.isVoid());
