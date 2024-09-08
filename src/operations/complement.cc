@@ -54,6 +54,9 @@ class MEDDLY::compl_mt : public unary_operation {
                 edge_value &cv, node_handle &cp);
 
     protected:
+        /// Implement compute(), recursively
+        void _compute(int L, unsigned in, node_handle A, node_handle &C);
+
         /*
            Recursive complement.
 
@@ -66,7 +69,7 @@ class MEDDLY::compl_mt : public unary_operation {
            @param   A   Source node
            @param   C   on output: complement of A
         */
-        void _compute(node_handle A, node_handle &C);
+        // void _compute(node_handle A, node_handle &C);
 
         /*
             Build a complemented identity pattern:
@@ -135,8 +138,9 @@ void MEDDLY::compl_mt::compute(int L, unsigned in,
 #endif
     MEDDLY_DCASSERT(av.isVoid());
     cv.set();
-    _compute(ap, cp);
+    _compute(L, in, ap, cp);
 
+    /*
     MEDDLY_DCASSERT(L>=0);
 
     int aplevel = argF->getNodeLevel(ap);
@@ -145,7 +149,152 @@ void MEDDLY::compl_mt::compute(int L, unsigned in,
     } else {
         cp = resF->makeRedundantsTo(cp, aplevel, L);
     }
+    */
 }
+
+void MEDDLY::compl_mt::_compute(int L, unsigned in,
+        node_handle A, node_handle &cp)
+{
+    //
+    // Terminal cases.
+    //
+    if (argF->isTerminalNode(A)) {
+        bool ta;
+        argF->getValueFromHandle(A, ta);
+        cp = resF->handleForValue(!ta);
+        //
+        // Add nodes up to level L.
+        //
+        if (argF->isIdentityReduced()) {
+            cp = identity_complement(cp, 0, L, in);
+        } else {
+            cp = resF->makeRedundantsTo(cp, 0, L);
+        }
+        return;
+    }
+
+    //
+    // Determine level information
+    //
+    const int Alevel = argF->getNodeLevel(A);
+#ifdef TRACE
+    out << "compl_mt::_compute(" << A << ")\n";
+#endif
+
+    //
+    // Check compute table
+    //
+    ct_vector key(1);
+    ct_vector res(1);
+    key[0].setN(A);
+    if (ct->findCT(key, res)) {
+        //
+        // compute table 'hit'
+        //
+        cp = resF->linkNode(res[0].getN());
+#ifdef TRACE
+        out << "  CT hit " << cp << "\n";
+        out << "  at level " << resF->getNodeLevel(cp) << "\n";
+#endif
+        //
+        // done: compute table 'hit'
+        //
+    } else {
+        //
+        // compute table 'miss'; do computation
+        //
+
+        //
+        // Initialize unpacked nodes
+        //
+        unpacked_node* Au = argF->newUnpacked(A, FULL_ONLY);
+        unpacked_node* Cu = unpacked_node::newFull(resF, Alevel, Au->getSize());
+#ifdef TRACE
+        out << "A: ";
+        Au->show(out, true);
+        out.indent_more();
+        out.put('\n');
+#endif
+        const int Cnextlevel = resF->isForRelations()
+            ? MXD_levels::downLevel(Alevel)
+            : MDD_levels::downLevel(Alevel);
+
+        //
+        // Recurse over child edges
+        //
+        for (unsigned i=0; i<Cu->getSize(); i++) {
+            node_handle d;
+            _compute(Cnextlevel, i, Au->down(i), d);
+            Cu->setFull(i, d);
+        }
+
+#ifdef TRACE
+        out.indent_less();
+        out.put('\n');
+        out << "compl_mt::_compute(" << A << ") done\n";
+        out << "A: ";
+        Au->show(out, true);
+        out << "\nC: ";
+        Cu->show(out, true);
+        out << "\n";
+#endif
+
+        //
+        // Reduce
+        //
+        edge_value cv;
+        resF->createReducedNode(Cu, cv, cp);
+        MEDDLY_DCASSERT(cv.isVoid());
+#ifdef TRACE
+        out << "reduced to " << cp << ": ";
+        resF->showNode(out, cp, SHOW_DETAILS);
+        out << "\n";
+#endif
+
+        //
+        // Add to CT
+        //
+        res[0].setN(cp);
+        ct->addCT(key, res);
+
+        //
+        // Cleanup
+        //
+        unpacked_node::Recycle(Au);
+        // Cu is recycled when we reduce it :)
+
+        //
+        // done: compute table 'miss'
+        //
+    }
+
+    //
+    // Adjust result for singletons, added identities/redundants.
+    // Do this for both CT hits and misses.
+    //
+    const int Clevel = resF->getNodeLevel(cp);
+    if (Clevel == L) {
+        //
+        // We don't need to add identities or redundants;
+        // just check if we need to avoid a singleton.
+        //
+        cp = resF->redirectSingleton(in, cp);
+        return;
+    }
+
+    //
+    // Add nodes but only from Alevel;
+    // if Clevel is below Alevel it means nodes were eliminated
+    // in the result forest.
+    //
+    if (argF->isIdentityReduced()) {
+        cp = identity_complement(cp, Alevel, L, in);
+    } else {
+        cp = resF->makeRedundantsTo(cp, Alevel, L);
+    }
+}
+
+#if 0
 
 void MEDDLY::compl_mt::_compute(node_handle A, node_handle &C)
 {
@@ -257,6 +406,8 @@ void MEDDLY::compl_mt::_compute(node_handle A, node_handle &C)
     //
     unpacked_node::Recycle(Au);
 }
+
+#endif
 
 MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
     int K, int L, unsigned in)
