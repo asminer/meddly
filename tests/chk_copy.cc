@@ -18,7 +18,7 @@
 */
 
 /*
-    Tests the cross-product operator.
+    Exhaustively test the copy operator.
 */
 
 

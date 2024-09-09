@@ -15,6 +15,7 @@ noinst_PROGRAMS = \
     chk_ct \
     chk_ct_old \
     chk_evtimes_float \
+    chk_minterms \
     ddedge \
     domain_list \
     kan_batch \
@@ -39,6 +40,7 @@ TESTS = \
     chk_ct \
     chk_ct_old \
     chk_evtimes_float \
+    chk_minterms \
     ddedge \
     domain_list \
     kan_batch \
@@ -92,6 +94,9 @@ chk_ct_old_LDADD = ../src/libmeddly.la
 
 chk_evtimes_float_SOURCES = chk_evtimes_float.cc
 chk_evtimes_float_LDADD = ../src/libmeddly.la
+
+chk_minterms_SOURCES = chk_minterms.cc
+chk_minterms_LDADD = ../src/libmeddly.la
 
 ddedge_SOURCES = ddedge.cc
 ddedge_LDADD = ../src/libmeddly.la

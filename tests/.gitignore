@@ -13,6 +13,7 @@ chk_cross
 chk_ct
 chk_ct_old
 chk_evtimes_float
+chk_minterms
 ddedge
 domain_list
 enctest
