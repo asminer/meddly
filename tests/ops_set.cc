@@ -709,7 +709,6 @@ int main()
 
     try {
         MEDDLY::initialize();
-        policies p;
 
         //
         // Test sets

@@ -21,11 +21,16 @@
 #include <iostream>
 
 const unsigned MAXTERMS = 32;
-// const unsigned MAXTERMS = 4;
 
 const int DOMSIZE = 4;       // DO NOT change
 const int SETVARS = 10;
 const int RELVARS = 6;
+
+/*
+ *
+ * RNG stuff
+ *
+ */
 
 long seed;
 
@@ -116,6 +121,114 @@ bool nextMinterm(int* mt, unsigned vars)
 
 /*
  *
+ * Tests for set-type forests
+ *
+ */
+
+void test_sets()
+{
+    using namespace MEDDLY;
+
+    //
+    // Build domain - once
+    //
+    int bs[SETVARS];
+    for (unsigned i=0; i<SETVARS; i++) {
+        bs[i] = DOMSIZE;
+    }
+    domain* D = domain::createBottomUp(bs, SETVARS);
+
+    //
+    // Build the various types of boolean forests
+    //
+    policies p;
+    p.useDefaults(SET);
+
+    forest* Ff = forest::create(D, SET, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+    p.setQuasiReduced();
+
+    forest* Fq = forest::create(D, SET, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+
+    //
+    // Build random minterms
+    //
+    int* mtlist[MAXTERMS];
+    for (unsigned i=0; i<MAXTERMS; i++) {
+        mtlist[i] = new int[1+SETVARS];
+    }
+
+    int eval[1+SETVARS];
+
+    //
+    // For various collections of minterms,
+    //  (1) build sets
+    //  (2) explicitly verify sets against minterms
+
+    std::cout << "Checking sets built from minterms:\n";
+    std::cout.flush();
+    for (unsigned mtsize=1; mtsize<=MAXTERMS; mtsize*=2)
+    {
+        std::cout << "    ";
+        if (mtsize<10) std::cout << ' ';
+        std::cout << mtsize << ": ";
+        std::cout.flush();
+        dd_edge Ef(Ff);
+        dd_edge Eq(Fq);
+
+        Fq->createEdge(mtlist, mtsize, Eq);
+        std::cout << "q ";
+        std::cout.flush();
+        Ff->createEdge(mtlist, mtsize, Ef);
+        std::cout << "f ";
+        std::cout.flush();
+
+        zeroMinterm(eval, SETVARS);
+        do {
+            bool val_q, val_f;
+            bool val_mts = evaluate(eval, SETVARS, mtlist, mtsize);
+            Fq->evaluate(Eq, eval, val_q);
+            Ff->evaluate(Ef, eval, val_f);
+
+            if (val_q != val_mts) {
+                std::cout << "\nMismatch on ";
+                showMinterm(eval, SETVARS);
+                std::cout << "\n  QMDD: " << (val_q ? "true" : "false") << "\n";
+                std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
+
+                for (unsigned n=0; n<mtsize; n++) {
+                    std::cout << "    ";
+                    showMinterm(mtlist[n], SETVARS);
+                    std::cout << "\n";
+                }
+                throw "mismatch";
+            }
+
+            if (val_f != val_mts) {
+                std::cout << "\nMismatch on ";
+                showMinterm(eval, SETVARS);
+                std::cout << "\n  FMDD: " << (val_f ? "true" : "false") << "\n";
+                std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
+                for (unsigned n=0; n<mtsize; n++) {
+                    std::cout << "    ";
+                    showMinterm(mtlist[n], SETVARS);
+                    std::cout << "\n";
+                }
+                throw "mismatch";
+            }
+
+        } while (nextMinterm(eval, SETVARS));
+        std::cout << "=" << std::endl;
+    }
+
+    domain::destroy(D);
+}
+
+/*
+ *
  * Manipulate minterms for relations
  *
  */
@@ -170,8 +283,167 @@ void showMinterm(const int* un, const int* pr, unsigned vars)
     cout << "]";
 }
 
+bool mintermMatches(const int* mtun, const int* mtpr,
+        const int* valun, const int* valpr, unsigned vars)
+{
+    for (unsigned i=1; i<=vars; i++) {
+        if (mtun[i] == -1) continue;  // don't care
+        if (mtun[i] != valun[i]) return false;
+        if (mtpr[i] == -1) continue;
+        if (mtpr[i] == -2) {
+            if (valpr[i] == valun[i]) continue;
+        }
+        if (mtpr[i] != valpr[i]) return false;
+    }
+    return true;
+}
+
+bool evaluate(const int* vun, const int* vpr, unsigned vars,
+        int** mtun, int** mtpr, unsigned nmt)
+{
+    for (unsigned i=0; i<nmt; i++) {
+        if (mintermMatches(mtun[i], mtpr[i], vun, vpr, vars)) return true;
+    }
+    return false;
+}
+
+void zeroMinterm(int* vun, int* vpr, unsigned vars)
+{
+    for (unsigned i=1; i<=vars; i++) {
+        vun[i] = 0;
+        vpr[i] = 0;
+    }
+}
+
+bool nextMinterm(int* vun, int* vpr, unsigned vars)
+{
+    for (unsigned i=1; i<=vars; i++) {
+        vpr[i]++;
+        if (vpr[i] < DOMSIZE) return true;
+        vpr[i] = 0;
+        vun[i]++;
+        if (vun[i] < DOMSIZE) return true;
+        vun[i] = 0;
+    }
+    return false;
+}
+
+/*
+ *
+ * Tests for relation-type forests
+ *
+ */
+
+void test_rels()
+{
+    using namespace MEDDLY;
+
+    //
+    // Build domain - once
+    //
+    int bs[RELVARS];
+    for (unsigned i=0; i<RELVARS; i++) {
+        bs[i] = DOMSIZE;
+    }
+    domain* D = domain::createBottomUp(bs, RELVARS);
+
+    //
+    // Build the various types of boolean forests
+    //
+    policies p;
+    p.useDefaults(SET);
+
+    forest* Ff = forest::create(D, RELATION, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+    p.setQuasiReduced();
+
+    forest* Fq = forest::create(D, RELATION, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, p);
 
 
+    //
+    // Build random minterms
+    //
+    int* unlist[MAXTERMS];
+    int* prlist[MAXTERMS];
+    for (unsigned i=0; i<MAXTERMS; i++) {
+        unlist[i] = new int[1+RELVARS];
+        prlist[i] = new int[1+RELVARS];
+    }
+
+    int uneval[1+RELVARS];
+    int preval[1+RELVARS];
+
+    //
+    // For various collections of minterms,
+    //  (1) build relations
+    //  (2) explicitly verify sets against minterms
+
+    std::cout << "Checking relations built from minterms:\n";
+    std::cout.flush();
+    for (unsigned mtsize=1; mtsize<=MAXTERMS; mtsize*=2)
+    {
+        std::cout << "    ";
+        if (mtsize<10) std::cout << ' ';
+        std::cout << mtsize << ": ";
+        std::cout.flush();
+        dd_edge Ef(Ff);
+        dd_edge Eq(Fq);
+
+        Fq->createEdge(unlist, prlist, mtsize, Eq);
+        std::cout << "q ";
+        std::cout.flush();
+        Ff->createEdge(unlist, prlist, mtsize, Ef);
+        std::cout << "f ";
+        std::cout.flush();
+
+        zeroMinterm(uneval, preval, RELVARS);
+        do {
+            bool val_q, val_f;
+            bool val_mts = evaluate(uneval, preval, RELVARS, unlist, prlist, mtsize);
+            Fq->evaluate(Eq, uneval, preval, val_q);
+            Ff->evaluate(Ef, uneval, preval, val_f);
+
+            if (val_q != val_mts) {
+                std::cout << "\nMismatch on ";
+                showMinterm(uneval, preval, RELVARS);
+                std::cout << "\n  QMxD: " << (val_q ? "true" : "false") << "\n";
+                std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
+
+                for (unsigned n=0; n<mtsize; n++) {
+                    std::cout << "    ";
+                    showMinterm(unlist[n], prlist[n], RELVARS);
+                    std::cout << "\n";
+                }
+                throw "mismatch";
+            }
+
+            if (val_f != val_mts) {
+                std::cout << "\nMismatch on ";
+                showMinterm(uneval, preval, RELVARS);
+                std::cout << "\n  FMxD: " << (val_f ? "true" : "false") << "\n";
+                std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
+                for (unsigned n=0; n<mtsize; n++) {
+                    std::cout << "    ";
+                    showMinterm(unlist[n], prlist[n], RELVARS);
+                    std::cout << "\n";
+                }
+                throw "mismatch";
+            }
+
+        } while (nextMinterm(uneval, preval, RELVARS));
+        std::cout << "=" << std::endl;
+    }
+
+    domain::destroy(D);
+}
+
+/*
+ *
+ * Main
+ *
+ */
 
 int main(int argc, const char** argv)
 {
@@ -189,50 +461,23 @@ int main(int argc, const char** argv)
     }
     cout << "Using rng seed " << seed << "\n";
 
-    int unterm[1+RELVARS];
-    int prterm[1+RELVARS];
-
-    for (unsigned n=0; n<MAXTERMS; n++) {
-        randomRelMinterm(unterm, prterm, RELVARS);
-        cout << "    ";
-        showMinterm(unterm, prterm, RELVARS);
-        cout << "\n";
+    try {
+        MEDDLY::initialize();
+        test_sets();
+        test_rels();
+        MEDDLY::cleanup();
+        return 0;
     }
-
-
-    /*
-
-    int* mtlist[MAXTERMS];
-    for (unsigned i=0; i<MAXTERMS; i++) {
-        mtlist[i] = new int[1+SETVARS];
+    catch (MEDDLY::error e) {
+        std::cerr   << "\nCaught meddly error " << e.getName()
+                    << "\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
     }
-
-    cout << "Minterms:\n";
-    for (unsigned n=0; n<MAXTERMS; n++) {
-        randomSetMinterm(mtlist[n], SETVARS);
-        cout << "    ";
-        showMinterm(mtlist[n], SETVARS);
-        cout << "\n";
+    catch (const char* e) {
+        std::cerr << "\nCaught our own error: " << e << "\n";
+        return 2;
     }
-
-    cout << "Set:\n";
-    int vars[1+SETVARS];
-    zeroMinterm(vars, SETVARS);
-    unsigned card = 0;
-    do {
-        if (evaluate(vars, SETVARS, mtlist, MAXTERMS)) {
-            ++card;
-            cout << "    ";
-            showMinterm(vars, SETVARS);
-            cout << "\n";
-
-        }
-    } while (nextMinterm(vars, SETVARS));
-    cout << "Cardinality " << card << "\n";
-
-    */
-
-    //
-
-    return 0;
+    std::cerr << "\nSome other error?\n";
+    return 4;
 }
