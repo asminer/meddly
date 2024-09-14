@@ -19,10 +19,14 @@
 #include "../defines.h"
 #include "difference.h"
 
+#include "../ops_builtin.h" // for COPY
 #include "../oper_binary.h"
+#include "../oper_unary.h"
 #include "../ct_vector.h"
 
 namespace MEDDLY {
+    class diffr_mt;
+
     class diffr_mdd;
     class diffr_mxd;
 
@@ -31,9 +35,363 @@ namespace MEDDLY {
 
 // #define TRACE
 
+// #define NEW_DIFF
+
 #ifdef TRACE
 #include "../operators.h"
 #endif
+
+// ******************************************************************
+// *                                                                *
+// *                         diffr_mt class                         *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::diffr_mt : public binary_operation {
+    public:
+        diffr_mt(forest* arg1, forest* arg2, forest* res);
+        virtual ~diffr_mt();
+
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
+                const edge_value &bv, node_handle bp,
+                edge_value &cv, node_handle &cp);
+
+    protected:
+        void _compute(int L, unsigned in, node_handle A, node_handle B,
+                node_handle &C);
+
+    private:
+        ct_entry_type* ct;
+        unary_operation* copy_arg1res;
+        bool force_by_levels;
+
+#ifdef TRACE
+        ostream_output out;
+#endif
+};
+
+
+// ******************************************************************
+
+MEDDLY::diffr_mt::diffr_mt(forest* arg1, forest* arg2, forest* res)
+  : binary_operation(arg1, arg2, res)
+#ifdef TRACE
+      , out(std::cout)
+#endif
+{
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
+    //
+    // Quick copying, even across forests, for terminal cases :)
+    //
+    copy_arg1res = COPY(arg1, res);
+
+    //
+    // How to handle different reductions
+    //
+    //      quasi - quasi   :   no level skipping will occur
+    //      quasi - fully   :   (same)
+    //      quasi - ident   :   (same)
+    //      fully - quasi   :   (same)
+    //      ident - quasi   :   (same)
+    //
+    //      ident - ident   :   identity pattern (can skip)
+    //                          [p 0 0]   [q 0 0]   [ p-q  0   0  ]
+    //                          [0 p 0] - [0 q 0] = [  0  p-q  0  ]
+    //                          [0 0 p]   [0 0 q]   [  0   0  p-q ]
+    //
+    //      ident - fully   :   identity pattern (can skip)
+    //                          [p 0 0]   [q q q]   [ p-q  0   0  ]
+    //                          [0 p 0] - [q q q] = [  0  p-q  0  ]
+    //                          [0 0 p]   [q q q]   [  0   0  p-q ]
+    //
+    //      fully - fully   :   fully pattern (can skip)
+    //                          [p p p]   [q q q]   [ p-q p-q p-q ]
+    //                          [p p p] - [q q q] = [ p-q p-q p-q ]
+    //                          [p p p]   [q q q]   [ p-q p-q p-q ]
+    //
+    //      fully - ident   :   Go by levels to build result pattern.
+    //                          Level information included in CT entries.
+    //                          [p p p]   [q 0 0]   [ p-q  p   p  ]
+    //                          [p p p] - [0 q 0] = [  p  p-q  p  ]
+    //                          [p p p]   [0 0 q]   [  p   p  p-q ]
+    //
+    force_by_levels = arg1->isFullyReduced() && arg2->isIdentityReduced();
+
+    ct = new ct_entry_type("difference");
+    // CT key:      node from forest arg1, node from forest arg2
+    // CT result:   node from forest res
+    if (force_by_levels) {
+        ct->setFixed('I', arg1, arg2);
+    } else {
+        ct->setFixed(arg1, arg2);
+    }
+    ct->setResult(res);
+    ct->doneBuilding();
+}
+
+MEDDLY::diffr_mt::~diffr_mt()
+{
+    ct->markForDestroy();
+}
+
+void MEDDLY::diffr_mt::compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
+                const edge_value &bv, node_handle bp,
+                edge_value &cv, node_handle &cp)
+{
+    MEDDLY_DCASSERT(av.isVoid());
+    MEDDLY_DCASSERT(bv.isVoid());
+#ifdef TRACE
+    out.indentation(0);
+#endif
+    _compute(L, in, ap, bp, cp);
+    cv.set();
+}
+
+void MEDDLY::diffr_mt::_compute(int L, unsigned in,
+            node_handle A, node_handle B, node_handle &C)
+{
+    //
+    // Check terminal cases
+    //
+    if (A==0) {
+        // 0 - B = 0
+        C = 0;
+        return;
+    }
+
+    if (B < 0) {
+        if (arg2F->isFullyReduced() || 0==L) {
+            // A -1 = 0
+            C = 0;
+            return;
+        }
+        //
+        // Must be identity reduced, so B=I
+        //
+        MEDDLY_DCASSERT(arg2F->isIdentityReduced());
+        if (A < 0) {
+            if (arg1F->isIdentityReduced()) {
+                // I - I
+                C = 0;
+                return;
+            }
+
+            // 1 - I, need to compute it
+        }
+    }
+
+    if (B==0) {
+        // A - 0 = A
+        edge_value dummy;
+        dummy.set();
+        MEDDLY_DCASSERT(copy_arg1res);
+        copy_arg1res->compute(L, in,  dummy, A, dummy, C);
+        MEDDLY_DCASSERT(dummy.isVoid());
+        return;
+    }
+
+    if (A == B) {
+        if (arg1F == arg2F && !force_by_levels) {
+            C = 0;
+            return;
+        }
+    }
+
+    //
+    // Determine level information
+    //
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = force_by_levels
+        ? L
+        : (resF->isForRelations()
+                ? MXD_levels::topLevel(Alevel, Blevel)
+                : MDD_levels::topLevel(Alevel, Blevel)
+          )
+    ;
+    const int Cnextlevel = resF->isForRelations()
+        ? MXD_levels::downLevel(Clevel)
+        : MDD_levels::downLevel(Clevel)
+    ;
+
+#ifdef TRACE
+    out << "diffr_mt::_compute(" << L << ", " << in << ", " << A << ", "
+        << B << << ")\n";
+    out << A << " level " << Alevel << "\n";
+    out << B << " level " << Blevel << "\n";
+    out << "result level " << Clevel << " before chain\n";
+#endif
+
+    //
+    // Check compute table
+    //
+    ct_vector key( force_by_levels ? 3 : 2);
+    ct_vector res(1);
+    if (force_by_levels) {
+        key[0].setI(L);
+        key[1].setN(A);
+        key[2].setN(B);
+    } else {
+        key[0].setN(A);
+        key[1].setN(B);
+    }
+    if (ct->findCT(key, res)) {
+        //
+        // compute table hit
+        //
+        C = resF->linkNode(res[0].getN());
+#ifdef TRACE
+        out << "CT hit " << C << "\n";
+#endif
+
+        //
+        // done compute table hit
+        //
+    } else {
+        //
+        // compute table 'miss'; do computation
+        //
+
+        //
+        // Set up unpacked nodes
+        //
+
+        unpacked_node* Au;
+        if (Alevel != Clevel) {
+            if (arg1F->isIdentityReduced() && Clevel<0) {
+                Au = unpacked_node::newIdentity(arg1F, Clevel, in,
+                        A, SPARSE_ONLY);
+            } else {
+                Au = unpacked_node::newRedundant(arg1F, Clevel,
+                        A, SPARSE_ONLY);
+            }
+        } else {
+            Au = arg1F->newUnpacked(A, SPARSE_ONLY);
+        }
+
+        unpacked_node* Bu;
+        if (Blevel != Clevel) {
+            if (arg2F->isIdentityReduced() && Clevel<0) {
+                Bu = unpacked_node::newIdentity(arg2F, Clevel, in,
+                        B, FULL_ONLY);
+            } else {
+                Bu = unpacked_node::newRedundant(arg2F, Clevel,
+                        B, FULL_ONLY);
+            }
+        } else {
+            Bu = arg2F->newUnpacked(A, FULL_ONLY);
+        }
+
+        unpacked_node* Cu =
+            unpacked_node::newSparse(resF, Clevel, Au->getSize());
+
+#ifdef TRACE
+        out << "A: ";
+        Au->show(out, true);
+        out << "B: ";
+        Bu->show(out, true);
+        out.indent_more();
+        out.put('\n');
+#endif
+
+        //
+        // Recurse
+        //
+
+        unsigned zc = 0;
+        for (unsigned z=0; z<Au->getSize(); z++) {
+            const unsigned i = Au->index(z);
+            node_handle cd;
+            _compute(Cnextlevel, int(i), Au->down(z), Bu->down(i), cd);
+            if (cd) {
+                Cu->setSparse(zc++, i, cd);
+            }
+        }
+        Cu->resize(zc);
+
+#ifdef TRACE
+        out.indent_less();
+        out.put('\n');
+        out << "diffr_mt::_compute(" << L << ", " << in << ", " << A << ", "
+            << B << << ") done\n";
+        out << "  A: ";
+        Au->show(out, true);
+        out << "\n  B: ";
+        Bu->show(out, true);
+        out << "\n  C: ";
+        Cu->show(out, true);
+        out << "\n";
+#endif
+
+        //
+        // Reduce
+        //
+        edge_value dummy;
+        resF->createReducedNode(Cu, dummy, C);
+        MEDDLY_DCASSERT(dummy.isVoid());
+#ifdef TRACE
+        out << "reduced to " << C << ": ";
+        resF->showNode(out, C, SHOW_DETAILS);
+        out << "\n";
+#endif
+
+        //
+        // Save result in CT, if we can
+        //
+        if (Au->wasIdentity() || Bu->wasIdentity()) {
+            //
+            // DON'T save, because result depends on in.
+            //
+            ct->noaddCT(key);
+        } else {
+            res[0].setN(C);
+            ct->addCT(key, res);
+        }
+
+        //
+        // Cleanup
+        //
+        unpacked_node::Recycle(Bu);
+        unpacked_node::Recycle(Au);
+
+        //
+        // done compute table 'miss'
+        //
+    }
+
+    //
+    // Adjust result for singletons, added identities/redundants.
+    // Do this for both CT hits and misses.
+    //
+    if (L == resF->getNodeLevel(C)) {
+        //
+        // We don't need to add identities or redundants;
+        // just check if we need to avoid a singleton.
+        //
+        C = resF->redirectSingleton(in, C);
+        return;
+    }
+
+    //
+    // Add nodes but only from Clevel;
+    // if the actual level of C is below Clevel it means
+    // nodes were eliminated in the result forest.
+    //
+    if (arg1F->isIdentityReduced()) {
+        C = resF->makeIdentitiesTo(C, Clevel, L, in);
+    } else {
+        C = resF->makeRedundantsTo(C, Clevel, L);
+    }
+}
+
+//
+// TBD: OLD STUFF BELOW
+//
 
 // ******************************************************************
 // *                                                                *
@@ -622,6 +980,11 @@ MEDDLY::DIFFERENCE(forest* a, forest* b, forest* c)
         return bop;
     }
 
+#ifdef NEW_DIFF
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        return DIFFR_cache.add(new diffr_mt(a, b, c));
+    }
+#else
     if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         if (c->isForRelations()) {
             return DIFFR_cache.add(new diffr_mxd(a, b, c));
@@ -629,6 +992,7 @@ MEDDLY::DIFFERENCE(forest* a, forest* b, forest* c)
             return DIFFR_cache.add(new diffr_mdd(a, b, c));
         }
     }
+#endif
 
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
