@@ -94,6 +94,16 @@ MEDDLY::ct_vector::~ct_vector()
     recycleArray(data, _size);
 }
 
+void MEDDLY::ct_vector::show(output &s) const
+{
+    s.put("[");
+    for (unsigned i=0; i<_size; i++) {
+        if (i) s.put(", ");
+        data[i].show(s);
+    }
+    s.put("]");
+}
+
 // ******************************************************************
 
 MEDDLY::ct_item* MEDDLY::ct_vector::lists[16];

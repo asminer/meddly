@@ -476,6 +476,8 @@ class MEDDLY::ct_vector {
             return hashVal;
         }
 
+        void show(output &s) const;
+
     private:
         const unsigned _size;
         unsigned hashVal;

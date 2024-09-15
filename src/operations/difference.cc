@@ -33,7 +33,7 @@ namespace MEDDLY {
     binary_list DIFFR_cache;
 };
 
-// #define TRACE
+#define TRACE
 
 #define NEW_DIFF
 
@@ -60,6 +60,21 @@ class MEDDLY::diffr_mt : public binary_operation {
     protected:
         void _compute(int L, unsigned in, node_handle A, node_handle B,
                 node_handle &C);
+
+    private:
+        inline int topLevelOf(int L, int Alevel, int Blevel) const
+        {
+            if (force_by_levels) {
+                return L;
+            }
+            if (! resF->isForRelations() ) {
+                return MDD_levels::topLevel(Alevel, Blevel);
+            }
+            if (arg1F->isIdentityReduced() || arg2F->isIdentityReduced()) {
+                if (L>0) return MXD_levels::topUnprimed(Alevel, Blevel);
+            }
+            return MXD_levels::topLevel(Alevel, Blevel);
+        }
 
     private:
         ct_entry_type* ct;
@@ -207,6 +222,8 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
     //
     const int Alevel = arg1F->getNodeLevel(A);
     const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = topLevelOf(L, Alevel, Blevel);
+    /*
     const int Clevel = force_by_levels
         ? L
         : (resF->isForRelations()
@@ -214,10 +231,18 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
                 : MDD_levels::topLevel(Alevel, Blevel)
           )
     ;
+    */
     const int Cnextlevel = resF->isForRelations()
         ? MXD_levels::downLevel(Clevel)
         : MDD_levels::downLevel(Clevel)
     ;
+
+    //
+    // TBD ^^^
+    //
+    // If L is positive and arg1F is identity reduced,
+    // then use the top unprimed level.
+    //
 
 #ifdef TRACE
     out << "diffr_mt::_compute(" << L << ", " << in << ", " << A << ", "
@@ -246,7 +271,11 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
         //
         C = resF->linkNode(res[0].getN());
 #ifdef TRACE
-        out << "CT hit " << C << "\n";
+        out << "CT hit ";
+        key.show(out);
+        out << " -> ";
+        res.show(out);
+        out << "\n";
 #endif
 
         //
@@ -383,8 +412,14 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
     // nodes were eliminated in the result forest.
     //
     if (arg1F->isIdentityReduced()) {
+#ifdef TRACE
+        out << "I chain to " << C << ", levels " << Clevel << " to " << L << "\n";
+#endif
         C = resF->makeIdentitiesTo(C, Clevel, L, in);
     } else {
+#ifdef TRACE
+        out << "X chain to " << C << ", levels " << Clevel << " to " << L << "\n";
+#endif
         C = resF->makeRedundantsTo(C, Clevel, L);
     }
 }
