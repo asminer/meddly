@@ -37,6 +37,7 @@ const unsigned MAX_REL_CARD = 64;
 
 using namespace MEDDLY;
 
+// #define DEBUG_MDDOPS
 // #define DEBUG_MXDOPS
 
 #define TEST_SETS
@@ -475,6 +476,20 @@ void compare_sets(const std::vector <bool> &Aset,
     dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres),
             cAsym(fres), ccAsym(fres);
 
+#ifdef DEBUG_MDDOPS
+    ostream_output out(std::cout);
+    std::cout << "==================================================================\n";
+    std::cout << "Sets:\n";
+    std::cout << "    A: ";
+    showSet(std::cout, Aset);
+    std::cout << "\n    B: ";
+    showSet(std::cout, Bset);
+    std::cout << "\nMDDs:\n";
+    std::cout << "    A:\n";
+    Add.showGraph(out);
+    std::cout << "    B:\n";
+    Bdd.showGraph(out);
+#endif
     apply(INTERSECTION, Add, Bdd, AiBsym);
     apply(UNION, Add, Bdd, AuBsym);
     apply(DIFFERENCE, Add, Bdd, AmBsym);

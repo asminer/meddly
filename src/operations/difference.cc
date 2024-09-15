@@ -35,7 +35,7 @@ namespace MEDDLY {
 
 // #define TRACE
 
-// #define NEW_DIFF
+#define NEW_DIFF
 
 #ifdef TRACE
 #include "../operators.h"
@@ -221,7 +221,7 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
 
 #ifdef TRACE
     out << "diffr_mt::_compute(" << L << ", " << in << ", " << A << ", "
-        << B << << ")\n";
+        << B << ")\n";
     out << A << " level " << Alevel << "\n";
     out << B << " level " << Blevel << "\n";
     out << "result level " << Clevel << " before chain\n";
@@ -284,7 +284,7 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
                         B, FULL_ONLY);
             }
         } else {
-            Bu = arg2F->newUnpacked(A, FULL_ONLY);
+            Bu = arg2F->newUnpacked(B, FULL_ONLY);
         }
 
         unpacked_node* Cu =
@@ -293,7 +293,7 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
 #ifdef TRACE
         out << "A: ";
         Au->show(out, true);
-        out << "B: ";
+        out << "\nB: ";
         Bu->show(out, true);
         out.indent_more();
         out.put('\n');
@@ -318,7 +318,7 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
         out.indent_less();
         out.put('\n');
         out << "diffr_mt::_compute(" << L << ", " << in << ", " << A << ", "
-            << B << << ") done\n";
+            << B << ") done\n";
         out << "  A: ";
         Au->show(out, true);
         out << "\n  B: ";

@@ -71,7 +71,7 @@ void MEDDLY::copy_inforest::compute(int L, unsigned in,
         const edge_value &av, node_handle ap, edge_value &cv, node_handle &cp)
 {
     cv = av;
-    ap = resF->linkNode(cp);
+    cp = resF->linkNode(ap);
 }
 
 
