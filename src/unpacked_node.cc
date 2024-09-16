@@ -692,6 +692,7 @@ MEDDLY::unpacked_node* MEDDLY::unpacked_node::New(const forest* f)
         showSingly(ForLists[FID].recycled);
 #endif
 
+        n->setRegular();
         return n;
     } else {
         // Our free list is empty
@@ -700,6 +701,7 @@ MEDDLY::unpacked_node* MEDDLY::unpacked_node::New(const forest* f)
         n->can_be_recycled = true;
 #endif
         MEDDLY_DCASSERT(n->isAttachedTo(f));
+        n->setRegular();
         return n;
     }
 }
