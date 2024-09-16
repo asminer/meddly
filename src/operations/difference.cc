@@ -33,7 +33,7 @@ namespace MEDDLY {
     binary_list DIFFR_cache;
 };
 
-#define TRACE
+// #define TRACE
 
 #define NEW_DIFF
 
@@ -47,6 +47,48 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
+//
+// TBD: adjust to do the following.
+//
+//      quasi - quasi   :   no level skipping will occur
+//      quasi - fully   :   (same)
+//      quasi - ident   :   (same)
+//      fully - quasi   :   (same)
+//      ident - quasi   :   (same)
+//
+//      ident - ident   :   identity pattern
+//                          skip to top unprimed level
+//                          [p 0 0]   [q 0 0]   [ p-q  0   0  ]
+//                          [0 p 0] - [0 q 0] = [  0  p-q  0  ]
+//                          [0 0 p]   [0 0 q]   [  0   0  p-q ]
+//
+//      ident - fully   :   identity pattern
+//                          skip to top unprimed level
+//                          [p 0 0]   [q q q]   [ p-q  0   0  ]
+//                          [0 p 0] - [q q q] = [  0  p-q  0  ]
+//                          [0 0 p]   [q q q]   [  0   0  p-q ]
+//
+//      fully - fully   :   fully pattern
+//                          skip to top level
+//                          [p p p]   [q q q]   [ p-q p-q p-q ]
+//                          [p p p] - [q q q] = [ p-q p-q p-q ]
+//                          [p p p]   [q q q]   [ p-q p-q p-q ]
+//
+//      fully - ident   :   Go by levels to build result pattern.
+//                          Level information included in CT entries.
+//                          [p p p]   [q 0 0]   [ p-q  p   p  ]
+//                          [p p p] - [0 q 0] = [  p  p-q  p  ]
+//                          [p p p]   [0 0 q]   [  p   p  p-q ]
+//
+//  skip to top unprimed:
+//      use CT for unprimed levels, and have a separate entry
+//      for the primed levels?
+//      (usable when both nodes are at the same primed level).
+//
+//  skip to top:
+//      works just like 2L level fully/quasi reduced.
+//
+
 class MEDDLY::diffr_mt : public binary_operation {
     public:
         diffr_mt(forest* arg1, forest* arg2, forest* res);
@@ -58,22 +100,79 @@ class MEDDLY::diffr_mt : public binary_operation {
                 edge_value &cv, node_handle &cp);
 
     protected:
-        void _compute(int L, unsigned in, node_handle A, node_handle B,
-                node_handle &C);
+        void _compute(bool useCT, int L, unsigned in,
+                node_handle A, node_handle B, node_handle &C);
 
     private:
-        inline int topLevelOf(int L, int Alevel, int Blevel) const
+        //
+        //  Level we should build, based on reduction types of arguments.
+        //
+        //  @param  L       topmost level of computation, from the recursion
+        //
+        //  @param  Alevel  level of the A node (argument 1)
+        //  @param  Blevel  level of the B node (argument 2)
+        //
+        //  @param  force_unprimed
+        //                  on output, true if we're forcing computation
+        //                  at the unprimed level above the top of A and B.
+        //
+        //  @return         What level should we build
+        //
+        inline int topLevelOf(int L, int Alevel, int Blevel,
+                bool &force_unprimed) const
         {
+            force_unprimed = false;
             if (force_by_levels) {
+                //
+                // No level skipping allowed
+                //
                 return L;
             }
-            if (! resF->isForRelations() ) {
+            if (! resF->isForRelations()) {
+                //
+                // MDD; skip as much as we can
+                //
                 return MDD_levels::topLevel(Alevel, Blevel);
             }
-            if (arg1F->isIdentityReduced() || arg2F->isIdentityReduced()) {
-                if (L>0) return MXD_levels::topUnprimed(Alevel, Blevel);
+
+            const int topAB = MXD_levels::topLevel(Alevel, Blevel);
+
+            if ( (topAB == L) || (topAB>0) || !arg1F->isIdentityReduced())
+            {
+                return topAB;
             }
-            return MXD_levels::topLevel(Alevel, Blevel);
+
+            //
+            //  Still here? Then
+            //      topAB is primed
+            //      topAB is below level L
+            //      arg1F is identity reduced
+            //
+            //  Now, determine if this operation must proceed at the
+            //  level just above topAB, which is the case if the operation
+            //  involves identity reduced nodes:
+            //
+            //      (1) Alevel is below topAB
+            //  or
+            //      (2) Blevel is below topAB
+            //
+            //  If that's the case, set force_unprimed to true
+            //  and use the topUnprimed.
+            //
+            //  Otherwise we can proceed as usual?
+            //
+
+            MEDDLY_DCASSERT(topAB < 0);
+            MEDDLY_DCASSERT(arg1F->isIdentityReduced());
+
+            force_unprimed = (Alevel != topAB) || (Blevel != topAB);
+
+            if (force_unprimed) {
+                return -topAB;      // the level above topAB
+            }
+
+            return topAB;
+
         }
 
     private:
@@ -163,11 +262,11 @@ void MEDDLY::diffr_mt::compute(int L, unsigned in,
 #ifdef TRACE
     out.indentation(0);
 #endif
-    _compute(L, in, ap, bp, cp);
+    _compute(true, L, in, ap, bp, cp);
     cv.set();
 }
 
-void MEDDLY::diffr_mt::_compute(int L, unsigned in,
+void MEDDLY::diffr_mt::_compute(bool useCT, int L, unsigned in,
             node_handle A, node_handle B, node_handle &C)
 {
     //
@@ -222,38 +321,26 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
     //
     const int Alevel = arg1F->getNodeLevel(A);
     const int Blevel = arg2F->getNodeLevel(B);
-    const int Clevel = topLevelOf(L, Alevel, Blevel);
-    /*
-    const int Clevel = force_by_levels
-        ? L
-        : (resF->isForRelations()
-                ? MXD_levels::topLevel(Alevel, Blevel)
-                : MDD_levels::topLevel(Alevel, Blevel)
-          )
-    ;
-    */
+    bool force_unprimed;
+    const int Clevel = topLevelOf(L, Alevel, Blevel, force_unprimed);
     const int Cnextlevel = resF->isForRelations()
         ? MXD_levels::downLevel(Clevel)
         : MDD_levels::downLevel(Clevel)
     ;
-
-    //
-    // TBD ^^^
-    //
-    // If L is positive and arg1F is identity reduced,
-    // then use the top unprimed level.
-    //
 
 #ifdef TRACE
     out << "diffr_mt::_compute(" << L << ", " << in << ", " << A << ", "
         << B << ")\n";
     out << A << " level " << Alevel << "\n";
     out << B << " level " << Blevel << "\n";
-    out << "result level " << Clevel << " before chain\n";
+    out << "result level " << Clevel << "; force_unprimed: "
+        << force_unprimed << "\n";
 #endif
 
     //
-    // Check compute table
+    // Check compute table, unless we can't
+    // (we're recursing on the primed part of
+    // a recursion that forces us to unprimed levels).
     //
     ct_vector key( force_by_levels ? 3 : 2);
     ct_vector res(1);
@@ -265,7 +352,7 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
         key[0].setN(A);
         key[1].setN(B);
     }
-    if (ct->findCT(key, res)) {
+    if (useCT && ct->findCT(key, res)) {
         //
         // compute table hit
         //
@@ -277,6 +364,19 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
         res.show(out);
         out << "\n";
 #endif
+
+        if (resF->isQuasiReduced()) {
+            if (C && (Clevel != resF->getNodeLevel(C))) {
+                std::cout << "\nLevel fail\n";
+                std::cout << "         L: " << L << "\n";
+                std::cout << "    Alevel: " << Alevel << "\n";
+                std::cout << "    Blevel: " << Blevel << "\n";
+                std::cout << "    Clevel: " << Clevel << "\n";
+                std::cout << "    force_unprimed: " << force_unprimed << "\n";
+
+                std::cout << "    actual level: " << resF->getNodeLevel(C) << "\n";
+            }
+        }
 
         //
         // done compute table hit
@@ -293,6 +393,8 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
         unpacked_node* Au;
         if (Alevel != Clevel) {
             if (arg1F->isIdentityReduced() && Clevel<0) {
+                MEDDLY_DCASSERT(Clevel == L);
+                // ^ if we skip too much, in is irrelevant
                 Au = unpacked_node::newIdentity(arg1F, Clevel, in,
                         A, SPARSE_ONLY);
             } else {
@@ -306,6 +408,7 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
         unpacked_node* Bu;
         if (Blevel != Clevel) {
             if (arg2F->isIdentityReduced() && Clevel<0) {
+                MEDDLY_DCASSERT(Clevel == L);
                 Bu = unpacked_node::newIdentity(arg2F, Clevel, in,
                         B, FULL_ONLY);
             } else {
@@ -336,7 +439,8 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
         for (unsigned z=0; z<Au->getSize(); z++) {
             const unsigned i = Au->index(z);
             node_handle cd;
-            _compute(Cnextlevel, int(i), Au->down(z), Bu->down(i), cd);
+            _compute(!force_unprimed, Cnextlevel, int(i),
+                        Au->down(z), Bu->down(i), cd);
             if (cd) {
                 Cu->setSparse(zc++, i, cd);
             }
@@ -372,9 +476,10 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
         //
         // Save result in CT, if we can
         //
-        if (Au->wasIdentity() || Bu->wasIdentity()) {
+        if (!useCT || Au->wasIdentity() || Bu->wasIdentity()) {
             //
-            // DON'T save, because result depends on in.
+            // DON'T save, because result depends on in,
+            // or we were told not to use the CT.
             //
             ct->noaddCT(key);
         } else {
