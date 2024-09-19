@@ -33,7 +33,7 @@ namespace MEDDLY {
     binary_list DIFFR_cache;
 };
 
-#define TRACE
+// #define TRACE
 
 #define NEW_DIFF
 
@@ -320,7 +320,13 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
         res.show(out);
         out << "\n";
 #endif
-        chainToLevel(C, Clevel, L, in);
+        if (L == resF->getNodeLevel(C)) {
+            // Make sure we don't point to a singleton
+            // from the same index.
+            C = resF->redirectSingleton(in, C);
+        } else {
+            chainToLevel(C, Clevel, L, in);
+        }
         return;
         //
         // done 'main' compute table hit
