@@ -1344,12 +1344,14 @@ void MEDDLY::forest::validateDownPointers(const unpacked_node &nb) const
             break;
 
         case reduction_rule::QUASI_REDUCED:
+#ifdef DEVELOPMENT_CODE
             int nextLevel;
             if (isForRelations()) {
                 nextLevel = MXD_levels::downLevel(nb.getLevel());
             } else {
                 nextLevel = MDD_levels::downLevel(nb.getLevel());
             }
+#endif
             for (unsigned i=0; i<nb.getSize(); i++) {
                 if (nb.down(i)==getTransparentNode()) continue;
                 MEDDLY_DCASSERT(getNodeLevel(nb.down(i)) == nextLevel);
