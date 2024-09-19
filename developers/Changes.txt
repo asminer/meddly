@@ -72,7 +72,7 @@ cardinality.cc      yes
 complement.cc       yes
 copy.cc             yes
 
-difference.cc       Yes*
+difference.cc       yes
 intersection.cc     Yes*
 maxmin_range.cc     yes
 union.cc            Yes*
