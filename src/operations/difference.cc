@@ -27,9 +27,6 @@
 namespace MEDDLY {
     class diffr_mt;
 
-    class diffr_mdd;
-    class diffr_mxd;
-
     binary_list DIFFR_cache;
 };
 
@@ -218,9 +215,11 @@ void MEDDLY::diffr_mt::compute(int L, unsigned in,
 void MEDDLY::diffr_mt::_compute(int L, unsigned in,
             node_handle A, node_handle B, node_handle &C)
 {
+    // **************************************************************
     //
     // Check terminal cases
     //
+    // **************************************************************
     if (A==0) {
         // 0 - B = 0
         C = 0;
@@ -265,9 +264,11 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
         }
     }
 
+    // **************************************************************
     //
     // Determine level information
     //
+    // **************************************************************
     const int Alevel = arg1F->getNodeLevel(A);
     const int Blevel = arg2F->getNodeLevel(B);
     const int Clevel = topLevelOf(L, Alevel, Blevel);
@@ -289,11 +290,11 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
     out << "result level " << Clevel << "\n";
 #endif
 
+    // **************************************************************
     //
-    // Check the compute table, unless we can't
-    // (we're recursing on the primed part of
-    // a recursion that forces us to unprimed levels).
+    // Check the compute table or primed compute table
     //
+    // **************************************************************
     ct_vector key( force_by_levels ? 3 : 2);
     ct_vector res(1);
     if (force_by_levels) {
@@ -353,9 +354,11 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
         //
     }
 
+    // **************************************************************
     //
-    // compute table 'miss'; do computation
+    // Compute table 'miss'; do computation
     //
+    // **************************************************************
 
     //
     // Set up unpacked nodes

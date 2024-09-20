@@ -22,10 +22,14 @@
 
 #include "apply_base.h" // remove this when we can
 
+#include "../ops_builtin.h" // for COPY
 #include "../oper_binary.h"
+#include "../oper_unary.h"
 #include "../ct_vector.h"
 
 namespace MEDDLY {
+    class inter_mt;
+
     class inter_mdd;
     class inter_mxd;
     class inter_max_evplus;
@@ -33,7 +37,319 @@ namespace MEDDLY {
     binary_list INTER_cache;
 };
 
+// #define NEW_INTER
+
 // #define TRACE
+
+// ******************************************************************
+// *                                                                *
+// *                         inter_mt class                         *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::inter_mt : public binary_operation {
+    public:
+        inter_mt(forest* arg1, forest* arg2, forest* res);
+        virtual ~inter_mt();
+
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
+                const edge_value &bv, node_handle bp,
+                edge_value &cv, node_handle &cp);
+
+    protected:
+        void _compute(int L, unsigned in,
+                node_handle A, node_handle B, node_handle &C);
+
+    private:
+        inline int topLevelOf(int L, int Alevel, int Blevel) const
+        {
+            if (! resF->isForRelations()) {
+                //
+                // MDD; skip as much as we can
+                //
+                return MDD_levels::topLevel(Alevel, Blevel);
+            }
+
+            if (identity_pattern) {
+                const int t = MXD_levels::topUnprimed(Alevel, Blevel);
+                return (t == MXD_levels::upLevel(L)) ? L : t;
+            } else {
+                return MXD_levels::topLevel(Alevel, Blevel);
+            }
+        }
+
+        inline void chainToLevel(node_handle &C, int Clevel, int L, unsigned in)
+        {
+            //
+            // Add nodes from Clevel to L
+            //
+            if (identity_pattern) {
+#ifdef TRACE
+                out << "I chain to " << C << ", levels " << Clevel
+                    << " to " << L << "\n";
+#endif
+                C = resF->makeIdentitiesTo(C, Clevel, L, in);
+            } else {
+#ifdef TRACE
+                out << "X chain to " << C << ", levels " << Clevel
+                    << " to " << L << "\n";
+#endif
+                C = resF->makeRedundantsTo(C, Clevel, L);
+            }
+        }
+
+    private:
+        ct_entry_type* ct;
+        ct_entry_type* ct_primed;
+        unary_operation* copy_arg1res;
+        unary_operation* copy_arg2res;
+        bool identity_pattern;
+
+#ifdef TRACE
+        ostream_output out;
+#endif
+};
+
+
+// ******************************************************************
+
+MEDDLY::inter_mt::inter_mt(forest* arg1, forest* arg2, forest* res)
+  : binary_operation(arg1, arg2, res)
+#ifdef TRACE
+      , out(std::cout)
+#endif
+{
+    checkDomains(__FILE__, __LINE__);
+    checkAllRelations(__FILE__, __LINE__);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+
+    //
+    // Quick copying, even across forests, for terminal cases :)
+    //
+    copy_arg1res = COPY(arg1, res);
+    copy_arg2res = COPY(arg2, res);
+
+    //
+    // How to handle different reductions
+    //
+    //      quasi ^ quasi   :   no level skipping will occur
+    //      quasi ^ fully   :
+    //      quasi ^ ident   :
+    //      fully ^ quasi   :
+    //      ident ^ quasi   :
+    //
+    //      ident ^ ident   :   identity pattern: skip by unprimed
+    //
+    //                          [p 0 0]   [q 0 0]   [ p^q  0   0  ]
+    //                          [0 p 0] ^ [0 q 0] = [  0  p^q  0  ]
+    //                          [0 0 p]   [0 0 q]   [  0   0  p^q ]
+    //
+    //      ident ^ fully   :   identity pattern: skip by unprimed
+    //
+    //                          [p 0 0]   [q q q]   [ p^q  0   0  ]
+    //                          [0 p 0] ^ [q q q] = [  0  p^q  0  ]
+    //                          [0 0 p]   [q q q]   [  0   0  p^q ]
+    //
+    //      fully ^ ident   :   identity pattern: skip by unprimed
+    //
+    //                          [p p p]   [q 0 0]   [ p^q  0   0  ]
+    //                          [p p p] ^ [0 q 0] = [  0  p^q  0  ]
+    //                          [p p p]   [0 0 q]   [  0   0  p^q ]
+    //
+    //      fully ^ fully   :   fully pattern: skip by top level
+    //
+    //                          [p p p]   [q q q]   [ p^q p^q p^q ]
+    //                          [p p p] ^ [q q q] = [ p^q p^q p^q ]
+    //                          [p p p]   [q q q]   [ p^q p^q p^q ]
+    //
+    //
+    identity_pattern = (arg1->isIdentityReduced() && !arg2->isQuasiReduced())
+                        ||
+                       (arg2->isIdentityReduced() && !arg1->isQuasiReduced());
+
+    ct = new ct_entry_type("intersection");
+    // CT key:      node from forest arg1, node from forest arg2
+    // CT result:   node from forest res
+    ct->setFixed(arg1, arg2);
+    ct->setResult(res);
+    ct->doneBuilding();
+
+    //
+    // If we're skipping by unprimed levels,
+    // keep a second CT for the primed level computations
+    // we are able to save. This is needed to differentiate
+    // the unprimed level result and the primed level result.
+    ct_primed = nullptr;
+    if (identity_pattern) {
+        ct_primed = new ct_entry_type("difference_pr");
+        ct_primed->setFixed(arg1, arg2);
+        ct_primed->setResult(res);
+        ct_primed->doneBuilding();
+    }
+}
+
+MEDDLY::inter_mt::~inter_mt()
+{
+    ct->markForDestroy();
+    if (ct_primed) ct_primed->markForDestroy();
+}
+
+void MEDDLY::inter_mt::compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
+                const edge_value &bv, node_handle bp,
+                edge_value &cv, node_handle &cp)
+{
+    MEDDLY_DCASSERT(av.isVoid());
+    MEDDLY_DCASSERT(bv.isVoid());
+#ifdef TRACE
+    out.indentation(0);
+#endif
+    _compute(L, in, ap, bp, cp);
+    cv.set();
+}
+
+void MEDDLY::inter_mt::_compute(int L, unsigned in,
+            node_handle A, node_handle B, node_handle &C)
+{
+    // **************************************************************
+    //
+    // Check terminal cases
+    //
+    // **************************************************************
+    if (A==0 || B==0) {
+        C = 0;
+        return;
+    }
+
+    if (arg1F->isTerminalNode(A)) {
+        // TRUE and B = B
+        edge_value dummy;
+        dummy.set();
+        MEDDLY_DCASSERT(copy_arg2res);
+        copy_arg2res->compute(L, in, dummy, B, dummy, C);
+        MEDDLY_DCASSERT(dummy.isVoid());
+        return;
+    }
+
+    if (arg2F->isTerminalNode(B)) {
+        // A and TRUE = A
+        edge_value dummy;
+        dummy.set();
+        MEDDLY_DCASSERT(copy_arg1res);
+        copy_arg1res->compute(L, in, dummy, A, dummy, C);
+        MEDDLY_DCASSERT(dummy.isVoid());
+        return;
+    }
+
+    if ((A == B) && (arg1F==arg2F)) {
+        // A and A = A
+        edge_value dummy;
+        dummy.set();
+        MEDDLY_DCASSERT(copy_arg1res);
+        copy_arg1res->compute(L, in, dummy, A, dummy, C);
+        MEDDLY_DCASSERT(dummy.isVoid());
+        return;
+    }
+
+    //
+    // Reorder A and B if they commute (same forest)
+    //
+    if (arg1F == arg2F) {
+        if (A > B) {
+            SWAP(A, B);
+        }
+    }
+
+    // **************************************************************
+    //
+    // Determine level information
+    //
+    // **************************************************************
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = topLevelOf(L, Alevel, Blevel);
+    const int Cnextlevel = resF->isForRelations()
+        ? MXD_levels::downLevel(Clevel)
+        : MDD_levels::downLevel(Clevel)
+    ;
+    const bool useCT = !identity_pattern || Clevel>0;
+    const bool useCTpr = !useCT && (L<0) &&
+        (Alevel == L) && (Blevel == L) && (Clevel == L);
+    MEDDLY_DCASSERT(!useCTpr || ct_primed);
+
+
+    // **************************************************************
+    //
+    // Check the compute table or primed compute table
+    //
+    // **************************************************************
+    ct_vector key(2);
+    ct_vector res(1);
+    key[0].setN(A);
+    key[1].setN(B);
+
+
+    if (useCT && ct->findCT(key, res)) {
+        //
+        // 'main' compute table hit
+        //
+        C = resF->linkNode(res[0].getN());
+#ifdef TRACE
+        out << "CT hit ";
+        key.show(out);
+        out << " -> ";
+        res.show(out);
+        out << "\n";
+#endif
+        if (L == resF->getNodeLevel(C)) {
+            // Make sure we don't point to a singleton
+            // from the same index.
+            C = resF->redirectSingleton(in, C);
+        } else {
+            chainToLevel(C, Clevel, L, in);
+        }
+        return;
+        //
+        // done 'main' compute table hit
+        //
+    }
+    if (useCTpr && ct_primed->findCT(key, res)) {
+        //
+        // 'primed' compute table hit
+        //
+        C = resF->linkNode(res[0].getN());
+#ifdef TRACE
+        out << "CT' hit ";
+        key.show(out);
+        out << " -> ";
+        res.show(out);
+        out << "\n";
+#endif
+        if (L == resF->getNodeLevel(C)) {
+            // Make sure we don't point to a singleton
+            // from the same index.
+            C = resF->redirectSingleton(in, C);
+        }
+        return;
+        //
+        // done 'primed' compute table hit
+        //
+    }
+
+    // **************************************************************
+    //
+    // Compute table 'miss'; do computation
+    //
+    // **************************************************************
+
+
+    // TBD
+}
+
+//
+//  OLD BELOW HERE
+//
 
 // ******************************************************************
 // *                                                                *
