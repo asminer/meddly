@@ -407,7 +407,6 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
     out.put('\n');
 #endif
 
-
     //
     // Recurse
     //
@@ -416,7 +415,7 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
     for (unsigned z=0; z<Au->getSize(); z++) {
         const unsigned i = Au->index(z);
         node_handle cd;
-        _compute(Cnextlevel, int(i), Au->down(z), Bu->down(i), cd);
+        _compute(Cnextlevel, i, Au->down(z), Bu->down(i), cd);
         if (cd) {
             Cu->setSparse(zc++, i, cd);
         }
