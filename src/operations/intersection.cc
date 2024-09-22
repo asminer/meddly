@@ -37,8 +37,6 @@ namespace MEDDLY {
     binary_list INTER_cache;
 };
 
-#define NEW_INTER
-
 // #define TRACE
 
 #ifdef TRACE
@@ -617,130 +615,6 @@ bool MEDDLY::inter_max_evplus::checkTerminals(long aev, node_handle a, long bev,
   return false;
 }
 
-#ifdef ALLOW_EXTENSIBLE
-MEDDLY::node_handle
-MEDDLY::inter_mxd::compute_ext(node_handle a, node_handle b)
-{
-  // Get level information
-  const int aLevel = arg1F->getNodeLevel(a);
-  const int bLevel = arg2F->getNodeLevel(b);
-  int resultLevel = ABS(topLevel(aLevel, bLevel));
-  const int dwnLevel = resF->downLevel(resultLevel);
-
-  MEDDLY_DCASSERT(resF->isExtensibleLevel(resultLevel));
-
-  // Initialize readers
-  unpacked_node *A = (aLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg1F, resultLevel, a, SPARSE_ONLY)
-    : arg1F->newUnpacked(a, SPARSE_ONLY)
-    ;
-  const node_handle A_ext_d = A->isExtensible()? A->ext_d(): 0;
-  int last_nz = int(A->getSize())-1;
-  for ( ; last_nz >= 0 && A->down(unsigned(last_nz)) == 0; last_nz--);
-  const unsigned int A_nnzs = last_nz + 1;
-  const int A_last_index = last_nz >= 0? int(A->index(unsigned(last_nz))): -1;
-
-  unpacked_node *B = (bLevel < resultLevel)
-    ? unpacked_node::newRedundant(arg2F, resultLevel, b, SPARSE_ONLY)
-    : arg2F->newUnpacked(b, SPARSE_ONLY)
-    ;
-  const node_handle B_ext_d = B->isExtensible()? B->ext_d(): 0;
-  last_nz = int(B->getSize())-1;
-  for ( ; last_nz >= 0 && B->down(unsigned(last_nz)) == 0; last_nz--);
-  const unsigned int B_nnzs = last_nz + 1;
-  const int B_last_index = last_nz >= 0? int(B->index(unsigned(last_nz))): -1;
-
-  const int max_a_b_last_index = MAX(A_last_index, B_last_index);
-
-  unsigned resultSize = A->getSize() + B->getSize() + 1 + 1;
-  unpacked_node* C = unpacked_node::newSparse(resF, resultLevel, resultSize);
-
-  unsigned nnz = 0;
-  unsigned A_curr_index = 0;
-  unsigned B_curr_index = 0;
-  for ( ; A_curr_index < A_nnzs && B_curr_index < B_nnzs; ) {
-    // get a_i, a_d, b_i, b_d
-    node_handle a_d, b_d;
-    const unsigned a_i = A->index(A_curr_index);
-    const unsigned b_i = B->index(B_curr_index);
-    if (a_i <= b_i) {
-      a_d = A->down(A_curr_index);
-      A_curr_index++;
-    } else {
-      a_d = 0;
-    }
-    if (a_i >= b_i) {
-      b_d = B->down(B_curr_index);
-      B_curr_index++;
-    } else {
-      b_d = 0;
-    }
-
-    if (a_d == 0 || b_d == 0) continue;
-
-    // compute inter(a_d, b_d)
-    const unsigned index = (a_d? a_i: b_i);
-    const node_handle down = compute_r(int(index), dwnLevel, a_d, b_d);
-
-    // if inter is non-zero, add it to the new node
-    if (down) {
-      C->setSparse(nnz, index, down);
-      // C->i_ref(nnz) = index;
-      // C->d_ref(nnz) = down;
-      nnz++;
-    }
-  } // for loop
-  if (B_ext_d != 0) {
-    for ( ; A_curr_index < A_nnzs; A_curr_index++) {
-      // do inter(a_i, b_ext_i)
-      const unsigned index = A->index(A_curr_index);
-      const node_handle down = compute_r(int(index), dwnLevel, A->down(A_curr_index), B_ext_d);
-      if (down) {
-        C->setSparse(nnz, index, down);
-        // C->i_ref(nnz) = index;
-        // C->d_ref(nnz) = down;
-        nnz++;
-      }
-    }
-  }
-  if (A_ext_d != 0) {
-    for ( ; B_curr_index < B_nnzs; B_curr_index++) {
-      // do inter(a_ext_i, b_i)
-      const unsigned index = B->index(B_curr_index);
-      node_handle down = compute_r(int(index), dwnLevel, A_ext_d, B->down(B_curr_index));
-      if (down) {
-        C->setSparse(nnz, index, down);
-        // C->i_ref(nnz) = index;
-        // C->d_ref(nnz) = down;
-        nnz++;
-      }
-    }
-  }
-  if (A_ext_d != 0 && B_ext_d != 0) {
-    const unsigned index = max_a_b_last_index+1;
-    MEDDLY_DCASSERT(index >= 0);
-    const node_handle down = compute_r(index, dwnLevel, A_ext_d, B_ext_d);
-    if (down) {
-      C->setSparse(nnz, index, down);
-      // C->i_ref(nnz) = unsigned(index);
-      // C->d_ref(nnz) = down;
-      C->markAsExtensible();
-      nnz++;
-    } else {
-      C->markAsNotExtensible();
-    }
-  }
-  C->shrink(nnz);
-
-  // cleanup
-  unpacked_node::Recycle(B);
-  unpacked_node::Recycle(A);
-
-  // reduce result
-  node_handle result = resF->createReducedNode(-1, C);
-  return result;
-}
-#endif // ALLOW_EXTENSIBLE
 
 // ******************************************************************
 // *                                                                *
