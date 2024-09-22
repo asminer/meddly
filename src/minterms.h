@@ -26,6 +26,12 @@
 // For now: defines that should eventually be part of minterm objects
 //
 
+//
+// A minterm should be a std::vector of ints, plus a rangeval.
+//
+// Should we define collections of minterms here?
+//
+
 namespace MEDDLY {
   /** Special value for minterms: don't care what this variable does.
       I.e., do the same thing for all possible assignments for a variable.

@@ -11,16 +11,6 @@ Current goal:
     * use COPY operation where it makes sense, e.g.,
         terminal cases in cross-forest unions
 
-    * add forest utility:
-        node_handle removeIdentityEdge(int fromlevel, unsigned from, node_handle p)
-
-        returns p most of the time, and quickly.
-        If the forest is identity-reduced, AND fromlevel is unprimed,
-        AND node p is at the level below fromlevel, AND node p is a
-        singleton node, AND from is the index of the singleton node,
-        THEN we return p's downward pointer.
-
-    * use removeIdentityEdge when building relation nodes in new operations
 
 Interface changes (aside from moving header files around)
 ======================================================================
@@ -73,9 +63,9 @@ complement.cc       yes
 copy.cc             yes
 
 difference.cc       yes
-intersection.cc     Yes*
+intersection.cc     yes         tbd: evplus (move to max)
 maxmin_range.cc     yes
-union.cc            Yes*
+union.cc            Yes*        tbd: evplus (move to min)
 
 ======================================================================
 Operations that need updating
