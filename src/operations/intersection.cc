@@ -41,6 +41,10 @@ namespace MEDDLY {
 
 // #define TRACE
 
+#ifdef TRACE
+#include "../operators.h"
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                         inter_mt class                         *
@@ -223,23 +227,27 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
     }
 
     if (arg1F->isTerminalNode(A)) {
-        // TRUE and B = B
-        edge_value dummy;
-        dummy.set();
-        MEDDLY_DCASSERT(copy_arg2res);
-        copy_arg2res->compute(L, in, dummy, B, dummy, C);
-        MEDDLY_DCASSERT(dummy.isVoid());
-        return;
+        if (L==0 || arg1F->isFullyReduced()) {
+            // TRUE and B = B
+            edge_value dummy;
+            dummy.set();
+            MEDDLY_DCASSERT(copy_arg2res);
+            copy_arg2res->compute(L, in, dummy, B, dummy, C);
+            MEDDLY_DCASSERT(dummy.isVoid());
+            return;
+        }
     }
 
     if (arg2F->isTerminalNode(B)) {
-        // A and TRUE = A
-        edge_value dummy;
-        dummy.set();
-        MEDDLY_DCASSERT(copy_arg1res);
-        copy_arg1res->compute(L, in, dummy, A, dummy, C);
-        MEDDLY_DCASSERT(dummy.isVoid());
-        return;
+        if (L==0 || arg2F->isFullyReduced()) {
+            // A and TRUE = A
+            edge_value dummy;
+            dummy.set();
+            MEDDLY_DCASSERT(copy_arg1res);
+            copy_arg1res->compute(L, in, dummy, A, dummy, C);
+            MEDDLY_DCASSERT(dummy.isVoid());
+            return;
+        }
     }
 
     if ((A == B) && (arg1F==arg2F)) {
