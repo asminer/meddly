@@ -26,6 +26,7 @@
 #include "node_storage.h"
 #include "unpacked_node.h"
 #include "policies.h"
+#include "rangeval.h"
 #include "domain.h"
 #include "enumerator.h"
 

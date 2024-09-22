@@ -143,23 +143,6 @@ namespace MEDDLY {
     const set_or_rel    WITH_PRIMED     = true;
 
     // ******************************************************************
-    // *                           range types                          *
-    // ******************************************************************
-
-    /** Types of values that we can currently store in forests.
-        I.e., if every node in a forest is a function,
-        these are the possible ranges for a function.
-    */
-    enum class range_type {
-        /// boolean-valued functions.
-        BOOLEAN,
-        /// integer-valued functions.
-        INTEGER,
-        /// real-valued functions.
-        REAL
-    };
-
-    // ******************************************************************
     // *                         edge  labelings                        *
     // ******************************************************************
 

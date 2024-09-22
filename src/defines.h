@@ -53,8 +53,8 @@ namespace MEDDLY {
   template<typename T>
   inline T Inf()    { return std::numeric_limits<T>::max(); }
   inline float Nan()  { return std::numeric_limits<float>::quiet_NaN(); }
-  inline bool isNan(float t) { return t != t; }
-  inline bool isNan(int t) { return false; }
+  // inline bool isNan(float t) { return t == Nan(); }
+  // inline bool isNan(int t) { return false; }
 
   // Handy Macros
 

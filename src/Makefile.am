@@ -59,6 +59,7 @@ libmeddly_la_SOURCES = \
     operators.h             operators.cc \
     ops_builtin.h           ops_builtin.cc \
     policies.h              policies.cc \
+    rangeval.h              rangeval.cc \
     relation_node.h         relation_node.cc \
     sat_relations.h         sat_relations.cc \
     statset.h               statset.cc \

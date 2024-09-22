@@ -24,21 +24,8 @@
 // #include <cstring>  // for memcpy
 
 namespace MEDDLY {
+    enum class terminal_type;
     class terminal;
-
-    /// Type of terminal value.
-    enum class terminal_type {
-        /// Null type
-        NOTHING,
-        /// Nothing; for EV
-        OMEGA,
-        /// For MT boolean
-        BOOLEAN,
-        /// For MT integer
-        INTEGER,
-        /// For MT real
-        REAL
-    };
 
     ///
     /// Special OMEGA values
@@ -54,6 +41,19 @@ namespace MEDDLY {
     class output;
 };
 
+/// Type of terminal value.
+enum class MEDDLY::terminal_type {
+    /// Null type
+    NOTHING,
+    /// Nothing; for EV
+    OMEGA,
+    /// For MT boolean
+    BOOLEAN,
+    /// For MT integer
+    INTEGER,
+    /// For MT real
+    REAL
+};
 
 /**
     Unified terminal object.
