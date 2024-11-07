@@ -111,11 +111,6 @@ divide.cc
         NO      divide_mdd
         NO      divide_mxd
 
-intersection.cc
-        YES*    inter_mdd
-        YES*    inter_mxd
-        NO      inter_max_evplus
-
 maxmin.cc
         NO      maximum_mdd
         NO      maximum_mxd
