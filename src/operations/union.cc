@@ -163,30 +163,38 @@ MEDDLY::union_mt::union_mt(forest* arg1, forest* arg2, forest* res)
     copy_arg2res = COPY(arg2, res);
 
     //
-    // Decide if we need to recurse by levels or not.
-    // If yes, then we store the level in the compute table and
-    // force the recursion to go by levels.
-    // If no, we do not store the level in the compute table
-    // and we recurse by the top level of the operands.
+    // How to handle different reductions
     //
-    //  Cases that naturally have NO level skipping
+    //      quasi v quasi   :   no level skipping will occur
+    //      quasi v fully   :
+    //      quasi v ident   :
+    //      fully v quasi   :
+    //      ident v quasi   :
     //
-    //      quasi, quasi    :   by_levels = false
-    //      quasi, fully    :   by_levels = false
-    //      quasi, ident    :   by_levels = false
-    //      fully, quasi    :   by_levels = false
-    //      ident, quasi    :   by_levels = false
+    //      ident v ident   :   identity pattern: skip by unprimed
     //
-    //  Cases with arbitrary level skipping allowed
+    //                          [p 0 0]   [q 0 0]   [ pvq  0   0  ]
+    //                          [0 p 0] v [0 q 0] = [  0  pvq  0  ]
+    //                          [0 0 p]   [0 0 q]   [  0   0  pvq ]
     //
-    //      fully, fully    :   by_levels = false
-    //      ident, ident    :   by_levels = false
+    //      ident v fully   :   force by levels, and store levels in
+    //      fully v ident   :   the compute table entry
     //
-    //  Cases that must proceed by levels, and store levels
-    //  in the compute table entry
+    //                          [p p p]   [q 0 0]   [ pvq  p   p  ]
+    //                          [p p p] v [0 q 0] = [  p  pvq  p  ]
+    //                          [p p p]   [0 0 q]   [  p   p  pvq ]
     //
-    //      fully, ident    :   by_levels = true;
-    //      ident, fully    :   by_levels = true;
+    //      fully v fully   :   fully pattern: skip by top level
+    //
+    //                          [p p p]   [q q q]   [ pvq pvq pvq ]
+    //                          [p p p] v [q q q] = [ pvq pvq pvq ]
+    //                          [p p p]   [q q q]   [ pvq pvq pvq ]
+    //
+    //
+
+
+    //
+    // TBD OLD BELOW HERE
     //
 
     by_levels =

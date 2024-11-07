@@ -38,6 +38,7 @@ namespace MEDDLY {
 };
 
 // #define TRACE
+#define USE_PRIMED_CACHE
 
 #ifdef TRACE
 #include "../operators.h"
@@ -103,7 +104,9 @@ class MEDDLY::inter_mt : public binary_operation {
 
     private:
         ct_entry_type* ct;
+#ifdef USE_PRIMED_CACHE
         ct_entry_type* ct_primed;
+#endif
         unary_operation* copy_arg1res;
         unary_operation* copy_arg2res;
         bool identity_pattern;
@@ -177,6 +180,7 @@ MEDDLY::inter_mt::inter_mt(forest* arg1, forest* arg2, forest* res)
     ct->setResult(res);
     ct->doneBuilding();
 
+#ifdef USE_PRIMED_CACHE
     //
     // If we're skipping by unprimed levels,
     // keep a second CT for the primed level computations
@@ -189,12 +193,15 @@ MEDDLY::inter_mt::inter_mt(forest* arg1, forest* arg2, forest* res)
         ct_primed->setResult(res);
         ct_primed->doneBuilding();
     }
+#endif // USE_PRIMED_CACHE
 }
 
 MEDDLY::inter_mt::~inter_mt()
 {
     ct->markForDestroy();
+#ifdef USE_PRIMED_CACHE
     if (ct_primed) ct_primed->markForDestroy();
+#endif
 }
 
 void MEDDLY::inter_mt::compute(int L, unsigned in,
@@ -280,9 +287,11 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
         : MDD_levels::downLevel(Clevel)
     ;
     const bool useCT = !identity_pattern || Clevel>0;
+#ifdef USE_PRIMED_CACHE
     const bool useCTpr = !useCT && (L<0) &&
         (Alevel == L) && (Blevel == L) && (Clevel == L);
     MEDDLY_DCASSERT(!useCTpr || ct_primed);
+#endif
 
 #ifdef TRACE
     out << "inter_mt::_compute(" << L << ", " << in << ", " << A << ", "
@@ -328,6 +337,7 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
         // done 'main' compute table hit
         //
     }
+#ifdef USE_PRIMED_CACHE
     if (useCTpr && ct_primed->findCT(key, res)) {
         //
         // 'primed' compute table hit
@@ -350,6 +360,7 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
         // done 'primed' compute table hit
         //
     }
+#endif // USE_PRIMED_CACHE
 
     // **************************************************************
     //
@@ -466,11 +477,13 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
             res[0].setN(C);
             ct->addCT(key, res);
         }
+#ifdef USE_PRIMED_CACHE
     } else if (useCTpr) {
         MEDDLY_DCASSERT(!Au->wasIdentity());
         MEDDLY_DCASSERT(!Bu->wasIdentity());
         res[0].setN(C);
         ct_primed->addCT(key, res);
+#endif // USE_PRIMED_CACHE
     } else {
         // recycle the key
         ct->noaddCT(key);
