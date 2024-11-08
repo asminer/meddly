@@ -88,6 +88,28 @@ class MEDDLY::union_mt : public binary_operation {
             }
         }
 
+        inline void chainToLevel(node_handle &C, int Clevel, int L, unsigned in)
+        {
+            //
+            // Add nodes from Clevel to L
+            //
+            if (both_identity) {
+#ifdef TRACE
+                out << "I chain to " << C << ", levels " << Clevel
+                    << " to " << L << "\n";
+#endif
+                C = resF->makeIdentitiesTo(C, Clevel, L, in);
+            } else {
+#ifdef TRACE
+                out << "X chain to " << C << ", levels " << Clevel
+                    << " to " << L << "\n";
+#endif
+                C = resF->makeRedundantsTo(C, Clevel, L);
+            }
+        }
+
+
+        /*
         inline unpacked_node* unpackEdge(forest* F, int atL, int in,
                 node_handle A, int alevel, node_storage_flags fs)
         {
@@ -112,6 +134,7 @@ class MEDDLY::union_mt : public binary_operation {
 
             return nullptr;
         }
+        */
 
     private:
         ct_entry_type* ct;
@@ -338,19 +361,14 @@ void MEDDLY::union_mt::_compute(int L, unsigned in,
 #endif
 
 
-
-// <<<<<<<<
-// HERE TBD
-// <<<<<<<<
-
-
-
+    // **************************************************************
     //
-    // Check compute table
+    // Check the compute table or primed compute table
     //
-    ct_vector key(by_levels ? 3 : 2);
+    // **************************************************************
+    ct_vector key(forced_by_levels ? 3 : 2);
     ct_vector res(1);
-    if (by_levels) {
+    if (forced_by_levels) {
         key[0].setI(L);
         key[1].setN(A);
         key[2].setN(B);
@@ -358,67 +376,124 @@ void MEDDLY::union_mt::_compute(int L, unsigned in,
         key[0].setN(A);
         key[1].setN(B);
     }
-    if (ct->findCT(key, res)) {
+
+    if (useCT && ct->findCT(key, res)) {
+        //
+        // 'main' compute table hit
+        //
         C = resF->linkNode(res[0].getN());
 #ifdef TRACE
-        out << "\tCT hit " << res[0].getN() << "\n";
-        out << "\tlevel is " << resF->getNodeLevel(C) << "\n";
+        out << "CT hit ";
+        key.show(out);
+        out << " -> ";
+        res.show(out);
+        out << "\n";
 #endif
+        if (L == resF->getNodeLevel(C)) {
+            // Make sure we don't point to a singleton
+            // from the same index.
+            C = resF->redirectSingleton(in, C);
+        } else {
+            chainToLevel(C, Clevel, L, in);
+        }
         return;
+        //
+        // done 'main' compute table hit
+        //
+    }
+#ifdef USE_PRIMED_CACHE
+    if (useCTpr && ct_primed->findCT(key, res)) {
+        //
+        // 'primed' compute table hit
+        //
+        C = resF->linkNode(res[0].getN());
+#ifdef TRACE
+        out << "CT' hit ";
+        key.show(out);
+        out << " -> ";
+        res.show(out);
+        out << "\n";
+#endif
+        if (L == resF->getNodeLevel(C)) {
+            // Make sure we don't point to a singleton
+            // from the same index.
+            C = resF->redirectSingleton(in, C);
+        }
+        return;
+        //
+        // done 'primed' compute table hit
+        //
+    }
+#endif // USE_PRIMED_CACHE
+
+
+    // **************************************************************
+    //
+    // Compute table 'miss'; do computation
+    //
+    // **************************************************************
+
+    //
+    // Set up unpacked nodes
+    //
+
+    unpacked_node* Au;
+    if (Alevel != Clevel) {
+        if (arg1F->isIdentityReduced() && Clevel<0) {
+            MEDDLY_DCASSERT(Clevel == L);
+            // ^ if we skip too much, in is irrelevant
+            Au = unpacked_node::newIdentity(arg1F, Clevel, in, A, FULL_ONLY);
+            MEDDLY_DCASSERT(Au->wasIdentity());
+        } else {
+            Au = unpacked_node::newRedundant(arg1F, Clevel, A, FULL_ONLY);
+            MEDDLY_DCASSERT(!Au->wasIdentity());
+        }
+    } else {
+        Au = arg1F->newUnpacked(A, FULL_ONLY);
+        MEDDLY_DCASSERT(!Au->wasIdentity());
     }
 
+    unpacked_node* Bu;
+    if (Blevel != Clevel) {
+        if (arg2F->isIdentityReduced() && Clevel<0) {
+            MEDDLY_DCASSERT(Clevel == L);
+            Bu = unpacked_node::newIdentity(arg2F, Clevel, in, B, FULL_ONLY);
+            MEDDLY_DCASSERT(Bu->wasIdentity());
+        } else {
+            Bu = unpacked_node::newRedundant(arg2F, Clevel, B, FULL_ONLY);
+            MEDDLY_DCASSERT(!Bu->wasIdentity());
+        }
+    } else {
+        Bu = arg2F->newUnpacked(B, FULL_ONLY);
+        MEDDLY_DCASSERT(!Bu->wasIdentity());
+    }
 
-    //
-    // Do computation
-    //
-
-    //
-    // Initialize unpacked nodes
-    //
-    unpacked_node* Au = unpackEdge(arg1F, Clevel, in, A, Alevel, FULL_ONLY);
-    unpacked_node* Bu = unpackEdge(arg2F, Clevel, in, B, Blevel, FULL_ONLY);
     MEDDLY_DCASSERT(Au->getSize() == Bu->getSize());
-    const bool depends_on_in = Au->wasIdentity() || Bu->wasIdentity();
-
     unpacked_node* Cu = unpacked_node::newFull(resF, Clevel, Au->getSize());
 
-    //
-    // Build result node
-    //
 #ifdef TRACE
+    out << "A: ";
+    Au->show(out, true);
+    out << "\nB: ";
+    Bu->show(out, true);
     out.indent_more();
     out.put('\n');
 #endif
-    const int nextlevel = resF->isForRelations()
-            ? MXD_levels::downLevel(Clevel)
-            : MDD_levels::downLevel(Clevel);
 
-// HERE TBD
-
-    /*
+    //
+    // Recurse
+    //
     for (unsigned i=0; i<Cu->getSize(); i++) {
-
-        node_handle d = _compute(int(i), Au->down(i), Bu->down(i), nextlevel);
-        Cu->setFull(i, d);
-        if (d) ++nnzs;
+        node_handle cd;
+        _compute(Cnextlevel, i, Au->down(i), Bu->down(i), cd);
+        Cu->setFull(i, cd);
     }
 
-
-
-    // OLD BELOW HERE TBD
-
-
-    unsigned nnzs = 0;
-    for (unsigned i=0; i<Cu->getSize(); i++) {
-        node_handle d = _compute(int(i), Au->down(i), Bu->down(i), nextlevel);
-        Cu->setFull(i, d);
-        if (d) ++nnzs;
-    }
 #ifdef TRACE
     out.indent_less();
     out.put('\n');
-    out << "union_mt compute(" << in << ", "
-        << A << ", " << B << ", " << L << ") done\n";
+    out << "inter_mt::_compute(" << L << ", " << in << ", " << A << ", "
+        << B << ") done\n";
     out << "  A: ";
     Au->show(out, true);
     out << "\n  B: ";
@@ -432,8 +507,7 @@ void MEDDLY::union_mt::_compute(int L, unsigned in,
     // Reduce
     //
     edge_value dummy;
-    node_handle C;
-    resF->createReducedNode(Cu, dummy, C, in);
+    resF->createReducedNode(Cu, dummy, C);
     MEDDLY_DCASSERT(dummy.isVoid());
 #ifdef TRACE
     out << "reduced to " << C << ": ";
@@ -441,11 +515,26 @@ void MEDDLY::union_mt::_compute(int L, unsigned in,
     out << "\n";
 #endif
 
-    if (depends_on_in) {
-        ct->noaddCT(key);
-    } else {
+    //
+    // Save result in CT, if we can
+    //
+    if (useCT) {
+        if (Au->wasIdentity() || Bu->wasIdentity()) {
+            ct->noaddCT(key);
+        } else {
+            res[0].setN(C);
+            ct->addCT(key, res);
+        }
+#ifdef USE_PRIMED_CACHE
+    } else if (useCTpr) {
+        MEDDLY_DCASSERT(!Au->wasIdentity());
+        MEDDLY_DCASSERT(!Bu->wasIdentity());
         res[0].setN(C);
-        ct->addCT(key, res);
+        ct_primed->addCT(key, res);
+#endif // USE_PRIMED_CACHE
+    } else {
+        // recycle the key
+        ct->noaddCT(key);
     }
 
     //
@@ -454,8 +543,24 @@ void MEDDLY::union_mt::_compute(int L, unsigned in,
     unpacked_node::Recycle(Bu);
     unpacked_node::Recycle(Au);
 
-    return resF->makeRedundantsTo(C, Clevel, L);
-    */
+    //
+    // Adjust result
+    //
+    if (L == resF->getNodeLevel(C)) {
+        //
+        // We don't need to add identities or redundants;
+        // just check if we need to avoid a singleton.
+        //
+        C = resF->redirectSingleton(in, C);
+    } else {
+        //
+        // Add nodes but only from Clevel;
+        // if the actual level of C is below Clevel it means
+        // nodes were eliminated in the result forest.
+        //
+        chainToLevel(C, Clevel, L, in);
+    }
+
 }
 
 // ******************************************************************
