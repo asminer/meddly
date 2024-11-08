@@ -44,7 +44,7 @@ namespace MEDDLY {
 #include "../operators.h"
 #endif
 
-// #define NEW_UNION
+#define NEW_UNION
 
 // ******************************************************************
 // *                                                                *
