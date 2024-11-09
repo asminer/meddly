@@ -863,23 +863,9 @@ MEDDLY::binary_operation* MEDDLY::EQUAL(forest* a, forest* b, forest* c)
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            if (c->isForRelations())
-                return EQUAL_cache.add(
-                    new compare_op<eq_templ<float> > (a,b,c)
-                );
-            else
-                return EQUAL_cache.add(
-                    new compare_op<eq_templ<float> > (a,b,c)
-                );
+            return EQUAL_cache.add( new compare_op<eq_templ<float> > (a,b,c) );
         } else {
-            if (c->isForRelations())
-                return EQUAL_cache.add(
-                    new compare_op<eq_templ<long> > (a,b,c)
-                );
-            else
-                return EQUAL_cache.add(
-                    new compare_op<eq_templ<long> > (a,b,c)
-                );
+            return EQUAL_cache.add( new compare_op<eq_templ<long> > (a,b,c) );
         }
     }
 
@@ -919,23 +905,9 @@ MEDDLY::binary_operation* MEDDLY::NOT_EQUAL(forest* a, forest* b, forest* c)
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            if (c->isForRelations())
-                return NEQ_cache.add(
-                    new compare_op<ne_templ<float> > (a,b,c)
-                );
-            else
-                return NEQ_cache.add(
-                    new compare_op<ne_templ<float> > (a,b,c)
-                );
+            return NEQ_cache.add( new compare_op<ne_templ<float> > (a,b,c) );
         } else {
-            if (c->isForRelations())
-                return NEQ_cache.add(
-                    new compare_op<ne_templ<long> > (a,b,c)
-                );
-            else
-                return NEQ_cache.add(
-                    new compare_op<ne_templ<long> > (a,b,c)
-                );
+            return NEQ_cache.add( new compare_op<ne_templ<long> > (a,b,c) );
         }
     }
 
@@ -969,23 +941,9 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN(forest* a, forest* b, forest* c)
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            if (c->isForRelations())
-                return GT_cache.add(
-                    new compare_op<gt_templ<float> > (a,b,c)
-                );
-            else
-                return GT_cache.add(
-                    new compare_op<gt_templ<float> > (a,b,c)
-                );
+            return GT_cache.add( new compare_op<gt_templ<float> > (a,b,c) );
         } else {
-            if (c->isForRelations())
-                return GT_cache.add(
-                    new compare_op<gt_templ<long> > (a,b,c)
-                );
-            else
-                return GT_cache.add(
-                    new compare_op<gt_templ<long> > (a,b,c)
-                );
+            return GT_cache.add( new compare_op<gt_templ<long> > (a,b,c) );
         }
     }
 
@@ -1019,23 +977,9 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN_EQUAL(forest* a, forest* b, fores
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            if (c->isForRelations())
-                return GE_cache.add(
-                    new compare_op<ge_templ<float> > (a,b,c)
-                );
-            else
-                return GE_cache.add(
-                    new compare_op<ge_templ<float> > (a,b,c)
-                );
+            return GE_cache.add( new compare_op<ge_templ<float> > (a,b,c) );
         } else {
-            if (c->isForRelations())
-                return GE_cache.add(
-                    new compare_op<ge_templ<long> > (a,b,c)
-                );
-            else
-                return GE_cache.add(
-                    new compare_op<ge_templ<long> > (a,b,c)
-                );
+            return GE_cache.add( new compare_op<ge_templ<long> > (a,b,c) );
         }
     }
 
@@ -1069,23 +1013,9 @@ MEDDLY::binary_operation* MEDDLY::LESS_THAN(forest* a, forest* b, forest* c)
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            if (c->isForRelations())
-                return LT_cache.add(
-                    new compare_op<lt_templ<float> > (a,b,c)
-                );
-            else
-                return LT_cache.add(
-                    new compare_op<lt_templ<float> > (a,b,c)
-                );
+            return LT_cache.add( new compare_op<lt_templ<float> > (a,b,c) );
         } else {
-            if (c->isForRelations())
-                return LT_cache.add(
-                    new compare_op<lt_templ<long> > (a,b,c)
-                );
-            else
-                return LT_cache.add(
-                    new compare_op<lt_templ<long> > (a,b,c)
-                );
+            return LT_cache.add( new compare_op<lt_templ<long> > (a,b,c) );
         }
     }
 
@@ -1119,23 +1049,9 @@ MEDDLY::binary_operation* MEDDLY::LESS_THAN_EQUAL(forest* a, forest* b, forest* 
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            if (c->isForRelations())
-                return LE_cache.add(
-                    new compare_op<le_templ<float> > (a,b,c)
-                );
-            else
-                return LE_cache.add(
-                    new compare_op<le_templ<float> > (a,b,c)
-                );
+            return LE_cache.add( new compare_op<le_templ<float> > (a,b,c) );
         } else {
-            if (c->isForRelations())
-                return LE_cache.add(
-                    new compare_op<le_templ<long> > (a,b,c)
-                );
-            else
-                return LE_cache.add(
-                    new compare_op<le_templ<long> > (a,b,c)
-                );
+            return LE_cache.add( new compare_op<le_templ<long> > (a,b,c) );
         }
     }
 
