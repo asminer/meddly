@@ -108,34 +108,6 @@ class MEDDLY::union_mt : public binary_operation {
             }
         }
 
-
-        /*
-        inline unpacked_node* unpackEdge(forest* F, int atL, int in,
-                node_handle A, int alevel, node_storage_flags fs)
-        {
-            MEDDLY_DCASSERT(A);
-            MEDDLY_DCASSERT(F->getNodeLevel(A) == alevel);
-
-            if (alevel == atL) {
-                return F->newUnpacked(A, fs);
-            }
-            if (atL >= 0 || 0==A || F->isFullyReduced()) {
-                return unpacked_node::newRedundant(F, atL, A, fs);
-            }
-            if (F->isIdentityReduced()) {
-                return unpacked_node::newIdentity(F, atL, in, A, fs);
-            }
-            std::cout << "unpackEdge fall through\n";
-            std::cout << "    atL: " << atL << "\n";
-            std::cout << "    A: " << A << "\n";
-            std::cout << "    a level: " << alevel << "\n";
-
-            MEDDLY_DCASSERT(false);
-
-            return nullptr;
-        }
-        */
-
     private:
         ct_entry_type* ct;
 #ifdef USE_PRIMED_CACHE
@@ -257,12 +229,10 @@ void MEDDLY::union_mt::compute(int L, unsigned in,
     out.indentation(0);
     ++top_count;
     out << "Union #" << top_count << " begin\n";
-    std::cerr << "Union #" << top_count << " begin\n";
 #endif
     _compute(L, in, ap, bp, cp);
 #ifdef TRACE
     out << "Union #" << top_count << " end\n";
-    std::cerr << "Union #" << top_count << " end\n";
 #endif
     cv.set();
 }

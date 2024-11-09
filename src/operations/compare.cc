@@ -29,6 +29,8 @@
 #include "../operators.h"
 #endif
 
+// #define NEW_RECURSION
+
 //
 // Operation instance caches
 //
@@ -90,17 +92,37 @@ namespace MEDDLY {
                     edge_value &cv, node_handle &cp);
 
         protected:
+            void _compute(int L, unsigned in, node_handle A, node_handle B,
+                    node_handle &C);
+
+            //
+            // Old computes
+            //
+
             node_handle _compute(node_handle A, node_handle B, int L);
 
             node_handle _compute_un(node_handle A, node_handle B, int L);
             node_handle _compute_pr(int in, node_handle A, node_handle B, int L);
 
         private:
+
+            inline int topLevelOf(int L, int alevel, int blevel) const
+            {
+                if (forced_by_levels) return L;
+                if (resF->isForRelations()) {
+                    return MXD_levels::topLevel(alevel, blevel);
+                } else {
+                    return MDD_levels::topLevel(alevel, blevel);
+                }
+            }
+
+        private:
             ct_entry_type* ct;
 #ifdef TRACE
             ostream_output out;
+            unsigned top_count;
 #endif
-            bool go_by_levels;
+            bool forced_by_levels;
     };
 };
 
@@ -110,7 +132,7 @@ template <class CTYPE>
 MEDDLY::compare_op<CTYPE>::compare_op(forest* arg1, forest* arg2,
         forest* res) : binary_operation(arg1, arg2, res)
 #ifdef TRACE
-      , out(std::cout)
+      , out(std::cout), top_count(0)
 #endif
 {
     checkDomains(__FILE__, __LINE__);
@@ -126,15 +148,22 @@ MEDDLY::compare_op<CTYPE>::compare_op(forest* arg1, forest* arg2,
     }
 
     //
-    // Do we need to recurse by levels?
-    // If either input is an identity-reduced relation, then YES.
+    // Do we need to recurse by levels and store level info in the CT?
+    // If either input is quasi-reduced, then we will go by levels anyway,
+    //      and we DON'T need to store level info in the CT.
+    // Otherwise, if either input is an identity-reduced relation, then YES.
     //
-    go_by_levels = arg1->isIdentityReduced() || arg2->isIdentityReduced();
+    if (arg1->isQuasiReduced() || arg2->isQuasiReduced()) {
+        forced_by_levels = false;
+    } else {
+        forced_by_levels =
+            arg1->isIdentityReduced() || arg2->isIdentityReduced();
+    }
 
     // Build compute table key and result types.
     // If we recurse by levels, then we need the level as part of the key.
     ct = new ct_entry_type(CTYPE::name());
-    if (go_by_levels) {
+    if (forced_by_levels) {
         ct->setFixed('I', arg1, arg2);
     } else {
         ct->setFixed(arg1, arg2);
@@ -157,23 +186,153 @@ void MEDDLY::compare_op<CTYPE>::compute(int L, unsigned in,
 {
 #ifdef TRACE
     out.indentation(0);
-    out << "********************************************************\n";
-    out << "Starting top-level call to " << CTYPE::name() << " compute\n";
+    ++top_count;
+    out << CTYPE::name() << " #" << top_count << " begin\n";
 #endif
     MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
-    cv.set();
+#ifdef NEW_RECURSION
+    _compute(L, in, ap, bp, cp);
+#else
     if (resF->isForRelations()) {
         cp = _compute_un(ap, bp, L);
     } else {
         cp = _compute(ap, bp, L);
     }
-#ifdef TRACE
-    out.indentation(0);
-    out << "Finished top-level call to " << CTYPE::name() << " compute\n";
-    out << "********************************************************\n";
 #endif
+
+#ifdef TRACE
+    out << CTYPE::name() << " #" << top_count << " end\n";
+#endif
+    cv.set();
 }
+
+
+template <class CTYPE>
+void MEDDLY::compare_op<CTYPE>::_compute(int L, unsigned in,
+        node_handle A, node_handle B, node_handle &C)
+{
+    // **************************************************************
+    //
+    // Check terminal cases
+    //
+    // **************************************************************
+
+    //
+    // Both are the zero function.
+    //
+    if (0==A && 0==B) {
+        terminal tt(CTYPE::isReflexive(), resF->getTerminalType());
+        C = resF->makeRedundantsTo(tt.getHandle(), 0, L);
+        return;
+    }
+
+    //
+    // Arguments are equal.
+    //
+    if (A == B && arg1F == arg2F) {
+        terminal tt(CTYPE::isReflexive(), resF->getTerminalType());
+        C = resF->makeRedundantsTo(tt.getHandle(), 0, L);
+        return;
+    }
+
+    //
+    // Both are constant functions.
+    //
+    if (arg1F->isTerminalNode(A) && arg2F->isTerminalNode(B)) {
+        if (0==L || !forced_by_levels) {
+            terminal tt( CTYPE::compare(arg1F, A, arg2F, B), resF->getTerminalType() );
+            C = resF->makeRedundantsTo(tt.getHandle(), 0, L);
+            return;
+        }
+    }
+
+    //
+    // Reorder A and B if the comparison is symmetric
+    // and A,B are from the same forest
+    //
+    if (CTYPE::isSymmetric() && arg1F == arg2F) {
+        if (A > B) {
+            SWAP(A, B);
+        }
+    }
+
+    // **************************************************************
+    //
+    // Determine level information
+    //
+    // **************************************************************
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = arg2F->getNodeLevel(B);
+    const int Clevel = topLevelOf(L, Alevel, Blevel);
+    const int Cnextlevel = resF->isForRelations()
+        ? MXD_levels::downLevel(Clevel)
+        : MDD_levels::downLevel(Clevel)
+    ;
+
+#ifdef TRACE
+    out << CTYPE::name() << " compare::compute(" << L << ", " << in << ", "
+        << A << ", " << B << ")\n";
+    out << A << " level " << Alevel << "\n";
+    out << B << " level " << Blevel << "\n";
+    out << "result level " << Clevel << "\n";
+#endif
+
+    // **************************************************************
+    //
+    // Check the compute table
+    //
+    // **************************************************************
+    ct_vector key(forced_by_levels ? 3 : 2);
+    ct_vector res(1);
+    if (forced_by_levels) {
+        key[0].setI(L);
+        key[1].setN(A);
+        key[2].setN(B);
+    } else {
+        key[0].setN(A);
+        key[1].setN(B);
+    }
+
+    if (ct->findCT(key, res)) {
+        //
+        // compute table hit
+        //
+        C = resF->linkNode(res[0].getN());
+#ifdef TRACE
+        out << "CT hit ";
+        key.show(out);
+        out << " -> ";
+        res.show(out);
+        out << "\n";
+#endif
+        if (L == resF->getNodeLevel(C)) {
+            // Make sure we don't point to a singleton
+            // from the same index.
+            C = resF->redirectSingleton(in, C);
+        } else {
+            C = resF->makeRedundantsTo(C, Clevel, L);
+        }
+        return;
+        //
+        // done compute table hit
+        //
+    }
+
+    // **************************************************************
+    //
+    // Compute table 'miss'; do computation
+    //
+    // **************************************************************
+
+
+    // TBD HERE <<<<<<<<
+}
+
+//
+// OLD COMPUTES
+//
+
 
 //
 // SET VERSION
@@ -183,7 +342,7 @@ template <class CTYPE>
 MEDDLY::node_handle
 MEDDLY::compare_op<CTYPE>::_compute(node_handle A, node_handle B, int L)
 {
-    MEDDLY_DCASSERT(!go_by_levels);
+    MEDDLY_DCASSERT(!forced_by_levels);
     MEDDLY_DCASSERT(L >= 0);
 
     //
@@ -345,7 +504,7 @@ MEDDLY::compare_op<CTYPE>::_compute_un(node_handle A, node_handle B, int L)
     }
 
     if (arg1F->isTerminalNode(A) && arg2F->isTerminalNode(B)) {
-        if (0==L || !go_by_levels) {
+        if (0==L || !forced_by_levels) {
             terminal tt( CTYPE::compare(arg1F, A, arg2F, B), resF->getTerminalType() );
             return resF->makeRedundantsTo(tt.getHandle(), 0, L);
         }
@@ -367,7 +526,7 @@ MEDDLY::compare_op<CTYPE>::_compute_un(node_handle A, node_handle B, int L)
     //
     const int Alevel = arg1F->getNodeLevel(A);
     const int Blevel = arg2F->getNodeLevel(B);
-    const int Clevel = go_by_levels
+    const int Clevel = forced_by_levels
         ? L
         : MAX(ABS(Alevel), ABS(Blevel));
 
@@ -386,9 +545,9 @@ MEDDLY::compare_op<CTYPE>::_compute_un(node_handle A, node_handle B, int L)
     //
     // Check compute table
     //
-    ct_vector key( go_by_levels ? 3 : 2);
+    ct_vector key( forced_by_levels ? 3 : 2);
     ct_vector res(1);
-    if (go_by_levels) {
+    if (forced_by_levels) {
         key[0].setI(L);
         key[1].setN(A);
         key[2].setN(B);
@@ -533,9 +692,9 @@ MEDDLY::compare_op<CTYPE>::_compute_pr(int in, node_handle A, node_handle B,
     // Check compute table
     //
     /*
-    ct_vector key( go_by_levels ? 3 : 2);
+    ct_vector key( forced_by_levels ? 3 : 2);
     ct_vector res(1);
-    if (go_by_levels) {
+    if (forced_by_levels) {
         key[0].setI(L);
         key[1].setN(A);
         key[2].setN(B);
