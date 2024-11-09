@@ -146,6 +146,7 @@ class MEDDLY::union_mt : public binary_operation {
 
 #ifdef TRACE
         ostream_output out;
+        unsigned top_count;
 #endif
 
         bool by_levels;
@@ -159,7 +160,7 @@ class MEDDLY::union_mt : public binary_operation {
 MEDDLY::union_mt::union_mt(forest* arg1, forest* arg2, forest* res)
     : binary_operation(arg1, arg2, res)
 #ifdef TRACE
-      , out(std::cout)
+      , out(std::cout), top_count(0)
 #endif
 {
     checkDomains(__FILE__, __LINE__);
@@ -254,8 +255,15 @@ void MEDDLY::union_mt::compute(int L, unsigned in,
     MEDDLY_DCASSERT(bv.isVoid());
 #ifdef TRACE
     out.indentation(0);
+    ++top_count;
+    out << "Union #" << top_count << " begin\n";
+    std::cerr << "Union #" << top_count << " begin\n";
 #endif
     _compute(L, in, ap, bp, cp);
+#ifdef TRACE
+    out << "Union #" << top_count << " end\n";
+    std::cerr << "Union #" << top_count << " end\n";
+#endif
     cv.set();
 }
 

@@ -113,6 +113,7 @@ class MEDDLY::inter_mt : public binary_operation {
 
 #ifdef TRACE
         ostream_output out;
+        unsigned top_count;
 #endif
 };
 
@@ -122,7 +123,7 @@ class MEDDLY::inter_mt : public binary_operation {
 MEDDLY::inter_mt::inter_mt(forest* arg1, forest* arg2, forest* res)
   : binary_operation(arg1, arg2, res)
 #ifdef TRACE
-      , out(std::cout)
+      , out(std::cout), top_count(0)
 #endif
 {
     checkDomains(__FILE__, __LINE__);
@@ -188,7 +189,7 @@ MEDDLY::inter_mt::inter_mt(forest* arg1, forest* arg2, forest* res)
     // the unprimed level result and the primed level result.
     ct_primed = nullptr;
     if (identity_pattern) {
-        ct_primed = new ct_entry_type("difference_pr");
+        ct_primed = new ct_entry_type("intersection_pr");
         ct_primed->setFixed(arg1, arg2);
         ct_primed->setResult(res);
         ct_primed->doneBuilding();
@@ -213,8 +214,13 @@ void MEDDLY::inter_mt::compute(int L, unsigned in,
     MEDDLY_DCASSERT(bv.isVoid());
 #ifdef TRACE
     out.indentation(0);
+    ++top_count;
+    out << "Intersection #" << top_count << " begin\n";
 #endif
     _compute(L, in, ap, bp, cp);
+#ifdef TRACE
+    out << "Intersection #" << top_count << " end\n";
+#endif
     cv.set();
 }
 
@@ -313,6 +319,13 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
     key[1].setN(B);
 
 
+#ifdef TRACE
+    if (useCT) {
+        out << "Check CT ";
+        key.show(out);
+        out << "\n";
+    }
+#endif
     if (useCT && ct->findCT(key, res)) {
         //
         // 'main' compute table hit
@@ -338,6 +351,13 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
         //
     }
 #ifdef USE_PRIMED_CACHE
+#ifdef TRACE
+    if (useCTpr) {
+        out << "Check CT' ";
+        key.show(out);
+        out << "\n";
+    }
+#endif
     if (useCTpr && ct_primed->findCT(key, res)) {
         //
         // 'primed' compute table hit

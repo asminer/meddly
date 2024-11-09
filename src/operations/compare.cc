@@ -29,8 +29,6 @@
 #include "../operators.h"
 #endif
 
-// #define OLD_OPS
-
 //
 // Operation instance caches
 //
