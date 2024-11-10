@@ -29,7 +29,7 @@
 #include "../operators.h"
 #endif
 
-// #define NEW_RECURSION
+#define NEW_RECURSION
 
 //
 // Operation instance caches
