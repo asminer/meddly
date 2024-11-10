@@ -95,6 +95,7 @@ namespace MEDDLY {
             void _compute(int L, unsigned in, node_handle A, node_handle B,
                     node_handle &C);
 
+#ifndef NEW_RECURSION
             //
             // Old computes
             //
@@ -103,6 +104,7 @@ namespace MEDDLY {
 
             node_handle _compute_un(node_handle A, node_handle B, int L);
             node_handle _compute_pr(int in, node_handle A, node_handle B, int L);
+#endif
 
         private:
 
@@ -435,6 +437,8 @@ void MEDDLY::compare_op<CTYPE>::_compute(int L, unsigned in,
         C = resF->makeRedundantsTo(C, Clevel, L);
     }
 }
+
+#ifndef NEW_RECURSION
 
 //
 // OLD COMPUTES
@@ -907,7 +911,7 @@ MEDDLY::compare_op<CTYPE>::_compute_pr(int in, node_handle A, node_handle B,
     return C;
 }
 
-
+#endif // NEW_RECURSION
 
 
 // ******************************************************************
