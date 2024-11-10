@@ -74,3 +74,5 @@ to make it easier to implement operations.
 *   Copy operations have been rewritten using the new compute table
     and operation interfaces.
 
+*   Comparison operations have been collected into a single source file
+    (operations/compare.cc) and rewritten using the new interfaces
