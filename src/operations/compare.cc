@@ -325,8 +325,120 @@ void MEDDLY::compare_op<CTYPE>::_compute(int L, unsigned in,
     //
     // **************************************************************
 
+    //
+    // Set up unpacked nodes
+    //
 
-    // TBD HERE <<<<<<<<
+    unpacked_node* Au;
+    if (Alevel != Clevel) {
+        if (arg1F->isIdentityReduced() && Clevel<0) {
+            MEDDLY_DCASSERT(Clevel == L);
+            Au = unpacked_node::newIdentity(arg1F, Clevel, in, A, FULL_ONLY);
+            MEDDLY_DCASSERT(Au->wasIdentity());
+        } else {
+            Au = unpacked_node::newRedundant(arg1F, Clevel, A, FULL_ONLY);
+            MEDDLY_DCASSERT(!Au->wasIdentity());
+        }
+    } else {
+        Au = arg1F->newUnpacked(A, FULL_ONLY);
+        MEDDLY_DCASSERT(!Au->wasIdentity());
+    }
+
+    unpacked_node* Bu;
+    if (Blevel != Clevel) {
+        if (arg2F->isIdentityReduced() && Clevel<0) {
+            MEDDLY_DCASSERT(Clevel == L);
+            Bu = unpacked_node::newIdentity(arg2F, Clevel, in, B, FULL_ONLY);
+            MEDDLY_DCASSERT(Bu->wasIdentity());
+        } else {
+            Bu = unpacked_node::newRedundant(arg2F, Clevel, B, FULL_ONLY);
+            MEDDLY_DCASSERT(!Bu->wasIdentity());
+        }
+    } else {
+        Bu = arg2F->newUnpacked(B, FULL_ONLY);
+        MEDDLY_DCASSERT(!Bu->wasIdentity());
+    }
+
+    MEDDLY_DCASSERT(Au->getSize() == Bu->getSize());
+    unpacked_node* Cu = unpacked_node::newFull(resF, Clevel, Au->getSize());
+
+#ifdef TRACE
+    out << "A: ";
+    Au->show(out, true);
+    out << "\nB: ";
+    Bu->show(out, true);
+    out.indent_more();
+    out.put('\n');
+#endif
+
+    //
+    // Recurse
+    //
+    for (unsigned i=0; i<Cu->getSize(); i++) {
+        node_handle cd;
+        _compute(Cnextlevel, i, Au->down(i), Bu->down(i), cd);
+        Cu->setFull(i, cd);
+    }
+
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << CTYPE::name() << " compare::compute(" << L << ", " << in << ", "
+        << A << ", " << B << ") done\n";
+    out << "  A: ";
+    Au->show(out, true);
+    out << "\n  B: ";
+    Bu->show(out, true);
+    out << "\n  C: ";
+    Cu->show(out, true);
+    out << "\n";
+#endif
+
+    //
+    // Reduce
+    //
+    edge_value dummy;
+    resF->createReducedNode(Cu, dummy, C);
+    MEDDLY_DCASSERT(dummy.isVoid());
+#ifdef TRACE
+    out << "reduced to " << C << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
+
+    //
+    // Save result in CT, if we can
+    //
+    if (Au->wasIdentity() || Bu->wasIdentity()) {
+        ct->noaddCT(key);
+    } else {
+        res[0].setN(C);
+        ct->addCT(key, res);
+    }
+
+    //
+    // Cleanup
+    //
+    unpacked_node::Recycle(Bu);
+    unpacked_node::Recycle(Au);
+
+    //
+    // Adjust result
+    //
+    if (L == resF->getNodeLevel(C)) {
+        //
+        // We don't need to add identities or redundants;
+        // just check if we need to avoid a singleton.
+        //
+        C = resF->redirectSingleton(in, C);
+    } else {
+        //
+        // Add nodes but only from Clevel;
+        // if the actual level of C is below Clevel it means
+        // nodes were eliminated in the result forest.
+        //
+        C = resF->makeRedundantsTo(C, Clevel, L);
+    }
 }
 
 //
