@@ -149,16 +149,11 @@ MEDDLY::compare_op<CTYPE>::compare_op(forest* arg1, forest* arg2,
 
     //
     // Do we need to recurse by levels and store level info in the CT?
-    // If either input is quasi-reduced, then we will go by levels anyway,
-    //      and we DON'T need to store level info in the CT.
-    // Otherwise, if either input is an identity-reduced relation, then YES.
+    // YES, if either forest is identity-reduced
+    //      (even if the other is quasi-reduced, because we can
+    //       still jump to terminal 0)
     //
-    if (arg1->isQuasiReduced() || arg2->isQuasiReduced()) {
-        forced_by_levels = false;
-    } else {
-        forced_by_levels =
-            arg1->isIdentityReduced() || arg2->isIdentityReduced();
-    }
+    forced_by_levels = arg1->isIdentityReduced() || arg2->isIdentityReduced();
 
     // Build compute table key and result types.
     // If we recurse by levels, then we need the level as part of the key.
