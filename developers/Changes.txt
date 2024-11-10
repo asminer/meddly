@@ -59,41 +59,18 @@ Completely reimplemented operations
 ======================================================================
 
 cardinality.cc      yes
+compare.cc          yes
 complement.cc       yes
 copy.cc             yes
 
 difference.cc       yes
 intersection.cc     yes         tbd: evplus (move to max)
 maxmin_range.cc     yes
-union.cc            Yes*        tbd: evplus (move to min)
+union.cc            yes         tbd: evplus (move to min)
 
 ======================================================================
 Operations that need updating
 ======================================================================
-
-comp_eq.cc
-        NO      equal_mdd
-        NO      equal_mxd
-
-comp_ge.cc
-        NO      moreequal_mdd
-        NO      moreequal_mxd
-
-comp_gt.cc
-        NO      morethan_mdd
-        NO      morethan_mxd
-
-comp_le.cc
-        NO      lessequal_mdd
-        NO      lessequal_mxd
-
-comp_lt.cc
-        NO      lessthan_mdd
-        NO      lessthan_mxd
-
-comp_ne.cc
-        NO      unequal_mdd
-        NO      unequal_mxd
 
 constrained.cc
         NO      constrained_forwd_dfs_mt
