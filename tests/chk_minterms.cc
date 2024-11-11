@@ -159,6 +159,7 @@ void test_sets()
     int* mtlist[MAXTERMS];
     for (unsigned i=0; i<MAXTERMS; i++) {
         mtlist[i] = new int[1+SETVARS];
+        randomSetMinterm(mtlist[i], SETVARS);
     }
 
     int eval[1+SETVARS];
@@ -370,6 +371,7 @@ void test_rels()
     for (unsigned i=0; i<MAXTERMS; i++) {
         unlist[i] = new int[1+RELVARS];
         prlist[i] = new int[1+RELVARS];
+        randomRelMinterm(unlist[i], prlist[i], RELVARS);
     }
 
     int uneval[1+RELVARS];
