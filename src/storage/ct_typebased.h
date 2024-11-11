@@ -833,13 +833,18 @@ void MEDDLY::ct_typebased<MONOLITHIC, CHAINED>::addEntry(ct_entry_key* key, cons
   }
 
 #ifdef DEBUG_CT
-  printf("Added CT entry ");
+  printf("Added CT entry to slot %u, hash %u ", h, key->getHash());
   FILE_output out(stdout);
   showEntry(out, curr);
 #ifdef DEBUG_CT_SLOTS
   printf(" handle %lu in slot %u (%u slots long)\n", curr, h, num_slots);
 #else
   printf("\n");
+  printf("  raw [%d", entry[0]);
+  for (unsigned i=1; i<num_slots; i++) {
+      printf(", %d", entry[i]);
+  }
+  printf("]\n");
 #endif
   fflush(stdout);
 #endif
