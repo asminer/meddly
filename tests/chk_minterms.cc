@@ -125,6 +125,37 @@ bool nextMinterm(int* mt, unsigned vars)
  *
  */
 
+void check_set_eq(char mddtype, const MEDDLY::dd_edge &E, const int* eval,
+        int** mtlist, const unsigned mtsize)
+{
+    bool val_mdd;
+    bool val_mts = evaluate(eval, SETVARS, mtlist, mtsize);
+    const MEDDLY::forest* F = E.getForest();
+    F->evaluate(E, eval, val_mdd);
+
+    if (val_mdd != val_mts) {
+        std::cout << "\nMismatch on ";
+        showMinterm(eval, SETVARS);
+        std::cout << "\n  " << mddtype << "MDD: " << (val_mdd ? "true" : "false") << "\n";
+        std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
+
+        std::cout << "\n";
+        std::cout << "Minterm list:\n";
+
+        for (unsigned n=0; n<mtsize; n++) {
+            std::cout << "    ";
+            showMinterm(mtlist[n], RELVARS);
+            std::cout << "\n";
+        }
+
+        std::cout << mddtype << "MDD:\n";
+        MEDDLY::ostream_output out(std::cout);
+        E.showGraph(out);
+
+        throw "mismatch";
+    }
+}
+
 void test_sets()
 {
     using namespace MEDDLY;
@@ -189,38 +220,8 @@ void test_sets()
 
         zeroMinterm(eval, SETVARS);
         do {
-            bool val_q, val_f;
-            bool val_mts = evaluate(eval, SETVARS, mtlist, mtsize);
-            Fq->evaluate(Eq, eval, val_q);
-            Ff->evaluate(Ef, eval, val_f);
-
-            if (val_q != val_mts) {
-                std::cout << "\nMismatch on ";
-                showMinterm(eval, SETVARS);
-                std::cout << "\n  QMDD: " << (val_q ? "true" : "false") << "\n";
-                std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
-
-                for (unsigned n=0; n<mtsize; n++) {
-                    std::cout << "    ";
-                    showMinterm(mtlist[n], SETVARS);
-                    std::cout << "\n";
-                }
-                throw "mismatch";
-            }
-
-            if (val_f != val_mts) {
-                std::cout << "\nMismatch on ";
-                showMinterm(eval, SETVARS);
-                std::cout << "\n  FMDD: " << (val_f ? "true" : "false") << "\n";
-                std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
-                for (unsigned n=0; n<mtsize; n++) {
-                    std::cout << "    ";
-                    showMinterm(mtlist[n], SETVARS);
-                    std::cout << "\n";
-                }
-                throw "mismatch";
-            }
-
+            check_set_eq('Q', Eq, eval, mtlist, mtsize);
+            check_set_eq('F', Ef, eval, mtlist, mtsize);
         } while (nextMinterm(eval, SETVARS));
         std::cout << "=" << std::endl;
     }
@@ -335,6 +336,40 @@ bool nextMinterm(int* vun, int* vpr, unsigned vars)
  *
  */
 
+void check_rel_eq(char mxdtype, const MEDDLY::dd_edge &E,
+        const int* uneval, const int* preval,
+        int** unlist, int** prlist, const unsigned mtsize)
+{
+    bool val_mxd;
+    bool val_mts = evaluate(uneval, preval, RELVARS, unlist, prlist, mtsize);
+    const MEDDLY::forest* F = E.getForest();
+    F->evaluate(E, uneval, preval, val_mxd);
+
+    if (val_mxd != val_mts) {
+        std::cout << "\nMismatch on ";
+        showMinterm(uneval, preval, RELVARS);
+        std::cout << "\n  " << mxdtype << "MxD: " << (val_mxd ? "true" : "false") << "\n";
+        std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
+
+        std::cout << "\n";
+        std::cout << "Minterm list:\n";
+
+        for (unsigned n=0; n<mtsize; n++) {
+            std::cout << "    ";
+            showMinterm(unlist[n], prlist[n], RELVARS);
+            std::cout << "\n";
+        }
+
+        std::cout << mxdtype << "Mxd:\n";
+        MEDDLY::ostream_output out(std::cout);
+        E.showGraph(out);
+
+        throw "mismatch";
+    }
+
+}
+
+
 void test_rels()
 {
     using namespace MEDDLY;
@@ -402,38 +437,8 @@ void test_rels()
 
         zeroMinterm(uneval, preval, RELVARS);
         do {
-            bool val_q, val_f;
-            bool val_mts = evaluate(uneval, preval, RELVARS, unlist, prlist, mtsize);
-            Fq->evaluate(Eq, uneval, preval, val_q);
-            Ff->evaluate(Ef, uneval, preval, val_f);
-
-            if (val_q != val_mts) {
-                std::cout << "\nMismatch on ";
-                showMinterm(uneval, preval, RELVARS);
-                std::cout << "\n  QMxD: " << (val_q ? "true" : "false") << "\n";
-                std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
-
-                for (unsigned n=0; n<mtsize; n++) {
-                    std::cout << "    ";
-                    showMinterm(unlist[n], prlist[n], RELVARS);
-                    std::cout << "\n";
-                }
-                throw "mismatch";
-            }
-
-            if (val_f != val_mts) {
-                std::cout << "\nMismatch on ";
-                showMinterm(uneval, preval, RELVARS);
-                std::cout << "\n  FMxD: " << (val_f ? "true" : "false") << "\n";
-                std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
-                for (unsigned n=0; n<mtsize; n++) {
-                    std::cout << "    ";
-                    showMinterm(unlist[n], prlist[n], RELVARS);
-                    std::cout << "\n";
-                }
-                throw "mismatch";
-            }
-
+            check_rel_eq('Q', Eq, uneval, preval, unlist, prlist, mtsize);
+            check_rel_eq('F', Ef, uneval, preval, unlist, prlist, mtsize);
         } while (nextMinterm(uneval, preval, RELVARS));
         std::cout << "=" << std::endl;
     }
