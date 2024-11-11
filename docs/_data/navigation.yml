@@ -37,6 +37,8 @@ side:
     children:
       - title: "Since last release"
         url: "/releases/unreleased"
+      - title: "Version 0.17.6"
+        url: "/releases/0.17.6"
       - title: "Version 0.17.5"
         url: "/releases/0.17.5"
       - title: "Version 0.17.4"
