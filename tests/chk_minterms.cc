@@ -20,6 +20,8 @@
 #include <time.h>
 #include <iostream>
 
+#define RESTRICT_DONT_CHANGE
+
 const unsigned MAXTERMS = 32;
 
 const int DOMSIZE = 4;       // DO NOT change
@@ -265,6 +267,11 @@ void randomRelMinterm(int* un, int* pr, unsigned vars)
         int index = Equilikely(0, 51);
         un[i] = unvals[index];
         pr[i] = prvals[index];
+#ifdef RESTRICT_DONT_CHANGE
+        if (pr[i] == -2) {
+            un[i] = -1;
+        }
+#endif
     }
 }
 
