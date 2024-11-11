@@ -289,8 +289,7 @@ bool mintermMatches(const int* mtun, const int* mtpr,
         const int* valun, const int* valpr, unsigned vars)
 {
     for (unsigned i=1; i<=vars; i++) {
-        if (mtun[i] == -1) continue;  // don't care
-        if (mtun[i] != valun[i]) return false;
+        if ((mtun[i] != -1) && (mtun[i] != valun[i])) return false;
         if (mtpr[i] == -1) continue;
         if (mtpr[i] == -2) {
             if (valpr[i] == valun[i]) continue;
@@ -363,6 +362,9 @@ void check_rel_eq(char mxdtype, const MEDDLY::dd_edge &E,
         std::cout << mxdtype << "Mxd:\n";
         MEDDLY::ostream_output out(std::cout);
         E.showGraph(out);
+
+        out << "\nPath ";
+        F->evaluate(E, uneval, preval, val_mxd, &out);
 
         throw "mismatch";
     }
