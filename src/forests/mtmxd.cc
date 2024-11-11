@@ -647,7 +647,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_iterator::first(int k, node_handle down)
 
   bool isFully = F->isFullyReduced();
 
-  for ( ; k; k = downLevel(k) ) {
+  for ( ; k; k = MXD_levels::downLevel(k) ) {
     MEDDLY_DCASSERT(down);
     int kdn = F->getNodeLevel(down);
     MEDDLY_DCASSERT(!isLevelAbove(kdn, k));
@@ -714,7 +714,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::next()
       down = path[k].down(nzp[k]);
       MEDDLY_DCASSERT(down);
       level_change = k;
-      if (first(downLevel(k), down)) return true;
+      if (first(MXD_levels::downLevel(k), down)) return true;
     }
   } // for
 
@@ -749,13 +749,13 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
 
   //
   // Ok, set up the "column" node below
-  k = downLevel(k);
+  k = MXD_levels::downLevel(k);
   MEDDLY_DCASSERT(k<0);
 
   if (isLevelAbove(k, F->getNodeLevel(cdown))) {
     // Skipped level, we can be fast about this.
     // first, recurse.
-    if (!first(downLevel(k), cdown)) return false;
+    if (!first(MXD_levels::downLevel(k), cdown)) return false;
     // Ok, there is a valid path.
     // Set up this level.
     nzp[k] = 0;
@@ -763,7 +763,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
       path[k].initRedundant(F, k, cdown, SPARSE_ONLY);
       index[k] = 0;
     } else {
-      index[k] = index[upLevel(k)];
+      index[k] = index[MXD_levels::upLevel(k)];
       path[k].initIdentity(F, k, index[k], cdown, SPARSE_ONLY);
     }
     return true;
@@ -775,7 +775,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
   F->unpackNode(path+k, cdown, SPARSE_ONLY);
 
   for (unsigned z=0; z<path[k].getSize(); z++) {
-    if (first(downLevel(k), path[k].down(z))) {
+    if (first(MXD_levels::downLevel(k), path[k].down(z))) {
       nzp[k] = z;
       index[k] = path[k].index(z);
       return true;
@@ -831,7 +831,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::next()
       down = path[k].down(nzp[k]);
       MEDDLY_DCASSERT(down);
       level_change = k;
-      if (first(downLevel(k), down)) return true;
+      if (first(MXD_levels::downLevel(k), down)) return true;
     }
   } // for
 
@@ -858,13 +858,13 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
     if (isLevelAbove(k, F->getNodeLevel(down))) {
       if (!F->isFullyReduced()) {
         // Identity node here - check index
-        if (index[k] != index[upLevel(k)]) return false;
+        if (index[k] != index[MXD_levels::upLevel(k)]) return false;
       }
-      return first(downLevel(k), down);
+      return first(MXD_levels::downLevel(k), down);
     }
     int cdown = F->getDownPtr(down, index[k]);
     if (0==cdown) return false;
-    return first(downLevel(k), cdown);
+    return first(MXD_levels::downLevel(k), cdown);
   }
 
   // Row node.  Find an index, if any,
@@ -873,11 +873,11 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
   int kdn = F->getNodeLevel(down);
   if (isLevelAbove(k, kdn)) {
     // Skipped level, handle quickly
-    int kpr = downLevel(k);
+    int kpr = MXD_levels::downLevel(k);
     if (isLevelAbove(kpr, F->getNodeLevel(kdn))) {
       // next level is also skipped.
       // See if there is a valid path below.
-      if (!first(downLevel(kpr), down)) return false;
+      if (!first(MXD_levels::downLevel(kpr), down)) return false;
       // There's one below, set up the one at these levels.
       path[k].initRedundant(F, k, down, SPARSE_ONLY);
       if (F->isFullyReduced()) {
@@ -905,7 +905,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
 
   for (unsigned z=0; z<path[k].getSize(); z++) {
     index[k] = path[k].index(z);
-    if (first(downLevel(k), path[k].down(z))) {
+    if (first(MXD_levels::downLevel(k), path[k].down(z))) {
       nzp[k] = z;
       return true;
     }

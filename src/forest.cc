@@ -35,6 +35,8 @@
 #include "operators.h"
 #include "node_marker.h"
 #include "logger.h"
+#include "compute_table.h"
+#include "ct_entry_type.h"  // for invalidateAllWithForest
 
 // for timestamps.
 // to do - check during configuration that these are present,
@@ -179,8 +181,8 @@ void MEDDLY::forest::destroy(forest* &f)
     if (!initializer_list::libraryIsRunning()) {
         throw error(error::UNINITIALIZED, __FILE__, __LINE__);
     }
-    f->markForDeletion();
-    operation::purgeAllMarked();
+    // f->markForDeletion();
+    // operation::purgeAllMarked();
     delete f;
     f = nullptr;
 }
@@ -201,17 +203,6 @@ void MEDDLY::forest::unpackNode(MEDDLY::unpacked_node* un,
     un->resize( getLevelSize( un->getLevel() ) );
     MEDDLY_DCASSERT(getNodeAddress(node));
     nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
-    //
-    // OLD
-    //
-    /*
-    MEDDLY_DCASSERT(un);
-    const int level = getNodeLevel(node);
-    MEDDLY_DCASSERT(0 != level);
-    un->bind_to_forest(this, level, unsigned(getLevelSize(level)), true);
-    MEDDLY_DCASSERT(getNodeAddress(node));
-    nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
-    */
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -222,6 +213,248 @@ MEDDLY::relation_node* MEDDLY::forest
 ::buildImplicitNode(node_handle rnh)
 {
     return implUT->getNode(rnh);
+}
+
+void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
+                node_handle &node, int in)
+{
+    MEDDLY_DCASSERT(un);
+#ifdef DEBUG_CREATE_REDUCED
+    ostream_output out(std::cout);
+    out << "Reducing unpacked node ";
+    un->show(out, true);
+    out << " in forest " << FID() << "\n";
+#endif
+    //
+    //
+    // Normalize the node and count nonzeroes.
+    //
+    //
+    unsigned minplusone = 0;
+    unsigned nnz = 0;
+    switch (edgeLabel) {
+        case edge_labeling::MULTI_TERMINAL:
+                ev.set();
+                for (unsigned i=0; i<un->getSize(); i++) {
+                    if (un->down(i)) ++nnz;
+                }
+                break;
+
+        case edge_labeling::EVPLUS:
+        case edge_labeling::INDEX_SET:
+                MEDDLY_DCASSERT(isRangeType(range_type::INTEGER));
+                ev.set(0L);
+                for (unsigned i=0; i<un->getSize(); i++) {
+                    if (0 == un->down(i)) continue;
+                    ++nnz;
+                    if (minplusone) {
+                        if (un->edgeval(i).getLong() < ev.getLong()) {
+                            ev = un->edgeval(i);
+                        }
+                    } else {
+                        minplusone = i+1;
+                        ev = un->edgeval(i);
+                    }
+                }
+                if (ev.getLong()) {
+                    //
+                    // non-zero adjustment
+                    //
+                    for (unsigned i=0; i<un->getSize(); i++) {
+                        if (0 == un->down(i)) continue;
+                        un->subtractFromEdge(i, ev.getLong());
+                    }
+                }
+                break;
+
+        case edge_labeling::EVTIMES:
+                MEDDLY_DCASSERT(isRangeType(range_type::REAL));
+                ev.set(0.0f);
+                minplusone = 0;
+                for (unsigned i=0; i<un->getSize(); i++) {
+                    if (0 == un->down(i)) continue;
+                    if (un->edgeval(i).getFloat()) {
+                        ++nnz;
+                        if (!minplusone) {
+                            ev = un->edgeval(i);
+                            minplusone = i+1;
+                        }
+                    }
+                }
+                if (ev.getFloat()) {
+                    for (unsigned i=0; i<un->getSize(); i++) {
+                        un->divideEdge(i, ev.getFloat());
+                    }
+                }
+                break;
+
+        default:
+                MEDDLY_DCASSERT(false);
+    }
+
+    //
+    // Is this a transparent node?
+    //
+    if (0==nnz) {
+#ifdef DEBUG_CREATE_REDUCED
+        out << "    ===> Transparent node\n";
+#endif
+        // nothing to unlink
+        node = getTransparentNode();
+        unpacked_node::Recycle(un);
+        return;
+    }
+
+    //
+    // check is the node is written in order,
+    // if not rearrange it in ascending order of indices.
+    //
+    if (un->isSparse()) {
+        un->sort();
+    }
+#ifdef DEVELOPMENT_CODE
+    validateDownPointers(*un);
+#endif
+
+#ifdef ALLOW_EXTENSIBLE
+//    if (un->isExtensible()) return createReducedExtensibleNodeHelper(in, *un);
+#endif
+
+    //
+    // Eliminate identity patterns
+    //
+    if (1==nnz && isIdentityReduced() && un->getLevel() < 0) {
+
+        //
+        // Check identity pattern
+        //
+        if (un->isSparse()) {
+            if (in == long(un->index(0))) {
+#ifdef DEBUG_CREATE_REDUCED
+                out << "    ===> Identity node\n";
+#endif
+                node = un->down(0);
+                unpacked_node::Recycle(un);
+                return;
+            }
+        } else {
+            if (in>=0 && in<long(un->getSize()) && un->down(in))
+            {
+#ifdef DEBUG_CREATE_REDUCED
+                out << "    ===> Identity node\n";
+#endif
+                node = un->down(in);
+                unpacked_node::Recycle(un);
+                return;
+            }
+        }
+
+    } // check identity patterns
+
+
+    //
+    // Eliminate redundant patterns
+    //
+    if ( isFullyReduced() || (isIdentityReduced() && un->getLevel() > 0))
+    {
+        //
+        // Redundant node check
+        //
+        bool redundant = (nnz == getLevelSize(un->getLevel()));
+        if (redundant) {
+            node = un->down(0);
+            for (unsigned i=1; i<nnz; i++) {
+                if (un->down(i) == node) continue;
+                redundant = false;
+                break;
+            }
+        }
+        if (redundant && un->hasEdges()) {
+            for (unsigned i=1; i<nnz; i++) {
+                if (un->edgeval(i) == un->edgeval(0)) continue;
+                redundant = false;
+                break;
+            }
+        }
+        if (redundant) {
+#ifdef DEBUG_CREATE_REDUCED
+            out << "    ===> Redundant node\n";
+#endif
+            unlinkAllDown(*un, 1);  // unlink all children but one
+            unpacked_node::Recycle(un);
+            return;
+        }
+    } // isFullyReduced()
+
+    //
+    // Check for a duplicate node in the unique table
+    //
+    un->computeHash();
+    node = unique->find(*un, getVarByLevel(un->getLevel()));
+    if (node) {
+#ifdef DEBUG_CREATE_REDUCED
+        out << "    ===> Duplicate of node " << node << "\n";
+#endif
+        // unlink all downward pointers
+        unlinkAllDown(*un);
+        unpacked_node::Recycle(un);
+        linkNode(node);
+        return;
+    }
+
+    //
+    // This node is new. Grab a node handle we can use.
+    //
+    node = nodeHeaders.getFreeNodeHandle();
+    nodeHeaders.setNodeLevel(node, un->getLevel());
+    if (reachable) {
+        reachable->setMarked(node);
+        nodeHeaders.setInCacheBit(node);
+    } else {
+        MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(node));
+        MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(node));
+        linkNode(node);
+    }
+
+    stats.incActive(1);
+    if (theLogger && theLogger->recordingNodeCounts()) {
+        theLogger->addToActiveNodeCount(this, un->getLevel(), 1);
+    }
+
+    //
+    // Copy the temp node into long-term node storage
+    //
+    nodeHeaders.setNodeAddress(node,
+        nodeMan->makeNode(node, *un, getPolicies().storage_flags)
+    );
+
+    //
+    // add to the unique table
+    //
+    unique->add(un->hash(), node);
+
+#ifdef DEBUG_CREATE_REDUCED
+    out << "    ===> New node " << node << "\n\t";
+    showNode(out, node, SHOW_DETAILS | SHOW_INDEX);
+    out << '\n';
+#endif
+
+    //
+    // Sanity check: can we find the node we just created
+    //
+#ifdef DEVELOPMENT_CODE
+    unpacked_node* key = newUnpacked(node, SPARSE_ONLY);
+    key->computeHash();
+    MEDDLY_DCASSERT(key->hash() == un->hash());
+    node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
+    MEDDLY_DCASSERT(f == node);
+    unpacked_node::Recycle(key);
+#endif
+
+    //
+    // Cleanup
+    //
+    unpacked_node::Recycle(un);
 }
 
 void MEDDLY::forest::deleteNode(node_handle p)
@@ -298,167 +531,7 @@ void MEDDLY::forest::deleteNode(node_handle p)
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-MEDDLY::node_handle MEDDLY::forest
-::createReducedHelper(int in, unpacked_node &nb)
-{
-    nb.computeHash();
-
-#ifdef DEVELOPMENT_CODE
-  validateDownPointers(nb);
-#endif
-
-  // check is the node is written in order,
-  // if not rearrange it in ascending order of indices.
-  if (nb.isSparse()) nb.sort();
-
-  if (nb.isExtensible()) return createReducedExtensibleNodeHelper(in, nb);
-
-  // get sparse, truncated full sizes and check
-  // for redundant / identity reductions.
-  unsigned nnz = 0;
-  if (nb.isSparse()) {
-    // Reductions for sparse nodes
-    nnz = nb.getSize();
-#ifdef DEVELOPMENT_CODE
-    for (unsigned z=0; z<nnz; z++) {
-      MEDDLY_DCASSERT(nb.down(z)!=getTransparentNode());
-    } // for z
-#endif
-
-    // Check for identity nodes
-    if (1==nnz && in==long(nb.index(0))) {
-      if (isIdentityEdge(nb, 0)) {
-#ifdef DEBUG_CREATE_REDUCED
-        printf("Identity node ");
-        FILE_output s(stdout);
-        showNode(s, nb.down(0), SHOW_DETAILS | SHOW_INDEX);
-        printf("\n");
-#endif
-        return nb.down(0);
-      }
-    }
-
-    // Check for redundant nodes
-    if (nnz == getLevelSize(nb.getLevel()) && !isExtensibleLevel(nb.getLevel())) {
-      if (isRedundant(nb)) {
-        // unlink downward pointers, except the one we're returning.
-        unlinkAllDown(nb, 1);
-#ifdef DEBUG_CREATE_REDUCED
-        printf("Redundant node ");
-        FILE_output s(stdout);
-        showNode(s, nb.down(0), SHOW_DETAILS | SHOW_INDEX);
-        printf("\n");
-#endif
-        return nb.down(0);
-      }
-    }
-
-  } else {
-    // Reductions for full nodes
-    MEDDLY_DCASSERT(long(nb.getSize()) <= long(getLevelSize(nb.getLevel())));
-    nnz = 0;
-    for (unsigned i=0; i<nb.getSize(); i++) {
-      if (nb.down(i)!=getTransparentNode()) nnz++;
-    } // for i
-
-    // Check for identity nodes
-    if (1==nnz) {
-      if (in < long(nb.getSize()) && isIdentityEdge(nb, in)) {
-#ifdef DEBUG_CREATE_REDUCED
-        printf("Identity node ");
-        FILE_output s(stdout);
-        showNode(s, nb.down(0), SHOW_DETAILS | SHOW_INDEX);
-        printf("\n");
-#endif
-        return nb.down(in);
-      }
-    }
-
-    // Check for redundant nodes
-    if (nnz == getLevelSize(nb.getLevel()) && !isExtensibleLevel(nb.getLevel())) {
-      if (isRedundant(nb)) {
-        // unlink downward pointers, except the one we're returning.
-        unlinkAllDown(nb, 1);
-#ifdef DEBUG_CREATE_REDUCED
-        printf("Redundant node ");
-        FILE_output s(stdout);
-        showNode(s, nb.down(0), SHOW_DETAILS | SHOW_INDEX);
-        printf("\n");
-#endif
-        return nb.down(0);
-      }
-    }
-  }
-
-  // Is this a transparent node?
-  if (0==nnz) {
-    // no need to unlink
-    return getTransparentNode();
-  }
-
-  // check for duplicates in unique table
-  node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));
-  if (q) {
-    // unlink all downward pointers
-    unlinkAllDown(nb);
-    return linkNode(q);
-  }
-
-  //
-  // Not eliminated by reduction rule.
-  // Not a duplicate.
-  //
-  // We need to create a new node for this.
-
-  // NOW is the best time to run the garbage collector, if necessary.
-#ifndef GC_OFF
-  // if (isTimeToGc()) garbageCollect();
-#endif
-
-  // Grab a new node
-    node_handle p = nodeHeaders.getFreeNodeHandle();
-    nodeHeaders.setNodeLevel(p, nb.getLevel());
-    if (reachable) {
-        reachable->setMarked(p);
-        nodeHeaders.setInCacheBit(p);
-    } else {
-        MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
-        MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
-    }
-
-  stats.incActive(1);
-  if (theLogger && theLogger->recordingNodeCounts()) {
-    theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
-  }
-
-  // All of the work is in nodeMan now :^)
-  nodeHeaders.setNodeAddress(p,
-          nodeMan->makeNode(p, nb, getPolicies().storage_flags)
-  );
-  linkNode(p);
-
-  // add to UT
-  unique->add(nb.hash(), p);
-
-#ifdef DEVELOPMENT_CODE
-  unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
-  key->computeHash();
-  MEDDLY_DCASSERT(key->hash() == nb.hash());
-  node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
-  MEDDLY_DCASSERT(f == p);
-  unpacked_node::Recycle(key);
-#endif
-#ifdef DEBUG_CREATE_REDUCED
-  printf("Created node ");
-  FILE_output s(stdout);
-  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
-  printf("\n");
-#endif
-
-  return p;
-}
-
-
+#ifdef ALLOW_EXTENSIBLE
 MEDDLY::node_handle MEDDLY::forest
 ::createReducedExtensibleNodeHelper(int in, unpacked_node &nb)
 {
@@ -558,6 +631,7 @@ MEDDLY::node_handle MEDDLY::forest
 
   return p;
 }
+#endif
 
 MEDDLY::node_handle MEDDLY::forest
 ::createImplicitNode(MEDDLY::relation_node &nb)
@@ -616,19 +690,133 @@ MEDDLY::node_handle MEDDLY::forest
 }
 
 
-void MEDDLY::forest::normalize(unpacked_node &nb, int& ev) const
+
+MEDDLY::node_handle
+MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    MEDDLY_DCASSERT(L);
+    unpacked_node* U = nullptr;
+
+    //
+    // Multi-terminal
+    //
+
+    // Special case for identity reduced:
+    //   if p is at a primed level,
+    //   and K is the same level as p,
+    //   then we need to take care if p is a singleton node.
+    //
+    bool check_singleton = isIdentityReduced() && (K<0) && (getNodeLevel(p) == K);
+
+    while (K != L) {
+        if (isForRelations()) {
+            K = MXD_levels::upLevel(K);
+        } else {
+            K = MDD_levels::upLevel(K);
+        }
+
+        if (check_singleton) {
+            unsigned sind;
+            node_handle sdwn;
+            if (isSingletonNode(p, sind, sdwn)) {
+                unsigned size = getLevelSize(K);
+                U = unpacked_node::newFull(this, K, size);
+                for (unsigned i=0; i<size; i++) {
+                    U->setFull(i, noop_edge, linkNode( (i==sind) ? sdwn : p ));
+                }
+                unlinkNode(p);
+
+                edge_value ev;
+                createReducedNode(U, ev, p);
+                MEDDLY_DCASSERT(ev == noop_edge);
+                check_singleton = false;
+                continue;
+            }
+            check_singleton = false;
+        }
+        if (!isIdentityReduced() || K<0)
+        {
+            /*
+               Build a redundant node.
+               Necessary for quasi reduced always,
+               and for identity reduced at primed levels
+               (unprimed is fully reduced).
+               */
+            U = unpacked_node::newRedundant(this, K, noop_edge, p, FULL_ONLY);
+            linkAllDown(*U, 1);
+            edge_value ev;
+            createReducedNode(U, ev, p);
+            MEDDLY_DCASSERT(ev == noop_edge);
+        }
+    }
+
+    return p;
 }
 
-void MEDDLY::forest::normalize(unpacked_node &nb, long& ev) const
-{
-  throw error(error::TYPE_MISMATCH);
-}
 
-void MEDDLY::forest::normalize(unpacked_node &nb, float& ev) const
+MEDDLY::node_handle
+MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    MEDDLY_DCASSERT(!isIdentityReduced());
+    MEDDLY_DCASSERT(isForRelations());
+
+    MEDDLY_DCASSERT(L!=0);
+    unpacked_node* Uun;
+    unpacked_node* Upr;
+    edge_value ev;
+    //
+    // Multi-terminal
+    //
+
+    if (K<0) {
+        //
+        // Add a redundant layer
+        //
+        if ( !isFullyReduced() ) {
+            Uun = unpacked_node::newRedundant(this, -K, noop_edge, p, FULL_ONLY);
+            linkAllDown(*Uun, 1);
+            createReducedNode(Uun, ev, p);
+            MEDDLY_DCASSERT(ev == noop_edge);
+        }
+        K = MXD_levels::upLevel(K);
+    }
+
+    MEDDLY_DCASSERT(K>=0);
+    const int Lstop = (L<0) ? MXD_levels::downLevel(L) : L;
+
+    //
+    // Proceed in unprimed, primed pairs
+    //
+    for (K++; K<=Lstop; K++) {
+        Uun = unpacked_node::newFull(this, K, getLevelSize(K));
+
+        // build primed level nodes
+        for (unsigned i=0; i<Uun->getSize(); i++) {
+            Upr = unpacked_node::newSparse(this, -K, 1);
+            Upr->setSparse(0, i, noop_edge, (i ? linkNode(p) : p));
+            node_handle h;
+            createReducedNode(Upr, ev, h);
+            MEDDLY_DCASSERT(ev == noop_edge);
+            Uun->setFull(i, noop_edge, h);
+        }
+
+        createReducedNode(Uun, ev, p);
+        MEDDLY_DCASSERT(ev == noop_edge);
+    } // for k
+
+    //
+    // Add top identity node, if L is negative
+    //
+    if (L<0) {
+        MEDDLY_DCASSERT(-K == L);
+        Upr = unpacked_node::newSparse(this, L, 1);
+        MEDDLY_DCASSERT(in>=0);
+        Upr->setSparse(0, unsigned(in), noop_edge, p);
+        createReducedNode(Upr, ev, p);
+        MEDDLY_DCASSERT(ev == noop_edge);
+    }
+
+    return p;
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -797,60 +985,20 @@ void MEDDLY::forest::unregisterDDEdges()
 // Operation registry methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-void MEDDLY::forest::removeStaleComputeTableEntries()
-{
-  if (operation::usesMonolithicComputeTable()) {
-    operation::removeStalesFromMonolithic();
-  } else {
-    for (unsigned i=0; i<opCount.size(); i++)
-      if (opCount[i]) {
-        operation* op = operation::getOpWithID(i);
-        op->removeStaleComputeTableEntries();
-      }
-  }
-}
-
 void MEDDLY::forest::removeAllComputeTableEntries()
 {
-  if (is_marked_for_deletion) return;
-  if (operation::usesMonolithicComputeTable()) {
+    if (is_marked_for_deletion) return;
+    //
+    // Remove all compute table entries.
+    //
     is_marked_for_deletion = true;
-    operation::removeStalesFromMonolithic();
-    is_marked_for_deletion = false;
-  } else {
-    for (unsigned i=0; i<opCount.size(); i++)
-      if (opCount[i]) {
-        operation* op = operation::getOpWithID(i);
-        op->removeAllComputeTableEntries();
-      }
-  }
-}
-
-void MEDDLY::forest::registerOperation(const operation* op)
-{
-    MEDDLY_DCASSERT(op->getID() > 0);
-    if (op->getID() >= opCount.size()) {
-        // need to expand; do so in chunks of 16
-        const unsigned newSize = ((op->getID() / 16) +1 )*16;
-        opCount.resize(newSize, 0);
+    if (compute_table::Monolithic()) {
+        compute_table::Monolithic()->removeStales();
     }
-#ifdef DEVELOPMENT_CODE
-    opCount.at(op->getID()) ++;
-#else
-    opCount[op->getID()] ++;
-#endif
+    is_marked_for_deletion = false;
+    ct_entry_type::removeAllCTEntriesWithForest(this);
 }
 
-void MEDDLY::forest::unregisterOperation(const operation* op)
-{
-    MEDDLY_DCASSERT(op->getID() >= 0);
-    MEDDLY_DCASSERT(opCount.at(op->getID())>0);
-#ifdef DEVELOPMENT_CODE
-    opCount.at(op->getID()) --;
-#else
-    opCount[op->getID()] --;
-#endif
-}
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Forest registry methods
@@ -870,6 +1018,9 @@ void MEDDLY::forest::freeStatics()
 
 void MEDDLY::forest::registerForest(forest* f)
 {
+#ifdef DEBUG_CLEANUP
+    std::cout << "Registering forest " << f << ", #" << all_forests.size() << "\n";
+#endif
     // Add f to the forest registry
     f->fid = all_forests.size();
     all_forests.push_back(f);
@@ -883,6 +1034,9 @@ void MEDDLY::forest::registerForest(forest* f)
 
 void MEDDLY::forest::unregisterForest(forest* f)
 {
+#ifdef DEBUG_CLEANUP
+    std::cout << "Unregistering forest " << f << ", #" << f->fid << "\n";
+#endif
     // Remove from forest slot
     if (f->fid < all_forests.size()) {
 #ifdef DEVELOPMENT_CODE
@@ -905,7 +1059,7 @@ void MEDDLY::forest::unregisterForest(forest* f)
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 bool MEDDLY::forest
-::showNode(output &s, node_handle p, unsigned int flags) const
+::showNode(output &s, node_handle p, display_flags flags) const
 {
   /*
     Deal with cases where nothing will be displayed.
@@ -1006,7 +1160,7 @@ void MEDDLY::forest
 
 
 
-void MEDDLY::forest::dump(output &s, unsigned int flags) const
+void MEDDLY::forest::dump(output &s, display_flags flags) const
 {
   for (long p=0; p<=nodeHeaders.lastUsedHandle(); p++) {
     if (showNode(s, p, flags | SHOW_INDEX)) {
@@ -1114,14 +1268,14 @@ void MEDDLY::forest::validateCacheCounts() const
   printf("Validating cache counts for %ld handles\n", getLastNode());
 #endif
   const node_handle N = getLastNode()+1;
-  size_t* counts = new size_t[N];
 
 #ifdef SHOW_VALIDATE_CACHECOUNTS
   printf("  Counting...\n");
   fflush(stdout);
 #endif
-  for (node_handle i=0; i<N; i++) counts[i] = 0;
-  operation::countAllNodeEntries(this, counts);
+
+  std::vector <unsigned long> counts(N, 0);
+  compute_table::countAllNodeEntries(this, counts);
 
 #ifdef SHOW_VALIDATE_CACHECOUNTS
   printf("  Validating...\n");
@@ -1144,7 +1298,6 @@ void MEDDLY::forest::validateCacheCounts() const
   );
 #endif
 
-  delete[] counts;
 #endif
 }
 
@@ -1194,9 +1347,9 @@ void MEDDLY::forest::validateDownPointers(const unpacked_node &nb) const
 #ifdef DEVELOPMENT_CODE
             int nextLevel;
             if (isForRelations()) {
-                nextLevel = downLevel(nb.getLevel());
+                nextLevel = MXD_levels::downLevel(nb.getLevel());
             } else {
-                nextLevel = nb.getLevel()-1;
+                nextLevel = MDD_levels::downLevel(nb.getLevel());
             }
 #endif
             for (unsigned i=0; i<nb.getSize(); i++) {
@@ -1231,20 +1384,6 @@ void MEDDLY::forest::setLogger(logger* L, const char* name)
     if (theLogger) theLogger->logForestInfo(this, name);
 }
 
-void MEDDLY::forest::showComputeTable(output &s, int verbLevel) const
-{
-  if (operation::usesMonolithicComputeTable()) {
-    operation::showMonolithicComputeTable(s, verbLevel);
-  } else {
-    for (unsigned i=0; i<opCount.size(); i++)
-      if (opCount[i]) {
-        operation* op = operation::getOpWithID(i);
-        op->showComputeTable(s, verbLevel);
-      }
-  }
-}
-
-
 void MEDDLY::forest::reportForestStats(output &s, const char* pad) const
 {
   // default - do nothing
@@ -1257,7 +1396,8 @@ void MEDDLY::forest::reportForestStats(output &s, const char* pad) const
 
 void MEDDLY::forest::reorderVariables(const int* level2var)
 {
-  removeAllComputeTableEntries();
+    removeAllComputeTableEntries();
+
 
   // Create a temporary variable order
   // Support in-place update and avoid interfering other forests
@@ -1429,6 +1569,9 @@ MEDDLY::forest
 
 MEDDLY::forest::~forest()
 {
+#ifdef DEBUG_CLEANUP
+    std::cout << "Deleting forest " << this << ", #" << FID() << "\n";
+#endif
 #ifdef REPORT_ON_DESTROY
     printf("Destroying forest.  Stats:\n");
     reportMemoryUsage(stdout, "\t", 9);
@@ -1444,145 +1587,141 @@ MEDDLY::forest::~forest()
     delete nodeMan;
 
     unregisterForest(this);
+    ct_entry_type::invalidateAllWithForest(this);
+    operation::destroyAllWithForest(this);
 }
 
 void MEDDLY::forest::markForDeletion()
 {
     if (is_marked_for_deletion) return;
     is_marked_for_deletion = true;
-    // deal with operations associated with this forest
-    for (unsigned i=0; i<opCount.size(); i++)
-        if (opCount[i]) {
-            operation* op = operation::getOpWithID(i);
-            op->markForDeletion();
-        }
     unregisterDDEdges();
 }
 
 void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 MEDDLY::node_handle MEDDLY::forest::unionOneMinterm(node_handle a,  int* from,  int* to, int level)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 
 void MEDDLY::forest::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::createEdge(const int* const* vl, const int* const* vpl, int N, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::createEdge(const int* const* vlist, const int* const* vplist, const long* terms, int N, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::createEdge(const int* const* vlist, const int* const* vplist, const float* terms, int N, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::createEdge(bool val, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::createEdge(long val, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::createEdge(float val, dd_edge &e)
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, bool &t) const
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, long &t) const
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, float &t) const
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::evaluate(const dd_edge& f, const int* vl, const int* vpl, bool &t) const
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
 ::evaluate(const dd_edge& f, const int* vl, const int* vpl, long &t) const
 {
-  throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH);
 }
 
 void MEDDLY::forest
 ::evaluate(const dd_edge& f, const int* vl, const int* vpl, float &t) const
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::getElement(const dd_edge& a, int index, int* e)
 {
-  throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
 {
-  throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
 }
 
 //
 
 MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedRowIter() const
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedColumnIter() const
 {
-  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 

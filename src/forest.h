@@ -26,6 +26,7 @@
 #include "node_storage.h"
 #include "unpacked_node.h"
 #include "policies.h"
+#include "rangeval.h"
 #include "domain.h"
 #include "enumerator.h"
 
@@ -34,10 +35,13 @@
 #include <vector>
 
 namespace MEDDLY {
+    class forest;
+
+    class MDD_levels;
+    class MXD_levels;
+
     class domain;
 
-    class operation;
-    class forest;
     class node_marker;
     class node_storage;
     class unpacked_node;
@@ -47,6 +51,135 @@ namespace MEDDLY {
     class global_rebuilder;
 
     class logger;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                        MDD_levels class                        *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Small class for MDD level behavior,
+    used for template parameters in operations.
+ */
+class MEDDLY::MDD_levels {
+    public:
+
+        /// Go "down a level"
+        static inline int downLevel(int k) {
+            return k-1;
+        }
+
+        ///  Go "up a level"
+        static inline int upLevel(int k) {
+            return k+1;
+        }
+
+        /// Determine the top of two levels
+        static inline int topLevel(int k1, int k2) {
+            return MAX(k1, k2);
+        }
+};
+
+
+// ******************************************************************
+// *                                                                *
+// *                        MXD_levels class                        *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Small class for MXD level behavior,
+    used for template parameters in operations.
+ */
+class MEDDLY::MXD_levels {
+    public:
+
+        /// Go "down a level"
+        static inline int downLevel(int k) {
+            return (k>0) ? (-k) : (-k-1);
+        }
+
+        ///  Go "up a level"
+        static inline int upLevel(int k) {
+            return (k<0) ? (-k) : (-k-1);
+        }
+
+        /// Determine the top of two levels
+        static inline int topLevel(int k1, int k2) {
+            if (ABS(k1) == ABS(k2)) {
+                return MAX(k1, k2);
+            }
+            return (ABS(k1) > ABS(k2)) ? k1 : k2;
+        }
+
+        /// Determine the top unprimed level of two levels.
+        /// This is ABS(topLevel(k1, k2)) but computed more efficiently.
+        static inline int topUnprimed(int k1, int k2) {
+            return MAX(ABS(k1), ABS(k2));
+        }
+};
+
+
+// ******************************************************************
+// *                                                                *
+// *                       EdgeOp_plus  class                       *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    /**
+        Small template class for EV+ behavior on edges.
+    */
+    template <class TYPE>
+    class EdgeOp_plus {
+        public:
+            /// Clear an edge value.
+            static inline void clear(edge_value &v)
+            {
+                v.set(TYPE(0));
+            }
+            /// Accumulate an edge value
+            static inline edge_value accumulate(const edge_value &a,
+                    const edge_value &b)
+            {
+                TYPE av, bv;
+                a.get(av);
+                b.get(bv);
+                return edge_value(av+bv);
+            }
+    };
+};
+
+// ******************************************************************
+// *                                                                *
+// *                       EdgeOp_times class                       *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    /**
+      Small template class for EV+ behavior on edges.
+    */
+    template <class TYPE>
+    class EdgeOp_times {
+        public:
+            /// Clear an edge value.
+            static inline void clear(edge_value &v)
+            {
+                v.set(TYPE(1));
+            }
+            /// Accumulate an edge value: a *= b
+            static inline edge_value accumulate(const edge_value &a,
+                    const edge_value &b)
+            {
+                TYPE av, bv;
+                a.get(av);
+                b.get(bv);
+                return edge_value(av*bv);
+            }
+    };
 };
 
 // ******************************************************************
@@ -164,12 +297,37 @@ class MEDDLY::forest {
 
         /** Return a forest node equal to the one given.
             The node is constructed as necessary.
+            The unpacked node is recycled.
+                @param  un  Unpacked node; will be recycled.
+
+                @param  ev  Output: edge value from normalizing
+                            the node. Will be void for multi-terminal.
+
+                @param  nh  Output: A node handle equivalent to
+                            \a un (when using edge value ev),
+                            taking into account the forest reduction rules
+                            and if a duplicate node exists.
+
+                @param  in  Incoming pointer index;
+                            used for identity reductions.
+                            A value of -1 may be used to not
+                            attempt identity reductions.
+        */
+        void createReducedNode(unpacked_node *un, edge_value &ev,
+                node_handle &node, int in=-1);
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+        /** Return a forest node equal to the one given.
+            The node is constructed as necessary.
             This version should be used only for
             multi terminal forests.
             The unpacked node is recycled.
+                @param  un  Unpacked node; will be recycled.
+
                 @param  in  Incoming pointer index;
                             used for identity reductions.
-                @param  un  Temporary node; will be recycled.
+                            A value of -1 may be used to not
+                            attempt identity reductions.
 
                 @return     A node handle equivalent
                             to \a un, taking into account
@@ -179,12 +337,11 @@ class MEDDLY::forest {
         */
         inline node_handle createReducedNode(int in, unpacked_node *un) {
             MEDDLY_DCASSERT(un);
-            node_handle q = createReducedHelper(in, *un);
-#ifdef TRACK_DELETIONS
-            std::cerr << "Created node " << q << "\n";
-#endif
-            unpacked_node::Recycle(un);
-            return q;
+            edge_value ev;
+            node_handle node;
+            createReducedNode(un, ev, node, in);
+            MEDDLY_DCASSERT(ev.isVoid());
+            return node;
         }
 
 
@@ -213,14 +370,11 @@ class MEDDLY::forest {
                 T& ev, node_handle& node)
         {
             MEDDLY_DCASSERT(un);
-            normalize(*un, ev);
-            node = createReducedHelper(in, *un);
-#ifdef TRACK_DELETIONS
-            std::cerr << "Created node " << node << "\n";
-#endif
-            unpacked_node::Recycle(un);
+            edge_value _ev;
+            createReducedNode(un, _ev, node, in);
+            _ev.get(ev);
         }
-
+#endif
 
         /** Return a forest node for implicit node equal to the one given.
             The implicit node is already constructed inside satimpl_opname.
@@ -250,18 +404,156 @@ class MEDDLY::forest {
         void deleteNode(node_handle p);
 
 
+        /**
+            Useful helper function.
+            Build a chain of redundant nodes from node p up to
+            a node at level L.
+            More precisely, build a chain of nodes indicating
+            that the function does not depend on levels from
+            the one above K to level L.
+            If the forest is fully-reduced, do nothing instead.
+                @param  p   Bottom node
+                @param  K   Start redundant nodes above this level.
+                            Usually this is the same level as p.
+                @param  L   Stop redundant nodes here
+                @return     A node that can be referenced at level L
+                            (i.e., definitely at level L if we're quasi
+                            reduced) with redundant nodes added down
+                            to level K.
+
+            Illustration:
+
+            Level:      input:              output:
+
+            L               |                  [.]  (new redundant node)
+                            |                   |
+                            |                   |
+            ...             |                  [.]  (new redundant node)
+                            |                   |
+                            |                   |
+            K+1             |                  [.]  (new redundant node)
+                            |                   |
+                            |                   |
+            K               |                   |
+                            |                   |
+                            v                   v
+            p.lvl           p                   p
+
+         */
+        inline node_handle makeRedundantsTo(node_handle p, int K, int L)
+        {
+            if (0==L) return p;
+            if (K==L) return p;
+            MEDDLY_DCASSERT( ABS(L) >= ABS(K) );
+            if (isFullyReduced()) return p;
+            if (0==p) return p;
+
+            return _makeRedundantsTo(p, K, L);
+        }
+
+        /**
+            Useful helper function.
+            Build a chain of redundant/identity nodes from node p
+            up to a node at level L.
+            If the forest is identity-reduced, do nothing instead.
+
+                @param  p   Bottom node
+                @param  K   Start adding nodes above this level
+                @param  L   Stop adding nodes here
+                @param  in  Index where root edge originates.
+                            Only needed if L is a primed level.
+
+                @return     A node that can be referenced at level L
+                            (i.e., definitely at level L if we're quasi
+                            reduced) with redundant/identity nodes added down
+                            to level K.
+
+            Illustration:
+
+            Level:      input:              output:
+
+            L               |                  [.]  (new redundant node)
+                            |                   |
+            -L              |                  [.]  (new identity nodes)
+                            |                   |
+            ...             |                   |
+                            |                   |
+            K+1             |                  [.]  (new redundant node)
+                            |                   |
+            -(K+1)          |                  [.]  (new identity nodes)
+                            |                   |
+            K               |                   |
+                            |                   |
+            ...             |                   |
+                            v                   v
+                            p                   p
+        */
+        inline node_handle makeIdentitiesTo(node_handle p, int K, int L, int in)
+        {
+            if (0==L) return p;
+            if (K==L) return p;
+            MEDDLY_DCASSERT(MXD_levels::topLevel(L, K) == L);
+            if (0==p) return p;
+            if (isIdentityReduced()) {
+                //
+                // A bit extra in case p is a singleton node
+                //
+                if (K<0) p = _makeRedundantsTo(p, K, -K);
+                return p;
+            }
+            if (isFullyReduced() && (K<0) && (-K == L)) {
+                // Just adding one redundant node;
+                // that's a no-op for fully reduced
+                return p;
+            }
+            return _makeIdentitiesTo(p, K, L, in);
+        }
+
+        /**
+            Redirect illegal i-singleton edges if we're identity reduced.
+
+                @param  i   Which child edge are we.
+
+                @param  p   Target node.
+
+                @return p   If we are allowed to point to p.
+                            This is always the case for forests that
+                            are not identity reduced and
+                            for nodes p that are not at a primed level.
+        */
+        inline node_handle redirectSingleton(unsigned i, node_handle p)
+        {
+            if (!isIdentityReduced()) return p;
+            if (getNodeLevel(p) >= 0) return p;
+
+            // check if p is a singleton node
+            unsigned pi;
+            node_handle pd;
+            if (isSingletonNode(p, pi, pd)) {
+                // p is a singleton node.
+                //  child pi points to pd.
+                if (i != pi) {
+                    return p;
+                }
+                // redirect
+                // and fix link counts
+#ifdef REFCOUNTS_ON
+                if (deflt.useReferenceCounts) {
+                    nodeHeaders.linkNode(pd);
+                    nodeHeaders.unlinkNode(p);
+                }
+#endif
+                return pd;
+            } else {
+                // p is not a singleton node.
+                return p;
+            }
+        }
+
+
     // ------------------------------------------------------------
     protected:  // helpers for reducing nodes
     // ------------------------------------------------------------
-
-        /** Apply reduction rule to the temporary node and finalize it.
-            Once a node is reduced, its contents cannot be modified.
-                @param  in      Incoming index, used only for identity reduction;
-                                Or -1.
-                @param  un      Unpacked node.
-                @return         Handle to a node that encodes the same thing.
-        */
-        node_handle createReducedHelper(int in, unpacked_node &nb);
 
         /** Apply reduction rule to the temporary extensible node and finalize it.
             Once a node is reduced, its contents cannot be modified.
@@ -271,7 +563,9 @@ class MEDDLY::forest {
                                 indices if sparse.
                 @return         Handle to a node that encodes the same thing.
         */
+#ifdef ALLOW_EXTENSIBLE
         node_handle createReducedExtensibleNodeHelper(int in, unpacked_node &nb);
+#endif
 
 
         /** Create implicit node in the forest.
@@ -282,62 +576,22 @@ class MEDDLY::forest {
         node_handle createImplicitNode(MEDDLY::relation_node &nb);
 
 
-        //
-        // TBD: replace with one normalize(unpacked_node &, edge_value &ev) const;
-        //
+        /**
+            Heavy implementation for makeRedundantsTo().
+                @param  p   Bottom node
+                @param  K   Level of node p
+                @param  L   Level of node we want
+         */
+        node_handle _makeRedundantsTo(node_handle p, int K, int L);
 
-        /** Normalize a node.
-            Used only for "edge valued" DDs with range type: integer.
-            Different forest types will have different normalization rules,
-            so the default behavior given here (throw an error) will need
-            to be overridden by all edge-valued forests.
-
-                @param  nb      Array of downward pointers and edge values;
-                                may be modified.
-                @param  ev      The incoming edge value, may be modified
-                                as appropriate to normalize the node.
-        */
-        virtual void normalize(unpacked_node &nb, int& ev) const;
-
-        virtual void normalize(unpacked_node &nb, long& ev) const;
-
-        /** Normalize a node.
-            Used only for "edge valued" DDs with range type: real.
-            Different forest types will have different normalization rules,
-            so the default behavior given here (throw an error) will need
-            to be overridden by all edge-valued forests.
-
-                @param  nb      Array of downward pointers and edge values;
-                                may be modified.
-                @param  ev      The incoming edge value, may be modified
-                                as appropriate to normalize the node.
-        */
-        virtual void normalize(unpacked_node &nb, float& ev) const;
-
-        /** Is this a redundant node that can be eliminated?
-            Must be implemented in derived forests
-            to deal with the default edge value.
-
-                @param  nb      Node we're trying to build.
-
-                @return         True, if nb is a redundant node
-                                AND it should be eliminated.
-        */
-        virtual bool isRedundant(const unpacked_node &nb) const = 0;
-
-        /** Is the specified edge an identity edge, that can be eliminated?
-            Must be implemented in derived forests
-            to deal with the default edge value.
-
-                @param  nb  Node we're trying to build.
-                            We know there is a single non-zero downward pointer.
-
-                @param  i   Candidate edge (or edge index for sparse nodes).
-
-                @return True, if nb[i] is an identity edge, and the
-                              identity node should be eliminated.
-        */
-        virtual bool isIdentityEdge(const unpacked_node &nb, int i) const = 0;
+        /**
+            Heavy implementation for makeIdentitiesTo().
+                @param  p   Bottom node
+                @param  K   Level of node p
+                @param  L   Level of node we want
+                @param  in  Index of edge above level L
+         */
+        node_handle _makeIdentitiesTo(node_handle p, int K, int L, int in);
 
     // ------------------------------------------------------------
     protected: // Moving nodes around; called in derived classes for reordering
@@ -433,8 +687,12 @@ class MEDDLY::forest {
 
         /// Returns the in-count for a node.
         inline unsigned long getNodeInCount(node_handle p) const {
+#ifdef REFCOUNTS_ON
             MEDDLY_DCASSERT(deflt.useReferenceCounts);
             return nodeHeaders.getIncomingCount(p);
+#else
+            return 0;
+#endif
         }
 
 
@@ -443,11 +701,15 @@ class MEDDLY::forest {
                 @return p, for convenience.
         */
         inline node_handle linkNode(node_handle p) {
+#ifdef REFCOUNTS_ON
             if (deflt.useReferenceCounts) {
                 return nodeHeaders.linkNode(p);
             } else {
                 return p;
             }
+#else
+            return p;
+#endif
         }
 
         /** Increase the link count to this node.
@@ -455,12 +717,16 @@ class MEDDLY::forest {
                 @return the node handle, for convenience.
         */
         inline node_handle linkNode(const dd_edge &p) {
+#ifdef REFCOUNTS_ON
             MEDDLY_DCASSERT(p.isAttachedTo(this));
             if (deflt.useReferenceCounts) {
                 return nodeHeaders.linkNode(p.getNode());
             } else {
                 return p.getNode();
             }
+#else
+            return p.getNode();
+#endif
         }
 
         /** Decrease the link count to this node.
@@ -468,19 +734,11 @@ class MEDDLY::forest {
             Call this when another node releases its connection to this node.
         */
         inline void unlinkNode(node_handle p) {
+#ifdef REFCOUNTS_ON
             if (deflt.useReferenceCounts) {
                 nodeHeaders.unlinkNode(p);
             }
-        }
-
-
-        /// Unlink down pointers in the unpacked node.
-        inline void unlinkAllDown(const unpacked_node &un, unsigned i=0) {
-            if (deflt.useReferenceCounts) {
-                for ( ; i<un.getSize(); i++) {
-                    nodeHeaders.unlinkNode(un.down(i));
-                }
-            }
+#endif
         }
 
 
@@ -490,9 +748,11 @@ class MEDDLY::forest {
                 @param  p     Node we care about.
         */
         inline void cacheNode(node_handle p) {
+#ifdef REFCOUNTS_ON
             if (deflt.useReferenceCounts) {
                 nodeHeaders.cacheNode(p);
             }
+#endif
         }
 
         /** Decrease the cache count for this node.
@@ -501,9 +761,11 @@ class MEDDLY::forest {
                 @param  p     Node we care about.
         */
         inline void uncacheNode(node_handle p) {
+#ifdef REFCOUNTS_ON
             if (deflt.useReferenceCounts) {
                 nodeHeaders.uncacheNode(p);
             }
+#endif
         }
 
         /** Mark the node as belonging to some cache entry.
@@ -581,6 +843,30 @@ class MEDDLY::forest {
         }
 
 
+        /// Unlink down pointers in an  unpacked node.
+        inline void unlinkAllDown(const unpacked_node &un, unsigned i=0) {
+#ifdef REFCOUNTS_ON
+            if (deflt.useReferenceCounts) {
+                for ( ; i<un.getSize(); i++) {
+                    nodeHeaders.unlinkNode(un.down(i));
+                }
+            }
+#endif
+        }
+
+        /// Link down pointers in an  unpacked node.
+        inline void linkAllDown(unpacked_node &un, unsigned i=0) {
+#ifdef REFCOUNTS_ON
+            if (deflt.useReferenceCounts) {
+                for ( ; i<un.getSize(); i++) {
+                    nodeHeaders.linkNode(un.down(i));
+                }
+            }
+#endif
+        }
+
+
+
     // ------------------------------------------------------------
     private:  // private node header information
     // ------------------------------------------------------------
@@ -617,34 +903,29 @@ class MEDDLY::forest {
         }
 
 
-        /** Check and find the index of a single downward pointer.
+        /** Determine if this is a singleton node.
+            Used for identity reductions.
+            @param  p       Handle of node to look at
 
-            @param  node    Node we care about
-            @param  down    Output:
-                            The singleton downward pointer, or undefined.
+            @param  index   On output:
+                            if we're a singleton node, the index of the
+                            only non-zero pointer;
+                            otherwise undefined.
 
-            @return     If the node has only one non-zero downward pointer,
-                        then return the index for that pointer.
-                        Otherwise, return a negative value.
+            @param  down    On output:
+                            if we're a singleton node, the only non-zero
+                            downward pointer;
+                            otherwise undefined.
+
+            @return     If the node is a singleton node
+                        (only one non-zero downward pointer),
+                        return true; otherwise return false.
         */
-        inline int getSingletonIndex(node_handle p, node_handle &down) const {
-            return nodeMan->getSingletonIndex(getNodeAddress(p), down);
-        }
-
-
-        /** Check and get a single downward pointer.
-
-            @param  node    Node we care about
-            @param  index   Index we're trying to match
-
-            @return     If the only non-zero downward pointer for
-                        this node happens at \a index, then return the pointer.
-                        Otherwise, return 0.
-        */
-        inline node_handle getSingletonDown(node_handle node, int index) const {
-            MEDDLY::node_handle down;
-            if (getSingletonIndex(node, down) == index) return down;
-            return 0;
+        inline bool isSingletonNode(node_handle p, unsigned &index,
+                node_handle &down) const
+        {
+            if (p<=0) return false;
+            return nodeMan->isSingletonNode(getNodeAddress(p), index, down);
         }
 
 
@@ -663,6 +944,26 @@ class MEDDLY::forest {
             return nodeMan->getDownPtr(getNodeAddress(p), index);
         }
 
+        /** For a given node, get a specified downward pointer.
+
+            This is designed to be used for one or two indexes only.
+            For reading all or several downward pointers, a
+            unpacked_node should be used instead.
+
+            @param  p       Node to look at
+            @param  index   Index of the pointer we want.
+
+            @param  ev      Output: edge value at that index.
+            @param  dn      Output: downward pointer at that index.
+        */
+        inline void getDownPtr(node_handle p, int index, edge_value& ev,
+                node_handle& dn) const
+        {
+            ev = transparent_edge;
+            nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
+        }
+
+        // TBD: remove these older 'getDownPtr' methods
 
         /** For a given node, get a specified downward pointer.
 
@@ -679,7 +980,9 @@ class MEDDLY::forest {
         inline void getDownPtr(node_handle p, int index, int& ev,
                 node_handle& dn) const
         {
-            nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
+            edge_value v = transparent_edge;
+            nodeMan->getDownPtr(getNodeAddress(p), index, v, dn);
+            ev = v.getInt();
         }
 
 
@@ -698,7 +1001,9 @@ class MEDDLY::forest {
         inline void getDownPtr(node_handle p, int index, long& ev,
                 node_handle& dn) const
         {
-            nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
+            edge_value v = transparent_edge;
+            nodeMan->getDownPtr(getNodeAddress(p), index, v, dn);
+            ev = v.getLong();
         }
 
 
@@ -717,7 +1022,9 @@ class MEDDLY::forest {
         inline void getDownPtr(node_handle p, int index, float& ev,
                 node_handle& dn) const
         {
-            nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
+            edge_value v = transparent_edge;
+            nodeMan->getDownPtr(getNodeAddress(p), index, v, dn);
+            ev = v.getFloat();
         }
 
 
@@ -789,6 +1096,13 @@ class MEDDLY::forest {
         }
 
         /**
+            Get the no-op edge value.
+        */
+        inline const edge_value& getNoOpEdge() const {
+            return noop_edge;
+        }
+
+        /**
             Is the given edge transparent?
             If so it may be "skipped" in a sparse node.
                 @param  ep    Node part of the edge to check
@@ -833,6 +1147,7 @@ class MEDDLY::forest {
             return the_terminal_type;
         }
 
+
         /**
             Convenience function.
             Based on the forest type, convert the desired value
@@ -842,6 +1157,7 @@ class MEDDLY::forest {
         */
         template <typename T>
         inline node_handle handleForValue(T v) const {
+            MEDDLY_DCASSERT(isMultiTerminal());
             terminal t(v, the_terminal_type);
             return t.getHandle();
         }
@@ -855,28 +1171,56 @@ class MEDDLY::forest {
         */
         template <typename T>
         inline void getValueFromHandle(node_handle n, T& v) const {
+            MEDDLY_DCASSERT(isMultiTerminal());
             MEDDLY_DCASSERT(n <= 0);
             terminal t(the_terminal_type, n);
             t.getValue(v);
         }
 
         inline bool getBooleanFromHandle(MEDDLY::node_handle n) const {
+            MEDDLY_DCASSERT(isMultiTerminal());
             bool v;
             getValueFromHandle(n, v);
             return v;
         }
 
         inline int getIntegerFromHandle(MEDDLY::node_handle n) const {
+            MEDDLY_DCASSERT(isMultiTerminal());
             int v;
             getValueFromHandle(n, v);
             return v;
         }
 
         inline float getRealFromHandle(MEDDLY::node_handle n) const {
+            MEDDLY_DCASSERT(isMultiTerminal());
             float v;
             getValueFromHandle(n, v);
             return v;
         }
+
+        /**
+            Convenience function.
+            Build an edge for a constant value.
+        */
+        template <class T>
+        inline void getEdgeForValue(T constval, edge_value &v, node_handle &p)
+        const
+        {
+            MEDDLY_DCASSERT(!isMultiTerminal());
+
+            v.setTempl(the_edge_type, constval);
+
+            if (isEVTimes() && (0==constval)) {
+                p = OMEGA_ZERO;
+            } else {
+                p = OMEGA_NORMAL;
+            }
+        }
+
+        //
+        // TBD:
+        //    getEdgeForInfinity
+        //
 
     // ------------------------------------------------------------
     protected: // methods to set edge info, for derived classes
@@ -926,30 +1270,52 @@ class MEDDLY::forest {
 
         inline void setTransparentEdge(node_handle p) {
             MEDDLY_DCASSERT(edge_type::VOID == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set();
+            noop_edge.set();
         }
         inline void setTransparentEdge(node_handle p, int v) {
             MEDDLY_DCASSERT(edge_type::INT == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
+            setNoOpEdgeval();
         }
         inline void setTransparentEdge(node_handle p, long v) {
             MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
+            setNoOpEdgeval();
         }
         inline void setTransparentEdge(node_handle p, float v) {
             MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
+            setNoOpEdgeval();
         }
         inline void setTransparentEdge(node_handle p, double v) {
             MEDDLY_DCASSERT(edge_type::DOUBLE == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
+            setNoOpEdgeval();
         }
 
+    // ------------------------------------------------------------
+    private:
+    // ------------------------------------------------------------
+
+        inline void setNoOpEdgeval() {
+            MEDDLY_DCASSERT(!isMultiTerminal());
+            if (isEVTimes()) {
+                noop_edge.setTempl(transparent_edge.getType(), 1);
+            } else {
+                noop_edge.setTempl(transparent_edge.getType(), 0);
+            }
+        }
 
     // ------------------------------------------------------------
     private: // transparent edge info
@@ -960,6 +1326,9 @@ class MEDDLY::forest {
 
         /// Transparent edge value
         edge_value  transparent_edge;
+
+        /// Edge value for no-op (e.g., 0 for +, 1 for *)
+        edge_value  noop_edge;
 
         /// Edge type.
         edge_type the_edge_type;
@@ -1079,7 +1448,7 @@ class MEDDLY::forest {
             return isForRelations() ? -int(getNumVariables()) : 0;
         }
 
-        /// returns 0 or -K, depending if it's a relation
+        /// returns K
         inline int getMaxLevelIndex() const {
             return int(getNumVariables());
         }
@@ -1096,9 +1465,9 @@ class MEDDLY::forest {
                 @param  k   Current level
                 @return Level immediately below level k
         */
-        static inline int downLevel(int k) {
-            return (k>0) ? (-k) : (-k-1);
-        }
+        // static inline int downLevel(int k) {
+            // return (k>0) ? (-k) : (-k-1);
+        // }
 
         /** Go "up a level" in a relation.
             Safest to use this, in case in later versions
@@ -1106,9 +1475,9 @@ class MEDDLY::forest {
                 @param  k   Current level
                 @return Level immediately above level k
         */
-        static inline int upLevel(int k) {
-            return (k<0) ? (-k) : (-k-1);
-        }
+        // static inline int upLevel(int k) {
+            // return (k<0) ? (-k) : (-k-1);
+        // }
 
 
         /// Can we have extensible nodes at level k?
@@ -1435,37 +1804,19 @@ class MEDDLY::forest {
     // ------------------------------------------------------------
     private: // Private members for root edge registry
     // ------------------------------------------------------------
-        /// Registry of dd_edges
+        /// Registry of dd_edges (doubly-linked list)
         dd_edge* roots;
 
 
 // ===================================================================
 //
-// Managing operations on this forest (using a registry)
+// Managing operations on this forest
 //
 // ===================================================================
 
   public:
-    /// Remove any stale compute table entries associated with this forest.
-    void removeStaleComputeTableEntries();
-
     /// Remove all compute table entries associated with this forest.
     void removeAllComputeTableEntries();
-
-
-
-  private:  // For operation registration
-    friend class operation;
-
-    std::vector <unsigned> opCount;
-
-    /// Register an operation with this forest.
-    /// Called only within operation.
-    void registerOperation(const operation* op);
-
-    /// Unregister an operation.
-    /// Called only within operation.
-    void unregisterOperation(const operation* op);
 
 
 // ===================================================================
@@ -1490,7 +1841,7 @@ class MEDDLY::forest {
         /// Find the forest with the given FID.
         /// If the forest has been deleted, this will be null.
         static inline forest* getForestWithID(unsigned id) {
-            if (id > all_forests.size()) return nullptr;
+            if (id >= all_forests.size()) return nullptr;
             return all_forests[id];
         }
 
@@ -1531,11 +1882,10 @@ class MEDDLY::forest {
                 @param  s       File stream to write to.
                 @param  node    Node to display.
                 @param  flags   Switches to control output;
-                                see constants "SHOW_DETAILED", etc.
-
+                                see constants "SHOW_DETAILS", etc.
                 @return true, iff we displayed anything
         */
-        bool showNode(output &s, node_handle node, unsigned int flags = 0) const;
+        bool showNode(output &s, node_handle node, display_flags flags = 0) const;
 
 
         /** Show various stats for this forest.
@@ -1553,9 +1903,9 @@ class MEDDLY::forest {
             Display all nodes in the forest.
                 @param  s       File stream to write to
                 @param  flags   Switches to control output;
-                                see constants "SHOW_DETAILED", etc.
+                                see constants "SHOW_DETAILS", etc.
         */
-        void dump(output &s, unsigned int flags) const;
+        void dump(output &s, display_flags flags) const;
         void dumpInternal(output &s) const;
         void dumpUniqueTable(output &s) const;
         void validateIncounts(bool exact);
@@ -1586,9 +1936,6 @@ class MEDDLY::forest {
                 @param  name    Name to use for the forest (for display only).
         */
         void setLogger(logger* L, const char* name);
-
-        /// Display the compute table(s)
-        void showComputeTable(output &s, int verbLevel) const;
 
     // ------------------------------------------------------------
     protected: // protected methods for debugging
@@ -2206,6 +2553,12 @@ class MEDDLY::forest {
 
 // ===================================================================
 //
+// Deprecated as of version 0.17.6
+//
+// ===================================================================
+
+// ===================================================================
+//
 // Deprecated as of version 0.17.4
 //
 // ===================================================================
@@ -2386,8 +2739,6 @@ class MEDDLY::forest {
 
 
 };
-
-
 
 // ===================================================================
 //

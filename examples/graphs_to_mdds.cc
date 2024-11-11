@@ -186,7 +186,7 @@ int main(int argv, char *argc[])
   std::cout << diff.getNode() << "\n";
   diff.showGraph(meddlyout);
 
-  operation::showMonolithicComputeTable(meddlyout, true);
+  compute_table::showMonolithicComputeTable(meddlyout, true);
   cleanup();
   return 0;
 }

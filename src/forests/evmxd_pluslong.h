@@ -30,9 +30,6 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
   public:
     class OP {
       public:
-        static inline bool isIdentityEdge(const edge_value &p) {
-          return p.equals(0L);
-        }
         static inline long apply(double a, double b) {
           return a + b;
         }
@@ -58,9 +55,6 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
       const int* vplist, long &term) const;
 
 
-    virtual bool isRedundant(const unpacked_node &nb) const;
-    virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
-
     virtual enumerator::iterator* makeFullIter() const {
       return new evtrmxd_iterator(this);
     }
@@ -78,7 +72,6 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
     virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
 
   protected:
-    virtual void normalize(unpacked_node &nb, long& ev) const;
 #ifdef ALLOW_DEPRECATED_0_17_3
     virtual const char* codeChars() const;
 #endif

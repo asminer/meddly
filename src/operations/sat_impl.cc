@@ -23,6 +23,7 @@
 #include <set>
 #include <map>
 
+#include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
 #include "../compute_table.h"
 #include "../oper_unary.h"
@@ -575,7 +576,9 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
 
 
   saturateHelper(*nb);
-  result = resF->createReducedNode(-1, nb);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
@@ -793,7 +796,7 @@ MEDDLY::saturation_impl_by_events_op
 
 MEDDLY::saturation_impl_by_events_op::~saturation_impl_by_events_op()
 {
-  removeAllComputeTableEntries();
+  // removeAllComputeTableEntries();
 }
 
 
@@ -853,7 +856,9 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
   // Cleanup
   unpacked_node::Recycle(mddDptrs);
   parent->saturateHelper(*nb);
-  n = resF->createReducedNode(-1, nb);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, n);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   // save in compute table
   saveSaturateResult(Key, mdd, n);
@@ -1069,7 +1074,11 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
       mdd, k, sz, mdd_level);
 #endif
 
+#ifdef ALLOW_EXTENSIBLE
   const node_handle ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
+#else
+  const node_handle ext_d = 0;
+#endif
 
   // Do computation
   for (int i=0; i<sz; i++) {
@@ -1114,7 +1123,9 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
     return true;
   }
 
-  n = resF->createReducedNode(-1, nb);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, n);
+  MEDDLY_DCASSERT(ev.isVoid());
   saveSaturateResult(Key, mdd, n);
 
 #ifdef DEBUG_DFS
@@ -1150,7 +1161,11 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
   } else {
     argF->unpackNode(consDptrs, constraint, FULL_ONLY);
   }
+#ifdef ALLOW_EXTENSIBLE
   const node_handle cons_ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
+#else
+  const node_handle cons_ext_d = 0;
+#endif
 
   // Initialize mxd readers, note we might skip the unprimed level
   node_handle* events = rel->arrayForLevel(level);
@@ -1324,7 +1339,11 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   } else {
     argF->unpackNode(consDptrs, constraint, FULL_ONLY);
   }
+#ifdef ALLOW_EXTENSIBLE
   const node_handle cons_ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
+#else
+  const node_handle cons_ext_d = 0;
+#endif
 
   //Re-Think
   if (mddLevel > mxdLevel) {
@@ -1439,7 +1458,9 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     return true;
   }
 
-  result = resF->createReducedNode(-1, nb);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
 
 #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);

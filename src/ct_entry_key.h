@@ -58,7 +58,7 @@ class MEDDLY::ct_entry_key {
         inline void writeEV(const edge_value &ev) {
             MEDDLY_DCASSERT(currslot < total_slots);
 
-            switch (etype->getKeyType(currslot)) {
+            switch (etype->getKeyType(currslot).getType()) {
                 case ct_typeID::INTEGER:
                     ev.get(data[currslot++].I);
                     break;
@@ -125,15 +125,14 @@ class MEDDLY::ct_entry_key {
         /// Increase cache counters for nodes in this portion of the entry.
         inline void cacheNodes() const {
             for (unsigned i=0; i<total_slots; i++) {
-                forest* f = etype->getKeyForest(i);
-                if (f) {
-                    f->cacheNode(data[i].N);
+                const ct_itemtype &item = etype->getKeyType(i);
+                if (item.hasNodeType()) {
+                    item.cacheNode(data[i].N);
                 }
             }
         }
 
-    protected:
-        // protected interface, for compute_table.
+    public:
         inline void setHash(unsigned h) {
             hash_value = h;
 #ifdef DEVELOPMENT_CODE
@@ -145,7 +144,7 @@ class MEDDLY::ct_entry_key {
         inline void WRITE_SLOT(ct_typeID t)
         {
             MEDDLY_DCASSERT(currslot < total_slots);
-            MEDDLY_DCASSERT(t == etype->getKeyType(currslot));
+            MEDDLY_DCASSERT(etype->getKeyType(currslot).hasType(t));
         }
 
 
@@ -168,6 +167,15 @@ class MEDDLY::ct_entry_key {
     protected:
         /// Used for linked-list of recycled search keys in compute_table
         ct_entry_key* next;
+
+    public:
+        //
+        // Stored data for CT misses,
+        // to save time for CT adds later.
+        //
+        unsigned long my_entry;
+        unsigned entry_slots;
+        unsigned result_shift;
 };
 
 

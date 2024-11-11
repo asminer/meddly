@@ -25,6 +25,7 @@
 #define OUT_OF_BOUNDS -1
 
 
+// #define DEBUG_INTERSECTION
 
 // #define DEBUG_GENERATE
 // #define DEBUG_EVENTS
@@ -71,10 +72,20 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
   using namespace MEDDLY;
   if (verb) fprintf(stderr, "Building next-state function\n");
 
+#ifdef DEBUG_INTERSECTION
+    unsigned intercount = 0;
+    FILE_output out(stdout);
+#endif
+
+#ifdef DEBUG_EVENTS
+  FILE_output out(stdout);
+#endif
+
   // set up auxiliary mtmxd forest and edges
   domain* d = mxd->getDomain();
   forest* mtmxd = forest::create(d,
-    true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL
+    true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL,
+    mxd->getPolicies()
   );
   const unsigned nVars = d->getNumVariables();
   unsigned maxBound = 1;
@@ -140,7 +151,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
     mxd->createEdge(&minterm, &mtprime, 1, nsf_ev);
 #ifdef DEBUG_EVENTS
     printf("Initial nsf for event %d\n", e);
-    nsf_ev.show(stdout, 2);
+    nsf_ev.showGraph(out);
 #endif
     if (verb>2) fprintf(stderr, " : ");
 
@@ -182,14 +193,31 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 #endif
 #ifdef DEBUG_EVENTS
       printf("Term for event %d, level %d\n", e, i);
-      term.show(stdout, 2);
+      term.showGraph(out);
 #endif
+
+#ifdef DEBUG_INTERSECTION
+      printf("Intersection #%u\n", ++intercount);
+      printf("Arg1: nsf_ev\n");
+      nsf_ev.showGraph(out);
+      printf("Arg2: term %c %u\n", ev[i], i);
+      term.showGraph(out);
+#endif
+
       nsf_ev *= term;
+
+#ifdef DEBUG_INTERSECTION
+      printf("Result:\n");
+      nsf_ev.showGraph(out);
+      printf("=====================================================================\n");
+#endif
+
+
     } // for i
 
 #ifdef DEBUG_EVENTS
     printf("Complete nsf for event %d:\n", e);
-    nsf_ev.show(stdout, 2);
+    nsf_ev.showGraph(out);
 #endif
     if (verb>2) fputc(' ', stderr);
 #ifdef SHOW_EVENT_HANDLES
@@ -234,7 +262,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 
 #ifdef DEBUG_EVENTS
   printf("Complete NSF:\n");
-  mono->show(stdout, 2);
+  mono->showGraph(out);
 #endif
 }
 

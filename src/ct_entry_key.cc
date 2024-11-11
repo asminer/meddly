@@ -34,6 +34,10 @@ MEDDLY::ct_entry_key::ct_entry_key()
     temp_bytes = 0;
     temp_alloc = 0;
     // malloc: because realloc later
+
+    my_entry = 0;
+    entry_slots = 0;
+    result_shift = 0;
 }
 
 MEDDLY::ct_entry_key::~ct_entry_key()

@@ -24,26 +24,36 @@
 // #include <cstring>  // for memcpy
 
 namespace MEDDLY {
+    enum class terminal_type;
     class terminal;
 
-    /// Type of terminal value.
-    enum class terminal_type {
-        /// Null type
-        NOTHING,
-        /// Nothing; for EV
-        OMEGA,
-        /// For MT boolean
-        BOOLEAN,
-        /// For MT integer
-        INTEGER,
-        /// For MT real
-        REAL
-    };
+    ///
+    /// Special OMEGA values
+    ///
+
+    static const node_handle OMEGA_NORMAL   = -1;
+    static const node_handle OMEGA_ZERO     =  0; // for *
+    static const node_handle OMEGA_INFINITY =  0; // for +
+
+    // TBD - other OMEGAs like OMEGA_UNDEFINED?
 
     class input;
     class output;
 };
 
+/// Type of terminal value.
+enum class MEDDLY::terminal_type {
+    /// Null type
+    NOTHING,
+    /// Nothing; for EV
+    OMEGA,
+    /// For MT boolean
+    BOOLEAN,
+    /// For MT integer
+    INTEGER,
+    /// For MT real
+    REAL
+};
 
 /**
     Unified terminal object.
@@ -212,7 +222,7 @@ class MEDDLY::terminal {
         // Setters for the label
         //
 
-        inline void setOmega(node_handle h=-1) {
+        inline void setOmega(node_handle h=OMEGA_NORMAL) {
             mytype = terminal_type::OMEGA;
             t_omega = h;
             if (h > 0) {

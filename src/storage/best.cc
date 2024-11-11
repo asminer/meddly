@@ -146,7 +146,12 @@ public:
   virtual void fillUnpacked(unpacked_node &nr, node_address addr, node_storage_flags) const;
 
   virtual unsigned hashNode(int level, node_address addr) const;
+  virtual bool isSingletonNode(node_address addr, unsigned &index,
+          node_handle &down) const;
+
+#ifdef ALLOW_DEPRECATED_SINGLETON
   virtual int getSingletonIndex(node_address addr, node_handle &down) const;
+#endif
   virtual node_handle getDownPtr(node_address addr, int index) const;
   virtual void getDownPtr(node_address addr, int ind, int& ev, node_handle& dn) const;
   virtual void getDownPtr(node_address addr, int ind, long& ev, node_handle& dn) const;
@@ -1003,11 +1008,13 @@ void MEDDLY::best_storage
     default:            assert(0);
   };
 
+#ifdef ALLOW_EXTENSIBLE
   // if (is_extensible) nr.markAsExtensible(); else nr.markAsNotExtensible();
   if (is_extensible && parent->isExtensibleLevel(nr.getLevel()))
     nr.markAsExtensible();
   else
     nr.markAsNotExtensible();
+#endif
 
   // Make sure that when an extensible node is unpacked that the trailing edges
   // are filled correctly (regardless of the storage scheme of the unpacked node)

@@ -28,6 +28,7 @@ namespace MEDDLY {
     class ternary_list;
 };
 
+
 // ******************************************************************
 // *                                                                *
 // *                    ternary_operation  class                    *
@@ -140,15 +141,27 @@ class MEDDLY::ternary_operation : public operation {
         */
         void compute(const dd_edge &ar1, const dd_edge &ar2,
                 const dd_edge &ar3, dd_edge &res);
+
+#ifdef ALLOW_DEPRECATED_0_17_6
         void computeTemp(const dd_edge &ar1, const dd_edge &ar2,
                 const dd_edge &ar3, dd_edge &res);
 
         virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2,
                 const dd_edge &ar3, dd_edge &res, bool userFlag) = 0;
+#endif
 
     protected:
         // Check if the variables orders of relevant forests are compatible
-        virtual bool checkForestCompatibility() const;
+        inline bool checkForestCompatibility() const
+        {
+            auto o1 = arg1F->variableOrder();
+            auto o2 = arg2F->variableOrder();
+            auto o3 = arg3F->variableOrder();
+            auto o4 = resF->variableOrder();
+            return  o1->is_compatible_with(*o2) &&
+                    o1->is_compatible_with(*o3) &&
+                    o1->is_compatible_with(*o4);
+        }
 
     protected:
         forest* arg1F;

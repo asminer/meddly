@@ -97,6 +97,7 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
     fflush(stdout);
 #endif
 
+#ifdef ALLOW_EXTENSIBLE
     // Get level information
     const int aLevel = arg1F->getNodeLevel(a);
     const int bLevel = arg2F->getNodeLevel(b);
@@ -105,6 +106,9 @@ MEDDLY::generic_binary_mdd::compute(node_handle a, node_handle b)
     result = resF->isExtensibleLevel(resultLevel)
         ? compute_ext(a, b)
         : compute_normal(a, b);
+#else
+    result = compute_normal(a, b);
+#endif
 
     // save result
     saveResult(Key, a, b, result);
@@ -171,11 +175,15 @@ MEDDLY::generic_binary_mdd::compute_normal(node_handle a, node_handle b)
   unpacked_node::Recycle(A);
 
   // reduce and return result
-  node_handle result = resF->createReducedNode(-1, C);
+  edge_value ev;
+  node_handle result;
+  resF->createReducedNode(C, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
   return result;
 }
 
 
+#ifdef ALLOW_EXTENSIBLE
 MEDDLY::node_handle
 MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
 {
@@ -303,11 +311,14 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
   }
 
   // reduce and return result
-  node_handle result = resF->createReducedNode(-1, C);
+  edge_value ev;
+  node_handle result;
+  resF->createReducedNode(C, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
   return result;
 }
 
-
+#endif // ALLOW_EXTENSIBLE
 
 
 // ******************************************************************
@@ -354,15 +365,18 @@ MEDDLY::generic_binary_mxd::compute(node_handle a, node_handle b)
   ct_entry_key* Key = findResult(a, b, result);
   if (0==Key) return result;
 
+#ifdef ALLOW_EXTENSIBLE
   // Get level information
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
-  int resultLevel = ABS(topLevel(aLevel, bLevel));
-
+  const int resultLevel = ABS(topLevel(aLevel, bLevel));
   result =
     resF->isExtensibleLevel(resultLevel)
     ? compute_ext(a, b)
     : compute_normal(a, b);
+#else
+  result = compute_normal(a, b);
+#endif
 
   // save result
   saveResult(Key, a, b, result);
@@ -396,10 +410,14 @@ MEDDLY::generic_binary_mxd::compute_r(int in, int k, node_handle a, node_handle 
   }
   */
 
+#ifdef ALLOW_EXTENSIBLE
   result =
     resF->isExtensibleLevel(k)
     ? compute_r_ext(in, k, a, b)
     : compute_r_normal(in, k, a, b);
+#else
+  result = compute_r_normal(in, k, a, b);
+#endif
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, level %d, %d, %d) = %d\n", getName(), in, k, a, b, result);
@@ -442,9 +460,9 @@ MEDDLY::generic_binary_mxd::compute_normal(node_handle a, node_handle b)
   // Do computation
   for (unsigned j=0; j<resultSize; j++) {
     C->setFull(j,
-        compute_r(j, resF->downLevel(resultLevel), A->down(j), B->down(j))
+        compute_r(j, MXD_levels::downLevel(resultLevel), A->down(j), B->down(j))
     );
-    // C->d_ref(j) = compute_r(j, resF->downLevel(resultLevel), A->down(j), B->down(j));
+    // C->d_ref(j) = compute_r(j, MXD_levels::downLevel(resultLevel), A->down(j), B->down(j));
   }
 
   // cleanup
@@ -452,11 +470,13 @@ MEDDLY::generic_binary_mxd::compute_normal(node_handle a, node_handle b)
   unpacked_node::Recycle(A);
 
   // reduce and return result
-  result = resF->createReducedNode(-1, C);
+  edge_value ev;
+  resF->createReducedNode(C, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
   return result;
 }
 
-
+#ifdef ALLOW_EXTENSIBLE
 MEDDLY::node_handle
 MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
 {
@@ -466,7 +486,7 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
   int resultLevel = ABS(topLevel(aLevel, bLevel));
-  const int dwnLevel = resF->downLevel(resultLevel);
+  const int dwnLevel = MXD_levels::downLevel(resultLevel);
 
   MEDDLY_DCASSERT(resF->isExtensibleLevel(resultLevel));
 
@@ -575,9 +595,13 @@ MEDDLY::generic_binary_mxd::compute_ext(node_handle a, node_handle b)
   unpacked_node::Recycle(A);
 
   // reduce and return result
-  result = resF->createReducedNode(-1, C);
+  edge_value ev;
+  node_handle result;
+  resF->createReducedNode(C, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
   return result;
 }
+#endif // ALLOW_EXTENSIBLE
 
 
 MEDDLY::node_handle
@@ -626,12 +650,14 @@ MEDDLY::generic_binary_mxd::compute_r_normal(int in, int k, node_handle a, node_
   unpacked_node::Recycle(A);
 
   // reduce
-  node_handle result = resF->createReducedNode(in, C);
-
+  edge_value ev;
+  node_handle result;
+  resF->createReducedNode(C, ev, result, in);
+  MEDDLY_DCASSERT(ev.isVoid());
   return result;
 }
 
-
+#ifdef ALLOW_EXTENSIBLE
 MEDDLY::node_handle
 MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_handle b)
 {
@@ -738,7 +764,10 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
     C->shrink(nnz);
 
     // reduce
-    result = resF->createReducedNode(in, C);
+    edge_value ev;
+    node_handle result;
+    resF->createReducedNode(C, ev, result, in);
+    MEDDLY_DCASSERT(ev.isVoid());
   }
 
   // cleanup
@@ -747,7 +776,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
 
   return result;
 }
-
+#endif // ALLOW_EXTENSIBLE
 
 // ******************************************************************
 // *                                                                *
@@ -760,7 +789,6 @@ MEDDLY::generic_binbylevel_mxd
   forest* arg2, forest* res)
  : binary_operation(code, 1, arg1, arg2, res)
 {
-  can_commute = false;
   ct_entry_type* et = new ct_entry_type(code.getName(), "INN:N");
   et->setForestForSlot(1, arg1);
   et->setForestForSlot(2, arg2);
@@ -844,7 +872,7 @@ MEDDLY::generic_binbylevel_mxd
   MEDDLY_DCASSERT(!B->isExtensible());
 
   // Do computation
-  int nextLevel = resF->downLevel(resultLevel);
+  int nextLevel = MXD_levels::downLevel(resultLevel);
   unsigned nnz = 0;
   for (unsigned j=0; j<resultSize; j++) {
     node_handle d = compute_r(j, nextLevel, A->down(j), B->down(j));
@@ -858,7 +886,9 @@ MEDDLY::generic_binbylevel_mxd
   unpacked_node::Recycle(A);
 
   // reduce
-  result = resF->createReducedNode(in, C);
+  edge_value ev;
+  resF->createReducedNode(C, ev, result, in);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   // save result in compute table, when we can
   if (resultLevel<0 && 1==nnz) canSaveResult = false;
@@ -884,7 +914,6 @@ MEDDLY::generic_binary_ev::generic_binary_ev(binary_list& code,
   forest* arg1, forest* arg2, forest* res)
   : binary_operation(code, 1, arg1, arg2, res)
 {
-  can_commute = false;
 }
 
 MEDDLY::generic_binary_ev::~generic_binary_ev()
@@ -980,7 +1009,9 @@ void MEDDLY::generic_binary_evplus
   unpacked_node::Recycle(A);
 
   // Reduce
-  resF->createReducedNode(-1, nb, cev, c);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, c);
+  cev = ev.getLong();
 
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);
@@ -1062,7 +1093,7 @@ void MEDDLY::generic_binary_evplus_mxd
 //    long ev = Inf<long>();
     long ev = 0;
     node_handle ed = 0;
-    compute_r(i, resF->downLevel(resultLevel),
+    compute_r(i, MXD_levels::downLevel(resultLevel),
       aev + A->edge_long(i), A->down(i),
       bev + B->edge_long(i), B->down(i),
       ev, ed);
@@ -1077,7 +1108,9 @@ void MEDDLY::generic_binary_evplus_mxd
   unpacked_node::Recycle(A);
 
   // Reduce
-  resF->createReducedNode(-1, nb, cev, c);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, c);
+  cev = ev.getLong();
 
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);
@@ -1134,7 +1167,9 @@ void MEDDLY::generic_binary_evplus_mxd
   unpacked_node::Recycle(A);
 
   // reduce
-  resF->createReducedNode(in, C, cev, c);
+  edge_value ev;
+  resF->createReducedNode(C, ev, c, in);
+  cev = ev.getLong();
 
 #ifdef TRACE_ALL_OPS
   printf("computed %s(in %d, %d, %d) = %d\n", getName(), in, a, b, c);
@@ -1182,6 +1217,11 @@ void MEDDLY::generic_binary_evtimes
 ::compute(float aev, node_handle a, float bev, node_handle b,
   float& cev, node_handle& c)
 {
+#ifdef TRACE_ALL_OPS
+   printf("computing %s(<%f, %d>, <%f, %d>)\n", getName(), aev, a, bev, b);
+   fflush(stdout);
+#endif
+
   // Compute for the unprimed levels.
   //
 
@@ -1235,9 +1275,9 @@ void MEDDLY::generic_binary_evtimes
   unpacked_node::Recycle(A);
 
   // Reduce
-  node_handle cl;
-  resF->createReducedNode(-1, nb, cev, cl);
-  c = cl;
+  edge_value ev;
+  resF->createReducedNode(nb, ev, c);
+  cev = ev.getFloat();
 
 #ifndef DISABLE_CACHE
   // Add to CT
@@ -1307,7 +1347,7 @@ void MEDDLY::generic_binary_evtimes
   unpacked_node::Recycle(A);
 
   // Reduce
-  node_handle cl;
-  resF->createReducedNode(in, nb, cev, cl);
-  c = cl;
+  edge_value ev;
+  resF->createReducedNode(nb, ev, c, in);
+  cev = ev.getFloat();
 }

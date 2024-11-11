@@ -17,65 +17,103 @@
 */
 
 #include "ct_entry_type.h"
+#include "ct_entry_key.h"
+#include "ct_initializer.h"
 #include "error.h"
 #include "forest.h"
 
-// **********************************************************************
-// *                                                                    *
-// *                         ct_object  methods                         *
-// *                                                                    *
-// **********************************************************************
+#include "io.h"
+#include "operators.h"
 
-MEDDLY::ct_object::ct_object()
-{
-}
+// #define DEBUG_ENTRY_TYPE
 
-MEDDLY::ct_object::~ct_object()
-{
-}
+// ******************************************************************
+// *                                                                *
+// *                       ct_itemtype methods                      *
+// *                                                                *
+// ******************************************************************
 
-// **********************************************************************
-// *                                                                    *
-// *                          Helper functions                          *
-// *                                                                    *
-// **********************************************************************
-
-inline unsigned bytes4typeID(MEDDLY::ct_typeID t)
-{
-    switch (t) {
-        case MEDDLY::ct_typeID::NODE    : return sizeof(MEDDLY::node_handle);
-        case MEDDLY::ct_typeID::INTEGER : return sizeof(int);
-        case MEDDLY::ct_typeID::LONG    : return sizeof(long);
-        case MEDDLY::ct_typeID::FLOAT   : return sizeof(float);
-        case MEDDLY::ct_typeID::DOUBLE  : return sizeof(double);
-        case MEDDLY::ct_typeID::GENERIC : return sizeof(MEDDLY::ct_object*);
-        default                         : return 0;
-    }
-}
-
-inline char typeID2char(MEDDLY::ct_typeID t)
-{
-    switch (t) {
-        case MEDDLY::ct_typeID::NODE    : return 'N';
-        case MEDDLY::ct_typeID::INTEGER : return 'I';
-        case MEDDLY::ct_typeID::LONG    : return 'L';
-        case MEDDLY::ct_typeID::FLOAT   : return 'F';
-        case MEDDLY::ct_typeID::DOUBLE  : return 'D';
-        case MEDDLY::ct_typeID::GENERIC : return 'G';
-        default                         : return '?';
-    }
-}
-
-inline MEDDLY::ct_typeID char2typeID(char c)
+MEDDLY::ct_itemtype::ct_itemtype(char c)
 {
     switch (c) {
-        case 'N':   return MEDDLY::ct_typeID::NODE;
-        case 'I':   return MEDDLY::ct_typeID::INTEGER;
-        case 'L':   return MEDDLY::ct_typeID::LONG;
-        case 'F':   return MEDDLY::ct_typeID::FLOAT;
-        case 'D':   return MEDDLY::ct_typeID::DOUBLE;
-        case 'G':   return MEDDLY::ct_typeID::GENERIC;
-        default :   return MEDDLY::ct_typeID::ERROR;
+        case 'N':   type = ct_typeID::NODE;         break;
+        case 'I':   type = ct_typeID::INTEGER;      break;
+        case 'L':   type = ct_typeID::LONG;         break;
+        case 'F':   type = ct_typeID::FLOAT;        break;
+        case 'D':   type = ct_typeID::DOUBLE;       break;
+        case 'G':   type = ct_typeID::GENERIC;      break;
+        default :   type = ct_typeID::ERROR;
+    }
+    typeUpdate(nullptr);
+}
+
+char MEDDLY::ct_itemtype::getTypeChar() const
+{
+    switch (type) {
+        case ct_typeID::NODE    : return 'N';
+        case ct_typeID::INTEGER : return 'I';
+        case ct_typeID::LONG    : return 'L';
+        case ct_typeID::FLOAT   : return 'F';
+        case ct_typeID::DOUBLE  : return 'D';
+        case ct_typeID::GENERIC : return 'G';
+        default                 : return '?';
+    }
+}
+
+void MEDDLY::ct_itemtype::show(output &s) const
+{
+    s.put(getTypeChar());
+    if (ct_typeID::NODE != type) return;
+    s.put("(f ");
+#ifdef USE_FID
+    s.put(nodeFID);
+#else
+    s.put(nodeF ? nodeF->FID() : 0);
+#endif
+    s.put(')');
+}
+
+void MEDDLY::ct_itemtype::typeUpdate(forest* f)
+{
+#ifdef USE_FID
+    nodeFID = f ? f->FID() : 0;
+#else
+    nodeF = f;
+#endif
+    switch (type) {
+        case ct_typeID::NODE    :
+                                    twoslots = sizeof(node_handle)>sizeof(int);
+                                    should_hash = true;
+                                    return;
+
+        case ct_typeID::INTEGER :
+                                    twoslots = false;
+                                    should_hash = true;
+                                    return;
+
+        case ct_typeID::LONG    :
+                                    twoslots = true;
+                                    should_hash = true;
+                                    return;
+
+        case ct_typeID::FLOAT   :
+                                    twoslots = sizeof(float) > sizeof(int);
+                                    should_hash = false;
+                                    return;
+
+        case ct_typeID::DOUBLE  :
+                                    twoslots = sizeof(double) > sizeof(int);
+                                    should_hash = false;
+                                    return;
+
+        case ct_typeID::GENERIC :
+                                    twoslots = true;
+                                    should_hash = false;
+                                    return;
+
+        default                 :
+                                    twoslots = false;
+                                    should_hash = false;
     }
 }
 
@@ -85,10 +123,36 @@ inline MEDDLY::ct_typeID char2typeID(char c)
 // *                                                                    *
 // **********************************************************************
 
+MEDDLY::ct_entry_type::~ct_entry_type()
+{
+    // Prevent "double deletion":
+    destroyWhenEmpty = false;
+
+    if (CT) {
+        if (CT_is_ours) {
+            MEDDLY_DCASSERT(CT->isOperationTable());
+            if (hasValidForest() || hasCTObject()) {
+                // We must carefully remove elements
+                CT->removeAll();
+            }
+            delete CT;
+        }
+        CT = nullptr;
+    }
+    unregisterEntry(this);
+}
+
+
+
+#ifdef ALLOW_DEPRECATED_0_17_6
 MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
 {
+    CT = nullptr;
+    registerEntry(this);
     name = _name;
     is_marked_for_deletion = false;
+    destroyWhenEmpty = false;
+    numEntries = 0;
 
     updatable_result = false;
 
@@ -121,148 +185,79 @@ MEDDLY::ct_entry_type::ct_entry_type(const char* _name, const char* pattern)
             continue;
         }
     }
-
-    //
-    // Determine lengths for each portion
-    //
-
     if (!saw_colon) {
         throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
     }
-
-    if (saw_dot) {
-        // "012.456:89"
-        len_ks_type = dot_slot;
-        MEDDLY_DCASSERT(colon_slot > dot_slot);
-        len_kr_type = (colon_slot - dot_slot) - 1;
-    } else {
-        // "01234:67"
-        len_ks_type = colon_slot;
-        len_kr_type = 0;
-    }
-    len_r_type = (length - colon_slot) - 1;
-
-    if (
-        (saw_dot && 0==len_kr_type)             // "foo.:bar" is bad
-        ||
-        (len_ks_type + len_kr_type == 0)        // no key?
-        ||
-        (len_r_type == 0)                       // no result?
-      )
-    {
-        throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    if (!saw_dot) {
+        dot_slot = colon_slot;
     }
 
     //
-    // Build starting portion of key
+    // Build fixed, repeating, and result arrays
     //
-    ks_bytes = 0;
-    if (len_ks_type) {
-        ks_type = new ct_typeID[len_ks_type];
-        ks_forest = new forest*[len_ks_type];
-        for (unsigned i=0; i<len_ks_type; i++) {
-            ks_type[i] = char2typeID(pattern[i]);
-            ks_bytes += bytes4typeID(ks_type[i]);
-            ks_forest[i] = 0;
-        }
-    } else {
-        // This is possible if the pattern begins with .
-        ks_type = 0;
-        ks_forest = 0;
+    for (unsigned i=0; i<dot_slot; i++) {
+        key_fixed.push_back(pattern[i]);
+    }
+
+    for (unsigned i=1+dot_slot; i<colon_slot; i++) {
+        key_repeating.push_back(pattern[i]);
+    }
+
+    for (unsigned i=1+colon_slot; i<length; i++) {
+        result.push_back(pattern[i]);
     }
 
     //
-    // Build repeating portion of key
+    // "Done" building
     //
-    kr_bytes = 0;
-    if (len_kr_type) {
-        kr_type = new ct_typeID[len_kr_type];
-        kr_forest = new forest*[len_kr_type];
-        for (unsigned i=0; i<len_kr_type; i++) {
-            kr_type[i] = char2typeID(pattern[i + dot_slot + 1]);
-            kr_bytes += bytes4typeID(kr_type[i]);
-            kr_forest[i] = 0;
-        }
-    } else {
-        kr_type = 0;
-        kr_forest = 0;
-    }
+    buildCT();
 
-    //
-    // Build result
-    //
-    MEDDLY_DCASSERT(len_r_type);
-    r_bytes = 0;
-    r_type = new ct_typeID[len_r_type];
-    r_forest = new forest*[len_r_type];
-    for (unsigned i=0; i<len_r_type; i++) {
-        r_type[i] = char2typeID(pattern[i + colon_slot + 1]);
-        r_bytes += bytes4typeID(r_type[i]);
-        r_forest[i] = 0;
-    }
 
 #ifdef DEBUG_ENTRY_TYPE
-    printf("Built entry type %s with pattern '%s'\n", name, pattern);
-    printf("Key start: \"");
-    for (unsigned i=0; i<len_ks_type; i++) {
-        fputc(typeID2char(ks_type[i]), stdout);
+    ostream_output sout(std::cout);
+    sout << "Built #" << etID << " entry type " << name << " with pattern '"
+         << pattern << "'\n";
+    sout << "        Key start: \"";
+    for (unsigned i=0; i<key_fixed.size(); i++) {
+        key_fixed[i].show(sout);
     }
-    printf("\"  (%u bytes)\n", ks_bytes);
-    printf("Key repeat: \"");
-    for (unsigned i=0; i<len_kr_type; i++) {
-        fputc(typeID2char(kr_type[i]), stdout);
+    sout << "\"  (" << fixed_intslots << " intslots)\n";
+    sout << "        Key repeat: \"";
+    for (unsigned i=0; i<key_repeating.size(); i++) {
+        key_repeating[i].show(sout);
     }
-    printf("\"  (%u bytes)\n", kr_bytes);
-    printf("Result: \"");
-    for (unsigned i=0; i<len_r_type; i++) {
-        fputc(typeID2char(r_type[i]), stdout);
+    sout << "\"  (" << repeating_intslots << " intslots)\n";
+    sout << "        Result: \"";
+    for (unsigned i=0; i<result.size(); i++) {
+        result[i].show(sout);
     }
-    printf("\"  (%u bytes)\n", r_bytes);
+    sout << "\"  (" << result_intslots << " intslots)\n";
 #endif
-}
-
-MEDDLY::ct_entry_type::~ct_entry_type()
-{
-    delete[] ks_type;
-    delete[] ks_forest;
-    delete[] kr_type;
-    delete[] kr_forest;
-    delete[] r_type;
-    delete[] r_forest;
 }
 
 void MEDDLY::ct_entry_type::setForestForSlot(unsigned i, forest* f)
 {
-    if (i<len_ks_type) {
-        if (ct_typeID::NODE != ks_type[i]) {
-            throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
-        }
-        ks_forest[i] = f;
+    if (i<key_fixed.size()) {
+        key_fixed[i].setForest(f);
         return;
     }
-    i -= len_ks_type;
+    i -= key_fixed.size();
 
-    if (len_kr_type) {
+    if (key_repeating.size()) {
         // adjust for the .
         i--;
-        if (i<len_kr_type) {
-            if (ct_typeID::NODE != kr_type[i]) {
-                throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
-            }
-            kr_forest[i] = f;
+        if (i<key_repeating.size()) {
+            key_repeating[i].setForest(f);
             return;
         }
     }
 
-    i -= len_kr_type;
+    i -= key_repeating.size();
     // adjust for :
     i--;
 
-    if (i < len_r_type) {
-        if (ct_typeID::NODE != r_type[i]) {
-            throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
-        }
-        r_forest[i] = f;
+    if (i < result.size()) {
+        result[i].setForest(f);
         return;
     }
 
@@ -270,64 +265,318 @@ void MEDDLY::ct_entry_type::setForestForSlot(unsigned i, forest* f)
     throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
 }
 
-void MEDDLY::ct_entry_type::clearForestCTBits(bool* skipF, unsigned N) const
+#endif // allow_deprecated_0_17_6
+
+MEDDLY::ct_entry_type::ct_entry_type(const char* _name)
+{
+    CT = nullptr;
+    registerEntry(this);
+    name = _name;
+    is_marked_for_deletion = false;
+    destroyWhenEmpty = false;
+    numEntries = 0;
+
+    updatable_result = false;
+
+    // fixed_bytes = 0;
+    fixed_intslots = 0;
+
+    // repeating_bytes = 0;
+    repeating_intslots = 0;
+
+    // result_bytes = 0;
+    result_intslots = 0;
+}
+
+
+bool MEDDLY::ct_entry_type::hasForest(const forest* f) const
 {
     unsigned i;
-    for (i=0; i<len_ks_type; i++) {
-        forest* f = ks_forest[i];
-        if (0==f) continue;
-        MEDDLY_DCASSERT(f->FID() < N);
-        if (skipF[ f->FID() ]) continue;
-        f->clearAllCacheBits();
-        skipF[ f->FID() ] = 1;
+    for (i=0; i<key_fixed.size(); i++) {
+        if (key_fixed[i].hasForest(f)) return true;
     }
-    for (i=0; i<len_kr_type; i++) {
-        forest* f = kr_forest[i];
-        if (0==f) continue;
-        MEDDLY_DCASSERT(f->FID() < N);
-        if (skipF[ f->FID() ]) continue;
-        f->clearAllCacheBits();
-        skipF[ f->FID() ] = 1;
+    for (i=0; i<key_repeating.size(); i++) {
+        if (key_repeating[i].hasForest(f)) return true;
     }
-    for (i=0; i<len_r_type; i++) {
-        forest* f = r_forest[i];
-        if (0==f) continue;
-        MEDDLY_DCASSERT(f->FID() < N);
+    for (i=0; i<result.size(); i++) {
+        if (result[i].hasForest(f)) return true;
+    }
+    return false;
+}
+
+
+void MEDDLY::ct_entry_type::clearForestCTBits(std::vector <bool> &skipF) const
+{
+    unsigned i;
+    for (i=0; i<key_fixed.size(); i++) {
+        forest* f = key_fixed[i].rawForest();
+        if (!f) continue;
+        MEDDLY_DCASSERT(f->FID() < skipF.size());
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
-        skipF[ f->FID() ] = 1;
+        skipF[ f->FID() ] = true;
+    }
+    for (i=0; i<key_repeating.size(); i++) {
+        forest* f = key_repeating[i].rawForest();
+        if (!f) continue;
+        MEDDLY_DCASSERT(f->FID() < skipF.size());
+        if (skipF[ f->FID() ]) continue;
+        f->clearAllCacheBits();
+        skipF[ f->FID() ] = true;
+    }
+    for (i=0; i<result.size(); i++) {
+        forest* f = result[i].rawForest();
+        if (!f) continue;
+        MEDDLY_DCASSERT(f->FID() < skipF.size());
+        if (skipF[ f->FID() ]) continue;
+        f->clearAllCacheBits();
+        skipF[ f->FID() ] = true;
     }
 }
 
-void MEDDLY::ct_entry_type::sweepForestCTBits(bool* whichF, unsigned N) const
+void MEDDLY::ct_entry_type::clearAllForestCTBits(std::vector <bool> &skipF)
+{
+    for (unsigned i=1; i<all_entries.size(); i++) {
+        if (all_entries[i]) {
+            all_entries[i]->clearForestCTBits(skipF);
+        }
+    }
+}
+
+void MEDDLY::ct_entry_type::sweepForestCTBits(std::vector <bool> &whichF) const
 {
     unsigned i;
-    for (i=0; i<len_ks_type; i++) {
-        forest* f = ks_forest[i];
-        if (0==f) continue;
-        MEDDLY_DCASSERT(f->FID() < N);
+    for (i=0; i<key_fixed.size(); i++) {
+        forest* f = key_fixed[i].rawForest();
+        if (!f) continue;
+        MEDDLY_DCASSERT(f->FID() < whichF.size());
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
             whichF[ f->FID() ] = 0;
         }
     }
-    for (i=0; i<len_kr_type; i++) {
-        forest* f = kr_forest[i];
-        if (0==f) continue;
-        MEDDLY_DCASSERT(f->FID() < N);
+    for (i=0; i<key_repeating.size(); i++) {
+        forest* f = key_repeating[i].rawForest();
+        if (!f) continue;
+        MEDDLY_DCASSERT(f->FID() < whichF.size());
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
             whichF[ f->FID() ] = 0;
         }
     }
-    for (i=0; i<len_r_type; i++) {
-        forest* f = r_forest[i];
-        if (0==f) continue;
-        MEDDLY_DCASSERT(f->FID() < N);
+    for (i=0; i<result.size(); i++) {
+        forest* f = result[i].rawForest();
+        if (!f) continue;
+        MEDDLY_DCASSERT(f->FID() < whichF.size());
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
             whichF[ f->FID() ] = 0;
         }
+    }
+}
+
+void MEDDLY::ct_entry_type::sweepAllForestCTBits(std::vector <bool> &whichF)
+{
+    for (unsigned i=1; i<all_entries.size(); i++) {
+        if (all_entries[i]) {
+            all_entries[i]->sweepForestCTBits(whichF);
+        }
+    }
+}
+
+
+void MEDDLY::ct_entry_type::show(output &s) const
+{
+    s.put(name);
+    s.put(' ');
+    s.put('[');
+    unsigned i;
+    for (i=0; i<key_fixed.size(); i++) {
+        key_fixed[i].show(s);
+    }
+    s.put('.');
+    for (i=0; i<key_repeating.size(); i++) {
+        key_repeating[i].show(s);
+    }
+    s.put(':');
+    for (i=0; i<result.size(); i++) {
+        result[i].show(s);
+    }
+    s.put(']');
+    s.put('\n');
+}
+
+void MEDDLY::ct_entry_type::invalidateForest(const forest* f)
+{
+#ifndef USE_FID
+    for (unsigned i=0; i<key_fixed.size(); i++) {
+        key_fixed[i].invalidateForest(f);
+    }
+    for (unsigned i=0; i<key_repeating.size(); i++) {
+        key_repeating[i].invalidateForest(f);
+    }
+    for (unsigned i=0; i<result.size(); i++) {
+        result[i].invalidateForest(f);
+    }
+#endif
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Entry registry static methods and members
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+std::vector <MEDDLY::ct_entry_type*> MEDDLY::ct_entry_type::all_entries;
+
+void MEDDLY::ct_entry_type::initStatics()
+{
+    all_entries.clear();
+    all_entries.push_back(nullptr);
+    // ^ reserve index 0 for 'no entry'
+}
+
+void MEDDLY::ct_entry_type::doneStatics()
+{
+    for (unsigned i=0; i<all_entries.size(); i++) {
+        if (!all_entries[i]) continue;
+        delete all_entries[i];
+        MEDDLY_DCASSERT(!all_entries[i]);
+    }
+    all_entries.clear();
+}
+
+void MEDDLY::ct_entry_type::invalidateAllWithForest(const forest* f)
+{
+#ifndef USE_FID
+    for (unsigned i=0; i<all_entries.size(); i++) {
+        if (all_entries[i]) {
+            all_entries[i]->invalidateForest(f);
+        }
+    }
+#endif
+}
+
+void MEDDLY::ct_entry_type::removeAllCTEntriesWithForest(const forest* f)
+{
+    for (unsigned i=0; i<all_entries.size(); i++) {
+        if (!all_entries[i]) continue;
+        if (!all_entries[i]->CT->isOperationTable()) continue;
+        if (!all_entries[i]->hasForest(f)) continue;
+
+        //
+        // Still here?
+        // We have an operation cache that uses forest f.
+        // Clear it.
+        all_entries[i]->CT->removeAll();
+    }
+}
+
+void MEDDLY::ct_entry_type::showAll(output &s)
+{
+    for (unsigned i=0; i<all_entries.size(); i++) {
+        if (!all_entries[i]) continue;
+        s.put("Entry type #");
+        s.put(i);
+        s.put(", has ");
+        s.put(all_entries[i]->numEntries);
+        s.put(" entries");
+        s.put(":    ");
+        all_entries[i]->show(s);
+    }
+}
+
+bool MEDDLY::ct_entry_type::mightHaveCTObjects()
+{
+    for (unsigned i=0; i<all_entries.size(); i++) {
+        if (!all_entries[i]) continue;
+        if (!all_entries[i]->numEntries) continue;
+        if (all_entries[i]->hasCTObject()) return true;
+    }
+    return false;
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Private helpers
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+bool MEDDLY::ct_entry_type::keyIsOurs(const ct_entry_key *k) const
+{
+    MEDDLY_DCASSERT(k);
+    return k->getET() == this;
+}
+
+bool MEDDLY::ct_entry_type::hasValidForest() const
+{
+    for (unsigned i=0; i<key_fixed.size(); i++) {
+        if (key_fixed[i].rawForest()) return true;
+    }
+    for (unsigned i=0; i<key_repeating.size(); i++) {
+        if (key_repeating[i].rawForest()) return true;
+    }
+    for (unsigned i=0; i<result.size(); i++) {
+        if (result[i].rawForest()) return true;
+    }
+    return false;
+}
+
+bool MEDDLY::ct_entry_type::hasCTObject() const
+{
+    for (unsigned i=0; i<key_fixed.size(); i++) {
+        if (key_fixed[i].hasType(ct_typeID::GENERIC)) return true;
+    }
+    for (unsigned i=0; i<key_repeating.size(); i++) {
+        if (key_repeating[i].hasType(ct_typeID::GENERIC)) return true;
+    }
+    for (unsigned i=0; i<result.size(); i++) {
+        if (result[i].hasType(ct_typeID::GENERIC)) return true;
+    }
+    return false;
+}
+
+void MEDDLY::ct_entry_type::buildCT()
+{
+    MEDDLY_DCASSERT(!CT);
+
+    //
+    // Preprocess fixed portion of key
+    //
+    fixed_intslots = 0;
+    fixed_entirely_hashable = true;
+    for (unsigned i=0; i<key_fixed.size(); i++) {
+        fixed_intslots += key_fixed[i].intslots();
+        if (!key_fixed[i].shouldBeHashed()) {
+            fixed_entirely_hashable = false;
+        }
+    }
+
+    //
+    // Preprocess repeating portion of key
+    //
+    repeating_intslots = 0;
+    repeating_entirely_hashable = true;
+    for (unsigned i=0; i<key_repeating.size(); i++) {
+        repeating_intslots += key_repeating[i].intslots();
+        if (!key_repeating[i].shouldBeHashed()) {
+            repeating_entirely_hashable = false;
+        }
+    }
+
+    //
+    // Preprocess result
+    //
+    result_intslots = 0;
+    for (unsigned i=0; i<result.size(); i++) {
+        result_intslots += result[i].intslots();
+    }
+
+    //
+    // Build CT or use monolithic as appropriate
+    //
+    if (compute_table::Monolithic()) {
+        CT = compute_table::Monolithic();
+        CT_is_ours = false;
+    } else {
+        CT = ct_initializer::createForOp(this);
+        CT_is_ours = true;
     }
 }
 

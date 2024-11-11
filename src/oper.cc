@@ -21,37 +21,11 @@
 #include "ct_entry_result.h"
 #include "compute_table.h"
 #include "ct_initializer.h"
-#include "operations/mpz_object.h"  // for mpz wrapper
-
-// ******************************************************************
-// *                                                                *
-// *                     gmp  wrapper functions                     *
-// *                                                                *
-// ******************************************************************
-
-#ifdef HAVE_LIBGMP
-
-MEDDLY::ct_object& MEDDLY::get_mpz_wrapper()
-{
-    static MEDDLY::mpz_object foo;
-    return foo;
-}
-
-void MEDDLY::unwrap(const ct_object &x, mpz_t &value)
-{
-    using namespace MEDDLY;
-    const mpz_object &mx = static_cast <const mpz_object &> (x);
-    mx.copyInto(value);
-}
-
-#endif
-
 
 // ******************************************************************
 // *                       operation  statics                       *
 // ******************************************************************
 
-MEDDLY::compute_table* MEDDLY::operation::Monolithic_CT;
 std::vector <MEDDLY::operation*> MEDDLY::operation::op_list;
 std::vector <unsigned> MEDDLY::operation::free_list;
 
@@ -68,9 +42,6 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     fflush(stdout);
 #endif
     name = n;
-    num_etids = et_slots;
-
-    is_marked_for_deletion = false;
 
     registerOperation(*this);
 
@@ -78,7 +49,9 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     // Delay CT initialization!
     // The derived class hasn't set up the entry types yet!
     //
+#ifdef ALLOW_DEPRECATED_0_17_6
     CT = 0;
+    num_etids = et_slots;
 
     //
     // Set up slots to save our entry_types.
@@ -100,13 +73,27 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     } else {
         CTresult = 0;
     }
+#endif
 
     //
-    // Allocate our slots
+    // Initialize list of forests
     //
-    compute_table::registerOp(this, et_slots);
+    FList.clear();
 }
 
+MEDDLY::operation::operation()
+{
+    name = nullptr;
+    registerOperation(*this);
+    FList.clear();
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+    CT = nullptr;
+    etype = nullptr;
+    CTresult = nullptr;
+    num_etids = 0;
+#endif
+}
 
 
 MEDDLY::operation::~operation()
@@ -116,19 +103,26 @@ MEDDLY::operation::~operation()
     fflush(stdout);
 #endif
 
+#ifdef ALLOW_DEPRECATED_0_17_6
     if (CT) {
-        for (unsigned i=0; i<num_etids; i++) {
-            if (CT[i] != Monolithic_CT) {
-                delete CT[i];
-            }
-        }
         delete[] CT;
         CT = nullptr;
     }
+
+    //
+    // Eventually operation destructors
+    // will destroy these
+    //
+    for (unsigned i=0; i<num_etids; i++) {
+        if (etype[i]) {
+            etype[i]->markForDestroy();
+        }
+    }
+
     // Don't delete the entries in etype, they're owned by compute_table.
     delete[] etype;
     delete[] CTresult;
-    compute_table::unregisterOp(this, num_etids);
+#endif
 
     unregisterOperation(*this);
 #ifdef DEBUG_CLEANUP
@@ -137,147 +131,26 @@ MEDDLY::operation::~operation()
 #endif
 }
 
-void MEDDLY::operation::destroy(operation* op)
+
+void MEDDLY::operation::destroyAllWithForest(const forest* f)
 {
-    if (!op) return;
-    if (!op->isMarkedForDeletion()) {
-        op->markForDeletion();
-        operation::removeStalesFromMonolithic();
-    }
-    delete op;
-}
-
-void MEDDLY::operation::removeStaleComputeTableEntries()
-{
-    bool has_monolithic = false;
-    if (CT) {
-        for (unsigned i=0; i<num_etids; i++) {
-            if (0==CT[i]) continue;
-            if (CT[i]->isOperationTable()) {
-                CT[i]->removeStales();
-            } else {
-                has_monolithic = true;
-            }
-        }
-    }
-    if (has_monolithic) {
-        Monolithic_CT->removeStales();
-    }
-}
-
-void MEDDLY::operation::removeAllComputeTableEntries()
-{
-#ifdef DEBUG_CLEANUP
-    fprintf(stdout, "Removing entries for operation %p %s\n", this, getName());
-    fflush(stdout);
-#endif
-    if (is_marked_for_deletion) return;
-    is_marked_for_deletion = true;
-    for (unsigned i=0; i<num_etids; i++) {
-        etype[i]->markForDeletion();
-    }
-    removeStaleComputeTableEntries();
-    for (unsigned i=0; i<num_etids; i++) {
-        etype[i]->unmarkForDeletion();
-    }
-    is_marked_for_deletion = false;
-#ifdef DEBUG_CLEANUP
-    fprintf(stdout, "Removed entries for operation %p %s\n", this, getName());
-    fflush(stdout);
-#endif
-}
-
-void MEDDLY::operation::removeStalesFromMonolithic()
-{
-    // DON'T make this inlined;
-    // we don't want it in the header file because
-    // it requires compute_table.h
-    if (Monolithic_CT) Monolithic_CT->removeStales();
-}
-
-void MEDDLY::operation::removeAllFromMonolithic()
-{
-    // DON'T make this inlined;
-    // we don't want it in the header file because
-    // it requires compute_table.h
-    if (Monolithic_CT) Monolithic_CT->removeAll();
-}
-
-void MEDDLY::operation::countAllNodeEntries(const forest* f, size_t* counts)
-{
-    if (Monolithic_CT) {
-        Monolithic_CT->countNodeEntries(f, counts);
-    }
-    for (unsigned i=0; i<op_list.size(); i++) {
-        if (op_list[i]) {
-            op_list[i]->countCTEntries(f, counts);
-        }
-    }
-}
-
-void MEDDLY::operation::countCTEntries(const forest* f, size_t* counts)
-    const
-{
-    if (CT) {
-        for (unsigned i=0; i<num_etids; i++) {
-            if (0==CT[i]) continue;
-            if (CT[i]->isOperationTable()) {
-                CT[i]->countNodeEntries(f, counts);
-            }
-        }
-    }
-}
-
-
-void MEDDLY::operation::showMonolithicComputeTable(output &s, int verbLevel)
-{
-    // DON'T make this inlined;
-    // we don't want it in the header file because
-    // it requires compute_table.h
-    if (Monolithic_CT) Monolithic_CT->show(s, verbLevel);
-}
-
-
-void MEDDLY::operation::showAllComputeTables(output &s, int verbLevel)
-{
-    if (Monolithic_CT) {
-        Monolithic_CT->show(s, verbLevel);
-        return;
-    }
-    for (unsigned i=0; i<op_list.size(); i++) {
-        if (op_list[i]) {
-            op_list[i]->showComputeTable(s, verbLevel);
-        }
-    }
-}
-
-void MEDDLY::operation::purgeAllMarked()
-{
-    removeStalesFromMonolithic();
+    if (!f) return;
     for (unsigned i=0; i<op_list.size(); i++) {
         if (!op_list[i]) continue;
-        if (op_list[i]->isMarkedForDeletion()) {
-            destroy(op_list[i]);
-            op_list[i] = nullptr;
+        operation* op = op_list[i];
+        //
+        // Check if this operation uses f
+        //
+        bool uses_f = false;
+        for (unsigned j=0; j<op->FList.size(); j++) {
+            if (f->FID() != op->FList[j]) continue;
+            uses_f = true;
+            break;
         }
-    }
-}
+        if (!uses_f) continue;
 
-void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const
-{
-    bool has_monolithic = false;
-    if (CT) {
-        for (unsigned i=0; i<num_etids; i++) {
-            if (0==CT[i]) continue;
-            if (CT[i]->isOperationTable()) {
-                CT[i]->show(s, verbLevel);
-            } else {
-                has_monolithic = true;
-            }
-        }
-    }
-    if (has_monolithic) {
-        Monolithic_CT->show(s, verbLevel);
+        delete op;
+        MEDDLY_DCASSERT(nullptr == op_list[i]);
     }
 }
 
@@ -286,58 +159,59 @@ void MEDDLY::operation::showComputeTable(output &s, int verbLevel) const
 // Protected
 //
 
-void MEDDLY::operation::markForDeletion()
-{
-#ifdef DEBUG_CLEANUP
-    fprintf(stdout, "Marking operation %p %s for deletion\n", this, getName());
-    fflush(stdout);
-#endif
-    if (is_marked_for_deletion) return;
-    is_marked_for_deletion = true;
-    for (unsigned i=0; i<num_etids; i++) {
-        etype[i]->markForDeletion();
-    }
-    if (CT) {
-        for (unsigned i=0; i<num_etids; i++) {
-            if (CT[i] && CT[i]->isOperationTable()) CT[i]->removeStales();
-        }
-    }
-}
-
 void MEDDLY::operation::registerInForest(MEDDLY::forest* f)
 {
+    if (!f) return;
+#ifdef FOREST_OPN_REGISTRY
     if (f) f->registerOperation(this);
+#endif
+    //
+    // See if FList already contains this FID
+    //
+    for (unsigned i=0; i<FList.size(); i++) {
+        if (f->FID() == FList[i]) return;
+    }
+
+    //
+    // Nope, add it
+    //
+    FList.push_back(f->FID());
 }
 
 void MEDDLY::operation::unregisterInForest(MEDDLY::forest* f)
 {
+#ifdef FOREST_OPN_REGISTRY
     if (f) f->unregisterOperation(this);
+#endif
+    //
+    // It is safe to NOT update FList
+    //
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_6
 void MEDDLY::operation::registerEntryType(unsigned slot, ct_entry_type* et)
 {
     MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, slot, num_etids);
     MEDDLY_DCASSERT(etype);
     MEDDLY_DCASSERT(0==etype[slot]);
     etype[slot] = et;
-    compute_table::registerEntryType(first_etid + slot, et);
 }
 
 void MEDDLY::operation::buildCTs()
 {
     if (0==num_etids) return;
 
+    //
+    // TBD: for now; eventually remove!
     CT = new compute_table* [num_etids];
 
-    if (Monolithic_CT) {
-        for (unsigned i=0; i<num_etids; i++) {
-            CT[i] = Monolithic_CT;
-        }
-    } else {
-        for (unsigned i=0; i<num_etids; i++) {
-            CT[i] = ct_initializer::createForOp(this, i);
-        }
+    for (unsigned i=0; i<num_etids; i++) {
+        CT[i] = etype[i]->getCT();
     }
+    //
+    // Most operations use only one slot
+    //
+    CT0 = CT[0];
 
     //
     // Initialize CTresults
@@ -345,12 +219,8 @@ void MEDDLY::operation::buildCTs()
     for (unsigned i=0; i<num_etids; i++) {
         CTresult[i].initialize(etype[i]);
     }
-
-    //
-    // Most operations use only one slot
-    //
-    CT0 = CT[0];
 }
+#endif
 
 
 //
@@ -365,11 +235,6 @@ void MEDDLY::operation::initializeStatics()
     op_list.clear();
     op_list.push_back(nullptr);
     free_list.clear();
-
-    //
-    // Monolithic compute table
-    //
-    Monolithic_CT = nullptr;
 }
 
 void MEDDLY::operation::destroyAllOps()

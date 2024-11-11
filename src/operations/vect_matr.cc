@@ -71,7 +71,7 @@ class MEDDLY::base_evplus_mt : public numerical_operation {
 
 MEDDLY::base_evplus_mt::base_evplus_mt(const char* name,
   const dd_edge &x_ind, const dd_edge& A, const dd_edge &y_ind)
- : numerical_operation(name, 0)
+ : numerical_operation(name)
 {
     fx = x_ind.getForest();
     fA = A.getForest();
@@ -482,169 +482,12 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
 }
 
 
-// ******************************************************************
-// *                                                                *
-// *                        VM_opname  class                        *
-// *                                                                *
-// ******************************************************************
-
-/*
-class MEDDLY::VM_opname : public numerical_opname {
-  public:
-    VM_opname();
-    virtual numerical_operation* buildOperation(arguments* a);
-};
-
-MEDDLY::VM_opname::VM_opname() : numerical_opname("VectMatrMult")
-{
-}
-
-MEDDLY::specialized_operation*
-MEDDLY::VM_opname::buildOperation(arguments* a)
-{
-  numerical_args* na = dynamic_cast<numerical_args*>(a);
-  if (0==na) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
-
-  const forest* fx = na->x_ind.getForest();
-  const forest* fA = na->A.getForest();
-  const forest* fy = na->y_ind.getForest();
-
-  // everyone must use the same domain
-  if (      (fx->getDomain() != fy->getDomain())
-        ||  (fx->getDomain() != fA->getDomain())  )
-  {
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-  }
-
-  // Check edge types
-  if (
-           (fy->getRangeType() != range_type::INTEGER)
-        || (fy->isForRelations())
-        || (fx->getRangeType() != range_type::INTEGER)
-        || (fx->isForRelations())
-        || (fA->getRangeType() != range_type::REAL)
-        || (!fA->isForRelations())
-      )
-  {
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-  }
-
-  // A can't be fully reduced.
-  if (fA->isFullyReduced()) {
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-  }
-
-  // For now, fy and fx must be Indexed sets or EVPLUS forests.
-  if ( !isEvPlusStyle(fy) || !isEvPlusStyle(fx) ) {
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-  }
-
-  switch (fA->getEdgeLabeling()) {
-    case edge_labeling::MULTI_TERMINAL:
-      return new VM_evplus_mt(this, na->x_ind, na->A, na->y_ind);
-
-    case edge_labeling::EVTIMES:
-      throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-
-    default:
-      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-  };
-
-  if (na->autoDestroy()) delete na;
-}
-*/
-
-// ******************************************************************
-// *                                                                *
-// *                        MV_opname  class                        *
-// *                                                                *
-// ******************************************************************
-
-/*
-class MEDDLY::MV_opname : public numerical_opname {
-  public:
-    MV_opname();
-    virtual specialized_operation* buildOperation(arguments* a);
-};
-
-MEDDLY::MV_opname::MV_opname() : numerical_opname("MatrVectMult")
-{
-}
-
-MEDDLY::specialized_operation*
-MEDDLY::MV_opname::buildOperation(arguments* a)
-{
-  numerical_args* na = dynamic_cast<numerical_args*>(a);
-  if (0==na) throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
-
-  const forest* fx = na->x_ind.getForest();
-  const forest* fA = na->A.getForest();
-  const forest* fy = na->y_ind.getForest();
-
-
-    // everyone must use the same domain
-  if (      (fx->getDomain() != fy->getDomain())
-        ||  (fx->getDomain() != fA->getDomain())  )
-  {
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-  }
-
-  // Check edge types
-  if (
-           (fy->getRangeType() != range_type::INTEGER)
-        || (fy->isForRelations())
-        || (fx->getRangeType() != range_type::INTEGER)
-        || (fx->isForRelations())
-        || (fA->getRangeType() != range_type::REAL)
-        || (!fA->isForRelations())
-      )
-  {
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-  }
-
-  // A can't be fully reduced.
-  if (fA->isFullyReduced()) {
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-  }
-
-  // For now, fy and fx must be Indexed sets or EVPLUS forests.
-  if ( !isEvPlusStyle(fy) || !isEvPlusStyle(fx) ) {
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-  }
-
-  switch (fA->getEdgeLabeling()) {
-    case edge_labeling::MULTI_TERMINAL:
-      return new MV_evplus_mt(this, na->x_ind, na->A, na->y_ind);
-
-    case edge_labeling::EVTIMES:
-      throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-
-    default:
-      throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-  };
-
-  if (na->autoDestroy()) delete na;
-}
-*/
 
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
-
-/*
-MEDDLY::numerical_opname* MEDDLY::initExplVectorMatrixMult()
-{
-  return new VM_opname;
-}
-
-MEDDLY::numerical_opname* MEDDLY::initMatrixExplVectorMult()
-{
-  return new MV_opname;
-}
-
-*/
 
 MEDDLY::numerical_operation* MEDDLY::EXPLVECT_MATR_MULT(const dd_edge &xind,
         const dd_edge &A, const dd_edge &yind)

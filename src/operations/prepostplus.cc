@@ -66,7 +66,7 @@ MEDDLY::ct_entry_key* MEDDLY::prepostplus_evplus::findResult(long aev, node_hand
 {
   ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
   MEDDLY_DCASSERT(CTsrch);
-  MEDDLY_DCASSERT(!can_commute);
+  MEDDLY_DCASSERT(!canCommute());
   CTsrch->writeL(0);
   CTsrch->writeN(a);
   CTsrch->writeL(0);
@@ -196,11 +196,11 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
     unpacked_node::Recycle(D);
 
     // Reduce
-    long dev = Inf<long>();
-    node_handle d = 0;
-    resF->createReducedNode(int(i), nb2, dev, d);
+    edge_value dev;
+    node_handle d;
+    resF->createReducedNode(nb2, dev, d, int(i));
 
-    nb->setFull(i, edge_value(dev), d);
+    nb->setFull(i, dev, d);
     // nb->d_ref(i) = d;
     // nb->setEdge(i, dev);
   }
@@ -210,9 +210,9 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
   unpacked_node::Recycle(A);
 
   // Reduce
-  node_handle cl;
-  resF->createReducedNode(-1, nb, cev, cl);
-  c = cl;
+  edge_value ev;
+  resF->createReducedNode( nb, ev, c);
+  cev = ev.getLong();
 
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);
@@ -306,11 +306,11 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
     unpacked_node::Recycle(D);
 
     // Reduce
-    long dev = Inf<long>();
-    node_handle d = 0;
-    resF->createReducedNode(int(i), nb2, dev, d);
+    edge_value dev;
+    node_handle d;
+    resF->createReducedNode(nb2, dev, d, int(i));
 
-    nb->setFull(i, edge_value(dev), d);
+    nb->setFull(i, dev, d);
     // nb->d_ref(i) = d;
     // nb->setEdge(i, dev);
   }
@@ -320,9 +320,9 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
   unpacked_node::Recycle(A);
 
   // Reduce
-  node_handle cl;
-  resF->createReducedNode(-1, nb, cev, cl);
-  c = cl;
+  edge_value ev;
+  resF->createReducedNode(nb, ev, c);
+  cev = ev.getLong();
 
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);

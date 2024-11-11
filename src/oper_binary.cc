@@ -20,14 +20,38 @@
 #include "error.h"
 #include "forest.h"
 
+#define DEBUG_THROWS
+
 // ******************************************************************
 // *                    binary_operation methods                    *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_6
+
 MEDDLY::binary_operation::binary_operation(binary_list& owner,
     unsigned et_slots, forest* arg1, forest* arg2,
-    forest* res) : operation(owner.getName(), et_slots), parent(owner)
+    forest* res) : operation(owner.getName(), et_slots)
 {
+    parent = &owner;
+
+    arg1F = arg1;
+    arg2F = arg2;
+    resF = res;
+
+    registerInForest(arg1F);
+    registerInForest(arg2F);
+    registerInForest(resF);
+    can_commute = false;
+    new_style = false;
+}
+
+#endif
+
+MEDDLY::binary_operation::binary_operation(forest* arg1, forest* arg2,
+        forest* res): operation()
+{
+    parent = nullptr;
+
     arg1F = arg1;
     arg2F = arg2;
     resF = res;
@@ -36,8 +60,12 @@ MEDDLY::binary_operation::binary_operation(binary_list& owner,
     registerInForest(arg2F);
     registerInForest(resF);
 
+#ifdef ALLOW_DEPRECATED_0_17_6
     can_commute = false;
+    new_style = true;
+#endif
 }
+
 
 MEDDLY::binary_operation::~binary_operation()
 {
@@ -45,34 +73,85 @@ MEDDLY::binary_operation::~binary_operation()
     unregisterInForest(arg2F);
     unregisterInForest(resF);
 
-    parent.remove(this);
+    if (parent) parent->remove(this);
 }
+
 
 void MEDDLY::binary_operation::compute(const dd_edge &ar1,
-    const dd_edge &ar2, dd_edge &res)
+        const dd_edge &ar2, dd_edge &res)
 {
     if (!checkForestCompatibility()) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     }
-    computeDDEdge(ar1, ar2, res, true);
+#ifdef ALLOW_DEPRECATED_0_17_6
+    if (new_style) {
+        node_handle resp;
+        compute(resF->getMaxLevelIndex(), ~0,
+                ar1.getEdgeValue(), ar1.getNode(),
+                ar2.getEdgeValue(), ar2.getNode(),
+                res.setEdgeValue(), resp);
+        res.set(resp);
+    } else {
+        computeDDEdge(ar1, ar2, res, true);
+   }
+#else
+    node_handle resp;
+    compute(resF->getMaxLevelIndex(), ~0,
+            ar1.getEdgeValue(), ar1.getNode(),
+            ar2.getEdgeValue(), ar2.getNode(),
+            res.setEdgeValue(), resp);
+    res.set(resp);
+#endif
 }
+
+#ifdef ALLOW_DEPRECATED_0_17_6
 
 void MEDDLY::binary_operation::computeTemp(const dd_edge &ar1,
-    const dd_edge &ar2, dd_edge &res)
+        const dd_edge &ar2, dd_edge &res)
 {
     if (!checkForestCompatibility()) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     }
-    computeDDEdge(ar1, ar2, res, false);
+    if (new_style) {
+        node_handle resp;
+        // THIS vvvvv is an ugly hack
+        int toplevel = arg1F->isForRelations()
+            ?  MXD_levels::topUnprimed(ar1.getLevel(), ar2.getLevel())
+            :  MDD_levels::topLevel(ar1.getLevel(), ar2.getLevel());
+        compute(toplevel, ~0,
+                ar1.getEdgeValue(), ar1.getNode(),
+                ar2.getEdgeValue(), ar2.getNode(),
+                res.setEdgeValue(), resp);
+        res.set(resp);
+    } else {
+        computeDDEdge(ar1, ar2, res, false);
+    }
 }
 
-bool MEDDLY::binary_operation::checkForestCompatibility() const
+
+void MEDDLY::binary_operation::computeDDEdge(const dd_edge &ar1,
+        const dd_edge &ar2, dd_edge &res, bool userFlag)
 {
-    auto o1 = arg1F->variableOrder();
-    auto o2 = arg2F->variableOrder();
-    auto o3 = resF->variableOrder();
-    return o1->is_compatible_with(*o2) && o1->is_compatible_with(*o3);
+#ifdef DEBUG_THROWS
+    std::cerr << "default computeDDEdge for binary operation " << getName() << "\n";
+    MEDDLY_DCASSERT(false);
+#endif
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
+
+void MEDDLY::binary_operation::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap,
+        const edge_value &bv, node_handle bp,
+        edge_value &cv, node_handle &cp)
+{
+#ifdef DEBUG_THROWS
+    std::cerr << "default compute for binary operation " << getName() << "\n";
+    MEDDLY_DCASSERT(false);
+#endif
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+#endif
 
 // ******************************************************************
 // *                      binary_list  methods                      *

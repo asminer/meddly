@@ -45,31 +45,6 @@ MEDDLY::mt_forest::mt_forest(domain *d, bool rel,
     setVoidEdges();
 }
 
-bool MEDDLY::mt_forest::isRedundant(const unpacked_node &nb) const
-{
-  if (isQuasiReduced()) return false;
-  if (nb.getLevel() < 0 && isIdentityReduced()) return false;
-  if (nb.isExtensible()) {
-    if (nb.getSize() == 1 && nb.ext_i() == 0) return true;
-    return false;
-  } else {
-    if (nb.getSize() < getLevelSize(nb.getLevel())) return false;
-    const node_handle common = nb.down(0);
-    for (unsigned i=1; i<nb.getSize(); i++)
-      if (nb.down(i) != common) return false;
-    return true;
-  }
-}
-
-bool MEDDLY::mt_forest::isIdentityEdge(const unpacked_node &nb, int i) const
-{
-  if (nb.getLevel() > 0) return false;
-  if (!isIdentityReduced()) return false;
-  if (i<0) return false;
-  return nb.down(i) != 0;
-}
-
-
 MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
 {
   int dk = getNodeLevel(d);
@@ -86,7 +61,15 @@ MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
       // make identity reductions below as necessary
 
       node_handle sd;
-      int si = isTerminalNode(d) ? -1 : getSingletonIndex(d, sd);
+      unsigned indx;
+      int si;
+      if (isSingletonNode(d, indx, sd)) {
+        si = int(indx);
+      } else {
+        si = -1;
+        sd = 0;
+      }
+
       int sz = getLevelSize(up);
       MEDDLY_DCASSERT(si < sz);
       const bool add_edge = (si+1 == sz && isExtensibleLevel(up));
@@ -95,27 +78,33 @@ MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
       for (int i=0; i<sz; i++) {
         nb->setFull(i, linkNode( (i==si) ? sd : d ));
       }
+#ifdef ALLOW_EXTENSIBLE
       if (isExtensibleLevel(up)) {
         nb->markAsExtensible();
         if (add_edge) {
             nb->setFull(sz, linkNode(d));
         }
       }
+#endif
     } else {
       //
       // don't worry about identity reductions
 
+#ifdef ALLOW_EXTENSIBLE
       if (isExtensibleLevel(up)) {
         nb = unpacked_node::newFull(this, up, 1);
         nb->setFull(0, linkNode(d));
         nb->markAsExtensible();
       } else {
+#endif
         int sz = getLevelSize(up);
         nb = unpacked_node::newFull(this, up, sz);
         for (int i=0; i<sz; i++) {
           nb->setFull(i, linkNode(d));
         }
+#ifdef ALLOW_EXTENSIBLE
       }
+#endif
     }
 
     unlinkNode(d);
@@ -133,7 +122,7 @@ void MEDDLY::mt_forest::initStatics()
 
 void MEDDLY::mt_forest::enlargeStatics(int n)
 {
-  MEDDLY_DCASSERT(n>0);
+  MEDDLY_DCASSERT(n>=0);
   if (n>order_size) {
     order = (int*) realloc(order, n*sizeof(int));
     //terminals = (node_handle*) realloc(terminals, n*sizeof(node_handle));
@@ -181,6 +170,5 @@ void MEDDLY::mt_forest::mt_iterator::getValue(float &termVal) const
   MEDDLY_DCASSERT(index);
   terminal t(terminal_type::REAL, index[0]);
   termVal = t.getReal();
-  // termVal = float_Tencoder::handle2value(index[0]);
 }
 

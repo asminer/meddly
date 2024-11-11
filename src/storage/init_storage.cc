@@ -20,41 +20,40 @@
 #include "init_storage.h"
 
 #include "simple.h"
-#include "pattern.h"
-#include "best.h"
+// #include "pattern.h"
+// #include "best.h"
 
 
 namespace MEDDLY {
-  const node_storage_style* SIMPLE_STORAGE = 0;
-  const node_storage_style* PATTERN_STORAGE = 0;
-  const node_storage_style* BEST_STORAGE = 0;
-
+    const node_storage_style* SIMPLE_STORAGE = 0;
+    // const node_storage_style* PATTERN_STORAGE = 0;
+    // const node_storage_style* BEST_STORAGE = 0;
 };
 
 MEDDLY::storage_initializer::storage_initializer(initializer_list *p)
 : initializer_list(p)
 {
-  simple = 0;
-  pattern = 0;
-  best = 0;
+    simple = nullptr;
+    // pattern = nullptr;
+    // best = nullptr;
 }
 
 void MEDDLY::storage_initializer::setup()
 {
-  SIMPLE_STORAGE = (simple = new simple_separated_style("SIMPLE_STORAGE"));
-  PATTERN_STORAGE = (pattern = new pattern_storage_style("PATTERN_STORAGE"));
-  BEST_STORAGE = (best = new best_storage_style("BEST_STORAGE"));
+    SIMPLE_STORAGE = (simple = new simple_separated_style("SIMPLE_STORAGE"));
+    // PATTERN_STORAGE = (pattern = new pattern_storage_style("PATTERN_STORAGE"));
+    // BEST_STORAGE = (best = new best_storage_style("BEST_STORAGE"));
 }
 
 void MEDDLY::storage_initializer::cleanup()
 {
-  delete simple;
-  SIMPLE_STORAGE = (simple = 0);
+    delete simple;
+    SIMPLE_STORAGE = (simple = nullptr);
 
-  delete pattern;
-  PATTERN_STORAGE = (pattern = 0);
+    // delete pattern;
+    // PATTERN_STORAGE = (pattern = nullptr);
 
-  delete best;
-  BEST_STORAGE = (best = 0);
+    // delete best;
+    // BEST_STORAGE = (best = nullptr);
 }
 

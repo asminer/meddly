@@ -18,12 +18,12 @@
 
 
 #include "defines.h"
+#include "error.h"
 
 #include "ct_initializer.h"
 #include "compute_table.h"
-
-// #define DEBUG_ENTRY_TYPE
-// #define DEBUG_ENTRY_REGISTRY
+#include "ct_entry_type.h"
+#include "ct_entry_key.h"
 
 // **********************************************************************
 // *                                                                    *
@@ -31,8 +31,9 @@
 // *                                                                    *
 // **********************************************************************
 
-MEDDLY::compute_table_style::compute_table_style()
+MEDDLY::compute_table_style::compute_table_style(bool um)
 {
+    uses_mono = um;
 }
 
 MEDDLY::compute_table_style::~compute_table_style()
@@ -48,10 +49,22 @@ MEDDLY::compute_table_style::create(const ct_settings &s) const
 
 MEDDLY::compute_table*
 MEDDLY::compute_table_style::create(const ct_settings &s,
-      operation* op, unsigned slot) const
+      unsigned etid) const
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
+
+// **********************************************************************
+// *                                                                    *
+// *                       compute_table  statics                       *
+// *                                                                    *
+// **********************************************************************
+
+MEDDLY::compute_table* MEDDLY::compute_table::Monolithic_CT;
+MEDDLY::ct_entry_key* MEDDLY::compute_table::free_keys;
+
+MEDDLY::compute_table* MEDDLY::compute_table::front;
+MEDDLY::compute_table* MEDDLY::compute_table::back;
 
 // **********************************************************************
 // *                                                                    *
@@ -59,14 +72,8 @@ MEDDLY::compute_table_style::create(const ct_settings &s,
 // *                                                                    *
 // **********************************************************************
 
-
-MEDDLY::ct_entry_type** MEDDLY::compute_table::entryInfo;
-unsigned MEDDLY::compute_table::entryInfoAlloc;
-unsigned MEDDLY::compute_table::entryInfoSize;
-MEDDLY::ct_entry_key* MEDDLY::compute_table::free_keys;
-
-MEDDLY::compute_table::compute_table(const ct_settings &s,
-  operation* op, unsigned slot)
+MEDDLY::compute_table::compute_table(const ct_settings &s, unsigned etid)
+    : global_etid(etid)
 {
     maxSize = s.maxSize;
     if (0==maxSize) {
@@ -99,163 +106,161 @@ MEDDLY::compute_table::compute_table(const ct_settings &s,
     perf.resizeScans = 0;
 
     //
-    // Global operation vs monolithic
+    // Add to list of CTs
     //
-    if (op) {
-        global_et = getEntryType(op, slot);
-        MEDDLY_DCASSERT(global_et);
+    next = nullptr;
+    if (back) {
+        back->next = this;
+        prev = back;
     } else {
-        global_et = 0;
+        front = this;
+        prev = nullptr;
     }
+    back = this;
+
+#ifdef DEBUG_CLEANUP
+    if (isOperationTable()) {
+        std::cout << "new compute table " << this << ", for etid " << global_etid << "\n";
+    } else {
+        std::cout << "new compute table " << this << ", monolithic\n";
+    }
+#endif
 }
 
 MEDDLY::compute_table::~compute_table()
 {
+    //
+    // Remove from list of CTs
+    //
+    if (next) {
+        next->prev = prev;
+    } else {
+        MEDDLY_DCASSERT(back == this);
+        back = prev;
+    }
+    if (prev) {
+        prev->next = next;
+    } else {
+        MEDDLY_DCASSERT(front == this);
+        front = next;
+    }
+
+#ifdef DEBUG_CLEANUP
+    if (isOperationTable()) {
+        std::cout << "done compute table " << this << ", for etid " << global_etid << "\n";
+    } else {
+        std::cout << "done compute table " << this << ", monolithic\n";
+    }
+#endif
 }
 
-void MEDDLY::compute_table::initialize()
+#ifdef ALLOW_DEPRECATED_0_17_6
+MEDDLY::ct_entry_key*
+MEDDLY::compute_table::useEntryKey(const ct_entry_type* et, unsigned repeats)
 {
-    free_keys = 0;
-    //
-    // Initialize entryInfo list
-    //
-    entryInfo = 0;
-    entryInfoAlloc = 0;
-    entryInfoSize = 0;
-    // zero that array?
+            if (!et) return nullptr;
+            MEDDLY_DCASSERT( (0==repeats) || et->isRepeating() );
+
+            ct_entry_key* k;
+            if (free_keys) {
+                k = free_keys;
+                free_keys = free_keys->next;
+            } else {
+                k = new ct_entry_key();
+            }
+            k->setup(et, repeats);
+            return k;
 }
 
-void MEDDLY::compute_table::destroy()
+void MEDDLY::compute_table::recycle(ct_entry_key* k)
 {
+            if (k) {
+                k->next = free_keys;
+                free_keys = k;
+            }
+}
+#endif
+
+void MEDDLY::compute_table::clearForestCTBits(std::vector <bool> &skipF) const
+{
+    if (global_etid) {
+        const ct_entry_type* et = ct_entry_type::getEntryType(global_etid);
+        if (et) et->clearForestCTBits(skipF);
+    } else {
+        ct_entry_type::clearAllForestCTBits(skipF);
+    }
+}
+
+void MEDDLY::compute_table::sweepForestCTBits(std::vector <bool> &whichF) const
+{
+    if (global_etid) {
+        const ct_entry_type* et = ct_entry_type::getEntryType(global_etid);
+        if (et) et->sweepForestCTBits(whichF);
+    } else {
+        ct_entry_type::sweepAllForestCTBits(whichF);
+    }
+}
+
+void MEDDLY::compute_table::updateEntry(ct_entry_key*, const ct_entry_result &)
+{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+
+void MEDDLY::compute_table::countAllNodeEntries(const forest* f,
+                std::vector <unsigned long> &counts)
+{
+    for (compute_table* ct = front; ct; ct=ct->next) {
+        ct->countNodeEntries(f, counts);
+    }
+}
+
+void MEDDLY::compute_table::showAll(output &s, int verbLevel)
+{
+    for (compute_table* ct = front; ct; ct=ct->next) {
+        ct->show(s, verbLevel);
+    }
+}
+
+void MEDDLY::compute_table::initStatics(const compute_table_style* ct_factory,
+        const ct_settings &the_settings)
+{
+#ifdef ALLOW_DEPRECATED_0_17_6
+    free_keys = nullptr;
+#endif
+
+    front = nullptr;
+    back = nullptr;
+    Monolithic_CT = nullptr;
+
+    if (ct_factory && ct_factory->usesMonolithic()) {
+        Monolithic_CT = ct_factory->create(the_settings);
+#ifdef DEBUG_CLEANUP
+        std::cout << "Created monolithic CT " << Monolithic_CT << "\n";
+#endif
+    }
+}
+
+void MEDDLY::compute_table::doneStatics()
+{
+#ifdef ALLOW_DEPRECATED_0_17_6
     while (free_keys) {
         ct_entry_key* n = free_keys->next;
         delete free_keys;
         free_keys = n;
     }
-    // delete the items?  TBD
-    delete[] entryInfo;
-}
-
-void MEDDLY::compute_table::clearForestCTBits(bool* skipF, unsigned N) const
-{
-    if (global_et) {
-        // Operation cache
-        global_et->clearForestCTBits(skipF, N);
-        return;
-    }
-    //
-    // Monolithic cache.
-    //
-    for (unsigned i=0; i<entryInfoSize; i++) {
-        if (entryInfo[i]) {
-            entryInfo[i]->clearForestCTBits(skipF, N);
-        }
-    }
-}
-
-void MEDDLY::compute_table::sweepForestCTBits(bool* whichF, unsigned N) const
-{
-    if (global_et) {
-        // Operation cache
-        global_et->sweepForestCTBits(whichF, N);
-        return;
-    }
-    //
-    // Monolithic cache.
-    //
-    for (unsigned i=0; i<entryInfoSize; i++) {
-        if (entryInfo[i]) {
-            entryInfo[i]->sweepForestCTBits(whichF, N);
-        }
-    }
-}
-
-void MEDDLY::compute_table::registerOp(operation* op, unsigned num_ids)
-{
-    if (0==op) return;
-    if (0==num_ids) return;
-
-#ifdef DEBUG_ENTRY_REGISTRY
-    printf("Requesting %u entry slots for operation %s\n",
-        num_ids, op->getName());
 #endif
 
-    if (1==num_ids) {
-        //
-        // Most common case, and easiest to find a hole.
-        //
-        for (unsigned i=0; i<entryInfoSize; i++) {
-            if (0==entryInfo[i]) {
-                op->setFirstETid(i);
-                return;
-            }
-        } // for i
-    } // if 1==num_ids
-
-    //
-    // No holes, or we want more than one slot so we didn't bother
-    // looking for holes.  Grab slots off the end
-    //
-    op->setFirstETid(entryInfoSize);
-    entryInfoSize += num_ids;
-
-    if (entryInfoSize > entryInfoAlloc) {
-        //
-        // Need to enlarge
-        //
-        ct_entry_type** net = new ct_entry_type* [entryInfoAlloc+256];
-        unsigned i;
-        for (i=0; i<entryInfoAlloc; i++) {
-            net[i] = entryInfo[i];
-        }
-        entryInfoAlloc += 256;
-        for (; i<entryInfoAlloc; i++) {
-            net[i] = 0;
-        }
-        delete[] entryInfo;
-        entryInfo = net;
-    }
-}
-
-void MEDDLY::compute_table::registerEntryType(unsigned etid, ct_entry_type* et)
-{
-    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, etid, entryInfoSize);
-    MEDDLY_DCASSERT(0==entryInfo[etid]);
-    entryInfo[etid] = et;
-    et->etID = etid;
-#ifdef DEBUG_ENTRY_REGISTRY
-    printf("Registering entry %s in slot %u\n", et->getName(), etid);
-    printf("Updated Table:\n");
-    for (unsigned i=0; i<entryInfoSize; i++) {
-        printf("    %2u: %s\n", i,
-                entryInfo[i] ? entryInfo[i]->getName() : " ");
-    }
+    if (Monolithic_CT) {
+#ifdef DEBUG_CLEANUP
+        std::cout << "Destroying monolithic CT " << Monolithic_CT << "\n";
 #endif
-}
+        if (ct_entry_type::mightHaveCTObjects()) {
+            Monolithic_CT->removeAll();
+        }
 
-void MEDDLY::compute_table::unregisterOp(operation* op, unsigned num_ids)
-{
-    if (0==op) return;
-    if (0==num_ids) return;
-    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, op->getFirstETid(),
-        entryInfoSize);
-    unsigned stopID = op->getFirstETid()+num_ids;
-    for (unsigned i=op->getFirstETid(); i<stopID; i++) {
-        delete entryInfo[i];
-        entryInfo[i] = nullptr;
+        delete Monolithic_CT;
+        Monolithic_CT = nullptr;
     }
-    //
-    // decrement entryInfoSize if array ends in zeroes
-    //
-    while (entryInfoSize && (0==entryInfo[entryInfoSize-1])) entryInfoSize--;
-#ifdef DEBUG_ENTRY_REGISTRY
-    printf("Unregistering %u slots for operation %s\n", num_ids, op->getName());
-    printf("Updated Table:\n");
-    for (unsigned i=0; i<entryInfoSize; i++) {
-        printf("    %2u: %s\n", i,
-                entryInfo[i] ? entryInfo[i]->getName() : " ");
-    }
-#endif
 }
-
 

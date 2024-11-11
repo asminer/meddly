@@ -19,22 +19,20 @@
 #include "../initializer.h"
 
 namespace MEDDLY {
-  class storage_initializer;
-  class node_storage_style;
+    class storage_initializer;
+    class node_storage_style;
 };
 
 class MEDDLY::storage_initializer : public initializer_list {
 
-    node_storage_style* simple;
-    node_storage_style* pattern;
-    node_storage_style* best;
+        node_storage_style* simple;
+        // node_storage_style* pattern;
+        // node_storage_style* best;
 
-    // TBD - build a new compact style
-
-  public:
-    storage_initializer(initializer_list *p);
-  protected:
-    virtual void setup();
-    virtual void cleanup();
+    public:
+        storage_initializer(initializer_list *p);
+    protected:
+        virtual void setup();
+        virtual void cleanup();
 };
 

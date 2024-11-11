@@ -43,99 +43,99 @@ long seed = -1;
 
 double Random()
 {
-  const long MODULUS = 2147483647L;
-  const long MULTIPLIER = 48271L;
-  const long Q = MODULUS / MULTIPLIER;
-  const long R = MODULUS % MULTIPLIER;
+    const long MODULUS = 2147483647L;
+    const long MULTIPLIER = 48271L;
+    const long Q = MODULUS / MULTIPLIER;
+    const long R = MODULUS % MULTIPLIER;
 
-  long t = MULTIPLIER * (seed % Q) - R * (seed / Q);
-  if (t > 0) {
-    seed = t;
-  } else {
-    seed = t + MODULUS;
-  }
-  return ((double) seed / MODULUS);
+    long t = MULTIPLIER * (seed % Q) - R * (seed / Q);
+    if (t > 0) {
+        seed = t;
+    } else {
+        seed = t + MODULUS;
+    }
+    return ((double) seed / MODULUS);
 }
 
 int Equilikely(int a, int b)
 {
-  return (a + (int) ((b - a + 1) * Random()));
+    return (a + (int) ((b - a + 1) * Random()));
 }
 
 void randomizeMinterm()
 {
-  for (int i=1; i<7; i++) minterm[i] = Equilikely(-1, 3);
+    for (int i=1; i<7; i++) minterm[i] = Equilikely(-1, 3);
 #ifdef DEBUG_RANDSET
-  printf("Random minterm: [%d", minterm[1]);
-  for (int i=2; i<7; i++) printf(", %d", minterm[i]);
-  printf("]\n");
+    printf("Random minterm: [%d", minterm[1]);
+    for (int i=2; i<7; i++) printf(", %d", minterm[i]);
+    printf("]\n");
 #endif
 }
 
 void makeRandomSet(forest* f, int nmt, dd_edge &x)
 {
 #ifdef DEBUG_SEGV
-  fprintf(stderr, "\tentering makeRandomSet\n");
+    fprintf(stderr, "\tentering makeRandomSet\n");
 #endif
-  dd_edge tmp(f);
-  for (; nmt; nmt--) {
+    dd_edge tmp(f);
+    for (; nmt; nmt--) {
 #ifdef DEBUG_SEGV
-    fprintf(stderr, "\tminterm\n");
+        fprintf(stderr, "\tminterm\n");
 #endif
-    randomizeMinterm();
+        randomizeMinterm();
 #ifdef DEBUG_SEGV
-    fprintf(stderr, "\tedge\n");
+        fprintf(stderr, "\tedge\n");
 #endif
-    f->createEdge(mtaddr, 1, tmp);
+        f->createEdge(mtaddr, 1, tmp);
 #ifdef DEBUG_SEGV
-    fprintf(stderr, "\tunion\n");
+        fprintf(stderr, "\tunion\n");
 #endif
-    x += tmp;
+        x += tmp;
 #ifdef DEBUG_SEGV
-    fprintf(stderr, "\tdone iter %d\n", nmt);
+        fprintf(stderr, "\tdone iter %d\n", nmt);
 #endif
-  }
+    }
 #ifdef DEBUG_SEGV
-  fprintf(stderr, "\texiting makeRandomSet\n");
+    fprintf(stderr, "\texiting makeRandomSet\n");
 #endif
 }
 
 void makeRandomRows(forest* f, int nmt, dd_edge &x)
 {
 #ifdef DEBUG_SEGV
-  fprintf(stderr, "\tentering makeRandomRows\n");
+    fprintf(stderr, "\tentering makeRandomRows\n");
 #endif
-  dd_edge tmp(f);
-  for (; nmt; nmt--) {
+    dd_edge tmp(f);
+    for (; nmt; nmt--) {
 #ifdef DEBUG_SEGV
-    fprintf(stderr, "\tminterm\n");
+        fprintf(stderr, "\tminterm\n");
 #endif
-    randomizeMinterm();
+        randomizeMinterm();
 #ifdef DEBUG_SEGV
-    fprintf(stderr, "\tedge\n");
+        fprintf(stderr, "\tedge\n");
 #endif
-    f->createEdge(mtaddr, dcaddr, 1, tmp);
+        f->createEdge(mtaddr, dcaddr, 1, tmp);
 #ifdef DEBUG_SEGV
-    fprintf(stderr, "\tunion\n");
+        fprintf(stderr, "\tunion\n");
 #endif
-    x += tmp;
+        x += tmp;
 #ifdef DEBUG_SEGV
-    fprintf(stderr, "\tdone iter %d\n", nmt);
+        fprintf(stderr, "\tdone iter %d\n", nmt);
 #endif
-  }
+    }
 #ifdef DEBUG_SEGV
-  fprintf(stderr, "\texiting makeRandomRows\n");
+    fprintf(stderr, "\texiting makeRandomRows\n");
 #endif
 }
 
 void makeRandomCols(forest* f, int nmt, dd_edge &x)
 {
-  dd_edge tmp(f);
-  for (; nmt; nmt--) {
-    randomizeMinterm();
-    f->createEdge(dcaddr, mtaddr, 1, tmp);
-    x += tmp;
-  }
+    dd_edge tmp(f);
+    for (; nmt; nmt--) {
+        randomizeMinterm();
+        f->createEdge(dcaddr, mtaddr, 1, tmp);
+        x += tmp;
+    }
 }
 
 void test(forest* mdd, forest* mxd, int nmt)
@@ -180,26 +180,40 @@ void test(forest* mdd, forest* mxd, int nmt)
   cr.show(out, 2);
 #endif
 
-  // check: generate cr from cs, make sure they match
-  apply(CROSS, one, cs, tmp);
-#ifdef DEBUG_RANDSET
-  printf("cs x 1:\n");
-  tmp.show(out, 2);
-#endif
-  assert(tmp == cr);
+    // check: generate cr from cs, make sure they match
+    apply(CROSS, one, cs, tmp);
+    if (tmp != cr) {
+        FILE_output out(stdout);
+        printf("mismatch on 1 x cs\n");
+        printf("cs:\n");
+        cs.showGraph(out);
+        printf("cr:\n");
+        cr.showGraph(out);
+        printf("1 x cs, should equal cr:\n");
+        tmp.showGraph(out);
+        throw "mismatch";
+    }
 
-  // intersection of rr and cr should equal rs x cs.
-  apply(CROSS, rs, cs, rcr);
-#ifdef DEBUG_RANDSET
-  printf("rs x cs:\n");
-  rcr.show(out, 2);
-#endif
-  tmp = rr * cr;
-#ifdef DEBUG_RANDSET
-  printf("rr * cr:\n");
-  tmp.show(out, 2);
-#endif
-  assert(tmp == rcr);
+    // intersection of rr and cr should equal rs x cs.
+    apply(CROSS, rs, cs, rcr);
+    tmp = rr * cr;
+    if (tmp != rcr) {
+        FILE_output out(stdout);
+        printf("mismatch on rs x cs\n");
+        printf("rs:\n");
+        rs.showGraph(out);
+        printf("rr:\n");
+        rr.showGraph(out);
+        printf("cs:\n");
+        cs.showGraph(out);
+        printf("cr:\n");
+        cr.showGraph(out);
+        printf("rr * cr:\n");
+        tmp.showGraph(out);
+        printf("Cross product, should equal rr*cr:\n");
+        rcr.showGraph(out);
+        throw "mismatch";
+    }
 }
 
 
@@ -227,24 +241,38 @@ int processArgs(int argc, const char** argv)
 
 int main(int argc, const char** argv)
 {
-  if (!processArgs(argc, argv)) return 1;
+    if (!processArgs(argc, argv)) return 1;
 
-  initialize();
+    try {
+        initialize();
 
-  domain* myd = domain::createBottomUp(vars, 6);
-  assert(myd);
+        domain* myd = domain::createBottomUp(vars, 6);
+        assert(myd);
 
-  forest* mdd = forest::create(myd, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  assert(mdd);
-  forest* mxd = forest::create(myd, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  assert(mxd);
+        forest* mdd = forest::create(myd, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        assert(mdd);
+        forest* mxd = forest::create(myd, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        assert(mxd);
 
-  for (int m=1; m<=20; m++) {
-    printf("\tChecking cross-product for %2d random minterms\n", m);
-    test(mdd, mxd, m);
-  }
-  domain::destroy(myd);
-  cleanup();
-  return 0;
+        for (int m=1; m<=20; m++) {
+            printf("\tChecking cross-product for %2d random minterms\n", m);
+            test(mdd, mxd, m);
+        }
+        domain::destroy(myd);
+        cleanup();
+        return 0;
+    }
+    catch (MEDDLY::error e) {
+        std::cerr   << "\nCaught meddly error " << e.getName()
+                    << "\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
+    }
+    catch (const char* e) {
+        std::cerr << "\nCaught our own error: " << e << "\n";
+        return 2;
+    }
+    std::cerr << "\nSome other error?\n";
+    return 4;
 }
 

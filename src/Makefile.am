@@ -22,7 +22,9 @@ libmeddly_la_SOURCES = \
     ct_entry_key.h          ct_entry_key.cc \
     ct_entry_result.h       ct_entry_result.cc \
     ct_entry_type.h         ct_entry_type.cc \
+    ct_generics.h           ct_generics.cc \
     ct_initializer.h        ct_initializer.cc \
+    ct_vector.h             ct_vector.cc \
     dd_edge.h               dd_edge.cc \
     defines.h               \
     domain.h                domain.cc \
@@ -49,6 +51,7 @@ libmeddly_la_SOURCES = \
     node_storage.h          node_storage.cc \
     oper.h                  oper.cc \
     oper_binary.h           oper_binary.cc \
+    oper_item.h             oper_item.cc \
     oper_numer.h            oper_numer.cc \
     oper_satur.h            oper_satur.cc \
     oper_ternary.h          oper_ternary.cc \
@@ -56,6 +59,7 @@ libmeddly_la_SOURCES = \
     operators.h             operators.cc \
     ops_builtin.h           ops_builtin.cc \
     policies.h              policies.cc \
+    rangeval.h              rangeval.cc \
     relation_node.h         relation_node.cc \
     sat_relations.h         sat_relations.cc \
     statset.h               statset.cc \
@@ -91,16 +95,11 @@ libmeddly_la_SOURCES = \
     memory_managers/malloc_style.h      memory_managers/malloc_style.cc  \
     memory_managers/orig_grid.h         memory_managers/orig_grid.cc  \
     \
-    operations/apply_base.h             operations/apply_base.cc  \
+    operations/apply_base.h             operations/apply_base.cc   \
     operations/cardinality.h            operations/cardinality.cc  \
-    operations/comp_eq.h                operations/comp_eq.cc      \
-    operations/comp_ge.h                operations/comp_ge.cc      \
-    operations/comp_gt.h                operations/comp_gt.cc      \
-    operations/comp_le.h                operations/comp_le.cc      \
-    operations/comp_lt.h                operations/comp_lt.cc      \
-    operations/comp_ne.h                operations/comp_ne.cc      \
+    operations/compare.h                operations/compare.cc      \
     operations/complement.h             operations/complement.cc   \
-    operations/constrained.h            operations/constrained.cc   \
+    operations/constrained.h            operations/constrained.cc  \
     operations/copy.h                   operations/copy.cc         \
     operations/cross.h                  operations/cross.cc        \
     operations/cycle.h                  operations/cycle.cc        \
@@ -113,15 +112,14 @@ libmeddly_la_SOURCES = \
     operations/minus.h                  operations/minus.cc        \
     operations/mm_mult.h                operations/mm_mult.cc      \
     operations/modulo.h                 operations/modulo.cc       \
-    operations/mpz_object.h             operations/mpz_object.cc   \
     operations/multiply.h               operations/multiply.cc     \
     operations/plus.h                   operations/plus.cc         \
     operations/prepostimage.h           operations/prepostimage.cc \
     operations/prepostplus.h            operations/prepostplus.cc  \
     operations/reach_bfs.h              operations/reach_bfs.cc    \
     operations/reach_dfs.h              operations/reach_dfs.cc    \
-    operations/sat_hyb.h                operations/sat_hyb.cc    \
-    operations/sat_impl.h               operations/sat_impl.cc    \
+    operations/sat_hyb.h                operations/sat_hyb.cc      \
+    operations/sat_impl.h               operations/sat_impl.cc     \
     operations/sat_otf.h                operations/sat_otf.cc      \
     operations/sat_pregen.h             operations/sat_pregen.cc   \
     operations/sccgraph.h               operations/sccgraph.cc     \
@@ -141,13 +139,9 @@ libmeddly_la_SOURCES = \
     reordering/reordering_factory.h             \
     reordering/sink_down_reordering.h           \
     \
-    storage/best.h              storage/best.cc \
     storage/bytepack.h          \
-    storage/ct_none.h           \
     storage/ct_styles.h         storage/ct_styles.cc \
-    storage/ct_typebased.h      \
     storage/init_storage.h      storage/init_storage.cc \
-    storage/pattern.h           storage/pattern.cc \
     storage/simple.h            storage/simple.cc
 
 

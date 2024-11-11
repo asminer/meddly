@@ -1,97 +1,180 @@
 
+Implement next:
+    * build MDD, MXD from minterms
+      (needed for test cases)
+
+Current goal:
+    * Better centralized omega meanings
+    * Use 0 handle for "normal" omega, non-zeroes for special values
+        (could break lots of things)
+
+    * use COPY operation where it makes sense, e.g.,
+        terminal cases in cross-forest unions
+
+
 Interface changes (aside from moving header files around)
 ======================================================================
-
-Next release:
 
 Make compute table interface easier to use for simple operations
     (i.e., most of the time)
 
-    * compute table item class, like edge value class
-        type, and a union
+Updates to operation interface:
+
+    * Add a 'temporary' node handle in unpacked_node,
+      will be marked during mark and sweep
+
+    * Allow (back) low-level interface
+
+
+Operation updates, to do:
+    * re-implement operations using new CT interface
+        start with intersection and check timing
+
+    * eventually: remove CTs from operation base class
+    * eventually: remove entry registration from operation base class
+
 
 
 Next release:
 
-Reimplement operations.
-
-Depending on how that goes, maybe adjust the operation hierarchy?
-
-        some thoughts:
-            operation
-                |
-                +--- binary_operation
-                        |
-                        +---- binary skip levels
-                        |           inline void compute_top(
-                        |               const dd_edge &a,
-                        |               const dd_edge &b, dd_edge c)
-                        |
-                        |           node_handle compute(node_handle a,
-                        |               node_handle b)
-                        |
-                        +---- binary by levels (for quasi reduced results)
-                        |
-                        |           node_handle compute(int K,
-                        |               node_handle a, node_handle b)
-                        |
-                        +---- binary, EV, skip levels
-                        |
-                        |           compute(const edge_value &av,
-                        |               node_handle an, const edge_value &,
-                        |               node_handle bn, edge_value &ec,
-                        |               node_handle &cn)
-                        |
-                        |           We could use the same iface for MT
-                        |           using void edge values, see if there's
-                        |           overhead and if so keep them split.
-                        |
-                        +---- binary, EV, by levels
+Finish Reimplementing operations.
 
 
-Although, if we make compute tables easy enough to use, then
-the motivation for abstract apply operation implementation goes away.
+======================================================================
 
-Ideal:
-    void union::compute(node_handle a, node_handle b, node_handle &c)
-    {
-        if (0==a) return b;
-        if (0==b) return a;
-        if (1==a) return 1;
-        if (1==b) return 1;
-        if (a==b) return a; // same forest only
+generic EV 'operator' for edges should provide:
 
-        commute_order(a, b);    // if we can commute, make sure a<b
+    // Combine edge values a and b, store result in c
+    static inline void apply(const edge_value &a, const edge_value &b,
+        edge_value &c);
 
-        ct_search key(entry0, a, b);
+    // Combine edge values a and b, store result in a
+    static inline void update(edge_value &a, const edge_value &b);
 
-        if (CT.find(key, c)) {
-          return;
-        }
+    // "Clear" an edge value; i.e., make it the identity element
+    static inline void clear(edge_value &a);
 
-        // do computation
+======================================================================
+Completely reimplemented operations
+======================================================================
 
-        CT.add(key, c);
+cardinality.cc      yes
+compare.cc          yes
+complement.cc       yes
+copy.cc             yes
 
-    }
+difference.cc       yes
+intersection.cc     yes         tbd: evplus (move to max)
+maxmin_range.cc     yes
+union.cc            yes         tbd: evplus (move to min)
+
+======================================================================
+Operations that need updating
+======================================================================
+
+constrained.cc
+        NO      constrained_forwd_dfs_mt
+        NO      constrained_bckwd_dfs_mt
+        NO      constrained_bckwd_dfs_evplus
+
+cross.cc
+        NO      cross_bool
+
+cycle.cc
+        NO      cycle_EV2EV
 
 
+divide.cc
+        NO      divide_mdd
+        NO      divide_mxd
 
-Forest cleanup
-    look at node reductions
+maxmin.cc
+        NO      maximum_mdd
+        NO      maximum_mxd
+        NO      minimum_mdd
+        NO      minimum_mxd
 
-Operations
-        -> split out and simplify (templates and functors) the
-            apply_generic_mdd style classes
-                (goal is for 'check terminals' to be inlined, not virtual)
+mdd2index.cc
+        NO      mdd2index_operation
 
+minus.cc
+        NO      minus_mdd
+        NO      minus_mxd
+        NO      minus_evplus
+        NO      minus_evtimes
 
-(*) node_storage::getDownPtr timing test
+mm_mult.cc
+        NO      mm_mult_mt
 
-(*) One version of node_storage::getDownPtr, using edge_value
+modulo.cc
+        NO      modulo_mdd
+        NO      modulo_mxd
 
+multiply.cc
+        NO      multiply_mdd
+        NO      multiply_mxd
+        NO      multiply_evplus
+        NO      multiply_evtimes
 
+plus.cc
+        NO      plus_mdd
+        NO      plus_mxd
+        NO      plus_evplus
+        NO      plus_evtimes
 
+prepostimage.cc
+        NO      mtmatr_mtvect
+        NO      mtmatr_evplusvect
+        NO      tcXrel_evplus
+
+prepostplus.cc
+        NO      preplus_evplus
+        NO      postplus_evplus
+
+reach_bfs.cc
+        NO      forwd_bfs_mt
+        NO      forwd_bfs_evplus
+        NO      bckwd_bfs_mt
+        NO      bckwd_bfs_evplus
+
+reach_dfs.cc
+        NO      forwd_dfs_mt
+        NO      forwd_dfs_evplus
+        NO      bckwd_dfs_mt
+
+sat_hyb.cc
+        NO      forwd_hyb_dfs_by_events_mt
+
+sat_impl.cc
+        NO      forwd_impl_dfs_by_events_mt
+
+sat_otf.cc
+        NO      forwd_otf_dfs_by_events_mt
+
+sat_pregen.cc
+        NO      forwd_dfs_by_events_mt
+        NO      bckwd_dfs_by_events_mt
+
+select.cc
+        NO      select_MT
+        NO      select_EVPlus
+
+transitive_closure.cc
+        NO      transitive_closure_forwd_dfs
+
+union.cc
+        tbd     union_mt    (combines old union_mdd and union_mxd)
+
+        YES*    union_mdd
+        YES*    union_mxd
+        NO      union_min_evplus
+        NO      union_min_evplus_mxd
+
+vect_matr.cc
+        N/A     VM_evplus_mt
+        N/A     MV_evplus_mt
+
+======================================================================
 
 
 Go through examples/ directory,
@@ -102,19 +185,10 @@ Files that need updating / cleanup
 ------------------------------------------------------------
 defines.h
 enumerator.h            enumerator.cc
-forest.h                forest.cc
 hash_stream.h
 heap.h
 impl_unique_table.h     impl_unique_table.cc
 loggers.h               loggers.cc
-memory.h                memory.cc
-opname.h                opname.cc
-opname_numer.h          opname_numer.cc
-opname_satur.h          opname_satur.cc
-
-oper.h                  oper.cc
-oper_binary.h           oper_binary.cc
-oper_unary.h            oper_unary.cc
 
 relation_node.h         relation_node.cc
 
@@ -157,3 +231,6 @@ Non-critical to do list (side quests)
     boolean only? or describe as "min value over these vars"?
 
 * interval decision diagrams?
+
+* look at using ev* over rationals to avoid floating-point issues?
+

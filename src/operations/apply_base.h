@@ -55,7 +55,9 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
     protected:
         node_handle compute(node_handle a, node_handle b);
         node_handle compute_normal(node_handle a, node_handle b);
+#ifdef ALLOW_EXTENSIBLE
         node_handle compute_ext(node_handle a, node_handle b);
+#endif
 
     protected:
         /// Check the compute table.
@@ -76,7 +78,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
         {
             ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
             MEDDLY_DCASSERT(CTsrch);
-            if (can_commute && a > b) {
+            if (canCommute() && a > b) {
                 CTsrch->writeN(b);
                 CTsrch->writeN(a);
             } else {
@@ -122,11 +124,15 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
   protected:
     node_handle compute(node_handle a, node_handle b);
     node_handle compute_normal(node_handle a, node_handle b);
+#ifdef ALLOW_EXTENSIBLE
     node_handle compute_ext(node_handle a, node_handle b);
+#endif
 
     node_handle compute_r(int i, int k, node_handle a, node_handle b);
     node_handle compute_r_normal(int i, int k, node_handle a, node_handle b);
+#ifdef ALLOW_EXTENSIBLE
     node_handle compute_r_ext(int i, int k, node_handle a, node_handle b);
+#endif
 
   protected:
     inline ct_entry_key*
@@ -134,7 +140,7 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
-      if (can_commute && a > b) {
+      if (canCommute() && a > b) {
         CTsrch->writeN(b);
         CTsrch->writeN(a);
       } else {
@@ -185,7 +191,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeI(k);
-      if (can_commute && a > b) {
+      if (canCommute() && a > b) {
         CTsrch->writeN(b);
         CTsrch->writeN(a);
       } else {
@@ -249,7 +255,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
-      if (can_commute && a > b) {
+      if (canCommute() && a > b) {
         CTsrch->writeL(bev);
         CTsrch->writeN(b);
         CTsrch->writeL(aev);
@@ -308,7 +314,7 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
-      if (can_commute && a > b) {
+      if (canCommute() && a > b) {
         CTsrch->writeL(bev);
         CTsrch->writeN(b);
         CTsrch->writeL(aev);
@@ -368,7 +374,7 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
       MEDDLY_DCASSERT(CTsrch);
-      if (can_commute && a > b) {
+      if (canCommute() && a > b) {
         CTsrch->writeF(bev);
         CTsrch->writeN(b);
         CTsrch->writeF(aev);

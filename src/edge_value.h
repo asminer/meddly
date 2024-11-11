@@ -63,6 +63,9 @@ class MEDDLY::edge_value {
         /// Initializes to DOUBLE
         edge_value(double v);
 
+        /// Conversion
+        edge_value(edge_type newtype, const edge_value &v);
+
         //
         // Getters for the type
         //
@@ -84,6 +87,9 @@ class MEDDLY::edge_value {
         }
         inline bool hasType(edge_type t) const {
             return (t == mytype);
+        }
+        inline edge_type getType() const {
+            return mytype;
         }
 
         //
@@ -172,6 +178,30 @@ class MEDDLY::edge_value {
                     throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
             }
         }
+        template <class T>
+        inline void copyInto(T &val) const {
+            switch (mytype) {
+                case edge_type::INT:
+                    val = T(ev_int);
+                    return;
+
+                case edge_type::LONG:
+                    val = T(ev_long);
+                    return;
+
+                case edge_type::FLOAT:
+                    val = T(ev_float);
+                    return;
+
+                case edge_type::DOUBLE:
+                    val = T(ev_double);
+                    return;
+
+                default:
+                    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+            }
+        }
+
         //
         // Setters
         //
@@ -196,6 +226,34 @@ class MEDDLY::edge_value {
             ev_double = v;
         }
 
+        template <class V>
+        inline void setTempl(edge_type t, V v) {
+            mytype = t;
+            switch (mytype) {
+                case edge_type::VOID:
+                    return;
+
+                case edge_type::INT:
+                    ev_int = int(v);
+                    return;
+
+                case edge_type::LONG:
+                    ev_long = long(v);
+                    return;
+
+                case edge_type::FLOAT:
+                    ev_float = float(v);
+                    return;
+
+                case edge_type::DOUBLE:
+                    ev_double = double(v);
+                    return;
+
+                default:
+                    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+            }
+        }
+
         //
         // Setters, for low-level storage objects
         //
@@ -218,10 +276,12 @@ class MEDDLY::edge_value {
             MEDDLY_DCASSERT(p);
             set( *((const double*) p) );
         }
-        inline void set(edge_type et, const void* p) {
-            switch (et) {
+        inline void setType(edge_type et) {
+            mytype = et;
+        }
+        inline void setRaw(const void* p) {
+            switch (mytype) {
                 case edge_type::VOID:
-                    setVoid(p);
                     return;
 
                 case edge_type::INT:
@@ -244,7 +304,32 @@ class MEDDLY::edge_value {
                     throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
             }
         }
+        inline void set(edge_type et, const void* p) {
+            setType(et);
+            setRaw(p);
+        }
 
+
+        //
+        // Add to the edge value
+        //
+
+        inline void add(int v) {
+            MEDDLY_DCASSERT(isInt());
+            ev_int += v;
+        }
+        inline void add(long v) {
+            MEDDLY_DCASSERT(isLong());
+            ev_long += v;
+        }
+        inline void add(float v) {
+            MEDDLY_DCASSERT(isFloat());
+            ev_float += v;
+        }
+        inline void add(double v) {
+            MEDDLY_DCASSERT(isDouble());
+            ev_double += v;
+        }
 
         //
         // Subtract from the edge value
@@ -266,6 +351,27 @@ class MEDDLY::edge_value {
         inline void subtract(double v) {
             MEDDLY_DCASSERT(isDouble());
             ev_double -= v;
+        }
+
+        //
+        // Multiply the edge value
+        //
+
+        inline void multiply(int v) {
+            MEDDLY_DCASSERT(isInt());
+            ev_int *= v;
+        }
+        inline void multiply(long v) {
+            MEDDLY_DCASSERT(isLong());
+            ev_long *= v;
+        }
+        inline void multiply(float v) {
+            MEDDLY_DCASSERT(isFloat());
+            ev_float *= v;
+        }
+        inline void multiply(double v) {
+            MEDDLY_DCASSERT(isDouble());
+            ev_double *= v;
         }
 
         //
@@ -415,6 +521,11 @@ class MEDDLY::edge_value {
             using read().
         */
         void write(output &s) const;
+
+        /**
+            Display an edge value for human consumption.
+        */
+        void show(output &s) const;
 
     private:
         union {

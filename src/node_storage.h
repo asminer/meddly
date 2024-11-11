@@ -31,6 +31,8 @@ namespace MEDDLY {
     class memory_manager_style;
     class output;
     class unpacked_node;
+
+    class edge_value;
 };
 
 // ******************************************************************
@@ -189,18 +191,28 @@ class MEDDLY::node_storage {
         */
         virtual bool isExtensible(node_address addr) const = 0;
 
+
+
         /** Determine if this is a singleton node.
             Used for identity reductions.
             @param  addr    Address of the node we care about
-            @param  down    Output:
-                            The singleton downward pointer, or undefined.
+            @param  index   On output:
+                            if we're a singleton node, the index of the
+                            only non-zero pointer;
+                            otherwise undefined.
 
-            @return     If the node has only one non-zero downward pointer,
-                        then return the index for that pointer.
-                        Otherwise, return a negative value.
+
+            @param  down    On output:
+                            if we're a singleton node, the only non-zero
+                            downward pointer;
+                            otherwise undefined.
+
+            @return     If the node is a singleton node
+                        (only one non-zero downward pointer),
+                        return true; otherwise return false.
         */
-        virtual int getSingletonIndex(node_address addr, node_handle &down)
-            const = 0;
+        virtual bool isSingletonNode(node_address addr, unsigned &index,
+                node_handle &down) const = 0;
 
 
         /** Get the specified downward pointer for a node.
@@ -213,27 +225,15 @@ class MEDDLY::node_storage {
         virtual node_handle getDownPtr(node_address addr, int index) const = 0;
 
         /** Get the specified outgoing edge for a node.
-            Fast if we just want one.
+            Reasonably if we just want one.
 
             @param  addr    Address of the node we care about
             @param  ind     Index of the pointer we want.
             @param  ev      Output: edge value at that index.
+                            Will be unchanged on transparent values.
             @param  dn      Output: downward pointer at that index.
         */
-        virtual void getDownPtr(node_address addr, int ind, int& ev,
-            node_handle& dn) const = 0;
-        virtual void getDownPtr(node_address addr, int ind, long& ev,
-            node_handle& dn) const = 0;
-
-        /** Get the specified outgoing edge for a node.
-            Fast if we just want one.
-
-            @param  addr    Address of the node we care about
-            @param  ind     Index of the pointer we want.
-            @param  ev      Output: edge value at that index.
-            @param  dn      Output: downward pointer at that index.
-        */
-        virtual void getDownPtr(node_address addr, int ind, float& ev,
+        virtual void getDownPtr(node_address addr, int ind, edge_value& ev,
             node_handle& dn) const = 0;
 
 

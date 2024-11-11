@@ -39,8 +39,32 @@ namespace MEDDLY {
 */
 class MEDDLY::binary_operation : public operation {
     public:
+#ifdef ALLOW_DEPRECATED_0_17_6
+        /**
+            OLD constructor.
+         */
         binary_operation(binary_list& owner, unsigned et_slots,
             forest* arg1, forest* arg2, forest* res);
+#endif
+
+        /**
+            NEW constructor.
+            Compute table entry information is managed 'by hand'
+            in the derived class.
+                @param  arg1    Forest containing the first argument
+                                of the binary operation.
+
+                @param  arg2    Forest containing the second argument
+                                of the binary operation. May equal or
+                                not arg1, and if unequal they must
+                                be "compatible" (same domain, same
+                                variable order).
+
+                @param  res     Forest that holds the result.
+                                Must be compatible with the argument
+                                forests.
+        */
+        binary_operation(forest* arg1, forest* arg2, forest* res);
 
     protected:
         virtual ~binary_operation();
@@ -57,6 +81,17 @@ class MEDDLY::binary_operation : public operation {
                 )
             {
                 throw error(error::DOMAIN_MISMATCH, file, line);
+            }
+        }
+        /// Make sure the arguments set/relation status match each other
+        inline void checkAllRelations(const char* file, unsigned line) const
+        {
+            if  (
+                    (arg1F->isForRelations() != resF->isForRelations())  ||
+                    (arg2F->isForRelations() != resF->isForRelations())
+                )
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
             }
         }
         /// Make sure the arguments set/relation status matches
@@ -127,31 +162,94 @@ class MEDDLY::binary_operation : public operation {
 
     public:
         /**
-            Checks forest comatability and then calls computeDDEdge().
+            Checks forest comatability and then calls computeDDEdge() (OLD)
+            or the new virtual compute method (NEW).
         */
-        void compute(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
-        void computeTemp(const dd_edge &ar1, const dd_edge &ar2, dd_edge &res);
+        void compute(const dd_edge &ar1, const dd_edge &ar2,
+                dd_edge &res);
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+        void computeTemp(const dd_edge &ar1, const dd_edge &ar2,
+                dd_edge &res);
 
         virtual void computeDDEdge(const dd_edge &ar1, const dd_edge &ar2,
-                dd_edge &res, bool userFlag) = 0;
+                dd_edge &res, bool userFlag);
+#endif
+
+        /**
+            New virtual compute method.
+
+                @param  L       Recursion level.
+                                If all forests are quasi-reduced,
+                                then this is the top level of the
+                                operand and result.
+                                Ignored for some reduction rules (e.g.,
+                                fully reduced) but important for others
+                                (e.g., quasi reduced).
+
+                @param  in      Incoming edge index.
+                                Important only for identity-reduced
+                                relations when L is positive.
+                                Use ~0 if there is no edge index.
+
+                @param  av      Edge value for operand 1
+                @param  ap      Node for operand 1, must be below L.
+
+                @param  bv      Edge value for operand 2
+                @param  bp      Node for operand 2, must be below L.
+
+                @param  cv      Edge value of result
+                @param  cp      Node for result, will be below L.
+         */
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap,
+                const edge_value &bv, node_handle bp,
+                edge_value &cv, node_handle &cp)
+#ifndef ALLOW_DEPRECATED_0_17_6
+                = 0
+#endif
+                ;
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+        /**
+            During the transition, callers may need to know
+            which version of compute() to call.
+         */
+        inline bool useNewCompute() const { return new_style; }
+#endif
 
     protected:
+#ifdef ALLOW_DEPRECATED_0_17_6
+        inline bool canCommute() const {
+            return can_commute;
+        }
+        /// Call this in the constructor of any operation that commutes.
         inline void operationCommutes() {
             can_commute = (arg1F == arg2F);
         }
+#endif
 
         // Check if the variables orders of relevant forests are compatible
-        virtual bool checkForestCompatibility() const;
+        inline bool checkForestCompatibility() const
+        {
+            auto o1 = arg1F->variableOrder();
+            auto o2 = arg2F->variableOrder();
+            auto o3 = resF->variableOrder();
+            return o1->is_compatible_with(*o2) && o1->is_compatible_with(*o3);
+        }
 
     protected:
-        bool can_commute;
         forest* arg1F;
         forest* arg2F;
         forest* resF;
 
     private:
-        binary_list& parent;
+        binary_list* parent;
         binary_operation* next;
+#ifdef ALLOW_DEPRECATED_0_17_6
+        bool can_commute;
+        bool new_style;
+#endif
 
         friend class binary_list;
 };
@@ -179,6 +277,13 @@ class MEDDLY::binary_list {
 
         inline binary_operation* add(binary_operation* bop) {
             if (bop) {
+                if (bop->parent) {
+                    // REMOVE EVENTUALLY
+                    MEDDLY_DCASSERT(bop->parent == this);
+                } else {
+                    bop->parent = this;
+                    bop->setName(name);
+                }
                 bop->next = front;
                 front = bop;
             }

@@ -23,6 +23,7 @@
 
 #include "../operators.h"
 #include "../minterms.h"
+#include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
 #include "../compute_table.h"
 #include "../oper_unary.h"
@@ -261,7 +262,7 @@ MEDDLY::otfsat_by_events_op
 
 MEDDLY::otfsat_by_events_op::~otfsat_by_events_op()
 {
-  removeAllComputeTableEntries();
+  // removeAllComputeTableEntries();
 }
 
 void MEDDLY::otfsat_by_events_op::compute(const dd_edge& in, dd_edge& out)
@@ -315,7 +316,9 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
   unpacked_node::Recycle(mddDptrs);
 
   parent->saturateHelper(*nb);
-  n = resF->createReducedNode(-1, nb);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, n);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   // save in compute table
   saveSaturateResult(Key, mdd, n);
@@ -575,7 +578,11 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       MEDDLY_DCASSERT(!Ru[ei]->isExtensible());
       node_handle ei_i = (i < Ru[ei]->getSize())
                         ? Ru[ei]->down(i)
+#ifdef ALLOW_EXTENSIBLE
                         : (Ru[ei]->isExtensible() ? Ru[ei]->ext_d() : 0);
+#else
+                        : 0;
+#endif
       if (0 == ei_i) continue;
 
       // grab column (TBD: build these ahead of time?)
@@ -768,6 +775,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
       recFireHelper(i, rLevel, Ru->down(iz), A->down(i), Rp, nb);
     }
     // loop over the extensible portion of mxd (if any)
+#ifdef ALLOW_EXTENSIBLE
     MEDDLY_DCASSERT(!Ru->isExtensible());
     if (Ru->isExtensible()) {
       const node_handle pnode = Ru->ext_d();
@@ -776,6 +784,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
         recFireHelper(i, rLevel, pnode, A->down(i), Rp, nb);
       }
     }
+#endif
 #endif
 
     unpacked_node::Recycle(Rp);
@@ -786,7 +795,9 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   unpacked_node::Recycle(A);
 
   saturateHelper(*nb);
-  result = resF->createReducedNode(-1, nb);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
 #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
 #endif

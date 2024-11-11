@@ -19,6 +19,7 @@
 #include "../defines.h"
 #include "mdd2index.h"
 
+#include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
 #include "../compute_table.h"
 #include "../oper_unary.h"
@@ -74,7 +75,6 @@ MEDDLY::mdd2index_operation
 {
   MEDDLY_DCASSERT(arg.getForest() == argF);
   MEDDLY_DCASSERT(res.getForest() == resF);
-  MEDDLY_DCASSERT(resF->handleForValue(false) == 0);
   MEDDLY_DCASSERT(argF->handleForValue(true) < 0);
   MEDDLY_DCASSERT(argF->handleForValue(false) == 0);
   node_handle down;
@@ -115,6 +115,9 @@ MEDDLY::mdd2index_operation
       bdn = resF->linkNode(CTresult[0].readN());
       bcard = CTresult[0].readL();
       CT0->recycle(CTsrch);
+#ifdef TRACE_ALL_OPS
+      printf("CT hit  mdd2index::compute(%d, %d) = %ld\n", k, a, bcard);
+#endif
       return;
     }
   }
@@ -160,11 +163,9 @@ MEDDLY::mdd2index_operation
   nb->setUHdata(&bcard);
   // memcpy(nb->UHdata(), &bcard, sizeof(bcard));
 
-  long dummy = 0;
-  node_handle bl;
-  resF->createReducedNode(-1, nb, dummy, bl);
-  bdn = bl;
-  MEDDLY_DCASSERT(0 == dummy);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, bdn);
+  MEDDLY_DCASSERT(0 == ev.getLong());
 
   // Add to compute table
   if (CTsrch) {
@@ -173,6 +174,10 @@ MEDDLY::mdd2index_operation
     CTresult[0].writeL(bcard);
     CT0->addEntry(CTsrch, CTresult[0]);
   }
+
+#ifdef TRACE_ALL_OPS
+  printf("finish  mdd2index::compute(%d, %d) = %ld\n", k, a, bcard);
+#endif
 }
 
 // ******************************************************************

@@ -19,6 +19,7 @@
 #include "../defines.h"
 #include "prepostimage.h"
 
+#include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
 #include "../compute_table.h"
 #include "../oper_binary.h"
@@ -280,7 +281,9 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
   // cleanup mdd reader
   unpacked_node::Recycle(A);
 
-  result = resF->createReducedNode(-1, C);
+  edge_value ev;
+  resF->createReducedNode(C, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
 #ifdef TRACE_ALL_OPS
   printf("computed relXset(%d, %d) = %d\n", mdd, mxd, result);
 #endif
@@ -424,7 +427,9 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
   // cleanup mdd reader
   unpacked_node::Recycle(A);
 
-  result = resF->createReducedNode(-1, C);
+  edge_value ev;
+  resF->createReducedNode(C, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
 #ifdef TRACE_ALL_OPS
   printf("computed new setXrel(%d, %d) = %d\n", mdd, mxd, result);
 #endif
@@ -781,7 +786,9 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   // cleanup mdd reader
   unpacked_node::Recycle(A);
 
-  resF->createReducedNode(-1, C, resEv, resEvmdd);
+  edge_value Cev;
+  resF->createReducedNode(C, Cev, resEvmdd);
+  resEv = Cev.getLong();
 #ifdef TRACE_ALL_OPS
   printf("computed new relXset(<%ld, %d>, %d) = <%ld, %d>\n", ev, evmdd, mxd, resEv, resEvmdd);
 #endif
@@ -929,7 +936,9 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   // cleanup mdd reader
   unpacked_node::Recycle(A);
 
-  resF->createReducedNode(-1, C, resEv, resEvmdd);
+  edge_value Cev;
+  resF->createReducedNode(C, Cev, resEvmdd);
+  resEv = Cev.getLong();
 #ifdef TRACE_ALL_OPS
   printf("computed new setXrel(<%ld, %d>, %d) = <%ld, %d>\n", ev, evmdd, mxd, resEv, resEvmdd);
 #endif
@@ -1159,10 +1168,10 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
       unpacked_node::Recycle(Ru);
     } // else
 
-    long cev = Inf<long>();
-    node_handle cnode = 0;
-    resF->createReducedNode(int(i), D, cev, cnode);
-    C->setFull(i, edge_value(cev), cnode);
+    edge_value cev;
+    node_handle cnode;
+    resF->createReducedNode(D, cev, cnode, int(i));
+    C->setFull(i, cev, cnode);
     // C->setEdge(i, cev);
     // C->d_ref(i) = cnode;
 
@@ -1172,7 +1181,9 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
   // cleanup mdd reader
   unpacked_node::Recycle(A);
 
-  resF->createReducedNode(-1, C, resEv, resEvmdd);
+  edge_value Cev;
+  resF->createReducedNode(C, Cev, resEvmdd);
+  resEv = Cev.getLong();
 #ifdef TRACE_ALL_OPS
   printf("computed new tcXrel(<%ld, %d>, %d) = <%ld, %d>\n", ev, evmxd, mxd, resEv, resEvmdd);
 #endif

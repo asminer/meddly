@@ -122,7 +122,11 @@ void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd
     debug << "Iteration " << iters << "\npseudo-frontier: ";
     front.showGraph(debug);
 #endif
-    unionOp->computeDDEdge(reachableStates, front, reachableStates, userFlag);
+    if (userFlag) {
+        unionOp->compute(reachableStates, front, reachableStates);
+    } else {
+        unionOp->computeTemp(reachableStates, front, reachableStates);
+    }
 #ifdef VERBOSE_BFS
     verbose << "\tunion done ";
     reachableStates.show(verbose, 0);

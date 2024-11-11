@@ -10,7 +10,10 @@ bug_02
 check_xA
 chk_copy
 chk_cross
+chk_ct
+chk_ct_old
 chk_evtimes_float
+chk_minterms
 ddedge
 domain_list
 enctest
@@ -21,6 +24,8 @@ kan_show
 kanban
 nodestor
 nqueens
+ops_comp
+ops_set
 refcount
 sat_test
 kan_io.data.*

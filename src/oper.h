@@ -24,10 +24,6 @@
 
 #include <vector>
 
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-#endif
-
 namespace MEDDLY {
     class operation;
     class compute_table;
@@ -37,10 +33,6 @@ namespace MEDDLY {
     class ct_initializer;
     class ct_entry_type;
     class ct_entry_result;
-    class ct_object;
-
-    void cleanup();
-
 
     /// Argument and result types for apply operations.
     enum class opnd_type {
@@ -48,20 +40,8 @@ namespace MEDDLY {
         BOOLEAN     = 1,
         INTEGER     = 2,
         REAL        = 3,
-        HUGEINT     = 4,
-        FLOATVECT   = 5,
-        DOUBLEVECT  = 6
+        HUGEINT     = 4
     };
-
-    // ******************************************************************
-    // *                    Wrapper for GMP integers                    *
-    // ******************************************************************
-
-#ifdef HAVE_LIBGMP
-    ct_object& get_mpz_wrapper();
-    void unwrap(const ct_object &, mpz_t &value);
-#endif
-
 };
 
 // ******************************************************************
@@ -77,89 +57,53 @@ namespace MEDDLY {
 class MEDDLY::operation {
         friend class initializer_list;
     public:
-        /** Constructor.
+        /** Constructor (OLD)
                 @param  n           Operation name, for debugging
                 @param  et_slots    Number of different compute table entry
                                     types used by this operation.
                                     Derived class constructors must register
                                     exactly this many entry types.
         */
-        operation(const char* n, unsigned et_slots);
+        operation(const char* n, unsigned et_slots=0);
 
-        /// Safely destroy the given operation.
-        static void destroy(operation* op);
+        /// New constructor.
+        operation();
 
-    protected:
+
+        /** Destructor.
+            Safe to call directly now :)
+        */
         virtual ~operation();
 
-    public:
-        /// Get the name of this operation; for display
+#ifdef ALLOW_DEPRECATED_0_17_6
+        /// Safely destroy the given operation.
+        inline static void destroy(operation* op) {
+            delete op;
+        }
+#endif
+
+        /// Safely destroy all operations associated with the given forest.
+        /// Called in forest destructor.
+        static void destroyAllWithForest(const forest* f);
+
+        /// Get the name of this operation; for display / debugging
         inline const char* getName() const { return name; }
 
-        /** Are we marked for deletion?
-            If so, all compute table entries for this operation
-            will be removed.
-        */
-        inline bool isMarkedForDeletion() const {
-            return is_marked_for_deletion;
-        }
-
-        void markForDeletion();
-
-        //
-        // Used primarily by compute tables.
-        //
-
-        /// Set the first entry type ID;
-        /// the remaining will come right after.
-        inline void setFirstETid(unsigned slot) { first_etid = slot; }
-
-        /// Get the first entry type ID
-        inline unsigned getFirstETid() const { return first_etid; }
-
-        /// Get the number of entry type IDs
-        inline unsigned getNumETids() const { return num_etids; }
-
-        //
-        // CT operations
-        //
-
-        /// Remove stale compute table entries for this operation.
-        void removeStaleComputeTableEntries();
-
-        /// Remove all compute table entries for this operation.
-        void removeAllComputeTableEntries();
-
-
-        inline static bool usesMonolithicComputeTable() {
-            return Monolithic_CT;
-        }
-        static void removeStalesFromMonolithic();
-        static void removeAllFromMonolithic();
-
-        static void countAllNodeEntries(const forest* f, size_t* counts);
-        void countCTEntries(const forest* f, size_t* counts) const;
-
-        //
-        // Display, for debugging
-        //
-
-        static void showMonolithicComputeTable(output &, int verbLevel);
-        static void showAllComputeTables(output &, int verbLevel);
-        void showComputeTable(output &, int verbLevel) const;
-
-
-        // TBD MOVE THIS HERE
-        static void purgeAllMarked();
-
     protected:
+        /// Set the name after constructing.
+        inline void setName(const char* n) {
+            if (!n) return;
+            MEDDLY_DCASSERT(!name);
+            name = n;
+        }
+
         void registerInForest(forest* f);
         void unregisterInForest(forest* f);
 
-        virtual bool checkForestCompatibility() const = 0;
-
+#ifdef ALLOW_DEPRECATED_0_17_6
         void registerEntryType(unsigned slot, ct_entry_type* et);
         void buildCTs();
+#endif
 
 
     // ------------------------------------------------------------
@@ -186,10 +130,10 @@ class MEDDLY::operation {
     // ------------------------------------------------------------
     private: // private methods for the operation registry
     // ------------------------------------------------------------
-        // should be called during library init.
+        /// Called during library initialization.
         static void initializeStatics();
 
-        // should ONLY be called during library cleanup.
+        /// Called during library cleanup.
         static void destroyAllOps();
 
         static void registerOperation(operation &o);
@@ -207,10 +151,16 @@ class MEDDLY::operation {
     //
 
     protected:
+#ifdef ALLOW_DEPRECATED_0_17_6
         /// Compute table to use (for entry type 0), if any.
         compute_table* CT0;
         /// Array of compute tables, one per entry type.
         compute_table** CT;
+
+        //
+        // TBD: remove all of these
+        //
+
         /** Array of entry types.
             Owned by the compute_table class; we have
             these pointers for convenience.
@@ -227,24 +177,12 @@ class MEDDLY::operation {
             This gives the dimension of arrays CT and etype.
         */
         unsigned num_etids;
+#endif
 
     private:
         const char* name;
-        bool is_marked_for_deletion;
-
-        // declared and initialized in meddly.cc
-        static compute_table* Monolithic_CT;
-
-        /**
-            Starting slot for entry_types, assigned
-            by compute_table.
-        */
-        unsigned first_etid;
-
-    friend class forest;
-    friend class initializer_list;
-
-    friend class ct_initializer;
+        /// List of forest IDs associated with this operation.
+        std::vector <unsigned> FList;
 
 };
 

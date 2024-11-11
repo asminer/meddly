@@ -42,6 +42,8 @@ class MEDDLY::ct_entry_result {
         /// Initialize after construction
         void initialize(const ct_entry_type* et);
 
+        inline const ct_entry_type* getET() const { return etype; }
+
         //
         // interface, for operations (reading).
         //
@@ -95,7 +97,7 @@ class MEDDLY::ct_entry_result {
             MEDDLY_DCASSERT(build);
             MEDDLY_DCASSERT(currslot < dataLength());
 
-            switch (etype->getResultType(currslot)) {
+            switch (etype->getResultType(currslot).getType()) {
                 case ct_typeID::INTEGER:
                     ev.get(build[currslot++].I);
                     break;
@@ -161,14 +163,15 @@ class MEDDLY::ct_entry_result {
         inline operator bool() const { return is_valid; }
 
         inline const ct_entry_item* rawData() const { return build; }
+        inline ct_entry_item* rawData() { return build; }
         inline unsigned dataLength() const { return etype->getResultSize(); }
 
         /// Increase cache counters for nodes in this portion of the entry.
         inline void cacheNodes() const {
             for (unsigned i=0; i<etype->getResultSize(); i++) {
-                forest* f = etype->getResultForest(i);
-                if (f) {
-                    f->cacheNode(build[i].N);
+                const ct_itemtype &item = etype->getResultType(i);
+                if (item.hasNodeType()) {
+                    item.cacheNode(build[i].N);
                 }
             }
         }
@@ -178,13 +181,13 @@ class MEDDLY::ct_entry_result {
         {
             MEDDLY_DCASSERT(data);
             MEDDLY_DCASSERT(currslot < dataLength());
-            MEDDLY_DCASSERT(t == etype->getResultType(currslot));
+            MEDDLY_DCASSERT(etype->getResultType(currslot).hasType(t));
         }
         inline void WRITE_SLOT(ct_typeID t)
         {
             MEDDLY_DCASSERT(build);
             MEDDLY_DCASSERT(currslot < dataLength());
-            MEDDLY_DCASSERT(t == etype->getResultType(currslot));
+            MEDDLY_DCASSERT(etype->getResultType(currslot).hasType(t));
         }
 
 

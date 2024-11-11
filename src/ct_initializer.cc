@@ -16,8 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "error.h"
 #include "ct_initializer.h"
 #include "compute_table.h"
+#include "ct_entry_type.h"
 
 #include "storage/ct_styles.h"
 
@@ -40,7 +42,7 @@ MEDDLY::ct_initializer::ct_initializer(initializer_list* prev)
     setBuiltinStyle(MonolithicUnchainedHash);
     setMaxSize(16777216);
     setStaleRemoval(staleRemovalOption::Moderate);
-    //  setCompression(None);
+    // setCompression(compressionOption::None);
     setCompression(compressionOption::TypeBased);
 
     //
@@ -65,29 +67,29 @@ void MEDDLY::ct_initializer::setup()
     MEDDLY_DCASSERT(FREELISTS);
     setMemoryManager(FREELISTS);
 
-    if (ct_factory->usesMonolithic()) {
-        operation::Monolithic_CT = ct_factory->create(the_settings);
-    }
-
-    compute_table::initialize();
+    compute_table::initStatics(ct_factory, the_settings);
 }
 
 void MEDDLY::ct_initializer::cleanup()
 {
-    delete operation::Monolithic_CT;
-    operation::Monolithic_CT = nullptr;
-
-    compute_table::destroy();
+    compute_table::doneStatics();
 }
+
+void MEDDLY::ct_initializer::setMemoryManager(const memory_manager_style* mms)
+{
+    the_settings.MMS = mms;
+}
+
 
 void MEDDLY::ct_initializer::setStaleRemoval(staleRemovalOption sro)
 {
     the_settings.staleRemoval = sro;
 }
 
-void MEDDLY::ct_initializer::setMaxSize(unsigned ms)
+void MEDDLY::ct_initializer::setMaxSize(unsigned long ms)
 {
     the_settings.maxSize = ms;
+    the_settings.allowHugeTables = (ms > 1000000000);
 }
 
 void MEDDLY::ct_initializer::setBuiltinStyle(builtinCTstyle cts)
@@ -127,15 +129,16 @@ void MEDDLY::ct_initializer::setCompression(compressionOption co)
     the_settings.compression = co;
 }
 
-void MEDDLY::ct_initializer::setMemoryManager(const memory_manager_style* mms)
+void MEDDLY::ct_initializer::setHugeTables(bool on)
 {
-    the_settings.MMS = mms;
+    the_settings.allowHugeTables = on;
 }
 
-MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(operation* op, unsigned slot)
+MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(const ct_entry_type* et)
 {
+    MEDDLY_DCASSERT(et);
     if (ct_factory) {
-        return ct_factory->create(the_settings, op, slot);
+        return ct_factory->create(the_settings, et->getID());
     } else {
         return nullptr;
     }

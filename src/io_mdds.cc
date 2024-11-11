@@ -288,7 +288,13 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
             //
             // Reduce the node, and update the translation
             //
-            map[node_index] = F->createReducedNode(-1, nb);
+            edge_value ev;
+            F->createReducedNode(nb, ev, map[node_index]);
+
+            MEDDLY_DCASSERT( !ev.isInt()    || (0==ev.getInt()) );
+            MEDDLY_DCASSERT( !ev.isLong()   || (0==ev.getLong()) );
+            MEDDLY_DCASSERT( !ev.isFloat()  || (0==ev.getFloat()) );
+            MEDDLY_DCASSERT( !ev.isDouble() || (0==ev.getDouble()) );
 
 #ifdef DEBUG_READ
             std::cerr << "File node " << node_index << " reduced to ";

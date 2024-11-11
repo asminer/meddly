@@ -19,6 +19,7 @@
 #include "../defines.h"
 #include "reach_dfs.h"
 
+#include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
 #include "../compute_table.h"
 #include "../oper_unary.h"
@@ -413,7 +414,9 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
   unpacked_node::Recycle(mddDptrs);
 
   parent->saturateHelper(*C);
-  n = resF->createReducedNode(-1, C);
+  edge_value ev;
+  resF->createReducedNode(C, ev, n);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   // save in compute table
   saveSaturateResult(Key, mdd, n);
@@ -520,8 +523,9 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
   unpacked_node::Recycle(evmddDptrs);
 
   parent->saturateHelper(*C);
-  resF->createReducedNode(-1, C, resEv, resEvmdd);
-  resEv += ev;
+  edge_value Cev;
+  resF->createReducedNode(C, Cev, resEvmdd);
+  resEv = Cev.getLong() + ev;
 
   // save in compute table
   saveSaturateResult(Key, ev, evmdd, resEv, resEvmdd);
@@ -749,7 +753,7 @@ void MEDDLY::common_dfs_mt
 
   // Cleanup
   cleanup();
-  so->removeAllComputeTableEntries();
+  // so->removeAllComputeTableEntries();
   delete so;
 }
 
@@ -973,7 +977,10 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
   unpacked_node::Recycle(A);
 
   saturateHelper(*nb);
-  result = resF->createReducedNode(-1, nb);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
+
 #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
 #endif
@@ -1191,7 +1198,9 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
   unpacked_node::Recycle(A);
 
   saturateHelper(*nb);
-  result = resF->createReducedNode(-1, nb);
+  edge_value ev;;
+  resF->createReducedNode(nb, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
 #ifdef TRACE_ALL_OPS
   printf("computed recFire(%d, %d) = %d\n", mdd, mxd, result);
 #endif
@@ -1249,7 +1258,7 @@ void MEDDLY::common_dfs_evplus
 
   // Cleanup
   cleanup();
-  so->removeAllComputeTableEntries();
+  // so->removeAllComputeTableEntries();
   delete so;
 }
 
@@ -1501,7 +1510,9 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
   unpacked_node::Recycle(A);
 
   saturateHelper(*nb);
-  resF->createReducedNode(-1, nb, resEv, resEvmdd);
+  edge_value rev;
+  resF->createReducedNode(nb, rev, resEvmdd);
+  resEv = rev.getLong();
 #ifdef TRACE_ALL_OPS
   printf("computed recfire(<%d, %d>, %d) = <%d, %d>\n", ev, evmdd, mxd, resEv, resEvmdd);
 #endif

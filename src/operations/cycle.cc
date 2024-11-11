@@ -19,6 +19,7 @@
 #include "../defines.h"
 #include "cycle.h"
 
+#include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
 #include "../compute_table.h"
 #include "../oper_unary.h"
@@ -125,7 +126,9 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, n
       // T->d_ref(i) = resF->linkNode(t);
     }
     resF->unlinkNode(t);
-    resF->createReducedNode(-1, T, bev, b);
+    edge_value ev;
+    resF->createReducedNode(T, ev, b);
+    bev = ev.getLong();
     return;
   }
 
@@ -162,7 +165,9 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, n
 
   unpacked_node::Recycle(A);
 
-  resF->createReducedNode(-1, T, bev, b);
+  edge_value ev;
+  resF->createReducedNode(T, ev, b);
+  bev = ev.getLong();
   saveResult(key, aev, a, bev, b);
 }
 

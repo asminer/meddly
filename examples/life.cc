@@ -689,7 +689,7 @@ int main(int argc, const char** argv)
       STORAGE_STATS | HOLE_MANAGER_STATS
     );
     cerr << "Operation stats:\n";
-    operation::showAllComputeTables(meddlyout, 3);
+    compute_table::showAll(meddlyout, 3);
   }
 
   // Done!

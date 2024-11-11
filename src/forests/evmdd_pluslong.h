@@ -31,9 +31,6 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
   public:
     class OP {
       public:
-        static inline bool isIdentityEdge(const edge_value& ev) {
-            return ev.equals(long(0));
-        }
         static inline long apply(long a, long b) {
           return a + b;
         }
@@ -53,9 +50,6 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
     virtual void createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a);
     virtual void evaluate(const dd_edge &f, const int* vlist, long &term) const;
 
-    virtual bool isRedundant(const unpacked_node &nb) const;
-    virtual bool isIdentityEdge(const unpacked_node &nb, int i) const;
-
     virtual enumerator::iterator* makeFullIter() const {
       return new evpimdd_iterator(this);
     }
@@ -65,7 +59,6 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
     virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
 
   protected:
-    virtual void normalize(unpacked_node &nb, long& ev) const;
 #ifdef ALLOW_DEPRECATED_0_17_3
     virtual const char* codeChars() const;
 #endif

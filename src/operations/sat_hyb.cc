@@ -28,6 +28,7 @@
 
 #include "../operators.h"
 #include "../minterms.h"
+#include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
 #include "../compute_table.h"
 #include "../oper_unary.h"
@@ -644,7 +645,9 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
   unpacked_node::Recycle(A);
 
   saturateHelper(*nb);
-  result = resF->createReducedNode(-1, nb);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, result);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
@@ -926,7 +929,7 @@ MEDDLY::saturation_hyb_by_events_op
 
 MEDDLY::saturation_hyb_by_events_op::~saturation_hyb_by_events_op()
 {
-  removeAllComputeTableEntries();
+  // removeAllComputeTableEntries();
 }
 
 
@@ -1001,7 +1004,9 @@ MEDDLY::saturation_hyb_by_events_op::saturate(node_handle mdd, int k)
   // Cleanup
   unpacked_node::Recycle(mddDptrs);
   parent->saturateHelper(*nb);
-  n = resF->createReducedNode(-1, nb);
+  edge_value ev;
+  resF->createReducedNode(nb, ev, n);
+  MEDDLY_DCASSERT(ev.isVoid());
 
   // save in compute table
   saveSaturateResult(Key, mdd, n);

@@ -25,87 +25,139 @@
 // *                    unary_operation  methods                    *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_6
+
 MEDDLY::unary_operation::unary_operation(unary_list& owner,
     unsigned et_slots, forest* arg, forest* res)
-    : operation(owner.getName(), et_slots), parent(owner)
+    : operation(owner.getName(), et_slots)
 {
+    parent = &owner;
+
     argF = arg;
     resultType = opnd_type::FOREST;
     resF = res;
 
     registerInForest(argF);
     registerInForest(resF);
+    new_style = false;
 }
 
 MEDDLY::unary_operation::unary_operation(unary_list& owner,
     unsigned et_slots, forest* arg, opnd_type res)
-    : operation(owner.getName(), et_slots), parent(owner)
+    : operation(owner.getName(), et_slots)
 {
-    parent = owner;
+    parent = &owner;
     argF = arg;
     resultType = res;
     resF = nullptr;
 
     registerInForest(argF);
+    new_style = false;
+}
+
+#endif
+
+MEDDLY::unary_operation::unary_operation(forest* arg, forest* res)
+    : operation()
+{
+    parent = nullptr;
+
+    argF = arg;
+    resultType = opnd_type::FOREST;
+    resF = res;
+
+    registerInForest(argF);
+    registerInForest(resF);
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+    new_style = true;
+#endif
+}
+
+MEDDLY::unary_operation::unary_operation(forest* arg, opnd_type res)
+    : operation()
+{
+    parent = nullptr;
+
+    argF = arg;
+    resultType = res;
+    resF = nullptr;
+
+    registerInForest(argF);
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+    new_style = true;
+#endif
 }
 
 MEDDLY::unary_operation::~unary_operation()
 {
     unregisterInForest(argF);
     unregisterInForest(resF);
-    parent.remove(this);
+    if (parent) parent->remove(this);
 }
 
+void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
+{
+    if (!checkForestCompatibility()) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+#ifdef ALLOW_DEPRECATED_0_17_6
+    if (new_style) {
+        node_handle resp;
+        compute(resF->getMaxLevelIndex(), ~0,
+                arg.getEdgeValue(), arg.getNode(),
+                res.setEdgeValue(), resp);
+        res.set(resp);
+    } else {
+        computeDDEdge(arg, res, true);
+    }
+#else
+    node_handle resp;
+    compute(resF->getMaxLevelIndex(), ~0,
+            arg.getEdgeValue(), arg.getNode(), res.setEdgeValue(), resp);
+    res.set(resp);
+#endif
+}
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+void MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
+{
+    if (!checkForestCompatibility()) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+
+    if (new_style) {
+    } else {
+        computeDDEdge(arg, res, false);
+        node_handle resp;
+        compute(argF->getMaxLevelIndex(), ~0,
+                arg.getEdgeValue(), arg.getNode(),
+                res.setEdgeValue(), resp);
+        res.set(resp);
+    }
+}
 
 void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
+#endif
 
-void MEDDLY::unary_operation::compute(const dd_edge &arg, long &res)
+// new compute methods
+
+void MEDDLY::unary_operation::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap, edge_value &cv, node_handle &cp)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::unary_operation::compute(const dd_edge &arg, double &res)
+void MEDDLY::unary_operation::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap, oper_item &res)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::unary_operation::compute(const dd_edge &arg, ct_object &c)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void
-MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
-{
-    if (!checkForestCompatibility()) {
-        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-    }
-    computeDDEdge(arg, res, true);
-}
-
-void
-MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
-{
-    if (!checkForestCompatibility()) {
-        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-    }
-    computeDDEdge(arg, res, false);
-}
-
-bool
-MEDDLY::unary_operation::checkForestCompatibility() const
-{
-    if (resultType == opnd_type::FOREST) {
-        auto o1 = argF->variableOrder();
-        auto o2 = resF->variableOrder();
-        return o1->is_compatible_with(*o2);
-    } else {
-        return true;
-    }
-}
 
 // ******************************************************************
 // *                       unary_list methods                       *

@@ -27,11 +27,21 @@
 // #define ALLOW_DEPRECATED_0_17_3  "12/03/2023"
 // #define ALLOW_DEPRECATED_0_17_4  "12/19/2023"
 // #define ALLOW_DEPRECATED_0_17_5  "04/05/2024"
+#define ALLOW_DEPRECATED_0_17_6
+
+// ==================================================================
+// ^ This line is important for the release script, don't remove it
+
+
+#define REFCOUNTS_ON
 
 // #define DEBUG_CLEANUP
 // #define DEBUG_SLOW
 // #define TRACE_ALL_OPS
 // #define DEBUG_READ_DD
+
+// Turn off extensible nodes for now
+// #define ALLOW_EXTENSIBLE
 
 #include <limits>
 
@@ -43,8 +53,8 @@ namespace MEDDLY {
   template<typename T>
   inline T Inf()    { return std::numeric_limits<T>::max(); }
   inline float Nan()  { return std::numeric_limits<float>::quiet_NaN(); }
-  inline bool isNan(float t) { return t != t; }
-  inline bool isNan(int t) { return false; }
+  // inline bool isNan(float t) { return t == Nan(); }
+  // inline bool isNan(int t) { return false; }
 
   // Handy Macros
 

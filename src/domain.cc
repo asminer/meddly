@@ -79,7 +79,7 @@ void MEDDLY::domain::destroy(MEDDLY::domain* &d)
         throw error(error::UNINITIALIZED, __FILE__, __LINE__);
     }
     d->markForDeletion();
-    operation::purgeAllMarked();
+    // operation::purgeAllMarked();
 
     //
     // Remove d from the domain_list

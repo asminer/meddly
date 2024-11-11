@@ -20,15 +20,16 @@
 #define MEDDLY_OPER_UNARY_H
 
 #include "oper.h"
+#include "oper_item.h"
 #include "forest.h"
 
 namespace MEDDLY {
-    class ct_object;
+    class ct_object;    // TBD: remove
+    class oper_item;
     class unary_operation;
     class unary_list;
     class forest;
 };
-
 
 // ******************************************************************
 // *                                                                *
@@ -41,11 +42,33 @@ namespace MEDDLY {
 */
 class MEDDLY::unary_operation : public operation {
     public:
+#ifdef ALLOW_DEPRECATED_0_17_6
+        /// Old constructor, returns DD
         unary_operation(unary_list& owner, unsigned et_slots,
             forest* arg, forest* res);
 
+        /// Old constructor, returns a number
         unary_operation(unary_list& owner, unsigned et_slots,
             forest* arg, opnd_type res);
+#endif
+        /** New constructor for a unary op that returns a DD.
+            Compute table entry information is managed 'by hand'
+            in the derived class.
+                @param  arg     Forest containing the argument.
+
+                @param  res     Forest containing the result.
+                                Must be compatible with the argument forest.
+        */
+        unary_operation(forest* arg, forest* res);
+
+        /** New constructor for a unary op that returns a DD.
+            Compute table entry information is managed 'by hand'
+            in the derived class.
+                @param  arg     Forest containing the argument.
+
+                @param  res     Type of the result; should NOT be FOREST.
+        */
+        unary_operation(forest* arg, opnd_type res);
 
     protected:
         virtual ~unary_operation();
@@ -56,18 +79,30 @@ class MEDDLY::unary_operation : public operation {
         /// Make sure all three domains are the same.
         inline void checkDomains(const char* file, unsigned line) const
         {
+            MEDDLY_DCASSERT(argF);
+            MEDDLY_DCASSERT(resF);
             if  ( (argF->getDomain() != resF->getDomain()) )
             {
                 throw error(error::DOMAIN_MISMATCH, file, line);
             }
         }
-        /// Make sure the arguments set/relation status matches
+        /// Make sure the arguments set/relation status match each other
+        inline void checkAllRelations(const char* file, unsigned line) const
+        {
+            MEDDLY_DCASSERT(argF);
+            if  (argF->isForRelations() != resF->isForRelations())
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
+        /// Make sure the arguments set/relation status matches a
         inline void checkAllRelations(const char* file, unsigned line,
                 set_or_rel a) const
         {
+            MEDDLY_DCASSERT(argF);
             if  (
                     (argF->isForRelations() != a)  ||
-                    (resF->isForRelations() != a)
+                    (resF && resF->isForRelations() != a)
                 )
             {
                 throw error(error::TYPE_MISMATCH, file, line);
@@ -77,9 +112,10 @@ class MEDDLY::unary_operation : public operation {
         inline void checkAllLabelings(const char* file, unsigned line,
                 edge_labeling a) const
         {
+            MEDDLY_DCASSERT(argF);
             if  (
                     (argF->getEdgeLabeling() != a)  ||
-                    (resF->getEdgeLabeling() != a)
+                    (resF && resF->getEdgeLabeling() != a)
                 )
             {
                 throw error(error::TYPE_MISMATCH, file, line);
@@ -89,6 +125,8 @@ class MEDDLY::unary_operation : public operation {
         inline void checkLabelings(const char* file, unsigned line,
                 edge_labeling a, edge_labeling r) const
         {
+            MEDDLY_DCASSERT(argF);
+            MEDDLY_DCASSERT(resF);
             if  (
                     (argF->getEdgeLabeling() != a)  ||
                     (resF->getEdgeLabeling() != r)
@@ -101,9 +139,10 @@ class MEDDLY::unary_operation : public operation {
         inline void checkAllRanges(const char* file, unsigned line,
                 range_type rt) const
         {
+            MEDDLY_DCASSERT(argF);
             if  (
                     (argF->getRangeType() != rt)  ||
-                    (resF->getRangeType() != rt)
+                    (resF && resF->getRangeType() != rt)
                 )
             {
                 throw error(error::TYPE_MISMATCH, file, line);
@@ -113,6 +152,8 @@ class MEDDLY::unary_operation : public operation {
         inline void checkRanges(const char* file, unsigned line,
                 range_type a, range_type r) const
         {
+            MEDDLY_DCASSERT(argF);
+            MEDDLY_DCASSERT(resF);
             if  (
                     (argF->getRangeType() != a)  ||
                     (resF->getRangeType() != r)
@@ -127,16 +168,89 @@ class MEDDLY::unary_operation : public operation {
             Checks forest comatability and then calls computeDDEdge().
         */
         void compute(const dd_edge &arg, dd_edge &res);
-        void computeTemp(const dd_edge &arg, dd_edge &res);
 
-        virtual void compute(const dd_edge &arg, long &res);
-        virtual void compute(const dd_edge &arg, double &res);
-        virtual void compute(const dd_edge &arg, ct_object &c);
+#ifdef ALLOW_DEPRECATED_0_17_6
+        void computeTemp(const dd_edge &arg, dd_edge &res);
         virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
+#endif
+
+        /**
+            New virtual compute method for DDs.
+
+                @param  L       Recursion level.
+                                If all forests are quasi-reduced,
+                                then this is the top level of the
+                                operand and result.
+                                Ignored for some reduction rules (e.g.,
+                                fully reduced) but important for others
+                                (e.g., quasi reduced).
+
+                @param  in      Incoming edge index.
+                                Important only for identity-reduced
+                                relations when L is positive.
+                                Use ~0 if there is no edge index.
+
+                @param  av      Edge value for operand
+                @param  ap      Node for operand, must be below L.
+
+                @param  cv      Edge value of result
+                @param  cp      Node for result, will be below L.
+         */
+        virtual void compute(
+                int L, unsigned in,
+                const edge_value &av, node_handle ap,
+                edge_value &cv, node_handle &cp);
+
+        /**
+            New virtual compute method for all other result types.
+                @param  L       Recursion level.
+                @param  in      Incoming edge index.
+                @param  av      Edge value for operand
+                @param  ap      Node for operand
+                @param  res     Result of the operation is stored here.
+         */
+        virtual void compute(int L, unsigned in,
+                const edge_value &av, node_handle ap, oper_item &res);
+
+
+        inline void compute(const dd_edge &arg, long &res) {
+            oper_item tmp(res);
+            compute(argF->getMaxLevelIndex(), ~0,
+                    arg.getEdgeValue(), arg.getNode(), tmp);
+            res = tmp.getInteger();
+        }
+
+        inline void compute(const dd_edge &arg, double &res) {
+            oper_item tmp(res);
+            compute(argF->getMaxLevelIndex(), ~0,
+                    arg.getEdgeValue(), arg.getNode(), tmp);
+            res = tmp.getReal();
+        }
+
+#ifdef HAVE_LIBGMP
+        inline void compute(const dd_edge &arg, mpz_ptr v) {
+            oper_item tmp(v);
+            compute(argF->getMaxLevelIndex(), ~0,
+                    arg.getEdgeValue(), arg.getNode(), tmp);
+        }
+#endif
+
+        inline void compute(const dd_edge &arg, oper_item &res) {
+            compute(argF->getMaxLevelIndex(), ~0,
+                    arg.getEdgeValue(), arg.getNode(), res);
+        }
 
     protected:
-        virtual bool checkForestCompatibility() const;
-
+        inline bool checkForestCompatibility() const
+        {
+            if (resultType == opnd_type::FOREST) {
+                auto o1 = argF->variableOrder();
+                auto o2 = resF->variableOrder();
+                return o1->is_compatible_with(*o2);
+            } else {
+                return true;
+            }
+        }
 
     protected:
         forest* argF;
@@ -144,10 +258,12 @@ class MEDDLY::unary_operation : public operation {
         opnd_type resultType;
 
     private:
-        unary_list& parent;
+        unary_list* parent;
         unary_operation* next;
+#ifdef ALLOW_DEPRECATED_0_17_6
+        bool new_style;
+#endif
 
-        // friend void destroyOperation(unary_operation* &op);
         friend class unary_list;
 };
 
@@ -174,6 +290,13 @@ class MEDDLY::unary_list {
 
         inline unary_operation* add(unary_operation* uop) {
             if (uop) {
+                if (uop->parent) {
+                    // REMOVE EVENTUALLY
+                    MEDDLY_DCASSERT(uop->parent == this);
+                } else {
+                    uop->parent = this;
+                    uop->setName(name);
+                }
                 uop->next = front;
                 front = uop;
             }
@@ -266,21 +389,19 @@ namespace MEDDLY {
     }
 
     /** Apply a unary operator.
-        For operators whose result is a anything else.
+        For operators whose result is a real.
             @param  bu  Built-in unary operator (function)
             @param  a   Operand.
-            @param  rt  Type of result
             @param  c   Output parameter: the result,
                           where \a c = \a op \a a.
     */
-    inline void apply(unary_builtin2 bu, const dd_edge &a, opnd_type rt,
-            ct_object &c)
+    inline void apply(unary_builtin2 bu, const dd_edge &a, oper_item &c)
     {
-        unary_operation* uop = bu(a.getForest(), rt);
+        unary_operation* uop = bu(a.getForest(), c.getType());
         uop->compute(a, c);
     }
 
-#ifdef __GMP_H__
+#ifdef HAVE_LIBGMP
     /** Apply a unary operator.
         For operators whose result is an arbitrary-precision integer
         (as supplied by the GNU MP library).
@@ -289,12 +410,10 @@ namespace MEDDLY {
             @param  c   Input: an initialized MP integer.
                         Output: the result, where \a c = \a op \a a.
     */
-    inline void apply(unary_builtin2 bu, const dd_edge &a, mpz_t &c)
+    inline void apply(unary_builtin2 bu, const dd_edge &a, mpz_ptr c)
     {
-        ct_object& x = get_mpz_wrapper();
         unary_operation* uop = bu(a.getForest(), opnd_type::HUGEINT);
-        uop->compute(a, x);
-        unwrap(x, c);
+        uop->compute(a, c);
     }
 #endif
 

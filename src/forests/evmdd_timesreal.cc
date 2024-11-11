@@ -49,7 +49,6 @@ void MEDDLY::evmdd_timesreal::createEdge(float val, dd_edge &e)
 void MEDDLY::evmdd_timesreal
 ::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 {
-  // binary_operation* unionOp = getOperation(PLUS, this, this, this);
   binary_operation* unionOp = 0;  // for now
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
@@ -81,17 +80,6 @@ void MEDDLY::evmdd_timesreal
   evaluateT<OP, float>(f, vlist, term);
 }
 
-
-bool MEDDLY::evmdd_timesreal::isRedundant(const unpacked_node &nb) const
-{
-  return isRedundantTempl<OP>(nb);
-}
-
-bool MEDDLY::evmdd_timesreal::isIdentityEdge(const unpacked_node &nb, int i) const
-{
-  return isIdentityEdgeTempl<OP>(nb, i);
-}
-
 void MEDDLY::evmdd_timesreal::showEdge(output &s, const edge_value &ev,
         node_handle d) const
 {
@@ -111,30 +99,6 @@ void MEDDLY::evmdd_timesreal::showEdge(output &s, const edge_value &ev,
     }
 }
 
-
-void MEDDLY::evmdd_timesreal::normalize(unpacked_node &nb, float& ev) const
-{
-  ev = 0.0f;
-  int index = -1;
-  for (unsigned i=0; i<nb.getSize(); i++) {
-    if (0==nb.down(i)) continue;
-    ev = nb.edgeval(i).getFloat();
-    if (!ev) continue;
-    index = int(i);
-    break;
-  }
-  if (index < 0) {
-      return; // this node will eventually be reduced to "0".
-  }
-  for (unsigned i=0; i<nb.getSize(); i++) {
-    if (0==nb.down(i)) continue;
-    if (nb.edgeval(i).equals(float(0))) {
-      nb.setFull(i, 0.0f, 0);
-    } else {
-      nb.divideEdge(i, ev);
-    }
-  }
-}
 
 #ifdef ALLOW_DEPRECATED_0_17_3
 

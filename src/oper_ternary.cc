@@ -50,7 +50,7 @@ MEDDLY::ternary_operation::~ternary_operation()
 }
 
 void MEDDLY::ternary_operation::compute(const dd_edge &ar1,
-    const dd_edge &ar2, const dd_edge &ar3, dd_edge &res)
+        const dd_edge &ar2, const dd_edge &ar3, dd_edge &res)
 {
     if (!checkForestCompatibility()) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
@@ -58,8 +58,10 @@ void MEDDLY::ternary_operation::compute(const dd_edge &ar1,
     computeDDEdge(ar1, ar2, ar3, res, true);
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_6
+
 void MEDDLY::ternary_operation::computeTemp(const dd_edge &ar1,
-    const dd_edge &ar2, const dd_edge &ar3, dd_edge &res)
+        const dd_edge &ar2, const dd_edge &ar3, dd_edge &res)
 {
     if (!checkForestCompatibility()) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
@@ -67,19 +69,10 @@ void MEDDLY::ternary_operation::computeTemp(const dd_edge &ar1,
     computeDDEdge(ar1, ar2, ar3, res, false);
 }
 
-bool MEDDLY::ternary_operation::checkForestCompatibility() const
-{
-    auto o1 = arg1F->variableOrder();
-    auto o2 = arg2F->variableOrder();
-    auto o3 = arg3F->variableOrder();
-    auto o4 = resF->variableOrder();
-    return  o1->is_compatible_with(*o2) &&
-            o1->is_compatible_with(*o3) &&
-            o1->is_compatible_with(*o4);
-}
+#endif
 
 // ******************************************************************
-// *                      ternary_list  methods                      *
+// *                      ternary_list methods                      *
 // ******************************************************************
 
 MEDDLY::ternary_list::ternary_list(const char* n)

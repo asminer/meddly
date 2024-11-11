@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
   // transitions->showInfo(meddlyout);
 
   printf("\nCompute Table:\n");
-  operation::showMonolithicComputeTable(meddlyout, true);
+  compute_table::showMonolithicComputeTable(meddlyout, true);
 
   dd_edge reachableStates(initial_state);
   dd_edge prevReachableStates(states);

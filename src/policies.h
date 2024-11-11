@@ -46,8 +46,8 @@ namespace MEDDLY {
         memory_manager_style for memory management.
     */
     extern const node_storage_style* SIMPLE_STORAGE;
-    extern const node_storage_style* PATTERN_STORAGE;
-    extern const node_storage_style* BEST_STORAGE;
+    // extern const node_storage_style* PATTERN_STORAGE;
+    // extern const node_storage_style* BEST_STORAGE;
 
     //
     // From here are "old" mechanisms for node storage,
@@ -85,12 +85,24 @@ namespace MEDDLY {
 
     /** Supported node reduction rules.
         Currently, the following reduction rules are allowed:
-          - Fully reduced, meaning that duplicate and redundant nodes are
-            eliminated.
-          - Quasi reduced, meaning that duplicate nodes are eliminated.
-          - Identity reduced, for relations only, meaning that duplicate
-            nodes are eliminated, as are "identity" pairs of primed, unprimed
-            variables.
+            - Quasi-reduced.
+                All zero nodes are eliminated.
+                Pointers from a node are always directly to the level
+                below, or directly to terminal node zero.
+
+            - Fully-reduced.
+                All redundant nodes are eliminated.
+
+            - Identity-reduced.
+                For relations only.
+                At unprimed levels, all redundant nodes are eliminated.
+                At primed levels, an i-singleton node is one that
+                is all zero, execept for index i. An i-singleton node
+                cannot have an incoming pointer from any level except
+                the unprimed level directly above it, and cannot have
+                an incoming pointer that is from the i-th child.
+
+        In all cases, duplicate nodes are eliminated.
     */
     enum class reduction_rule {
         /// Nodes are fully reduced.
@@ -129,23 +141,6 @@ namespace MEDDLY {
     const set_or_rel    RELATION        = true;
     const set_or_rel    MATRIX          = true;
     const set_or_rel    WITH_PRIMED     = true;
-
-    // ******************************************************************
-    // *                           range types                          *
-    // ******************************************************************
-
-    /** Types of values that we can currently store in forests.
-        I.e., if every node in a forest is a function,
-        these are the possible ranges for a function.
-    */
-    enum class range_type {
-        /// boolean-valued functions.
-        BOOLEAN,
-        /// integer-valued functions.
-        INTEGER,
-        /// real-valued functions.
-        REAL
-    };
 
     // ******************************************************************
     // *                         edge  labelings                        *
