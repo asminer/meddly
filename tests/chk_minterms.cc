@@ -363,9 +363,6 @@ void check_rel_eq(char mxdtype, const MEDDLY::dd_edge &E,
         MEDDLY::ostream_output out(std::cout);
         E.showGraph(out);
 
-        out << "\nPath ";
-        F->evaluate(E, uneval, preval, val_mxd, &out);
-
         throw "mismatch";
     }
 
