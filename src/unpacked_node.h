@@ -39,7 +39,7 @@ namespace MEDDLY {
 #define ALLOW_SET_FROM_DDEDGE
 #define ALLOW_SET_FROM_POINTER
 
-#define USE_STRUCT
+// #define USE_STRUCT
 
 // ******************************************************************
 // *                                                                *
