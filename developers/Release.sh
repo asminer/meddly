@@ -32,7 +32,7 @@ update_defines()
     local ddate=`date +"%m/%d/%Y"`
     local versid=`tr '.' '_' <<< "$1"`
     mv -f ../$DEFFILE ../$DEFFILE.old
-    sed "1,/=======/s/$versid.*/$versid  \"$ddate\"/" ../$DEFFILE.old > ../$DEFFILE
+    sed "1,/=======/s|$versid.*|$versid  \"$ddate\"|" ../$DEFFILE.old > ../$DEFFILE
     git add ../$DEFFILE
 }
 
