@@ -125,15 +125,20 @@ class MEDDLY::minterm {
         // sparse access
 
         inline void append(unsigned ndx, int from) {
+            if (DONT_CARE == from) return;
             MEDDLY_DCASSERT(isForSets());
             MEDDLY_DCASSERT(isSparse());
+            MEDDLY_DCASSERT( _index.empty() || _index.back() < ndx );
             _index.push_back(ndx);
             _from.push_back(from);
+
         }
 
         inline void append(unsigned ndx, int from, int to) {
+            if ((DONT_CARE == from) && (DONT_CARE == to)) return;
             MEDDLY_DCASSERT(isForSets());
             MEDDLY_DCASSERT(isSparse());
+            MEDDLY_DCASSERT( _index.empty() || _index.back() < ndx );
             _index.push_back(ndx);
             _from.push_back(from);
             _to.push_back(to);
@@ -159,6 +164,29 @@ class MEDDLY::minterm {
         //
         bool contains(const minterm& m) const;
 
+    private:
+        inline bool matches(unsigned i, const minterm& m, unsigned j) const
+        {
+            MEDDLY_DCASSERT(isForRelations() == m.isForRelations());
+
+            if ((DONT_CARE != _from.at(i)) && (_from.at(i) == m._from.at(j)))
+                return false;
+
+            if (!isForRelations())  return true;
+
+            if (DONT_CARE == _to.at(i)) return true;
+            if (_to.at(i) == m._to.at(j)) return true;
+
+            return (DONT_CHANGE == _to.at(i))
+                && (m._to.at(j) == m._from.at(j));
+        }
+
+        inline bool isDontCare(unsigned i) const
+        {
+            if (DONT_CARE != _from.at(i)) return false;
+            if (!isForRelations()) return true;
+            return DONT_CARE == _to.at(i);
+        }
 
     private:
         std::vector<int> _from;
