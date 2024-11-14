@@ -32,17 +32,143 @@
 // Should we define collections of minterms here?
 //
 
+#include "minterms.h"
+#include "policies.h"
+#include "terminal.h"
+
 namespace MEDDLY {
-  /** Special value for minterms: don't care what this variable does.
+
+    /** Special value for minterms: don't care what this variable does.
       I.e., do the same thing for all possible assignments for a variable.
-  */
-  const int DONT_CARE  = -1;
-  /** Special value for primed minterms: don't change this variable.
+      */
+    const int DONT_CARE  = -1;
+
+    /** Special value for primed minterms: don't change this variable.
       Forces the primed value to equal the unprimed value for a variable.
       Undefined for unprimed variables.
-  */
-  const int DONT_CHANGE = -2;
+      */
+    const int DONT_CHANGE = -2;
+
+
+    class forest;
+    class minterm;
 
 };  // namespace MEDDLY
+
+
+class MEDDLY::minterm {
+    public:
+        minterm(const forest* parent, node_storage_flags fs);
+
+        inline bool isSparse()          const { return sparse; }
+        inline bool isFull()            const { return !sparse; }
+
+        inline bool isForSets()         const { return !for_relations; }
+        inline bool isForRelations()    const { return for_relations; }
+
+        inline unsigned numVars()       const { return num_vars; }
+
+        /// Return true iff there are no don't cares/don't change
+        inline bool areAllAssigned()    const { return all_assigned; }
+
+        // access for sets
+
+        inline void getVar(unsigned i, int &from) const {
+            MEDDLY_DCASSERT(isForSets());
+#ifdef DEVELOPMENT_CODE
+            from = _from.at(i);
+#else
+            from = _from[i];
+#endif
+        }
+        inline void setVar(unsigned i, int from) {
+            MEDDLY_DCASSERT(isForSets());
+            MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
+#ifdef DEVELOPMENT_CODE
+            _from.at(i) = from;
+#else
+            _from[i] = from;
+#endif
+            if (from<0) {
+                all_assigned = false;
+            }
+        }
+
+        // access for relations
+
+        inline void getVars(unsigned i, int &from, int &to) const {
+            MEDDLY_DCASSERT(isForRelations());
+#ifdef DEVELOPMENT_CODE
+            from = _from.at(i);
+            to   = _to.at(i);
+#else
+            from = _from[i];
+            to   = _to[i];
+#endif
+        }
+        inline void setVars(unsigned i, int from, int to) {
+            MEDDLY_DCASSERT(isForRelations());
+            MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
+            MEDDLY_DCASSERT(to >= 0 || to == DONT_CARE || to == DONT_CHANGE);
+#ifdef DEVELOPMENT_CODE
+            _from.at(i) = from;
+            _to.at(i) = to;
+#else
+            _from[i] = from;
+            _to[i] = to;
+#endif
+            if (from<0 || to<0) {
+                all_assigned = false;
+            }
+        }
+
+        // sparse access
+
+        inline void append(unsigned ndx, int from) {
+            MEDDLY_DCASSERT(isForSets());
+            MEDDLY_DCASSERT(isSparse());
+            _index.push_back(ndx);
+            _from.push_back(from);
+        }
+
+        inline void append(unsigned ndx, int from, int to) {
+            MEDDLY_DCASSERT(isForSets());
+            MEDDLY_DCASSERT(isSparse());
+            _index.push_back(ndx);
+            _from.push_back(from);
+            _to.push_back(to);
+        }
+
+        inline unsigned size() const {
+            MEDDLY_DCASSERT(isSparse());
+            return _index.size();
+        }
+
+        inline int whichVar(unsigned nz) const {
+            MEDDLY_DCASSERT(isSparse());
+#ifdef DEVELOPMENT_CODE
+            return _index.at(nz);
+#else
+            return _index[nz];
+#endif
+        }
+
+        //
+        // check if we are equal to m,
+        // except we may contain more don't cares
+        //
+        bool contains(const minterm& m) const;
+
+
+    private:
+        std::vector<int> _from;
+        std::vector<int> _to;
+        std::vector<unsigned> _index;
+
+        unsigned num_vars;
+        bool for_relations;
+        bool sparse;
+        bool all_assigned;
+};
 
 #endif

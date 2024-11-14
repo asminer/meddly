@@ -632,7 +632,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
         fflush(stdout);
         sat = SATURATION_FORWARD(mdd, ensf, mdd);
         if (0==sat) {
-          throw error(error::INVALID_OPERATION);
+          throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
         }
         sat->compute(initialStates, reachableStates);
         break;

@@ -113,7 +113,7 @@ void MEDDLY::enumerator::iterator::getValue(int &) const
 
 void MEDDLY::enumerator::iterator::getValue(long &) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::enumerator::iterator::getValue(float &) const

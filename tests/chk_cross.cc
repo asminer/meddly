@@ -28,8 +28,6 @@
 
 #include "../src/meddly.h"
 
-using namespace MEDDLY;
-
 // #define DEBUG_RANDSET
 // #define DEBUG_SEGV
 
@@ -71,6 +69,9 @@ void randomizeMinterm()
     printf("]\n");
 #endif
 }
+
+using namespace MEDDLY;
+
 
 void makeRandomSet(forest* f, int nmt, dd_edge &x)
 {

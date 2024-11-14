@@ -79,7 +79,7 @@ class MEDDLY::error {
             MISCELLANEOUS
         };
     public:
-        error(code c, const char* fn=nullptr, unsigned ln=0);
+        error(code c, const char* fn, unsigned ln);
 
         /// Return a human-readable error message
         const char* getName() const;

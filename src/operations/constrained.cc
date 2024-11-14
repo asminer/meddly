@@ -281,7 +281,7 @@ MEDDLY::constrained_bckwd_bfs_evplus::constrained_bckwd_bfs_evplus(
         plusOp = PLUS(resF, arg1F, resF);
         minOp = UNION(resF, resF, resF);
     } else {
-        throw error(error::INVALID_OPERATION);
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     }
     imageOp = PRE_IMAGE(arg2F, arg3F, resF);
 }
@@ -1789,7 +1789,7 @@ MEDDLY::ternary_operation* MEDDLY::CONSTRAINED_FORWARD_DFS(forest* consF,
         return new constrained_forwd_dfs_mt(CONSTRAINED_FORWARD_DFS_cache,
                 consF, inF, relF, outF);
     }
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::CONSTRAINED_FORWARD_DFS_init()
@@ -1819,7 +1819,7 @@ MEDDLY::ternary_operation* MEDDLY::CONSTRAINED_BACKWARD_DFS(forest* consF,
         return new constrained_bckwd_dfs_evplus(CONSTRAINED_BACKWARD_DFS_cache,
             consF, inF, relF, outF);
     }
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::CONSTRAINED_BACKWARD_DFS_init()

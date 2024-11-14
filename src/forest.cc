@@ -1693,7 +1693,7 @@ void MEDDLY::forest
 void MEDDLY::forest
 ::evaluate(const dd_edge& f, const int* vl, const int* vpl, long &t) const
 {
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest

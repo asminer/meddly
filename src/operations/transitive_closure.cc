@@ -191,7 +191,7 @@ MEDDLY::transitive_closure_forwd_bfs
     plusOp = POST_PLUS(resF, arg1F, resF);
     minOp = UNION(resF, resF, resF);
   } else {
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
   imageOp = TC_POST_IMAGE(arg2F, arg3F, resF);
 }

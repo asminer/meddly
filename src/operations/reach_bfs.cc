@@ -204,7 +204,7 @@ MEDDLY::forwd_bfs_evplus::forwd_bfs_evplus(forest* a1, forest* a2, forest* res)
   if (res->getRangeType() == range_type::INTEGER) {
     setUnionOp( UNION(res, res, res) );
   } else {
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
   setImageOp( POST_IMAGE(a1, a2, res) );
 }
@@ -228,7 +228,7 @@ MEDDLY::bckwd_bfs_evplus::bckwd_bfs_evplus(forest* a1, forest* a2, forest* res)
   if (res->getRangeType() == range_type::INTEGER) {
     setUnionOp( UNION(res, res, res) );
   } else {
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
   setImageOp( PRE_IMAGE(a1, a2, res) );
 }

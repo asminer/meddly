@@ -45,7 +45,7 @@ libmeddly_la_SOURCES = \
     log_simple.h            log_simple.cc \
     memory.h                memory.cc \
     memstats.h              memstats.cc \
-    minterms.h              \
+    minterms.h              minterms.cc \
     node_headers.h          node_headers.cc \
     node_marker.h           node_marker.cc \
     node_storage.h          node_storage.cc \

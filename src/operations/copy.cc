@@ -131,7 +131,7 @@ MEDDLY::copy_MT::copy_MT(forest* arg, forest* res)
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__);
     if (!arg->isMultiTerminal()) {
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
     ct = new ct_entry_type("copy_mt");
@@ -428,7 +428,7 @@ MEDDLY::copy_EV_fast::copy_EV_fast(forest* arg, forest* res)
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__);
     if (arg->isMultiTerminal() || res->isMultiTerminal()) {
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
     ct = new ct_entry_type("copy_ev_fast");
@@ -664,7 +664,7 @@ MEDDLY::copy_EV<EdgeOp>::copy_EV(forest* arg, forest* res)
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__);
     if (arg->isMultiTerminal()) {
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
     ct = new ct_entry_type("copy_ev");
