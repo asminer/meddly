@@ -21,6 +21,7 @@
 #include "forest.h"
 
 MEDDLY::minterm::minterm(const forest* parent, node_storage_flags fs)
+    : termval(true)
 {
     if (parent) {
         num_vars = parent->getNumVariables();

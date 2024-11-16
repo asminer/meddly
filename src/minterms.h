@@ -56,20 +56,43 @@ namespace MEDDLY {
 };  // namespace MEDDLY
 
 
+/**
+    Minterm object.
+    We assign values to each variable, or we allow variables
+    to be unset using a value of DONT_CARE, or in a relation
+    we can restruct variables to be unchanged using a value
+    of DONT_CARE.
+
+    Storage-wise, a minterm may be stored in sparse or full format.
+    In sparse format, any unspecified variable is assumed
+    to be DONT_CARE (any possible value).
+    In both formats, for relations we must set the unprimed
+    and primed variables together.
+
+    Unlike a proper minterm, however, we can set the
+    function value to something other than true for the
+    given set of variable assignments.
+*/
 class MEDDLY::minterm {
     public:
         minterm(const forest* parent, node_storage_flags fs);
 
-        inline bool isSparse()          const { return sparse; }
-        inline bool isFull()            const { return !sparse; }
+        inline bool isSparse()              const   { return sparse; }
+        inline bool isFull()                const   { return !sparse; }
 
-        inline bool isForSets()         const { return !for_relations; }
-        inline bool isForRelations()    const { return for_relations; }
+        inline bool isForSets()             const   { return !for_relations; }
+        inline bool isForRelations()        const   { return for_relations; }
 
-        inline unsigned numVars()       const { return num_vars; }
+        inline unsigned numVars()           const   { return num_vars; }
 
         /// Return true iff there are no don't cares/don't change
-        inline bool areAllAssigned()    const { return all_assigned; }
+        inline bool areAllAssigned()        const   { return all_assigned; }
+
+        /// Set the terminal value
+        inline void setTerm(const terminal &t)      { termval = t; }
+
+        /// Get the terminal value
+        inline const terminal& getTerm()    const   { return termval; }
 
         // access for sets
 
@@ -126,6 +149,7 @@ class MEDDLY::minterm {
 
         inline void append(unsigned ndx, int from) {
             if (DONT_CARE == from) return;
+            MEDDLY_DCASSERT(from >= 0);
             MEDDLY_DCASSERT(isForSets());
             MEDDLY_DCASSERT(isSparse());
             MEDDLY_DCASSERT( _index.empty() || _index.back() < ndx );
@@ -136,6 +160,8 @@ class MEDDLY::minterm {
 
         inline void append(unsigned ndx, int from, int to) {
             if ((DONT_CARE == from) && (DONT_CARE == to)) return;
+            MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
+            MEDDLY_DCASSERT(to >= 0 || to == DONT_CARE || to == DONT_CHANGE);
             MEDDLY_DCASSERT(isForSets());
             MEDDLY_DCASSERT(isSparse());
             MEDDLY_DCASSERT( _index.empty() || _index.back() < ndx );
@@ -192,6 +218,8 @@ class MEDDLY::minterm {
         std::vector<int> _from;
         std::vector<int> _to;
         std::vector<unsigned> _index;
+
+        terminal termval;
 
         unsigned num_vars;
         bool for_relations;

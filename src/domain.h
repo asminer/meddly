@@ -127,19 +127,6 @@ class MEDDLY::domain {
             return vars[lev];
         }
 
-#ifdef ALLOW_DEPRECATED_0_17_2
-        inline variable* useVar(unsigned lev) {
-            return getVar(lev);
-        }
-        inline variable* getExpertVar(unsigned lev) {
-            return getVar(lev);
-        }
-        inline const variable* getExpertVar(unsigned lev) const {
-            return getVar(lev);
-        }
-#endif
-
-
         /** Get the specified bound of a variable.
             @param  lev     Level number, should be 1 for bottom-most
                             and getNumVariables() for top-most.
@@ -377,22 +364,6 @@ class MEDDLY::domain {
 
     public:
 
-#ifdef ALLOW_DEPRECATED_0_17_2
-
-        /**
-            Deprecated; use forest::create() instead.
-        */
-        forest* createForest(bool rel, range_type t, edge_labeling ev,
-                const policies &p, int* level_reduction_rule=NULL, int tv=0);
-
-        /**
-            Deprecated; use forest::create() instead.
-        */
-        forest* createForest(bool rel, range_type t, edge_labeling ev);
-
-#endif
-
-
     // --------------------------------------------------------------------
     //
     // Ideas for future expansion.
@@ -458,43 +429,5 @@ class MEDDLY::domain {
 
 };
 
-
-
-// ******************************************************************
-// *                                                                *
-// *             OLD deprecated methods,  replace usage             *
-// *                                                                *
-// ******************************************************************
-
-#ifdef ALLOW_DEPRECATED_0_17_2
-namespace MEDDLY {
-
-    /// Deprecated; use domain::create() instead.
-    inline domain* createDomain(variable** vars=nullptr, unsigned N=0)
-    {
-        return domain::create(vars, N);
-    }
-
-    /// Deprecated; use domain::create() instead.
-    inline domain* createDomainBottomUp(const int* bounds, unsigned N)
-    {
-        return domain::createBottomUp(bounds, N);
-    }
-
-    /// Deprecated; use domain::destroy() instead.
-    inline void destroyDomain(domain* &d)
-    {
-        domain::destroy(d);
-    }
-
-    class expert_domain : public domain {
-        protected:
-            expert_domain(variable** v, unsigned N) : domain(v, N) { }
-            virtual ~expert_domain()  { };
-
-            friend class domain;
-    };
-};
-#endif
 
 #endif
