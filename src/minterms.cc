@@ -24,9 +24,11 @@ MEDDLY::minterm::minterm(const forest* parent, node_storage_flags fs)
     : termval(true)
 {
     if (parent) {
+        parent_FID = parent->FID();
         num_vars = parent->getNumVariables();
         for_relations = parent->isForRelations();
     } else {
+        parent_FID = 0;
         num_vars = 0;
         for_relations = false;
     }
@@ -40,6 +42,11 @@ bool MEDDLY::minterm::contains(const minterm& m) const
          (m.numVars() != numVars()) )
     {
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    if ( m.getParentFID() != getParentFID() )
+    {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
     }
 
     if (isFull()) {

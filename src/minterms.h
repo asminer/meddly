@@ -55,6 +55,12 @@ namespace MEDDLY {
 
 };  // namespace MEDDLY
 
+// ******************************************************************
+// *                                                                *
+// *                         minterm  class                         *
+// *                                                                *
+// ******************************************************************
+
 
 /**
     Minterm object.
@@ -84,6 +90,8 @@ class MEDDLY::minterm {
         inline bool isForRelations()        const   { return for_relations; }
 
         inline unsigned numVars()           const   { return num_vars; }
+
+        inline unsigned getParentFID()      const   { return parent_FID; }
 
         /// Return true iff there are no don't cares/don't change
         inline bool areAllAssigned()        const   { return all_assigned; }
@@ -222,9 +230,20 @@ class MEDDLY::minterm {
         terminal termval;
 
         unsigned num_vars;
+        unsigned parent_FID;
         bool for_relations;
         bool sparse;
         bool all_assigned;
 };
+
+// ******************************************************************
+// *                                                                *
+// *                       minterm_coll class                       *
+// *                                                                *
+// ******************************************************************
+
+// TBD: collection of minterms here
+//
+//
 
 #endif
