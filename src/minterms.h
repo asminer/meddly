@@ -141,6 +141,11 @@ class MEDDLY::minterm {
             MEDDLY_DCASSERT(isForRelations());
             MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
             MEDDLY_DCASSERT(to >= 0 || to == DONT_CARE || to == DONT_CHANGE);
+            if (DONT_CHANGE == to) {
+                if (from >= 0) {
+                    to = from;
+                }
+            }
 #ifdef DEVELOPMENT_CODE
             _from.at(i) = from;
             _to.at(i) = to;
@@ -173,6 +178,11 @@ class MEDDLY::minterm {
             MEDDLY_DCASSERT(isForSets());
             MEDDLY_DCASSERT(isSparse());
             MEDDLY_DCASSERT( _index.empty() || _index.back() < ndx );
+            if (DONT_CHANGE == to) {
+                if (from >= 0) {
+                    to = from;
+                }
+            }
             _index.push_back(ndx);
             _from.push_back(from);
             _to.push_back(to);
