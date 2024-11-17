@@ -32,6 +32,7 @@
 // Should we define collections of minterms here?
 //
 
+#include "defines.h"
 #include "minterms.h"
 #include "policies.h"
 #include "terminal.h"
@@ -49,9 +50,11 @@ namespace MEDDLY {
       */
     const int DONT_CHANGE = -2;
 
-
     class forest;
+    class output;
+
     class minterm;
+    class minterm_coll;
 
 };  // namespace MEDDLY
 
@@ -91,10 +94,7 @@ class MEDDLY::minterm {
 
         inline unsigned numVars()           const   { return num_vars; }
 
-        inline unsigned getParentFID()      const   { return parent_FID; }
-
-        /// Return true iff there are no don't cares/don't change
-        inline bool areAllAssigned()        const   { return all_assigned; }
+        inline const forest* getParent()    const   { return _parent; }
 
         /// Set the terminal value
         inline void setTerm(const terminal &t)      { termval = t; }
@@ -120,9 +120,6 @@ class MEDDLY::minterm {
 #else
             _from[i] = from;
 #endif
-            if (from<0) {
-                all_assigned = false;
-            }
         }
 
         // access for relations
@@ -153,9 +150,6 @@ class MEDDLY::minterm {
             _from[i] = from;
             _to[i] = to;
 #endif
-            if (from<0 || to<0) {
-                all_assigned = false;
-            }
         }
 
         // sparse access
@@ -208,6 +202,16 @@ class MEDDLY::minterm {
         //
         bool contains(const minterm& m) const;
 
+        //
+        // Check that we are sparse, and have the same variables
+        // set as the given list L.
+        //
+        bool hasSparseVars(const std::vector <unsigned> &vars) const;
+
+        //
+        // For convenience and debugging
+        void show(output &s) const;
+
     private:
         inline bool matches(unsigned i, const minterm& m, unsigned j) const
         {
@@ -233,6 +237,8 @@ class MEDDLY::minterm {
         }
 
     private:
+        const forest* _parent;
+
         std::vector<int> _from;
         std::vector<int> _to;
         std::vector<unsigned> _index;
@@ -240,10 +246,12 @@ class MEDDLY::minterm {
         terminal termval;
 
         unsigned num_vars;
-        unsigned parent_FID;
         bool for_relations;
         bool sparse;
-        bool all_assigned;
+
+    private:
+        friend class MEDDLY::minterm_coll;
+        minterm* next;
 };
 
 // ******************************************************************
@@ -252,8 +260,99 @@ class MEDDLY::minterm {
 // *                                                                *
 // ******************************************************************
 
-// TBD: collection of minterms here
-//
-//
+class MEDDLY::minterm_coll {
+    public:
+        /// Build a collection for a given parent forest.
+        /// Each minterm is stored in full.
+        ///     @param  parent  The parent forest
+        minterm_coll(const forest* parent);
+
+        /// Build a collection of sparse minterms,
+        /// for a given parent forest and with the same set
+        /// of variables used.
+        ///     @param  parent  The parent forest
+        ///     @param  varlist Array list of variables used,
+        ///                     in decreasing order.
+        minterm_coll(const forest* parent, const std::vector<unsigned> &varlist);
+
+        /// Make a minterm for someone to build
+        inline minterm* makeTemp()
+        {
+            if (freelist) {
+                minterm* p = freelist;
+                freelist = freelist->next;
+                return p;
+            }
+            return new minterm(_parent, sparse ? SPARSE_ONLY : FULL_ONLY);
+        }
+
+        /// Add a minterm to the collection
+        inline void addToCollection(minterm* m)
+        {
+            if (m) {
+                MEDDLY_DCASSERT(_check(m));
+                _mtlist.push_back(m);
+            }
+        }
+
+        /// Recycle a minterm
+        inline void recycle(minterm* m)
+        {
+            if (m) {
+                MEDDLY_DCASSERT(m->getParent() == _parent);
+                m->next = freelist;
+                freelist = m;
+            }
+        }
+
+
+        /// Sort the collection into a good order
+        /// for building a MDD / MXD
+        inline void sort()
+        {
+            if (sorted) return;
+            if (_mtlist.size()) {
+                _sort(num_vars, 0, _mtlist.size());
+            }
+            sorted = true;
+        }
+
+        /// Clear the collection
+        void clear();
+
+
+        /// Current collection size
+        inline unsigned size() const { return _mtlist.size(); }
+
+        //
+        // For convenience and debugging
+        void show(output &s, const char* pre, const char* post) const;
+
+    private:
+        /// Make sure we can add the given minterm to this collection.
+        bool _check(minterm*) const;
+
+        /// recursive radix sort helper.
+        ///     @param  k       Variable to sort on
+        ///     @param  low     Smallest index
+        ///     @param  high    One past largest index
+        ///
+        /// We sort on elements [low, low+1, ..., high-1]
+        ///
+        void _sort(unsigned k, unsigned low, unsigned high);
+
+    private:
+        std::vector<minterm*> _mtlist;
+
+        std::vector<unsigned> _varlist;
+
+        const forest* _parent;
+        minterm* freelist;
+
+        unsigned num_vars;
+        bool for_relations;
+        bool sparse;
+        bool sorted;
+};
 
 #endif
