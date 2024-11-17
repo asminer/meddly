@@ -22,8 +22,6 @@
 
 #define DEBUG_MINTERM_COLL
 
-#define RESTRICT_DONT_CHANGE
-
 const unsigned MAXTERMS = 32;
 
 const int DOMSIZE = 4;       // DO NOT change
@@ -59,6 +57,7 @@ int Equilikely(int a, int b)
     return (a + (int) ((b - a + 1) * Random()));
 }
 
+using namespace MEDDLY;
 
 /*
  *
@@ -66,7 +65,7 @@ int Equilikely(int a, int b)
  *
  */
 
-void randomSetMinterm(MEDDLY::minterm* m)
+void randomSetMinterm(minterm* m)
 {
     const int vals[9] = { -1, 0, 0, 1, 1, 2, 2, 3, 3 };
 
@@ -76,62 +75,36 @@ void randomSetMinterm(MEDDLY::minterm* m)
     }
 }
 
-void randomSetMinterm(int* mt, unsigned vars)
+bool evaluate(const minterm &m, const minterm_coll &MC)
 {
-    const int vals[9] = { -1, 0, 0, 1, 1, 2, 2, 3, 3 };
-
-    for (unsigned i=1; i<=vars; i++) {
-        int index = Equilikely(0, 8);
-        mt[i] = vals[index];
-    }
-}
-
-void showMinterm(const int* mt, unsigned vars)
-{
-    using namespace std;
-
-    cout << "[ bot";
-    for (unsigned i=1; i<=vars; i++) {
-        cout << ", ";
-        if (mt[i] < 0)  cout << 'x';
-        else            cout << mt[i];
-    }
-    cout << "]";
-}
-
-bool mintermMatches(const int* mt, const int* vals, unsigned vars)
-{
-    for (unsigned i=1; i<=vars; i++) {
-        if (mt[i] == -1) continue;  // don't care
-        if (mt[i] != vals[i]) return false;
-    }
-    return true;
-}
-
-bool evaluate(const int* vals, unsigned vars, int** mt, unsigned nmt)
-{
-    for (unsigned i=0; i<nmt; i++) {
-        if (mintermMatches(mt[i], vals, vars)) return true;
+    for (unsigned i=0; i<MC.size(); i++) {
+        if (MC.at(i)->contains(m)) return true;
     }
     return false;
 }
 
-void zeroMinterm(int* mt, unsigned vars)
+
+void zeroMinterm(minterm& m)
 {
-    for (unsigned i=1; i<=vars; i++) {
-        mt[i] = 0;
+    for (unsigned i=1; i<=m.getNumVars(); i++) {
+        m.setVar(i, 0);
     }
 }
 
-bool nextMinterm(int* mt, unsigned vars)
+bool nextMinterm(minterm& m)
 {
-    for (unsigned i=1; i<=vars; i++) {
-        mt[i]++;
-        if (mt[i] < DOMSIZE) return true;
-        mt[i] = 0;
+    for (unsigned i=1; i<=m.getNumVars(); i++) {
+        int v = m.getVar(i);
+        v++;
+        if (v < DOMSIZE) {
+            m.setVar(i, v);
+            return true;
+        }
+        m.setVar(i, 0);
     }
     return false;
 }
+
 
 /*
  *
@@ -139,32 +112,27 @@ bool nextMinterm(int* mt, unsigned vars)
  *
  */
 
-void check_set_eq(char mddtype, const MEDDLY::dd_edge &E, const int* eval,
-        int** mtlist, const unsigned mtsize)
+void check_set_eq(char mddtype, const MEDDLY::dd_edge &E,
+        minterm &eval, minterm_coll &mtcoll)
 {
-    bool val_mdd;
-    bool val_mts = evaluate(eval, SETVARS, mtlist, mtsize);
-    const MEDDLY::forest* F = E.getForest();
-    F->evaluate(E, eval, val_mdd);
+    bool val_mdd, val_mts;
+    val_mts = evaluate(eval, mtcoll);
+    E.evaluate(eval, val_mdd);
 
     if (val_mdd != val_mts) {
-        std::cout << "\nMismatch on ";
-        showMinterm(eval, SETVARS);
-        std::cout << "\n  " << mddtype << "MDD: " << (val_mdd ? "true" : "false") << "\n";
-        std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
-
-        std::cout << "\n";
-        std::cout << "Minterm list:\n";
-
-        for (unsigned n=0; n<mtsize; n++) {
-            std::cout << "    ";
-            showMinterm(mtlist[n], RELVARS);
-            std::cout << "\n";
-        }
-
-        std::cout << mddtype << "MDD:\n";
         MEDDLY::ostream_output out(std::cout);
+        out << "\nMismatch on ";
+        eval.show(out);
+        out << "\n  " << mddtype << "MDD: " << (val_mdd ? "true" : "false") << "\n";
+        out << "mtlist: " << (val_mts ? "true" : "false") << "\n";
+
+        out << "\n";
+        out << "Minterm list:\n";
+        mtcoll.show(out, nullptr, "\n");
+
+        out << mddtype << "MDD:\n";
         E.showGraph(out);
+        out.flush();
 
         throw "mismatch";
     }
@@ -199,32 +167,11 @@ void test_sets()
 
 
     //
-    // Build random minterms
+    // Set up minterm collection
+    // and evaluation minterm
     //
-    int* mtlist[MAXTERMS];
-    for (unsigned i=0; i<MAXTERMS; i++) {
-        mtlist[i] = new int[1+SETVARS];
-        randomSetMinterm(mtlist[i], SETVARS);
-    }
-
-#ifdef DEBUG_MINTERM_COLL
     minterm_coll mtcoll(D, SET);
-    for (unsigned i=0; i<MAXTERMS; i++) {
-        minterm* m = mtcoll.makeTemp();
-        randomSetMinterm(m);
-        mtcoll.addToCollection(m);
-    }
-    ostream_output out(std::cout);
-    out << "Built set minterm collection:\n";
-    mtcoll.show(out, nullptr, "\n");
-    out << "Sorting...\n";
-    mtcoll.sort();
-    out << "Sorted collection:\n";
-    mtcoll.show(out, nullptr, "\n");
-    return;
-#endif
-
-    int eval[1+SETVARS];
+    minterm eval(D, SET, FULL_ONLY);
 
     //
     // For various collections of minterms,
@@ -239,23 +186,46 @@ void test_sets()
         if (mtsize<10) std::cout << ' ';
         std::cout << mtsize << ": ";
         std::cout.flush();
+
+        //
+        // Add minterms to the collection
+        //
+        while (mtcoll.size() < mtsize) {
+            minterm* m = mtcoll.makeTemp();
+            randomSetMinterm(m);
+            mtcoll.addToCollection(m);
+        }
+
+        //
+        // Set up ddedges
+        //
         dd_edge Ef(Ff);
         dd_edge Eq(Fq);
+        Ff->createEdge(false, Ef);
+        Fq->createEdge(false, Eq);
 
-        Fq->createEdge(mtlist, mtsize, Eq);
+        //
+        // Build unions
+        //
+        apply(UNION, Eq, mtcoll, Eq);
         std::cout << "q ";
         std::cout.flush();
-        Ff->createEdge(mtlist, mtsize, Ef);
+
+        apply(UNION, Ef, mtcoll, Ef);
         std::cout << "f ";
         std::cout.flush();
 
-        zeroMinterm(eval, SETVARS);
+        //
+        // Brute force: compare functions
+        //
+        zeroMinterm(eval);
         do {
-            check_set_eq('Q', Eq, eval, mtlist, mtsize);
-            check_set_eq('F', Ef, eval, mtlist, mtsize);
-        } while (nextMinterm(eval, SETVARS));
+            check_set_eq('Q', Eq, eval, mtcoll);
+            check_set_eq('F', Ef, eval, mtcoll);
+        } while (nextMinterm(eval));
         std::cout << "=" << std::endl;
-    }
+
+    } // for mtsize
 
     domain::destroy(D);
 }
@@ -559,7 +529,7 @@ int main(int argc, const char** argv)
     try {
         MEDDLY::initialize();
         test_sets();
-        test_rels();
+    //    test_rels();
         MEDDLY::cleanup();
         return 0;
     }

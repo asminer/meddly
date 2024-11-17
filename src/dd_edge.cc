@@ -21,6 +21,7 @@
 #include "defines.h"
 #include "dd_edge.h"
 #include "forest.h"
+#include "minterms.h"
 #include "io.h"
 
 #include "node_marker.h"
@@ -284,6 +285,96 @@ void MEDDLY::dd_edge::read(input &s, const std::vector <node_handle> &map)
 #endif
 }
 
+
+// **********************************************************************
+//
+// Function evaluation
+// Eventually replacing evaluate() in the forest class
+//
+// **********************************************************************
+
+namespace MEDDLY {
+    template <class EOP>
+    class evaluator_helper {
+            const forest* F;
+            const minterm& m;
+        public:
+            evaluator_helper(const forest* _F, const minterm &_m)
+                : F(_F), m(_m)
+            {
+                MEDDLY_DCASSERT(F);
+            }
+
+            void set_eval(edge_value &ev, node_handle &p)
+            {
+                MEDDLY_DCASSERT( !m.isForRelations() );
+                while (!F->isTerminalNode(p)) {
+                    edge_value pv;
+    	            int level = F->getNodeLevel(p);
+                    MEDDLY_DCASSERT(level>0);
+                    F->getDownPtr(p, m.getVar(level), pv, p);
+                    ev = EOP::accumulate(ev, pv);
+                }
+            }
+
+            void rel_eval(edge_value &ev, node_handle &p)
+            {
+                MEDDLY_DCASSERT( m.isForRelations() );
+                while (!F->isTerminalNode(p)) {
+                    edge_value pv;
+    	            int level = F->getNodeLevel(p);
+                    if (level > 0) {
+                        F->getDownPtr(p, m.getFrom(level), pv, p);
+                    } else {
+                        F->getDownPtr(p, m.getTo(-level), pv, p);
+                    }
+                    ev = EOP::accumulate(ev, pv);
+                }
+            }
+
+    };
+};
+
+
+// **********************************************************************
+
+void MEDDLY::dd_edge::evaluate(const minterm& m, bool &val) const
+{
+    forest* fp = forest::getForestWithID(parentFID);
+    if (!fp) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+    if (! fp->isRangeType(range_type::BOOLEAN) ) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+    if ( fp->isForRelations() != m.isForRelations() ) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+    if ( fp->getDomain() != m.getDomain() ) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    evaluator_helper<EdgeOp_none> EH(fp, m);
+    node_handle term = node;
+    edge_value  ev(edgeval);
+    if (m.isForRelations()) {
+        EH.rel_eval(ev, term);
+    } else {
+        EH.set_eval(ev, term);
+    }
+    MEDDLY_DCASSERT(ev.isVoid());
+
+    terminal t(terminal_type::BOOLEAN, term);
+    val = t.getBoolean();
+}
+
+void MEDDLY::dd_edge::evaluate(const minterm& m, long &val) const
+{
+}
+
+void MEDDLY::dd_edge::evaluate(const minterm& m, double &val) const
+{
+}
 
 //
 // Private

@@ -186,6 +186,7 @@ pkginclude_HEADERS = \
     node_storage.h \
     oper.h  \
     oper_binary.h  \
+    oper_minterm.h \
     oper_numer.h \
     oper_ternary.h  \
     oper_unary.h  \

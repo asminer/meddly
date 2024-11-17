@@ -104,12 +104,12 @@ class MEDDLY::minterm {
 
         // access for sets
 
-        inline void getVar(unsigned i, int &from) const {
+        inline int getVar(unsigned i) const {
             MEDDLY_DCASSERT(isForSets());
 #ifdef DEVELOPMENT_CODE
-            from = _from.at(i);
+            return _from.at(i);
 #else
-            from = _from[i];
+            return _from[i];
 #endif
         }
         inline void setVar(unsigned i, int from) {
@@ -132,6 +132,22 @@ class MEDDLY::minterm {
 #else
             from = _from[i];
             to   = _to[i];
+#endif
+        }
+        inline int getFrom(unsigned i) const {
+            MEDDLY_DCASSERT(isForRelations());
+#ifdef DEVELOPMENT_CODE
+            return _from.at(i);
+#else
+            return _from[i];
+#endif
+        }
+        inline int getTo(unsigned i) const {
+            MEDDLY_DCASSERT(isForRelations());
+#ifdef DEVELOPMENT_CODE
+            return _to.at(i);
+#else
+            return _to[i];
 #endif
         }
         inline void setVars(unsigned i, int from, int to) {

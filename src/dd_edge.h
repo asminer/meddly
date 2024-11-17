@@ -31,6 +31,8 @@ namespace MEDDLY {
 
     class input;
     class output;
+
+    class minterm;
 };
 
 
@@ -219,6 +221,27 @@ class MEDDLY::dd_edge {
             set(n);
             edgeval = v;
         }
+
+        ///
+        /// Evaluate the function for variable assignments given in m,
+        /// and store the result in val.
+        /// Throws an error on forest type mismatch.
+        ///
+        void evaluate(const minterm& m, bool &val) const;
+
+        ///
+        /// Evaluate the function for variable assignments given in m,
+        /// and store the result in val.
+        /// Throws an error on forest type mismatch.
+        ///
+        void evaluate(const minterm& m, long &val) const;
+
+        ///
+        /// Evaluate the function for variable assignments given in m,
+        /// and store the result in val.
+        /// Throws an error on forest type mismatch.
+        ///
+        void evaluate(const minterm& m, double &val) const;
 
     private:
         void init(const dd_edge &e);

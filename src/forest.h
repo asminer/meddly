@@ -124,6 +124,33 @@ class MEDDLY::MXD_levels {
 
 // ******************************************************************
 // *                                                                *
+// *                       EdgeOp_none  class                       *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    /**
+        Small class for MT behavior on edges.
+    */
+    class EdgeOp_none {
+        public:
+            /// Clear an edge value.
+            static inline void clear(edge_value &v)
+            {
+                v.set();
+            }
+            /// Accumulate an edge value
+            static inline edge_value accumulate(const edge_value &a,
+                    const edge_value &b)
+            {
+                return edge_value();
+            }
+    };
+};
+
+
+// ******************************************************************
+// *                                                                *
 // *                       EdgeOp_plus  class                       *
 // *                                                                *
 // ******************************************************************
