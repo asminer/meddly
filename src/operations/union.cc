@@ -1415,15 +1415,7 @@ MEDDLY::UNION(forest* a, forest* b, forest* c)
     }
 
     if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-#ifdef NEW_UNION
         return UNION_cache.add(new union_mt(a, b, c));
-#else
-        if (c->isForRelations()) {
-            return UNION_cache.add(new union_mxd(a, b, c));
-        } else {
-            return UNION_cache.add(new union_mdd(a, b, c));
-        }
-#endif
     }
 
     if (c->getEdgeLabeling() == edge_labeling::EVPLUS) {
