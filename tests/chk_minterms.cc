@@ -216,11 +216,11 @@ void test_sets()
     }
     ostream_output out(std::cout);
     out << "Built set minterm collection:\n";
-    mtcoll.show(out, "    ", "\n");
+    mtcoll.show(out, nullptr, "\n");
     out << "Sorting...\n";
     mtcoll.sort();
     out << "Sorted collection:\n";
-    mtcoll.show(out, "    ", "\n");
+    mtcoll.show(out, nullptr, "\n");
     return;
 #endif
 
@@ -489,12 +489,12 @@ void test_rels()
     }
     ostream_output out(std::cout);
     out << "Built relation minterm collection:\n";
-    mtcoll.show(out, "    ", "\n");
+    mtcoll.show(out, nullptr, "\n");
     out.flush();
     out << "Sorting...\n";
     mtcoll.sort();
     out << "Sorted collection:\n";
-    mtcoll.show(out, "    ", "\n");
+    mtcoll.show(out, nullptr, "\n");
     out.flush();
     return;
 #endif
