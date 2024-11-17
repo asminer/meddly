@@ -355,6 +355,23 @@ class MEDDLY::minterm_coll {
         ///
         void _sort(unsigned k, bool primed, unsigned low, unsigned high);
 
+        ///
+        /// Helper for _sort
+        ///
+        ///     For all items between lo (included) and hi (not included),
+        ///     move any item with value val for variable x_k (or x'_k,
+        ///     if pr is true) to the end of the array.
+        ///
+        ///     Returns the index of the first element equal to val,
+        ///     after the move.
+        ///     If this equals hi, then there were no elements.
+        ///
+        ///     Remembers the largest value not equal to val
+        ///     that was seen.
+        ///
+        unsigned moveValuesToEnd(int val, int &max, unsigned k, bool pr,
+                unsigned lo, unsigned hi);
+
     private:
         std::vector<minterm*> _mtlist;
 
