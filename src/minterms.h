@@ -312,7 +312,7 @@ class MEDDLY::minterm_coll {
         {
             if (sorted) return;
             if (_mtlist.size()) {
-                _sort(num_vars, 0, _mtlist.size());
+                _sort(num_vars, false, 0, _mtlist.size());
             }
             sorted = true;
         }
@@ -324,6 +324,15 @@ class MEDDLY::minterm_coll {
         /// Current collection size
         inline unsigned size() const { return _mtlist.size(); }
 
+        /// Get an element
+        inline const minterm* at(unsigned i) const {
+#ifdef DEVELOPMENT_CODE
+            return _mtlist.at(i);
+#else
+            return _mtlist[i];
+#endif
+        }
+
         //
         // For convenience and debugging
         void show(output &s, const char* pre, const char* post) const;
@@ -334,12 +343,13 @@ class MEDDLY::minterm_coll {
 
         /// recursive radix sort helper.
         ///     @param  k       Variable to sort on
+        ///     @param  primed  Are we on the primed variable?
         ///     @param  low     Smallest index
         ///     @param  high    One past largest index
         ///
         /// We sort on elements [low, low+1, ..., high-1]
         ///
-        void _sort(unsigned k, unsigned low, unsigned high);
+        void _sort(unsigned k, bool primed, unsigned low, unsigned high);
 
     private:
         std::vector<minterm*> _mtlist;

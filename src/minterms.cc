@@ -248,7 +248,8 @@ bool MEDDLY::minterm_coll::_check(minterm* m) const
     return true;
 }
 
-void MEDDLY::minterm_coll::_sort(unsigned k, unsigned low, unsigned high)
+void MEDDLY::minterm_coll::_sort(unsigned k, bool primed,
+        unsigned low, unsigned high)
 {
     if (0==k) return;
     if (low+1 == high) return;
