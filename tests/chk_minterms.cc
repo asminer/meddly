@@ -20,6 +20,8 @@
 #include <time.h>
 #include <iostream>
 
+#define DEBUG_MINTERM_COLL
+
 #define RESTRICT_DONT_CHANGE
 
 const unsigned MAXTERMS = 32;
@@ -63,6 +65,16 @@ int Equilikely(int a, int b)
  * Manipulate minterms for sets
  *
  */
+
+void randomSetMinterm(MEDDLY::minterm* m)
+{
+    const int vals[9] = { -1, 0, 0, 1, 1, 2, 2, 3, 3 };
+
+    for (unsigned i=1; i<=m->getNumVars(); i++) {
+        int index = Equilikely(0, 8);
+        m->setVar(i, vals[index]);
+    }
+}
 
 void randomSetMinterm(int* mt, unsigned vars)
 {
@@ -195,6 +207,23 @@ void test_sets()
         randomSetMinterm(mtlist[i], SETVARS);
     }
 
+#ifdef DEBUG_MINTERM_COLL
+    minterm_coll mtcoll(D, SET);
+    for (unsigned i=0; i<MAXTERMS; i++) {
+        minterm* m = mtcoll.makeTemp();
+        randomSetMinterm(m);
+        mtcoll.addToCollection(m);
+    }
+    ostream_output out(std::cout);
+    out << "Built set minterm collection:\n";
+    mtcoll.show(out, "    ", "\n");
+    out << "Sorting...\n";
+    mtcoll.sort();
+    out << "Sorted collection:\n";
+    mtcoll.show(out, "    ", "\n");
+    return;
+#endif
+
     int eval[1+SETVARS];
 
     //
@@ -236,6 +265,39 @@ void test_sets()
  * Manipulate minterms for relations
  *
  */
+
+void randomRelMinterm(MEDDLY::minterm* m)
+{
+    //
+    // Separated
+    //
+    //
+    //
+
+    const int unvals[52] =
+    { -1, -1, -1, -1,   // 4 (x,x) pairs
+      -1, -1, -1, -1,   // 4 (x,i) pairs
+      -1, -1, -1, -1,   // 4 (x, normal) pairs
+       0,  1,  2,  3,   // 4 (normal, x) pairs
+       0,  1,  2,  3,   // 4 (normal, i) pairs
+       0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3,   // 16 normal pairs
+       0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3};  // 16 normal pairs
+
+    const int prvals[52] =
+    { -1, -1, -1, -1,   // 4 (x,x) pairs
+      -2, -2, -2, -2,   // 4 (x,i) pairs
+       0,  1,  2,  3,   // 4 (x, normal) pairs
+      -1, -1, -1, -1,   // 4 (normal, x) pairs
+      -2, -2, -2, -2,   // 4 (normal, i) pairs
+       0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,   // 16 normal pairs
+       0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3};  // 16 normal pairs
+
+    for (unsigned i=1; i<=m->getNumVars(); i++) {
+        int index = Equilikely(0, 51);
+
+        m->setVars(i, unvals[index], prvals[index]);
+    }
+}
 
 void randomRelMinterm(int* un, int* pr, unsigned vars)
 {
@@ -417,6 +479,26 @@ void test_rels()
 
     int uneval[1+RELVARS];
     int preval[1+RELVARS];
+
+#ifdef DEBUG_MINTERM_COLL
+    minterm_coll mtcoll(D, RELATION);
+    for (unsigned i=0; i<MAXTERMS; i++) {
+        minterm* m = mtcoll.makeTemp();
+        randomRelMinterm(m);
+        mtcoll.addToCollection(m);
+    }
+    ostream_output out(std::cout);
+    out << "Built relation minterm collection:\n";
+    mtcoll.show(out, "    ", "\n");
+    out.flush();
+    out << "Sorting...\n";
+    mtcoll.sort();
+    out << "Sorted collection:\n";
+    mtcoll.show(out, "    ", "\n");
+    out.flush();
+    return;
+#endif
+
 
     //
     // For various collections of minterms,

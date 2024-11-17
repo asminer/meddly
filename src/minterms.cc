@@ -19,7 +19,7 @@
 #include "minterms.h"
 
 #include "io.h"
-#include "forest.h"
+#include "domain.h"
 
 // ******************************************************************
 // *                                                                *
@@ -28,17 +28,16 @@
 // ******************************************************************
 
 
-MEDDLY::minterm::minterm(const forest* parent, node_storage_flags fs)
-    : termval(true)
+MEDDLY::minterm::minterm(const domain* D, set_or_rel sr,
+        node_storage_flags fs) : termval(true)
 {
-    _parent = parent;
-    if (parent) {
-        num_vars = parent->getNumVariables();
-        for_relations = parent->isForRelations();
+    _D = D;
+    if (D) {
+        num_vars = D->getNumVariables();
     } else {
         num_vars = 0;
-        for_relations = false;
     }
+    for_relations = sr;
     sparse = (fs == SPARSE_ONLY);
     if (!sparse) {
         _from.resize(1+num_vars, DONT_CARE);
@@ -50,15 +49,10 @@ MEDDLY::minterm::minterm(const forest* parent, node_storage_flags fs)
 
 bool MEDDLY::minterm::contains(const minterm& m) const
 {
-    if ( (m.isForRelations() != isForRelations()) ||
-         (m.numVars() != numVars()) )
+    if ( ( m.getDomain() != getDomain() ) ||
+         (m.isForRelations() != isForRelations()) )
     {
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-    }
-
-    if ( m.getParent() != getParent() )
-    {
-        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
     }
 
     if (isFull()) {
@@ -180,32 +174,22 @@ void MEDDLY::minterm::show(output &s) const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::minterm_coll::minterm_coll(const forest* parent)
+MEDDLY::minterm_coll::minterm_coll(const domain* D, set_or_rel sr)
 {
-    _parent = parent;
-    if (parent) {
-        num_vars = parent->getNumVariables();
-        for_relations = parent->isForRelations();
-    } else {
-        num_vars = 0;
-        for_relations = false;
-    }
+    _D = D;
+    num_vars = D ? D->getNumVariables() : 0;
+    for_relations = sr;
     sparse = false;
     freelist = nullptr;
     sorted = false;
 }
 
-MEDDLY::minterm_coll::minterm_coll(const forest* parent,
+MEDDLY::minterm_coll::minterm_coll(const domain* D, set_or_rel sr,
         const std::vector<unsigned> &varlist)
 {
-    _parent = parent;
-    if (parent) {
-        num_vars = parent->getNumVariables();
-        for_relations = parent->isForRelations();
-    } else {
-        num_vars = 0;
-        for_relations = false;
-    }
+    _D = D;
+    num_vars = D ? D->getNumVariables() : 0;
+    for_relations = sr;
     sparse = true;
     freelist = nullptr;
     sorted = false;
@@ -238,7 +222,8 @@ void MEDDLY::minterm_coll::show(output &s,
 
 bool MEDDLY::minterm_coll::_check(minterm* m) const
 {
-    MEDDLY_DCASSERT(m->getParent() == _parent);
+    MEDDLY_DCASSERT(m->getDomain() == _D);
+    MEDDLY_DCASSERT(m->isForRelations() == for_relations);
     if (sparse) {
         MEDDLY_DCASSERT(!m->isFull());
         MEDDLY_DCASSERT(m->hasSparseVars(_varlist));

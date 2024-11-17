@@ -50,7 +50,7 @@ namespace MEDDLY {
       */
     const int DONT_CHANGE = -2;
 
-    class forest;
+    class domain;
     class output;
 
     class minterm;
@@ -84,7 +84,7 @@ namespace MEDDLY {
 */
 class MEDDLY::minterm {
     public:
-        minterm(const forest* parent, node_storage_flags fs);
+        minterm(const domain* D, set_or_rel sr, node_storage_flags fs);
 
         inline bool isSparse()              const   { return sparse; }
         inline bool isFull()                const   { return !sparse; }
@@ -92,9 +92,9 @@ class MEDDLY::minterm {
         inline bool isForSets()             const   { return !for_relations; }
         inline bool isForRelations()        const   { return for_relations; }
 
-        inline unsigned numVars()           const   { return num_vars; }
+        inline unsigned getNumVars()        const   { return num_vars; }
 
-        inline const forest* getParent()    const   { return _parent; }
+        inline const domain* getDomain()    const   { return _D; }
 
         /// Set the terminal value
         inline void setTerm(const terminal &t)      { termval = t; }
@@ -237,7 +237,7 @@ class MEDDLY::minterm {
         }
 
     private:
-        const forest* _parent;
+        const domain* _D;
 
         std::vector<int> _from;
         std::vector<int> _to;
@@ -262,18 +262,21 @@ class MEDDLY::minterm {
 
 class MEDDLY::minterm_coll {
     public:
-        /// Build a collection for a given parent forest.
+        /// Build a collection for a given domain.
         /// Each minterm is stored in full.
-        ///     @param  parent  The parent forest
-        minterm_coll(const forest* parent);
+        ///     @param  D   The domain
+        ///     @param  sr  Set or relation
+        minterm_coll(const domain* D, set_or_rel sr);
 
         /// Build a collection of sparse minterms,
-        /// for a given parent forest and with the same set
+        /// for a given domain and with the same set
         /// of variables used.
-        ///     @param  parent  The parent forest
+        ///     @param  D       The domain
+        ///     @param  sr      Set or relation
         ///     @param  varlist Array list of variables used,
         ///                     in decreasing order.
-        minterm_coll(const forest* parent, const std::vector<unsigned> &varlist);
+        minterm_coll(const domain* D, set_or_rel sr,
+                const std::vector<unsigned> &varlist);
 
         /// Make a minterm for someone to build
         inline minterm* makeTemp()
@@ -283,7 +286,8 @@ class MEDDLY::minterm_coll {
                 freelist = freelist->next;
                 return p;
             }
-            return new minterm(_parent, sparse ? SPARSE_ONLY : FULL_ONLY);
+            return new minterm(_D, for_relations,
+                    sparse ? SPARSE_ONLY : FULL_ONLY);
         }
 
         /// Add a minterm to the collection
@@ -299,7 +303,7 @@ class MEDDLY::minterm_coll {
         inline void recycle(minterm* m)
         {
             if (m) {
-                MEDDLY_DCASSERT(m->getParent() == _parent);
+                MEDDLY_DCASSERT(m->getDomain() == _D);
                 m->next = freelist;
                 freelist = m;
             }
@@ -356,7 +360,7 @@ class MEDDLY::minterm_coll {
 
         std::vector<unsigned> _varlist;
 
-        const forest* _parent;
+        const domain* _D;
         minterm* freelist;
 
         unsigned num_vars;
