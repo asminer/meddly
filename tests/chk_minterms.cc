@@ -193,6 +193,7 @@ void test_sets()
         }
 
 #ifdef SHOW_MINTERMS
+        mtcoll.sort();
         mtcoll.show(out, nullptr, "\n");
 #endif
         out << "    ";

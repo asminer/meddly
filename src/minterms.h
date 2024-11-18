@@ -315,6 +315,7 @@ class MEDDLY::minterm_coll {
             if (m) {
                 MEDDLY_DCASSERT(_check(m));
                 _mtlist.push_back(m);
+                sorted = false;
             }
         }
 
