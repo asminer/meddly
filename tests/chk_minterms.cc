@@ -20,7 +20,7 @@
 #include <time.h>
 #include <iostream>
 
-#define DEBUG_MINTERM_COLL
+#define SHOW_MINTERMS
 
 const unsigned MAXTERMS = 32;
 
@@ -178,15 +178,11 @@ void test_sets()
     //  (1) build sets
     //  (2) explicitly verify sets against minterms
 
-    std::cout << "Checking sets built from minterms:\n";
-    std::cout.flush();
+    ostream_output out(std::cout);
+    out << "Checking sets built from minterms:\n";
+    out.flush();
     for (unsigned mtsize=1; mtsize<=MAXTERMS; mtsize*=2)
     {
-        std::cout << "    ";
-        if (mtsize<10) std::cout << ' ';
-        std::cout << mtsize << ": ";
-        std::cout.flush();
-
         //
         // Add minterms to the collection
         //
@@ -195,6 +191,15 @@ void test_sets()
             randomSetMinterm(m);
             mtcoll.addToCollection(m);
         }
+
+#ifdef SHOW_MINTERMS
+        mtcoll.show(out, nullptr, "\n");
+#endif
+        out << "    ";
+        out.put((unsigned long) mtsize, 2);
+        out << ": ";
+        out.flush();
+
 
         //
         // Set up ddedges
@@ -208,12 +213,12 @@ void test_sets()
         // Build unions
         //
         apply(UNION, Eq, mtcoll, Eq);
-        std::cout << "q ";
-        std::cout.flush();
+        out << "q ";
+        out.flush();
 
         apply(UNION, Ef, mtcoll, Ef);
-        std::cout << "f ";
-        std::cout.flush();
+        out << "f ";
+        out.flush();
 
         //
         // Brute force: compare functions
@@ -223,7 +228,8 @@ void test_sets()
             check_set_eq('Q', Eq, eval, mtcoll);
             check_set_eq('F', Ef, eval, mtcoll);
         } while (nextMinterm(eval));
-        std::cout << "=" << std::endl;
+        out << "=\n";
+        out.flush();
 
     } // for mtsize
 

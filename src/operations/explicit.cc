@@ -21,6 +21,13 @@
 #include "../oper_minterm.h"
 #include "../minterms.h"
 
+// #define TRACE
+
+#ifdef TRACE
+#include "../operators.h"
+#endif
+
+
 // ******************************************************************
 // *                                                                *
 // *          generic template class for minterm operators          *
@@ -55,6 +62,12 @@ namespace MEDDLY {
                     const edge_value &av, node_handle ap,
                     unsigned low, unsigned high,
                     edge_value &cv, node_handle &cp);
+
+        private:
+#ifdef TRACE
+            ostream_output out;
+            unsigned top_count;
+#endif
     };
 };
 
@@ -64,6 +77,9 @@ template <class OP, class EdgeOp>
 MEDDLY::generic_minterm_op<OP,EdgeOp>::generic_minterm_op(forest* arg1,
         minterm_coll &arg2, forest* res)
         : minterm_operation(arg1, arg2, res)
+#ifdef TRACE
+            , out(std::cout), top_count(0)
+#endif
 {
     if (arg1 != res) {
         throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
@@ -86,6 +102,18 @@ void MEDDLY::generic_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
         unsigned low, unsigned high,
         edge_value &cv, node_handle &cp)
 {
+#ifdef TRACE
+    if (L == resF->getNumVariables()) {
+        out.indentation(0);
+        ++top_count;
+        out << "generic_minterm_op #" << top_count << " begin\n";
+        arg2.show(out, nullptr, "\n");
+    }
+
+    out << "compute L=" << L << ", in=" << in << ", ap=" << ap
+        << ", [" << low << ", " << high << ")\n";
+#endif
+
     if (OP::stop_recursion_on(av, ap)) {
         cv = av;
         cp = ap;
@@ -155,6 +183,12 @@ void MEDDLY::generic_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
         edge_value tv;
         node_handle tp;
 
+#ifdef TRACE
+        out << "    [" << dl << ", " << dh << ") value " << lowval << "\n";
+        out.indent_more();
+        out.put('\n');
+#endif
+
         if (lowval == DONT_CARE) {
             //
             // Special case: DONT_CARE
@@ -178,6 +212,12 @@ void MEDDLY::generic_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
             resF->unlinkNode(Cu->down(i));
             Cu->setFull(i, tv, tp);
         }
+
+#ifdef TRACE
+        out.indent_less();
+        out.put('\n');
+        out << "    [" << dl << ", " << dh << ") value " << lowval << " done\n";
+#endif
 
         //
         // Advance interval
