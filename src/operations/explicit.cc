@@ -121,11 +121,13 @@ void MEDDLY::generic_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
     Cu->allowWrites(resF);
 
     //
-    // Apply av to edges in Cu
+    // Apply av to edges in Cu,
+    // and increase reference counts
     //
     for (unsigned i=0; i<Cu->getSize(); i++)
     {
         Cu->setEdgeval(i, EdgeOp::accumulate(av, Cu->edgeval(i)) );
+        resF->linkNode(Cu->down(i));
     }
 
     //

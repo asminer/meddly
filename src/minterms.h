@@ -232,7 +232,7 @@ class MEDDLY::minterm {
         {
             MEDDLY_DCASSERT(isForRelations() == m.isForRelations());
 
-            if ((DONT_CARE != _from.at(i)) && (_from.at(i) == m._from.at(j)))
+            if ((DONT_CARE != _from.at(i)) && (_from.at(i) != m._from.at(j)))
                 return false;
 
             if (!isForRelations())  return true;
