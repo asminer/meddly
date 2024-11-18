@@ -82,11 +82,15 @@ class MEDDLY::minterm_operation : public operation {
                 @param  av      Edge value for operand 1
                 @param  ap      Node for operand 1, must be below L.
 
+                @param  low     Low element in minterm collection.
+                @param  high    1+high element in minterm collection.
+
                 @param  cv      Edge value of result
                 @param  cp      Node for result, will be below L.
          */
         virtual void compute(int L, unsigned in,
                 const edge_value &av, node_handle ap,
+                unsigned low, unsigned high,
                 edge_value &cv, node_handle &cp) = 0;
 
     protected:

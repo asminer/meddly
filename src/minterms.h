@@ -135,7 +135,6 @@ class MEDDLY::minterm {
 #endif
         }
         inline int getFrom(unsigned i) const {
-            MEDDLY_DCASSERT(isForRelations());
 #ifdef DEVELOPMENT_CODE
             return _from.at(i);
 #else
@@ -293,6 +292,10 @@ class MEDDLY::minterm_coll {
         ///                     in decreasing order.
         minterm_coll(const domain* D, set_or_rel sr,
                 const std::vector<unsigned> &varlist);
+
+        inline bool isForRelations()        const   { return for_relations; }
+        inline unsigned getNumVars()        const   { return num_vars; }
+        inline const domain* getDomain()    const   { return _D; }
 
         /// Make a minterm for someone to build
         inline minterm* makeTemp()

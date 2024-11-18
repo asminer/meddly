@@ -44,6 +44,7 @@ void MEDDLY::minterm_operation::compute(const dd_edge &ar1, dd_edge &res)
     node_handle resp;
     compute(resF->getMaxLevelIndex(), ~0,
             ar1.getEdgeValue(), ar1.getNode(),
+            0, arg2.size(),
             res.setEdgeValue(), resp);
     res.set(resp);
 }
