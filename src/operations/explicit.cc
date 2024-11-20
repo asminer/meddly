@@ -170,7 +170,7 @@ void MEDDLY::generic_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
         const int
             lowval = (L>0) ? arg2.at(dl)->getFrom(L) : arg2.at(dl)->getTo(-L);
         unsigned dh;
-        for (dh=low+1; dh<high; dh++) {
+        for (dh=dl+1; dh<high; dh++) {
             int hv = (L>0) ? arg2.at(dh)->getFrom(L) : arg2.at(dh)->getTo(-L);
             if (hv != lowval) break;
         }

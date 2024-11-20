@@ -20,7 +20,7 @@
 #include <time.h>
 #include <iostream>
 
-#define SHOW_MINTERMS
+// #define SHOW_MINTERMS
 
 const unsigned MAXTERMS = 32;
 
