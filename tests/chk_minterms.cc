@@ -60,6 +60,46 @@ int Equilikely(int a, int b)
 using namespace MEDDLY;
 
 /*
+ *  common for sets and relations
+ */
+
+bool evaluate(const minterm &m, const minterm_coll &MC)
+{
+    for (unsigned i=0; i<MC.size(); i++) {
+        if (MC.at(i)->contains(m)) return true;
+    }
+    return false;
+}
+
+void check_equal(char mddtype, const MEDDLY::dd_edge &E,
+        minterm &eval, minterm_coll &mtcoll)
+{
+    const char* MDD = eval.isForRelations() ? "MxD" : "MDD";
+    bool val_mdd, val_mts;
+    val_mts = evaluate(eval, mtcoll);
+    E.evaluate(eval, val_mdd);
+
+    if (val_mdd != val_mts) {
+        MEDDLY::ostream_output out(std::cout);
+        out << "\nMismatch on ";
+        eval.show(out);
+        out << "\n  " << mddtype << MDD << ": "
+            << (val_mdd ? "true" : "false") << "\n";
+        out << "mtlist: " << (val_mts ? "true" : "false") << "\n";
+        out << "\n";
+        out << "Minterm list:\n";
+        mtcoll.show(out, nullptr, "\n");
+
+        out << mddtype << MDD << ":\n";
+        E.showGraph(out);
+        out.flush();
+
+        throw "mismatch";
+    }
+}
+
+
+/*
  *
  * Manipulate minterms for sets
  *
@@ -75,23 +115,14 @@ void randomSetMinterm(minterm* m)
     }
 }
 
-bool evaluate(const minterm &m, const minterm_coll &MC)
-{
-    for (unsigned i=0; i<MC.size(); i++) {
-        if (MC.at(i)->contains(m)) return true;
-    }
-    return false;
-}
-
-
-void zeroMinterm(minterm& m)
+void zeroSetMinterm(minterm& m)
 {
     for (unsigned i=1; i<=m.getNumVars(); i++) {
         m.setVar(i, 0);
     }
 }
 
-bool nextMinterm(minterm& m)
+bool nextSetMinterm(minterm& m)
 {
     for (unsigned i=1; i<=m.getNumVars(); i++) {
         int v = m.getVar(i);
@@ -111,32 +142,6 @@ bool nextMinterm(minterm& m)
  * Tests for set-type forests
  *
  */
-
-void check_set_eq(char mddtype, const MEDDLY::dd_edge &E,
-        minterm &eval, minterm_coll &mtcoll)
-{
-    bool val_mdd, val_mts;
-    val_mts = evaluate(eval, mtcoll);
-    E.evaluate(eval, val_mdd);
-
-    if (val_mdd != val_mts) {
-        MEDDLY::ostream_output out(std::cout);
-        out << "\nMismatch on ";
-        eval.show(out);
-        out << "\n  " << mddtype << "MDD: " << (val_mdd ? "true" : "false") << "\n";
-        out << "mtlist: " << (val_mts ? "true" : "false") << "\n";
-
-        out << "\n";
-        out << "Minterm list:\n";
-        mtcoll.show(out, nullptr, "\n");
-
-        out << mddtype << "MDD:\n";
-        E.showGraph(out);
-        out.flush();
-
-        throw "mismatch";
-    }
-}
 
 void test_sets()
 {
@@ -224,11 +229,11 @@ void test_sets()
         //
         // Brute force: compare functions
         //
-        zeroMinterm(eval);
+        zeroSetMinterm(eval);
         do {
-            check_set_eq('Q', Eq, eval, mtcoll);
-            check_set_eq('F', Ef, eval, mtcoll);
-        } while (nextMinterm(eval));
+            check_equal('Q', Eq, eval, mtcoll);
+            check_equal('F', Ef, eval, mtcoll);
+        } while (nextSetMinterm(eval));
         out << "=\n";
         out.flush();
 
@@ -245,12 +250,6 @@ void test_sets()
 
 void randomRelMinterm(MEDDLY::minterm* m)
 {
-    //
-    // Separated
-    //
-    //
-    //
-
     const int unvals[52] =
     { -1, -1, -1, -1,   // 4 (x,x) pairs
       -1, -1, -1, -1,   // 4 (x,i) pairs
@@ -276,104 +275,35 @@ void randomRelMinterm(MEDDLY::minterm* m)
     }
 }
 
-void randomRelMinterm(int* un, int* pr, unsigned vars)
+void zeroRelMinterm(minterm& m)
 {
-    //
-    // Separated
-    //
-    //
-    //
+    for (unsigned i=1; i<=m.getNumVars(); i++) {
+        m.setVars(i, 0, 0);
+    }
+}
 
-    const int unvals[52] =
-    { -1, -1, -1, -1,   // 4 (x,x) pairs
-      -1, -1, -1, -1,   // 4 (x,i) pairs
-      -1, -1, -1, -1,   // 4 (x, normal) pairs
-       0,  1,  2,  3,   // 4 (normal, x) pairs
-       0,  1,  2,  3,   // 4 (normal, i) pairs
-       0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3,   // 16 normal pairs
-       0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3};  // 16 normal pairs
-
-    const int prvals[52] =
-    { -1, -1, -1, -1,   // 4 (x,x) pairs
-      -2, -2, -2, -2,   // 4 (x,i) pairs
-       0,  1,  2,  3,   // 4 (x, normal) pairs
-      -1, -1, -1, -1,   // 4 (normal, x) pairs
-      -2, -2, -2, -2,   // 4 (normal, i) pairs
-       0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,   // 16 normal pairs
-       0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3};  // 16 normal pairs
-
-    for (unsigned i=1; i<=vars; i++) {
-        int index = Equilikely(0, 51);
-        un[i] = unvals[index];
-        pr[i] = prvals[index];
-#ifdef RESTRICT_DONT_CHANGE
-        if (pr[i] == -2) {
-            un[i] = -1;
+bool nextRelMinterm(minterm& m)
+{
+    for (unsigned i=1; i<=m.getNumVars(); i++) {
+        int v = m.getFrom(i);
+        v++;
+        if (v < DOMSIZE) {
+            m.setFrom(i, v);
+            return true;
         }
-#endif
-    }
-}
-
-void showMinterm(const int* un, const int* pr, unsigned vars)
-{
-    using namespace std;
-
-    cout << "[ bot";
-    for (unsigned i=1; i<=vars; i++) {
-        cout << ", ";
-        if (un[i] < 0)  cout << 'x';
-        else            cout << un[i];
-        cout << "->";
-        if (pr[i] == -2)    cout << 'i';
-        else if (pr[i] < 0) cout << 'x';
-        else                cout << pr[i];
-    }
-    cout << "]";
-}
-
-bool mintermMatches(const int* mtun, const int* mtpr,
-        const int* valun, const int* valpr, unsigned vars)
-{
-    for (unsigned i=1; i<=vars; i++) {
-        if ((mtun[i] != -1) && (mtun[i] != valun[i])) return false;
-        if (mtpr[i] == -1) continue;
-        if (mtpr[i] == -2) {
-            if (valpr[i] == valun[i]) continue;
+        m.setFrom(i, 0);
+        v = m.getTo(i);
+        v++;
+        if (v < DOMSIZE) {
+            m.setTo(i, v);
+            return true;
         }
-        if (mtpr[i] != valpr[i]) return false;
-    }
-    return true;
-}
-
-bool evaluate(const int* vun, const int* vpr, unsigned vars,
-        int** mtun, int** mtpr, unsigned nmt)
-{
-    for (unsigned i=0; i<nmt; i++) {
-        if (mintermMatches(mtun[i], mtpr[i], vun, vpr, vars)) return true;
+        m.setTo(i, 0);
     }
     return false;
 }
 
-void zeroMinterm(int* vun, int* vpr, unsigned vars)
-{
-    for (unsigned i=1; i<=vars; i++) {
-        vun[i] = 0;
-        vpr[i] = 0;
-    }
-}
 
-bool nextMinterm(int* vun, int* vpr, unsigned vars)
-{
-    for (unsigned i=1; i<=vars; i++) {
-        vpr[i]++;
-        if (vpr[i] < DOMSIZE) return true;
-        vpr[i] = 0;
-        vun[i]++;
-        if (vun[i] < DOMSIZE) return true;
-        vun[i] = 0;
-    }
-    return false;
-}
 
 /*
  *
@@ -381,38 +311,6 @@ bool nextMinterm(int* vun, int* vpr, unsigned vars)
  *
  */
 
-void check_rel_eq(char mxdtype, const MEDDLY::dd_edge &E,
-        const int* uneval, const int* preval,
-        int** unlist, int** prlist, const unsigned mtsize)
-{
-    bool val_mxd;
-    bool val_mts = evaluate(uneval, preval, RELVARS, unlist, prlist, mtsize);
-    const MEDDLY::forest* F = E.getForest();
-    F->evaluate(E, uneval, preval, val_mxd);
-
-    if (val_mxd != val_mts) {
-        std::cout << "\nMismatch on ";
-        showMinterm(uneval, preval, RELVARS);
-        std::cout << "\n  " << mxdtype << "MxD: " << (val_mxd ? "true" : "false") << "\n";
-        std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
-
-        std::cout << "\n";
-        std::cout << "Minterm list:\n";
-
-        for (unsigned n=0; n<mtsize; n++) {
-            std::cout << "    ";
-            showMinterm(unlist[n], prlist[n], RELVARS);
-            std::cout << "\n";
-        }
-
-        std::cout << mxdtype << "Mxd:\n";
-        MEDDLY::ostream_output out(std::cout);
-        E.showGraph(out);
-
-        throw "mismatch";
-    }
-
-}
 
 
 void test_rels()
@@ -444,69 +342,33 @@ void test_rels()
 
 
     //
-    // Build random minterms
+    // Set up minterm collection
+    // and evaluation minterm
     //
-    int* unlist[MAXTERMS];
-    int* prlist[MAXTERMS];
-    for (unsigned i=0; i<MAXTERMS; i++) {
-        unlist[i] = new int[1+RELVARS];
-        prlist[i] = new int[1+RELVARS];
-        randomRelMinterm(unlist[i], prlist[i], RELVARS);
-    }
-
-    int uneval[1+RELVARS];
-    int preval[1+RELVARS];
-
-#ifdef DEBUG_MINTERM_COLL
     minterm_coll mtcoll(D, RELATION);
-    for (unsigned i=0; i<MAXTERMS; i++) {
+    minterm eval(D, RELATION, FULL_ONLY);
+
+    //
+    // For various collections of minterms,
+    //  (1) build sets
+    //  (2) explicitly verify sets against minterms
+
+    ostream_output out(std::cout);
+    out << "Checking relations built from minterms:\n";
+    out.flush();
+
+        //
+        // TBD
+        //
+    for (unsigned mtsize=1; mtsize<=MAXTERMS; ++mtsize)
+    {
         minterm* m = mtcoll.makeTemp();
         randomRelMinterm(m);
         mtcoll.addToCollection(m);
     }
-    ostream_output out(std::cout);
-    out << "Built relation minterm collection:\n";
-    mtcoll.show(out, nullptr, "\n");
-    out.flush();
-    out << "Sorting...\n";
+
     mtcoll.sort();
-    out << "Sorted collection:\n";
     mtcoll.show(out, nullptr, "\n");
-    out.flush();
-    return;
-#endif
-
-
-    //
-    // For various collections of minterms,
-    //  (1) build relations
-    //  (2) explicitly verify sets against minterms
-
-    std::cout << "Checking relations built from minterms:\n";
-    std::cout.flush();
-    for (unsigned mtsize=1; mtsize<=MAXTERMS; mtsize*=2)
-    {
-        std::cout << "    ";
-        if (mtsize<10) std::cout << ' ';
-        std::cout << mtsize << ": ";
-        std::cout.flush();
-        dd_edge Ef(Ff);
-        dd_edge Eq(Fq);
-
-        Fq->createEdge(unlist, prlist, mtsize, Eq);
-        std::cout << "q ";
-        std::cout.flush();
-        Ff->createEdge(unlist, prlist, mtsize, Ef);
-        std::cout << "f ";
-        std::cout.flush();
-
-        zeroMinterm(uneval, preval, RELVARS);
-        do {
-            check_rel_eq('Q', Eq, uneval, preval, unlist, prlist, mtsize);
-            check_rel_eq('F', Ef, uneval, preval, unlist, prlist, mtsize);
-        } while (nextMinterm(uneval, preval, RELVARS));
-        std::cout << "=" << std::endl;
-    }
 
     domain::destroy(D);
 }
@@ -536,7 +398,7 @@ int main(int argc, const char** argv)
     try {
         MEDDLY::initialize();
         test_sets();
-    //    test_rels();
+        test_rels();
         MEDDLY::cleanup();
         return 0;
     }

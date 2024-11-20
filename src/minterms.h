@@ -134,21 +134,6 @@ class MEDDLY::minterm {
             to   = _to[i];
 #endif
         }
-        inline int getFrom(unsigned i) const {
-#ifdef DEVELOPMENT_CODE
-            return _from.at(i);
-#else
-            return _from[i];
-#endif
-        }
-        inline int getTo(unsigned i) const {
-            MEDDLY_DCASSERT(isForRelations());
-#ifdef DEVELOPMENT_CODE
-            return _to.at(i);
-#else
-            return _to[i];
-#endif
-        }
         inline void setVars(unsigned i, int from, int to) {
             MEDDLY_DCASSERT(isForRelations());
             MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
@@ -164,6 +149,36 @@ class MEDDLY::minterm {
 #else
             _from[i] = from;
             _to[i] = to;
+#endif
+        }
+        inline int getFrom(unsigned i) const {
+#ifdef DEVELOPMENT_CODE
+            return _from.at(i);
+#else
+            return _from[i];
+#endif
+        }
+        inline void setFrom(unsigned i, int f) {
+#ifdef DEVELOPMENT_CODE
+            _from.at(i) = f;
+#else
+            _from[i] = f;
+#endif
+        }
+        inline int getTo(unsigned i) const {
+            MEDDLY_DCASSERT(isForRelations());
+#ifdef DEVELOPMENT_CODE
+            return _to.at(i);
+#else
+            return _to[i];
+#endif
+        }
+        inline void setTo(unsigned i, int t) {
+            MEDDLY_DCASSERT(isForRelations());
+#ifdef DEVELOPMENT_CODE
+            _to.at(i) = t;
+#else
+            _to[i] = t;
 #endif
         }
 
