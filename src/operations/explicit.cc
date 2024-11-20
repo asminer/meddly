@@ -18,6 +18,8 @@
 
 #include "../defines.h"
 #include "explicit.h"
+#include "../ops_builtin.h"
+#include "../oper_binary.h"
 #include "../oper_minterm.h"
 #include "../minterms.h"
 
@@ -27,36 +29,45 @@
 #include "../operators.h"
 #endif
 
+/*
+    To use the generic template classes below,
+    class OP must provide the following static methods:
+
+
+        bool stop_recursion_on(const edge_value &av, node_handle ap);
+
+            If true, we can stop the recursion and return <av, ap>
+
+
+        void finalize(const edge_value &av, node_handle ap,
+                const minterm_coll &mc, unsigned low, unsigned high,
+                edge_value &cv, node_handle &cp);
+
+            Determine the terminal edge for the given input edge
+            <av, ap> and minterms in mc with indexes in [low, high).
+            Store the result in <cv, cp>.
+
+
+        void get_null_edge(edge_value &av, node_handle &ap);
+
+            Get the edge e such that e op x is x for all x.
+            For op=union this is false. For op=intersection this
+            is true.  For op=minimize this is infinity. For
+            op=maximize this is negative infinity.
+ */
 
 // ******************************************************************
 // *                                                                *
-// *          generic template class for minterm operators          *
+// *           template class for "set" minterm operators           *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
     template <class OP, class EdgeOp>
-    class generic_minterm_op : public minterm_operation {
-        /*
-            OP must provide the following static methods:
-
-
-                bool stop_recursion_on(const edge_value &av, node_handle ap);
-
-                    If true, we can stop the recursion and return <av, ap>
-
-
-                void finalize(const edge_value &av, node_handle ap,
-                        const minterm_coll &mc, unsigned low, unsigned high,
-                        edge_value &cv, node_handle &cp);
-
-                    Determine the terminal edge for the given input edge
-                    <av, ap> and minterms in mc with indexes in [low, high).
-                    Store the result in <cv, cp>.
-         */
+    class set_minterm_op : public minterm_operation {
         public:
-            generic_minterm_op(forest* arg1, minterm_coll &arg2,
-                    forest* res);
+            set_minterm_op(binary_builtin Union,
+                    forest* arg1, minterm_coll &arg2, forest* res);
 
             virtual void compute(int L, unsigned in,
                     const edge_value &av, node_handle ap,
@@ -68,14 +79,15 @@ namespace MEDDLY {
             ostream_output out;
             unsigned top_count;
 #endif
+            binary_operation* union_op;
     };
 };
 
 // ******************************************************************
 
 template <class OP, class EdgeOp>
-MEDDLY::generic_minterm_op<OP,EdgeOp>::generic_minterm_op(forest* arg1,
-        minterm_coll &arg2, forest* res)
+MEDDLY::set_minterm_op<OP,EdgeOp>::set_minterm_op(binary_builtin Union,
+        forest* arg1, minterm_coll &arg2, forest* res)
         : minterm_operation(arg1, arg2, res)
 #ifdef TRACE
             , out(std::cout), top_count(0)
@@ -89,15 +101,18 @@ MEDDLY::generic_minterm_op<OP,EdgeOp>::generic_minterm_op(forest* arg1,
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }
 
-    if (arg1->isForRelations() != arg2.isForRelations()) {
+    if (arg1->isForRelations() || arg2.isForRelations()) {
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }
+
+    union_op = Union(arg1, arg1, arg1);
+    MEDDLY_DCASSERT(union_op);
 }
 
 // ******************************************************************
 
 template <class OP, class EdgeOp>
-void MEDDLY::generic_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
+void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
         const edge_value &av, node_handle ap,
         unsigned low, unsigned high,
         edge_value &cv, node_handle &cp)
@@ -128,21 +143,22 @@ void MEDDLY::generic_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
     // NO CT :)
 
     //
+    // Initialize "don't care" result
+    //
+    edge_value dnc_val;
+    node_handle dnc_node;
+    bool has_dont_care = false;
+
+
+    //
     // Allocate unpacked result node,
     // and copy from ap
     //
-    const int Lnext = resF->isForRelations()
-        ? MXD_levels::downLevel(L)
-        : MDD_levels::downLevel(L)
-    ;
+    const int Lnext = MDD_levels::downLevel(L);
     const int Alevel = arg1F->getNodeLevel(ap);
     unpacked_node* Cu;
     if (Alevel != L) {
-        if (arg1F->isIdentityReduced() && L<0) {
-            Cu = unpacked_node::newIdentity(arg1F, L, in, ap, FULL_ONLY);
-        } else {
-            Cu = unpacked_node::newRedundant(arg1F, L, ap, FULL_ONLY);
-        }
+        Cu = unpacked_node::newRedundant(arg1F, L, ap, FULL_ONLY);
     } else {
         Cu = arg1F->newUnpacked(ap, FULL_ONLY);
     }
@@ -193,21 +209,19 @@ void MEDDLY::generic_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
             //
             // Special case: DONT_CARE
             //
-            for (unsigned i=0; i<Cu->getSize(); i++) {
-                compute(Lnext, i, Cu->edgeval(i), Cu->down(i), dl, dh, tv, tp);
-                resF->unlinkNode(Cu->down(i));
-                Cu->setFull(i, tv, tp);
-            } // for i
+            // Build the "don't care" portion:
+            // (1) Recurse on a null edge
+            // (2) Build a redundant node to the result
+            //
+
+            OP::get_null_edge(dnc_val, dnc_node);
+            dnc_node = resF->makeRedundantsTo(dnc_node, 0, Lnext);
+            compute(Lnext, ~0, dnc_val, dnc_node, dl, dh, dnc_val, dnc_node);
+            dnc_node = resF->makeRedundantsTo(dnc_node, Lnext, L);
+            has_dont_care = true;
+
         } else {
-            //
-            // Normal recursion, except for DONT_CHANGE
-            // we set the index to the incoming index
-            //
-            if (lowval<0) {
-                MEDDLY_DCASSERT(L<0);
-                MEDDLY_DCASSERT(in != ~0);
-            }
-            const unsigned i = (lowval<0) ? in : unsigned(lowval);
+            const unsigned i = unsigned(lowval);
             compute(Lnext, i, Cu->edgeval(i), Cu->down(i), dl, dh, tv, tp);
             resF->unlinkNode(Cu->down(i));
             Cu->setFull(i, tv, tp);
@@ -227,8 +241,18 @@ void MEDDLY::generic_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
     } // while more subintervals
 
     resF->createReducedNode(Cu, cv, cp);
+    if (has_dont_care) {
+        union_op->compute(L, in, dnc_val, dnc_node, cv, cp, cv, cp);
+    }
 }
 
+// ******************************************************************
+// *                                                                *
+// *        template class  for "relation" minterm operators        *
+// *                                                                *
+// ******************************************************************
+
+// TBD
 
 // ******************************************************************
 // *                                                                *
@@ -265,6 +289,13 @@ namespace MEDDLY {
             }
         }
 
+        static inline void get_null_edge(edge_value &av, node_handle &ap)
+        {
+            av.set();
+            terminal t(false);
+            ap = t.getHandle();
+        }
+
     };
 };
 
@@ -283,7 +314,12 @@ MEDDLY::UNION(forest* a, minterm_coll &b, forest* c)
     }
 
     if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-        return new generic_minterm_op<mt_union_templ, EdgeOp_none> (a, b, c);
+        if (c->isForRelations()) {
+            // TBD
+        } else {
+            return new set_minterm_op<mt_union_templ, EdgeOp_none>
+                (UNION, a, b, c);
+        }
     }
 
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
