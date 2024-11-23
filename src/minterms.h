@@ -159,7 +159,7 @@ class MEDDLY::minterm {
         inline int var(int i) const {
             MEDDLY_DCASSERT(i>0 || isForRelations());
 #ifdef DEVELOPMENT_CODE
-            return (i>0) ? _from.at(i) : _to_at(-i);
+            return (i>0) ? _from.at(i) : _to.at(-i);
 #else
             return (i>0) ? _from[i] : _to[-i];
 #endif
