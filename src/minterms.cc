@@ -268,16 +268,23 @@ void MEDDLY::minterm_coll::_sort(unsigned k, bool primed,
     }
 
     int vmax;
+    unsigned hend;
 
-    unsigned hend = moveValuesToEnd(DONT_CARE, vmax, k, primed, low, high);
-    _sort(knext, prnext, hend, high);
-    high = hend;
-
+    //
+    // Special value: don't change
+    //
     if (primed) {
         hend = moveValuesToEnd(DONT_CHANGE, vmax, k, primed, low, high);
         _sort(knext, prnext, hend, high);
         high = hend;
     }
+
+    //
+    // Special value: don't care
+    //
+    hend = moveValuesToEnd(DONT_CARE, vmax, k, primed, low, high);
+    _sort(knext, prnext, hend, high);
+    high = hend;
 
     //
     // Move remaining until nothing left to move
