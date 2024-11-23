@@ -357,18 +357,58 @@ void test_rels()
     out << "Checking relations built from minterms:\n";
     out.flush();
 
-        //
-        // TBD
-        //
-    for (unsigned mtsize=1; mtsize<=MAXTERMS; ++mtsize)
+    for (unsigned mtsize=1; mtsize<=MAXTERMS; mtsize*=2)
     {
-        minterm* m = mtcoll.makeTemp();
-        randomRelMinterm(m);
-        mtcoll.addToCollection(m);
-    }
+        //
+        // Add minterms to the collection
+        //
+        while (mtcoll.size() < mtsize) {
+            minterm* m = mtcoll.makeTemp();
+            randomRelMinterm(m);
+            mtcoll.addToCollection(m);
+        }
 
-    mtcoll.sort();
-    mtcoll.show(out, nullptr, "\n");
+#ifdef SHOW_MINTERMS
+        mtcoll.sort();
+        mtcoll.show(out, nullptr, "\n");
+#endif
+        out << "    ";
+        out.put((unsigned long) mtsize, 2);
+        out << ": ";
+        out.flush();
+
+
+        //
+        // Set up ddedges
+        //
+        dd_edge Ef(Ff);
+        dd_edge Eq(Fq);
+        Ff->createEdge(false, Ef);
+        Fq->createEdge(false, Eq);
+
+        //
+        // Build unions
+        //
+        apply(UNION, Eq, mtcoll, Eq);
+        out << "q ";
+        out.flush();
+
+        apply(UNION, Ef, mtcoll, Ef);
+        out << "f ";
+        out.flush();
+
+        //
+        // Brute force: compare functions
+        //
+        zeroRelMinterm(eval);
+        do {
+            check_equal('Q', Eq, eval, mtcoll);
+            check_equal('F', Ef, eval, mtcoll);
+        } while (nextRelMinterm(eval));
+        out << "=\n";
+        out.flush();
+
+    } // for mtsize
 
     domain::destroy(D);
 }

@@ -63,7 +63,7 @@
 // ******************************************************************
 
 namespace MEDDLY {
-    template <class OP, class EdgeOp>
+    template <class OP, class EdgeOp, bool RELS>
     class set_minterm_op : public minterm_operation {
         public:
             set_minterm_op(binary_builtin Union,
@@ -85,8 +85,8 @@ namespace MEDDLY {
 
 // ******************************************************************
 
-template <class OP, class EdgeOp>
-MEDDLY::set_minterm_op<OP,EdgeOp>::set_minterm_op(binary_builtin Union,
+template <class OP, class EdgeOp, bool RELS>
+MEDDLY::set_minterm_op<OP,EdgeOp,RELS>::set_minterm_op(binary_builtin Union,
         forest* arg1, minterm_coll &arg2, forest* res)
         : minterm_operation(arg1, arg2, res)
 #ifdef TRACE
@@ -101,7 +101,9 @@ MEDDLY::set_minterm_op<OP,EdgeOp>::set_minterm_op(binary_builtin Union,
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }
 
-    if (arg1->isForRelations() || arg2.isForRelations()) {
+    if ( (arg1->isForRelations() != RELS) ||
+         (arg2.isForRelations() != RELS) )
+    {
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }
 
@@ -111,8 +113,8 @@ MEDDLY::set_minterm_op<OP,EdgeOp>::set_minterm_op(binary_builtin Union,
 
 // ******************************************************************
 
-template <class OP, class EdgeOp>
-void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
+template <class OP, class EdgeOp, bool RELS>
+void MEDDLY::set_minterm_op<OP,EdgeOp,RELS>::compute(int L, unsigned in,
         const edge_value &av, node_handle ap,
         unsigned low, unsigned high,
         edge_value &cv, node_handle &cp)
@@ -143,22 +145,30 @@ void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
     // NO CT :)
 
     //
-    // Initialize "don't care" result
+    // Initialize "don't care" result,
+    // and our "don't change" result (relations only).
     //
-    edge_value dnc_val;
-    node_handle dnc_node;
+    edge_value dnc_val, ident_val;
+    node_handle dnc_node, ident_node;
     bool has_dont_care = false;
+    bool has_identity = false;
 
 
     //
     // Allocate unpacked result node,
     // and copy from ap
     //
-    const int Lnext = MDD_levels::downLevel(L);
+    const int Lnext =
+        RELS ? MXD_levels::downLevel(L)
+             : MDD_levels::downLevel(L);
     const int Alevel = arg1F->getNodeLevel(ap);
     unpacked_node* Cu;
     if (Alevel != L) {
-        Cu = unpacked_node::newRedundant(arg1F, L, ap, FULL_ONLY);
+        if ((L<0) && (resF->isIdentityReduced())) {
+            Cu = unpacked_node::newIdentity(arg1F, L, in, ap, FULL_ONLY);
+        } else {
+            Cu = unpacked_node::newRedundant(arg1F, L, ap, FULL_ONLY);
+        }
     } else {
         Cu = arg1F->newUnpacked(ap, FULL_ONLY);
     }
@@ -199,39 +209,87 @@ void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
         edge_value tv;
         node_handle tp;
 
-#ifdef TRACE
-        out << "    [" << dl << ", " << dh << ") value " << lowval << "\n";
-        out.indent_more();
-        out.put('\n');
-#endif
-
         if (lowval == DONT_CARE) {
             //
-            // Special case: DONT_CARE
+            // If we're at an unprimed level and we're a relation,
+            // split the DONT_CARE region into
+            // [dl, identstart), where the primed level is not DONT_CHANGE
+            // [identstart, dh), where the primed level is DONT_CHANGE
             //
-            // Build the "don't care" portion:
-            // (1) Recurse on a null edge
-            // (2) Build a redundant node to the result
-            //
+            unsigned identstart = dh;
+            if (RELS && L>0) {
+                for (identstart=dl; identstart<dh; identstart++) {
+                    if ( DONT_CHANGE == arg2.at(identstart)->getTo(L) ) break;
+                }
 
-            OP::get_null_edge(dnc_val, dnc_node);
-            dnc_node = resF->makeRedundantsTo(dnc_node, 0, Lnext);
-            compute(Lnext, ~0, dnc_val, dnc_node, dl, dh, dnc_val, dnc_node);
-            dnc_node = resF->makeRedundantsTo(dnc_node, Lnext, L);
-            has_dont_care = true;
+                //
+                // Build the "don't change" portion
+                // Note this is down TWO levels, at the next unprimed level
+                //
+                if (identstart < dh) {
+                    MEDDLY_DCASSERT(!has_identity);
+#ifdef TRACE
+                    out << "    [" << identstart << ", " << dh << ") identity\n";
+                    out.indent_more();
+                    out.put('\n');
+#endif
+                    OP::get_null_edge(ident_val, ident_node);
+                    ident_node = resF->makeRedundantsTo(ident_node, 0, L-1);
+                    compute(L-1, ~0, ident_val, ident_node, identstart, dh,
+                            ident_val, ident_node);
+                    ident_node = resF->makeIdentitiesTo(ident_node, L-1, L, ~0);
+                    has_identity = true;
+#ifdef TRACE
+                    out.indent_less();
+                    out.put('\n');
+                    out << "    [" << identstart << ", " << dh << ") done\n";
+#endif
+                }
+
+            }
+
+            //
+            // Build the "don't care" portion
+            //
+            if (dl < identstart) {
+                MEDDLY_DCASSERT(!has_dont_care);
+#ifdef TRACE
+                out << "    [" << dl << ", " << identstart << ") don't care\n";
+                out.indent_more();
+                out.put('\n');
+#endif
+                OP::get_null_edge(dnc_val, dnc_node);
+                dnc_node = resF->makeRedundantsTo(dnc_node, 0, Lnext);
+                compute(Lnext, ~0, dnc_val, dnc_node, dl, identstart,
+                        dnc_val, dnc_node);
+                dnc_node = resF->makeRedundantsTo(dnc_node, Lnext, L);
+                has_dont_care = true;
+#ifdef TRACE
+                out.indent_less();
+                out.put('\n');
+                out << "    [" << dl << ", " << identstart << ") done\n";
+#endif
+            }
 
         } else {
+#ifdef TRACE
+            out << "    [" << dl << ", " << dh << ") value " << lowval << "\n";
+            out.indent_more();
+            out.put('\n');
+#endif
+
             const unsigned i = unsigned(lowval);
             compute(Lnext, i, Cu->edgeval(i), Cu->down(i), dl, dh, tv, tp);
             resF->unlinkNode(Cu->down(i));
             Cu->setFull(i, tv, tp);
-        }
 
 #ifdef TRACE
-        out.indent_less();
-        out.put('\n');
-        out << "    [" << dl << ", " << dh << ") value " << lowval << " done\n";
+            out.indent_less();
+            out.put('\n');
+            out << "    [" << dl << ", " << dh << ") value " << lowval
+                << " done\n";
 #endif
+        }
 
         //
         // Advance interval
@@ -243,6 +301,9 @@ void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
     resF->createReducedNode(Cu, cv, cp);
     if (has_dont_care) {
         union_op->compute(L, in, dnc_val, dnc_node, cv, cp, cv, cp);
+    }
+    if (RELS && has_identity) {
+        union_op->compute(L, in, ident_val, ident_node, cv, cp, cv, cp);
     }
 }
 
@@ -315,9 +376,10 @@ MEDDLY::UNION(forest* a, minterm_coll &b, forest* c)
 
     if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         if (c->isForRelations()) {
-            // TBD
+            return new set_minterm_op<mt_union_templ, EdgeOp_none, true>
+                (UNION, a, b, c);
         } else {
-            return new set_minterm_op<mt_union_templ, EdgeOp_none>
+            return new set_minterm_op<mt_union_templ, EdgeOp_none, false>
                 (UNION, a, b, c);
         }
     }
