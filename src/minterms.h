@@ -329,6 +329,8 @@ class MEDDLY::minterm_coll {
         }
 
 
+        // TBD: remove sort
+
         /// Sort the collection into a good order
         /// for building a MDD / MXD
         inline void sort()
@@ -339,6 +341,40 @@ class MEDDLY::minterm_coll {
             }
             sorted = true;
         }
+
+        // TBD: figure this interface out and use it in the operation
+        //
+
+        /** Partial sort, as used by explicit minterm operations.
+            Based on level L, and the range of minterms [low, hi),
+            collect all elements together with variable L equal to item #low.
+            on output, lend is such that [low, lend) has equal elements
+            where low < lend <= hi
+
+            As a special case, if L>0 and the collection is for relations,
+            if the first item has value "DONT_CARE", then we ALSO look at
+            the primed value but only to distinguish "DONT_CHANGE" and
+            not equal to "DONT_CHANGE".
+
+                @param  L       Variable number; use negative for primed
+                @param  low     First minterm to check
+                @param  hi      One past the last minterm to check
+                @param  lend    On output, one past the last minterm
+                                in the group equal to low.
+
+                @return Nothing, but will reorder the collection.
+        */
+        inline void collect_first(int L, unsigned low, unsigned hi,
+                unsigned& lend)
+        {
+            if (hi-low < 2) {
+                // Only one element, no checking or reordering required.
+                lend = hi;
+                return;
+            }
+            _collect_first(L, low, hi, lend);
+        }
+
 
         /// Clear the collection
         void clear();
@@ -390,6 +426,9 @@ class MEDDLY::minterm_coll {
         ///
         unsigned moveValuesToEnd(int val, int &max, unsigned k, bool pr,
                 unsigned lo, unsigned hi);
+
+
+        void _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
 
     private:
         std::vector<minterm*> _mtlist;

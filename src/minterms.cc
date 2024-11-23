@@ -286,3 +286,12 @@ unsigned MEDDLY::minterm_coll::moveValuesToEnd(int val, int &max,
     }
 }
 
+void MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
+        unsigned hi, unsigned& lend)
+{
+    //
+    // TBD; will be similar to moveValuesToEnd
+    //
+    throw 7;
+}
+
