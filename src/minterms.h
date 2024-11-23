@@ -251,32 +251,6 @@ class MEDDLY::minterm {
         void show(output &s) const;
 
     private:
-        /*
-        inline bool matches(unsigned i, const minterm& m, unsigned j) const
-        {
-            MEDDLY_DCASSERT(isForRelations() == m.isForRelations());
-
-            if ((DONT_CARE != _from.at(i)) && (_from.at(i) != m._from.at(j)))
-                return false;
-
-            if (!isForRelations())  return true;
-
-            if (DONT_CARE == _to.at(i)) return true;
-            if (_to.at(i) == m._to.at(j)) return true;
-
-            return (DONT_CHANGE == _to.at(i))
-                && (m._to.at(j) == m._from.at(j));
-        }
-
-        inline bool isDontCare(unsigned i) const
-        {
-            if (DONT_CARE != _from.at(i)) return false;
-            if (!isForRelations()) return true;
-            return DONT_CARE == _to.at(i);
-        }
-        */
-
-    private:
         const domain* _D;
 
         std::vector<int> _from;
