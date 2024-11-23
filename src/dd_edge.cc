@@ -324,9 +324,9 @@ namespace MEDDLY {
                     edge_value pv;
     	            int level = F->getNodeLevel(p);
                     if (level > 0) {
-                        F->getDownPtr(p, m.getFrom(level), pv, p);
+                        F->getDownPtr(p, m.from(level), pv, p);
                     } else {
-                        F->getDownPtr(p, m.getTo(-level), pv, p);
+                        F->getDownPtr(p, m.to(-level), pv, p);
                     }
                     ev = EOP::accumulate(ev, pv);
                 }

@@ -140,8 +140,8 @@ bool nextMinterm(int* mt, unsigned vars)
 void check_set_eq(char mddtype, const MEDDLY::dd_edge &E, const int* eval,
         int** mtlist, const unsigned mtsize)
 {
-    bool val_mdd;
-    bool val_mts = evaluate(eval, SETVARS, mtlist, mtsize);
+    bool val_mdd, val_mts;
+    val_mts = evaluate(eval, SETVARS, mtlist, mtsize);
     const MEDDLY::forest* F = E.getForest();
     F->evaluate(E, eval, val_mdd);
 
@@ -389,8 +389,8 @@ void check_rel_eq(char mxdtype, const MEDDLY::dd_edge &E,
         const int* uneval, const int* preval,
         int** unlist, int** prlist, const unsigned mtsize)
 {
-    bool val_mxd;
-    bool val_mts = evaluate(uneval, preval, RELVARS, unlist, prlist, mtsize);
+    bool val_mxd, val_mts;
+    val_mts = evaluate(uneval, preval, RELVARS, unlist, prlist, mtsize);
     const MEDDLY::forest* F = E.getForest();
     F->evaluate(E, uneval, preval, val_mxd);
 

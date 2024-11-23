@@ -37,6 +37,8 @@
 #include "policies.h"
 #include "terminal.h"
 
+#include <vector>
+
 namespace MEDDLY {
 
     /** Special value for minterms: don't care what this variable does.
@@ -102,7 +104,7 @@ class MEDDLY::minterm {
         /// Get the terminal value
         inline const terminal& getTerm()    const   { return termval; }
 
-        // access for sets
+        // set access
 
         inline int getVar(unsigned i) const {
             MEDDLY_DCASSERT(isForSets());
@@ -122,7 +124,7 @@ class MEDDLY::minterm {
 #endif
         }
 
-        // access for relations
+        // relation access
 
         inline void getVars(unsigned i, int &from, int &to) const {
             MEDDLY_DCASSERT(isForRelations());
@@ -151,21 +153,33 @@ class MEDDLY::minterm {
             _to[i] = to;
 #endif
         }
-        inline int getFrom(unsigned i) const {
+
+        // both access
+
+        inline int var(int i) const {
+            MEDDLY_DCASSERT(i>0 || isForRelations());
+#ifdef DEVELOPMENT_CODE
+            return (i>0) ? _from.at(i) : _to_at(-i);
+#else
+            return (i>0) ? _from[i] : _to[-i];
+#endif
+        }
+
+        inline int from(unsigned i) const {
 #ifdef DEVELOPMENT_CODE
             return _from.at(i);
 #else
             return _from[i];
 #endif
         }
-        inline void setFrom(unsigned i, int f) {
+        inline int& from(unsigned i) {
 #ifdef DEVELOPMENT_CODE
-            _from.at(i) = f;
+            return _from.at(i);
 #else
-            _from[i] = f;
+            return _from[i];
 #endif
         }
-        inline int getTo(unsigned i) const {
+        inline int to(unsigned i) const {
             MEDDLY_DCASSERT(isForRelations());
 #ifdef DEVELOPMENT_CODE
             return _to.at(i);
@@ -173,12 +187,12 @@ class MEDDLY::minterm {
             return _to[i];
 #endif
         }
-        inline void setTo(unsigned i, int t) {
+        inline int& to(unsigned i) {
             MEDDLY_DCASSERT(isForRelations());
 #ifdef DEVELOPMENT_CODE
-            _to.at(i) = t;
+            return _to.at(i);
 #else
-            _to[i] = t;
+            return _to[i];
 #endif
         }
 
@@ -227,12 +241,6 @@ class MEDDLY::minterm {
         }
 
         //
-        // check if we are equal to m,
-        // except we may contain more don't cares
-        //
-        bool contains(const minterm& m) const;
-
-        //
         // Check that we are sparse, and have the same variables
         // set as the given list L.
         //
@@ -243,6 +251,7 @@ class MEDDLY::minterm {
         void show(output &s) const;
 
     private:
+        /*
         inline bool matches(unsigned i, const minterm& m, unsigned j) const
         {
             MEDDLY_DCASSERT(isForRelations() == m.isForRelations());
@@ -265,6 +274,7 @@ class MEDDLY::minterm {
             if (!isForRelations()) return true;
             return DONT_CARE == _to.at(i);
         }
+        */
 
     private:
         const domain* _D;

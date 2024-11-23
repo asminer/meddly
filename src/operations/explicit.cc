@@ -193,11 +193,10 @@ void MEDDLY::set_minterm_op<OP,EdgeOp,RELS>::compute(int L, unsigned in,
         //
         // find end of subinterval
         //
-        const int
-            lowval = (L>0) ? arg2.at(dl)->getFrom(L) : arg2.at(dl)->getTo(-L);
+        const int lowval = arg2.at(dl)->var(L);
         unsigned dh;
         for (dh=dl+1; dh<high; dh++) {
-            int hv = (L>0) ? arg2.at(dh)->getFrom(L) : arg2.at(dh)->getTo(-L);
+            int hv = arg2.at(dh)->var(L);
             if (hv != lowval) break;
         }
         //
@@ -219,7 +218,7 @@ void MEDDLY::set_minterm_op<OP,EdgeOp,RELS>::compute(int L, unsigned in,
             unsigned identstart = dh;
             if (RELS && L>0) {
                 for (identstart=dl; identstart<dh; identstart++) {
-                    if ( DONT_CHANGE == arg2.at(identstart)->getTo(L) ) break;
+                    if ( DONT_CHANGE == arg2.at(identstart)->to(L) ) break;
                 }
 
                 //

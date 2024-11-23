@@ -63,39 +63,26 @@ using namespace MEDDLY;
  *  common for sets and relations
  */
 
-bool evaluate(const minterm &m, const minterm_coll &MC)
-{
-    for (unsigned i=0; i<MC.size(); i++) {
-        if (MC.at(i)->contains(m)) return true;
-    }
-    return false;
-}
-
-void check_equal(char mddtype, const MEDDLY::dd_edge &E,
-        minterm &eval, minterm_coll &mtcoll)
+void mismatch(const minterm &eval,
+        char mddtype, const MEDDLY::dd_edge &E, bool val_mdd,
+        const minterm_coll &mtcoll, bool mtcoll_answer)
 {
     const char* MDD = eval.isForRelations() ? "MxD" : "MDD";
-    bool val_mdd, val_mts;
-    val_mts = evaluate(eval, mtcoll);
-    E.evaluate(eval, val_mdd);
+    MEDDLY::ostream_output out(std::cout);
+    out << "\nMismatch on ";
+    eval.show(out);
+    out << "\n  " << mddtype << MDD << ": "
+        << (val_mdd ? "true" : "false") << "\n";
+    out << "mtlist: " << (mtcoll_answer ? "true" : "false") << "\n";
+    out << "\n";
+    out << "Minterm list:\n";
+    mtcoll.show(out, nullptr, "\n");
 
-    if (val_mdd != val_mts) {
-        MEDDLY::ostream_output out(std::cout);
-        out << "\nMismatch on ";
-        eval.show(out);
-        out << "\n  " << mddtype << MDD << ": "
-            << (val_mdd ? "true" : "false") << "\n";
-        out << "mtlist: " << (val_mts ? "true" : "false") << "\n";
-        out << "\n";
-        out << "Minterm list:\n";
-        mtcoll.show(out, nullptr, "\n");
+    out << mddtype << MDD << ":\n";
+    E.showGraph(out);
+    out.flush();
 
-        out << mddtype << MDD << ":\n";
-        E.showGraph(out);
-        out.flush();
-
-        throw "mismatch";
-    }
+    throw "mismatch";
 }
 
 
@@ -125,16 +112,31 @@ void zeroSetMinterm(minterm& m)
 bool nextSetMinterm(minterm& m)
 {
     for (unsigned i=1; i<=m.getNumVars(); i++) {
-        int v = m.getVar(i);
-        v++;
-        if (v < DOMSIZE) {
-            m.setVar(i, v);
+        if (++m.from(i) < DOMSIZE) {
             return true;
         }
-        m.setVar(i, 0);
+        m.from(i) = 0;
     }
     return false;
 }
+
+bool matches_set(const minterm* m, const minterm& va)
+{
+    for (unsigned i=1; i<=va.getNumVars(); i++) {
+        if (m->from(i) == DONT_CARE) continue;
+        if (m->from(i) != va.from(i)) return false;
+    }
+    return true;
+}
+
+bool evaluate_set(const minterm &m, const minterm_coll &MC)
+{
+    for (unsigned i=0; i<MC.size(); i++) {
+        if (matches_set(MC.at(i), m)) return true;
+    }
+    return false;
+}
+
 
 
 /*
@@ -231,8 +233,17 @@ void test_sets()
         //
         zeroSetMinterm(eval);
         do {
-            check_equal('Q', Eq, eval, mtcoll);
-            check_equal('F', Ef, eval, mtcoll);
+            bool in_mtcoll = evaluate_set(eval, mtcoll);
+            bool qval, fval;
+            Eq.evaluate(eval, qval);
+            Ef.evaluate(eval, fval);
+
+            if (qval != in_mtcoll) {
+                mismatch(eval, 'Q', Eq, qval, mtcoll, in_mtcoll);
+            }
+            if (fval != in_mtcoll) {
+                mismatch(eval, 'F', Ef, fval, mtcoll, in_mtcoll);
+            }
         } while (nextSetMinterm(eval));
         out << "=\n";
         out.flush();
@@ -285,24 +296,40 @@ void zeroRelMinterm(minterm& m)
 bool nextRelMinterm(minterm& m)
 {
     for (unsigned i=1; i<=m.getNumVars(); i++) {
-        int v = m.getFrom(i);
-        v++;
-        if (v < DOMSIZE) {
-            m.setFrom(i, v);
+        if (++m.from(i) < DOMSIZE) {
             return true;
         }
-        m.setFrom(i, 0);
-        v = m.getTo(i);
-        v++;
-        if (v < DOMSIZE) {
-            m.setTo(i, v);
+        m.from(i) = 0;
+        if (++m.to(i) < DOMSIZE) {
             return true;
         }
-        m.setTo(i, 0);
+        m.to(i) = 0;
     }
     return false;
 }
 
+bool matches_rel(const minterm* m, const minterm& va)
+{
+    for (unsigned i=1; i<=va.getNumVars(); i++) {
+        if ((m->from(i) != DONT_CARE) && (m->from(i) != va.from(i)))  {
+            return false;
+        }
+        if (m->to(i) == DONT_CARE) continue;
+        if (m->to(i) == DONT_CHANGE) {
+            if (va.to(i) == va.from(i)) continue;
+        }
+        if (m->to(i) != va.to(i)) return false;
+    }
+    return true;
+}
+
+bool evaluate_rel(const minterm &m, const minterm_coll &MC)
+{
+    for (unsigned i=0; i<MC.size(); i++) {
+        if (matches_rel(MC.at(i), m)) return true;
+    }
+    return false;
+}
 
 
 /*
@@ -402,8 +429,17 @@ void test_rels()
         //
         zeroRelMinterm(eval);
         do {
-            check_equal('Q', Eq, eval, mtcoll);
-            check_equal('F', Ef, eval, mtcoll);
+            bool in_mtcoll = evaluate_rel(eval, mtcoll);
+            bool qval, fval;
+            Eq.evaluate(eval, qval);
+            Ef.evaluate(eval, fval);
+
+            if (qval != in_mtcoll) {
+                mismatch(eval, 'Q', Eq, qval, mtcoll, in_mtcoll);
+            }
+            if (fval != in_mtcoll) {
+                mismatch(eval, 'F', Ef, fval, mtcoll, in_mtcoll);
+            }
         } while (nextRelMinterm(eval));
         out << "=\n";
         out.flush();

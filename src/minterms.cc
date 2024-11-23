@@ -50,6 +50,7 @@ MEDDLY::minterm::minterm(const domain* D, set_or_rel sr,
     }
 }
 
+/*
 bool MEDDLY::minterm::contains(const minterm& m) const
 {
     if ( ( m.getDomain() != getDomain() ) ||
@@ -121,6 +122,7 @@ bool MEDDLY::minterm::contains(const minterm& m) const
         }
     }
 }
+*/
 
 bool MEDDLY::minterm::hasSparseVars(const std::vector <unsigned> &vars) const
 {
