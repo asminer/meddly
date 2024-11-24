@@ -23,8 +23,8 @@
 
 // #define DEBUG_SORT
 // #define DEBUG_RECURSE_STOP 9
-#define DEBUG_COLLECT_FIRST
-#include "operators.h"
+// #define DEBUG_COLLECT_FIRST
+// #include "operators.h"
 
 // ******************************************************************
 // *                                                                *
@@ -114,7 +114,6 @@ MEDDLY::minterm_coll::minterm_coll(const domain* D, set_or_rel sr)
     for_relations = sr;
     sparse = false;
     freelist = nullptr;
-    sorted = false;
 }
 
 MEDDLY::minterm_coll::minterm_coll(const domain* D, set_or_rel sr,
@@ -125,7 +124,6 @@ MEDDLY::minterm_coll::minterm_coll(const domain* D, set_or_rel sr,
     for_relations = sr;
     sparse = true;
     freelist = nullptr;
-    sorted = false;
 
     _varlist.resize(varlist.size());
     for (unsigned i=0; i<varlist.size(); i++) {
@@ -140,7 +138,6 @@ void MEDDLY::minterm_coll::clear()
         _mtlist.back() = nullptr;
         _mtlist.pop_back();
     }
-    sorted = false;
 }
 
 void MEDDLY::minterm_coll::show(output &s,
@@ -172,132 +169,6 @@ bool MEDDLY::minterm_coll::_check(minterm* m) const
     return true;
 }
 
-void MEDDLY::minterm_coll::_sort(unsigned k, bool primed,
-        unsigned low, unsigned high)
-{
-    int L = primed ? -int(k) : int(k);
-    unsigned mid;
-
-    do {
-        collect_first(L, low, high, mid);
-        low = mid;
-    } while (mid < high);
-
-    return;
-
-
-#ifdef DEBUG_SORT
-
-#ifdef DEBUG_RECURSE_STOP
-    if (k < DEBUG_RECURSE_STOP) return;
-#endif
-
-#endif
-    if (0==k) return;
-    if (low == high) return;
-    if (low+1 == high) return;
-    MEDDLY_DCASSERT(low < high);
-
-    unsigned knext;
-    bool prnext;
-    if (for_relations) {
-        knext = primed ? k-1 : k;
-        prnext = !primed;
-    } else {
-        knext = k-1;
-        prnext = false;
-    }
-
-    int vmax;
-    unsigned hend;
-
-    //
-    // Special value: don't change
-    //
-    if (primed) {
-        hend = moveValuesToEnd(DONT_CHANGE, vmax, k, primed, low, high);
-        _sort(knext, prnext, hend, high);
-        high = hend;
-    }
-
-    //
-    // Special value: don't care
-    //
-    hend = moveValuesToEnd(DONT_CARE, vmax, k, primed, low, high);
-    _sort(knext, prnext, hend, high);
-    high = hend;
-
-    //
-    // Move remaining until nothing left to move
-    //
-    while (vmax >= 0) {
-        hend = moveValuesToEnd(vmax, vmax, k, primed, low, high);
-        _sort(knext, prnext, hend, high);
-        high = hend;
-        // if (1==high) return;
-    }
-}
-
-unsigned MEDDLY::minterm_coll::moveValuesToEnd(int val, int &max,
-        unsigned k, bool pr, unsigned lo, unsigned hi)
-{
-#ifdef DEBUG_SORT
-    printf("  Moving x_%u%c value %d to end; range [%u, %u)\n",
-            k, pr ? '\'' : ' ', val, lo, hi);
-    // FILE_output foo(stdout);
-    // show(foo, nullptr, "\n");
-#endif
-    unsigned lptr = lo;
-    unsigned hptr = hi-1;
-    max = -3;
-
-    for (;;)
-    {
-        //
-        // Find largest element not equal to val
-        //
-        for (;;) {
-            const int vkh = pr ? at(hptr)->_to[k] : at(hptr)->_from[k];
-            if (vkh != val) {
-                max = MAX(max, vkh);
-                break;
-            }
-            if (hptr == lptr) {
-#ifdef DEBUG_SORT
-                printf("    high cross; return %u\n", hptr);
-#endif
-                return hptr;
-            }
-            --hptr;
-        }
-
-        //
-        // Find smallest element equal to val
-        //
-        for (;;) {
-            const int vkl = pr ? at(lptr)->_to[k] : at(lptr)->_from[k];
-            if (vkl == val) break;
-            max = MAX(max, vkl);
-            ++lptr;
-            if (lptr >= hptr) {
-#ifdef DEBUG_SORT
-                printf("    low cross %u return %u\n", lptr, hptr+1);
-#endif
-                return hptr+1;
-            }
-        }
-
-        //
-        // Swap elements
-        //
-#ifdef DEBUG_SORT
-        printf("    swapping %u and %u\n", lptr, hptr);
-#endif
-        minterm* tmp = _mtlist[lptr];
-        _mtlist[lptr] = _mtlist[hptr];
-        _mtlist[hptr] = tmp;
-    }
-}
 
 int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
         unsigned hi, unsigned& lend)

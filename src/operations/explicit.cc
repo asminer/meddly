@@ -197,6 +197,38 @@ void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
 #endif
 
         if (DONT_CARE == val) {
+            //
+            // We have to deal with either DONT_CARE,
+            // or a DONT_CARE, DONT_CHANGE pair group.
+            // First, determine which one.
+            //
+            if (resF->isForRelations() && L>0
+                    && (DONT_CHANGE == arg2.at(low)->var(-L)))
+            {
+                //
+                // Build the "don't change" portion
+                // Note this is down TWO levels, at the next unprimed level
+                //
+                MEDDLY_DCASSERT(!has_identity);
+                OP::get_null_edge(ident_val, ident_node);
+                ident_node = resF->makeRedundantsTo(ident_node, 0, L-1);
+                compute(L-1, ~0, ident_val, ident_node, low, mid,
+                            ident_val, ident_node);
+                ident_node = resF->makeIdentitiesTo(ident_node, L-1, L, ~0);
+                has_identity = true;
+            } else {
+                //
+                // Build the "don't care" portion
+                //
+                MEDDLY_DCASSERT(!has_dont_care);
+                OP::get_null_edge(dnc_val, dnc_node);
+                dnc_node = resF->makeRedundantsTo(dnc_node, 0, Lnext);
+                compute(Lnext, ~0, dnc_val, dnc_node, low, mid,
+                            dnc_val, dnc_node);
+                dnc_node = resF->makeRedundantsTo(dnc_node, Lnext, L);
+                has_dont_care = true;
+            }
+
         } else {
             //
             // Ordinary value
@@ -218,121 +250,6 @@ void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
         low = mid;
     } while (mid < high);
 
-    // TBD HERE <<<<<<<<<<<<<<<<<<<<<<
-
-    //
-    // Break interval [low, high) into subintervals
-    // based on value of variable x_L
-    //
-    unsigned dl = low;
-    while (dl < high) {
-        //
-        // find end of subinterval
-        //
-        const int lowval = arg2.at(dl)->var(L);
-        unsigned dh;
-        for (dh=dl+1; dh<high; dh++) {
-            int hv = arg2.at(dh)->var(L);
-            if (hv != lowval) break;
-        }
-        //
-        // Current interval is [dl, dh)
-        // and all elements have value: lowval.
-        //
-        // Ready to recurse
-        //
-        edge_value tv;
-        node_handle tp;
-
-        if (lowval == DONT_CARE) {
-            //
-            // If we're at an unprimed level and we're a relation,
-            // split the DONT_CARE region into
-            // [dl, identstart), where the primed level is not DONT_CHANGE
-            // [identstart, dh), where the primed level is DONT_CHANGE
-            //
-            unsigned identstart = dh;
-            if (resF->isForRelations() && L>0) {
-                for (identstart=dl; identstart<dh; identstart++) {
-                    if ( DONT_CHANGE == arg2.at(identstart)->to(L) ) break;
-                }
-
-                //
-                // Build the "don't change" portion
-                // Note this is down TWO levels, at the next unprimed level
-                //
-                if (identstart < dh) {
-                    MEDDLY_DCASSERT(!has_identity);
-#ifdef TRACE
-                    out << "    [" << identstart << ", " << dh << ") identity\n";
-                    out.indent_more();
-                    out.put('\n');
-#endif
-                    OP::get_null_edge(ident_val, ident_node);
-                    ident_node = resF->makeRedundantsTo(ident_node, 0, L-1);
-                    compute(L-1, ~0, ident_val, ident_node, identstart, dh,
-                            ident_val, ident_node);
-                    ident_node = resF->makeIdentitiesTo(ident_node, L-1, L, ~0);
-                    has_identity = true;
-#ifdef TRACE
-                    out.indent_less();
-                    out.put('\n');
-                    out << "    [" << identstart << ", " << dh << ") done\n";
-#endif
-                }
-
-            }
-
-            //
-            // Build the "don't care" portion
-            //
-            if (dl < identstart) {
-                MEDDLY_DCASSERT(!has_dont_care);
-#ifdef TRACE
-                out << "    [" << dl << ", " << identstart << ") don't care\n";
-                out.indent_more();
-                out.put('\n');
-#endif
-                OP::get_null_edge(dnc_val, dnc_node);
-                dnc_node = resF->makeRedundantsTo(dnc_node, 0, Lnext);
-                compute(Lnext, ~0, dnc_val, dnc_node, dl, identstart,
-                        dnc_val, dnc_node);
-                dnc_node = resF->makeRedundantsTo(dnc_node, Lnext, L);
-                has_dont_care = true;
-#ifdef TRACE
-                out.indent_less();
-                out.put('\n');
-                out << "    [" << dl << ", " << identstart << ") done\n";
-#endif
-            }
-
-        } else {
-#ifdef TRACE
-            out << "    [" << dl << ", " << dh << ") value " << lowval << "\n";
-            out.indent_more();
-            out.put('\n');
-#endif
-
-            const unsigned i = unsigned(lowval);
-            compute(Lnext, i, Cu->edgeval(i), Cu->down(i), dl, dh, tv, tp);
-            resF->unlinkNode(Cu->down(i));
-            Cu->setFull(i, tv, tp);
-
-#ifdef TRACE
-            out.indent_less();
-            out.put('\n');
-            out << "    [" << dl << ", " << dh << ") value " << lowval
-                << " done\n";
-#endif
-        }
-
-        //
-        // Advance interval
-        //
-        dl = dh;
-
-    } // while more subintervals
-
     resF->createReducedNode(Cu, cv, cp);
     if (has_dont_care) {
         union_op->compute(L, in, dnc_val, dnc_node, cv, cp, cv, cp);
@@ -341,14 +258,6 @@ void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
         union_op->compute(L, in, ident_val, ident_node, cv, cp, cv, cp);
     }
 }
-
-// ******************************************************************
-// *                                                                *
-// *        template class  for "relation" minterm operators        *
-// *                                                                *
-// ******************************************************************
-
-// TBD
 
 // ******************************************************************
 // *                                                                *

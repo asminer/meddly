@@ -314,7 +314,7 @@ class MEDDLY::minterm_coll {
             if (m) {
                 MEDDLY_DCASSERT(_check(m));
                 _mtlist.push_back(m);
-                sorted = false;
+                // sorted = false;
             }
         }
 
@@ -328,22 +328,6 @@ class MEDDLY::minterm_coll {
             }
         }
 
-
-        // TBD: remove sort
-
-        /// Sort the collection into a good order
-        /// for building a MDD / MXD
-        inline void sort()
-        {
-            if (sorted) return;
-            if (_mtlist.size()) {
-                _sort(num_vars, false, 0, _mtlist.size());
-            }
-            sorted = true;
-        }
-
-        // TBD: figure this interface out and use it in the operation
-        //
 
         /** Partial sort, as used by explicit minterm operations.
             Based on level L, and the range of minterms [low, hi),
@@ -401,34 +385,6 @@ class MEDDLY::minterm_coll {
         /// Make sure we can add the given minterm to this collection.
         bool _check(minterm*) const;
 
-        /// recursive radix sort helper.
-        ///     @param  k       Variable to sort on
-        ///     @param  primed  Are we on the primed variable?
-        ///     @param  low     Smallest index
-        ///     @param  high    One past largest index
-        ///
-        /// We sort on elements [low, low+1, ..., high-1]
-        ///
-        void _sort(unsigned k, bool primed, unsigned low, unsigned high);
-
-        ///
-        /// Helper for _sort
-        ///
-        ///     For all items between lo (included) and hi (not included),
-        ///     move any item with value val for variable x_k (or x'_k,
-        ///     if pr is true) to the end of the array.
-        ///
-        ///     Returns the index of the first element equal to val,
-        ///     after the move.
-        ///     If this equals hi, then there were no elements.
-        ///
-        ///     Remembers the largest value not equal to val
-        ///     that was seen.
-        ///
-        unsigned moveValuesToEnd(int val, int &max, unsigned k, bool pr,
-                unsigned lo, unsigned hi);
-
-
         int _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
 
     private:
@@ -442,7 +398,6 @@ class MEDDLY::minterm_coll {
         unsigned num_vars;
         bool for_relations;
         bool sparse;
-        bool sorted;
 };
 
 #endif

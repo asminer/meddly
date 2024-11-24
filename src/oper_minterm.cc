@@ -40,7 +40,6 @@ MEDDLY::minterm_operation::~minterm_operation()
 
 void MEDDLY::minterm_operation::compute(const dd_edge &ar1, dd_edge &res)
 {
-    arg2.sort();
     node_handle resp;
     compute(resF->getMaxLevelIndex(), ~0,
             ar1.getEdgeValue(), ar1.getNode(),

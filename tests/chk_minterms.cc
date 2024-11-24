@@ -20,9 +20,6 @@
 #include <time.h>
 #include <iostream>
 
-// #define SHOW_MINTERMS
-#define TEST_SORT
-
 const unsigned MAXTERMS = 32;
 
 const int DOMSIZE = 4;       // DO NOT change
@@ -188,23 +185,10 @@ void test_sets()
 
     ostream_output out(std::cout);
 
-#ifdef TEST_SORT
-    for (unsigned i=0; i<MAXTERMS; i++) {
-        minterm* m = mtcoll.makeTemp();
-        randomSetMinterm(m);
-        mtcoll.addToCollection(m);
-    }
-    mtcoll.sort();
-    mtcoll.show(out, nullptr, "\n");
-    domain::destroy(D);
-    return;
-#endif
-
     out << "Checking sets built from minterms:\n";
     out.flush();
 
-    unsigned mtsize = MAXTERMS;
-    // for (unsigned mtsize=1; mtsize<=MAXTERMS; mtsize*=2)
+    for (unsigned mtsize=1; mtsize<=MAXTERMS; mtsize*=2)
     {
         //
         // Add minterms to the collection
@@ -215,10 +199,6 @@ void test_sets()
             mtcoll.addToCollection(m);
         }
 
-#ifdef SHOW_MINTERMS
-        mtcoll.sort();
-        mtcoll.show(out, nullptr, "\n");
-#endif
         out << "    ";
         out.put((unsigned long) mtsize, 2);
         out << ": ";
@@ -398,23 +378,10 @@ void test_rels()
 
     ostream_output out(std::cout);
 
-#ifdef TEST_SORT
-    for (unsigned i=0; i<MAXTERMS; i++) {
-        minterm* m = mtcoll.makeTemp();
-        randomRelMinterm(m);
-        mtcoll.addToCollection(m);
-    }
-    mtcoll.sort();
-    mtcoll.show(out, nullptr, "\n");
-    domain::destroy(D);
-    return;
-#endif
-
     out << "Checking relations built from minterms:\n";
     out.flush();
 
-    unsigned mtsize = MAXTERMS;
-    // for (unsigned mtsize=1; mtsize<=MAXTERMS; mtsize*=2)
+    for (unsigned mtsize=1; mtsize<=MAXTERMS; mtsize*=2)
     {
         //
         // Add minterms to the collection
@@ -425,10 +392,6 @@ void test_rels()
             mtcoll.addToCollection(m);
         }
 
-#ifdef SHOW_MINTERMS
-        mtcoll.sort();
-        mtcoll.show(out, nullptr, "\n");
-#endif
         out << "    ";
         out.put((unsigned long) mtsize, 2);
         out << ": ";
