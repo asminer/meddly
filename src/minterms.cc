@@ -23,6 +23,8 @@
 
 // #define DEBUG_SORT
 // #define DEBUG_RECURSE_STOP 9
+#define DEBUG_COLLECT_FIRST
+#include "operators.h"
 
 // ******************************************************************
 // *                                                                *
@@ -286,12 +288,74 @@ unsigned MEDDLY::minterm_coll::moveValuesToEnd(int val, int &max,
     }
 }
 
-void MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
+int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
         unsigned hi, unsigned& lend)
 {
-    //
-    // TBD; will be similar to moveValuesToEnd
-    //
-    throw 7;
+    int val = at(low)->var(L);
+    lend = low+1;
+    unsigned hptr = hi;
+
+    for (;;)
+    {
+        //
+        // Find smallest element different from val
+        //
+        for (;;) {
+            const int vl = at(lend)->var(L);
+            if (vl != val) break;
+            ++lend;
+            if (lend >= hptr) {
+#ifdef DEBUG_COLLECT_FIRST
+                FILE_output out(stdout);
+                out << "Collected first on range [" << low << ", "
+                    << hi << "):\n";
+                for (unsigned i=low; i<hi; i++) {
+                    if (i==lend) out << "    ======================\n";
+                    out << "    ";
+                    out.put(long(i), 2);
+                    out << "  ";
+                    at(i)->show(out);
+                    out << "\n";
+                }
+                out << "val " << val << "\n";
+#endif
+                return val;
+            }
+        }
+
+        //
+        // Find high element to swap with
+        //
+        for (;;) {
+            const int vh = at(hptr-1)->var(L);
+            if (vh == val) break;
+            --hptr;
+            if (lend >= hptr) {
+#ifdef DEBUG_COLLECT_FIRST
+                FILE_output out(stdout);
+                out << "Collected first on range [" << low << ", "
+                    << hi << "):\n";
+                for (unsigned i=low; i<hi; i++) {
+                    if (i==lend) out << "    ======================\n";
+                    out << "    ";
+                    out.put(long(i), 2);
+                    out << "  ";
+                    at(i)->show(out);
+                    out << "\n";
+                }
+                out << "val " << val << "\n";
+#endif
+                return val;
+            }
+        }
+
+        //
+        // Swap elements
+        //
+        minterm* tmp = _mtlist[lend];
+        _mtlist[lend] = _mtlist[hptr-1];
+        _mtlist[hptr-1] = tmp;
+    }
+
 }
 

@@ -362,17 +362,17 @@ class MEDDLY::minterm_coll {
                 @param  lend    On output, one past the last minterm
                                 in the group equal to low.
 
-                @return Nothing, but will reorder the collection.
+                @return The first value
         */
-        inline void collect_first(int L, unsigned low, unsigned hi,
+        inline int collect_first(int L, unsigned low, unsigned hi,
                 unsigned& lend)
         {
             if (hi-low < 2) {
                 // Only one element, no checking or reordering required.
                 lend = hi;
-                return;
+                return at(low)->var(L);
             }
-            _collect_first(L, low, hi, lend);
+            return _collect_first(L, low, hi, lend);
         }
 
 
@@ -386,6 +386,7 @@ class MEDDLY::minterm_coll {
         /// Get an element
         inline const minterm* at(unsigned i) const {
 #ifdef DEVELOPMENT_CODE
+            MEDDLY_DCASSERT(_mtlist.at(i));
             return _mtlist.at(i);
 #else
             return _mtlist[i];
@@ -428,7 +429,7 @@ class MEDDLY::minterm_coll {
                 unsigned lo, unsigned hi);
 
 
-        void _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
+        int _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
 
     private:
         std::vector<minterm*> _mtlist;
