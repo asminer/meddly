@@ -41,7 +41,7 @@ TESTS = \
     chk_ct \
     chk_ct_old \
     chk_evtimes_float \
-    chk_minterms_old \
+    chk_minterms \
     ddedge \
     domain_list \
     kan_batch \
