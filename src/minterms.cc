@@ -21,8 +21,6 @@
 #include "io.h"
 #include "domain.h"
 
-// #define DEBUG_SORT
-// #define DEBUG_RECURSE_STOP 9
 // #define DEBUG_COLLECT_FIRST
 // #include "operators.h"
 
