@@ -175,6 +175,17 @@ bool MEDDLY::minterm_coll::_check(minterm* m) const
 void MEDDLY::minterm_coll::_sort(unsigned k, bool primed,
         unsigned low, unsigned high)
 {
+    int L = primed ? -int(k) : int(k);
+    unsigned mid;
+
+    do {
+        collect_first(L, low, high, mid);
+        low = mid;
+    } while (mid < high);
+
+    return;
+
+
 #ifdef DEBUG_SORT
 
 #ifdef DEBUG_RECURSE_STOP
@@ -292,6 +303,12 @@ int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
         unsigned hi, unsigned& lend)
 {
     int val = at(low)->var(L);
+    bool val_dc;
+    if ((DONT_CARE == val) && isForRelations() && (L>0)) {
+        val_dc = (DONT_CHANGE == at(low)->var(-L));
+    } else {
+        val_dc = false;
+    }
     lend = low+1;
     unsigned hptr = hi;
 
@@ -303,6 +320,10 @@ int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
         for (;;) {
             const int vl = at(lend)->var(L);
             if (vl != val) break;
+            if ((DONT_CARE == vl) && isForRelations() && (L>0)) {
+                const bool vl_dc = (DONT_CHANGE == at(lend)->var(-L));
+                if (val_dc != vl_dc) break;
+            }
             ++lend;
             if (lend >= hptr) {
 #ifdef DEBUG_COLLECT_FIRST
@@ -328,7 +349,14 @@ int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
         //
         for (;;) {
             const int vh = at(hptr-1)->var(L);
-            if (vh == val) break;
+            if (vh == val) {
+                if ((DONT_CARE == vh) && isForRelations() && (L>0)) {
+                    const bool vh_dc = (DONT_CHANGE == at(hptr-1)->var(-L));
+                    if (val_dc == vh_dc) break;
+                } else {
+                    break;
+                }
+            }
             --hptr;
             if (lend >= hptr) {
 #ifdef DEBUG_COLLECT_FIRST
