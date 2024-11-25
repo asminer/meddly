@@ -447,9 +447,15 @@ void explicitReachset(const char* const* events, unsigned nEvents,
                 minterms.incsize();
                 if (minterms.size() >= batchsize) {
                     // Buffer is full; flush it
+                    f->createEdge(false, batch);
+                    apply(MEDDLY::UNION, batch, minterms, batch);
+                    /*
                     apply(MEDDLY::UNION, unexplored, minterms, unexplored);
                     apply(MEDDLY::UNION, RS, minterms, RS);
+                    */
                     minterms.clear();
+                    unexplored += batch;
+                    RS += batch;
                 }
 #endif
             }
@@ -465,9 +471,15 @@ void explicitReachset(const char* const* events, unsigned nEvents,
         }
 #else
         if (minterms.size()) {
+            f->createEdge(false, batch);
+            apply(MEDDLY::UNION, batch, minterms, batch);
+            /*
             apply(MEDDLY::UNION, unexplored, minterms, unexplored);
             apply(MEDDLY::UNION, RS, minterms, RS);
+            */
             minterms.clear();
+            unexplored += batch;
+            RS += batch;
         }
 #endif
 
