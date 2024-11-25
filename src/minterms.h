@@ -39,8 +39,6 @@
 
 #include <vector>
 
-#define FIXED_SIZE_COLLECTIONS
-
 namespace MEDDLY {
 
     /** Special value for minterms: don't care what this variable does.
@@ -264,12 +262,6 @@ class MEDDLY::minterm {
         unsigned num_vars;
         bool for_relations;
         bool sparse;
-
-#ifndef FIXED_SIZE_COLLECTIONS
-    private:
-        friend class MEDDLY::minterm_coll;
-        minterm* next;
-#endif
 };
 
 // ******************************************************************
@@ -282,25 +274,21 @@ class MEDDLY::minterm_coll {
     public:
         /// Build a collection for a given domain.
         /// Each minterm is stored in full.
-        ///     @param  D   The domain
-        ///     @param  sr  Set or relation
-        minterm_coll(
-#ifdef FIXED_SIZE_COLLECTIONS
-                unsigned maxsize,
-#endif
+        ///     @param  maxsize Maximum size of the collection
+        ///     @param  D       The domain
+        ///     @param  sr      Set or relation
+        minterm_coll(unsigned maxsize,
                 const domain* D, set_or_rel sr);
 
         /// Build a collection of sparse minterms,
         /// for a given domain and with the same set
         /// of variables used.
+        ///     @param  maxsize Maximum size of the collection
         ///     @param  D       The domain
         ///     @param  sr      Set or relation
         ///     @param  varlist Array list of variables used,
         ///                     in decreasing order.
-        minterm_coll(
-#ifdef FIXED_SIZE_COLLECTIONS
-                unsigned maxsize,
-#endif
+        minterm_coll(unsigned maxsize,
                 const domain* D, set_or_rel sr,
                 const std::vector<unsigned> &varlist);
 
@@ -342,7 +330,6 @@ class MEDDLY::minterm_coll {
 
 
 
-#ifdef FIXED_SIZE_COLLECTIONS
         /// Current collection size
         inline unsigned size() const { return first_unused; }
 
@@ -361,45 +348,6 @@ class MEDDLY::minterm_coll {
                 return false;
             }
         }
-#else
-        /// Current collection size
-        inline unsigned size() const { return _mtlist.size(); }
-
-        /// Clear the collection
-        void clear();
-
-        /// Make a minterm for someone to build
-        inline minterm* makeTemp()
-        {
-            if (freelist) {
-                minterm* p = freelist;
-                freelist = freelist->next;
-                return p;
-            }
-            return new minterm(_D, for_relations,
-                    sparse ? SPARSE_ONLY : FULL_ONLY);
-        }
-
-        /// Add a minterm to the collection
-        inline void addToCollection(minterm* m)
-        {
-            if (m) {
-                MEDDLY_DCASSERT(_check(m));
-                _mtlist.push_back(m);
-            }
-        }
-
-        /// Recycle a minterm
-        inline void recycle(minterm* m)
-        {
-            if (m) {
-                MEDDLY_DCASSERT(m->getDomain() == _D);
-                m->next = freelist;
-                freelist = m;
-            }
-        }
-
-#endif
 
         /// Get an element
         inline minterm& at(unsigned i) {
@@ -432,11 +380,6 @@ class MEDDLY::minterm_coll {
         void show(output &s, const char* pre, const char* post) const;
 
     private:
-#ifndef FIXED_SIZE_COLLECTIONS
-        /// Make sure we can add the given minterm to this collection.
-        bool _check(minterm*) const;
-#endif
-
         int _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
 
     private:
@@ -444,11 +387,7 @@ class MEDDLY::minterm_coll {
 
         std::vector<unsigned> _varlist;
 
-#ifdef FIXED_SIZE_COLLECTIONS
         unsigned first_unused;
-#else
-        minterm* freelist;
-#endif
 
         const domain* _D;
 

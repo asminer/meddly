@@ -105,8 +105,6 @@ void MEDDLY::minterm::show(output &s) const
 // *                                                                *
 // ******************************************************************
 
-#ifdef FIXED_SIZE_COLLECTIONS
-
 MEDDLY::minterm_coll::minterm_coll(unsigned maxsize, const domain* D,
             set_or_rel sr)
 {
@@ -150,53 +148,6 @@ MEDDLY::minterm_coll::~minterm_coll()
     }
 }
 
-#else
-
-MEDDLY::minterm_coll::minterm_coll(const domain* D, set_or_rel sr)
-{
-    _D = D;
-    num_vars = D ? D->getNumVariables() : 0;
-    for_relations = sr;
-    sparse = false;
-    freelist = nullptr;
-}
-
-MEDDLY::minterm_coll::minterm_coll(const domain* D, set_or_rel sr,
-        const std::vector<unsigned> &varlist)
-{
-    _D = D;
-    num_vars = D ? D->getNumVariables() : 0;
-    for_relations = sr;
-    sparse = true;
-    freelist = nullptr;
-
-    _varlist.resize(varlist.size());
-    for (unsigned i=0; i<varlist.size(); i++) {
-        _varlist[i] = varlist[i];
-    }
-}
-
-MEDDLY::minterm_coll::~minterm_coll()
-{
-    clear();
-    while (freelist) {
-        minterm* m = freelist;
-        freelist = freelist->next;
-        delete m;
-    }
-}
-
-void MEDDLY::minterm_coll::clear()
-{
-    while (_mtlist.size()) {
-        recycle( _mtlist.back() );
-        _mtlist.back() = nullptr;
-        _mtlist.pop_back();
-    }
-}
-
-#endif
-
 void MEDDLY::minterm_coll::show(output &s,
         const char* pre, const char* post) const
 {
@@ -212,23 +163,6 @@ void MEDDLY::minterm_coll::show(output &s,
         s.put(post);
     }
 }
-
-#ifndef FIXED_SIZE_COLLECTIONS
-
-bool MEDDLY::minterm_coll::_check(minterm* m) const
-{
-    MEDDLY_DCASSERT(m->getDomain() == _D);
-    MEDDLY_DCASSERT(m->isForRelations() == for_relations);
-    if (sparse) {
-        MEDDLY_DCASSERT(!m->isFull());
-        MEDDLY_DCASSERT(m->hasSparseVars(_varlist));
-    } else {
-        MEDDLY_DCASSERT(m->isFull());
-    }
-    return true;
-}
-
-#endif
 
 int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
         unsigned hi, unsigned& lend)
