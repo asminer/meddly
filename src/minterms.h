@@ -39,6 +39,8 @@
 
 #include <vector>
 
+#define FIXED_SIZE_COLLECTIONS
+
 namespace MEDDLY {
 
     /** Special value for minterms: don't care what this variable does.
@@ -263,9 +265,11 @@ class MEDDLY::minterm {
         bool for_relations;
         bool sparse;
 
+#ifndef FIXED_SIZE_COLLECTIONS
     private:
         friend class MEDDLY::minterm_coll;
         minterm* next;
+#endif
 };
 
 // ******************************************************************
@@ -280,7 +284,11 @@ class MEDDLY::minterm_coll {
         /// Each minterm is stored in full.
         ///     @param  D   The domain
         ///     @param  sr  Set or relation
-        minterm_coll(const domain* D, set_or_rel sr);
+        minterm_coll(
+#ifdef FIXED_SIZE_COLLECTIONS
+                unsigned maxsize,
+#endif
+                const domain* D, set_or_rel sr);
 
         /// Build a collection of sparse minterms,
         /// for a given domain and with the same set
@@ -289,7 +297,11 @@ class MEDDLY::minterm_coll {
         ///     @param  sr      Set or relation
         ///     @param  varlist Array list of variables used,
         ///                     in decreasing order.
-        minterm_coll(const domain* D, set_or_rel sr,
+        minterm_coll(
+#ifdef FIXED_SIZE_COLLECTIONS
+                unsigned maxsize,
+#endif
+                const domain* D, set_or_rel sr,
                 const std::vector<unsigned> &varlist);
 
         ~minterm_coll();
@@ -297,6 +309,64 @@ class MEDDLY::minterm_coll {
         inline bool isForRelations()        const   { return for_relations; }
         inline unsigned getNumVars()        const   { return num_vars; }
         inline const domain* getDomain()    const   { return _D; }
+
+        /** Partial sort, as used by explicit minterm operations.
+            Based on level L, and the range of minterms [low, hi),
+            collect all elements together with variable L equal to item #low.
+            on output, lend is such that [low, lend) has equal elements
+            where low < lend <= hi
+
+            As a special case, if L>0 and the collection is for relations,
+            if the first item has value "DONT_CARE", then we ALSO look at
+            the primed value but only to distinguish "DONT_CHANGE" and
+            not equal to "DONT_CHANGE".
+
+                @param  L       Variable number; use negative for primed
+                @param  low     First minterm to check
+                @param  hi      One past the last minterm to check
+                @param  lend    On output, one past the last minterm
+                                in the group equal to low.
+
+                @return The first value
+        */
+        inline int collect_first(int L, unsigned low, unsigned hi,
+                unsigned& lend)
+        {
+            if (hi-low < 2) {
+                // Only one element, no checking or reordering required.
+                lend = hi;
+                return at(low).var(L);
+            }
+            return _collect_first(L, low, hi, lend);
+        }
+
+
+
+#ifdef FIXED_SIZE_COLLECTIONS
+        /// Current collection size
+        inline unsigned size() const { return first_unused; }
+
+        /// Collection max size
+        inline unsigned maxsize() const { return _mtlist.size(); }
+
+        /// Clear the collection
+        inline void clear() { first_unused = 0; }
+
+        /// Increase the collection; returns true on success
+        inline bool incsize() {
+            if (first_unused < maxsize()) {
+                ++first_unused;
+                return true;
+            } else {
+                return false;
+            }
+        }
+#else
+        /// Current collection size
+        inline unsigned size() const { return _mtlist.size(); }
+
+        /// Clear the collection
+        void clear();
 
         /// Make a minterm for someone to build
         inline minterm* makeTemp()
@@ -329,62 +399,43 @@ class MEDDLY::minterm_coll {
             }
         }
 
-
-        /** Partial sort, as used by explicit minterm operations.
-            Based on level L, and the range of minterms [low, hi),
-            collect all elements together with variable L equal to item #low.
-            on output, lend is such that [low, lend) has equal elements
-            where low < lend <= hi
-
-            As a special case, if L>0 and the collection is for relations,
-            if the first item has value "DONT_CARE", then we ALSO look at
-            the primed value but only to distinguish "DONT_CHANGE" and
-            not equal to "DONT_CHANGE".
-
-                @param  L       Variable number; use negative for primed
-                @param  low     First minterm to check
-                @param  hi      One past the last minterm to check
-                @param  lend    On output, one past the last minterm
-                                in the group equal to low.
-
-                @return The first value
-        */
-        inline int collect_first(int L, unsigned low, unsigned hi,
-                unsigned& lend)
-        {
-            if (hi-low < 2) {
-                // Only one element, no checking or reordering required.
-                lend = hi;
-                return at(low)->var(L);
-            }
-            return _collect_first(L, low, hi, lend);
-        }
-
-
-        /// Clear the collection
-        void clear();
-
-
-        /// Current collection size
-        inline unsigned size() const { return _mtlist.size(); }
+#endif
 
         /// Get an element
-        inline const minterm* at(unsigned i) const {
+        inline minterm& at(unsigned i) {
 #ifdef DEVELOPMENT_CODE
             MEDDLY_DCASSERT(_mtlist.at(i));
-            return _mtlist.at(i);
+            return *(_mtlist.at(i));
 #else
-            return _mtlist[i];
+            return *(_mtlist[i]);
 #endif
         }
+
+        /// Get an element
+        inline const minterm& at(unsigned i) const {
+#ifdef DEVELOPMENT_CODE
+            MEDDLY_DCASSERT(_mtlist.at(i));
+            return *(_mtlist.at(i));
+#else
+            return *(_mtlist[i]);
+#endif
+        }
+
+        /// Get the first unused element
+        inline minterm& unused() {
+            return at(first_unused);
+        }
+
 
         //
         // For convenience and debugging
         void show(output &s, const char* pre, const char* post) const;
 
     private:
+#ifndef FIXED_SIZE_COLLECTIONS
         /// Make sure we can add the given minterm to this collection.
         bool _check(minterm*) const;
+#endif
 
         int _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
 
@@ -393,8 +444,13 @@ class MEDDLY::minterm_coll {
 
         std::vector<unsigned> _varlist;
 
-        const domain* _D;
+#ifdef FIXED_SIZE_COLLECTIONS
+        unsigned first_unused;
+#else
         minterm* freelist;
+#endif
+
+        const domain* _D;
 
         unsigned num_vars;
         bool for_relations;

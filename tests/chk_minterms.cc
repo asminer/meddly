@@ -90,13 +90,13 @@ void mismatch(const minterm &eval,
  *
  */
 
-void randomSetMinterm(minterm* m)
+void randomSetMinterm(minterm& m)
 {
     const int vals[9] = { -1, 0, 0, 1, 1, 2, 2, 3, 3 };
 
-    for (unsigned i=1; i<=m->getNumVars(); i++) {
+    for (unsigned i=1; i<=m.getNumVars(); i++) {
         int index = Equilikely(0, 8);
-        m->setVar(i, vals[index]);
+        m.setVar(i, vals[index]);
     }
 }
 
@@ -118,11 +118,11 @@ bool nextSetMinterm(minterm& m)
     return false;
 }
 
-bool matches_set(const minterm* m, const minterm& va)
+bool matches_set(const minterm &m, const minterm& va)
 {
     for (unsigned i=1; i<=va.getNumVars(); i++) {
-        if (m->from(i) == DONT_CARE) continue;
-        if (m->from(i) != va.from(i)) return false;
+        if (m.from(i) == DONT_CARE) continue;
+        if (m.from(i) != va.from(i)) return false;
     }
     return true;
 }
@@ -175,7 +175,7 @@ void test_sets()
     // Set up minterm collection
     // and evaluation minterm
     //
-    minterm_coll mtcoll(D, SET);
+    minterm_coll mtcoll(MAXTERMS, D, SET);
     minterm eval(D, SET, FULL_ONLY);
 
     //
@@ -194,9 +194,8 @@ void test_sets()
         // Add minterms to the collection
         //
         while (mtcoll.size() < mtsize) {
-            minterm* m = mtcoll.makeTemp();
-            randomSetMinterm(m);
-            mtcoll.addToCollection(m);
+            randomSetMinterm(mtcoll.unused());
+            mtcoll.incsize();
         }
 
         out << "    ";
@@ -255,7 +254,7 @@ void test_sets()
  *
  */
 
-void randomRelMinterm(MEDDLY::minterm* m)
+void randomRelMinterm(MEDDLY::minterm &m)
 {
     const int unvals[52] =
     { -1, -1, -1, -1,   // 4 (x,x) pairs
@@ -275,10 +274,10 @@ void randomRelMinterm(MEDDLY::minterm* m)
        0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,   // 16 normal pairs
        0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3};  // 16 normal pairs
 
-    for (unsigned i=1; i<=m->getNumVars(); i++) {
+    for (unsigned i=1; i<=m.getNumVars(); i++) {
         int index = Equilikely(0, 51);
 
-        m->setVars(i, unvals[index], prvals[index]);
+        m.setVars(i, unvals[index], prvals[index]);
     }
 }
 
@@ -304,17 +303,17 @@ bool nextRelMinterm(minterm& m)
     return false;
 }
 
-bool matches_rel(const minterm* m, const minterm& va)
+bool matches_rel(const minterm &m, const minterm& va)
 {
     for (unsigned i=1; i<=va.getNumVars(); i++) {
-        if ((m->from(i) != DONT_CARE) && (m->from(i) != va.from(i)))  {
+        if ((m.from(i) != DONT_CARE) && (m.from(i) != va.from(i)))  {
             return false;
         }
-        if (m->to(i) == DONT_CARE) continue;
-        if (m->to(i) == DONT_CHANGE) {
+        if (m.to(i) == DONT_CARE) continue;
+        if (m.to(i) == DONT_CHANGE) {
             if (va.to(i) == va.from(i)) continue;
         }
-        if (m->to(i) != va.to(i)) return false;
+        if (m.to(i) != va.to(i)) return false;
     }
     return true;
 }
@@ -368,7 +367,7 @@ void test_rels()
     // Set up minterm collection
     // and evaluation minterm
     //
-    minterm_coll mtcoll(D, RELATION);
+    minterm_coll mtcoll(MAXTERMS, D, RELATION);
     minterm eval(D, RELATION, FULL_ONLY);
 
     //
@@ -387,9 +386,8 @@ void test_rels()
         // Add minterms to the collection
         //
         while (mtcoll.size() < mtsize) {
-            minterm* m = mtcoll.makeTemp();
-            randomRelMinterm(m);
-            mtcoll.addToCollection(m);
+            randomRelMinterm(mtcoll.unused());
+            mtcoll.incsize();
         }
 
         out << "    ";

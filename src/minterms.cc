@@ -105,6 +105,53 @@ void MEDDLY::minterm::show(output &s) const
 // *                                                                *
 // ******************************************************************
 
+#ifdef FIXED_SIZE_COLLECTIONS
+
+MEDDLY::minterm_coll::minterm_coll(unsigned maxsize, const domain* D,
+            set_or_rel sr)
+{
+    _D = D;
+    num_vars = D ? D->getNumVariables() : 0;
+    for_relations = sr;
+    sparse = false;
+
+    _mtlist.resize(maxsize);
+    for (unsigned i=0; i<maxsize; i++) {
+        _mtlist[i] = new minterm(_D, for_relations, FULL_ONLY);
+    }
+    clear();
+}
+
+MEDDLY::minterm_coll::minterm_coll(unsigned maxsize, const domain* D,
+            set_or_rel sr, const std::vector<unsigned> &varlist)
+{
+    _D = D;
+    num_vars = D ? D->getNumVariables() : 0;
+    for_relations = sr;
+    sparse = true;
+
+    _mtlist.resize(maxsize);
+    for (unsigned i=0; i<maxsize; i++) {
+        _mtlist[i] = new minterm(_D, for_relations, SPARSE_ONLY);
+    }
+    clear();
+
+    _varlist.resize(varlist.size());
+    for (unsigned i=0; i<varlist.size(); i++) {
+        _varlist[i] = varlist[i];
+    }
+}
+
+MEDDLY::minterm_coll::~minterm_coll()
+{
+    for (unsigned i=0; i<_mtlist.size(); i++) {
+        delete _mtlist[i];
+        _mtlist[i] = nullptr;
+    }
+}
+
+#else
+
 MEDDLY::minterm_coll::minterm_coll(const domain* D, set_or_rel sr)
 {
     _D = D;
@@ -148,10 +195,12 @@ void MEDDLY::minterm_coll::clear()
     }
 }
 
+#endif
+
 void MEDDLY::minterm_coll::show(output &s,
         const char* pre, const char* post) const
 {
-    for (unsigned i=0; i<_mtlist.size(); i++) {
+    for (unsigned i=0; i<size(); i++) {
         if (pre) {
             s.put(pre);
         } else {
@@ -163,6 +212,8 @@ void MEDDLY::minterm_coll::show(output &s,
         s.put(post);
     }
 }
+
+#ifndef FIXED_SIZE_COLLECTIONS
 
 bool MEDDLY::minterm_coll::_check(minterm* m) const
 {
@@ -177,14 +228,15 @@ bool MEDDLY::minterm_coll::_check(minterm* m) const
     return true;
 }
 
+#endif
 
 int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
         unsigned hi, unsigned& lend)
 {
-    int val = at(low)->var(L);
+    int val = at(low).var(L);
     bool val_dc;
     if ((DONT_CARE == val) && isForRelations() && (L>0)) {
-        val_dc = (DONT_CHANGE == at(low)->var(-L));
+        val_dc = (DONT_CHANGE == at(low).var(-L));
     } else {
         val_dc = false;
     }
@@ -197,10 +249,10 @@ int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
         // Find smallest element different from val
         //
         for (;;) {
-            const int vl = at(lend)->var(L);
+            const int vl = at(lend).var(L);
             if (vl != val) break;
             if ((DONT_CARE == vl) && isForRelations() && (L>0)) {
-                const bool vl_dc = (DONT_CHANGE == at(lend)->var(-L));
+                const bool vl_dc = (DONT_CHANGE == at(lend).var(-L));
                 if (val_dc != vl_dc) break;
             }
             ++lend;
@@ -214,7 +266,7 @@ int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
                     out << "    ";
                     out.put(long(i), 2);
                     out << "  ";
-                    at(i)->show(out);
+                    at(i).show(out);
                     out << "\n";
                 }
                 out << "val " << val << "\n";
@@ -227,10 +279,10 @@ int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
         // Find high element to swap with
         //
         for (;;) {
-            const int vh = at(hptr-1)->var(L);
+            const int vh = at(hptr-1).var(L);
             if (vh == val) {
                 if ((DONT_CARE == vh) && isForRelations() && (L>0)) {
-                    const bool vh_dc = (DONT_CHANGE == at(hptr-1)->var(-L));
+                    const bool vh_dc = (DONT_CHANGE == at(hptr-1).var(-L));
                     if (val_dc == vh_dc) break;
                 } else {
                     break;
@@ -247,7 +299,7 @@ int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
                     out << "    ";
                     out.put(long(i), 2);
                     out << "  ";
-                    at(i)->show(out);
+                    at(i).show(out);
                     out << "\n";
                 }
                 out << "val " << val << "\n";

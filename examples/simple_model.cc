@@ -100,9 +100,8 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
     int* minterm = new int[nVars+1];
     int* mtprime = new int[nVars+1];
 #else
-    minterm_coll mtlist(d, RELATION);
-    minterm* the_minterm = mtlist.makeTemp();
-    mtlist.addToCollection(the_minterm);
+    minterm_coll mtlist(1, d, RELATION);
+    mtlist.incsize();
 #endif
     dd_edge** varP  = new dd_edge*[nVars+1];
     varP[0] = 0;
@@ -153,14 +152,14 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
                 minterm[i] = DONT_CARE;
                 mtprime[i] = DONT_CHANGE;
 #else
-                the_minterm->setVars(i, DONT_CARE, DONT_CHANGE);
+                mtlist.at(0).setVars(i, DONT_CARE, DONT_CHANGE);
 #endif
             } else {
 #ifdef USE_OLD_MINTERMS
                 minterm[i] = DONT_CARE;
                 mtprime[i] = DONT_CARE;
 #else
-                the_minterm->setVars(i, DONT_CARE, DONT_CARE);
+                mtlist.at(0).setVars(i, DONT_CARE, DONT_CARE);
 #endif
             }
         }
@@ -353,20 +352,20 @@ bool fireEvent(const char* event, const int* current, int* next, unsigned nVars)
 #else
 
 bool fireEvent(const char* event, const int* current,
-        MEDDLY::minterm* next)
+        MEDDLY::minterm& next)
 {
-    for (unsigned i=next->getNumVars(); i; i--) {
+    for (unsigned i=next.getNumVars(); i; i--) {
         if ('.' == event[i]) {
-            next->from(i) = current[i];
+            next.from(i) = current[i];
             continue;
         }
         if ('-' == event[i]) {
-            next->from(i) = current[i] - 1;
-            if (next->from(i) < 0) return false;
+            next.from(i) = current[i] - 1;
+            if (next.from(i) < 0) return false;
             continue;
         }
         if ('+' == event[i]) {
-            next->from(i) = current[i] + 1;
+            next.from(i) = current[i] + 1;
             // TBD ... check for overflow
             continue;
         }
@@ -385,16 +384,15 @@ void explicitReachset(const char* const* events, unsigned nEvents,
 
     // initialize batch memory
 #ifdef USE_OLD_MINTERMS
-    unsigned nVars = f->getNumVariables();
     unsigned b;
+    unsigned nVars = f->getNumVariables();
     int** minterms = new int*[batchsize];
     for (b=0; b<batchsize; b++) {
         minterms[b] = new int[1+nVars];
     }
     b = 0;
 #else
-    MEDDLY::minterm_coll minterms(f->getDomain(), MEDDLY::SET);
-    MEDDLY::minterm* minterms_b = minterms.makeTemp();
+    MEDDLY::minterm_coll minterms(batchsize, f->getDomain(), MEDDLY::SET);
 #endif
 
     // unexplored states
@@ -420,7 +418,7 @@ void explicitReachset(const char* const* events, unsigned nEvents,
 #ifdef USE_OLD_MINTERMS
                 if (!fireEvent(events[e], curr, minterms[b], nVars)) continue;
 #else
-                if (!fireEvent(events[e], curr, minterms_b)) continue;
+                if (!fireEvent(events[e], curr, minterms.unused())) continue;
 #endif
 #ifdef DEBUG_GENERATE
                 printf("  -- (event %d) --> ", e);
@@ -443,17 +441,16 @@ void explicitReachset(const char* const* events, unsigned nEvents,
                     b = 0;
                 }
 #else
-                RS.evaluate(*minterms_b, seen);
+                RS.evaluate(minterms.unused(), seen);
                 if (seen) continue;     // already known in RS
 
-                minterms.addToCollection(minterms_b);
+                minterms.incsize();
                 if (minterms.size() >= batchsize) {
                     // Buffer is full; flush it
                     apply(MEDDLY::UNION, unexplored, minterms, unexplored);
                     apply(MEDDLY::UNION, RS, minterms, RS);
                     minterms.clear();
                 }
-                minterms_b = minterms.makeTemp();
 #endif
             }
         }
@@ -467,9 +464,11 @@ void explicitReachset(const char* const* events, unsigned nEvents,
             b = 0;
         }
 #else
-        apply(MEDDLY::UNION, unexplored, minterms, unexplored);
-        apply(MEDDLY::UNION, RS, minterms, RS);
-        minterms.clear();
+        if (minterms.size()) {
+            apply(MEDDLY::UNION, unexplored, minterms, unexplored);
+            apply(MEDDLY::UNION, RS, minterms, RS);
+            minterms.clear();
+        }
 #endif
 
         expl = unexplored;

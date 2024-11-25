@@ -203,7 +203,7 @@ void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
             // First, determine which one.
             //
             if (resF->isForRelations() && L>0
-                    && (DONT_CHANGE == arg2.at(low)->var(-L)))
+                    && (DONT_CHANGE == arg2.at(low).var(-L)))
             {
                 //
                 // Build the "don't change" portion
@@ -288,7 +288,7 @@ namespace MEDDLY {
             MEDDLY_DCASSERT(av.isVoid());
             cv.set();
             for (unsigned i=low; i<high; i++) {
-                terminal t = mc.at(i)->getTerm();
+                terminal t = mc.at(i).getTerm();
                 cp = t.getHandle();
                 if (cp) return;
             }
