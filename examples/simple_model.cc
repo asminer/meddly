@@ -35,7 +35,7 @@
 
 // #define SAME_FOREST_OPERATIONS
 
-#define USE_OLD_MINTERMS
+// #define USE_OLD_MINTERMS
 
 inline unsigned MAX(unsigned a, int b) {
     if (b<0) return a;
@@ -433,8 +433,6 @@ void explicitReachset(const char* const* events, unsigned nEvents,
 #ifdef USE_OLD_MINTERMS
                 f->evaluate(RS, minterms[b], seen);
                 if (seen) continue;     // already known in RS
-                f->evaluate(unexplored, minterms[b], seen);
-                if (seen) continue;     // already in unexplored list
 
                 b++;
                 if (b>=batchsize) {
@@ -468,7 +466,6 @@ void explicitReachset(const char* const* events, unsigned nEvents,
             RS += batch;
             b = 0;
         }
-//        RS += unexplored;
 #else
         apply(MEDDLY::UNION, unexplored, minterms, unexplored);
         apply(MEDDLY::UNION, RS, minterms, RS);
