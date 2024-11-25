@@ -129,6 +129,16 @@ MEDDLY::minterm_coll::minterm_coll(const domain* D, set_or_rel sr,
     }
 }
 
+MEDDLY::minterm_coll::~minterm_coll()
+{
+    clear();
+    while (freelist) {
+        minterm* m = freelist;
+        freelist = freelist->next;
+        delete m;
+    }
+}
+
 void MEDDLY::minterm_coll::clear()
 {
     while (_mtlist.size()) {

@@ -164,7 +164,7 @@ void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
     const int Alevel = arg1F->getNodeLevel(ap);
     unpacked_node* Cu;
     if (Alevel != L) {
-        if ((L<0) && (resF->isIdentityReduced())) {
+        if ((L<0) && (resF->isIdentityReduced()) && ap) {
             Cu = unpacked_node::newIdentity(arg1F, L, in, ap, FULL_ONLY);
         } else {
             Cu = unpacked_node::newRedundant(arg1F, L, ap, FULL_ONLY);

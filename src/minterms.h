@@ -292,6 +292,8 @@ class MEDDLY::minterm_coll {
         minterm_coll(const domain* D, set_or_rel sr,
                 const std::vector<unsigned> &varlist);
 
+        ~minterm_coll();
+
         inline bool isForRelations()        const   { return for_relations; }
         inline unsigned getNumVars()        const   { return num_vars; }
         inline const domain* getDomain()    const   { return _D; }
@@ -314,7 +316,6 @@ class MEDDLY::minterm_coll {
             if (m) {
                 MEDDLY_DCASSERT(_check(m));
                 _mtlist.push_back(m);
-                // sorted = false;
             }
         }
 
