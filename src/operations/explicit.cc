@@ -54,6 +54,12 @@
             For op=union this is false. For op=intersection this
             is true.  For op=minimize this is infinity. For
             op=maximize this is negative infinity.
+
+
+        bool is_null_edge(const edge_value &av, node_handle ap);
+
+            Return true if (av, ap) is the edge e such that
+            e op x is x for all x.
  */
 
 // ******************************************************************
@@ -141,6 +147,85 @@ void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
         return;
     }
 
+    unpacked_node* Cu;
+
+    //
+    // Special, fast case: edge (av, ap) is the identity for
+    // this operation, and we're down to only one element
+    // in the collection. Use a loop to build from the bottom up.
+    //
+    MEDDLY_DCASSERT(high > low);
+    if ( (high - low == 1) && OP::is_null_edge(av, ap) )
+    {
+#ifdef TRACE
+        out << "    one midterm loop from bottom to level " << L << "\n";
+#endif
+        OP::finalize(av, ap, arg2, low, high, cv, cp);
+        int k = 0;
+        while (k != L) {
+            const int prevk = k;
+            k = resF->isForRelations()
+                    ? MXD_levels::upLevel(k)
+                    : MDD_levels::upLevel(k)
+            ;
+            const int vark = arg2.at(low).var(k);
+
+            if (DONT_CHANGE == vark) {
+                //
+                // Next 2 levels are identity pattern;
+                // process them together.
+                //
+                MEDDLY_DCASSERT(k<0);
+                MEDDLY_DCASSERT(DONT_CARE == arg2.at(low).var(-k));
+
+                k = MXD_levels::upLevel(k);
+                cp = resF->makeIdentitiesTo(cp, k-1, k, ~0);
+                continue;
+            }
+
+            if (DONT_CARE == vark) {
+                //
+                // Next level is redundant
+                //
+                cp = resF->makeRedundantsTo(cp, prevk, k);
+                continue;
+            }
+
+            //
+            // Create a singleton node.
+            // Except don't if we're at a primed level and
+            // the forest is identity reduced.
+            //
+            if (resF->isIdentityReduced() && k<0) {
+                //
+                // See if we can point to the singleton node
+                // we're about to create.
+                //
+                if (k==L) {
+                    if (in == vark) {
+                        //
+                        // skip this node.
+                        // and k==L so we're done
+                        //
+                        return;
+                    }
+                } else {
+                    if (vark == arg2.at(low).from(-k)) {
+                        //
+                        // skip this node
+                        //
+                        continue;
+                    }
+                }
+            }
+
+            Cu = unpacked_node::newSparse(resF, k, 1);
+            Cu->setSparse(0, vark, cv, cp);
+            resF->createReducedNode(Cu, cv, cp);
+        }
+        return;
+    }
+
     // NO CT :)
 
     //
@@ -162,7 +247,6 @@ void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
                         : MDD_levels::downLevel(L);
 
     const int Alevel = arg1F->getNodeLevel(ap);
-    unpacked_node* Cu;
     if (Alevel != L) {
         if ((L<0) && (resF->isIdentityReduced()) && ap) {
             Cu = unpacked_node::newIdentity(arg1F, L, in, ap, FULL_ONLY);
@@ -299,6 +383,13 @@ namespace MEDDLY {
             av.set();
             terminal t(false);
             ap = t.getHandle();
+        }
+
+        static inline bool is_null_edge(const edge_value &av, node_handle ap)
+        {
+            MEDDLY_DCASSERT(av.isVoid());
+            terminal t(false);
+            return (ap == t.getHandle());
         }
 
     };
