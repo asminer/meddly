@@ -36,6 +36,7 @@
 #include "minterms.h"
 #include "policies.h"
 #include "terminal.h"
+#include "dd_edge.h"
 
 #include <vector>
 
@@ -344,6 +345,22 @@ class MEDDLY::minterm_coll {
         }
 
 
+        /** Create an edge from this collection.
+            The default value is 0.
+            If the collection contains overlapping minterms
+            for a particular variable assignment,
+            the maximum value is taken.
+            Because this can cause strange behavior
+            with negative values, the values assigned to
+            each midterm should not be negative.
+
+                @param  e   On input: should be attached to the
+                            forest we want to create the function in.
+                            On output: the function.
+        */
+        void buildFunction(dd_edge &e);
+
+
         /** Partial sort, as used by explicit minterm operations.
             Based on level L, and the range of minterms [low, hi),
             collect all elements together with variable L equal to item #low.
@@ -383,6 +400,9 @@ class MEDDLY::minterm_coll {
 
     private:
         int _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
+
+        /// Recursive implementation of buildFunction
+        void _build(int L, unsigned in, unsigned lo, unsigned hi, dd_edge &e);
 
     private:
         std::vector<minterm*> _mtlist;

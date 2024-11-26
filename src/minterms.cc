@@ -20,6 +20,7 @@
 
 #include "io.h"
 #include "domain.h"
+#include "forest.h"
 
 // #define DEBUG_COLLECT_FIRST
 // #include "operators.h"
@@ -148,6 +149,23 @@ MEDDLY::minterm_coll::~minterm_coll()
     }
 }
 
+void MEDDLY::minterm_coll::buildFunction(dd_edge &e)
+{
+    if (!e.getForest()) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+    if (e.getForest()->getDomain() != _D) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+    if (e.getForest()->isForRelations() != isForRelations())
+    {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    _build(num_vars, ~0, 0, first_unused, e);
+
+}
+
 void MEDDLY::minterm_coll::show(output &s,
         const char* pre, const char* post) const
 {
@@ -250,5 +268,12 @@ int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
         _mtlist[hptr-1] = tmp;
     }
 
+}
+
+
+void MEDDLY::minterm_coll::_build(int L, unsigned in,
+        unsigned lo, unsigned hi, dd_edge &e)
+{
+    // TBD
 }
 
