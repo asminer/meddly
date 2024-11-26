@@ -101,7 +101,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
     int* mtprime = new int[nVars+1];
 #else
     minterm_coll mtlist(1, d, RELATION);
-    mtlist.incsize();
+    mtlist.pushUnused();
 #endif
     dd_edge** varP  = new dd_edge*[nVars+1];
     varP[0] = 0;
@@ -444,7 +444,7 @@ void explicitReachset(const char* const* events, unsigned nEvents,
                 RS.evaluate(minterms.unused(), seen);
                 if (seen) continue;     // already known in RS
 
-                minterms.incsize();
+                minterms.pushUnused();
                 if (minterms.size() >= batchsize) {
                     // Buffer is full; flush it
                     f->createEdge(false, batch);

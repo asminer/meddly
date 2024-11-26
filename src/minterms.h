@@ -298,6 +298,52 @@ class MEDDLY::minterm_coll {
         inline unsigned getNumVars()        const   { return num_vars; }
         inline const domain* getDomain()    const   { return _D; }
 
+        /// Current collection size
+        inline unsigned size() const { return first_unused; }
+
+        /// Collection max size
+        inline unsigned maxsize() const { return _mtlist.size(); }
+
+        /// Clear the collection
+        inline void clear() { first_unused = 0; }
+
+        /// Get an element
+        inline minterm& at(unsigned i) {
+#ifdef DEVELOPMENT_CODE
+            MEDDLY_DCASSERT(_mtlist.at(i));
+            return *(_mtlist.at(i));
+#else
+            return *(_mtlist[i]);
+#endif
+        }
+
+        /// Get an element
+        inline const minterm& at(unsigned i) const {
+#ifdef DEVELOPMENT_CODE
+            MEDDLY_DCASSERT(_mtlist.at(i));
+            return *(_mtlist.at(i));
+#else
+            return *(_mtlist[i]);
+#endif
+        }
+
+        /// Get the first unused element
+        inline minterm& unused() {
+            return at(first_unused);
+        }
+
+        /// Add the unused element to the collection.
+        /// Returns true on success.
+        inline bool pushUnused() {
+            if (first_unused < maxsize()) {
+                ++first_unused;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+
         /** Partial sort, as used by explicit minterm operations.
             Based on level L, and the range of minterms [low, hi),
             collect all elements together with variable L equal to item #low.
@@ -329,50 +375,6 @@ class MEDDLY::minterm_coll {
         }
 
 
-
-        /// Current collection size
-        inline unsigned size() const { return first_unused; }
-
-        /// Collection max size
-        inline unsigned maxsize() const { return _mtlist.size(); }
-
-        /// Clear the collection
-        inline void clear() { first_unused = 0; }
-
-        /// Increase the collection; returns true on success
-        inline bool incsize() {
-            if (first_unused < maxsize()) {
-                ++first_unused;
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        /// Get an element
-        inline minterm& at(unsigned i) {
-#ifdef DEVELOPMENT_CODE
-            MEDDLY_DCASSERT(_mtlist.at(i));
-            return *(_mtlist.at(i));
-#else
-            return *(_mtlist[i]);
-#endif
-        }
-
-        /// Get an element
-        inline const minterm& at(unsigned i) const {
-#ifdef DEVELOPMENT_CODE
-            MEDDLY_DCASSERT(_mtlist.at(i));
-            return *(_mtlist.at(i));
-#else
-            return *(_mtlist[i]);
-#endif
-        }
-
-        /// Get the first unused element
-        inline minterm& unused() {
-            return at(first_unused);
-        }
 
 
         //

@@ -195,7 +195,7 @@ void test_sets()
         //
         while (mtcoll.size() < mtsize) {
             randomSetMinterm(mtcoll.unused());
-            mtcoll.incsize();
+            mtcoll.pushUnused();
         }
 
         out << "    ";
@@ -387,7 +387,7 @@ void test_rels()
         //
         while (mtcoll.size() < mtsize) {
             randomRelMinterm(mtcoll.unused());
-            mtcoll.incsize();
+            mtcoll.pushUnused();
         }
 
         out << "    ";
