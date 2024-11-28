@@ -38,6 +38,8 @@
 #include "terminal.h"
 #include "dd_edge.h"
 
+// #define USE_VECTOR
+
 #include <vector>
 
 namespace MEDDLY {
@@ -82,6 +84,7 @@ namespace MEDDLY {
 class MEDDLY::minterm {
     public:
         minterm(const domain* D, set_or_rel sr);
+        ~minterm();
 
         inline bool isForSets()             const   { return !for_relations; }
         inline bool isForRelations()        const   { return for_relations; }
@@ -100,93 +103,79 @@ class MEDDLY::minterm {
 
         inline int getVar(unsigned i) const {
             MEDDLY_DCASSERT(isForSets());
-#ifdef DEVELOPMENT_CODE
-            return _from.at(i);
-#else
-            return _from[i];
+            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
+#ifndef USE_VECTOR
+            MEDDLY_DCASSERT(_from);
 #endif
+            return _from[i];
         }
         inline void setVar(unsigned i, int from) {
             MEDDLY_DCASSERT(isForSets());
             MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
-#ifdef DEVELOPMENT_CODE
-            _from.at(i) = from;
-#else
-            _from[i] = from;
+            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
+#ifndef USE_VECTOR
+            MEDDLY_DCASSERT(_from);
 #endif
+            _from[i] = from;
         }
 
         // relation access
 
         inline void getVars(unsigned i, int &from, int &to) const {
             MEDDLY_DCASSERT(isForRelations());
-#ifdef DEVELOPMENT_CODE
-            from = _from.at(i);
-            to   = _to.at(i);
-#else
+            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
+#ifndef USE_VECTOR
+            MEDDLY_DCASSERT(_from);
+            MEDDLY_DCASSERT(_to);
+#endif
             from = _from[i];
             to   = _to[i];
-#endif
         }
         inline void setVars(unsigned i, int from, int to) {
             MEDDLY_DCASSERT(isForRelations());
             MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
             MEDDLY_DCASSERT(to >= 0 || to == DONT_CARE || to == DONT_CHANGE);
+            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
+#ifndef USE_VECTOR
+            MEDDLY_DCASSERT(_from);
+            MEDDLY_DCASSERT(_to);
+#endif
             if (DONT_CHANGE == to) {
                 if (from >= 0) {
                     to = from;
                 }
             }
-#ifdef DEVELOPMENT_CODE
-            _from.at(i) = from;
-            _to.at(i) = to;
-#else
             _from[i] = from;
             _to[i] = to;
-#endif
         }
 
         // both access
 
-        inline int var(int i) const {
-            MEDDLY_DCASSERT(i>0 || isForRelations());
-#ifdef DEVELOPMENT_CODE
-            return (i>0) ? _from.at(i) : _to.at(-i);
-#else
-            return (i>0) ? _from[i] : _to[-i];
-#endif
-        }
-
         inline int from(unsigned i) const {
-#ifdef DEVELOPMENT_CODE
-            return _from.at(i);
-#else
+            MEDDLY_DCASSERT(_from);
+            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
             return _from[i];
-#endif
         }
         inline int& from(unsigned i) {
-#ifdef DEVELOPMENT_CODE
-            return _from.at(i);
-#else
+            MEDDLY_DCASSERT(_from);
+            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
             return _from[i];
-#endif
         }
         inline int to(unsigned i) const {
-            MEDDLY_DCASSERT(isForRelations());
-#ifdef DEVELOPMENT_CODE
-            return _to.at(i);
-#else
+            MEDDLY_DCASSERT(_to);
+            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
             return _to[i];
-#endif
         }
         inline int& to(unsigned i) {
-            MEDDLY_DCASSERT(isForRelations());
-#ifdef DEVELOPMENT_CODE
-            return _to.at(i);
-#else
+            MEDDLY_DCASSERT(_to);
+            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
             return _to[i];
-#endif
         }
+
+        inline int var(int i) const {
+            return (i>0) ? from(i) : to(-i);
+        }
+
 
         //
         // For convenience and debugging
@@ -195,8 +184,13 @@ class MEDDLY::minterm {
     private:
         const domain* _D;
 
+#ifdef USE_VECTOR
         std::vector<int> _from;
         std::vector<int> _to;
+#else
+        int* _from;
+        int* _to;
+#endif
 
         terminal termval;
 
@@ -229,29 +223,33 @@ class MEDDLY::minterm_coll {
         inline unsigned size() const { return first_unused; }
 
         /// Collection max size
+#ifdef USE_VECTOR
         inline unsigned maxsize() const { return _mtlist.size(); }
+#else
+        inline unsigned maxsize() const { return max_coll_size; }
+#endif
 
         /// Clear the collection
         inline void clear() { first_unused = 0; }
 
         /// Get an element
         inline minterm& at(unsigned i) {
-#ifdef DEVELOPMENT_CODE
-            MEDDLY_DCASSERT(_mtlist.at(i));
-            return *(_mtlist.at(i));
-#else
-            return *(_mtlist[i]);
+            CHECK_RANGE(__FILE__, __LINE__, 0u, i, 1+first_unused);
+#ifndef USE_VECTOR
+            MEDDLY_DCASSERT(_mtlist);
 #endif
+            MEDDLY_DCASSERT(_mtlist[i]);
+            return *(_mtlist[i]);
         }
 
         /// Get an element
         inline const minterm& at(unsigned i) const {
-#ifdef DEVELOPMENT_CODE
-            MEDDLY_DCASSERT(_mtlist.at(i));
-            return *(_mtlist.at(i));
-#else
-            return *(_mtlist[i]);
+            CHECK_RANGE(__FILE__, __LINE__, 0u, i, 1+first_unused);
+#ifndef USE_VECTOR
+            MEDDLY_DCASSERT(_mtlist);
 #endif
+            MEDDLY_DCASSERT(_mtlist[i]);
+            return *(_mtlist[i]);
         }
 
         /// Get the first unused element
@@ -326,9 +324,12 @@ class MEDDLY::minterm_coll {
 
 
     private:
+#ifdef USE_VECTOR
         std::vector<minterm*> _mtlist;
-
-        std::vector<unsigned> _varlist;
+#else
+        minterm** _mtlist;
+        const unsigned max_coll_size;
+#endif
 
         unsigned first_unused;
 

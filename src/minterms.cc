@@ -102,10 +102,27 @@ MEDDLY::minterm::minterm(const domain* D, set_or_rel sr) : termval(true)
         num_vars = 0;
     }
     for_relations = sr;
+#ifdef USE_VECTOR
     _from.resize(1+num_vars, DONT_CARE);
     if (for_relations) {
         _to.resize(1+num_vars, DONT_CARE);
     }
+#else
+    _from = new int[1+num_vars];
+    if (for_relations) {
+        _to = new int[1+num_vars];
+    } else {
+        _to = nullptr;
+    }
+#endif
+}
+
+MEDDLY::minterm::~minterm()
+{
+#ifndef USE_VECTOR
+    delete[] _from;
+    delete[] _to;
+#endif
 }
 
 void MEDDLY::minterm::show(output &s) const
@@ -133,15 +150,22 @@ void MEDDLY::minterm::show(output &s) const
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::minterm_coll::minterm_coll(unsigned maxsize, const domain* D,
+MEDDLY::minterm_coll::minterm_coll(unsigned maxsz, const domain* D,
             set_or_rel sr)
+#ifndef USE_VECTOR
+    : max_coll_size(maxsz)
+#endif
 {
     _D = D;
     num_vars = D ? D->getNumVariables() : 0;
     for_relations = sr;
 
-    _mtlist.resize(maxsize);
-    for (unsigned i=0; i<maxsize; i++) {
+#ifdef USE_VECTOR
+    _mtlist.resize(maxsz);
+#else
+    _mtlist = new minterm*[max_coll_size];
+#endif
+    for (unsigned i=0; i<maxsize(); i++) {
         _mtlist[i] = new minterm(_D, for_relations);
     }
     clear();
@@ -150,10 +174,13 @@ MEDDLY::minterm_coll::minterm_coll(unsigned maxsize, const domain* D,
 
 MEDDLY::minterm_coll::~minterm_coll()
 {
-    for (unsigned i=0; i<_mtlist.size(); i++) {
+    for (unsigned i=0; i<maxsize(); i++) {
         delete _mtlist[i];
         _mtlist[i] = nullptr;
     }
+#ifndef USE_VECTOR
+    delete[] _mtlist;
+#endif
 }
 
 void MEDDLY::minterm_coll::buildFunction(dd_edge &e)
