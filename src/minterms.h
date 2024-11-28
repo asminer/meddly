@@ -75,22 +75,13 @@ namespace MEDDLY {
     we can restruct variables to be unchanged using a value
     of DONT_CARE.
 
-    Storage-wise, a minterm may be stored in sparse or full format.
-    In sparse format, any unspecified variable is assumed
-    to be DONT_CARE (any possible value).
-    In both formats, for relations we must set the unprimed
-    and primed variables together.
-
     Unlike a proper minterm, however, we can set the
     function value to something other than true for the
     given set of variable assignments.
 */
 class MEDDLY::minterm {
     public:
-        minterm(const domain* D, set_or_rel sr, node_storage_flags fs);
-
-        inline bool isSparse()              const   { return sparse; }
-        inline bool isFull()                const   { return !sparse; }
+        minterm(const domain* D, set_or_rel sr);
 
         inline bool isForSets()             const   { return !for_relations; }
         inline bool isForRelations()        const   { return for_relations; }
@@ -197,56 +188,6 @@ class MEDDLY::minterm {
 #endif
         }
 
-        // sparse access
-
-        inline void append(unsigned ndx, int from) {
-            if (DONT_CARE == from) return;
-            MEDDLY_DCASSERT(from >= 0);
-            MEDDLY_DCASSERT(isForSets());
-            MEDDLY_DCASSERT(isSparse());
-            MEDDLY_DCASSERT( _index.empty() || _index.back() < ndx );
-            _index.push_back(ndx);
-            _from.push_back(from);
-
-        }
-
-        inline void append(unsigned ndx, int from, int to) {
-            if ((DONT_CARE == from) && (DONT_CARE == to)) return;
-            MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
-            MEDDLY_DCASSERT(to >= 0 || to == DONT_CARE || to == DONT_CHANGE);
-            MEDDLY_DCASSERT(isForSets());
-            MEDDLY_DCASSERT(isSparse());
-            MEDDLY_DCASSERT( _index.empty() || _index.back() < ndx );
-            if (DONT_CHANGE == to) {
-                if (from >= 0) {
-                    to = from;
-                }
-            }
-            _index.push_back(ndx);
-            _from.push_back(from);
-            _to.push_back(to);
-        }
-
-        inline unsigned size() const {
-            MEDDLY_DCASSERT(isSparse());
-            return _index.size();
-        }
-
-        inline int whichVar(unsigned nz) const {
-            MEDDLY_DCASSERT(isSparse());
-#ifdef DEVELOPMENT_CODE
-            return _index.at(nz);
-#else
-            return _index[nz];
-#endif
-        }
-
-        //
-        // Check that we are sparse, and have the same variables
-        // set as the given list L.
-        //
-        bool hasSparseVars(const std::vector <unsigned> &vars) const;
-
         //
         // For convenience and debugging
         void show(output &s) const;
@@ -256,13 +197,11 @@ class MEDDLY::minterm {
 
         std::vector<int> _from;
         std::vector<int> _to;
-        std::vector<unsigned> _index;
 
         terminal termval;
 
         unsigned num_vars;
         bool for_relations;
-        bool sparse;
 };
 
 // ******************************************************************
@@ -274,24 +213,11 @@ class MEDDLY::minterm {
 class MEDDLY::minterm_coll {
     public:
         /// Build a collection for a given domain.
-        /// Each minterm is stored in full.
         ///     @param  maxsize Maximum size of the collection
         ///     @param  D       The domain
         ///     @param  sr      Set or relation
         minterm_coll(unsigned maxsize,
                 const domain* D, set_or_rel sr);
-
-        /// Build a collection of sparse minterms,
-        /// for a given domain and with the same set
-        /// of variables used.
-        ///     @param  maxsize Maximum size of the collection
-        ///     @param  D       The domain
-        ///     @param  sr      Set or relation
-        ///     @param  varlist Array list of variables used,
-        ///                     in decreasing order.
-        minterm_coll(unsigned maxsize,
-                const domain* D, set_or_rel sr,
-                const std::vector<unsigned> &varlist);
 
         ~minterm_coll();
 
@@ -350,9 +276,6 @@ class MEDDLY::minterm_coll {
             If the collection contains overlapping minterms
             for a particular variable assignment,
             the maximum value is taken.
-            Because this can cause strange behavior
-            with negative values, the values assigned to
-            each midterm should not be negative.
 
                 @param  e   On input: should be attached to the
                             forest we want to create the function in.
@@ -401,9 +324,6 @@ class MEDDLY::minterm_coll {
     private:
         int _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
 
-        /// Recursive implementation of buildFunction
-        void _build(int L, unsigned in, unsigned lo, unsigned hi, dd_edge &e);
-
     private:
         std::vector<minterm*> _mtlist;
 
@@ -415,7 +335,6 @@ class MEDDLY::minterm_coll {
 
         unsigned num_vars;
         bool for_relations;
-        bool sparse;
 };
 
 #endif

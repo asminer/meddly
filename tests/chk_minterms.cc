@@ -176,7 +176,7 @@ void test_sets()
     // and evaluation minterm
     //
     minterm_coll mtcoll(MAXTERMS, D, SET);
-    minterm eval(D, SET, FULL_ONLY);
+    minterm eval(D, SET);
 
     //
     // For various collections of minterms,
@@ -209,6 +209,16 @@ void test_sets()
         //
         dd_edge Ef(Ff);
         dd_edge Eq(Fq);
+
+        mtcoll.buildFunction(Eq);
+        out << "q ";
+        out.flush();
+
+        mtcoll.buildFunction(Ef);
+        out << "f ";
+        out.flush();
+
+        /*
         Ff->createEdge(false, Ef);
         Fq->createEdge(false, Eq);
 
@@ -222,6 +232,7 @@ void test_sets()
         apply(UNION, Ef, mtcoll, Ef);
         out << "f ";
         out.flush();
+        */
 
         //
         // Brute force: compare functions
@@ -368,7 +379,7 @@ void test_rels()
     // and evaluation minterm
     //
     minterm_coll mtcoll(MAXTERMS, D, RELATION);
-    minterm eval(D, RELATION, FULL_ONLY);
+    minterm eval(D, RELATION);
 
     //
     // For various collections of minterms,
@@ -401,6 +412,16 @@ void test_rels()
         //
         dd_edge Ef(Ff);
         dd_edge Eq(Fq);
+
+        mtcoll.buildFunction(Eq);
+        out << "q ";
+        out.flush();
+
+        mtcoll.buildFunction(Ef);
+        out << "f ";
+        out.flush();
+
+        /*
         Ff->createEdge(false, Ef);
         Fq->createEdge(false, Eq);
 
@@ -414,6 +435,7 @@ void test_rels()
         apply(UNION, Ef, mtcoll, Ef);
         out << "f ";
         out.flush();
+        */
 
         //
         // Brute force: compare functions
