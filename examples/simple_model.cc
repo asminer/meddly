@@ -166,11 +166,9 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 #ifdef USE_OLD_MINTERMS
         mxd->createEdge(&minterm, &mtprime, 1, nsf_ev);
 #else
-        mtlist.buildFunction(nsf_ev);
-        /*
+        // mtlist.buildFunction(nsf_ev);
         mxd->createEdge(false, nsf_ev);
         apply(UNION, nsf_ev, mtlist, nsf_ev);
-        */
 #endif
 #ifdef DEBUG_EVENTS
         printf("Initial nsf for event %d\n", e);
@@ -450,11 +448,9 @@ void explicitReachset(const char* const* events, unsigned nEvents,
                 minterms.pushUnused();
                 if (minterms.size() >= batchsize) {
                     // Buffer is full; flush it
-                    /*
                     f->createEdge(false, batch);
                     apply(MEDDLY::UNION, batch, minterms, batch);
-                    */
-                    minterms.buildFunction(batch);
+                    // minterms.buildFunction(batch);
                     /*
                     apply(MEDDLY::UNION, unexplored, minterms, unexplored);
                     apply(MEDDLY::UNION, RS, minterms, RS);
@@ -477,11 +473,9 @@ void explicitReachset(const char* const* events, unsigned nEvents,
         }
 #else
         if (minterms.size()) {
-            /*
             f->createEdge(false, batch);
             apply(MEDDLY::UNION, batch, minterms, batch);
-            */
-            minterms.buildFunction(batch);
+            // minterms.buildFunction(batch);
             /*
             apply(MEDDLY::UNION, unexplored, minterms, unexplored);
             apply(MEDDLY::UNION, RS, minterms, RS);

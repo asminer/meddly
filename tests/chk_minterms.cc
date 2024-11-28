@@ -210,6 +210,7 @@ void test_sets()
         dd_edge Ef(Ff);
         dd_edge Eq(Fq);
 
+        /*
         mtcoll.buildFunction(Eq);
         out << "q ";
         out.flush();
@@ -217,8 +218,8 @@ void test_sets()
         mtcoll.buildFunction(Ef);
         out << "f ";
         out.flush();
+        */
 
-        /*
         Ff->createEdge(false, Ef);
         Fq->createEdge(false, Eq);
 
@@ -232,7 +233,6 @@ void test_sets()
         apply(UNION, Ef, mtcoll, Ef);
         out << "f ";
         out.flush();
-        */
 
         //
         // Brute force: compare functions
@@ -413,6 +413,7 @@ void test_rels()
         dd_edge Ef(Ff);
         dd_edge Eq(Fq);
 
+        /*
         mtcoll.buildFunction(Eq);
         out << "q ";
         out.flush();
@@ -420,8 +421,8 @@ void test_rels()
         mtcoll.buildFunction(Ef);
         out << "f ";
         out.flush();
+        */
 
-        /*
         Ff->createEdge(false, Ef);
         Fq->createEdge(false, Eq);
 
@@ -435,7 +436,6 @@ void test_rels()
         apply(UNION, Ef, mtcoll, Ef);
         out << "f ";
         out.flush();
-        */
 
         //
         // Brute force: compare functions
