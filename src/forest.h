@@ -1132,10 +1132,12 @@ class MEDDLY::forest {
         /**
             Is the given edge transparent?
             If so it may be "skipped" in a sparse node.
-                @param  ep    Node part of the edge to check
                 @param  ev    Value part of the edge to check
+                @param  ep    Node part of the edge to check
         */
-        inline bool isTransparentEdge(node_handle ep, const edge_value &ev) const {
+        inline bool isTransparentEdge(const edge_value &ev, node_handle ep)
+                    const
+        {
             if (ep != transparent_node) return false;
             return ev == transparent_edge;
         }
@@ -1144,12 +1146,14 @@ class MEDDLY::forest {
             Get the transparent edge value.
             This is the default edge value for "skipped" edges in sparse nodes.
             Copy the transparent edge value into the parameters.
-                @param  ep      Put node part of the edge here.
                 @param  ev      Put value part of the edge here.
+                @param  ep      Put node part of the edge here.
         */
-        inline void getTransparentEdge(node_handle &ep, edge_value &ptr) const {
-            ep = transparent_node;
+        inline void getTransparentEdge(edge_value &ptr, node_handle &ep)
+                    const
+        {
             ptr = transparent_edge;
+            ep = transparent_node;
         }
 
         /**

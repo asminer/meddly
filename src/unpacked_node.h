@@ -689,6 +689,20 @@ class MEDDLY::unpacked_node {
 #endif
 
 
+        /**
+            Hack for mark and sweep.
+            Add an extra, temporary node to the list of roots
+            for mark and sweep.
+            Do this for example in an "APPLY" operation that
+            needs to create a temporary result.
+            We can hold one such result and make sure it's marked,
+            by calling this method.
+                @param  t   Node handle for temporary result.
+         */
+        inline void setTempRoot(node_handle t)
+        {
+            mark_extra = t;
+        }
 
     public:
         //
@@ -898,6 +912,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(parent == mp);
             modparent = mp;
             AddToBuildList(this);
+            mark_extra = 0;
         }
 
         // Set edges to transparent
@@ -1017,6 +1032,9 @@ class MEDDLY::unpacked_node {
         /// Edge values; or null if void edges
         edge_value* _edge;
 #endif
+
+        /// Extra, temporary, node handle for marking.
+        node_handle mark_extra;
 
         /// Allocated sizes of arrays
         unsigned alloc;

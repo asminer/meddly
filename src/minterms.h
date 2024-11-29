@@ -252,6 +252,26 @@ class MEDDLY::minterm_coll {
             return *(_mtlist[i]);
         }
 
+        /// Get part of a minterm
+        inline int unprimed(unsigned i, int k) const {
+            CHECK_RANGE(__FILE__, __LINE__, 1, k, int(num_vars)+1);
+#ifndef USE_VECTOR
+            MEDDLY_DCASSERT(_mtlist);
+#endif
+            MEDDLY_DCASSERT(_mtlist[i]);
+            return _mtlist[i]->from(k);
+        }
+
+        /// Get part of a minterm
+        inline int primed(unsigned i, int k) const {
+            CHECK_RANGE(__FILE__, __LINE__, 1, k, int(num_vars)+1);
+#ifndef USE_VECTOR
+            MEDDLY_DCASSERT(_mtlist);
+#endif
+            MEDDLY_DCASSERT(_mtlist[i]);
+            return _mtlist[i]->to(k);
+        }
+
         /// Get the first unused element
         inline minterm& unused() {
             return at(first_unused);
@@ -268,6 +288,16 @@ class MEDDLY::minterm_coll {
             }
         }
 
+        /// For now, TBD
+        inline void swap(unsigned i, unsigned j)
+        {
+            CHECK_RANGE(__FILE__, __LINE__, 0u, i, first_unused);
+            CHECK_RANGE(__FILE__, __LINE__, 0u, j, first_unused);
+#ifndef USE_VECTOR
+            MEDDLY_DCASSERT(_mtlist);
+#endif
+            SWAP(_mtlist[i], _mtlist[j]);
+        }
 
         /** Partial sort, as used by explicit minterm operations.
             Based on level L, and the range of minterms [low, hi),
@@ -300,15 +330,6 @@ class MEDDLY::minterm_coll {
         }
 
 
-
-
-        //
-        // For convenience and debugging
-        void show(output &s, const char* pre, const char* post) const;
-
-    private:
-        int _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
-
         /** Create an edge from this collection.
             The default value is 0.
             If the collection contains overlapping minterms
@@ -322,6 +343,15 @@ class MEDDLY::minterm_coll {
         void buildFunction(dd_edge &e);
 
 
+
+
+
+        //
+        // For convenience and debugging
+        void show(output &s, const char* pre, const char* post) const;
+
+    private:
+        int _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
 
     private:
 #ifdef USE_VECTOR

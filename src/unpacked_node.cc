@@ -76,6 +76,8 @@ MEDDLY::unpacked_node::unpacked_node(const forest* f)
     _edge = nullptr;
 #endif
 
+    mark_extra = 0;
+
     alloc = 0;
     size = 0;
 
@@ -473,7 +475,7 @@ void MEDDLY::unpacked_node::computeHash()
     if (isSparse()) {
         if (parent->areEdgeValuesHashed()) {
             for (unsigned z=0; z<getSize(); z++) {
-                MEDDLY_DCASSERT(!parent->isTransparentEdge(down(z), edgeval(z)));
+                MEDDLY_DCASSERT(!parent->isTransparentEdge(edgeval(z), down(z)));
                 s.push(index(z), unsigned(down(z)));
                 edgeval(z).hash(s);
             }
@@ -486,7 +488,7 @@ void MEDDLY::unpacked_node::computeHash()
     } else {
         if (parent->areEdgeValuesHashed()) {
             for (unsigned n=0; n<getSize(); n++) {
-                if (!parent->isTransparentEdge(down(n), edgeval(n))) {
+                if (!parent->isTransparentEdge(edgeval(n), down(n))) {
                     s.push(n, unsigned(down(n)));
                     edgeval(n).hash(s);
                 }
@@ -638,7 +640,7 @@ void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
 
     if (hasEdges()) {
         for (unsigned i=low; i<high; i++) {
-            parent->getTransparentEdge(_idev[i].down, _idev[i].edgeval);
+            parent->getTransparentEdge(_idev[i].edgeval, _idev[i].down);
         }
     } else {
         for (unsigned i=low; i<high; i++) {
@@ -651,7 +653,7 @@ void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
     if (hasEdges()) {
         MEDDLY_DCASSERT(_edge);
         for (unsigned i=low; i<high; i++) {
-            parent->getTransparentEdge(_down[i], _edge[i]);
+            parent->getTransparentEdge(_edge[i], _down[i]);
         }
     } else {
         for (unsigned i=low; i<high; i++) {
@@ -744,6 +746,7 @@ void MEDDLY::unpacked_node::MarkWritable(node_marker &M)
         for (unsigned i=0; i<curr->getSize(); i++) {
             M.mark(curr->down(i));
         }
+        M.mark(curr->mark_extra);
     } // for curr
 }
 

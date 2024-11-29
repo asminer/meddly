@@ -386,7 +386,7 @@ MEDDLY::node_address MEDDLY::simple_separated
       // EV, check for transparent edges
       //
       for (int i=0; i<nb.getSize(); i++) {
-        if (!getParent()->isTransparentEdge(nb.down(i), nb.edgeval(i))) {
+        if (!getParent()->isTransparentEdge(nb.edgeval(i), nb.down(i))) {
           nnzs++;
           truncsize = i+1;
         }
@@ -1607,7 +1607,7 @@ MEDDLY::node_address MEDDLY::simple_separated
       } else {
         int z = 0;
         for (int i=0; i<nb.getSize(); i++) {
-          if (getParent()->isTransparentEdge(nb.down(i), nb.edgeval(i))) continue;
+          if (getParent()->isTransparentEdge(nb.edgeval(i), nb.down(i))) continue;
           MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, z, size);
           down[z] = nb.down(i);
           index[z] = i;

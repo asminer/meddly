@@ -44,7 +44,7 @@ namespace MEDDLY {
             indexes in [low, high). Store the result in <cv, cp>.
 
     */
-    template <class OP, class EdgeOp>
+    template <class OP>
     class fbuilder {
         public:
             fbuilder(forest* f, minterm_coll &mtlist, binary_builtin Union)
@@ -55,7 +55,47 @@ namespace MEDDLY {
                 MEDDLY_DCASSERT(union_op);
             }
 
-            void compute(int L, unsigned in,
+            inline int unprimed(unsigned i, int L) const {
+                return mtc.unprimed(i, L);
+            }
+            inline void swap(unsigned i, unsigned j) {
+                mtc.swap(i, j);
+            }
+            inline const minterm& element(unsigned i) const {
+                return mtc.at(i);
+            }
+
+            void createEdgeSet(int L, unsigned low, unsigned high,
+                    edge_value &cv, node_handle &cp);
+
+            // Input: <cv, cp> is the bottom value
+            // Output: <cv, cp> is the final thingy
+            inline void setPathToBottom(int L, const minterm &m,
+                    edge_value &cv, node_handle &cp)
+            {
+                for (int k=1; k<=L; k++) {
+                    if (DONT_CARE == m.from(k)) {
+                        if (F->isFullyReduced()) continue;
+                        // Make a redundant node
+                        const unsigned sz = F->getLevelSize(k);
+                        unpacked_node* nb = unpacked_node::newFull(F, k, sz);
+                        nb->setFull(0, cv, cp);
+                        for (unsigned v=1; v<sz; v++) {
+                            nb->setFull(v, cv, F->linkNode(cp));
+                        }
+                        F->createReducedNode(nb, cv, cp);
+                    } else {
+                        // make a singleton node
+                        unpacked_node* nb = unpacked_node::newSparse(F, k, 1);
+                        MEDDLY_DCASSERT(m.from(k) >= 0);
+                        nb->setSparse(0, m.from(k), cv, cp);
+                        F->createReducedNode(nb, cv, cp);
+                    }
+                } // for i
+            }
+
+
+            void createEdgeRel(int L, unsigned in,
                     unsigned low, unsigned high,
                     edge_value &cv, node_handle &cp);
 
@@ -197,9 +237,14 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e)
     }
 
     if (e.getForest()->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-        fbuilder<fbop_union_bool, EdgeOp_none> fb(e.getForest(), *this, UNION);
+        fbuilder<fbop_union_bool> fb(e.getForest(), *this, UNION);
         node_handle en;
-        fb.compute(num_vars, ~0, 0, first_unused, e.setEdgeValue(), en);
+        if (isForRelations()) {
+            fb.createEdgeRel(num_vars, ~0,
+                    0, first_unused, e.setEdgeValue(), en);
+        } else {
+            fb.createEdgeSet(num_vars, 0, first_unused, e.setEdgeValue(), en);
+        }
         e.set(en);
         return;
     }
@@ -318,175 +363,143 @@ int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
 // *                                                                *
 // ******************************************************************
 
-template <class OP, class EdgeOp>
-void MEDDLY::fbuilder<OP,EdgeOp>::compute(int L, unsigned in,
-        unsigned low, unsigned high,
+template <class OP>
+void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
         edge_value &cv, node_handle &cp)
 {
+    MEDDLY_DCASSERT(L>=0);
     MEDDLY_DCASSERT(high > low);
+
+    //
+    // Terminal case
+    //
     if (0==L) {
         OP::finalize(mtc, low, high, cv, cp);
         return;
     }
-
-    unpacked_node* Cu;
 
     //
     // Special case: only one minterm left
     //
     if (high - low == 1) {
         OP::finalize(mtc, low, high, cv, cp);
-        int k = 0;
-        while (k != L) {
-            const int prevk = k;
-            k = F->isForRelations()
-                    ? MXD_levels::upLevel(k)
-                    : MDD_levels::upLevel(k)
-            ;
-            const int vark = mtc.at(low).var(k);
-
-            if (DONT_CHANGE == vark) {
-                //
-                // Next 2 levels are identity pattern;
-                // process them together.
-                //
-                MEDDLY_DCASSERT(k<0);
-                MEDDLY_DCASSERT(DONT_CARE == mtc.at(low).var(-k));
-
-                k = MXD_levels::upLevel(k);
-                cp = F->makeIdentitiesTo(cp, k-1, k, ~0);
-                continue;
-            }
-
-            if (DONT_CARE == vark) {
-                //
-                // Next level is redundant
-                //
-                cp = F->makeRedundantsTo(cp, prevk, k);
-                continue;
-            }
-
-            //
-            // Create a singleton node.
-            // Except don't if we're at a primed level and
-            // the forest is identity reduced.
-            //
-            if (F->isIdentityReduced() && k<0) {
-                //
-                // See if we can point to the singleton node
-                // we're about to create.
-                //
-                if (k==L) {
-                    if (in == vark) {
-                        //
-                        // skip this node.
-                        // and k==L so we're done
-                        //
-                        return;
-                    }
-                } else {
-                    if (vark == mtc.at(low).from(-k)) {
-                        //
-                        // skip this node
-                        //
-                        continue;
-                    }
-                }
-            }
-
-            Cu = unpacked_node::newSparse(F, k, 1);
-            Cu->setSparse(0, vark, cv, cp);
-            F->createReducedNode(Cu, cv, cp);
+        if (!F->isTransparentEdge(cv, cp)) {
+            setPathToBottom(L, element(low), cv, cp);
         }
         return;
     }
 
-    // NO CT :)
+    // size of variables at level L
+    unsigned lastV = F->getLevelSize(L);
+    // index of end of current batch
+    unsigned batchP = low;
+    // sparse node we're going to build
+    unpacked_node* Cu = unpacked_node::newSparse(F, L, lastV);
+    // number of nonzero edges in our sparse node
+    unsigned z = 0;
 
     //
-    // Initialize "don't care" result,
-    // and our "don't change" result (relations only).
+    // Move any "don't cares" to the front
+    // Also keep track of the next smallest value
     //
-    edge_value dnc_val, ident_val;
-    node_handle dnc_node, ident_node;
-    bool has_dont_care = false;
-    bool has_identity = false;
-
-
-    //
-    // Allocate unpacked result node
-    //
-    const int Lnext = F->isForRelations()
-                        ? MXD_levels::downLevel(L)
-                        : MDD_levels::downLevel(L);
-    Cu = unpacked_node::newFull(F, L, F->getLevelSize(L));
-
-    unsigned mid;
-    do {
-        //
-        // Break off next interval
-        //
-        int val = mtc.collect_first(L, low, high, mid);
-#ifdef TRACE
-        out << "    processing " << val << " on [" << low << ", " << mid << ")\n";
-        out.indent_more();
-        out.put('\n');
-#endif
-
-        if (DONT_CARE == val) {
-            //
-            // We have to deal with either DONT_CARE,
-            // or a DONT_CARE, DONT_CHANGE pair group.
-            // First, determine which one.
-            //
-            if (F->isForRelations() && L>0
-                    && (DONT_CHANGE == mtc.at(low).var(-L)))
-            {
-                //
-                // Build the "don't change" portion
-                // Note this is down TWO levels, at the next unprimed level
-                //
-                MEDDLY_DCASSERT(!has_identity);
-                compute(L-1, ~0, low, mid, ident_val, ident_node);
-                ident_node = F->makeIdentitiesTo(ident_node, L-1, L, ~0);
-                has_identity = true;
-            } else {
-                //
-                // Build the "don't care" portion
-                //
-                MEDDLY_DCASSERT(!has_dont_care);
-                compute(Lnext, ~0, low, mid, dnc_val, dnc_node);
-                dnc_node = F->makeRedundantsTo(dnc_node, Lnext, L);
-                has_dont_care = true;
+    int nextV = lastV;
+    for (unsigned i=low; i<high; i++) {
+        if (DONT_CARE == unprimed(i, L)) {
+            if (batchP != i) {
+                swap(batchP, i);
             }
-
+            batchP++;
         } else {
-            //
-            // Ordinary value
-            // Just recurse
-            //
-            edge_value tv;
-            node_handle tp;
-            const unsigned i = unsigned(val);
-            compute(Lnext, i, low, mid, tv, tp);
-            F->unlinkNode(Cu->down(i));
-            Cu->setFull(i, tv, tp);
+            MEDDLY_DCASSERT(unprimed(i, L) >= 0);
+            nextV = MIN(nextV, unprimed(i, L));
+        }
+    }
+
+    edge_value dnc_val;
+    node_handle dnc_node;
+    bool has_dont_care = false;
+
+    //
+    // Build common don't care edge
+    //
+    if (batchP > low) {
+        createEdgeSet(L-1, low, batchP, dnc_val, dnc_node);
+        if (F->isQuasiReduced()) {
+            // Add the redundant node at level L
+            unpacked_node* redund = unpacked_node::newFull(F, L, lastV);
+            redund->setFull(0, dnc_val, dnc_node);
+            for (unsigned v=1; v<lastV; v++) {
+                redund->setFull(v, dnc_val, F->linkNode(dnc_node));
+            }
+            F->createReducedNode(redund, dnc_val, dnc_node);
+        }
+        has_dont_care = true;
+
+        // Make sure dnc_node isn't recycled yet
+        Cu->setTempRoot(dnc_node);
+    }
+
+    //
+    // Build the rest of the node, smallest value to largest.
+    // For each value v, move those values to the front, and process them.
+    //
+    for (int v = nextV; v<lastV; v = nextV) {
+        nextV = lastV;
+
+        //
+        // We're done with the previous batch, so move low over
+        //
+        low = batchP;
+
+        //
+        // move anything with value v, to the "new" front
+        //
+        for (unsigned i=low; i<high; i++) {
+            if (v == unprimed(i, L)) {
+                if (batchP != i) {
+                    swap(batchP, i);
+                }
+                batchP++;
+            } else {
+                nextV = MIN(nextV, unprimed(i, L));
+            }
         }
 
-#ifdef TRACE
-        out.indent_less();
-        out.put('\n');
-        out << "    done val " << val << " on [" << low << ", " << mid << ")\n";
-#endif
-        low = mid;
-    } while (mid < high);
+        //
+        // recurse if necessary
+        //
+        MEDDLY_DCASSERT(batchP > low);
+        node_handle dn_node;
+        edge_value  dn_eval;
+        createEdgeSet(L-1, low, batchP, dn_eval, dn_node);
 
+        //
+        // add to sparse node, unless transparent
+        //
+        if (!F->isTransparentEdge(dn_eval, dn_node)) {
+            Cu->setSparse(z, v, dn_eval, dn_node);
+            z++;
+        }
+
+    } // for v
+
+    //
+    // Finish building
+    //
+    Cu->shrink(z);
     F->createReducedNode(Cu, cv, cp);
     if (has_dont_care) {
-        union_op->compute(L, in, dnc_val, dnc_node, cv, cp, cv, cp);
+        union_op->compute(L, ~0, dnc_val, dnc_node, cv, cp, cv, cp);
     }
-    if (has_identity) {
-        union_op->compute(L, in, ident_val, ident_node, cv, cp, cv, cp);
-    }
+
+}
+
+// ******************************************************************
+
+template <class OP>
+void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned in,
+        unsigned low, unsigned high, edge_value &cv, node_handle &cp)
+{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
