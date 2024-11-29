@@ -145,6 +145,10 @@ namespace MEDDLY {
             {
                 return edge_value();
             }
+            /// Accumulate an edge value, into a terminal value
+            static inline void accumulate(const edge_value &a, terminal &term)
+            {
+            }
     };
 };
 
@@ -175,6 +179,12 @@ namespace MEDDLY {
                 a.get(av);
                 b.get(bv);
                 return edge_value(av+bv);
+            }
+            /// Accumulate an edge value, into a terminal value
+            static inline void accumulate(const edge_value &a, terminal &term)
+            {
+                TYPE av;
+                a.get(av);
             }
     };
 };
@@ -2428,6 +2438,14 @@ class MEDDLY::forest {
 // ===================================================================
 
     public:
+    /** Evaluate the function encoded by an edge.
+        @param  f       Edge (function) to evaluate.
+        @param  mt      List of variable assignments.
+        @param  term    Output, as a terminal value.
+    */
+    virtual void evaluate(const dd_edge &f, const minterm& mt, terminal &term)
+        const;
+
 
 
     /** Evaluate the function encoded by an edge.

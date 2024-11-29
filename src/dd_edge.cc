@@ -294,30 +294,66 @@ void MEDDLY::dd_edge::read(input &s, const std::vector <node_handle> &map)
 // **********************************************************************
 
 namespace MEDDLY {
-    template <class EOP>
-    class evaluator_helper {
+
+    class evaluator_helper_mt {
             const forest* F;
             const minterm& m;
         public:
-            evaluator_helper(const forest* _F, const minterm &_m)
+            evaluator_helper_mt(const forest* _F, const minterm &_m)
                 : F(_F), m(_m)
             {
                 MEDDLY_DCASSERT(F);
             }
 
-            void set_eval(edge_value &ev, node_handle &p)
+            inline node_handle set_eval(node_handle p)
+            {
+                MEDDLY_DCASSERT( !m.isForRelations() );
+                while (!F->isTerminalNode(p)) {
+    	            int level = F->getNodeLevel(p);
+                    p = F->getDownPtr(p, m.from(level));
+                }
+                return p;
+            }
+
+            inline node_handle rel_eval(node_handle p)
+            {
+                MEDDLY_DCASSERT( m.isForRelations() );
+                while (!F->isTerminalNode(p)) {
+    	            int level = F->getNodeLevel(p);
+                    if (level > 0) {
+                        p = F->getDownPtr(p, m.from(level));
+                    } else {
+                        p = F->getDownPtr(p, m.to(-level));
+                    }
+                }
+                return p;
+            }
+    };
+
+    template <class EOP>
+    class evaluator_helper_ev {
+            const forest* F;
+            const minterm& m;
+        public:
+            evaluator_helper_ev(const forest* _F, const minterm &_m)
+                : F(_F), m(_m)
+            {
+                MEDDLY_DCASSERT(F);
+            }
+
+            inline void set_eval(edge_value &ev, node_handle &p)
             {
                 MEDDLY_DCASSERT( !m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
                     edge_value pv;
     	            int level = F->getNodeLevel(p);
                     MEDDLY_DCASSERT(level>0);
-                    F->getDownPtr(p, m.getVar(level), pv, p);
+                    F->getDownPtr(p, m.from(level), pv, p);
                     ev = EOP::accumulate(ev, pv);
                 }
             }
 
-            void rel_eval(edge_value &ev, node_handle &p)
+            inline void rel_eval(edge_value &ev, node_handle &p)
             {
                 MEDDLY_DCASSERT( m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
@@ -338,7 +374,8 @@ namespace MEDDLY {
 
 // **********************************************************************
 
-void MEDDLY::dd_edge::evaluate(const minterm& m, bool &val) const
+void MEDDLY::dd_edge::evaluate(const minterm& m,
+            edge_value &ev, node_handle &en) const
 {
     forest* fp = forest::getForestWithID(parentFID);
     if (!fp) {
@@ -354,26 +391,19 @@ void MEDDLY::dd_edge::evaluate(const minterm& m, bool &val) const
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }
 
-    evaluator_helper<EdgeOp_none> EH(fp, m);
-    node_handle term = node;
-    edge_value  ev(edgeval);
-    if (m.isForRelations()) {
-        EH.rel_eval(ev, term);
-    } else {
-        EH.set_eval(ev, term);
+    if ( fp->isMultiTerminal() )
+    {
+        evaluator_helper_mt EH(fp, m);
+        if (m.isForRelations()) {
+            en = EH.rel_eval(node);
+        } else {
+            en = EH.set_eval(node);
+        }
+        ev.set();
+        return;
     }
-    MEDDLY_DCASSERT(ev.isVoid());
 
-    terminal t(terminal_type::BOOLEAN, term);
-    val = t.getBoolean();
-}
-
-void MEDDLY::dd_edge::evaluate(const minterm& m, long &val) const
-{
-}
-
-void MEDDLY::dd_edge::evaluate(const minterm& m, double &val) const
-{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 //

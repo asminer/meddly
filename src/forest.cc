@@ -1669,6 +1669,11 @@ void MEDDLY::forest::createEdge(float val, dd_edge &e)
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+void MEDDLY::forest::evaluate(const dd_edge &, const minterm &, terminal &) const
+{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
 void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, bool &t) const
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
