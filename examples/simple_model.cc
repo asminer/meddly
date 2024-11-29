@@ -36,7 +36,6 @@
 // #define SAME_FOREST_OPERATIONS
 
 // #define USE_OLD_MINTERMS
-#define EDGE_EVALUATE
 
 inline unsigned MAX(unsigned a, int b) {
     if (b<0) return a;
@@ -444,15 +443,9 @@ void explicitReachset(const char* const* events, unsigned nEvents,
                 }
 #else
                 // Have we seen this already in the RS
-#ifdef EDGE_EVALUATE
                 bool seen;
                 RS.evaluate(minterms.unused(), seen);
                 if (seen) continue;
-#else
-                MEDDLY::terminal t_seen;
-                f->evaluate(RS, minterms.unused(), t_seen);
-                if (t_seen.getBoolean()) continue;
-#endif
 
                 minterms.pushUnused();
                 if (minterms.size() >= batchsize) {
