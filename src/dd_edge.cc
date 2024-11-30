@@ -315,7 +315,7 @@ namespace MEDDLY {
                 return p;
             }
 
-            inline node_handle rel_eval(node_handle p)
+            inline node_handle fully_rel_eval(node_handle p)
             {
                 MEDDLY_DCASSERT( m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
@@ -328,7 +328,44 @@ namespace MEDDLY {
                 }
                 return p;
             }
+
+            inline node_handle ident_rel_eval(node_handle p)
+            {
+                if (0==p) return 0;
+                MEDDLY_DCASSERT( m.isForRelations() );
+                int plvl = F->getNodeLevel(p);
+                int L = F->getNumVariables();
+                while (L) {
+                    //
+                    // Unprimed
+                    //
+                    MEDDLY_DCASSERT(L>0);
+                    if (plvl == L) {
+                        p = F->getDownPtr(p, m.from(L));
+                        if (0==p) return 0;
+                        plvl = F->getNodeLevel(p);
+                    }
+                    L = MXD_levels::downLevel(L);
+                    //
+                    // Primed
+                    //
+                    MEDDLY_DCASSERT(L<0);
+                    if (plvl == L) {
+                        p = F->getDownPtr(p, m.to(-L));
+                        if (0==p) return 0;
+                        plvl = F->getNodeLevel(p);
+                    } else {
+                        if (m.to(-L) != m.from(-L)) {
+                            return 0;
+                        }
+                    }
+                    L = MXD_levels::downLevel(L);
+                }
+                return p;
+            }
     };
+
+    /*
 
     template <class EOP>
     class evaluator_helper_ev {
@@ -353,7 +390,22 @@ namespace MEDDLY {
                 }
             }
 
-            inline void rel_eval(edge_value &ev, node_handle &p)
+            inline void fully_rel_eval(edge_value &ev, node_handle &p)
+            {
+                MEDDLY_DCASSERT( m.isForRelations() );
+                while (!F->isTerminalNode(p)) {
+                    edge_value pv;
+    	            int level = F->getNodeLevel(p);
+                    if (level > 0) {
+                        F->getDownPtr(p, m.from(level), pv, p);
+                    } else {
+                        F->getDownPtr(p, m.to(-level), pv, p);
+                    }
+                    ev = EOP::accumulate(ev, pv);
+                }
+            }
+
+            inline void ident_rel_eval(edge_value &ev, node_handle &p)
             {
                 MEDDLY_DCASSERT( m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
@@ -369,6 +421,7 @@ namespace MEDDLY {
             }
 
     };
+    */
 };
 
 
@@ -395,7 +448,11 @@ void MEDDLY::dd_edge::evaluate(const minterm& m,
     {
         evaluator_helper_mt EH(fp, m);
         if (m.isForRelations()) {
-            en = EH.rel_eval(node);
+            if (fp->isIdentityReduced()) {
+                en = EH.ident_rel_eval(node);
+            } else {
+                en = EH.fully_rel_eval(node);
+            }
         } else {
             en = EH.set_eval(node);
         }

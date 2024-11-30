@@ -2438,15 +2438,6 @@ class MEDDLY::forest {
 // ===================================================================
 
     public:
-    /** Evaluate the function encoded by an edge.
-        @param  f       Edge (function) to evaluate.
-        @param  mt      List of variable assignments.
-        @param  term    Output, as a terminal value.
-    */
-    virtual void evaluate(const dd_edge &f, const minterm& mt, terminal &term)
-        const;
-
-
 
     /** Evaluate the function encoded by an edge.
         @param  f     Edge (function) to evaluate.

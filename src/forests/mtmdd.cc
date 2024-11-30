@@ -204,6 +204,7 @@ void MEDDLY::mtmdd_forest::dynamicReorderVariables(int top, int bottom)
   }
 }
 
+/*
 void MEDDLY::mtmdd_forest::evaluate(const dd_edge &f, const minterm &m,
         terminal &term) const
 {
@@ -214,6 +215,7 @@ void MEDDLY::mtmdd_forest::evaluate(const dd_edge &f, const minterm &m,
     }
     term.setFromHandle(getTerminalType(), p);
 }
+*/
 
 void MEDDLY::mtmdd_forest::sifting(int var, int top, int bottom)
 {

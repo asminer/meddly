@@ -286,6 +286,8 @@ class MEDDLY::terminal {
                         return;
 
                 case terminal_type::BOOLEAN:
+                        MEDDLY_DCASSERT(h <= 0);
+                        MEDDLY_DCASSERT(h >= -1);
                         if (h<-1 || h>0) {
                             throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
                         }

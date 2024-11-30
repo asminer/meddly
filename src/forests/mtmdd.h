@@ -40,8 +40,8 @@ class MEDDLY::mtmdd_forest : public mt_forest {
       return new mtmdd_iterator(this);
     }
 
-    virtual void evaluate(const dd_edge &f, const minterm &mt, terminal &term)
-        const;
+    // virtual void evaluate(const dd_edge &f, const minterm &mt, terminal &term)
+        // const;
 
   protected:
     inline node_handle evaluateRaw(const dd_edge &f, const int* vlist) const {

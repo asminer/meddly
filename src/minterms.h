@@ -343,8 +343,25 @@ class MEDDLY::minterm_coll {
         void buildFunction(dd_edge &e);
 
 
+        /**
+            Sort minterms, as needed for explicit minterm operations.
+            Based on level L, and the range of minterms [low, hi),
+            sort the minterms and store the interval points in
+            vector index such that the interval [ index[i], index[i+1] )
+            gives the range of indexes with equal values, after the sort.
+            If variable L has the same value for the whole interval
+            [low, high), then index will have size 2 with
+            index[0] = low and index[1] = high.
+            Actually, no matter what, we will have index[0] = low
+            and index[size()-1] = high.
 
-
+                @param  L       Variable number
+                @param  low     Low end of range
+                @param  high    High end of range
+                @param  index   On output: sub-intervals.
+        */
+        void sortOnVariable(int L, unsigned low, unsigned high,
+                std::vector<unsigned> &index);
 
         //
         // For convenience and debugging

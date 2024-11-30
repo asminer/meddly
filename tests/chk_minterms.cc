@@ -20,9 +20,12 @@
 #include <time.h>
 #include <iostream>
 
-// #define USE_MTCOLL_BUILD
+#define SORT_TEST
 
-const unsigned MAXTERMS = 32;
+#define TEST_SETS
+#define TEST_RELS
+
+// #define USE_MTCOLL_BUILD
 
 const int DOMSIZE = 4;       // DO NOT change
 const int SETVARS = 10;
@@ -164,6 +167,8 @@ void test_sets()
     policies p;
     p.useDefaults(SET);
 
+    p.setFullyReduced();
+
     forest* Ff = forest::create(D, SET, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL, p);
 
@@ -177,8 +182,18 @@ void test_sets()
     // Set up minterm collection
     // and evaluation minterm
     //
-    minterm_coll mtcoll(MAXTERMS, D, SET);
+    minterm_coll mtcoll(64, D, SET);
     minterm eval(D, SET);
+
+#ifdef SORT_TEST
+    for (unsigned i=0; i<64; i++) {
+        randomSetMinterm(mtcoll.unused());
+        mtcoll.pushUnused();
+    }
+    std::vector<unsigned> index;
+    mtcoll.sortOnVariable(SETVARS, 0, 64, index);
+    return;
+#endif
 
     //
     // For various collections of minterms,
@@ -190,21 +205,34 @@ void test_sets()
     out << "Checking sets built from minterms:\n";
     out.flush();
 
-    for (unsigned mtsize=1; mtsize<=MAXTERMS; mtsize*=2)
-    {
+    char     testtype[] = { 'f', 'r', 'r', 'r', 'r', 'r', 'r', 'r', 0 };
+    unsigned mtsizes[] =  {   0,   1,   2,   4,   8,  16,  32,  64 };
+
+    for (unsigned i=0; testtype[i]; ++i) {
         //
-        // Add minterms to the collection
+        // Build the collection
         //
-        while (mtcoll.size() < mtsize) {
-            randomSetMinterm(mtcoll.unused());
+        if ('f' == testtype[i]) {
+            mtcoll.clear();
+            for (int v=1; v<=SETVARS; v++) {
+                mtcoll.unused().setVar(v, MEDDLY::DONT_CARE);
+            }
             mtcoll.pushUnused();
+            out << " fully: ";
+            out.flush();
+        } else {
+            if (1 == mtsizes[i]) mtcoll.clear();
+
+            while (mtcoll.size() < mtsizes[i]) {
+                randomSetMinterm(mtcoll.unused());
+                mtcoll.pushUnused();
+            }
+
+            out << "    ";
+            out.put((unsigned long) mtsizes[i], 2);
+            out << ": ";
+            out.flush();
         }
-
-        out << "    ";
-        out.put((unsigned long) mtsize, 2);
-        out << ": ";
-        out.flush();
-
 
         //
         // Set up ddedges
@@ -369,9 +397,16 @@ void test_rels()
     // Build the various types of boolean forests
     //
     policies p;
-    p.useDefaults(SET);
+    p.useDefaults(RELATION);
+
+    p.setFullyReduced();
 
     forest* Ff = forest::create(D, RELATION, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+    p.setIdentityReduced();
+
+    forest* Fi = forest::create(D, RELATION, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL, p);
 
     p.setQuasiReduced();
@@ -384,8 +419,18 @@ void test_rels()
     // Set up minterm collection
     // and evaluation minterm
     //
-    minterm_coll mtcoll(MAXTERMS, D, RELATION);
+    minterm_coll mtcoll(32, D, RELATION);
     minterm eval(D, RELATION);
+
+#ifdef SORT_TEST
+    for (unsigned i=0; i<32; i++) {
+        randomRelMinterm(mtcoll.unused());
+        mtcoll.pushUnused();
+    }
+    std::vector<unsigned> index;
+    mtcoll.sortOnVariable(RELVARS, 0, 32, index);
+    return;
+#endif
 
     //
     // For various collections of minterms,
@@ -397,26 +442,49 @@ void test_rels()
     out << "Checking relations built from minterms:\n";
     out.flush();
 
-    for (unsigned mtsize=1; mtsize<=MAXTERMS; mtsize*=2)
-    {
+    char     testtype[] = { 'f', 'i', 'r', 'r', 'r', 'r', 'r', 'r', 0 };
+    unsigned mtsizes[] =  {   0,   0,   1,   2,   4,   8,  16,  32 };
+
+    for (unsigned i=0; testtype[i]; ++i) {
         //
-        // Add minterms to the collection
+        // Build the collection
         //
-        while (mtcoll.size() < mtsize) {
-            randomRelMinterm(mtcoll.unused());
+        if ('f' == testtype[i]) {
+            mtcoll.clear();
+            for (int v=1; v<=RELVARS; v++) {
+                mtcoll.unused().setVars(v, DONT_CARE, DONT_CARE);
+            }
             mtcoll.pushUnused();
+            out << " fully: ";
+            out.flush();
+        } else if ('i' == testtype[i]) {
+            mtcoll.clear();
+            for (int v=1; v<=RELVARS; v++) {
+                mtcoll.unused().setVars(v, DONT_CARE, DONT_CHANGE);
+            }
+            mtcoll.pushUnused();
+            out << " ident: ";
+            out.flush();
+
+        } else {
+            if (1 == mtsizes[i]) mtcoll.clear();
+
+            while (mtcoll.size() < mtsizes[i]) {
+                randomRelMinterm(mtcoll.unused());
+                mtcoll.pushUnused();
+            }
+
+            out << "    ";
+            out.put((unsigned long) mtsizes[i], 2);
+            out << ": ";
+            out.flush();
         }
-
-        out << "    ";
-        out.put((unsigned long) mtsize, 2);
-        out << ": ";
-        out.flush();
-
 
         //
         // Set up ddedges
         //
         dd_edge Ef(Ff);
+        dd_edge Ei(Fi);
         dd_edge Eq(Fq);
 
 #ifdef USE_MTCOLL_BUILD
@@ -429,9 +497,14 @@ void test_rels()
         out << "f ";
         out.flush();
 
+        mtcoll.buildFunction(Ei);
+        out << "i ";
+        out.flush();
+
 #else
 
         Ff->createEdge(false, Ef);
+        Fi->createEdge(false, Ei);
         Fq->createEdge(false, Eq);
 
         //
@@ -445,6 +518,10 @@ void test_rels()
         out << "f ";
         out.flush();
 
+        apply(UNION, Ei, mtcoll, Ei);
+        out << "i ";
+        out.flush();
+
 #endif
 
         //
@@ -453,15 +530,19 @@ void test_rels()
         zeroRelMinterm(eval);
         do {
             bool in_mtcoll = evaluate_rel(eval, mtcoll);
-            bool qval, fval;
+            bool qval, fval, ival;
             Eq.evaluate(eval, qval);
             Ef.evaluate(eval, fval);
+            Ei.evaluate(eval, ival);
 
             if (qval != in_mtcoll) {
                 mismatch(eval, 'Q', Eq, qval, mtcoll, in_mtcoll);
             }
             if (fval != in_mtcoll) {
                 mismatch(eval, 'F', Ef, fval, mtcoll, in_mtcoll);
+            }
+            if (ival != in_mtcoll) {
+                mismatch(eval, 'I', Ei, ival, mtcoll, in_mtcoll);
             }
         } while (nextRelMinterm(eval));
         out << "=\n";
@@ -496,8 +577,12 @@ int main(int argc, const char** argv)
 
     try {
         MEDDLY::initialize();
+#ifdef TEST_SETS
         test_sets();
+#endif
+#ifdef TEST_RELS
         test_rels();
+#endif
         MEDDLY::cleanup();
         return 0;
     }
