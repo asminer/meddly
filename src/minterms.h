@@ -38,10 +38,6 @@
 #include "terminal.h"
 #include "dd_edge.h"
 
-// #define USE_VECTOR
-
-#include <vector>
-
 namespace MEDDLY {
 
     /** Special value for minterms: don't care what this variable does.
