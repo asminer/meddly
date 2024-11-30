@@ -70,15 +70,181 @@
 
 namespace MEDDLY {
     template <class OP, class EdgeOp>
-    class set_minterm_op : public minterm_operation {
+    class minterm_op : public minterm_operation {
         public:
-            set_minterm_op(binary_builtin Union,
+            minterm_op(binary_builtin Union,
                     forest* arg1, minterm_coll &arg2, forest* res);
 
             virtual void compute(int L, unsigned in,
                     const edge_value &av, node_handle ap,
                     unsigned low, unsigned high,
                     edge_value &cv, node_handle &cp);
+
+        private:
+            // Set version of compute
+            void setCompute(int L, const edge_value &av, node_handle ap,
+                    unsigned low, unsigned high,
+                    edge_value &cv, node_handle &cp);
+
+            // Relation version of compute
+            void relCompute(int L, const edge_value &av, node_handle ap,
+                    unsigned low, unsigned high,
+                    edge_value &cv, node_handle &cp);
+
+            /// Build a chain of nodes for a single "set" minterm.
+            ///     @param L    Last level to build a node.
+            ///     @param m    Minterm to build from
+            ///     @param cv   Input: bottom value
+            ///                 Output: top value
+            ///     @param cp   Input: bottom node
+            ///                 Output: top node
+            ///
+            void setPathToBottom(int L, const minterm &m,
+                    edge_value &cv, node_handle &cp)
+            {
+#ifdef TRACE
+                out << "    setPathToBottom level " << L << "\n";
+#endif
+                MEDDLY_DCASSERT(m.isForSets());
+                for (int k=1; k<=L; k++) {
+                    if (DONT_CARE == m.from(k)) {
+                        cp = resF->makeRedundantsTo(cp, k-1, k);
+                        continue;
+                    }
+                    // make a singleton node
+                    unpacked_node* nb = unpacked_node::newSparse(resF, k, 1);
+                    MEDDLY_DCASSERT(m.from(k) >= 0);
+                    nb->setSparse(0, m.from(k), cv, cp);
+                    resF->createReducedNode(nb, cv, cp);
+                } // for k
+            }
+
+            /// Build a chain of nodes for a single "relation" minterm.
+            /// This is for identity-reduced forests:
+            ///     we don't need to build identity patterns (yay)
+            ///     but we need to check if edges to singletons
+            ///     are legal (boo).
+            ///
+            ///     @param L    Last level to build a node.
+            ///     @param m    Minterm to build from
+            ///     @param cv   Input: bottom value
+            ///                 Output: top value
+            ///     @param cp   Input: bottom node
+            ///                 Output: top node
+            ///
+            void identityPathToBottom(int L, const minterm &m,
+                    edge_value &cv, node_handle &cp)
+            {
+#ifdef TRACE
+                out << "    identityPathToBottom level " << L << "\n";
+#endif
+                MEDDLY_DCASSERT(m.isForRelations());
+                MEDDLY_DCASSERT(resF->isIdentityReduced());
+                MEDDLY_DCASSERT(L>0);
+                for (int k=1; k<=L; k++) {
+                    //
+                    // Check for identity pattern at levels (k, k')
+                    //
+                    if (DONT_CHANGE == m.to(k)) {
+                        MEDDLY_DCASSERT(DONT_CARE == m.from(k));
+                        continue;
+                    }
+
+                    //
+                    // Build node at primed level, unless skipped?
+                    //
+                    if (DONT_CARE == m.to(k)) {
+                        if (DONT_CARE == m.from(k)) {
+                            cp = resF->makeRedundantsTo(cp, k-1, k);
+                            continue;
+                        }
+                        cp = resF->makeRedundantsTo(cp, k-1, -k);
+                    } else {
+                        if (m.from(k) != m.to(k)) {
+                            //
+                            // The singleton node at the primed
+                            // level can be pointed at, so
+                            // build the node.
+                            //
+                            unpacked_node* nb
+                                = unpacked_node::newSparse(resF, k, 1);
+                            nb->setSparse(0, m.to(k), cv, cp);
+                            resF->createReducedNode(nb, cv, cp);
+                        }
+                    }
+
+                    //
+                    // Build node at unprimed level, unless skipped?
+                    //
+                    if (DONT_CARE != m.from(k)) {
+                        unpacked_node* nb
+                            = unpacked_node::newSparse(resF, k, 1);
+                        nb->setSparse(0, m.from(k), cv, cp);
+                        resF->createReducedNode(nb, cv, cp);
+                    }
+                } // for k
+            }
+
+            /// Build a chain of nodes for a single "relation" minterm.
+            /// This is for non-identity-reduced forests:
+            ///     we need to build identity patterns (boo)
+            ///     but no need to check incoming edges to singletons (yay).
+            ///
+            ///     @param L    Last level to build a node.
+            ///     @param m    Minterm to build from
+            ///     @param cv   Input: bottom value
+            ///                 Output: top value
+            ///     @param cp   Input: bottom node
+            ///                 Output: top node
+            ///
+            void relPathToBottom(int L, const minterm &m,
+                    edge_value &cv, node_handle &cp)
+            {
+#ifdef TRACE
+                out << "    relPathToBottom level " << L << "\n";
+#endif
+                MEDDLY_DCASSERT(m.isForRelations());
+                MEDDLY_DCASSERT(!resF->isIdentityReduced());
+                MEDDLY_DCASSERT(L>0);
+                for (int k=1; k<=L; k++) {
+                    //
+                    // Check for identity pattern at levels (k, k')
+                    //
+                    if (DONT_CHANGE == m.to(k)) {
+                        MEDDLY_DCASSERT(DONT_CARE == m.from(k));
+                        cp = resF->makeIdentitiesTo(cp, k-1, k, ~0);
+                        continue;
+                    }
+
+                    //
+                    // Build node at primed level
+                    //
+                    if (DONT_CARE == m.to(k)) {
+                        if (DONT_CARE == m.from(k)) {
+                            cp = resF->makeRedundantsTo(cp, k-1, k);
+                            continue;
+                        }
+                        cp = resF->makeRedundantsTo(cp, k-1, -k);
+                    } else {
+                        unpacked_node* nb
+                            = unpacked_node::newSparse(resF, k, 1);
+                        nb->setSparse(0, m.to(k), cv, cp);
+                        resF->createReducedNode(nb, cv, cp);
+                    }
+
+                    //
+                    // Build node at unprimed level
+                    //
+                    if (DONT_CARE == m.from(k)) {
+                        cp = resF->makeRedundantsTo(cp, -k, k);
+                    } else {
+                        unpacked_node* nb
+                            = unpacked_node::newSparse(resF, k, 1);
+                        nb->setSparse(0, m.from(k), cv, cp);
+                        resF->createReducedNode(nb, cv, cp);
+                    }
+                } // for k
+            }
 
         private:
 #ifdef TRACE
@@ -92,7 +258,7 @@ namespace MEDDLY {
 // ******************************************************************
 
 template <class OP, class EdgeOp>
-MEDDLY::set_minterm_op<OP,EdgeOp>::set_minterm_op(binary_builtin Union,
+MEDDLY::minterm_op<OP,EdgeOp>::minterm_op(binary_builtin Union,
         forest* arg1, minterm_coll &arg2, forest* res)
         : minterm_operation(arg1, arg2, res)
 #ifdef TRACE
@@ -119,22 +285,33 @@ MEDDLY::set_minterm_op<OP,EdgeOp>::set_minterm_op(binary_builtin Union,
 // ******************************************************************
 
 template <class OP, class EdgeOp>
-void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
+void MEDDLY::minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
         const edge_value &av, node_handle ap,
         unsigned low, unsigned high,
         edge_value &cv, node_handle &cp)
 {
 #ifdef TRACE
-    if (L == resF->getNumVariables()) {
-        out.indentation(0);
-        ++top_count;
-        out << "generic_minterm_op #" << top_count << " begin\n";
-        arg2.show(out, nullptr, "\n");
-    }
+    out.indentation(0);
+    ++top_count;
+    out << "generic_minterm_op #" << top_count << " begin\n";
+    arg2.show(out, nullptr, "\n");
 
     out << "compute L=" << L << ", in=" << in << ", ap=" << ap
         << ", [" << low << ", " << high << ")\n";
 #endif
+
+    if (arg2.isForRelations()) {
+        relCompute(L, av, ap, low, high, cv, cp);
+    } else {
+        setCompute(L, av, ap, low, high, cv, cp);
+    }
+    return;
+
+    //
+    // OLD HERE
+    //
+
+#if 0
 
     if (OP::stop_recursion_on(av, ap)) {
         cv = av;
@@ -161,70 +338,11 @@ void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
         out << "    one midterm loop from bottom to level " << L << "\n";
 #endif
         OP::finalize(av, ap, arg2, low, high, cv, cp);
-        int k = 0;
-        while (k != L) {
-            const int prevk = k;
-            k = resF->isForRelations()
-                    ? MXD_levels::upLevel(k)
-                    : MDD_levels::upLevel(k)
-            ;
-            const int vark = arg2.at(low).var(k);
-
-            if (DONT_CHANGE == vark) {
-                //
-                // Next 2 levels are identity pattern;
-                // process them together.
-                //
-                MEDDLY_DCASSERT(k<0);
-                MEDDLY_DCASSERT(DONT_CARE == arg2.at(low).var(-k));
-
-                k = MXD_levels::upLevel(k);
-                cp = resF->makeIdentitiesTo(cp, k-1, k, ~0);
-                continue;
-            }
-
-            if (DONT_CARE == vark) {
-                //
-                // Next level is redundant
-                //
-                cp = resF->makeRedundantsTo(cp, prevk, k);
-                continue;
-            }
-
-            //
-            // Create a singleton node.
-            // Except don't if we're at a primed level and
-            // the forest is identity reduced.
-            //
-            if (resF->isIdentityReduced() && k<0) {
-                //
-                // See if we can point to the singleton node
-                // we're about to create.
-                //
-                if (k==L) {
-                    if (in == vark) {
-                        //
-                        // skip this node.
-                        // and k==L so we're done
-                        //
-                        return;
-                    }
-                } else {
-                    if (vark == arg2.at(low).from(-k)) {
-                        //
-                        // skip this node
-                        //
-                        continue;
-                    }
-                }
-            }
-
-            Cu = unpacked_node::newSparse(resF, k, 1);
-            Cu->setSparse(0, vark, cv, cp);
-            resF->createReducedNode(Cu, cv, cp);
-        }
+        setPathToBottom(L, arg2.at(low), cv, cp);
         return;
     }
+
+    // TBD HERE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     // NO CT :)
 
@@ -341,6 +459,152 @@ void MEDDLY::set_minterm_op<OP,EdgeOp>::compute(int L, unsigned in,
     if (has_identity) {
         union_op->compute(L, in, ident_val, ident_node, cv, cp, cv, cp);
     }
+#endif
+}
+
+// ******************************************************************
+
+template <class OP, class EdgeOp>
+void MEDDLY::minterm_op<OP,EdgeOp>::setCompute(int L,
+        const edge_value &av, node_handle ap,
+        unsigned low, unsigned high,
+        edge_value &cv, node_handle &cp)
+{
+    if (OP::stop_recursion_on(av, ap)) {
+        cv = av;
+        cp = ap;
+        return;
+    }
+
+    if (0==L) {
+        OP::finalize(av, ap, arg2, low, high, cv, cp);
+        return;
+    }
+
+    MEDDLY_DCASSERT(high > low);
+
+    //
+    // Special case for only one minterm left
+    //
+    if ( (high - low == 1) && OP::is_null_edge(av, ap) )
+    {
+        OP::finalize(av, ap, arg2, low, high, cv, cp);
+        setPathToBottom(L, arg2.at(low), cv, cp);
+        return;
+    }
+
+    //
+    // Determine minterm value range
+    //
+    int minV, maxV;
+    arg2.getMinMax(L, low, high, minV, maxV);
+
+    //
+    // Special case: all values are DONT_CARE
+    //
+    if (DONT_CARE == maxV) {
+        edge_value zv;
+        node_handle zp;
+        OP::get_null_edge(zv, zp);
+        setCompute(L-1, zv, zp, low, high, cv, cp);
+        cp = resF->makeRedundantsTo(cp, L-1, L);
+        if (!OP::is_null_edge(av, ap)) {
+            union_op->compute(L, ~0, av, ap, cv, cp, cv, cp);
+        }
+        return;
+    }
+
+    //
+    // Start unpacked result node, from <av, ap>
+    //
+    unpacked_node* Cu;
+    const int Alevel = arg1F->getNodeLevel(ap);
+    if (Alevel != L || OP::is_null_edge(av, ap)) {
+        Cu = unpacked_node::newRedundant(arg1F, L, ap, FULL_ONLY);
+    } else {
+        Cu = arg1F->newUnpacked(ap, FULL_ONLY);
+    }
+    Cu->allowWrites(resF);
+
+    //
+    // Apply av to edges in Cu,
+    // and increase reference counts
+    //
+    for (unsigned i=0; i<Cu->getSize(); i++)
+    {
+        Cu->setEdgeval(i, EdgeOp::accumulate(av, Cu->edgeval(i)) );
+        resF->linkNode(Cu->down(i));
+    }
+
+    //
+    // Vars for recursion
+    //
+    edge_value dnc_val, cz_val;
+    node_handle dnc_node, cz_node;
+    bool has_dont_care = false;
+    unsigned mid = low;
+
+    //
+    // Recursion loop
+    //
+    while (minV < maxV) {
+        const int currV = minV;
+        arg2.moveValueToFront(L, minV, low, high, mid);
+
+        if (DONT_CARE == currV) {
+            //
+            // Build a redundant node at level L
+            // but recurse to figure out where it points to.
+            //
+            edge_value zv;
+            node_handle zp;
+            OP::get_null_edge(zv, zp);
+            setCompute(L-1, zv, zp, low, high, dnc_val, dnc_node);
+            dnc_node = resF->makeRedundantsTo(dnc_node, L-1, L);
+            has_dont_care = true;
+
+            // Make sure dnc_node isn't recycled yet
+            Cu->setTempRoot(dnc_node);
+
+        } else {
+            //
+            // Recurse and add result to unpacked node Cu
+            //
+            setCompute(L-1, Cu->edgeval(currV), Cu->down(currV),
+                    low, mid, cz_val, cz_node);
+            resF->unlinkNode(Cu->down(currV));
+            Cu->setFull(currV, cz_val, cz_node);
+        }
+
+        low = mid;
+    }
+    MEDDLY_DCASSERT(maxV>=0);
+    MEDDLY_DCASSERT(minV == maxV);
+    //
+    // Last value
+    //
+    setCompute(L-1, Cu->edgeval(minV), Cu->down(minV),
+            mid, high, cz_val, cz_node);
+    resF->unlinkNode(Cu->down(minV));
+    Cu->setFull(minV, cz_val, cz_node);
+
+    //
+    // Reduce result node
+    //
+    resF->createReducedNode(Cu, cv, cp);
+    if (has_dont_care) {
+        union_op->compute(L, ~0, dnc_val, dnc_node, cv, cp, cv, cp);
+    }
+}
+
+// ******************************************************************
+
+template <class OP, class EdgeOp>
+void MEDDLY::minterm_op<OP,EdgeOp>::relCompute(int L,
+        const edge_value &av, node_handle ap,
+        unsigned low, unsigned high,
+        edge_value &cv, node_handle &cp)
+{
 }
 
 // ******************************************************************
@@ -410,7 +674,7 @@ MEDDLY::UNION(forest* a, minterm_coll &b, forest* c)
     }
 
     if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-        return new set_minterm_op<mt_union_templ,EdgeOp_none> (UNION, a, b, c);
+        return new minterm_op<mt_union_templ,EdgeOp_none> (UNION, a, b, c);
     }
 
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
