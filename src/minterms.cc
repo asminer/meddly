@@ -25,8 +25,8 @@
 #include "ops_builtin.h"
 
 // #define DEBUG_COLLECT_FIRST
-#define DEBUG_SORT
-#include "operators.h"
+// #define DEBUG_SORT
+// #include "operators.h"
 
 // ******************************************************************
 // *                                                                *
@@ -101,6 +101,21 @@ namespace MEDDLY {
                     edge_value &cv, node_handle &cp);
 
         private:
+            inline void makeRedundantNode(int L, int L_size,
+                    edge_value &dv, node_handle &dp)
+            {
+                if (F->isQuasiReduced()) {
+                    // Build a redundant node at level L
+                    unpacked_node* ru = unpacked_node::newFull(F, L, L_size);
+                    ru->setFull(0, dv, dp);
+                    for (unsigned v=1; v<L_size; v++) {
+                        ru->setFull(v, dv, F->linkNode(dp));
+                    }
+                    F->createReducedNode(ru, dv, dp);
+                }
+            }
+
+        private:
             forest* F;
             minterm_coll &mtc;
             binary_operation* union_op;
@@ -143,27 +158,18 @@ MEDDLY::minterm::minterm(const domain* D, set_or_rel sr) : termval(true)
         num_vars = 0;
     }
     for_relations = sr;
-#ifdef USE_VECTOR
-    _from.resize(1+num_vars, DONT_CARE);
-    if (for_relations) {
-        _to.resize(1+num_vars, DONT_CARE);
-    }
-#else
     _from = new int[1+num_vars];
     if (for_relations) {
         _to = new int[1+num_vars];
     } else {
         _to = nullptr;
     }
-#endif
 }
 
 MEDDLY::minterm::~minterm()
 {
-#ifndef USE_VECTOR
     delete[] _from;
     delete[] _to;
-#endif
 }
 
 void MEDDLY::minterm::show(output &s) const
@@ -192,20 +198,13 @@ void MEDDLY::minterm::show(output &s) const
 // ******************************************************************
 
 MEDDLY::minterm_coll::minterm_coll(unsigned maxsz, const domain* D,
-            set_or_rel sr)
-#ifndef USE_VECTOR
-    : max_coll_size(maxsz)
-#endif
+            set_or_rel sr) : max_coll_size(maxsz)
 {
     _D = D;
     num_vars = D ? D->getNumVariables() : 0;
     for_relations = sr;
 
-#ifdef USE_VECTOR
-    _mtlist.resize(maxsz);
-#else
     _mtlist = new minterm*[max_coll_size];
-#endif
     for (unsigned i=0; i<maxsize(); i++) {
         _mtlist[i] = new minterm(_D, for_relations);
     }
@@ -219,9 +218,42 @@ MEDDLY::minterm_coll::~minterm_coll()
         delete _mtlist[i];
         _mtlist[i] = nullptr;
     }
-#ifndef USE_VECTOR
     delete[] _mtlist;
-#endif
+}
+
+void MEDDLY::minterm_coll::moveValueToFront(int L, int &minV,
+        unsigned low, unsigned high, unsigned& mid)
+{
+    const int frontV = minV;
+    minV = std::numeric_limits<int>::max();
+
+    mid = low;
+    if (L<0) {
+        const int absL = -L;
+        for (unsigned i=low; i<high; i++) {
+            const int pri = primed(i, absL);
+            if (frontV == pri) {
+                if (mid != i) {
+                    swap(mid, i);
+                }
+                ++mid;
+            } else {
+                minV = MIN(minV, pri);
+            }
+        }
+    } else {
+        for (unsigned i=low; i<high; i++) {
+            const int unpr = unprimed(i, L);
+            if (frontV == unpr) {
+                if (mid != i) {
+                    swap(mid, i);
+                }
+                ++mid;
+            } else {
+                minV = MIN(minV, unpr);
+            }
+        }
+    }
 }
 
 void MEDDLY::minterm_coll::buildFunction(dd_edge &e)
@@ -254,7 +286,7 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e)
 }
 
 void MEDDLY::minterm_coll::sortOnVariable(int L, unsigned low, unsigned high,
-        std::vector<unsigned> &index)
+        std::vector<unsigned> &index, std::vector <int> &value)
 {
 #ifdef DEBUG_SORT
     FILE_output out(stdout);
@@ -283,10 +315,11 @@ void MEDDLY::minterm_coll::sortOnVariable(int L, unsigned low, unsigned high,
     }
 
     //
-    // Initialize index
+    // Initialize index, value
     //
     index.clear();
     index.push_back(low);
+    value.clear();
 
     //
     // Sort. For each minimum value v, move those values to the front.
@@ -294,6 +327,7 @@ void MEDDLY::minterm_coll::sortOnVariable(int L, unsigned low, unsigned high,
     //
     unsigned indx_next = low;
     for (int v = minV; v<maxV; v = minV) {
+        value.push_back(minV);
         minV = std::numeric_limits<int>::max();
 
         //
@@ -330,12 +364,18 @@ void MEDDLY::minterm_coll::sortOnVariable(int L, unsigned low, unsigned high,
     } // for v
     MEDDLY_DCASSERT(index.back() < high);
     index.push_back(high);
+    value.push_back(minV);
 
 #ifdef DEBUG_SORT
     out << "Done sort\n";
     out << "Indexes: [" << index[0];
     for (unsigned i=1; i<index.size(); i++) {
         out << ", " << index[i];
+    }
+    out << "]\n";
+    out << "Values: [" << value[0];
+    for (unsigned i=1; i<value.size(); i++) {
+        out << ", " << value[i];
     }
     out << "]\n";
     for (unsigned i=index[0]; i<index.back(); i++) {
@@ -485,99 +525,84 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
         return;
     }
 
+    //
+    // Determine values
+    //
+    unsigned mid = low;
+    int minV, maxV;
+    mtc.getMinMax(L, low, high, minV, maxV);
+
+    //
+    // Special case: all values are DONT_CARE
+    //
+    if (DONT_CARE == maxV) {
+        createEdgeSet(L-1, low, high, cv, cp);
+        makeRedundantNode(L, F->getLevelSize(L), cv, cp);
+        return;
+    }
+
+    //
+    // Get ready for recursions
+    //
+
+    // Don't care stuff
+    edge_value dnc_val, cz_val;
+    node_handle dnc_node, cz_node;
+    bool has_dont_care = false;
+
     // size of variables at level L
-    unsigned lastV = F->getLevelSize(L);
-    // index of end of current batch
-    unsigned batchP = low;
+    unsigned L_size = F->getLevelSize(L);
     // sparse node we're going to build
-    unpacked_node* Cu = unpacked_node::newSparse(F, L, lastV);
+    unpacked_node* Cu = unpacked_node::newSparse(F, L, L_size);
     // number of nonzero edges in our sparse node
     unsigned z = 0;
 
     //
-    // Move any "don't cares" to the front
-    // Also keep track of the next smallest value
+    // Recursion loop
     //
-    int nextV = lastV;
-    for (unsigned i=low; i<high; i++) {
-        if (DONT_CARE == unprimed(i, L)) {
-            if (batchP != i) {
-                swap(batchP, i);
-            }
-            batchP++;
+    while (minV < maxV) {
+        const int currV = minV;
+        mtc.moveValueToFront(L, minV, low, high, mid);
+
+        if (DONT_CARE == currV) {
+            //
+            // Build a redundant node at level L
+            // but recurse to figure out where it points to.
+            //
+            createEdgeSet(L-1, low, mid, dnc_val, dnc_node);
+            makeRedundantNode(L, L_size, dnc_val, dnc_node);
+            has_dont_care = true;
+
+            // Make sure dnc_node isn't recycled yet
+            Cu->setTempRoot(dnc_node);
+
         } else {
-            MEDDLY_DCASSERT(unprimed(i, L) >= 0);
-            nextV = MIN(nextV, unprimed(i, L));
-        }
-    }
+            //
+            // Recurse and add result to unpacked node Cu
+            //
+            createEdgeSet(L-1, low, mid, cz_val, cz_node);
 
-    edge_value dnc_val;
-    node_handle dnc_node;
-    bool has_dont_care = false;
-
-    //
-    // Build common don't care edge
-    //
-    if (batchP > low) {
-        createEdgeSet(L-1, low, batchP, dnc_val, dnc_node);
-        if (F->isQuasiReduced()) {
-            // Add the redundant node at level L
-            unpacked_node* redund = unpacked_node::newFull(F, L, lastV);
-            redund->setFull(0, dnc_val, dnc_node);
-            for (unsigned v=1; v<lastV; v++) {
-                redund->setFull(v, dnc_val, F->linkNode(dnc_node));
-            }
-            F->createReducedNode(redund, dnc_val, dnc_node);
-        }
-        has_dont_care = true;
-
-        // Make sure dnc_node isn't recycled yet
-        Cu->setTempRoot(dnc_node);
-    }
-
-    //
-    // Build the rest of the node, smallest value to largest.
-    // For each value v, move those values to the front, and process them.
-    //
-    for (int v = nextV; v<lastV; v = nextV) {
-        nextV = lastV;
-
-        //
-        // We're done with the previous batch, so move low over
-        //
-        low = batchP;
-
-        //
-        // move anything with value v, to the "new" front
-        //
-        for (unsigned i=low; i<high; i++) {
-            if (v == unprimed(i, L)) {
-                if (batchP != i) {
-                    swap(batchP, i);
-                }
-                batchP++;
-            } else {
-                nextV = MIN(nextV, unprimed(i, L));
+            //
+            // add to sparse node, unless transparent
+            //
+            if (!F->isTransparentEdge(cz_val, cz_node)) {
+                Cu->setSparse(z, currV, cz_val, cz_node);
+                z++;
             }
         }
 
-        //
-        // recurse if necessary
-        //
-        MEDDLY_DCASSERT(batchP > low);
-        node_handle dn_node;
-        edge_value  dn_eval;
-        createEdgeSet(L-1, low, batchP, dn_eval, dn_node);
-
-        //
-        // add to sparse node, unless transparent
-        //
-        if (!F->isTransparentEdge(dn_eval, dn_node)) {
-            Cu->setSparse(z, v, dn_eval, dn_node);
-            z++;
-        }
-
-    } // for v
+        low = mid;
+    }
+    MEDDLY_DCASSERT(maxV>=0);
+    MEDDLY_DCASSERT(minV == maxV);
+    //
+    // Last value
+    //
+    createEdgeSet(L-1, mid, high, cz_val, cz_node);
+    if (!F->isTransparentEdge(cz_val, cz_node)) {
+        Cu->setSparse(z, minV, cz_val, cz_node);
+        z++;
+    }
 
     //
     // Finish building

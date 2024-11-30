@@ -104,18 +104,14 @@ class MEDDLY::minterm {
         inline int getVar(unsigned i) const {
             MEDDLY_DCASSERT(isForSets());
             CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
-#ifndef USE_VECTOR
             MEDDLY_DCASSERT(_from);
-#endif
             return _from[i];
         }
         inline void setVar(unsigned i, int from) {
             MEDDLY_DCASSERT(isForSets());
             MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
             CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
-#ifndef USE_VECTOR
             MEDDLY_DCASSERT(_from);
-#endif
             _from[i] = from;
         }
 
@@ -124,10 +120,8 @@ class MEDDLY::minterm {
         inline void getVars(unsigned i, int &from, int &to) const {
             MEDDLY_DCASSERT(isForRelations());
             CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
-#ifndef USE_VECTOR
             MEDDLY_DCASSERT(_from);
             MEDDLY_DCASSERT(_to);
-#endif
             from = _from[i];
             to   = _to[i];
         }
@@ -136,10 +130,8 @@ class MEDDLY::minterm {
             MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
             MEDDLY_DCASSERT(to >= 0 || to == DONT_CARE || to == DONT_CHANGE);
             CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
-#ifndef USE_VECTOR
             MEDDLY_DCASSERT(_from);
             MEDDLY_DCASSERT(_to);
-#endif
             if (DONT_CHANGE == to) {
                 if (from >= 0) {
                     to = from;
@@ -184,13 +176,8 @@ class MEDDLY::minterm {
     private:
         const domain* _D;
 
-#ifdef USE_VECTOR
-        std::vector<int> _from;
-        std::vector<int> _to;
-#else
         int* _from;
         int* _to;
-#endif
 
         terminal termval;
 
@@ -223,11 +210,7 @@ class MEDDLY::minterm_coll {
         inline unsigned size() const { return first_unused; }
 
         /// Collection max size
-#ifdef USE_VECTOR
-        inline unsigned maxsize() const { return _mtlist.size(); }
-#else
         inline unsigned maxsize() const { return max_coll_size; }
-#endif
 
         /// Clear the collection
         inline void clear() { first_unused = 0; }
@@ -235,39 +218,31 @@ class MEDDLY::minterm_coll {
         /// Get an element
         inline minterm& at(unsigned i) {
             CHECK_RANGE(__FILE__, __LINE__, 0u, i, 1+first_unused);
-#ifndef USE_VECTOR
             MEDDLY_DCASSERT(_mtlist);
-#endif
             MEDDLY_DCASSERT(_mtlist[i]);
             return *(_mtlist[i]);
         }
 
-        /// Get an element
+        /// Get minterm i
         inline const minterm& at(unsigned i) const {
             CHECK_RANGE(__FILE__, __LINE__, 0u, i, 1+first_unused);
-#ifndef USE_VECTOR
             MEDDLY_DCASSERT(_mtlist);
-#endif
             MEDDLY_DCASSERT(_mtlist[i]);
             return *(_mtlist[i]);
         }
 
-        /// Get part of a minterm
+        /// Get x_k (unprimed) from minterm i
         inline int unprimed(unsigned i, int k) const {
             CHECK_RANGE(__FILE__, __LINE__, 1, k, int(num_vars)+1);
-#ifndef USE_VECTOR
             MEDDLY_DCASSERT(_mtlist);
-#endif
             MEDDLY_DCASSERT(_mtlist[i]);
             return _mtlist[i]->from(k);
         }
 
-        /// Get part of a minterm
+        /// Get x'_k (primed) from minterm i
         inline int primed(unsigned i, int k) const {
             CHECK_RANGE(__FILE__, __LINE__, 1, k, int(num_vars)+1);
-#ifndef USE_VECTOR
             MEDDLY_DCASSERT(_mtlist);
-#endif
             MEDDLY_DCASSERT(_mtlist[i]);
             return _mtlist[i]->to(k);
         }
@@ -288,16 +263,61 @@ class MEDDLY::minterm_coll {
             }
         }
 
-        /// For now, TBD
+        /// Swap minterms i and j
+        /// Eventually: make private
         inline void swap(unsigned i, unsigned j)
         {
             CHECK_RANGE(__FILE__, __LINE__, 0u, i, first_unused);
             CHECK_RANGE(__FILE__, __LINE__, 0u, j, first_unused);
-#ifndef USE_VECTOR
             MEDDLY_DCASSERT(_mtlist);
-#endif
+            MEDDLY_DCASSERT(i != j);
             SWAP(_mtlist[i], _mtlist[j]);
         }
+
+        /**
+            Get the minimum and maximum values for level L,
+            on the interval [low, high).
+         */
+        inline void getMinMax(int L, unsigned low, unsigned hi,
+                int &minV, int &maxV) const
+        {
+            minV = std::numeric_limits<int>::max();
+            maxV = DONT_CHANGE;
+            if (L<0) {
+                const int absL = -L;
+                for (unsigned i=low; i<hi; i++) {
+                    const int pri = primed(i, absL);
+                    minV = MIN(minV, pri);
+                    maxV = MAX(maxV, pri);
+                }
+            } else {
+                for (unsigned i=low; i<hi; i++) {
+                    const int unpr = unprimed(i, L);
+                    minV = MIN(minV, unpr);
+                    maxV = MAX(maxV, unpr);
+                }
+            }
+        }
+
+        /**
+            Arrange minterms on interval [low, hi)
+            into two intervals: [low, mid) and [mid, hi)
+            where [low, mid) all have level L value == minV,
+            and   [mid, hi)  all have level L value != minv.
+
+            On output, minV is the smallest level L value on [mid, hi).
+
+                @param  L       Level to sort on.
+                @param  minV    Input: Value to sort on.
+                                Output: smallest value on [mid, hi).
+                @param  low     low end of input interval
+                @param  hi      high end of input interval
+
+                @param  mid     On output: determines where to split [low, hi).
+         */
+        void moveValueToFront(int L, int &minV, unsigned low, unsigned hi,
+                unsigned& mid);
+
 
         /** Partial sort, as used by explicit minterm operations.
             Based on level L, and the range of minterms [low, hi),
@@ -343,6 +363,17 @@ class MEDDLY::minterm_coll {
         void buildFunction(dd_edge &e);
 
 
+        //
+        // For convenience and debugging
+        void show(output &s, const char* pre, const char* post) const;
+
+    private:
+        int _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
+
+
+        // OLD STUFF
+    private:
+
         /**
             Sort minterms, as needed for explicit minterm operations.
             Based on level L, and the range of minterms [low, hi),
@@ -359,24 +390,15 @@ class MEDDLY::minterm_coll {
                 @param  low     Low end of range
                 @param  high    High end of range
                 @param  index   On output: sub-intervals.
+                @param  value   On output: value for each sub-interval.
         */
         void sortOnVariable(int L, unsigned low, unsigned high,
-                std::vector<unsigned> &index);
+                std::vector<unsigned> &index, std::vector<int> &value);
 
-        //
-        // For convenience and debugging
-        void show(output &s, const char* pre, const char* post) const;
 
     private:
-        int _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
-
-    private:
-#ifdef USE_VECTOR
-        std::vector<minterm*> _mtlist;
-#else
         minterm** _mtlist;
         const unsigned max_coll_size;
-#endif
 
         unsigned first_unused;
 

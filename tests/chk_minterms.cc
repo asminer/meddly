@@ -20,12 +20,10 @@
 #include <time.h>
 #include <iostream>
 
-#define SORT_TEST
-
 #define TEST_SETS
-#define TEST_RELS
+// #define TEST_RELS
 
-// #define USE_MTCOLL_BUILD
+#define USE_MTCOLL_BUILD
 
 const int DOMSIZE = 4;       // DO NOT change
 const int SETVARS = 10;
@@ -184,16 +182,6 @@ void test_sets()
     //
     minterm_coll mtcoll(64, D, SET);
     minterm eval(D, SET);
-
-#ifdef SORT_TEST
-    for (unsigned i=0; i<64; i++) {
-        randomSetMinterm(mtcoll.unused());
-        mtcoll.pushUnused();
-    }
-    std::vector<unsigned> index;
-    mtcoll.sortOnVariable(SETVARS, 0, 64, index);
-    return;
-#endif
 
     //
     // For various collections of minterms,
@@ -421,16 +409,6 @@ void test_rels()
     //
     minterm_coll mtcoll(32, D, RELATION);
     minterm eval(D, RELATION);
-
-#ifdef SORT_TEST
-    for (unsigned i=0; i<32; i++) {
-        randomRelMinterm(mtcoll.unused());
-        mtcoll.pushUnused();
-    }
-    std::vector<unsigned> index;
-    mtcoll.sortOnVariable(RELVARS, 0, 32, index);
-    return;
-#endif
 
     //
     // For various collections of minterms,
