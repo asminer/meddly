@@ -1170,7 +1170,7 @@ class MEDDLY::forest {
             Make a transparent edge
         */
         inline void getTransparentEdge(dd_edge &e) const {
-            e.set(transparent_node, transparent_edge);
+            e.set(transparent_edge, transparent_node);
         }
 
         /// Get the edge type.

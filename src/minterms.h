@@ -164,7 +164,6 @@ class MEDDLY::minterm {
             return (i>0) ? from(i) : to(-i);
         }
 
-
         //
         // For convenience and debugging
         void show(output &s) const;
@@ -388,8 +387,10 @@ class MEDDLY::minterm_coll {
                 @param  index   On output: sub-intervals.
                 @param  value   On output: value for each sub-interval.
         */
+        /*
         void sortOnVariable(int L, unsigned low, unsigned high,
                 std::vector<unsigned> &index, std::vector<int> &value);
+                */
 
 
     private:

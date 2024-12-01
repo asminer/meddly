@@ -210,6 +210,7 @@ class MEDDLY::dd_edge {
             return edgeval;
         }
 
+        /*
         inline void set(node_handle n, long value) {
             set(n);
             setEdgeValue(value);
@@ -218,7 +219,9 @@ class MEDDLY::dd_edge {
             set(n);
             setEdgeValue(value);
         }
-        inline void set(node_handle n, edge_value v) {
+        */
+
+        inline void set(edge_value v, node_handle n) {
             set(n);
             edgeval = v;
         }
