@@ -646,9 +646,7 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
     //
     if (high - low == 1) {
         OP::finalize(mtc, low, high, cv, cp);
-        if (!F->isTransparentEdge(cv, cp)) {
-            setPathToBottom(L, element(low), cv, cp);
-        }
+        setPathToBottom(L, element(low), cv, cp);
         return;
     }
 
@@ -748,6 +746,30 @@ template <class OP>
 void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned in,
         unsigned low, unsigned high, edge_value &cv, node_handle &cp)
 {
+    MEDDLY_DCASSERT(L>=0);
+    MEDDLY_DCASSERT(high > low);
+
+    //
+    // Terminal case
+    //
+    if (0==L) {
+        OP::finalize(mtc, low, high, cv, cp);
+        return;
+    }
+
+    //
+    // Special case: only one minterm left
+    //
+    if (high - low == 1) {
+        OP::finalize(mtc, low, high, cv, cp);
+        if (F->isIdentityReduced()) {
+            identityPathToBottom(L, element(low), cv, cp);
+        } else {
+            relPathToBottom(L, element(low), cv, cp);
+        }
+        return;
+    }
+
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
