@@ -19,6 +19,8 @@
 #ifndef MEDDLY_EXPLICIT_H
 #define MEDDLY_EXPLICIT_H
 
+#ifdef ALLOW_MINTERM_OPS
+
 namespace MEDDLY {
     class forest;
     class minterm_coll;
@@ -26,6 +28,8 @@ namespace MEDDLY {
 
     minterm_operation* UNION(forest* a, minterm_coll &b, forest* c);
 }
+
+#endif
 
 #endif
 

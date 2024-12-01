@@ -19,6 +19,8 @@
 #ifndef MEDDLY_OPER_MINTERM_H
 #define MEDDLY_OPER_MINTERM_H
 
+#ifdef ALLOW_MINTERM_OPS
+
 #include "oper.h"
 #include "forest.h"
 
@@ -125,5 +127,7 @@ namespace MEDDLY {
         delete mop;
     }
 };
+
+#endif
 
 #endif // #include guard

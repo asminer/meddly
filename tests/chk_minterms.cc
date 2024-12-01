@@ -21,7 +21,7 @@
 #include <iostream>
 
 #define TEST_SETS
-// #define TEST_RELS
+#define TEST_RELS
 
 #define USE_MTCOLL_BUILD
 

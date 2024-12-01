@@ -167,9 +167,12 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 #ifdef USE_OLD_MINTERMS
         mxd->createEdge(&minterm, &mtprime, 1, nsf_ev);
 #else
-        // mtlist.buildFunction(nsf_ev);
+#ifdef USE_MTCOLL_BUILD
+        mtlist.buildFunction(nsf_ev);
+#else
         mxd->createEdge(false, nsf_ev);
         apply(UNION, nsf_ev, mtlist, nsf_ev);
+#endif
 #endif
 #ifdef DEBUG_EVENTS
         printf("Initial nsf for event %d\n", e);

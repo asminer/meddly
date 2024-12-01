@@ -24,9 +24,9 @@
 #include "oper_binary.h"
 #include "ops_builtin.h"
 
-// #define DEBUG_COLLECT_FIRST
-// #define DEBUG_SORT
-// #include "operators.h"
+// #define DEBUG_MOVE_VALUES
+#define DEBUG_MOVE_PAIRS
+#include "operators.h"
 
 // ******************************************************************
 // *                                                                *
@@ -35,35 +35,14 @@
 // ******************************************************************
 
 namespace MEDDLY {
-    /*
-        struct OP must provide the following static methods:
-
-        void finalize(const minterm_coll &mc, unsigned low, unsigned high,
-                edge_value &cv, node_handle &cp);
-
-            Determine the terminal edge for the minterms in mc with
-            indexes in [low, high). Store the result in <cv, cp>.
-
-    */
-    template <class OP>
-    class fbuilder {
+    class fbuilder_common {
         public:
-            fbuilder(forest* f, minterm_coll &mtlist, binary_builtin Union)
-                : mtc(mtlist)
+            fbuilder_common(forest* f, minterm_coll &mtl, binary_builtin Union)
+                : mtc(mtl)
             {
                 F = f;
                 union_op = Union(f, f, f);
                 MEDDLY_DCASSERT(union_op);
-            }
-
-            inline int unprimed(unsigned i, int L) const {
-                return mtc.unprimed(i, L);
-            }
-            inline void swap(unsigned i, unsigned j) {
-                mtc.swap(i, j);
-            }
-            inline const minterm& element(unsigned i) const {
-                return mtc.at(i);
             }
 
             /// Build a chain of nodes for a single "set" minterm.
@@ -75,22 +54,7 @@ namespace MEDDLY {
             ///                 Output: top node
             ///
             void setPathToBottom(int L, const minterm &m,
-                    edge_value &cv, node_handle &cp)
-            {
-                MEDDLY_DCASSERT(L>0);
-                MEDDLY_DCASSERT(!m.isForRelations());
-                for (int k=1; k<=L; k++) {
-                    if (DONT_CARE == m.from(k)) {
-                        cp = F->makeRedundantsTo(cp, k-1, k);
-                    } else {
-                        // make a singleton node
-                        unpacked_node* nb = unpacked_node::newSparse(F, k, 1);
-                        MEDDLY_DCASSERT(m.from(k) >= 0);
-                        nb->setSparse(0, m.from(k), cv, cp);
-                        F->createReducedNode(nb, cv, cp);
-                    }
-                } // for i
-            }
+                    edge_value &cv, node_handle &cp);
 
             /// Build a chain of nodes for a single "relation" minterm.
             /// This is for identity-reduced forests:
@@ -106,54 +70,7 @@ namespace MEDDLY {
             ///                 Output: top node
             ///
             void identityPathToBottom(int L, const minterm &m,
-                    edge_value &cv, node_handle &cp)
-            {
-                MEDDLY_DCASSERT(L>0);
-                MEDDLY_DCASSERT(m.isForRelations());
-                MEDDLY_DCASSERT(F->isIdentityReduced());
-                for (int k=1; k<=L; k++) {
-                    //
-                    // Check for identity pattern at levels (k, k')
-                    //
-                    if (DONT_CHANGE == m.to(k)) {
-                        MEDDLY_DCASSERT(DONT_CARE == m.from(k));
-                        continue;
-                    }
-
-                    //
-                    // Build node at primed level, unless skipped?
-                    //
-                    if (DONT_CARE == m.to(k)) {
-                        if (DONT_CARE == m.from(k)) {
-                            cp = F->makeRedundantsTo(cp, k-1, k);
-                            continue;
-                        }
-                        cp = F->makeRedundantsTo(cp, k-1, -k);
-                    } else {
-                        if (m.from(k) != m.to(k)) {
-                            //
-                            // The singleton node at the primed
-                            // level can be pointed at, so
-                            // build the node.
-                            //
-                            unpacked_node* nb
-                                = unpacked_node::newSparse(F, k, 1);
-                            nb->setSparse(0, m.to(k), cv, cp);
-                            F->createReducedNode(nb, cv, cp);
-                        }
-                    }
-
-                    //
-                    // Build node at unprimed level, unless skipped?
-                    //
-                    if (DONT_CARE != m.from(k)) {
-                        unpacked_node* nb
-                            = unpacked_node::newSparse(F, k, 1);
-                        nb->setSparse(0, m.from(k), cv, cp);
-                        F->createReducedNode(nb, cv, cp);
-                    }
-                } // for k
-            }
+                    edge_value &cv, node_handle &cp);
 
             /// Build a chain of nodes for a single "relation" minterm.
             /// This is for non-identity-reduced forests:
@@ -168,81 +85,136 @@ namespace MEDDLY {
             ///                 Output: top node
             ///
             void relPathToBottom(int L, const minterm &m,
-                    edge_value &cv, node_handle &cp)
+                    edge_value &cv, node_handle &cp);
+
+
+            /// Get the minimum and maximum values for level L,
+            /// on the interval [low, high).
+            ///
+            inline void getMinMax(int L, unsigned low, unsigned hi,
+                int &minV, int &maxV) const
             {
+                MEDDLY_DCASSERT(!mtc.isForRelations());
                 MEDDLY_DCASSERT(L>0);
-                MEDDLY_DCASSERT(m.isForRelations());
-                MEDDLY_DCASSERT(!F->isIdentityReduced());
-                for (int k=1; k<=L; k++) {
-                    //
-                    // Check for identity pattern at levels (k, k')
-                    //
-                    if (DONT_CHANGE == m.to(k)) {
-                        MEDDLY_DCASSERT(DONT_CARE == m.from(k));
-                        cp = F->makeIdentitiesTo(cp, k-1, k, ~0);
-                        continue;
-                    }
-
-                    //
-                    // Build node at primed level
-                    //
-                    if (DONT_CARE == m.to(k)) {
-                        if (DONT_CARE == m.from(k)) {
-                            cp = F->makeRedundantsTo(cp, k-1, k);
-                            continue;
-                        }
-                        cp = F->makeRedundantsTo(cp, k-1, -k);
-                    } else {
-                        unpacked_node* nb
-                            = unpacked_node::newSparse(F, k, 1);
-                        nb->setSparse(0, m.to(k), cv, cp);
-                        F->createReducedNode(nb, cv, cp);
-                    }
-
-                    //
-                    // Build node at unprimed level
-                    //
-                    if (DONT_CARE == m.from(k)) {
-                        cp = F->makeRedundantsTo(cp, -k, k);
-                    } else {
-                        unpacked_node* nb
-                            = unpacked_node::newSparse(F, k, 1);
-                        nb->setSparse(0, m.from(k), cv, cp);
-                        F->createReducedNode(nb, cv, cp);
-                    }
-                } // for k
+                minV = std::numeric_limits<int>::max();
+                maxV = DONT_CHANGE;
+                for (unsigned i=low; i<hi; i++) {
+                    const int unpr = mtc.unprimed(i, L);
+                    minV = MIN(minV, unpr);
+                    maxV = MAX(maxV, unpr);
+                }
             }
 
+
+            /// Arrange minterms on interval [low, hi)
+            /// into two intervals: [low, mid) and [mid, hi)
+            /// where [low, mid) all have level L value == minV,
+            /// and   [mid, hi)  all have level L value != minv.
+            ///
+            /// On output, minV is the smallest level L value on [mid, hi).
+            ///
+            ///     @param  L       Level to sort on.
+            ///     @param  minV    Input: Value to sort on.
+            ///                     Output: smallest value on [mid, hi).
+            ///     @param  low     low end of input interval
+            ///     @param  hi      high end of input interval
+            ///
+            ///     @param  mid     On output: determines where to
+            ///                     split [low, hi).
+            ///
+            void moveValuesToFront(int L, int &minV,
+                    unsigned low, unsigned hi, unsigned& mid);
+
+
+            /// Pair comparison: is a,b < c,d
+            static inline bool pairLT(int a, int b, int c, int d)
+            {
+                if (a<c) return true;
+                if (a>c) return false;
+                // a == c
+                return b<d;
+            }
+
+            /// Get the minimum and maximum pairs for levels L,L'
+            /// on the interval [low, high).
+            ///
+            inline void getMinMax(int L, unsigned low, unsigned hi,
+                    int &minU, int &minP, int &maxU, int &maxP) const
+            {
+                MEDDLY_DCASSERT(mtc.isForRelations());
+                MEDDLY_DCASSERT(L>0);
+                minU = std::numeric_limits<int>::max();
+                minP = std::numeric_limits<int>::max();
+                maxU = -10;
+                maxP = -10;
+                for (unsigned i=low; i<hi; i++) {
+                    const int unp = mtc.unprimed(i, L);
+                    const int pri = mtc.primed(i, L);
+                    if (pairLT(unp, pri, minU, minP)) {
+                        minU = unp;
+                        minP = pri;
+                    }
+                    if (pairLT(maxU, maxP, unp, pri)) {
+                        maxU = unp;
+                        maxP = pri;
+                    }
+                }
+            }
+
+
+            /// The relation version of moveValueToFront().
+            /// Arrange minterms on interval [low, hi)
+            /// into two intervals: [low, mid) and [mid, hi)
+            /// where [low, mid) all have level L,L' pairs  = (mU, mP),
+            /// and   [mid, hi)  all have level L,L' pairs != (mU, mP).
+            ///
+            /// On output, (mU, mP) is the smallest level L,L'
+            /// pair on [mid, hi).
+            ///
+            ///     @param  L       Level to sort on.
+            ///     @param  mU      Input: Value to sort on, unprimed vars.
+            ///                     Output: next value to sort on
+            ///     @param  mP      Input: Value to sort on, primed vars.
+            ///                     Output: next value to sort on
+            ///
+            ///     @param  low     low end of input interval
+            ///     @param  hi      high end of input interval
+            ///
+            ///     @param  mid     On output: determines where to
+            ///                     split [low, hi).
+            ///
+            void movePairsToFront(int L, int &mU, int &mP,
+                    unsigned low, unsigned hi, unsigned& mid);
+
+        protected:
+            forest* F;
+            minterm_coll &mtc;
+            binary_operation* union_op;
+
+    };
+
+    /*
+        struct OP must provide the following static methods:
+
+        void finalize(const minterm_coll &mc, unsigned low, unsigned high,
+                edge_value &cv, node_handle &cp);
+
+            Determine the terminal edge for the minterms in mc with
+            indexes in [low, high). Store the result in <cv, cp>.
+
+    */
+    template <class OP>
+    class fbuilder : public fbuilder_common {
+        public:
+            fbuilder(forest* f, minterm_coll &mtl, binary_builtin Union)
+                : fbuilder_common(f, mtl, Union) { }
 
 
             void createEdgeSet(int L, unsigned low, unsigned high,
                     edge_value &cv, node_handle &cp);
 
-            void createEdgeRel(int L, unsigned in,
-                    unsigned low, unsigned high,
+            void createEdgeRel(int L, unsigned low, unsigned high,
                     edge_value &cv, node_handle &cp);
-
-        private:
-            /*
-            inline void makeRedundantNode(int L, int L_size,
-                    edge_value &dv, node_handle &dp)
-            {
-                if (F->isQuasiReduced()) {
-                    // Build a redundant node at level L
-                    unpacked_node* ru = unpacked_node::newFull(F, L, L_size);
-                    ru->setFull(0, dv, dp);
-                    for (unsigned v=1; v<L_size; v++) {
-                        ru->setFull(v, dv, F->linkNode(dp));
-                    }
-                    F->createReducedNode(ru, dv, dp);
-                }
-            }
-            */
-
-        private:
-            forest* F;
-            minterm_coll &mtc;
-            binary_operation* union_op;
     };
 
     // ******************************************************************
@@ -345,41 +317,6 @@ MEDDLY::minterm_coll::~minterm_coll()
     delete[] _mtlist;
 }
 
-void MEDDLY::minterm_coll::moveValueToFront(int L, int &minV,
-        unsigned low, unsigned high, unsigned& mid)
-{
-    const int frontV = minV;
-    minV = std::numeric_limits<int>::max();
-
-    mid = low;
-    if (L<0) {
-        const int absL = -L;
-        for (unsigned i=low; i<high; i++) {
-            const int pri = primed(i, absL);
-            if (frontV == pri) {
-                if (mid != i) {
-                    swap(mid, i);
-                }
-                ++mid;
-            } else {
-                minV = MIN(minV, pri);
-            }
-        }
-    } else {
-        for (unsigned i=low; i<high; i++) {
-            const int unpr = unprimed(i, L);
-            if (frontV == unpr) {
-                if (mid != i) {
-                    swap(mid, i);
-                }
-                ++mid;
-            } else {
-                minV = MIN(minV, unpr);
-            }
-        }
-    }
-}
-
 void MEDDLY::minterm_coll::buildFunction(dd_edge &e)
 {
     if (!e.getForest()) {
@@ -399,7 +336,7 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e)
     if (e.getForest()->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         fbuilder<fbop_union_bool> fb(e.getForest(), *this, UNION);
         if (isForRelations()) {
-            fb.createEdgeRel(num_vars, ~0, 0, first_unused, ev, en);
+            fb.createEdgeRel(num_vars, 0, first_unused, ev, en);
         } else {
             fb.createEdgeSet(num_vars, 0, first_unused, ev, en);
         }
@@ -531,6 +468,8 @@ void MEDDLY::minterm_coll::show(output &s,
     }
 }
 
+#ifdef ALLOW_MINTERM_OPS
+
 int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
         unsigned hi, unsigned& lend)
 {
@@ -619,6 +558,214 @@ int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
 
 }
 
+#endif // ALLOW_MINTERM_OPS
+
+// ******************************************************************
+// *                                                                *
+// *                    fbuilder_common  methods                    *
+// *                                                                *
+// ******************************************************************
+
+void MEDDLY::fbuilder_common::setPathToBottom(int L, const minterm &m,
+        edge_value &cv, node_handle &cp)
+{
+    MEDDLY_DCASSERT(L>0);
+    MEDDLY_DCASSERT(!m.isForRelations());
+    for (int k=1; k<=L; k++) {
+        if (DONT_CARE == m.from(k)) {
+            cp = F->makeRedundantsTo(cp, k-1, k);
+        } else {
+            // make a singleton node
+            unpacked_node* nb = unpacked_node::newSparse(F, k, 1);
+            MEDDLY_DCASSERT(m.from(k) >= 0);
+            nb->setSparse(0, m.from(k), cv, cp);
+            F->createReducedNode(nb, cv, cp);
+        }
+    } // for i
+}
+
+void MEDDLY::fbuilder_common::identityPathToBottom(int L, const minterm &m,
+        edge_value &cv, node_handle &cp)
+{
+    MEDDLY_DCASSERT(L>0);
+    MEDDLY_DCASSERT(m.isForRelations());
+    MEDDLY_DCASSERT(F->isIdentityReduced());
+    for (int k=1; k<=L; k++) {
+        //
+        // Check for identity pattern at levels (k, k')
+        //
+        if (DONT_CHANGE == m.to(k)) {
+            MEDDLY_DCASSERT(DONT_CARE == m.from(k));
+            continue;
+        }
+
+        //
+        // Build node at primed level, unless skipped?
+        //
+        if (DONT_CARE == m.to(k)) {
+            if (DONT_CARE == m.from(k)) {
+                cp = F->makeRedundantsTo(cp, k-1, k);
+                continue;
+            }
+            cp = F->makeRedundantsTo(cp, k-1, -k);
+        } else {
+            if (m.from(k) != m.to(k)) {
+                //
+                // The singleton node at the primed
+                // level can be pointed at, so
+                // build the node.
+                //
+                unpacked_node* nb
+                    = unpacked_node::newSparse(F, k, 1);
+                nb->setSparse(0, m.to(k), cv, cp);
+                F->createReducedNode(nb, cv, cp);
+            }
+        }
+
+        //
+        // Build node at unprimed level, unless skipped?
+        //
+        if (DONT_CARE != m.from(k)) {
+            unpacked_node* nb
+                = unpacked_node::newSparse(F, k, 1);
+            nb->setSparse(0, m.from(k), cv, cp);
+            F->createReducedNode(nb, cv, cp);
+        }
+    } // for k
+}
+
+void MEDDLY::fbuilder_common::relPathToBottom(int L, const minterm &m,
+        edge_value &cv, node_handle &cp)
+{
+    MEDDLY_DCASSERT(L>0);
+    MEDDLY_DCASSERT(m.isForRelations());
+    MEDDLY_DCASSERT(!F->isIdentityReduced());
+    for (int k=1; k<=L; k++) {
+        //
+        // Check for identity pattern at levels (k, k')
+        //
+        if (DONT_CHANGE == m.to(k)) {
+            MEDDLY_DCASSERT(DONT_CARE == m.from(k));
+            cp = F->makeIdentitiesTo(cp, k-1, k, ~0);
+            continue;
+        }
+
+        //
+        // Build node at primed level
+        //
+        if (DONT_CARE == m.to(k)) {
+            if (DONT_CARE == m.from(k)) {
+                cp = F->makeRedundantsTo(cp, k-1, k);
+                continue;
+            }
+            cp = F->makeRedundantsTo(cp, k-1, -k);
+        } else {
+            unpacked_node* nb
+                = unpacked_node::newSparse(F, k, 1);
+            nb->setSparse(0, m.to(k), cv, cp);
+            F->createReducedNode(nb, cv, cp);
+        }
+
+        //
+        // Build node at unprimed level
+        //
+        if (DONT_CARE == m.from(k)) {
+            cp = F->makeRedundantsTo(cp, -k, k);
+        } else {
+            unpacked_node* nb
+                = unpacked_node::newSparse(F, k, 1);
+            nb->setSparse(0, m.from(k), cv, cp);
+            F->createReducedNode(nb, cv, cp);
+        }
+    } // for k
+}
+
+void MEDDLY::fbuilder_common::moveValuesToFront(int L, int &minV,
+        unsigned low, unsigned high, unsigned& mid)
+{
+    MEDDLY_DCASSERT(!mtc.isForRelations());
+    MEDDLY_DCASSERT(L>0);
+
+#ifdef DEBUG_MOVE_VALUES
+    FILE_output out(stdout);
+    out << "starting moveValuesToFront(" << L << ", " << minV << ", "
+        << low << ", " << high << ")\n";
+#endif
+
+    const int frontV = minV;
+    minV = std::numeric_limits<int>::max();
+
+    mid = low;
+    for (unsigned i=low; i<high; i++) {
+        const int unpr = mtc.unprimed(i, L);
+        if (frontV == unpr) {
+            if (mid != i) {
+                mtc.swap(mid, i);
+            }
+            ++mid;
+        } else {
+            minV = MIN(minV, unpr);
+        }
+    }
+
+#ifdef DEBUG_MOVE_VALUES
+    out << "Done move; mid=" << mid << ", minV=" << minV << "\n";
+    for (unsigned i=low; i<high; i++) {
+        out << "    ";
+        out.put(long(i), 2);
+        out << "  ";
+        mtc.at(i).show(out);
+        out << "\n";
+    }
+#endif
+
+}
+
+void MEDDLY::fbuilder_common::movePairsToFront(int L, int &mU, int &mP,
+                    unsigned low, unsigned high, unsigned& mid)
+{
+    MEDDLY_DCASSERT(mtc.isForRelations());
+    MEDDLY_DCASSERT(L>0);
+
+#ifdef DEBUG_MOVE_PAIRS
+    FILE_output out(stdout);
+    out << "starting movePairsToFront(" << L << ", (" << mU << "->"
+        << mP << "), " << low << ", " << high << ")\n";
+#endif
+
+    const int frontU = mU;
+    const int frontP = mP;
+    mU = std::numeric_limits<int>::max();
+    mP = std::numeric_limits<int>::max();
+
+    mid = low;
+    for (unsigned i=low; i<high; i++) {
+        const int unp = mtc.unprimed(i, L);
+        const int pri = mtc.primed(i, L);
+        if ((frontU == unp) && (frontP == pri)) {
+            if (mid != i) {
+                mtc.swap(mid, i);
+            }
+            ++mid;
+        } else {
+            if (pairLT(unp, pri, mU, mP)) {
+                mU = unp;
+                mP = pri;
+            }
+        }
+    }
+
+#ifdef DEBUG_MOVE_PAIRS
+    out << "Done move; mid=" << mid << ", min=(" << mU << "->" << mP << ")\n";
+    for (unsigned i=low; i<high; i++) {
+        out << "    ";
+        out.put(long(i), 2);
+        out << "  ";
+        mtc.at(i).show(out);
+        out << "\n";
+    }
+#endif
+}
 
 // ******************************************************************
 // *                                                                *
@@ -646,7 +793,7 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
     //
     if (high - low == 1) {
         OP::finalize(mtc, low, high, cv, cp);
-        setPathToBottom(L, element(low), cv, cp);
+        setPathToBottom(L, mtc.at(low), cv, cp);
         return;
     }
 
@@ -655,12 +802,13 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
     //
     unsigned mid = low;
     int minV, maxV;
-    mtc.getMinMax(L, low, high, minV, maxV);
+    getMinMax(L, low, high, minV, maxV);
 
     //
     // Special case: all values are DONT_CARE
     //
     if (DONT_CARE == maxV) {
+        MEDDLY_DCASSERT(DONT_CARE == minV);
         createEdgeSet(L-1, low, high, cv, cp);
         cp = F->makeRedundantsTo(cp, L-1, L);
         return;
@@ -676,7 +824,7 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
     bool has_dont_care = false;
 
     // size of variables at level L
-    unsigned L_size = F->getLevelSize(L);
+    const unsigned L_size = F->getLevelSize(L);
     // sparse node we're going to build
     unpacked_node* Cu = unpacked_node::newSparse(F, L, L_size);
     // number of nonzero edges in our sparse node
@@ -687,7 +835,7 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
     //
     while (minV < maxV) {
         const int currV = minV;
-        mtc.moveValueToFront(L, minV, low, high, mid);
+        moveValuesToFront(L, minV, low, high, mid);
 
         if (DONT_CARE == currV) {
             //
@@ -743,8 +891,8 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
 // ******************************************************************
 
 template <class OP>
-void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned in,
-        unsigned low, unsigned high, edge_value &cv, node_handle &cp)
+void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
+        edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(L>=0);
     MEDDLY_DCASSERT(high > low);
@@ -763,13 +911,80 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned in,
     if (high - low == 1) {
         OP::finalize(mtc, low, high, cv, cp);
         if (F->isIdentityReduced()) {
-            identityPathToBottom(L, element(low), cv, cp);
+            identityPathToBottom(L, mtc.at(low), cv, cp);
         } else {
-            relPathToBottom(L, element(low), cv, cp);
+            relPathToBottom(L, mtc.at(low), cv, cp);
         }
         return;
     }
 
+    //
+    // Determine values
+    //
+    unsigned mid = low;
+    int minU, minP, maxU, maxP;
+    getMinMax(L, low, high, minU, minP, maxU, maxP);
+
+    //
+    // Special case: all pairs are (DONT_CARE, DONT_CARE)
+    //
+    if ( (DONT_CARE == maxU) && (DONT_CARE == maxP) && (DONT_CARE == minP) )
+    {
+        MEDDLY_DCASSERT(DONT_CARE == minU);
+        createEdgeRel(L-1, low, high, cv, cp);
+        cp = F->makeRedundantsTo(cp, L-1, L);
+        return;
+    }
+
+    //
+    // Special case: all pairs are (DONT_CARE, DONT_CHANGE)
+    //
+    if ( (DONT_CARE == maxU) && (DONT_CHANGE == maxP) )
+    {
+        MEDDLY_DCASSERT(DONT_CARE == minU);
+        createEdgeRel(L-1, low, high, cv, cp);
+        cp = F->makeIdentitiesTo(cp, L-1, L, ~0);
+        return;
+    }
+
+    //
+    // Get ready for recursions
+    //
+    //  Unprimed level variables:
+    //      <tmp_val, tmp_node> : temp function for union op
+    //      Cu                  : unpacked node
+    //      zu                  : sparse count for Cu
+    //
+    //  Primed level variables:
+    //      Cp                  : unpacked node
+    //      zp                  : sparse count for Cp
+    //
+
+    const unsigned L_size = F->getLevelSize(L);
+
+    edge_value tmp_val;
+    node_handle tmp_node;
+    bool has_temp = false;
+
+    unpacked_node* Cu = nullptr;
+    unsigned zu = 0;
+    unpacked_node* Cp = nullptr;
+    unsigned zp = 0;
+
+    //
+    // Recursion loop
+    //
+    while (pairLT(minU, minP, maxU, maxP)) {
+        const int currU = minU;
+        const int currP = minP;
+        movePairsToFront(L, minU, minP, low, high, mid);
+
+        // TBD
+
+        low = mid;
+    }
+
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
 }
 

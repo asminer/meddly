@@ -16,6 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef ALLOW_MINTERM_OPS
+
 #include "../defines.h"
 #include "explicit.h"
 #include "../ops_builtin.h"
@@ -680,3 +682,4 @@ MEDDLY::UNION(forest* a, minterm_coll &b, forest* c)
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
+#endif // allow_minterm_ops

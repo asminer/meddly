@@ -259,7 +259,6 @@ class MEDDLY::minterm_coll {
         }
 
         /// Swap minterms i and j
-        /// Eventually: make private
         inline void swap(unsigned i, unsigned j)
         {
             CHECK_RANGE(__FILE__, __LINE__, 0u, i, first_unused);
@@ -269,51 +268,31 @@ class MEDDLY::minterm_coll {
             SWAP(_mtlist[i], _mtlist[j]);
         }
 
-        /**
-            Get the minimum and maximum values for level L,
-            on the interval [low, high).
-         */
-        inline void getMinMax(int L, unsigned low, unsigned hi,
-                int &minV, int &maxV) const
-        {
-            minV = std::numeric_limits<int>::max();
-            maxV = DONT_CHANGE;
-            if (L<0) {
-                const int absL = -L;
-                for (unsigned i=low; i<hi; i++) {
-                    const int pri = primed(i, absL);
-                    minV = MIN(minV, pri);
-                    maxV = MAX(maxV, pri);
-                }
-            } else {
-                for (unsigned i=low; i<hi; i++) {
-                    const int unpr = unprimed(i, L);
-                    minV = MIN(minV, unpr);
-                    maxV = MAX(maxV, unpr);
-                }
-            }
-        }
 
-        /**
-            Arrange minterms on interval [low, hi)
-            into two intervals: [low, mid) and [mid, hi)
-            where [low, mid) all have level L value == minV,
-            and   [mid, hi)  all have level L value != minv.
+        /** Create an edge from this collection.
+            The default value is 0.
+            If the collection contains overlapping minterms
+            for a particular variable assignment,
+            the maximum value is taken.
 
-            On output, minV is the smallest level L value on [mid, hi).
-
-                @param  L       Level to sort on.
-                @param  minV    Input: Value to sort on.
-                                Output: smallest value on [mid, hi).
-                @param  low     low end of input interval
-                @param  hi      high end of input interval
-
-                @param  mid     On output: determines where to split [low, hi).
-         */
-        void moveValueToFront(int L, int &minV, unsigned low, unsigned hi,
-                unsigned& mid);
+                @param  e   On input: should be attached to the
+                            forest we want to create the function in.
+                            On output: the function.
+        */
+        void buildFunction(dd_edge &e);
 
 
+        //
+        // For convenience and debugging
+        void show(output &s, const char* pre, const char* post) const;
+
+        //
+        // Used by fbuilder.
+        // TBD: move there?
+        //
+
+
+#ifdef ALLOW_MINTERM_OPS
         /** Partial sort, as used by explicit minterm operations.
             Based on level L, and the range of minterms [low, hi),
             collect all elements together with variable L equal to item #low.
@@ -343,27 +322,16 @@ class MEDDLY::minterm_coll {
             }
             return _collect_first(L, low, hi, lend);
         }
+#endif
 
-
-        /** Create an edge from this collection.
-            The default value is 0.
-            If the collection contains overlapping minterms
-            for a particular variable assignment,
-            the maximum value is taken.
-
-                @param  e   On input: should be attached to the
-                            forest we want to create the function in.
-                            On output: the function.
-        */
-        void buildFunction(dd_edge &e);
-
-
-        //
-        // For convenience and debugging
-        void show(output &s, const char* pre, const char* post) const;
 
     private:
+
+
+#ifdef ALLOW_MINTERM_OPS
+    private:
         int _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
+#endif
 
 
         // OLD STUFF

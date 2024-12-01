@@ -16,6 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef ALLOW_MINTERM_OPS
+
 #include "oper_minterm.h"
 #include "error.h"
 #include "forest.h"
@@ -53,3 +55,4 @@ void MEDDLY::minterm_operation::compute(const dd_edge &ar1, dd_edge &res)
     res.set(resp);
 }
 
+#endif
