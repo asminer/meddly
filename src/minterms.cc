@@ -134,6 +134,14 @@ namespace MEDDLY {
                 // a == c
                 return b<d;
             }
+            /// Pair comparison: is a,b <= c,d
+            static inline bool pairLE(int a, int b, int c, int d)
+            {
+                if (a<c) return true;
+                if (a>c) return false;
+                // a == c
+                return b<=d;
+            }
 
             /// Get the minimum and maximum pairs for levels L,L'
             /// on the interval [low, high).
@@ -185,6 +193,32 @@ namespace MEDDLY {
             ///
             void movePairsToFront(int L, int &mU, int &mP,
                     unsigned low, unsigned hi, unsigned& mid);
+
+        protected:
+#ifdef DEBUG_MOVE_VALUES
+            static inline output& show_val(output &os, int val) {
+                if (val >= 0) {
+                    return os << val;
+                }
+                return os << 'x';
+            }
+#endif
+#ifdef DEBUG_MOVE_PAIRS
+            static inline output& show_pair(output &os, int from, int to) {
+                if (from >= 0) {
+                    os << '(' << from << "->";
+                } else {
+                    os << "(x->";
+                }
+                if (to >= 0) {
+                    return os << to << ')';
+                }
+                if (DONT_CARE == to) {
+                    return os << "x)";
+                }
+                return os << "i)";
+            }
+#endif
 
         protected:
             forest* F;
@@ -616,7 +650,7 @@ void MEDDLY::fbuilder_common::identityPathToBottom(int L, const minterm &m,
                 // build the node.
                 //
                 unpacked_node* nb
-                    = unpacked_node::newSparse(F, k, 1);
+                    = unpacked_node::newSparse(F, -k, 1);
                 nb->setSparse(0, m.to(k), cv, cp);
                 F->createReducedNode(nb, cv, cp);
             }
@@ -661,7 +695,7 @@ void MEDDLY::fbuilder_common::relPathToBottom(int L, const minterm &m,
             cp = F->makeRedundantsTo(cp, k-1, -k);
         } else {
             unpacked_node* nb
-                = unpacked_node::newSparse(F, k, 1);
+                = unpacked_node::newSparse(F, -k, 1);
             nb->setSparse(0, m.to(k), cv, cp);
             F->createReducedNode(nb, cv, cp);
         }
@@ -688,7 +722,8 @@ void MEDDLY::fbuilder_common::moveValuesToFront(int L, int &minV,
 
 #ifdef DEBUG_MOVE_VALUES
     FILE_output out(stdout);
-    out << "starting moveValuesToFront(" << L << ", " << minV << ", "
+    out << "starting moveValuesToFront(" << L << ", ";
+    show_val(out, minV) << ", "
         << low << ", " << high << ")\n";
 #endif
 
@@ -709,7 +744,8 @@ void MEDDLY::fbuilder_common::moveValuesToFront(int L, int &minV,
     }
 
 #ifdef DEBUG_MOVE_VALUES
-    out << "Done move; mid=" << mid << ", minV=" << minV << "\n";
+    out << "Done move; mid=" << mid << ", minV=";
+    show_val(out, minV) << "\n";
     for (unsigned i=low; i<high; i++) {
         out << "    ";
         out.put(long(i), 2);
@@ -729,8 +765,8 @@ void MEDDLY::fbuilder_common::movePairsToFront(int L, int &mU, int &mP,
 
 #ifdef DEBUG_MOVE_PAIRS
     FILE_output out(stdout);
-    out << "starting movePairsToFront(" << L << ", (" << mU << "->"
-        << mP << "), " << low << ", " << high << ")\n";
+    out << "starting movePairsToFront(" << L << ", ";
+    show_pair(out, mU, mP) << ", " << low << ", " << high << ")\n";
 #endif
 
     const int frontU = mU;
@@ -756,7 +792,8 @@ void MEDDLY::fbuilder_common::movePairsToFront(int L, int &mU, int &mP,
     }
 
 #ifdef DEBUG_MOVE_PAIRS
-    out << "Done move; mid=" << mid << ", min=(" << mU << "->" << mP << ")\n";
+    out << "Done move; mid=" << mid << ", min=";
+    show_pair(out, mU, mP) << "\n";
     for (unsigned i=low; i<high; i++) {
         out << "    ";
         out.put(long(i), 2);
@@ -833,9 +870,16 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
     //
     // Recursion loop
     //
-    while (minV < maxV) {
+    while (minV <= maxV) {
         const int currV = minV;
-        moveValuesToFront(L, minV, low, high, mid);
+        if (minV < maxV) {
+            // More interval to split
+            moveValuesToFront(L, minV, low, high, mid);
+        } else {
+            // We're on the last interval
+            ++minV;
+            mid = high;
+        }
 
         if (DONT_CARE == currV) {
             //
@@ -850,6 +894,7 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
             Cu->setTempRoot(dnc_node);
 
         } else {
+
             //
             // Recurse and add result to unpacked node Cu
             //
@@ -865,16 +910,6 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
         }
 
         low = mid;
-    }
-    MEDDLY_DCASSERT(maxV>=0);
-    MEDDLY_DCASSERT(minV == maxV);
-    //
-    // Last value
-    //
-    createEdgeSet(L-1, mid, high, cz_val, cz_node);
-    if (!F->isTransparentEdge(cz_val, cz_node)) {
-        Cu->setSparse(z, minV, cz_val, cz_node);
-        z++;
     }
 
     //
@@ -951,40 +986,200 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     // Get ready for recursions
     //
     //  Unprimed level variables:
-    //      <tmp_val, tmp_node> : temp function for union op
-    //      Cu                  : unpacked node
-    //      zu                  : sparse count for Cu
+    //      <ue_v, ue_p>    : unprimed extra function for union
+    //      Cu              : unpacked node
+    //      zu              : sparse count for Cu
     //
     //  Primed level variables:
-    //      Cp                  : unpacked node
-    //      zp                  : sparse count for Cp
+    //      <pe_v, pe_p>    : primed extra function for union
+    //      Cp              : unpacked node
+    //      zp              : sparse count for Cp
+    //      cpin            : unprimed value pointing to Cp
+    //
+    //  Other variables:
+    //      <tv, tp>        :   generic temp function
     //
 
     const unsigned L_size = F->getLevelSize(L);
 
-    edge_value tmp_val;
-    node_handle tmp_node;
-    bool has_temp = false;
+    edge_value ue_v, pe_v, tv;
+    node_handle ue_p, pe_p, tp;
+    bool has_unprimed_extra = false;
+    bool has_primed_extra = false;
 
-    unpacked_node* Cu = nullptr;
+    unpacked_node* Cu = unpacked_node::newSparse(F, L, L_size);
     unsigned zu = 0;
-    unpacked_node* Cp = nullptr;
+    unpacked_node* Cp = unpacked_node::newSparse(F, -L, L_size);
     unsigned zp = 0;
+    int cpin = -10;
 
     //
     // Recursion loop
     //
-    while (pairLT(minU, minP, maxU, maxP)) {
+    while (pairLE(minU, minP, maxU, maxP)) {
         const int currU = minU;
         const int currP = minP;
-        movePairsToFront(L, minU, minP, low, high, mid);
+        if (pairLT(minU, minP, maxU, maxP)) {
+            // More interval to split
+            movePairsToFront(L, minU, minP, low, high, mid);
+        } else {
+            // We're on the last interval
+            ++minU;
+            mid = high;
+        }
 
-        // TBD
+        //
+        // Start another primed node, or not?
+        //
+        if (cpin < DONT_CHANGE) {
+            // First time through
+            cpin = currU;
+        }
+        if (cpin != currU) {
+            //
+            // Done with Cp; check it in and connect it
+            //
+            Cp->shrink(zp);
+            F->createReducedNode(Cp, tv, tp);
+            if (has_primed_extra) {
+                MEDDLY_DCASSERT(cpin >= 0);
+                union_op->compute(-L, cpin, pe_v, pe_p, tv, tp, tv, tp);
+            }
+            if (DONT_CARE == cpin) {
+                //
+                // This is the extra unprimed function now
+                //
+                MEDDLY_DCASSERT(!has_unprimed_extra);
+                ue_v = tv;
+                ue_p = tp;
+                Cu->setTempRoot(ue_p);
+                has_unprimed_extra = true;
+            } else {
+                //
+                // Connect to cpin in Cu
+                //
+                Cu->setSparse(zu, cpin, tv, tp);
+                ++zu;
+            }
+            //
+            // Reset Cp
+            //
+            Cp = unpacked_node::newSparse(F, L, L_size);
+            zp = 0;
+            has_primed_extra = false;
+            cpin = currU;
+        }
+
+        if (DONT_CARE == currU)
+        {
+            if (DONT_CHANGE == currP || DONT_CARE == currP)
+            {
+                //
+                // Build an identity (matrix) node at level L
+                // or a don't care (matrix) node at level L,
+                // but recurse to figure out where it points to.
+                //
+                createEdgeRel(L-1, low, mid, tv, tp);
+                if (DONT_CHANGE == currP) {
+                    tp = F->makeIdentitiesTo(tp, L-1, L, ~0);
+                } else {
+                    tp = F->makeRedundantsTo(tp, L-1, L);
+                }
+                //
+                // Add this to the UNPRIMED extra function
+                //
+                if (has_unprimed_extra) {
+                    union_op->compute(L, ~0, ue_v, ue_p, tv, tp,
+                            ue_v, ue_p);
+                } else {
+                    ue_v = tv;
+                    ue_p = tp;
+                    has_unprimed_extra = true;
+                }
+
+                // Make sure ue_p isn't recycled
+                Cu->setTempRoot(ue_p);
+
+            } else {
+                //
+                // Add to Cp
+                //
+                createEdgeRel(L-1, low, mid, tv, tp);
+                Cp->setSparse(zp, currP, tv, tp);
+                ++zp;
+            }
+
+        } else {
+            //
+            // Unprimed has an actual value.
+            // But we still could have DONT_CARE for the primed value.
+            //
+            MEDDLY_DCASSERT(currP != DONT_CHANGE);
+            if (DONT_CARE == currP)
+            {
+                //
+                // Recurse and add to the PRIMED extra function
+                //
+                createEdgeRel(L-1, low, mid, tv, tp);
+                tp = F->makeRedundantsTo(tp, L-1, -L);
+                if (has_primed_extra) {
+                    union_op->compute(-L, cpin, pe_v, pe_p, tv, tp,
+                            pe_v, pe_p);
+                } else {
+                    pe_v = tv;
+                    pe_p = tp;
+                    has_primed_extra = true;
+                }
+
+                // Make sure ue_p isn't recycled
+                Cu->setTempRoot(ue_p);
+
+            } else {
+                //
+                // Add to Cp
+                //
+                createEdgeRel(L-1, low, mid, tv, tp);
+                Cp->setSparse(zp, currP, tv, tp);
+                ++zp;
+            }
+        }
 
         low = mid;
     }
 
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    //
+    // Close off the final Cp
+    //
+    Cp->shrink(zp);
+    F->createReducedNode(Cp, tv, tp);
+    if (has_primed_extra) {
+        MEDDLY_DCASSERT(cpin >= 0);
+        union_op->compute(-L, cpin, pe_v, pe_p, tv, tp, tv, tp);
+    }
+    if (DONT_CARE == cpin) {
+        //
+        // This is the extra unprimed function now
+        //
+        MEDDLY_DCASSERT(!has_unprimed_extra);
+        ue_v = tv;
+        ue_p = tp;
+        Cu->setTempRoot(ue_p);
+        has_unprimed_extra = true;
+    } else {
+        //
+        // Connect to cpin in Cu
+        //
+        Cu->setSparse(zu, cpin, tv, tp);
+        ++zu;
+    }
 
+    //
+    // Finish Cu
+    //
+    Cu->shrink(zu);
+    F->createReducedNode(Cu, cv, cp);
+    if (has_unprimed_extra) {
+        union_op->compute(L, ~0, ue_v, ue_p, cv, cp, cv, cp);
+    }
 }
 
