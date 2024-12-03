@@ -25,8 +25,8 @@
 #include "ops_builtin.h"
 
 // #define DEBUG_MOVE_VALUES
-#define DEBUG_MOVE_PAIRS
-#include "operators.h"
+// #define DEBUG_MOVE_PAIRS
+// #include "operators.h"
 
 // ******************************************************************
 // *                                                                *
@@ -1048,13 +1048,16 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
             }
             if (DONT_CARE == cpin) {
                 //
-                // This is the extra unprimed function now
+                // Add to the extra unprimed function
                 //
-                MEDDLY_DCASSERT(!has_unprimed_extra);
-                ue_v = tv;
-                ue_p = tp;
+                if (has_unprimed_extra) {
+                    union_op->compute(L, ~0, tv, tp, ue_v, ue_p, ue_v, ue_p);
+                } else {
+                    ue_v = tv;
+                    ue_p = tp;
+                    has_unprimed_extra = true;
+                }
                 Cu->setTempRoot(ue_p);
-                has_unprimed_extra = true;
             } else {
                 //
                 // Connect to cpin in Cu
