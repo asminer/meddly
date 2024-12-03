@@ -50,6 +50,8 @@ void MEDDLY::evmxd_timesreal::createEdge(float val, dd_edge &e)
 #endif
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::evmxd_timesreal
 ::createEdge(const int* const* vlist, const int* const* vplist,
   const float* terms, int N, dd_edge &e)
@@ -74,19 +76,21 @@ void MEDDLY::evmxd_timesreal
 }
 
 void MEDDLY::evmxd_timesreal
+::evaluate(const dd_edge &f, const int* vlist, const int* vplist,
+  float &term) const
+{
+  evaluateT<OP, float>(f, vlist, vplist, term);
+}
+
+#endif
+
+void MEDDLY::evmxd_timesreal
 ::createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 {
   createEdgeForVarTempl<OP, float>(vh, vp, terms, a);
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
-}
-
-void MEDDLY::evmxd_timesreal
-::evaluate(const dd_edge &f, const int* vlist, const int* vplist,
-  float &term) const
-{
-  evaluateT<OP, float>(f, vlist, vplist, term);
 }
 
 void MEDDLY::evmxd_timesreal::showEdge(output &s, const edge_value &ev,

@@ -37,11 +37,13 @@ class MEDDLY::mt_mxd_bool : public mtmxd_forest {
     ~mt_mxd_bool();
 
     virtual void createEdge(bool val, dd_edge &e);
+    virtual void createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a);
+#ifdef ALLOW_DEPRECATED_0_17_7
     virtual void createEdge(const int* const* vlist, const int* const* vplist,
         int N, dd_edge& e);
-    virtual void createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a);
     virtual void evaluate(const dd_edge& f, const int* vlist,
         const int* vplist, bool &term) const;
+#endif
 
     virtual node_handle unionOneMinterm(node_handle a,  int* from,  int* to, int level);
 

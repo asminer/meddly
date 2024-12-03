@@ -40,6 +40,8 @@ void MEDDLY::mt_mxd_bool::createEdge(bool term, dd_edge& e)
 #endif
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::mt_mxd_bool
 ::createEdge(const int* const* vlist, const int* const* vplist, int N, dd_edge &e)
 {
@@ -88,6 +90,15 @@ void MEDDLY::mt_mxd_bool
 #endif
 }
 
+void MEDDLY::mt_mxd_bool::evaluate(const dd_edge &f, const int* vlist,
+  const int* vplist, bool &term) const
+{
+    terminal t(terminal_type::BOOLEAN, evaluateRaw(f, vlist, vplist));
+    term = t.getBoolean();
+}
+
+#endif
+
 void MEDDLY::mt_mxd_bool::
 createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
@@ -96,13 +107,6 @@ createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
-}
-
-void MEDDLY::mt_mxd_bool::evaluate(const dd_edge &f, const int* vlist,
-  const int* vplist, bool &term) const
-{
-    terminal t(terminal_type::BOOLEAN, evaluateRaw(f, vlist, vplist));
-    term = t.getBoolean();
 }
 
 void MEDDLY::mt_mxd_bool::showEdge(output &s, const edge_value &ev,

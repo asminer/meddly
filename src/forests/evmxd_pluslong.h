@@ -47,12 +47,14 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
     // using evmxd_forest::createEdgeForVar;
 
     virtual void createEdge(long val, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-      const long* terms, int N, dd_edge &e);
     virtual void createEdgeForVar(int vh, bool vp, const long* terms,
       dd_edge& a);
+#ifdef ALLOW_DEPRECATED_0_17_7
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
+      const long* terms, int N, dd_edge &e);
     virtual void evaluate(const dd_edge &f, const int* vlist,
       const int* vplist, long &term) const;
+#endif
 
 
     virtual enumerator::iterator* makeFullIter() const {

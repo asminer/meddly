@@ -43,12 +43,14 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
     ~evmxd_timesreal();
 
     virtual void createEdge(float val, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-      const float* terms, int N, dd_edge &e);
     virtual void createEdgeForVar(int vh, bool vp, const float* terms,
       dd_edge& a);
+#ifdef ALLOW_DEPRECATED_0_17_7
+    virtual void createEdge(const int* const* vlist, const int* const* vplist,
+      const float* terms, int N, dd_edge &e);
     virtual void evaluate(const dd_edge &f, const int* vlist,
       const int* vplist, float &term) const;
+#endif
 
     virtual enumerator::iterator* makeFullIter() const {
       return new evtrmxd_iterator(this);

@@ -2245,6 +2245,100 @@ class MEDDLY::forest {
     };
 
 
+    /** Create an edge for a boolean constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN.
+    */
+    virtual void createEdge(bool val, dd_edge &e);
+
+    /** Create an edge for an integer constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN.
+    */
+    virtual void createEdge(long val, dd_edge &e);
+
+    /** Create an edge for an integer constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN.
+    */
+    virtual void createEdge(float val, dd_edge &e);
+
+
+
+    /** Returns element \a e at index \a i from an Index Set EV+MDD.
+
+        size(e) = number of variables in the forest + 1 (for terminals).
+        TODO: complete this description
+
+        on return: e[0] will be 1 if the element could be found, 0 otherwise.
+
+        @throws       INVALID_OPERATION, if this is not an Index Set EV+MDD.
+    */
+    virtual void getElement(const dd_edge& a, int index, int* e);
+    virtual void getElement(const dd_edge& a, long index, int* e);
+
+
+    /**
+        Build an iterator.
+        Used by class enumerator.
+    */
+    virtual enumerator::iterator* makeFullIter() const = 0;
+
+    /**
+        Build an iterator with a fixed row.
+        Default behavior - throw an "INVALID_FOREST" error.
+    */
+    virtual enumerator::iterator* makeFixedRowIter() const;
+
+    /**
+        Build an iterator with a fixed column.
+        Default behavior - throw an "INVALID_FOREST" error.
+    */
+    virtual enumerator::iterator* makeFixedColumnIter() const;
+
+
+
+
+    //
+    // misc.
+    //
+
+  // ------------------------------------------------------------
+  // Ugly details from here down.
+  private:  // Defaults
+    static policies mddDefaults;
+    static policies mxdDefaults;
+
+  private:
+    bool isRelation;
+    range_type rangeType;
+    edge_labeling edgeLabel;
+
+    /// Mark for deletion.
+    void markForDeletion();
+
+
+// ===================================================================
+//
+// Deprecated as of version 0.17.7
+//
+// ===================================================================
+
+#ifdef ALLOW_DEPRECATED_0_17_7
+    public:
+
     /** Create an edge as the union of several explicit vectors.
         @param  vlist Array of vectors. Each vector has dimension equal
                       to one plus the largest variable handle in the domain.
@@ -2401,44 +2495,6 @@ class MEDDLY::forest {
         const float* terms, int N, dd_edge &e);
 
 
-    /** Create an edge for a boolean constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN.
-    */
-    virtual void createEdge(bool val, dd_edge &e);
-
-    /** Create an edge for an integer constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN.
-    */
-    virtual void createEdge(long val, dd_edge &e);
-
-    /** Create an edge for an integer constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN.
-    */
-    virtual void createEdge(float val, dd_edge &e);
-
-// ===================================================================
-//
-// Evaluation methods; probably will be moved elsewhere
-//
-// ===================================================================
-
-    public:
-
     /** Evaluate the function encoded by an edge.
         @param  f     Edge (function) to evaluate.
         @param  vlist List of variable assignments, of dimension one higher
@@ -2537,65 +2593,7 @@ class MEDDLY::forest {
     */
     virtual void evaluate(const dd_edge& f, const int* vlist,
       const int* vplist, float &term) const;
-
-    /** Returns element \a e at index \a i from an Index Set EV+MDD.
-
-        size(e) = number of variables in the forest + 1 (for terminals).
-        TODO: complete this description
-
-        on return: e[0] will be 1 if the element could be found, 0 otherwise.
-
-        @throws       INVALID_OPERATION, if this is not an Index Set EV+MDD.
-    */
-    virtual void getElement(const dd_edge& a, int index, int* e);
-    virtual void getElement(const dd_edge& a, long index, int* e);
-
-
-    /**
-        Build an iterator.
-        Used by class enumerator.
-    */
-    virtual enumerator::iterator* makeFullIter() const = 0;
-
-    /**
-        Build an iterator with a fixed row.
-        Default behavior - throw an "INVALID_FOREST" error.
-    */
-    virtual enumerator::iterator* makeFixedRowIter() const;
-
-    /**
-        Build an iterator with a fixed column.
-        Default behavior - throw an "INVALID_FOREST" error.
-    */
-    virtual enumerator::iterator* makeFixedColumnIter() const;
-
-
-
-
-    //
-    // misc.
-    //
-
-  // ------------------------------------------------------------
-  // Ugly details from here down.
-  private:  // Defaults
-    static policies mddDefaults;
-    static policies mxdDefaults;
-
-  private:
-    bool isRelation;
-    range_type rangeType;
-    edge_labeling edgeLabel;
-
-    /// Mark for deletion.
-    void markForDeletion();
-
-
-// ===================================================================
-//
-// Deprecated as of version 0.17.6
-//
-// ===================================================================
+#endif
 
 // ===================================================================
 //

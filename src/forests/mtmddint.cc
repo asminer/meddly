@@ -40,6 +40,8 @@ void MEDDLY::mt_mdd_int::createEdge(long term, dd_edge& e)
 #endif
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::mt_mdd_int::createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e)
 {
   binary_operation* unionOp = PLUS(this, this, this);
@@ -78,6 +80,16 @@ void MEDDLY::mt_mdd_int::createEdge(const int* const* vlist, const long* terms, 
 #endif
 }
 
+void MEDDLY::mt_mdd_int
+::evaluate(const dd_edge &f, const int* vlist, long &term) const
+{
+    terminal t(terminal_type::INTEGER, evaluateRaw(f, vlist));
+    term = t.getInteger();
+    // term = int_Tencoder::handle2value(evaluateRaw(f, vlist));
+}
+
+#endif
+
 void MEDDLY::mt_mdd_int::
 createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 {
@@ -86,14 +98,6 @@ createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif
-}
-
-void MEDDLY::mt_mdd_int
-::evaluate(const dd_edge &f, const int* vlist, long &term) const
-{
-    terminal t(terminal_type::INTEGER, evaluateRaw(f, vlist));
-    term = t.getInteger();
-    // term = int_Tencoder::handle2value(evaluateRaw(f, vlist));
 }
 
 void MEDDLY::mt_mdd_int::showEdge(output &s, const edge_value &ev,

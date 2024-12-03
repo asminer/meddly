@@ -1619,6 +1619,54 @@ MEDDLY::node_handle MEDDLY::forest::unionOneMinterm(node_handle a,  int* from,  
 }
 
 
+void MEDDLY::forest::createEdge(bool val, dd_edge &e)
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest::createEdge(long val, dd_edge &e)
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest::createEdge(float val, dd_edge &e)
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest::getElement(const dd_edge& a, int index, int* e)
+{
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
+{
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+}
+
+//
+
+MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedRowIter() const
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedColumnIter() const
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+
+//
+
+// ===================================================================
+//
+// Deprecated as of version 0.17.7
+//
+// ===================================================================
+
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::forest::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1650,21 +1698,6 @@ void MEDDLY::forest
 
 void MEDDLY::forest
 ::createEdge(const int* const* vlist, const int* const* vplist, const float* terms, int N, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::createEdge(bool val, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::createEdge(long val, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::createEdge(float val, dd_edge &e)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -1702,32 +1735,7 @@ void MEDDLY::forest
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::forest::getElement(const dd_edge& a, int index, int* e)
-{
-    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
-{
-    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-}
-
-//
-
-MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedRowIter() const
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedColumnIter() const
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-
-//
-
-
+#endif
 
 // ===================================================================
 //

@@ -49,6 +49,8 @@ void MEDDLY::evmdd_pluslong::createEdge(long val, dd_edge &e)
   createEdgeTempl<OP, long>(val, e);
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::evmdd_pluslong
 ::createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e)
 {
@@ -93,6 +95,14 @@ void MEDDLY::evmdd_pluslong
 }
 
 void MEDDLY::evmdd_pluslong
+::evaluate(const dd_edge &f, const int* vlist, long &term) const
+{
+  evaluateT<OP, long>(f, vlist, term);
+}
+
+#endif
+
+void MEDDLY::evmdd_pluslong
 ::createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 {
   int sz = this->getVariableSize(vh);
@@ -113,12 +123,6 @@ void MEDDLY::evmdd_pluslong
   delete[] terms_long;
 }
 
-
-void MEDDLY::evmdd_pluslong
-::evaluate(const dd_edge &f, const int* vlist, long &term) const
-{
-  evaluateT<OP, long>(f, vlist, term);
-}
 
 void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
 {
