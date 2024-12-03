@@ -168,6 +168,15 @@ class MEDDLY::minterm {
         // For convenience and debugging
         void show(output &s) const;
 
+        /** Create an edge from this minterm.
+            The default value is 0.
+
+                @param  e   On input: should be attached to the
+                            forest we want to create the function in.
+                            On output: the function.
+        */
+        void buildFunction(dd_edge &e) const;
+
     private:
         const domain* _D;
 
@@ -285,11 +294,6 @@ class MEDDLY::minterm_coll {
         //
         // For convenience and debugging
         void show(output &s, const char* pre, const char* post) const;
-
-        //
-        // Used by fbuilder.
-        // TBD: move there?
-        //
 
 
 #ifdef ALLOW_MINTERM_OPS

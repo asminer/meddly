@@ -23,8 +23,6 @@
 #define TEST_SETS
 #define TEST_RELS
 
-#define USE_MTCOLL_BUILD
-
 const int DOMSIZE = 4;       // DO NOT change
 const int SETVARS = 10;
 const int RELVARS = 5;
@@ -85,6 +83,29 @@ void mismatch(const minterm &eval,
 
     throw "mismatch";
 }
+
+void mismatch(const minterm &eval,
+        char mddtype, const MEDDLY::dd_edge &E, bool val_mdd,
+        const minterm &mt, bool mtcoll_answer)
+{
+    const char* MDD = eval.isForRelations() ? "MxD" : "MDD";
+    MEDDLY::ostream_output out(std::cout);
+    out << "\nMismatch on ";
+    eval.show(out);
+    out << "\n  " << mddtype << MDD << ": "
+        << (val_mdd ? "true" : "false") << "\n";
+    out << "mtlist: " << (mtcoll_answer ? "true" : "false") << "\n";
+    out << "\n";
+    out << "Minterm:\n  ";
+    mt.show(out);
+
+    out << "\n" << mddtype << MDD << ":\n";
+    E.showGraph(out);
+    out.flush();
+
+    throw "mismatch";
+}
+
 
 
 /*
@@ -190,7 +211,7 @@ void test_sets()
 
     ostream_output out(std::cout);
 
-    out << "Checking sets built from minterms:\n";
+    out << "Checking sets built from minterm collections:\n";
     out.flush();
 
     char     testtype[] = { 'f', 'r', 'r', 'r', 'r', 'r', 'r', 'r', 0 };
@@ -228,8 +249,6 @@ void test_sets()
         dd_edge Ef(Ff);
         dd_edge Eq(Fq);
 
-#ifdef USE_MTCOLL_BUILD
-
         mtcoll.buildFunction(Eq);
         out << "q ";
         out.flush();
@@ -237,24 +256,6 @@ void test_sets()
         mtcoll.buildFunction(Ef);
         out << "f ";
         out.flush();
-
-#else
-
-        Ff->createEdge(false, Ef);
-        Fq->createEdge(false, Eq);
-
-        //
-        // Build unions
-        //
-        apply(UNION, Eq, mtcoll, Eq);
-        out << "q ";
-        out.flush();
-
-        apply(UNION, Ef, mtcoll, Ef);
-        out << "f ";
-        out.flush();
-
-#endif
 
         //
         // Brute force: compare functions
@@ -277,6 +278,44 @@ void test_sets()
         out.flush();
 
     } // for mtsize
+
+    out << "Checking sets built from single minterms:\n";
+    out.flush();
+    for (unsigned i=0; i<5; ++i) {
+        //
+        // Set up ddedges
+        //
+        dd_edge Ef(Ff);
+        dd_edge Eq(Fq);
+
+        mtcoll.at(i).buildFunction(Eq);
+        out << "        q ";
+        out.flush();
+
+        mtcoll.at(i).buildFunction(Ef);
+        out << "f ";
+        out.flush();
+
+        //
+        // Brute force: compare functions
+        //
+        zeroSetMinterm(eval);
+        do {
+            bool in_mtcoll = matches_set(mtcoll.at(i), eval);
+            bool qval, fval;
+            Eq.evaluate(eval, qval);
+            Ef.evaluate(eval, fval);
+
+            if (qval != in_mtcoll) {
+                mismatch(eval, 'Q', Eq, qval, mtcoll.at(i), in_mtcoll);
+            }
+            if (fval != in_mtcoll) {
+                mismatch(eval, 'F', Ef, fval, mtcoll.at(i), in_mtcoll);
+            }
+        } while (nextSetMinterm(eval));
+        out << "=\n";
+        out.flush();
+    }
 
     domain::destroy(D);
 }
@@ -417,7 +456,7 @@ void test_rels()
 
     ostream_output out(std::cout);
 
-    out << "Checking relations built from minterms:\n";
+    out << "Checking relations built from minterm collections:\n";
     out.flush();
 
     char     testtype[] = { 'f', 'i', 'r', 'r', 'r', 'r', 'r', 'r', 0 };
@@ -465,8 +504,6 @@ void test_rels()
         dd_edge Ei(Fi);
         dd_edge Eq(Fq);
 
-#ifdef USE_MTCOLL_BUILD
-
         mtcoll.buildFunction(Eq);
         out << "q ";
         out.flush();
@@ -478,29 +515,6 @@ void test_rels()
         mtcoll.buildFunction(Ei);
         out << "i ";
         out.flush();
-
-#else
-
-        Ff->createEdge(false, Ef);
-        Fi->createEdge(false, Ei);
-        Fq->createEdge(false, Eq);
-
-        //
-        // Build unions
-        //
-        apply(UNION, Eq, mtcoll, Eq);
-        out << "q ";
-        out.flush();
-
-        apply(UNION, Ef, mtcoll, Ef);
-        out << "f ";
-        out.flush();
-
-        apply(UNION, Ei, mtcoll, Ei);
-        out << "i ";
-        out.flush();
-
-#endif
 
         //
         // Brute force: compare functions
@@ -527,6 +541,53 @@ void test_rels()
         out.flush();
 
     } // for mtsize
+
+    out << "Checking relations built from single minterms:\n";
+    out.flush();
+    for (unsigned i=0; i<5; ++i) {
+        //
+        // Set up ddedges
+        //
+        dd_edge Ef(Ff);
+        dd_edge Eq(Fq);
+        dd_edge Ei(Fi);
+
+        mtcoll.at(i).buildFunction(Eq);
+        out << "        q ";
+        out.flush();
+
+        mtcoll.at(i).buildFunction(Ef);
+        out << "f ";
+        out.flush();
+
+        mtcoll.at(i).buildFunction(Ei);
+        out << "i ";
+        out.flush();
+
+        //
+        // Brute force: compare functions
+        //
+        zeroRelMinterm(eval);
+        do {
+            bool in_mtcoll = matches_rel(mtcoll.at(i), eval);
+            bool qval, fval, ival;
+            Eq.evaluate(eval, qval);
+            Ef.evaluate(eval, fval);
+            Ei.evaluate(eval, ival);
+
+            if (qval != in_mtcoll) {
+                mismatch(eval, 'Q', Eq, qval, mtcoll.at(i), in_mtcoll);
+            }
+            if (fval != in_mtcoll) {
+                mismatch(eval, 'F', Ef, fval, mtcoll.at(i), in_mtcoll);
+            }
+            if (ival != in_mtcoll) {
+                mismatch(eval, 'I', Ei, ival, mtcoll.at(i), in_mtcoll);
+            }
+        } while (nextRelMinterm(eval));
+        out << "=\n";
+        out.flush();
+    }
 
     domain::destroy(D);
 }

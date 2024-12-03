@@ -32,20 +32,14 @@
 
 // ******************************************************************
 // *                                                                *
-// *                         fbuilder class                         *
+// *                    fbuilder class hierarchy                    *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
-    class fbuilder_common {
+    class fbuilder_forest {
         public:
-            fbuilder_common(forest* f, minterm_coll &mtl, binary_builtin Union)
-                : mtc(mtl)
-            {
-                F = f;
-                union_op = Union(f, f, f);
-                MEDDLY_DCASSERT(union_op);
-            }
+            fbuilder_forest(forest* f) { F = f; }
 
             /// Build a chain of nodes for a single "set" minterm.
             ///     @param L    Last level to build a node.
@@ -89,6 +83,20 @@ namespace MEDDLY {
             void relPathToBottom(int L, const minterm &m,
                     edge_value &cv, node_handle &cp);
 
+
+
+        protected:
+            forest* F;
+    };
+
+    class fbuilder_common : public fbuilder_forest {
+        public:
+            fbuilder_common(forest* f, minterm_coll &mtl, binary_builtin Union)
+                : fbuilder_forest(f), mtc(mtl)
+            {
+                union_op = Union(f, f, f);
+                MEDDLY_DCASSERT(union_op);
+            }
 
             /// Get the minimum and maximum values for level L,
             /// on the interval [low, high).
@@ -223,16 +231,16 @@ namespace MEDDLY {
 #endif
 
         protected:
-            forest* F;
             minterm_coll &mtc;
             binary_operation* union_op;
 
     };
 
     /*
-        struct OP must provide the following static methods:
+        To build a function for a collection of minterms, struct OP must
+        provide the following static method:
 
-        void finalize(const minterm_coll &mc, unsigned low, unsigned high,
+            void finalize(const minterm_coll &mc, unsigned low, unsigned high,
                 edge_value &cv, node_handle &cp);
 
             Determine the terminal edge for the minterms in mc with
@@ -244,7 +252,6 @@ namespace MEDDLY {
         public:
             fbuilder(forest* f, minterm_coll &mtl, binary_builtin Union)
                 : fbuilder_common(f, mtl, Union) { }
-
 
             void createEdgeSet(int L, unsigned low, unsigned high,
                     edge_value &cv, node_handle &cp);
@@ -270,7 +277,6 @@ namespace MEDDLY {
                 if (cp) return;
             }
         }
-
     };
 };
 
@@ -321,6 +327,43 @@ void MEDDLY::minterm::show(output &s) const
         else                            s.put(_to[i]);
     }
     s.put(", bot]");
+}
+
+void MEDDLY::minterm::buildFunction(dd_edge &e) const
+{
+    forest* F = e.getForest();
+    if (!F) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+    if (F->getDomain() != _D) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+    if (F->isForRelations() != isForRelations())
+    {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    fbuilder_forest fb(F);
+    node_handle cp;
+    edge_value cv;
+
+    if (F->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        cv.set();
+        cp = termval.getHandle();
+        if (isForRelations()) {
+            if (F->isIdentityReduced()) {
+                fb.identityPathToBottom(num_vars, *this, cv, cp);
+            } else {
+                fb.relPathToBottom(num_vars, *this, cv, cp);
+            }
+        } else {
+            fb.setPathToBottom(num_vars, *this, cv, cp);
+        }
+        e.set(cv, cp);
+        return;
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 // ******************************************************************
@@ -598,11 +641,11 @@ int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
 
 // ******************************************************************
 // *                                                                *
-// *                    fbuilder_common  methods                    *
+// *                    fbuilder_forest  methods                    *
 // *                                                                *
 // ******************************************************************
 
-void MEDDLY::fbuilder_common::setPathToBottom(int L, const minterm &m,
+void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
         edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(L>0);
@@ -620,7 +663,7 @@ void MEDDLY::fbuilder_common::setPathToBottom(int L, const minterm &m,
     } // for i
 }
 
-void MEDDLY::fbuilder_common::identityPathToBottom(int L, const minterm &m,
+void MEDDLY::fbuilder_forest::identityPathToBottom(int L, const minterm &m,
         edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(L>0);
@@ -670,7 +713,7 @@ void MEDDLY::fbuilder_common::identityPathToBottom(int L, const minterm &m,
     } // for k
 }
 
-void MEDDLY::fbuilder_common::relPathToBottom(int L, const minterm &m,
+void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
         edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(L>0);
@@ -715,6 +758,13 @@ void MEDDLY::fbuilder_common::relPathToBottom(int L, const minterm &m,
         }
     } // for k
 }
+
+
+// ******************************************************************
+// *                                                                *
+// *                    fbuilder_common  methods                    *
+// *                                                                *
+// ******************************************************************
 
 void MEDDLY::fbuilder_common::moveValuesToFront(int L, int &minV,
         unsigned low, unsigned high, unsigned& mid)

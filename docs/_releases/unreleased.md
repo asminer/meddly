@@ -10,9 +10,11 @@ layout: single
 * Added classes ```minterm``` and ```minterm_coll``` to deal
     with variable assignments and truth tables over sets and relations.
 
-* Added operators for MDDs and collections of minterms.
-    TBD: deprecate old function::createEdge that takes
-    in a list of minterms.
+* Can create functions from single minterms or minterm collections
+    using methods ```minterm::buildFunction()``` and
+    ```minterm_coll::buildFunction```.
+    This replaces several ```forest::createEdge()``` methods,
+    which are now deprecated. (TBD)
 
 * Function evaluation is now done through ```dd_edge::evaluate```.
     TBD: deprecate the old function evaluate
