@@ -1277,7 +1277,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::computeDDEdge(const dd_edge& a, const
   node_handle c = 0;
   _compute(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, c);
 
-  res.set(c, cev);
+  res.set(cev, c);
 }
 
 void MEDDLY::constrained_bckwd_dfs_evplus::_compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
@@ -1388,8 +1388,8 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
           nb.setFull(i, edge_value(recev), rec);
         }
         else {
-          nbdi.set(nb.down(i), nb.edge_long(i));
-          newst.set(rec, recev);
+          nbdi.set(nb.edge_long(i), nb.down(i));
+          newst.set(recev, rec);
           minOp->computeTemp(nbdi, newst, nbdi);
           updated = (nbdi.getNode() != nb.down(i));
           nb.setFull(i, nbdi);
@@ -1547,8 +1547,8 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
 */
 
         // there's new states and existing states; union them.
-        Tdi.set(T->down(i), T->edge_long(i));
-        newst.set(n, nev);
+        Tdi.set(T->edge_long(i), T->down(i));
+        newst.set(nev, n);
         minOp->computeTemp(newst, Tdi, Tdi);
         T->setFull(i, Tdi);
       } // for j

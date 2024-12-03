@@ -17,5 +17,8 @@ layout: single
 * Function evaluation is now done through ```dd_edge::evaluate```.
     TBD: deprecate the old function evaluate
 
+* ```dd_edge::set()``` parameters are reversed, for consistency
+    (edge value before node).
+
 ### Implementation
 

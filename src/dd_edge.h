@@ -108,11 +108,15 @@ class MEDDLY::dd_edge {
             h = node; node = 0;
         }
         inline const edge_value& getEdgeValue() const { return edgeval; }
-        inline long getEdgeInt() const { return edgeval.getLong(); }
+        inline int getEdgeInt() const { return edgeval.getInt(); }
+        inline long getEdgeLong() const { return edgeval.getLong(); }
         inline float getEdgeFloat() const { return edgeval.getFloat(); }
+        inline double getEdgeDouble() const { return edgeval.getDouble(); }
 
+        inline void getEdgeValue(int &v) const { edgeval.get(v); }
         inline void getEdgeValue(long &v) const { edgeval.get(v); }
         inline void getEdgeValue(float &v) const { edgeval.get(v); }
+        inline void getEdgeValue(double &v) const { edgeval.get(v); }
 
         /** Counts the number of unique nodes below this edge.
             @return     The number of unique nodes starting at the root node

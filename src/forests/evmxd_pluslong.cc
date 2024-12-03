@@ -64,7 +64,7 @@ void MEDDLY::evmxd_pluslong
   long ev;
   node_handle ep;
   EM.createEdge(ev, ep);
-  e.set(ep, ev);
+  e.set(ev, ep);
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif

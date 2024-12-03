@@ -951,7 +951,7 @@ void MEDDLY::generic_binary_evplus
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
-  c.set(result, ev);
+  c.set(ev, result);
 #ifdef DEVELOPMENT_CODE
   resF->validateIncounts(true);
 #endif
@@ -1050,7 +1050,7 @@ void MEDDLY::generic_binary_evplus_mxd
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
-  c.set(result, ev);
+  c.set(ev, result);
 #ifdef DEVELOPMENT_CODE
   resF->validateIncounts(true);
 #endif
@@ -1207,7 +1207,7 @@ void MEDDLY::generic_binary_evtimes
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
-  c.set(result, ev);
+  c.set(ev, result);
 #ifdef DEVELOPMENT_CODE
   resF->validateIncounts(true);
 #endif

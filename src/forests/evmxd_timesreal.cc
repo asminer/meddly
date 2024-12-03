@@ -43,7 +43,7 @@ void MEDDLY::evmxd_timesreal::createEdge(float val, dd_edge &e)
     if (val) {
         createEdgeTempl<OP, float>(val, e);
     } else {
-        e.set(0, 0.0f);
+        e.set(0.0f, 0);
     }
 #ifdef DEVELOPMENT_CODE
     validateIncounts(true);
@@ -67,7 +67,7 @@ void MEDDLY::evmxd_timesreal
   float ev;
   node_handle ep;
   EM.createEdge(ev, ep);
-  e.set(ep, ev);
+  e.set(ev, ep);
 #ifdef DEVELOPMENT_CODE
   validateIncounts(true);
 #endif

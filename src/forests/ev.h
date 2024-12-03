@@ -136,7 +136,7 @@ class MEDDLY::ev_forest :
       node_handle node;
       createReducedNode(-1, nb, ev, node);
       makeNodeAtTop<OPERATION, T>(ev, node);
-      result.set(node, ev);
+      result.set(ev, node);
     }
 
 
@@ -149,7 +149,7 @@ class MEDDLY::ev_forest :
         t.setOmega();
         node_handle ed = t.getHandle();
         makeNodeAtTop<OPERATION, T>(term, ed);
-        e.set(ed, term);
+        e.set(term, ed);
     }
 
 

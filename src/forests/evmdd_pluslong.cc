@@ -86,7 +86,7 @@ void MEDDLY::evmdd_pluslong
   long ev = Inf<long>();
   node_handle ep = 0;
   EM.createEdge(ev, ep);
-  e.set(ep, ev);
+  e.set(ev, ep);
 
   free(ordered_vlist);
   free(terms_long);

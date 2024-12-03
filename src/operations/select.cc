@@ -134,7 +134,7 @@ void MEDDLY::select_EVPlus::computeDDEdge(const dd_edge &arg, dd_edge &res, bool
   long aev = 0;
   arg.getEdgeValue(aev);
   _compute(aev, arg.getNode(), resF->getMaxLevelIndex(), bev, b);
-  res.set(b, bev);
+  res.set(bev, b);
 }
 
 void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& bev, node_handle& b)

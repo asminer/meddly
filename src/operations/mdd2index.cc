@@ -81,7 +81,7 @@ MEDDLY::mdd2index_operation
   long card = 0;
   int nVars = argF->getMaxLevelIndex();
   compute_r(nVars, arg.getNode(), down, card);
-  res.set(down, long(0));
+  res.set(0L, down);
 }
 
 void
