@@ -1040,7 +1040,8 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
             // Done with Cp; check it in and connect it
             //
             Cp->shrink(zp);
-            F->createReducedNode(Cp, tv, tp);
+            F->createReducedNode(Cp, tv, tp, cpin);
+
             if (has_primed_extra) {
                 MEDDLY_DCASSERT(cpin >= 0);
                 union_op->compute(-L, cpin, pe_v, pe_p, tv, tp, tv, tp);
@@ -1064,7 +1065,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
             //
             // Reset Cp
             //
-            Cp = unpacked_node::newSparse(F, L, L_size);
+            Cp = unpacked_node::newSparse(F, -L, L_size);
             zp = 0;
             has_primed_extra = false;
             cpin = currU;
@@ -1151,7 +1152,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     // Close off the final Cp
     //
     Cp->shrink(zp);
-    F->createReducedNode(Cp, tv, tp);
+    F->createReducedNode(Cp, tv, tp, cpin);
     if (has_primed_extra) {
         MEDDLY_DCASSERT(cpin >= 0);
         union_op->compute(-L, cpin, pe_v, pe_p, tv, tp, tv, tp);
