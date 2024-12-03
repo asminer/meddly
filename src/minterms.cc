@@ -28,6 +28,8 @@
 // #define DEBUG_MOVE_PAIRS
 // #include "operators.h"
 
+// #define DEBUG_CREATE_EDGE_REL
+
 // ******************************************************************
 // *                                                                *
 // *                         fbuilder class                         *
@@ -1034,6 +1036,9 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
         if (cpin < DONT_CHANGE) {
             // First time through
             cpin = currU;
+#ifdef DEBUG_CREATE_EDGE_REL
+            printf("Starting Cp level %d in %d\n", -L, cpin);
+#endif
         }
         if (cpin != currU) {
             //
@@ -1050,6 +1055,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
                 //
                 // Add to the extra unprimed function
                 //
+                tp = F->makeRedundantsTo(tp, -L, L);
                 if (has_unprimed_extra) {
                     union_op->compute(L, ~0, tv, tp, ue_v, ue_p, ue_v, ue_p);
                 } else {
@@ -1072,6 +1078,9 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
             zp = 0;
             has_primed_extra = false;
             cpin = currU;
+#ifdef DEBUG_CREATE_EDGE_REL
+            printf("Starting Cp level %d in %d\n", -L, cpin);
+#endif
         }
 
         if (DONT_CARE == currU)
@@ -1111,6 +1120,11 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
                 createEdgeRel(L-1, low, mid, tv, tp);
                 Cp->setSparse(zp, currP, tv, tp);
                 ++zp;
+#ifdef DEBUG_CREATE_EDGE_REL
+                printf("Adding to Cp level %d in %d\n", -L, cpin);
+                printf("  down[%d] = %d level %d\n",
+                        currP, tp, F->getNodeLevel(tp));
+#endif
             }
 
         } else {
@@ -1136,7 +1150,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
                 }
 
                 // Make sure ue_p isn't recycled
-                Cu->setTempRoot(ue_p);
+                Cp->setTempRoot(pe_p);
 
             } else {
                 //
@@ -1145,6 +1159,11 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
                 createEdgeRel(L-1, low, mid, tv, tp);
                 Cp->setSparse(zp, currP, tv, tp);
                 ++zp;
+#ifdef DEBUG_CREATE_EDGE_REL
+                printf("Adding to Cp level %d in %d\n", -L, cpin);
+                printf("  down[%d] = %d level %d\n",
+                        currP, tp, F->getNodeLevel(tp));
+#endif
             }
         }
 
@@ -1164,6 +1183,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
         //
         // Add this to the UNPRIMED extra function
         //
+        tp = F->makeRedundantsTo(tp, -L, L);
         if (has_unprimed_extra) {
             union_op->compute(L, ~0, ue_v, ue_p, tv, tp,
                     ue_v, ue_p);
@@ -1186,8 +1206,16 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     //
     Cu->shrink(zu);
     F->createReducedNode(Cu, cv, cp);
+#ifdef DEBUG_CREATE_EDGE_REL
+    printf("Reduced Cu level %d -> node %d at level %d\n",
+            L, cp, F->getNodeLevel(cp));
+#endif
     if (has_unprimed_extra) {
         union_op->compute(L, ~0, ue_v, ue_p, cv, cp, cv, cp);
     }
+#ifdef DEBUG_CREATE_EDGE_REL
+    printf("After union level %d -> node %d at level %d\n",
+            L, cp, F->getNodeLevel(cp));
+#endif
 }
 
