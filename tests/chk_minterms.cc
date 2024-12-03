@@ -27,7 +27,7 @@
 
 const int DOMSIZE = 4;       // DO NOT change
 const int SETVARS = 10;
-const int RELVARS = 6;
+const int RELVARS = 5;
 
 /*
  *
