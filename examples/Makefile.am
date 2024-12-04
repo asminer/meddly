@@ -5,7 +5,6 @@
 
 ## bin_PROGRAMS = \
 noinst_PROGRAMS = \
-build_expression \
 dining_phils \
 graphs_to_mdds \
 kanban \
@@ -46,9 +45,6 @@ testmddlib
 
 AM_CXXFLAGS = -Wall
 
-
-build_expression_SOURCES = build_expression.cc
-build_expression_LDADD = ../src/libmeddly.la
 
 dining_phils_SOURCES = dining_phils.cc
 dining_phils_LDADD = ../src/libmeddly.la

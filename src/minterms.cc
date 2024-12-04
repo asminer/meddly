@@ -290,19 +290,20 @@ namespace MEDDLY {
 MEDDLY::minterm::minterm(const domain* D, set_or_rel sr) : termval(true)
 {
     _D = D;
-    if (D) {
-        num_vars = D->getNumVariables();
-    } else {
-        num_vars = 0;
-    }
     for_relations = sr;
-    _from = new int[1+num_vars];
-    if (for_relations) {
-        _to = new int[1+num_vars];
-    } else {
-        _to = nullptr;
-    }
+    initVectors();
 }
+
+MEDDLY::minterm::minterm(const forest* F) : termval(true)
+{
+    if (!F) {
+        throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    }
+    _D = F->getDomain();
+    for_relations = F->isForRelations();
+    initVectors();
+}
+
 
 MEDDLY::minterm::~minterm()
 {
@@ -364,6 +365,21 @@ void MEDDLY::minterm::buildFunction(dd_edge &e) const
     }
 
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::minterm::initVectors()
+{
+    if (_D) {
+        num_vars = _D->getNumVariables();
+    } else {
+        num_vars = 0;
+    }
+    _from = new int[1+num_vars];
+    if (for_relations) {
+        _to = new int[1+num_vars];
+    } else {
+        _to = nullptr;
+    }
 }
 
 // ******************************************************************

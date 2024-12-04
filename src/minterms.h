@@ -80,6 +80,7 @@ namespace MEDDLY {
 class MEDDLY::minterm {
     public:
         minterm(const domain* D, set_or_rel sr);
+        minterm(const forest* F);
         ~minterm();
 
         inline bool isForSets()             const   { return !for_relations; }
@@ -176,6 +177,14 @@ class MEDDLY::minterm {
                             On output: the function.
         */
         void buildFunction(dd_edge &e) const;
+
+    private:
+        /// PRE:    _D, termval, and for_relations are set.
+        ///
+        /// POST:   _D, termval, and for_relations are unchanged;
+        ///         num_vars, _from, and _to are set.
+        ///
+        void initVectors();
 
     private:
         const domain* _D;
