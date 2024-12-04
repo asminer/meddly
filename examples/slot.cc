@@ -207,18 +207,6 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
     }
     initial.buildFunction(init_state);
 
-/*
-  int* initial = new int[1+N*8];
-  for (int i=N*8; i; i--) initial[i] = 0;
-  int* initLocal = initial;
-  for (int i=0; i<N; i++) {
-    initLocal[3] = initLocal[5] = 1;
-    initLocal += 8;
-  }
-  dd_edge init_state(mdd);
-  mdd->createEdge(&initial, 1, init_state);
-  */
-
     //
     // Build next-state function
     //

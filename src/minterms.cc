@@ -409,6 +409,7 @@ MEDDLY::minterm_coll::minterm_coll(unsigned maxsz, const forest* F)
         throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
     }
     _D = F->getDomain();
+    num_vars = _D ? _D->getNumVariables() : 0;
     for_relations = F->isForRelations();
 
     _mtlist = new minterm*[max_coll_size];

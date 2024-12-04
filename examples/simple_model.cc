@@ -345,7 +345,9 @@ void explicitReachset(const char* const* events, unsigned nEvents,
             const int* curr = I.getAssignments();
 #ifdef DEBUG_GENERATE
             printf("Exploring state: (%d", curr[1]);
-            for (int n=2; n<=nVars; n++) printf(", %d", curr[n]);
+            for (int n=2; n<=minterms.getNumVars(); n++) {
+                printf(", %d", curr[n]);
+            }
             printf(")\n");
 #endif
             // what's enabled?
@@ -353,8 +355,8 @@ void explicitReachset(const char* const* events, unsigned nEvents,
                 if (!fireEvent(events[e], curr, minterms.unused())) continue;
 #ifdef DEBUG_GENERATE
                 printf("  -- (event %d) --> ", e);
-                FILE_output fout(stdout);
-                minterms_b->show(fout);
+                MEDDLY::FILE_output fout(stdout);
+                minterms.unused().show(fout);
                 printf("\n");
 #endif
 
