@@ -38,18 +38,9 @@ int main(int argc, char *argv[])
     // Initialize MEDDLY
     MEDDLY::initialize();
 
-    // Number of levels in domain (excluding terminals)
-    const int nLevels = 2;
-
-    // Set up arrays bounds
-    variable** vars = new variable*[1+nLevels];
-    vars[0] = nullptr;
-    for (unsigned i = nLevels; i; i--) {
-        vars[i] = createVariable(2, "");
-    }
-
-    // Create a domain and set up the state variables.
-    domain *d = domain::create(vars, nLevels);
+    // Create a domain
+    const int varsizes[] = { 2, 2 };
+    domain *d = domain::createBottomUp(varsizes, 2);
     assert(d);
 
     // Create an MDD forest in this domain (to store states)
@@ -81,20 +72,10 @@ int main(int argc, char *argv[])
     nsf_coll.unused().setVars(1, DONT_CARE, 1);
     nsf_coll.unused().setVars(2, 0, 1);
     nsf_coll.pushUnused();
-
     nsf_coll.buildFunction(nsf);
 
-    /*
-  int from1[nLevels+1] = {0, DONT_CARE, 0};
-  int from2[nLevels+1] = {0, DONT_CARE, 0};
-  int to1[nLevels+1] = {0, 1, 0};
-  int to2[nLevels+1] = {0, 1, 1};
-  int *from[2] = { from1, from2 };
-  int *to[2] = { to1, to2 };
-  mxd->createEdge(reinterpret_cast<int**>(from),
-      reinterpret_cast<int**>(to), 2, nsf);
-      */
-
+    // Generate reachable states
+    //
     dd_edge reachBFS(initialStates);
     dd_edge reachDFS(initialStates);
 

@@ -30,6 +30,8 @@
 
 // #define DEBUG_CREATE_EDGE_REL
 
+// #define SPECIALIZED_IDENTITY
+
 // ******************************************************************
 // *                                                                *
 // *                    fbuilder class hierarchy                    *
@@ -52,6 +54,7 @@ namespace MEDDLY {
             void setPathToBottom(int L, const minterm &m,
                     edge_value &cv, node_handle &cp);
 
+#ifdef SPECIALIZED_IDENTITY
             /// Build a chain of nodes for a single "relation" minterm.
             /// This is for identity-reduced forests:
             ///     we don't need to build identity patterns (yay)
@@ -67,11 +70,9 @@ namespace MEDDLY {
             ///
             void identityPathToBottom(int L, const minterm &m,
                     edge_value &cv, node_handle &cp);
+#endif
 
             /// Build a chain of nodes for a single "relation" minterm.
-            /// This is for non-identity-reduced forests:
-            ///     we need to build identity patterns (boo)
-            ///     but no need to check incoming edges to singletons (yay).
             ///
             ///     @param L    Last level to build a node.
             ///     @param m    Minterm to build from
@@ -352,11 +353,15 @@ void MEDDLY::minterm::buildFunction(dd_edge &e) const
         cv.set();
         cp = termval.getHandle();
         if (isForRelations()) {
+#ifdef SPECIALIZED_IDENTITY
             if (F->isIdentityReduced()) {
                 fb.identityPathToBottom(num_vars, *this, cv, cp);
             } else {
                 fb.relPathToBottom(num_vars, *this, cv, cp);
             }
+#else
+            fb.relPathToBottom(num_vars, *this, cv, cp);
+#endif
         } else {
             fb.setPathToBottom(num_vars, *this, cv, cp);
         }
@@ -475,97 +480,6 @@ void MEDDLY::minterm_coll::show(output &s,
     }
 }
 
-#ifdef ALLOW_MINTERM_OPS
-
-int MEDDLY::minterm_coll::_collect_first(int L, unsigned low,
-        unsigned hi, unsigned& lend)
-{
-    int val = at(low).var(L);
-    bool val_dc;
-    if ((DONT_CARE == val) && isForRelations() && (L>0)) {
-        val_dc = (DONT_CHANGE == at(low).var(-L));
-    } else {
-        val_dc = false;
-    }
-    lend = low+1;
-    unsigned hptr = hi;
-
-    for (;;)
-    {
-        //
-        // Find smallest element different from val
-        //
-        for (;;) {
-            const int vl = at(lend).var(L);
-            if (vl != val) break;
-            if ((DONT_CARE == vl) && isForRelations() && (L>0)) {
-                const bool vl_dc = (DONT_CHANGE == at(lend).var(-L));
-                if (val_dc != vl_dc) break;
-            }
-            ++lend;
-            if (lend >= hptr) {
-#ifdef DEBUG_COLLECT_FIRST
-                FILE_output out(stdout);
-                out << "Collected first on range [" << low << ", "
-                    << hi << "):\n";
-                for (unsigned i=low; i<hi; i++) {
-                    if (i==lend) out << "    ======================\n";
-                    out << "    ";
-                    out.put(long(i), 2);
-                    out << "  ";
-                    at(i).show(out);
-                    out << "\n";
-                }
-                out << "val " << val << "\n";
-#endif
-                return val;
-            }
-        }
-
-        //
-        // Find high element to swap with
-        //
-        for (;;) {
-            const int vh = at(hptr-1).var(L);
-            if (vh == val) {
-                if ((DONT_CARE == vh) && isForRelations() && (L>0)) {
-                    const bool vh_dc = (DONT_CHANGE == at(hptr-1).var(-L));
-                    if (val_dc == vh_dc) break;
-                } else {
-                    break;
-                }
-            }
-            --hptr;
-            if (lend >= hptr) {
-#ifdef DEBUG_COLLECT_FIRST
-                FILE_output out(stdout);
-                out << "Collected first on range [" << low << ", "
-                    << hi << "):\n";
-                for (unsigned i=low; i<hi; i++) {
-                    if (i==lend) out << "    ======================\n";
-                    out << "    ";
-                    out.put(long(i), 2);
-                    out << "  ";
-                    at(i).show(out);
-                    out << "\n";
-                }
-                out << "val " << val << "\n";
-#endif
-                return val;
-            }
-        }
-
-        //
-        // Swap elements
-        //
-        minterm* tmp = _mtlist[lend];
-        _mtlist[lend] = _mtlist[hptr-1];
-        _mtlist[hptr-1] = tmp;
-    }
-
-}
-
-#endif // ALLOW_MINTERM_OPS
 
 // ******************************************************************
 // *                                                                *
@@ -590,6 +504,8 @@ void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
         }
     } // for i
 }
+
+#ifdef SPECIALIZED_IDENTITY
 
 void MEDDLY::fbuilder_forest::identityPathToBottom(int L, const minterm &m,
         edge_value &cv, node_handle &cp)
@@ -645,12 +561,13 @@ void MEDDLY::fbuilder_forest::identityPathToBottom(int L, const minterm &m,
     } // for k
 }
 
+#endif
+
 void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
         edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(L>0);
     MEDDLY_DCASSERT(m.isForRelations());
-    MEDDLY_DCASSERT(!F->isIdentityReduced());
     for (int k=1; k<=L; k++) {
         //
         // Check for identity pattern at levels (k, k')
@@ -929,11 +846,15 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     //
     if (high - low == 1) {
         OP::finalize(mtc, low, high, cv, cp);
+#ifdef SPECIALIZED_IDENTITY
         if (F->isIdentityReduced()) {
             identityPathToBottom(L, mtc.at(low), cv, cp);
         } else {
             relPathToBottom(L, mtc.at(low), cv, cp);
         }
+#else
+        relPathToBottom(L, mtc.at(low), cv, cp);
+#endif
         return;
     }
 

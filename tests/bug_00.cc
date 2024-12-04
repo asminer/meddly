@@ -14,8 +14,9 @@ int main()
         MEDDLY::initialize();
 
         // Initialize domain
-        int tmp[] = { 3, 3, 3};
-        domain* d = domain::createBottomUp(tmp, 3);
+        const int varsizes[] = { 3, 3, 3};
+        domain* d = domain::createBottomUp(varsizes, 3);
+        assert(d);
 
         // Initialize forests
         forest* mdd = forest::create(d, SET, range_type::BOOLEAN,

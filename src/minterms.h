@@ -314,48 +314,6 @@ class MEDDLY::minterm_coll {
         void show(output &s, const char* pre, const char* post) const;
 
 
-#ifdef ALLOW_MINTERM_OPS
-        /** Partial sort, as used by explicit minterm operations.
-            Based on level L, and the range of minterms [low, hi),
-            collect all elements together with variable L equal to item #low.
-            on output, lend is such that [low, lend) has equal elements
-            where low < lend <= hi
-
-            As a special case, if L>0 and the collection is for relations,
-            if the first item has value "DONT_CARE", then we ALSO look at
-            the primed value but only to distinguish "DONT_CHANGE" and
-            not equal to "DONT_CHANGE".
-
-                @param  L       Variable number; use negative for primed
-                @param  low     First minterm to check
-                @param  hi      One past the last minterm to check
-                @param  lend    On output, one past the last minterm
-                                in the group equal to low.
-
-                @return The first value
-        */
-        inline int collect_first(int L, unsigned low, unsigned hi,
-                unsigned& lend)
-        {
-            if (hi-low < 2) {
-                // Only one element, no checking or reordering required.
-                lend = hi;
-                return at(low).var(L);
-            }
-            return _collect_first(L, low, hi, lend);
-        }
-#endif
-
-
-    private:
-
-
-#ifdef ALLOW_MINTERM_OPS
-    private:
-        int _collect_first(int L, unsigned low, unsigned hi, unsigned& lend);
-#endif
-
-
     private:
         minterm** _mtlist;
         const unsigned max_coll_size;

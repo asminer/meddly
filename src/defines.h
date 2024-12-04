@@ -29,8 +29,6 @@
 #define ALLOW_DEPRECATED_0_17_6  "11/11/2024"
 #define ALLOW_DEPRECATED_0_17_7
 
-// #define ALLOW_MINTERM_OPS
-
 // ==================================================================
 // ^ This line is important for the release script, don't remove it
 
