@@ -213,6 +213,15 @@ class MEDDLY::minterm_coll {
         minterm_coll(unsigned maxsize,
                 const domain* D, set_or_rel sr);
 
+        /// Build a collection for a given forest.
+        /// The collection will work for any forest with the same
+        /// domain, and with the same dimension (i.e., sets
+        /// vs. relations).
+        ///     @param  maxsize Maximum size of the collection
+        ///     @param  F       The forest
+        minterm_coll(unsigned maxsize, const forest* F);
+
+
         ~minterm_coll();
 
         inline bool isForRelations()        const   { return for_relations; }

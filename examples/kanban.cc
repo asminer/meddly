@@ -266,12 +266,15 @@ int main(int argc, const char** argv)
         // Build initial state
         //
         if (LOG) LOG->newPhase(mdd, "Building initial state");
-        int* initial = new int[17];
-        for (int i=16; i; i--) initial[i] = 0;
-        initial[1] = initial[5] = initial[9] = initial[13] = N;
+
+        minterm initial(mdd);
         dd_edge init_state(mdd);
-        mdd->createEdge(&initial, 1, init_state);
-        delete[] initial;
+        for (int i=16; i; i--) initial.setVar(i, 0);
+        initial.setVar(1, N);
+        initial.setVar(5, N);
+        initial.setVar(9, N);
+        initial.setVar(13, N);
+        initial.buildFunction(init_state);
 
         //
         // Build next-state function

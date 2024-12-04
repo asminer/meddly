@@ -402,6 +402,21 @@ MEDDLY::minterm_coll::minterm_coll(unsigned maxsz, const domain* D,
     clear();
 }
 
+MEDDLY::minterm_coll::minterm_coll(unsigned maxsz, const forest* F)
+        : max_coll_size(maxsz)
+{
+    if (!F) {
+        throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    }
+    _D = F->getDomain();
+    for_relations = F->isForRelations();
+
+    _mtlist = new minterm*[max_coll_size];
+    for (unsigned i=0; i<maxsize(); i++) {
+        _mtlist[i] = new minterm(F);
+    }
+    clear();
+}
 
 MEDDLY::minterm_coll::~minterm_coll()
 {

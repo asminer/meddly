@@ -35,9 +35,6 @@
 
 // #define SAME_FOREST_OPERATIONS
 
-// #define USE_OLD_MINTERMS
-#define USE_MTCOLL_BUILD
-
 inline unsigned MAX(unsigned a, int b) {
     if (b<0) return a;
     return (a> unsigned(b)) ? a : unsigned(b);
@@ -97,13 +94,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
     }
     maxBound++;
     long* temp = new long[maxBound];
-#ifdef USE_OLD_MINTERMS
-    int* minterm = new int[nVars+1];
-    int* mtprime = new int[nVars+1];
-#else
-    minterm_coll mtlist(1, d, RELATION);
-    mtlist.pushUnused();
-#endif
+    minterm mt(mtmxd);
     dd_edge** varP  = new dd_edge*[nVars+1];
     varP[0] = 0;
     dd_edge** inc   = new dd_edge*[nVars+1];
@@ -149,31 +140,12 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
         //
         for (unsigned i=1; i<=nVars; i++) {
             if ('.' == ev[i]) {
-#ifdef USE_OLD_MINTERMS
-                minterm[i] = DONT_CARE;
-                mtprime[i] = DONT_CHANGE;
-#else
-                mtlist.at(0).setVars(i, DONT_CARE, DONT_CHANGE);
-#endif
+                mt.setVars(i, DONT_CARE, DONT_CHANGE);
             } else {
-#ifdef USE_OLD_MINTERMS
-                minterm[i] = DONT_CARE;
-                mtprime[i] = DONT_CARE;
-#else
-                mtlist.at(0).setVars(i, DONT_CARE, DONT_CARE);
-#endif
+                mt.setVars(i, DONT_CARE, DONT_CARE);
             }
         }
-#ifdef USE_OLD_MINTERMS
-        mxd->createEdge(&minterm, &mtprime, 1, nsf_ev);
-#else
-#ifdef USE_MTCOLL_BUILD
-        mtlist.buildFunction(nsf_ev);
-#else
-        mxd->createEdge(false, nsf_ev);
-        apply(UNION, nsf_ev, mtlist, nsf_ev);
-#endif
-#endif
+        mt.buildFunction(nsf_ev);
 #ifdef DEBUG_EVENTS
         printf("Initial nsf for event %d\n", e);
         nsf_ev.showGraph(out);
@@ -272,10 +244,6 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
     if (verb==2) fputc('\n', stderr);
 
     // cleanup
-#ifdef USE_OLD_MINTERMS
-    delete[] mtprime;
-    delete[] minterm;
-#endif
     delete[] temp;
     for (unsigned i=1; i<=nVars; i++) {
         delete varP[i];
@@ -330,32 +298,6 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 //  Explicit RS construction
 //
 
-#ifdef USE_OLD_MINTERMS
-
-bool fireEvent(const char* event, const int* current, int* next, unsigned nVars)
-{
-    for (unsigned i=nVars; i; i--) {
-        if ('.' == event[i]) {
-            next[i] = current[i];
-            continue;
-        }
-        if ('-' == event[i]) {
-            next[i] = current[i] - 1;
-            if (next[i] < 0) return false;
-            continue;
-        }
-        if ('+' == event[i]) {
-            next[i] = current[i] + 1;
-            // TBD ... check for overflow
-            continue;
-        }
-        throw 1;  // bad event string
-    }
-    return true;
-}
-
-#else
-
 bool fireEvent(const char* event, const int* current,
         MEDDLY::minterm& next)
 {
@@ -379,8 +321,6 @@ bool fireEvent(const char* event, const int* current,
     return true;
 }
 
-#endif
-
 void explicitReachset(const char* const* events, unsigned nEvents,
   MEDDLY::forest* f, MEDDLY::dd_edge &expl, MEDDLY::dd_edge &RS,
   unsigned batchsize)
@@ -388,17 +328,7 @@ void explicitReachset(const char* const* events, unsigned nEvents,
     if (batchsize < 1) batchsize = 256;
 
     // initialize batch memory
-#ifdef USE_OLD_MINTERMS
-    unsigned b;
-    unsigned nVars = f->getNumVariables();
-    int** minterms = new int*[batchsize];
-    for (b=0; b<batchsize; b++) {
-        minterms[b] = new int[1+nVars];
-    }
-    b = 0;
-#else
-    MEDDLY::minterm_coll minterms(batchsize, f->getDomain(), MEDDLY::SET);
-#endif
+    MEDDLY::minterm_coll minterms(batchsize, f);
 
     // unexplored states
     MEDDLY::dd_edge unexplored(f);
@@ -420,11 +350,7 @@ void explicitReachset(const char* const* events, unsigned nEvents,
 #endif
             // what's enabled?
             for (unsigned e=0; e<nEvents; e++) {
-#ifdef USE_OLD_MINTERMS
-                if (!fireEvent(events[e], curr, minterms[b], nVars)) continue;
-#else
                 if (!fireEvent(events[e], curr, minterms.unused())) continue;
-#endif
 #ifdef DEBUG_GENERATE
                 printf("  -- (event %d) --> ", e);
                 FILE_output fout(stdout);
@@ -432,20 +358,6 @@ void explicitReachset(const char* const* events, unsigned nEvents,
                 printf("\n");
 #endif
 
-#ifdef USE_OLD_MINTERMS
-                bool seen;
-                f->evaluate(RS, minterms[b], seen);
-                if (seen) continue;     // already known in RS
-
-                b++;
-                if (b>=batchsize) {
-                    // Buffer is full; flush it
-                    f->createEdge(minterms, int(b), batch);
-                    unexplored += batch;
-                    RS += batch;
-                    b = 0;
-                }
-#else
                 // Have we seen this already in the RS
                 bool seen;
                 RS.evaluate(minterms.unused(), seen);
@@ -454,60 +366,24 @@ void explicitReachset(const char* const* events, unsigned nEvents,
                 minterms.pushUnused();
                 if (minterms.size() >= batchsize) {
                     // Buffer is full; flush it
-#ifdef USE_MTCOLL_BUILD
                     minterms.buildFunction(batch);
-#else
-                    f->createEdge(false, batch);
-                    apply(MEDDLY::UNION, batch, minterms, batch);
-#endif
-                    /*
-                    apply(MEDDLY::UNION, unexplored, minterms, unexplored);
-                    apply(MEDDLY::UNION, RS, minterms, RS);
-                    */
                     minterms.clear();
                     unexplored += batch;
                     RS += batch;
                 }
-#endif
             }
         }
         // expl is empty.
         // Flush the buffer
-#ifdef USE_OLD_MINTERMS
-        if (b) {
-            f->createEdge(minterms, int(b), batch);
-            unexplored += batch;
-            RS += batch;
-            b = 0;
-        }
-#else
         if (minterms.size()) {
-#ifdef USE_MTCOLL_BUILD
             minterms.buildFunction(batch);
-#else
-            f->createEdge(false, batch);
-            apply(MEDDLY::UNION, batch, minterms, batch);
-#endif
-            /*
-            apply(MEDDLY::UNION, unexplored, minterms, unexplored);
-            apply(MEDDLY::UNION, RS, minterms, RS);
-            */
             minterms.clear();
             unexplored += batch;
             RS += batch;
         }
-#endif
 
         expl = unexplored;
     }
-
-    // cleanup batch memory
-#ifdef USE_OLD_MINTERMS
-    for (b=0; b<batchsize; b++) {
-        delete[] minterms[b];
-    }
-    delete[] minterms;
-#endif
 }
 
 
