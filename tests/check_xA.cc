@@ -27,8 +27,8 @@
 
 #include "../src/meddly.h"
 
-// #define SHOW_INDEXES
-// #define SHOW_MATRIX
+#define SHOW_INDEXES
+#define SHOW_MATRIX
 
 using namespace MEDDLY;
 
@@ -65,9 +65,10 @@ void build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
   indf->createEdge(sslist, indexes, 3, ss);
   success();
 
+  FILE_output out(stdout);
 #ifdef SHOW_INDEXES
-  printf("Indexes:\n");
-  ss.show(stdout, 2);
+  out << "Indexes:\n";
+  ss.showGraph(out);
 #endif
 
   // Build matrix elements
@@ -87,8 +88,8 @@ void build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
   success();
 
 #ifdef SHOW_MATRIX
-  printf("Matrix:\n");
-  P.show(stdout, 2);
+  out << "Matrix:\n";
+  P.showGraph(out);
 #endif
 }
 
