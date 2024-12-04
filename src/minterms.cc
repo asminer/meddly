@@ -458,110 +458,6 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e)
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-/*
-void MEDDLY::minterm_coll::sortOnVariable(int L, unsigned low, unsigned high,
-        std::vector<unsigned> &index, std::vector <int> &value)
-{
-#ifdef DEBUG_SORT
-    FILE_output out(stdout);
-    out << "Sorting variable " << L << " on range ["
-        << low << ", " << high << ")\n";
-#endif
-
-    //
-    // Determine the smallest and largest values
-    //
-    const int absL = ABS(L);
-    int minV = std::numeric_limits<int>::max();
-    int maxV = DONT_CHANGE;
-    if (L<0) {
-        for (unsigned i=low; i<high; i++) {
-            const int pri = primed(i, absL);
-            minV = MIN(minV, pri);
-            maxV = MAX(maxV, pri);
-        }
-    } else {
-        for (unsigned i=low; i<high; i++) {
-            const int unpr = unprimed(i, absL);
-            minV = MIN(minV, unpr);
-            maxV = MAX(maxV, unpr);
-        }
-    }
-
-    //
-    // Initialize index, value
-    //
-    index.clear();
-    index.push_back(low);
-    value.clear();
-
-    //
-    // Sort. For each minimum value v, move those values to the front.
-    // While doing that, keep track of the next smallest value.
-    //
-    unsigned indx_next = low;
-    for (int v = minV; v<maxV; v = minV) {
-        value.push_back(minV);
-        minV = std::numeric_limits<int>::max();
-
-        //
-        // move anything with value v, to the "new" front
-        //
-        if (L<0) {
-            for (unsigned i=index.back(); i<high; i++) {
-                const int pri = primed(i, absL);
-                if (v == pri) {
-                    if (indx_next != i) {
-                        swap(indx_next, i);
-                    }
-                    ++indx_next;
-                } else {
-                    minV = MIN(minV, pri);
-                }
-            }
-        } else {
-            for (unsigned i=index.back(); i<high; i++) {
-                const int unpr = unprimed(i, absL);
-                if (v == unpr) {
-                    if (indx_next != i) {
-                        swap(indx_next, i);
-                    }
-                    ++indx_next;
-                } else {
-                    minV = MIN(minV, unpr);
-                }
-            }
-        }
-        MEDDLY_DCASSERT(indx_next > index.back());
-        index.push_back(indx_next);
-
-    } // for v
-    MEDDLY_DCASSERT(index.back() < high);
-    index.push_back(high);
-    value.push_back(minV);
-
-#ifdef DEBUG_SORT
-    out << "Done sort\n";
-    out << "Indexes: [" << index[0];
-    for (unsigned i=1; i<index.size(); i++) {
-        out << ", " << index[i];
-    }
-    out << "]\n";
-    out << "Values: [" << value[0];
-    for (unsigned i=1; i<value.size(); i++) {
-        out << ", " << value[i];
-    }
-    out << "]\n";
-    for (unsigned i=index[0]; i<index.back(); i++) {
-        out << "    ";
-        out.put(long(i), 2);
-        out << "  ";
-        at(i).show(out);
-        out << "\n";
-    }
-#endif
-}
-*/
 
 void MEDDLY::minterm_coll::show(output &s,
         const char* pre, const char* post) const
@@ -741,6 +637,10 @@ void MEDDLY::fbuilder_forest::identityPathToBottom(int L, const minterm &m,
                 = unpacked_node::newSparse(F, k, 1);
             nb->setSparse(0, m.from(k), cv, cp);
             F->createReducedNode(nb, cv, cp);
+        } else {
+            // For sure there is a singleton below,
+            // so we must build the redundant node.
+            cp = F->makeRedundantsTo(cp, -k, k);
         }
     } // for k
 }
@@ -780,13 +680,13 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
         //
         // Build node at unprimed level
         //
-        if (DONT_CARE == m.from(k)) {
-            cp = F->makeRedundantsTo(cp, -k, k);
-        } else {
+        if (DONT_CARE != m.from(k)) {
             unpacked_node* nb
                 = unpacked_node::newSparse(F, k, 1);
             nb->setSparse(0, m.from(k), cv, cp);
             F->createReducedNode(nb, cv, cp);
+        } else {
+            cp = F->makeRedundantsTo(cp, -k, k);
         }
     } // for k
 }
