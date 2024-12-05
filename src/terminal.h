@@ -203,8 +203,6 @@ class MEDDLY::terminal {
                                 t_integer > 1073741823)
                             {
                                 // Can't fit in 31 bits (signed)
-                                printf("t_integer is %ld\n", t_integer);
-                                MEDDLY_DCASSERT(0);
                                 throw error(error::VALUE_OVERFLOW,
                                         __FILE__, __LINE__);
                             }
