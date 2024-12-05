@@ -56,24 +56,43 @@ using namespace MEDDLY;
 
 dd_edge buildReachset(domain* d, int N)
 {
-  // Build initial state
-  int* initial = new int[17];
-  for (int i=16; i; i--) initial[i] = 0;
-  initial[1] = initial[5] = initial[9] = initial[13] = N;
-  forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  dd_edge init_state(mdd);
-  mdd->createEdge(&initial, 1, init_state);
-  delete[] initial;
+    //
+    // Build forests
+    //
+    forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL);
+    forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL);
 
-  // Build next-state function
-  forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf);
+    //
+    // Build initial state
+    //
+    minterm initial(mdd);
+    dd_edge init_state(mdd);
+    for (int i=16; i; i--) initial.setVar(i, 0);
+    initial.setVar(1, N);
+    initial.setVar(5, N);
+    initial.setVar(9, N);
+    initial.setVar(13, N);
+    initial.buildFunction(init_state);
+    printf("\tbuilt initial state\n");
+    fflush(stdout);
 
-  dd_edge reachable(mdd);
-  apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    //
+    // Build next-state function
+    //
+    dd_edge nsf(mxd);
+    buildNextStateFunction(kanban, 16, mxd, nsf);
+    printf("\tbuilt next-state function\n");
+    fflush(stdout);
 
-  return reachable;
+    //
+    // Build reachable states
+    //
+    dd_edge reachable(mdd);
+    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+
+    return reachable;
 }
 
 bool matches(const char* mark, const int* minterm, int np)
@@ -134,27 +153,27 @@ void showRS(int N)
 
 int main()
 {
-  MEDDLY::initialize();
+    MEDDLY::initialize();
 
-  long c;
+    long c;
 
-  printf("Checking Kanban reachability set, N=1\n");
-  c = checkRS(1, kanban_rs1);
-  if (c != expected[1]) return 1;
-  printf("\t%ld markings checked out\n", c);
+    printf("Checking Kanban reachability set, N=1\n");
+    c = checkRS(1, kanban_rs1);
+    if (c != expected[1]) return 1;
+    printf("\t%ld markings checked out\n", c);
 
-  printf("Checking Kanban reachability set, N=2\n");
-  c = checkRS(2, kanban_rs2);
-  if (c != expected[2]) return 1;
-  printf("\t%ld markings checked out\n", c);
+    printf("Checking Kanban reachability set, N=2\n");
+    c = checkRS(2, kanban_rs2);
+    if (c != expected[2]) return 1;
+    printf("\t%ld markings checked out\n", c);
 
-  printf("Checking Kanban reachability set, N=3\n");
-  c = checkRS(3, kanban_rs3);
-  if (c != expected[3]) return 1;
-  printf("\t%ld markings checked out\n", c);
+    printf("Checking Kanban reachability set, N=3\n");
+    c = checkRS(3, kanban_rs3);
+    if (c != expected[3]) return 1;
+    printf("\t%ld markings checked out\n", c);
 
-  MEDDLY::cleanup();
-  printf("Done\n");
-  return 0;
+    MEDDLY::cleanup();
+    printf("Done\n");
+    return 0;
 }
 

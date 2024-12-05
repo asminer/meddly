@@ -56,113 +56,110 @@ using namespace MEDDLY;
 
 dd_edge buildReachsetSAT(forest* mdd, forest* mxd, int N)
 {
-  // Build initial state
-  int* initial = new int[17];
-  for (int i=16; i; i--) initial[i] = 0;
-  initial[1] = initial[5] = initial[9] = initial[13] = N;
-  dd_edge init_state(mdd);
-  mdd->createEdge(&initial, 1, init_state);
-  delete[] initial;
+    //
+    // Build initial state
+    //
+    minterm initial(mdd);
+    dd_edge init_state(mdd);
+    for (int i=16; i; i--) initial.setVar(i, 0);
+    initial.setVar(1, N);
+    initial.setVar(5, N);
+    initial.setVar(9, N);
+    initial.setVar(13, N);
+    initial.buildFunction(init_state);
 
-  // Build next-state function
-  dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf);
+    //
+    // Build next-state function
+    //
+    dd_edge nsf(mxd);
+    buildNextStateFunction(kanban, 16, mxd, nsf);
 
-  dd_edge reachable(mdd);
-  apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    //
+    // Build reachable states
+    //
+    dd_edge reachable(mdd);
+    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
 
-  return reachable;
+    return reachable;
 }
 
-void mark2minterm(const char* mark, int* minterm, int np)
+void mark2minterm(const char* mark, minterm &m)
 {
-  for (; np; np--) {
-    minterm[np] = mark[np]-48;
-  }
-  minterm[0] = 0;
+    for (unsigned i=m.getNumVars(); i; i--) {
+        m.setVar(i, mark[i]-'0');
+    }
 }
 
 dd_edge buildReachsetBatch(int b, forest* mdd, const char* rs[], long states)
 {
-  int** batch = new int*[b];
-  for (int i=0; i<b; i++) {
-    batch[i] = new int[17];
-  }
+    minterm_coll batch(b, mdd);
+    dd_edge reachable(mdd);
 
-  dd_edge reachable(mdd);
-
-  int i = 0;
-  for (long s=0; s<states; s++) {
-    if (i>=b) {
-      dd_edge tmp(mdd);
-      mdd->createEdge(batch, b, tmp);
-      reachable += tmp;
-      i = 0;
-    }
-    mark2minterm(rs[s]-1, batch[i], 16);
-    i++;
-  }
-  if (i) {
     dd_edge tmp(mdd);
-    mdd->createEdge(batch, i, tmp);
+    for (long s=0; s<states; s++) {
+        if (batch.size() >= batch.maxsize()) {
+            batch.buildFunction(tmp);
+            reachable += tmp;
+            batch.clear();
+        }
+        mark2minterm(rs[s]-1, batch.unused());
+        batch.pushUnused();
+    }
+    batch.buildFunction(tmp);
     reachable += tmp;
-  }
 
-  // cleanup the batch
-  for (i=0; i<b; i++) {
-    delete[] batch[i];
-  }
-  delete[] batch;
-  return reachable;
+    return reachable;
 }
 
 bool checkRS(int N, const char* rs[])
 {
-  bool ok = true;
-  const int batches[] = { 1000, 100, 10, 1, 0 };
-  int sizes[16];
+    bool ok = true;
+    const int batches[] = { 1000, 100, 10, 1, 0 };
+    int sizes[16];
 
-  for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = domain::createBottomUp(sizes, 16);
-  forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+    for (int i=15; i>=0; i--) sizes[i] = N+1;
+    domain* d = domain::createBottomUp(sizes, 16);
+    forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL);
+    forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL);
 
-  dd_edge reachable = buildReachsetSAT(mdd, mxd, N);
+    dd_edge reachable = buildReachsetSAT(mdd, mxd, N);
 
-  for (int b=0; batches[b]; b++) {
-    printf("\tBuilding %ld markings by hand, %d at a time\n",
-      expected[N], batches[b]);
-    fflush(stdout);
+    for (int b=0; batches[b]; b++) {
+        printf("\tBuilding %ld markings by hand, %d at a time\n",
+                expected[N], batches[b]);
+        fflush(stdout);
 
-    dd_edge brs = buildReachsetBatch(batches[b], mdd, rs, expected[N]);
+        dd_edge brs = buildReachsetBatch(batches[b], mdd, rs, expected[N]);
 
-    if (brs != reachable) {
-      printf("\t\tError, didn't match\n");
-      ok = false;
-      break;
+        if (brs != reachable) {
+            printf("\t\tError, didn't match\n");
+            ok = false;
+            break;
+        }
     }
-  }
 
-  domain::destroy(d);
-  return ok;
+    domain::destroy(d);
+    return ok;
 }
 
 
 int main()
 {
-  MEDDLY::initialize();
+    MEDDLY::initialize();
 
-  printf("Checking Kanban reachability set, N=1\n");
-  if (!checkRS(1, kanban_rs1)) return 1;
+    printf("Checking Kanban reachability set, N=1\n");
+    if (!checkRS(1, kanban_rs1)) return 1;
 
-  printf("Checking Kanban reachability set, N=2\n");
-  if (!checkRS(2, kanban_rs2)) return 1;
+    printf("Checking Kanban reachability set, N=2\n");
+    if (!checkRS(2, kanban_rs2)) return 1;
 
-  printf("Checking Kanban reachability set, N=3\n");
-  if (!checkRS(3, kanban_rs3)) return 1;
+    printf("Checking Kanban reachability set, N=3\n");
+    if (!checkRS(3, kanban_rs3)) return 1;
 
-  MEDDLY::cleanup();
-  printf("Done\n");
-  return 0;
+    MEDDLY::cleanup();
+    printf("Done\n");
+    return 0;
 }
 

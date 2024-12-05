@@ -63,26 +63,6 @@ int Equilikely(int a, int b)
     return (a + (int) ((b - a + 1) * Random()));
 }
 
-void randomizeMinterm(bool primed, int max, int* mt, unsigned N)
-{
-    int min = primed ? -2 : -1;
-    for (unsigned i=1; i<N; i++) {
-        mt[i] = Equilikely(min, max);
-    }
-#ifdef DEBUG_RANDSET
-    printf("Random minterm: [%d", minterm[1]);
-    for (unsigned i=2; i<N; i++) printf(", %d", minterm[i]);
-    printf("]\n");
-#endif
-}
-
-void adjustMinterms(int* mtu, int* mtp, unsigned N)
-{
-    for (unsigned i=1; i<N; i++) {
-        if (mtp[i] == -2) mtu[i] = -1;
-    }
-}
-
 void randomizeMinterm(minterm &m, int max)
 {
     if (m.isForRelations()) {

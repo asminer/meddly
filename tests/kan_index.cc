@@ -55,48 +55,63 @@ bool equal(const int* a, const int* b, int N)
 
 bool checkReachset(int N)
 {
-  printf("Running test for N=%d...\n", N);
+    printf("Running test for N=%d...\n", N);
 
-  int sizes[16];
+    int sizes[16];
 
-  for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* dom = domain::createBottomUp(sizes, 16);
+    for (int i=15; i>=0; i--) sizes[i] = N+1;
+    domain* dom = domain::createBottomUp(sizes, 16);
+    forest* mdd = forest::create(dom, SET, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL);
+    forest* mxd = forest::create(dom, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL);
+    forest* evmdd = forest::create(dom, SET, range_type::INTEGER,
+                        edge_labeling::INDEX_SET);
 
-  // Build initial state
-  int* initial = new int[17];
-  for (int i=16; i; i--) initial[i] = 0;
-  initial[1] = initial[5] = initial[9] = initial[13] = N;
-  forest* mdd = forest::create(dom, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  dd_edge init_state(mdd);
-  mdd->createEdge(&initial, 1, init_state);
-  delete[] initial;
-  printf("\tbuilt initial state\n");
-  fflush(stdout);
+    //
+    // Build initial state
+    //
+    minterm initial(mdd);
+    dd_edge init_state(mdd);
+    for (int i=16; i; i--) initial.setVar(i, 0);
+    initial.setVar(1, N);
+    initial.setVar(5, N);
+    initial.setVar(9, N);
+    initial.setVar(13, N);
+    initial.buildFunction(init_state);
+    printf("\tbuilt initial state\n");
+    fflush(stdout);
 
-  // Build next-state function
-  forest* mxd = forest::create(dom, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf, 0);
-  printf("\tbuilt next-state function\n");
-  fflush(stdout);
+    //
+    // Build next-state function
+    //
+    dd_edge nsf(mxd);
+    buildNextStateFunction(kanban, 16, mxd, nsf);
+    printf("\tbuilt next-state function\n");
+    fflush(stdout);
 
-  // Build reachable states
-  dd_edge reachable(mdd);
-  apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-  printf("\tbuilt reachable states\n");
-  fflush(stdout);
+    //
+    // Build reachable states
+    //
+    dd_edge reachable(mdd);
+    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    printf("\tbuilt reachable states\n");
+    fflush(stdout);
 
-  // Build index set for reachable states
-  forest* evmdd = forest::create(dom, 0, range_type::INTEGER, edge_labeling::INDEX_SET);
-  dd_edge reach_index(evmdd);
-  apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
+    //
+    // Build index set for reachable states
+    //
+    dd_edge reach_index(evmdd);
+    apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 #ifdef SHOW_INDEXES
-  printf("\tbuilt index set:\n");
-  reach_index.show(stdout, 2);
+    FILE_output out(stdout);
+    printf("\tbuilt index set:\n");
+    reach_index.showGraph(out);
 #else
-  printf("\tbuilt index set\n");
+    printf("\tbuilt index set\n");
 #endif
-  fflush(stdout);
+    fflush(stdout);
+
 
   // Verify indexes
   int c = 0;
@@ -156,14 +171,14 @@ bool checkReachset(int N)
 
 int main()
 {
-  MEDDLY::initialize();
+    MEDDLY::initialize();
 
-  for (int n=1; n<4; n++) {
-    if (!checkReachset(n)) return 1;
-  }
+    for (int n=1; n<4; n++) {
+        if (!checkReachset(n)) return 1;
+    }
 
-  MEDDLY::cleanup();
-  printf("Done\n");
-  return 0;
+    MEDDLY::cleanup();
+    printf("Done\n");
+    return 0;
 }
 

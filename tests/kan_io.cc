@@ -60,19 +60,21 @@ using namespace MEDDLY;
 // Build the domain
 inline domain* buildKanbanDomain(int N)
 {
-  int sizes[16];
-  for (int i=15; i>=0; i--) sizes[i] = N+1;
-  return domain::createBottomUp(sizes, 16);
+    int sizes[16];
+    for (int i=15; i>=0; i--) sizes[i] = N+1;
+    return domain::createBottomUp(sizes, 16);
 }
 
 // Build the initial state
 inline void buildInitial(int N, forest* mdd, dd_edge &init_state)
 {
-  int initial[17];
-  for (int i=16; i; i--) initial[i] = 0;
-  initial[1] = initial[5] = initial[9] = initial[13] = N;
-  int* initptr = initial;
-  mdd->createEdge(&initptr, 1, init_state);
+    minterm initial(mdd);
+    for (int i=16; i; i--) initial.setVar(i, 0);
+    initial.setVar(1, N);
+    initial.setVar(5, N);
+    initial.setVar(9, N);
+    initial.setVar(13, N);
+    initial.buildFunction(init_state);
 }
 
 /*
@@ -81,80 +83,83 @@ inline void buildInitial(int N, forest* mdd, dd_edge &init_state)
 */
 long writeReachset(FILE* s, int N)
 {
-  // Build domain
-  domain* d = buildKanbanDomain(N);
+    // Build domain
+    domain* d = buildKanbanDomain(N);
 
-  // Build initial state
-  forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  dd_edge init_state(mdd);
-  buildInitial(N, mdd, init_state);
-
-#ifdef PROGRESS
-  fputc('i', stdout);
-  fflush(stdout);
-#endif
-
-  // Build next-state function
-  forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf);
+    // Build initial state
+    forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL);
+    dd_edge init_state(mdd);
+    buildInitial(N, mdd, init_state);
 
 #ifdef PROGRESS
-  fputc('n', stdout);
-  fflush(stdout);
+    fputc('i', stdout);
+    fflush(stdout);
 #endif
 
-  // Build reachable states
-  dd_edge reachable(mdd);
-  apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    // Build next-state function
+    forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL);
+    dd_edge nsf(mxd);
+    buildNextStateFunction(kanban, 16, mxd, nsf);
 
 #ifdef PROGRESS
-  fputc('r', stdout);
-  fflush(stdout);
+    fputc('n', stdout);
+    fflush(stdout);
 #endif
 
-  // Build index set for reachable states
-  forest* evmdd = forest::create(d, 0, range_type::INTEGER, edge_labeling::INDEX_SET);
-  dd_edge reach_index(evmdd);
-  apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
+    // Build reachable states
+    dd_edge reachable(mdd);
+    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
 
 #ifdef PROGRESS
-  fputc('x', stdout);
-  fflush(stdout);
+    fputc('r', stdout);
+    fflush(stdout);
 #endif
 
-  long c;
-  apply(CARDINALITY, reachable, c);
+    // Build index set for reachable states
+    forest* evmdd = forest::create(d, SET, range_type::INTEGER,
+                        edge_labeling::INDEX_SET);
+    dd_edge reach_index(evmdd);
+    apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 
 #ifdef PROGRESS
-  fputc('c', stdout);
-  fflush(stdout);
+    fputc('x', stdout);
+    fflush(stdout);
 #endif
 
-  FILE_output mys(s);
+    long c;
+    apply(CARDINALITY, reachable, c);
+
+#ifdef PROGRESS
+    fputc('c', stdout);
+    fflush(stdout);
+#endif
+
+    FILE_output mys(s);
 #ifdef WRITE_MXD
-  mdd_writer wmxd(mys, mxd);
-  wmxd.writeRootEdge(nsf);
-  wmxd.finish();
+    mdd_writer wmxd(mys, mxd);
+    wmxd.writeRootEdge(nsf);
+    wmxd.finish();
 #endif
 
 #ifdef WRITE_MDD
-  // Write initial state + reachable states
-  mdd_writer wmdd(mys, mdd);
-  wmdd.writeRootEdge(init_state);
-  wmdd.writeRootEdge(reachable);
-  wmdd.finish();
+    // Write initial state + reachable states
+    mdd_writer wmdd(mys, mdd);
+    wmdd.writeRootEdge(init_state);
+    wmdd.writeRootEdge(reachable);
+    wmdd.finish();
 #endif
 
 #ifdef WRITE_EVMDD
-  mdd_writer wevmdd(mys, evmdd);
-  wevmdd.writeRootEdge(reach_index);
-  wevmdd.finish();
+    mdd_writer wevmdd(mys, evmdd);
+    wevmdd.writeRootEdge(reach_index);
+    wevmdd.finish();
 #endif
 
-  domain::destroy(d);
+    domain::destroy(d);
 
-  return c;
+    return c;
 }
 
 
@@ -168,12 +173,12 @@ bool generateAndRead(FILE* s, int N)
   domain* d = buildKanbanDomain(N);
 
   // Build initial state
-  forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mdd = forest::create(d, SET, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge init_state(mdd);
   buildInitial(N, mdd, init_state);
 
   // Build next-state function
-  forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
   dd_edge nsf(mxd);
   buildNextStateFunction(kanban, 16, mxd, nsf);
 
@@ -182,7 +187,7 @@ bool generateAndRead(FILE* s, int N)
   apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
 
   // Build index set for reachable states
-  forest* evmdd = forest::create(d, 0, range_type::INTEGER, edge_labeling::INDEX_SET);
+  forest* evmdd = forest::create(d, SET, range_type::INTEGER, edge_labeling::INDEX_SET);
   dd_edge reach_index(evmdd);
   apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 
@@ -249,9 +254,9 @@ bool readAndGenerate(FILE* s, int N)
   domain* d = buildKanbanDomain(N);
 
   // Build (empty) forests
-  forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  forest* evmdd = forest::create(d, 0, range_type::INTEGER, edge_labeling::INDEX_SET);
+  forest* mdd = forest::create(d, SET, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+  forest* evmdd = forest::create(d, SET, range_type::INTEGER, edge_labeling::INDEX_SET);
 
   dd_edge mxdfile;
   dd_edge mddfile0, mddfile1;
