@@ -19,6 +19,7 @@
 
 
 #include "edge_value.h"
+#include "terminal.h"
 #include "io.h"
 
 // ******************************************************************

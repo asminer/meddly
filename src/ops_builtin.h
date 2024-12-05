@@ -165,18 +165,6 @@ namespace MEDDLY {
     */
     binary_operation* MM_MULTIPLY(forest* a, forest* b, forest* c);
 
-    // ******************************************************************
-    // *                                                                *
-    // *      "built-in"  binary operations on minterm collections      *
-    // *                                                                *
-    // ******************************************************************
-
-    class minterm_operation;
-    class minterm_coll;
-
-    /// Set union operation for forests with range_type of BOOLEAN
-    minterm_operation* UNION(forest* a, minterm_coll &b, forest* c);
-
 
     // ******************************************************************
     // *                                                                *
@@ -192,6 +180,7 @@ namespace MEDDLY {
 
     numerical_operation* MATR_EXPLVECT_MULT(const dd_edge &xind,
             const dd_edge &A, const dd_edge &yind);
+
 
     // ******************************************************************
     // *                                                                *

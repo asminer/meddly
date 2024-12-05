@@ -45,9 +45,9 @@ inline void success()
 
 const int vars[] = {10, 10, 10};
 
-int R[] = {0, 3, 1, 4};
-int N[] = {0, 1, 4, 9};
-int S[] = {0, 2, 6, 5};
+const int R[] = {0, 3, 1, 4};
+const int N[] = {0, 1, 4, 9};
+const int S[] = {0, 2, 6, 5};
 
 // State indexes:
 //    R : 0
@@ -56,115 +56,131 @@ int S[] = {0, 2, 6, 5};
 
 void build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
 {
-  // Build state indexes
+    //
+    // Build state indexes
+    //
+    trying("build indexes");
+    minterm_coll sslist(3, indf);
+    sslist.unused().setAll(R, 0L);
+    sslist.pushUnused();
+    sslist.unused().setAll(N, 1L);
+    sslist.pushUnused();
+    sslist.unused().setAll(S, 2L);
+    sslist.buildFunction(ss);
+    success();
 
-  int* sslist[] = { R, N, S };
-  long indexes[] = { 0, 1, 2 };
-
-  trying("build indexes");
-  indf->createEdge(sslist, indexes, 3, ss);
-  success();
-
-  FILE_output out(stdout);
+    FILE_output out(stdout);
 #ifdef SHOW_INDEXES
-  out << "Indexes:\n";
-  ss.showGraph(out);
+    out << "Indexes:\n";
+    ss.showGraph(out);
 #endif
 
-  // Build matrix elements
+    //
+    // Build matrix elements
+    //
+    trying("build matrix");
+    minterm_coll matrix(8, mxd);
+    matrix.unused().setAll(R, R, 0.5f);
+    matrix.pushUnused();
+    matrix.unused().setAll(R, N, 0.25f);
+    matrix.pushUnused();
+    matrix.unused().setAll(R, S, 0.25f);
+    matrix.pushUnused();
 
-  int* fromlist[] = {
-    R,    R,    R,    N,    N,    S,    S,    S
-  };
-  int* tolist[] = {
-    R,    N,    S,    R,    S,    R,    N,    S
-  };
-  float problist[] = {
-    0.5,  0.25, 0.25, 0.5,  0.5,  0.25, 0.25, 0.5
-  };
+    matrix.unused().setAll(N, R, 0.5f);
+    matrix.pushUnused();
+    matrix.unused().setAll(N, S, 0.5f);
+    matrix.pushUnused();
 
-  trying("build matrix");
-  mxd->createEdge(fromlist, tolist, problist, 8, P);
-  success();
+    matrix.unused().setAll(S, R, 0.25f);
+    matrix.pushUnused();
+    matrix.unused().setAll(S, N, 0.25f);
+    matrix.pushUnused();
+    matrix.unused().setAll(S, S, 0.5f);
+    matrix.pushUnused();
+    matrix.buildFunction(P);
+    success();
 
 #ifdef SHOW_MATRIX
-  out << "Matrix:\n";
-  P.showGraph(out);
+    out << "Matrix:\n";
+    P.showGraph(out);
 #endif
 }
 
 void by_hand_oz_xA(double* y, const double* const x)
 {
-  y[0] += x[0]/2 + x[1]/2 + x[2]/4;
-  y[1] += x[0]/4 +          x[2]/4;
-  y[2] += x[0]/4 + x[1]/2 + x[2]/2;
+    y[0] += x[0]/2 + x[1]/2 + x[2]/4;
+    y[1] += x[0]/4 +          x[2]/4;
+    y[2] += x[0]/4 + x[1]/2 + x[2]/2;
 }
 
 void by_hand_oz_Ax(double* y, const double* const x)
 {
-  y[0] += x[0]/2 + x[1]/4 + x[2]/4;
-  y[1] += x[0]/2 +          x[2]/2;
-  y[2] += x[0]/4 + x[1]/4 + x[2]/2;
+    y[0] += x[0]/2 + x[1]/4 + x[2]/4;
+    y[1] += x[0]/2 +          x[2]/2;
+    y[2] += x[0]/4 + x[1]/4 + x[2]/2;
 }
 
 bool equals(double *xgot, double *xans, int size)
 {
-  for (int i=0; i<size; i++) {
-    double delta = xgot[i] - xans[i];
-    if (xgot[i]) delta /= xgot[i];
-    if (delta > -1e-5 && delta < 1e-5) continue;
-    // not equal, print an error
-    printf("Got     : [%lf", xgot[0]);
-    for (int j=1; j<size; j++) printf(", %lf", xgot[j]);
-    printf("]\nExpected: [%lf", xans[0]);
-    for (int j=1; j<size; j++) printf(", %lf", xans[j]);
-    printf("]\n");
-    return false;
-  }
-  return true;
+    for (int i=0; i<size; i++) {
+        double delta = xgot[i] - xans[i];
+        if (xgot[i]) delta /= xgot[i];
+        if (delta > -1e-5 && delta < 1e-5) continue;
+        // not equal, print an error
+        printf("Got     : [%lf", xgot[0]);
+        for (int j=1; j<size; j++) printf(", %lf", xgot[j]);
+        printf("]\nExpected: [%lf", xans[0]);
+        for (int j=1; j<size; j++) printf(", %lf", xans[j]);
+        printf("]\n");
+        return false;
+    }
+    return true;
 }
+
+// TBD HERE
 
 void readVector(const dd_edge &x, double* ans)
 {
-  forest* f = x.getForest();
-  float temp;
-  f->evaluate(x, R, temp);
-  ans[0] = temp;
-  f->evaluate(x, N, temp);
-  ans[1] = temp;
-  f->evaluate(x, S, temp);
-  ans[2] = temp;
+    forest* f = x.getForest();
+    float temp;
+    f->evaluate(x, R, temp);
+    ans[0] = temp;
+    f->evaluate(x, N, temp);
+    ans[1] = temp;
+    f->evaluate(x, S, temp);
+    ans[2] = temp;
 }
 
 void impl_xA_check(dd_edge &x, const dd_edge &P)
 {
-  printf("xA multiplications (implicit):\n");
+    printf("xA multiplications (implicit):\n");
 
-  forest* f = x.getForest();
-  int* pinit[] = { N };
-  float v=1;
-  f->createEdge(pinit, &v, 1, x);
+    forest* f = x.getForest();
+    minterm init(f);
+    init.setAll(N, 1.0f);
+    init.buildFunction(x);
 
-  for (int i=0; ; i++) {
-    double ex[3];
-    double exP[3];
-    double test[3];
-    readVector(x, ex);
-    printf("p%d: [%lf, %lf, %lf]\n", i, ex[0], ex[1], ex[2]);
-    if (i>=9) break;
-    trying("multiply");
-    apply(VM_MULTIPLY, x, P, x);
-    success();
+    for (int i=0; ; i++) {
+        double ex[3];
+        double exP[3];
+        double test[3];
+        readVector(x, ex);
+        printf("p%d: [%lf, %lf, %lf]\n", i, ex[0], ex[1], ex[2]);
+        if (i>=9) break;
+        trying("multiply");
+        apply(VM_MULTIPLY, x, P, x);
+        success();
 
-    // determine product by hand
-    exP[0] = exP[1] = exP[2] = 0;
-    by_hand_oz_xA(exP, ex);
+        // determine product by hand
+        exP[0] = exP[1] = exP[2] = 0;
+        by_hand_oz_xA(exP, ex);
 
-    // Compare!
-    readVector(x, test);
-    if (!equals(test, exP, 3)) throw "vectors not equal";
+        // Compare!
+        readVector(x, test);
+        if (!equals(test, exP, 3)) throw "vectors not equal";
 
-  }
+    }
 }
 
 void expl_xA_check(const dd_edge &ss, const dd_edge &P)
@@ -202,9 +218,9 @@ void impl_Ax_check(dd_edge &x, const dd_edge &P)
   printf("Ax multiplications (implicit):\n");
 
   forest* f = x.getForest();
-  int* pinit[] = { N };
-  float v=1;
-  f->createEdge(pinit, &v, 1, x);
+  minterm init(f);
+  init.setAll(N, 1.0f);
+  init.buildFunction(x);
 
   for (int i=0; ; i++) {
     double ex[3];

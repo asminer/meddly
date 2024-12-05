@@ -86,7 +86,6 @@ namespace MEDDLY {
                 : fbuilder_forest(f), mtc(mtl)
             {
                 union_op = Union(f, f, f);
-                MEDDLY_DCASSERT(union_op);
             }
 
             /// Get the minimum and maximum values for level L,
@@ -222,7 +221,22 @@ namespace MEDDLY {
 #endif
 
         protected:
+            // computes <cv, cp> = union(<cv, cp>, <av, ap>)
+            inline void accumulate(int L, unsigned in,
+                    const edge_value &av, node_handle ap,
+                    edge_value &cv, node_handle& cp)
+            {
+                if (union_op) {
+                    union_op->compute(L, in, av, ap, cv, cp, cv, cp);
+                } else {
+                    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+                }
+            }
+
+        protected:
             minterm_coll &mtc;
+
+        private:
             binary_operation* union_op;
 
     };
@@ -232,7 +246,7 @@ namespace MEDDLY {
         provide the following static method:
 
             void finalize(const minterm_coll &mc, unsigned low, unsigned high,
-                edge_value &cv, node_handle &cp);
+                const forest* F, edge_value &cv, node_handle &cp);
 
             Determine the terminal edge for the minterms in mc with
             indexes in [low, high). Store the result in <cv, cp>.
@@ -244,6 +258,17 @@ namespace MEDDLY {
             fbuilder(forest* f, minterm_coll &mtl, binary_builtin Union)
                 : fbuilder_common(f, mtl, Union) { }
 
+            inline void createEdge(int L, unsigned low, unsigned high,
+                    edge_value &cv, node_handle &cp)
+            {
+                if (mtc.isForRelations()) {
+                    createEdgeRel(L, low, high, cv, cp);
+                } else {
+                    createEdgeSet(L, low, high, cv, cp);
+                }
+            }
+
+        protected:
             void createEdgeSet(int L, unsigned low, unsigned high,
                     edge_value &cv, node_handle &cp);
 
@@ -258,8 +283,9 @@ namespace MEDDLY {
     // ******************************************************************
 
     struct fbop_union_bool {
-        static inline void finalize(const minterm_coll &mc,
-            unsigned low, unsigned high, edge_value &cv, node_handle &cp)
+        static inline void finalize(
+                const minterm_coll &mc, unsigned low, unsigned high,
+                const forest* F, edge_value &cv, node_handle &cp)
         {
             cv.set();
             for (unsigned i=low; i<high; i++) {
@@ -267,6 +293,67 @@ namespace MEDDLY {
                 cp = t.getHandle();
                 if (cp) return;
             }
+        }
+    };
+    struct fbop_inter_bool {
+        static inline void finalize(
+                const minterm_coll &mc, unsigned low, unsigned high,
+                const forest* F, edge_value &cv, node_handle &cp)
+        {
+            cv.set();
+            for (unsigned i=low; i<high; i++) {
+                terminal t = mc.at(i).getTerm();
+                cp = t.getHandle();
+                if (!cp) return;
+            }
+        }
+    };
+    struct fbop_min_int {
+        static inline void finalize(
+                const minterm_coll &mc, unsigned low, unsigned high,
+                const forest* F, edge_value &cv, node_handle &cp)
+        {
+            long val = mc.at(low).getTerm().getInteger();
+            for (unsigned i=low+1; i<high; i++) {
+                val = MIN(val, mc.at(i).getTerm().getInteger());
+            }
+            F->getEdgeForValue(val, cv, cp);
+        }
+    };
+    struct fbop_max_int {
+        static inline void finalize(
+                const minterm_coll &mc, unsigned low, unsigned high,
+                const forest* F, edge_value &cv, node_handle &cp)
+        {
+            long val = mc.at(low).getTerm().getInteger();
+            for (unsigned i=low+1; i<high; i++) {
+                val = MAX(val, mc.at(i).getTerm().getInteger());
+            }
+            F->getEdgeForValue(val, cv, cp);
+        }
+    };
+    struct fbop_min_real {
+        static inline void finalize(
+                const minterm_coll &mc, unsigned low, unsigned high,
+                const forest* F, edge_value &cv, node_handle &cp)
+        {
+            double val = mc.at(low).getTerm().getReal();
+            for (unsigned i=low+1; i<high; i++) {
+                val = MIN(val, mc.at(i).getTerm().getReal());
+            }
+            F->getEdgeForValue(val, cv, cp);
+        }
+    };
+    struct fbop_max_real {
+        static inline void finalize(
+                const minterm_coll &mc, unsigned low, unsigned high,
+                const forest* F, edge_value &cv, node_handle &cp)
+        {
+            double val = mc.at(low).getTerm().getReal();
+            for (unsigned i=low+1; i<high; i++) {
+                val = MAX(val, mc.at(i).getTerm().getReal());
+            }
+            F->getEdgeForValue(val, cv, cp);
         }
     };
 };
@@ -339,19 +426,29 @@ void MEDDLY::minterm::buildFunction(dd_edge &e) const
     node_handle cp;
     edge_value cv;
 
-    if (F->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-        cv.set();
-        cp = termval.getHandle();
-        if (isForRelations()) {
-            fb.relPathToBottom(num_vars, *this, cv, cp);
-        } else {
-            fb.setPathToBottom(num_vars, *this, cv, cp);
-        }
-        e.set(cv, cp);
-        return;
+    switch (termval.getType()) {
+        case terminal_type::BOOLEAN:
+            F->getEdgeForValue(termval.getBoolean(), cv, cp);
+            break;
+
+        case terminal_type::INTEGER:
+            F->getEdgeForValue(termval.getInteger(), cv, cp);
+            break;
+
+        case terminal_type::REAL:
+            F->getEdgeForValue(termval.getReal(), cv, cp);
+            break;
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    if (isForRelations()) {
+        fb.relPathToBottom(num_vars, *this, cv, cp);
+    } else {
+        fb.setPathToBottom(num_vars, *this, cv, cp);
+    }
+    e.set(cv, cp);
 }
 
 void MEDDLY::minterm::initVectors()
@@ -415,15 +512,16 @@ MEDDLY::minterm_coll::~minterm_coll()
     delete[] _mtlist;
 }
 
-void MEDDLY::minterm_coll::buildFunction(dd_edge &e)
+void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
 {
-    if (!e.getForest()) {
+    forest* F = e.getForest();
+    if (!F) {
         throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
     }
-    if (e.getForest()->getDomain() != _D) {
+    if (F->getDomain() != _D) {
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }
-    if (e.getForest()->isForRelations() != isForRelations())
+    if (F->isForRelations() != isForRelations())
     {
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }
@@ -431,18 +529,46 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e)
     node_handle en;
     edge_value ev;
 
-    if (e.getForest()->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-        fbuilder<fbop_union_bool> fb(e.getForest(), *this, UNION);
-        if (isForRelations()) {
-            fb.createEdgeRel(num_vars, 0, first_unused, ev, en);
-        } else {
-            fb.createEdgeSet(num_vars, 0, first_unused, ev, en);
-        }
-        e.set(ev, en);
-        return;
+    /*
+     * Determine operation, based on parameter "minimize"
+     * and the forest type.
+     */
+    switch (F->getRangeType()) {
+        case range_type::BOOLEAN:
+                if (minimize) {
+                    // strange things will happen with intersection but
+                    // I guess the user is always right?
+                    fbuilder<fbop_inter_bool> fb(F, *this, INTERSECTION);
+                    fb.createEdge(num_vars, 0, first_unused, ev, en);
+                } else {
+                    fbuilder<fbop_union_bool> fb(F, *this, UNION);
+                    fb.createEdge(num_vars, 0, first_unused, ev, en);
+                }
+                break;
+
+        case range_type::INTEGER:
+                if (minimize) {
+                    fbuilder<fbop_min_int> fb(F, *this, MINIMUM);
+                    fb.createEdge(num_vars, 0, first_unused, ev, en);
+                } else {
+                    fbuilder<fbop_max_int> fb(F, *this, MAXIMUM);
+                    fb.createEdge(num_vars, 0, first_unused, ev, en);
+                }
+                break;
+
+        case range_type::REAL:
+                if (minimize) {
+                    fbuilder<fbop_min_real> fb(F, *this, MINIMUM);
+                    fb.createEdge(num_vars, 0, first_unused, ev, en);
+                } else {
+                    fbuilder<fbop_max_real> fb(F, *this, MAXIMUM);
+                    fb.createEdge(num_vars, 0, first_unused, ev, en);
+                }
+                break;
+
     }
 
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    e.set(ev, en);
 }
 
 
@@ -649,7 +775,7 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
     // Terminal case
     //
     if (0==L) {
-        OP::finalize(mtc, low, high, cv, cp);
+        OP::finalize(mtc, low, high, F, cv, cp);
         return;
     }
 
@@ -657,7 +783,7 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
     // Special case: only one minterm left
     //
     if (high - low == 1) {
-        OP::finalize(mtc, low, high, cv, cp);
+        OP::finalize(mtc, low, high, F, cv, cp);
         setPathToBottom(L, mtc.at(low), cv, cp);
         return;
     }
@@ -746,7 +872,7 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
     Cu->shrink(z);
     F->createReducedNode(Cu, cv, cp);
     if (has_dont_care) {
-        union_op->compute(L, ~0, dnc_val, dnc_node, cv, cp, cv, cp);
+        accumulate(L, ~0, dnc_val, dnc_node, cv, cp);
     }
 
 }
@@ -764,7 +890,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     // Terminal case
     //
     if (0==L) {
-        OP::finalize(mtc, low, high, cv, cp);
+        OP::finalize(mtc, low, high, F, cv, cp);
         return;
     }
 
@@ -772,7 +898,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     // Special case: only one minterm left
     //
     if (high - low == 1) {
-        OP::finalize(mtc, low, high, cv, cp);
+        OP::finalize(mtc, low, high, F, cv, cp);
         relPathToBottom(L, mtc.at(low), cv, cp);
         return;
     }
@@ -871,7 +997,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
 
             if (has_primed_extra) {
                 MEDDLY_DCASSERT(cpin >= 0);
-                union_op->compute(-L, cpin, pe_v, pe_p, tv, tp, tv, tp);
+                accumulate(-L, cpin, pe_v, pe_p, tv, tp);
             }
             if (DONT_CARE == cpin) {
                 //
@@ -879,7 +1005,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
                 //
                 tp = F->makeRedundantsTo(tp, -L, L);
                 if (has_unprimed_extra) {
-                    union_op->compute(L, ~0, tv, tp, ue_v, ue_p, ue_v, ue_p);
+                    accumulate(L, ~0, tv, tp, ue_v, ue_p);
                 } else {
                     ue_v = tv;
                     ue_p = tp;
@@ -924,8 +1050,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
                 // Add this to the UNPRIMED extra function
                 //
                 if (has_unprimed_extra) {
-                    union_op->compute(L, ~0, ue_v, ue_p, tv, tp,
-                            ue_v, ue_p);
+                    accumulate(L, ~0, tv, tp, ue_v, ue_p);
                 } else {
                     ue_v = tv;
                     ue_p = tp;
@@ -963,8 +1088,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
                 createEdgeRel(L-1, low, mid, tv, tp);
                 tp = F->makeRedundantsTo(tp, L-1, -L);
                 if (has_primed_extra) {
-                    union_op->compute(-L, cpin, pe_v, pe_p, tv, tp,
-                            pe_v, pe_p);
+                    accumulate(-L, cpin, tv, tp, pe_v, pe_p);
                 } else {
                     pe_v = tv;
                     pe_p = tp;
@@ -999,7 +1123,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     F->createReducedNode(Cp, tv, tp, cpin);
     if (has_primed_extra) {
         MEDDLY_DCASSERT(cpin >= 0);
-        union_op->compute(-L, cpin, pe_v, pe_p, tv, tp, tv, tp);
+        accumulate(-L, cpin, pe_v, pe_p, tv, tp);
     }
     if (DONT_CARE == cpin) {
         //
@@ -1007,8 +1131,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
         //
         tp = F->makeRedundantsTo(tp, -L, L);
         if (has_unprimed_extra) {
-            union_op->compute(L, ~0, ue_v, ue_p, tv, tp,
-                    ue_v, ue_p);
+            accumulate(L, ~0, tv, tp, ue_v, ue_p);
         } else {
             ue_v = tv;
             ue_p = tp;
@@ -1033,7 +1156,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
             L, cp, F->getNodeLevel(cp));
 #endif
     if (has_unprimed_extra) {
-        union_op->compute(L, ~0, ue_v, ue_p, cv, cp, cv, cp);
+        accumulate(L, ~0, ue_v, ue_p, cv, cp);
     }
 #ifdef DEBUG_CREATE_EDGE_REL
     printf("After union level %d -> node %d at level %d\n",

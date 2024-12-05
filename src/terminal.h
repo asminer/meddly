@@ -87,6 +87,10 @@ class MEDDLY::terminal {
         terminal(float v) {
             setReal(v);
         }
+        /// Initialize from a real label
+        terminal(double v) {
+            setReal(v);
+        }
 
         /// Initialize from a boolean label, but convert types if needed
         terminal(bool v, terminal_type t) {
@@ -102,6 +106,10 @@ class MEDDLY::terminal {
         }
         /// Initialize from a real label, but convert types if needed
         terminal(float v, terminal_type t) {
+            setFromValue(t, v);
+        }
+        /// Initialize from a real label, but convert types if needed
+        terminal(double v, terminal_type t) {
             setFromValue(t, v);
         }
 
@@ -124,6 +132,9 @@ class MEDDLY::terminal {
         inline bool hasType(terminal_type t) const {
             return (t == mytype);
         }
+        inline terminal_type getType() const {
+            return mytype;
+        }
 
         //
         // Getters for the label
@@ -137,11 +148,11 @@ class MEDDLY::terminal {
             MEDDLY_DCASSERT(isBoolean());
             return t_boolean;
         }
-        inline int getInteger() const {
+        inline long getInteger() const {
             MEDDLY_DCASSERT(isInteger());
             return t_integer;
         }
-        inline float getReal() const {
+        inline double getReal() const {
             MEDDLY_DCASSERT(isReal());
             return t_real;
         }
@@ -188,6 +199,15 @@ class MEDDLY::terminal {
 
                 case terminal_type::INTEGER:
                         if (t_integer) {
+                            if (t_integer < -1073741824 ||
+                                t_integer > 1073741823)
+                            {
+                                // Can't fit in 31 bits (signed)
+                                printf("t_integer is %ld\n", t_integer);
+                                MEDDLY_DCASSERT(0);
+                                throw error(error::VALUE_OVERFLOW,
+                                        __FILE__, __LINE__);
+                            }
                             return t_integer | -2147483648; // set sign bit
                         } else {
                             return 0;
@@ -233,17 +253,18 @@ class MEDDLY::terminal {
             mytype = terminal_type::BOOLEAN;
             t_boolean = v;
         }
-        inline void setInteger(int v) {
+        inline void setInteger(long v) {
             mytype = terminal_type::INTEGER;
+            /*
             if (v < -1073741824 || v > 1073741823) {
                 // Can't fit in 31 bits (signed)
                 throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
             }
+            */
             t_integer = v;
         }
-        inline void setReal(float v) {
+        inline void setReal(double v) {
             mytype = terminal_type::REAL;
-            // TBD: should we mask off the lsb here?
             t_real = v;
         }
 
@@ -263,11 +284,11 @@ class MEDDLY::terminal {
                         return;
 
                 case terminal_type::INTEGER:
-                        t_integer = int(v);
+                        t_integer = long(v);
                         return;
 
                 case terminal_type::REAL:
-                        t_real = float(v);
+                        t_real = double(v);
                         return;
 
                 default:
@@ -310,10 +331,6 @@ class MEDDLY::terminal {
                         x.h = (h << 1);
                         t_real = x.f;
                         return;
-                        /*
-                        h <<= 1;
-                        memcpy(&t_real, &h, sizeof(float));
-                        */
 
                 default:
                         MEDDLY_DCASSERT(false);
@@ -364,7 +381,7 @@ class MEDDLY::terminal {
         union {
             node_handle     t_omega;        // for special values
             bool            t_boolean;
-            int             t_integer;
+            long            t_integer;
             float           t_real;
         };
 

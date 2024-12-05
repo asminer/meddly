@@ -1247,14 +1247,18 @@ class MEDDLY::forest {
         inline void getEdgeForValue(T constval, edge_value &v, node_handle &p)
         const
         {
-            MEDDLY_DCASSERT(!isMultiTerminal());
-
-            v.setTempl(the_edge_type, constval);
-
-            if (isEVTimes() && (0==constval)) {
-                p = OMEGA_ZERO;
+            if (isMultiTerminal()) {
+                v.set();
+                terminal t(constval, the_terminal_type);
+                p = t.getHandle();
             } else {
-                p = OMEGA_NORMAL;
+                v.setTempl(the_edge_type, constval);
+
+                if (isEVTimes() && (0==constval)) {
+                    p = OMEGA_ZERO;
+                } else {
+                    p = OMEGA_NORMAL;
+                }
             }
         }
 

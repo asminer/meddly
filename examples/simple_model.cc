@@ -109,14 +109,14 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
     }
 
     // Create edge for each function xi+1
-    for (unsigned i=0; i<maxBound; i++) temp[i] = i+1;
+    for (unsigned i=0; i<maxBound; i++) temp[i] = int(i)+1;
     for (unsigned i=1; i<=nVars; i++) {
         inc[i] = new dd_edge(mtmxd);
         mtmxd->createEdgeForVar(int(i), false, temp, inc[i][0]);
     }
 
     // Create edge for each function xi-1
-    for (unsigned i=0; i<maxBound; i++) temp[i] = i-1;
+    for (unsigned i=0; i<maxBound; i++) temp[i] = int(i)-1;
     for (unsigned i=1; i<=nVars; i++) {
         dec[i] = new dd_edge(mtmxd);
         mtmxd->createEdgeForVar(int(i), false, temp, dec[i][0]);
