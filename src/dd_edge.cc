@@ -443,9 +443,11 @@ void MEDDLY::dd_edge::evaluate(const minterm& m,
     if (!fp) {
         throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
     }
+    /*
     if (! fp->isRangeType(range_type::BOOLEAN) ) {
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
+    */
     if ( fp->isForRelations() != m.isForRelations() ) {
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }

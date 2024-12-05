@@ -155,18 +155,22 @@ bool equals(double *xgot, double *xans, int size)
     return true;
 }
 
-// TBD HERE
-
 void readVector(const dd_edge &x, double* ans)
 {
+    trying("read vector");
     forest* f = x.getForest();
-    float temp;
-    f->evaluate(x, R, temp);
+    double temp;
+    minterm Rm(f), Nm(f), Sm(f);
+    Rm.setAll(R, 1.0);
+    Nm.setAll(N, 1.0);
+    Sm.setAll(S, 1.0);
+    x.evaluate(Rm, temp);
     ans[0] = temp;
-    f->evaluate(x, N, temp);
+    x.evaluate(Nm, temp);
     ans[1] = temp;
-    f->evaluate(x, S, temp);
+    x.evaluate(Sm, temp);
     ans[2] = temp;
+    success();
 }
 
 void impl_xA_check(dd_edge &x, const dd_edge &P)
@@ -202,89 +206,89 @@ void impl_xA_check(dd_edge &x, const dd_edge &P)
 
 void expl_xA_check(const dd_edge &ss, const dd_edge &P)
 {
-  int i;
-  double p[3];
-  double q[3];
-  double q_alt[3];
-  p[0] = 0; p[1] = 1; p[2] = 0;
-  printf("xA multiplications (explicit):\n");
-  numerical_operation* VM = EXPLVECT_MATR_MULT(ss, P, ss);
-  for (i=0; i<9; i++) {
+    int i;
+    double p[3];
+    double q[3];
+    double q_alt[3];
+    p[0] = 0; p[1] = 1; p[2] = 0;
+    printf("xA multiplications (explicit):\n");
+    numerical_operation* VM = EXPLVECT_MATR_MULT(ss, P, ss);
+    for (i=0; i<9; i++) {
+        printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
+        q[0] = q[1] = q[2] = 0;
+        trying("multiply");
+        VM->compute(q, p);
+        success();
+
+        // determine product by hand
+        q_alt[0] = q_alt[1] = q_alt[2] = 0;
+        by_hand_oz_xA(q_alt, p);
+
+        // Compare!
+        if (!equals(q, q_alt, 3)) throw "vectors not equal";
+        p[0] = q[0];
+        p[1] = q[1];
+        p[2] = q[2];
+    }
     printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
-    q[0] = q[1] = q[2] = 0;
-    trying("multiply");
-    VM->compute(q, p);
-    success();
-
-    // determine product by hand
-    q_alt[0] = q_alt[1] = q_alt[2] = 0;
-    by_hand_oz_xA(q_alt, p);
-
-    // Compare!
-    if (!equals(q, q_alt, 3)) throw "vectors not equal";
-    p[0] = q[0];
-    p[1] = q[1];
-    p[2] = q[2];
-  }
-  printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
-  operation::destroy(VM);
+    operation::destroy(VM);
 }
 
 void impl_Ax_check(dd_edge &x, const dd_edge &P)
 {
-  printf("Ax multiplications (implicit):\n");
+    printf("Ax multiplications (implicit):\n");
 
-  forest* f = x.getForest();
-  minterm init(f);
-  init.setAll(N, 1.0f);
-  init.buildFunction(x);
+    forest* f = x.getForest();
+    minterm init(f);
+    init.setAll(N, 1.0f);
+    init.buildFunction(x);
 
-  for (int i=0; ; i++) {
-    double ex[3];
-    double exP[3];
-    double test[3];
-    readVector(x, ex);
-    printf("p%d: [%lf, %lf, %lf]\n", i, ex[0], ex[1], ex[2]);
-    if (i>=9) break;
-    trying("multiply");
-    apply(MV_MULTIPLY, P, x, x);
-    success();
+    for (int i=0; ; i++) {
+        double ex[3];
+        double exP[3];
+        double test[3];
+        readVector(x, ex);
+        printf("p%d: [%lf, %lf, %lf]\n", i, ex[0], ex[1], ex[2]);
+        if (i>=9) break;
+        trying("multiply");
+        apply(MV_MULTIPLY, P, x, x);
+        success();
 
-    // determine product by hand
-    exP[0] = exP[1] = exP[2] = 0;
-    by_hand_oz_Ax(exP, ex);
+        // determine product by hand
+        exP[0] = exP[1] = exP[2] = 0;
+        by_hand_oz_Ax(exP, ex);
 
-    // Compare!
-    readVector(x, test);
-    if (!equals(test, exP, 3)) throw "vectors not equal";
+        // Compare!
+        readVector(x, test);
+        if (!equals(test, exP, 3)) throw "vectors not equal";
 
-  }
+    }
 }
 
 void expl_Ax_check(const dd_edge &ss, const dd_edge &P)
 {
-  int i;
-  double p[3];
-  double q[3];
-  double q_alt[3];
-  p[0] = 0; p[1] = 1; p[2] = 0;
-  printf("Ax multiplications (explicit):\n");
-  numerical_operation* MV = MATR_EXPLVECT_MULT(ss, P, ss);
-  for (i=0; i<9; i++) {
+    int i;
+    double p[3];
+    double q[3];
+    double q_alt[3];
+    p[0] = 0; p[1] = 1; p[2] = 0;
+    printf("Ax multiplications (explicit):\n");
+    numerical_operation* MV = MATR_EXPLVECT_MULT(ss, P, ss);
+    for (i=0; i<9; i++) {
+        printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
+        q[0] = q[1] = q[2] = 0;
+        trying("multiply");
+        MV->compute(q, p);
+        success();
+        q_alt[0] = q_alt[1] = q_alt[2] = 0;
+        by_hand_oz_Ax(q_alt, p);
+        if (!equals(q, q_alt, 3)) throw "vectors not equal";
+        p[0] = q[0];
+        p[1] = q[1];
+        p[2] = q[2];
+    }
     printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
-    q[0] = q[1] = q[2] = 0;
-    trying("multiply");
-    MV->compute(q, p);
-    success();
-    q_alt[0] = q_alt[1] = q_alt[2] = 0;
-    by_hand_oz_Ax(q_alt, p);
-    if (!equals(q, q_alt, 3)) throw "vectors not equal";
-    p[0] = q[0];
-    p[1] = q[1];
-    p[2] = q[2];
-  }
-  printf("p%d: [%lf, %lf, %lf]\n", i, p[0], p[1], p[2]);
-  operation::destroy(MV);
+    operation::destroy(MV);
 }
 
 int main(int argc, const char** argv)
