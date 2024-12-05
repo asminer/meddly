@@ -29,13 +29,8 @@
 #include "../src/meddly.h"
 
 // #define DEBUG_RANDSET
-// #define DEBUG_SEGV
 
 int vars[] = {4, 4, 4, 4, 4, 4};
-int dontcare[] = {0, -1, -1, -1, -1, -1, -1};
-int minterm[7];
-int* mtaddr[] = { minterm };
-int* dcaddr[] = { dontcare };
 
 long seed = -1;
 
@@ -60,81 +55,63 @@ int Equilikely(int a, int b)
     return (a + (int) ((b - a + 1) * Random()));
 }
 
-void randomizeMinterm()
+using namespace MEDDLY;
+
+void randomizeMinterm(minterm &m, bool rows=true)
 {
-    for (int i=1; i<7; i++) minterm[i] = Equilikely(-1, 3);
+    if (m.isForSets()) {
+        for (int i=1; i<=m.getNumVars(); i++) {
+            m.setVar(i, Equilikely(-1, 3));
+        }
+    } else {
+        if (rows) {
+            for (int i=1; i<=m.getNumVars(); i++) {
+                m.setVars(i, Equilikely(-1, 3), DONT_CARE);
+            }
+        } else {
+            for (int i=1; i<=m.getNumVars(); i++) {
+                m.setVars(i, DONT_CARE, Equilikely(-1, 3));
+            }
+        }
+    }
 #ifdef DEBUG_RANDSET
-    printf("Random minterm: [%d", minterm[1]);
-    for (int i=2; i<7; i++) printf(", %d", minterm[i]);
-    printf("]\n");
+    FILE_output out(stdout);
+    out << "Random minterm: ";
+    m.show(out);
+    out << "\n";
 #endif
 }
-
-using namespace MEDDLY;
 
 
 void makeRandomSet(forest* f, int nmt, dd_edge &x)
 {
-#ifdef DEBUG_SEGV
-    fprintf(stderr, "\tentering makeRandomSet\n");
-#endif
     dd_edge tmp(f);
+    minterm mint(f);
     for (; nmt; nmt--) {
-#ifdef DEBUG_SEGV
-        fprintf(stderr, "\tminterm\n");
-#endif
-        randomizeMinterm();
-#ifdef DEBUG_SEGV
-        fprintf(stderr, "\tedge\n");
-#endif
-        f->createEdge(mtaddr, 1, tmp);
-#ifdef DEBUG_SEGV
-        fprintf(stderr, "\tunion\n");
-#endif
+        randomizeMinterm(mint);
+        mint.buildFunction(tmp);
         x += tmp;
-#ifdef DEBUG_SEGV
-        fprintf(stderr, "\tdone iter %d\n", nmt);
-#endif
     }
-#ifdef DEBUG_SEGV
-    fprintf(stderr, "\texiting makeRandomSet\n");
-#endif
 }
 
 void makeRandomRows(forest* f, int nmt, dd_edge &x)
 {
-#ifdef DEBUG_SEGV
-    fprintf(stderr, "\tentering makeRandomRows\n");
-#endif
     dd_edge tmp(f);
+    minterm mint(f);
     for (; nmt; nmt--) {
-#ifdef DEBUG_SEGV
-        fprintf(stderr, "\tminterm\n");
-#endif
-        randomizeMinterm();
-#ifdef DEBUG_SEGV
-        fprintf(stderr, "\tedge\n");
-#endif
-        f->createEdge(mtaddr, dcaddr, 1, tmp);
-#ifdef DEBUG_SEGV
-        fprintf(stderr, "\tunion\n");
-#endif
+        randomizeMinterm(mint, true);
+        mint.buildFunction(tmp);
         x += tmp;
-#ifdef DEBUG_SEGV
-        fprintf(stderr, "\tdone iter %d\n", nmt);
-#endif
     }
-#ifdef DEBUG_SEGV
-    fprintf(stderr, "\texiting makeRandomRows\n");
-#endif
 }
 
 void makeRandomCols(forest* f, int nmt, dd_edge &x)
 {
     dd_edge tmp(f);
+    minterm mint(f);
     for (; nmt; nmt--) {
-        randomizeMinterm();
-        f->createEdge(dcaddr, mtaddr, 1, tmp);
+        randomizeMinterm(mint, false);
+        mint.buildFunction(tmp);
         x += tmp;
     }
 }
@@ -155,16 +132,16 @@ void test(forest* mdd, forest* mxd, int nmt)
 #ifdef DEBUG_RANDSET
   FILE_output out(stdout);
   printf("Generated random set:\n");
-  rs.show(out, 2);
+  rs.showGraph(out);
   printf("Generated random rows:\n");
-  rr.show(out, 2);
+  rr.showGraph(out);
 #endif
 
   // check: generate rr from rs, make sure they match
   apply(CROSS, rs, one, tmp);
 #ifdef DEBUG_RANDSET
   printf("rs x 1:\n");
-  tmp.show(out, 2);
+  tmp.showGraph(out);
 #endif
   assert(tmp == rr);
 
@@ -176,9 +153,9 @@ void test(forest* mdd, forest* mxd, int nmt)
 
 #ifdef DEBUG_RANDSET
   printf("Generated random set:\n");
-  cs.show(out, 2);
+  cs.showGraph(out);
   printf("Generated random cols:\n");
-  cr.show(out, 2);
+  cr.showGraph(out);
 #endif
 
     // check: generate cr from cs, make sure they match
@@ -220,24 +197,24 @@ void test(forest* mdd, forest* mxd, int nmt)
 
 int processArgs(int argc, const char** argv)
 {
-  if (argc>2) {
-    /* Strip leading directory, if any: */
-    const char* name = argv[0];
-    for (const char* ptr=name; *ptr; ptr++) {
-    if ('/' == *ptr) name = ptr+1;
-  }
-    printf("Usage: %s <seed>\n", name);
-    return 0;
-  }
-  if (argc>1) {
-    seed = atol(argv[1]);
-  }
-  if (seed < 1) {
-    seed = time(0);
-  }
+    if (argc>2) {
+        /* Strip leading directory, if any: */
+        const char* name = argv[0];
+        for (const char* ptr=name; *ptr; ptr++) {
+            if ('/' == *ptr) name = ptr+1;
+        }
+        printf("Usage: %s <seed>\n", name);
+        return 0;
+    }
+    if (argc>1) {
+        seed = atol(argv[1]);
+    }
+    if (seed < 1) {
+        seed = time(0);
+    }
 
-  printf("Using rng seed %ld\n", seed);
-  return 1;
+    printf("Using rng seed %ld\n", seed);
+    return 1;
 }
 
 int main(int argc, const char** argv)
@@ -250,9 +227,11 @@ int main(int argc, const char** argv)
         domain* myd = domain::createBottomUp(vars, 6);
         assert(myd);
 
-        forest* mdd = forest::create(myd, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        forest* mdd = forest::create(myd, SET, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL);
         assert(mdd);
-        forest* mxd = forest::create(myd, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        forest* mxd = forest::create(myd, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL);
         assert(mxd);
 
         for (int m=1; m<=20; m++) {

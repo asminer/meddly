@@ -83,26 +83,37 @@ void adjustMinterms(int* mtu, int* mtp, unsigned N)
     }
 }
 
-void printMinterm(FILE* out, const char* which, const int* mt, unsigned N)
+void randomizeMinterm(minterm &m, int max)
 {
-    if (0 == mt) return;
-    fprintf(out, "    %s (bottom) [ %d", which, mt[0]);
-    for (unsigned i=1; i<N; i++ ) {
-        fprintf(out, ", %d", mt[i]);
+    if (m.isForRelations()) {
+        for (unsigned i=1; i<=m.getNumVars(); i++) {
+            int from = Equilikely(-1, max);
+            int to = Equilikely(-2, max);
+            if (DONT_CHANGE == to) {
+                from = DONT_CARE;
+            }
+            m.setVars(i, from, to);
+        }
+    } else {
+        for (unsigned i=1; i<=m.getNumVars(); i++) {
+            m.setVar(i, Equilikely(-1, max));
+        }
     }
-    fprintf(out, "] (top)\n");
+}
+
+void printMinterm(FILE* fout, const minterm& m)
+{
+    FILE_output out(fout);
+    out << "    ";
+    m.show(out);
+    out << "\n";
 }
 
 void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
 {
     seed = s;
     forest* f = out.getForest();
-    const unsigned Vars = f->getNumVariables();
-
-    int* minterm = new int[Vars+1];
-    int* minprime = 0;
-    if (f->isForRelations()) minprime = new int[Vars+1];
-
+    minterm mint(f);
 
     switch (f->getRangeType()) {
         case range_type::BOOLEAN:
@@ -121,39 +132,31 @@ void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
         fprintf(fout, "Function(s) based on %d terms:\n", terms);
     }
     for (int i=0; i<terms; i++) {
-        randomizeMinterm(false, 4, minterm, Vars+1);
-        if (minprime) {
-            randomizeMinterm(true, 4, minprime, Vars+1);
-            adjustMinterms(minterm, minprime, Vars+1);
-        }
+        randomizeMinterm(mint, 4);
+
         long i_value = Equilikely(1, 5);
-        float f_value = i_value;
-
-        dd_edge temp(out);
-
         switch (f->getRangeType()) {
             case range_type::BOOLEAN:
-                if (minprime) f->createEdge(&minterm, &minprime, 1, temp);
-                else          f->createEdge(&minterm, 1, temp);
+                mint.setTerm(true);
                 break;
 
             case range_type::INTEGER:
-                if (minprime) f->createEdge(&minterm, &minprime, &i_value, 1, temp);
-                else          f->createEdge(&minterm, &i_value, 1, temp);
+                mint.setTerm(i_value);
                 break;
 
             case range_type::REAL:
-                if (minprime) f->createEdge(&minterm, &minprime, &f_value, 1, temp);
-                else          f->createEdge(&minterm, &f_value, 1, temp);
+                mint.setTerm(double(i_value));
                 break;
         }
+
+        dd_edge temp(out);
+        mint.buildFunction(temp);
 
         if (fout) {
             if (f->getRangeType() != range_type::BOOLEAN) {
                 fprintf(fout, "    value %ld\n", i_value);
             }
-            printMinterm(fout, "unprimed", minterm, Vars+1);
-            printMinterm(fout, "  primed", minprime, Vars+1);
+            printMinterm(fout, mint);
         }
 
         out += temp;
@@ -168,10 +171,6 @@ void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
 #endif
 
     } // for i
-
-    // cleanup
-    delete[] minprime;
-    delete[] minterm;
 }
 
 void writeLongReduction(const forest* f)
