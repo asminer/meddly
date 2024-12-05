@@ -343,8 +343,9 @@ class MEDDLY::minterm_coll {
 
 
         //
-        // For convenience and debugging
-        void show(output &s, const char* pre, const char* post) const;
+        // For convenience and debugging: show all minterms.
+        void show(output &s, const char* pre=nullptr, const char* post="\n")
+            const;
 
 
     private:

@@ -584,6 +584,8 @@ void MEDDLY::minterm_coll::show(output &s,
             s.put("  ");
         }
         _mtlist[i]->show(s);
+        s.put("  ");
+        _mtlist[i]->getTerm().write(s);
         s.put(post);
     }
 }
@@ -641,10 +643,12 @@ void MEDDLY::fbuilder_forest::_relPathToBottom(int L, const minterm &m,
             }
             cp = F->makeRedundantsTo(cp, k-1, -k);
         } else {
-            unpacked_node* nb
-                = unpacked_node::newSparse(F, -k, 1);
-            nb->setSparse(0, m.to(k), cv, cp);
-            F->createReducedNode(nb, cv, cp);
+            if (!IDENT || m.from(k) != m.to(k)) {
+                unpacked_node* nb
+                    = unpacked_node::newSparse(F, -k, 1);
+                nb->setSparse(0, m.to(k), cv, cp);
+                F->createReducedNode(nb, cv, cp);
+            }
         }
 
         //

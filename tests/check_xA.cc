@@ -29,6 +29,7 @@
 
 #define SHOW_INDEXES
 #define SHOW_MATRIX
+// #define TEST_MATRIX_ELEMS
 
 using namespace MEDDLY;
 
@@ -66,11 +67,14 @@ void build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
     sslist.unused().setAll(N, 1L);
     sslist.pushUnused();
     sslist.unused().setAll(S, 2L);
+    sslist.pushUnused();
     sslist.buildFunction(ss);
     success();
 
     FILE_output out(stdout);
 #ifdef SHOW_INDEXES
+    out << "Indexes (minterms):\n";
+    sslist.show(out);
     out << "Indexes:\n";
     ss.showGraph(out);
 #endif
@@ -101,7 +105,20 @@ void build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
     matrix.buildFunction(P);
     success();
 
+#ifdef TEST_MATRIX_ELEMS
+    for (unsigned i=0; i<matrix.size(); i++) {
+        out << "Building Mxd for minterm:\n";
+        matrix.at(i).show(out);
+        out << "\n";
+        dd_edge ij(mxd);
+        matrix.at(i).buildFunction(ij);
+        ij.showGraph(out);
+    }
+#endif
+
 #ifdef SHOW_MATRIX
+    out << "Matrix (minterms):\n";
+    matrix.show(out);
     out << "Matrix:\n";
     P.showGraph(out);
 #endif

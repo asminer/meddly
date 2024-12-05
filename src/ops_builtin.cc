@@ -53,10 +53,6 @@ namespace MEDDLY {
 #include "operations/vect_matr.h"
 #include "operations/mm_mult.h"
 //
-// In case we need to initialize minterm operations
-//
-#include "operations/explicit.h"
-//
 // For initializing numerical operations
 //
 #include "operations/vect_matr.h"

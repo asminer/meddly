@@ -196,6 +196,15 @@ void MEDDLY::dd_edge::showGraph(output &s) const
     } else {
         s.put("MDD");
     }
+    if (efp->isIdentityReduced()) {
+        s.put(" (identity reduced)");
+    }
+    if (efp->isFullyReduced()) {
+        s.put(" (fully reduced)");
+    }
+    if (efp->isQuasiReduced()) {
+        s.put(" (quasi reduced)");
+    }
     s.put(" rooted at edge ");
     efp->showEdge(s, edgeval, node);
     s.put('\n');

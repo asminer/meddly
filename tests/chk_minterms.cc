@@ -75,7 +75,7 @@ void mismatch(const minterm &eval,
     out << "mtlist: " << (mtcoll_answer ? "true" : "false") << "\n";
     out << "\n";
     out << "Minterm list:\n";
-    mtcoll.show(out, nullptr, "\n");
+    mtcoll.show(out);
 
     out << mddtype << MDD << ":\n";
     E.showGraph(out);

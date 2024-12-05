@@ -52,7 +52,6 @@ libmeddly_la_SOURCES = \
     oper.h                  oper.cc \
     oper_binary.h           oper_binary.cc \
     oper_item.h             oper_item.cc \
-    oper_minterm.h          oper_minterm.cc \
     oper_numer.h            oper_numer.cc \
     oper_satur.h            oper_satur.cc \
     oper_ternary.h          oper_ternary.cc \
@@ -106,7 +105,6 @@ libmeddly_la_SOURCES = \
     operations/cycle.h                  operations/cycle.cc        \
     operations/difference.h             operations/difference.cc   \
     operations/divide.h                 operations/divide.cc       \
-    operations/explicit.h               operations/explicit.cc     \
     operations/intersection.h           operations/intersection.cc \
     operations/maxmin.h                 operations/maxmin.cc       \
     operations/maxmin_range.h           operations/maxmin_range.cc \
@@ -186,7 +184,6 @@ pkginclude_HEADERS = \
     node_storage.h \
     oper.h  \
     oper_binary.h  \
-    oper_minterm.h \
     oper_numer.h \
     oper_ternary.h  \
     oper_unary.h  \
