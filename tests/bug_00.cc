@@ -2,6 +2,8 @@
 #include "../src/meddly.h"
 #include "simple_model.h"
 
+#include <assert.h>
+
 #define VERBOSE
 
 using namespace MEDDLY;

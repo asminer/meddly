@@ -30,8 +30,6 @@
 
 // #define DEBUG_CREATE_EDGE_REL
 
-// #define SPECIALIZED_IDENTITY
-
 // ******************************************************************
 // *                                                                *
 // *                    fbuilder class hierarchy                    *
@@ -54,24 +52,17 @@ namespace MEDDLY {
             void setPathToBottom(int L, const minterm &m,
                     edge_value &cv, node_handle &cp);
 
-#ifdef SPECIALIZED_IDENTITY
-            /// Build a chain of nodes for a single "relation" minterm.
-            /// This is for identity-reduced forests:
-            ///     we don't need to build identity patterns (yay)
-            ///     but we need to check if edges to singletons
-            ///     are legal (boo).
-            ///
-            ///     @param L    Last level to build a node.
-            ///     @param m    Minterm to build from
-            ///     @param cv   Input: bottom value
-            ///                 Output: top value
-            ///     @param cp   Input: bottom node
-            ///                 Output: top node
-            ///
-            void identityPathToBottom(int L, const minterm &m,
-                    edge_value &cv, node_handle &cp);
-#endif
+            inline void relPathToBottom(int L, const minterm &m,
+                    edge_value &cv, node_handle &cp)
+            {
+                if (F->isIdentityReduced()) {
+                    _relPathToBottom<true>(L, m, cv, cp);
+                } else {
+                    _relPathToBottom<false>(L, m, cv, cp);
+                }
+            }
 
+        protected:
             /// Build a chain of nodes for a single "relation" minterm.
             ///
             ///     @param L    Last level to build a node.
@@ -81,10 +72,9 @@ namespace MEDDLY {
             ///     @param cp   Input: bottom node
             ///                 Output: top node
             ///
-            void relPathToBottom(int L, const minterm &m,
+            template <bool IDENT>
+            void _relPathToBottom(int L, const minterm &m,
                     edge_value &cv, node_handle &cp);
-
-
 
         protected:
             forest* F;
@@ -353,15 +343,7 @@ void MEDDLY::minterm::buildFunction(dd_edge &e) const
         cv.set();
         cp = termval.getHandle();
         if (isForRelations()) {
-#ifdef SPECIALIZED_IDENTITY
-            if (F->isIdentityReduced()) {
-                fb.identityPathToBottom(num_vars, *this, cv, cp);
-            } else {
-                fb.relPathToBottom(num_vars, *this, cv, cp);
-            }
-#else
             fb.relPathToBottom(num_vars, *this, cv, cp);
-#endif
         } else {
             fb.setPathToBottom(num_vars, *this, cv, cp);
         }
@@ -505,65 +487,8 @@ void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
     } // for i
 }
 
-#ifdef SPECIALIZED_IDENTITY
-
-void MEDDLY::fbuilder_forest::identityPathToBottom(int L, const minterm &m,
-        edge_value &cv, node_handle &cp)
-{
-    MEDDLY_DCASSERT(L>0);
-    MEDDLY_DCASSERT(m.isForRelations());
-    MEDDLY_DCASSERT(F->isIdentityReduced());
-    for (int k=1; k<=L; k++) {
-        //
-        // Check for identity pattern at levels (k, k')
-        //
-        if (DONT_CHANGE == m.to(k)) {
-            MEDDLY_DCASSERT(DONT_CARE == m.from(k));
-            continue;
-        }
-
-        //
-        // Build node at primed level, unless skipped?
-        //
-        if (DONT_CARE == m.to(k)) {
-            if (DONT_CARE == m.from(k)) {
-                cp = F->makeRedundantsTo(cp, k-1, k);
-                continue;
-            }
-            cp = F->makeRedundantsTo(cp, k-1, -k);
-        } else {
-            if (m.from(k) != m.to(k)) {
-                //
-                // The singleton node at the primed
-                // level can be pointed at, so
-                // build the node.
-                //
-                unpacked_node* nb
-                    = unpacked_node::newSparse(F, -k, 1);
-                nb->setSparse(0, m.to(k), cv, cp);
-                F->createReducedNode(nb, cv, cp);
-            }
-        }
-
-        //
-        // Build node at unprimed level, unless skipped?
-        //
-        if (DONT_CARE != m.from(k)) {
-            unpacked_node* nb
-                = unpacked_node::newSparse(F, k, 1);
-            nb->setSparse(0, m.from(k), cv, cp);
-            F->createReducedNode(nb, cv, cp);
-        } else {
-            // For sure there is a singleton below,
-            // so we must build the redundant node.
-            cp = F->makeRedundantsTo(cp, -k, k);
-        }
-    } // for k
-}
-
-#endif
-
-void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
+template <bool IDENT>
+void MEDDLY::fbuilder_forest::_relPathToBottom(int L, const minterm &m,
         edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(L>0);
@@ -574,7 +499,9 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
         //
         if (DONT_CHANGE == m.to(k)) {
             MEDDLY_DCASSERT(DONT_CARE == m.from(k));
-            cp = F->makeIdentitiesTo(cp, k-1, k, ~0);
+            if (!IDENT) {
+                cp = F->makeIdentitiesTo(cp, k-1, k, ~0);
+            }
             continue;
         }
 
@@ -846,15 +773,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     //
     if (high - low == 1) {
         OP::finalize(mtc, low, high, cv, cp);
-#ifdef SPECIALIZED_IDENTITY
-        if (F->isIdentityReduced()) {
-            identityPathToBottom(L, mtc.at(low), cv, cp);
-        } else {
-            relPathToBottom(L, mtc.at(low), cv, cp);
-        }
-#else
         relPathToBottom(L, mtc.at(low), cv, cp);
-#endif
         return;
     }
 

@@ -166,6 +166,37 @@ class MEDDLY::minterm {
         }
 
         //
+        // Set from an array.
+        //
+        inline void setAll(const int* v, const terminal &t)
+        {
+            MEDDLY_DCASSERT(isForSets());
+            MEDDLY_DCASSERT(v);
+            MEDDLY_DCASSERT(_from);
+            for (unsigned i=num_vars; i; --i) {
+                _from[i] = v[i];
+            }
+            termval = t;
+        }
+
+        //
+        // Set from unprimed and primed arrays.
+        //
+        inline void setAll(const int* un, const int* pr, const terminal &t)
+        {
+            MEDDLY_DCASSERT(isForRelations());
+            MEDDLY_DCASSERT(un);
+            MEDDLY_DCASSERT(pr);
+            MEDDLY_DCASSERT(_from);
+            MEDDLY_DCASSERT(_to);
+            for (unsigned i=num_vars; i; --i) {
+                _from[i] = un[i];
+                _to[i] = pr[i];
+            }
+            termval = t;
+        }
+
+        //
         // For convenience and debugging
         void show(output &s) const;
 
