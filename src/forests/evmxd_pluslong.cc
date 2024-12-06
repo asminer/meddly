@@ -42,7 +42,7 @@ void MEDDLY::evmxd_pluslong::createEdge(long val, dd_edge &e)
 {
   createEdgeTempl<OP, long>(val, e);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -68,7 +68,7 @@ void MEDDLY::evmxd_pluslong
   EM.createEdge(ev, ep);
   e.set(ev, ep);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -86,7 +86,7 @@ void MEDDLY::evmxd_pluslong
 {
   createEdgeForVarTempl<OP, long>(vh, vp, terms, a);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 

@@ -109,6 +109,9 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
                 arg.getEdgeValue(), arg.getNode(),
                 res.setEdgeValue(), resp);
         res.set(resp);
+#ifdef DEVELOPMENT_CODE
+        resF->validateIncounts(true, __FILE__, __LINE__);
+#endif
     } else {
         computeDDEdge(arg, res, true);
     }
@@ -117,6 +120,10 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
     compute(resF->getMaxLevelIndex(), ~0,
             arg.getEdgeValue(), arg.getNode(), res.setEdgeValue(), resp);
     res.set(resp);
+#ifdef DEVELOPMENT_CODE
+    resF->validateIncounts(true, __FILE__, __LINE__);
+#endif
+
 #endif
 }
 

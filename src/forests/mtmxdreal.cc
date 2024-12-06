@@ -36,7 +36,7 @@ void MEDDLY::mt_mxd_real::createEdge(float term, dd_edge& e)
     // createEdgeTempl<float_Tencoder, float>(term, e);
     createEdgeTempl<float>(term, e);
 #ifdef DEVELOPMENT_CODE
-    validateIncounts(true);
+    validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -86,7 +86,7 @@ void MEDDLY::mt_mxd_real
   free(ordered_vplist);
 
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -107,7 +107,7 @@ createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
     // createEdgeForVarTempl<float_Tencoder, float>(vh, vp, terms, a);
     createEdgeForVarTempl<float>(vh, vp, terms, a);
 #ifdef DEVELOPMENT_CODE
-    validateIncounts(true);
+    validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 

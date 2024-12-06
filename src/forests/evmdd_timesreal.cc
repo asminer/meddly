@@ -42,7 +42,7 @@ void MEDDLY::evmdd_timesreal::createEdge(float val, dd_edge &e)
 {
   createEdgeTempl<OP, float>(val, e);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -63,7 +63,7 @@ void MEDDLY::evmdd_timesreal
   EM.createEdge(ev, ep);
   e.set(ev, ep);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -80,7 +80,7 @@ void MEDDLY::evmdd_timesreal
 {
   createEdgeForVarTempl<OP, float>(vh, vp, terms, a);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 

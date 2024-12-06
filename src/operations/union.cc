@@ -547,6 +547,8 @@ void MEDDLY::union_mt::_compute(int L, unsigned in,
 // *                                                                *
 // ******************************************************************
 
+#if 0
+
 class MEDDLY::union_mdd : public binary_operation {
     public:
         union_mdd(forest* arg1, forest* arg2, forest* res);
@@ -595,6 +597,9 @@ void MEDDLY::union_mdd::compute(int L, unsigned in,
     MEDDLY_DCASSERT(bv.isVoid());
     cv.set();
     cp = _compute(ap, bp, L);
+#ifdef DEVELOPMENT_CODE
+    resF->validateIncounts(true, __FILE__, __LINE__);
+#endif
 }
 
 MEDDLY::node_handle
@@ -713,12 +718,15 @@ MEDDLY::union_mdd::_compute(node_handle A, node_handle B, int L)
     return resF->makeRedundantsTo(C, Clevel, L);
 }
 
+#endif // if 0
 
 // ******************************************************************
 // *                                                                *
 // *                        union_mxd  class                        *
 // *                                                                *
 // ******************************************************************
+
+#if 0
 
 class MEDDLY::union_mxd : public binary_operation {
     public:
@@ -838,6 +846,9 @@ void MEDDLY::union_mxd::compute(int L, unsigned in,
     MEDDLY_DCASSERT(bv.isVoid());
     cv.set();
     cp = _compute(ap, bp, L);
+#ifdef DEVELOPMENT_CODE
+    resF->validateIncounts(true, __FILE__, __LINE__);
+#endif
 }
 
 MEDDLY::node_handle
@@ -1139,6 +1150,7 @@ MEDDLY::union_mxd::_compute_primed(int in, node_handle A, node_handle B,
     return C;
 }
 
+#endif // if 0
 
 // ******************************************************************
 // *                                                                *

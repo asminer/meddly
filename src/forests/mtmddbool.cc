@@ -37,7 +37,7 @@ void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
   // createEdgeTempl<bool_Tencoder, bool>(term, e);
   createEdgeTempl<bool>(term, e);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -77,7 +77,7 @@ void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
   free(ordered_vlist);
 
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -97,7 +97,7 @@ createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
   //createEdgeForVarTempl<bool_Tencoder, bool>(vh, vp, terms, a);
   createEdgeForVarTempl<bool>(vh, vp, terms, a);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 

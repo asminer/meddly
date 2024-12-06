@@ -88,6 +88,7 @@ class MEDDLY::compl_mt : public unary_operation {
 
 #ifdef TRACE
         ostream_output out;
+        unsigned top_count;
 #endif
 };
 
@@ -96,7 +97,7 @@ class MEDDLY::compl_mt : public unary_operation {
 MEDDLY::compl_mt::compl_mt(forest* arg, forest* res)
     : unary_operation(arg, res)
 #ifdef TRACE
-      , out(std::cout)
+      , out(std::cout), top_count(0)
 #endif
 {
     checkDomains(__FILE__, __LINE__);
@@ -120,11 +121,17 @@ void MEDDLY::compl_mt::compute(int L, unsigned in,
                 edge_value &cv, node_handle &cp)
 {
 #ifdef TRACE
+    ++top_count;
     out.indentation(0);
+    out << "Starting top-level compl_mt::compute #" << top_count << "\n";
 #endif
     MEDDLY_DCASSERT(av.isVoid());
     cv.set();
     _compute(L, in, ap, cp);
+#ifdef TRACE
+    out.indentation(0);
+    out << "Finishing top-level compl_mt::compute #" << top_count << "\n";
+#endif
 }
 
 void MEDDLY::compl_mt::_compute(int L, unsigned in,

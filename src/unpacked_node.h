@@ -950,6 +950,13 @@ class MEDDLY::unpacked_node {
         /// and add r back to its forest's recycle list.
         static void Recycle(unpacked_node* r);
 
+        /// Update counts of children in writable nodes.
+        ///     @param  F           Forest we care about.
+        ///     @param  incounts    Vector of counts for each
+        ///                         nonterminal node.
+        ///
+        static void AddToIncomingCounts(const forest* F,
+                        std::vector <unsigned> &incounts);
 
         /// forest should call this in its constructor, after it has its FID.
         /// Initializes empty lists for forest f.

@@ -37,11 +37,10 @@ const unsigned MAX_REL_CARD = 64;
 
 using namespace MEDDLY;
 
-// #define DEBUG_OPS
 // #define DEBUG_MDDOPS
 // #define DEBUG_MXDOPS
 
-// #define TEST_SETS
+#define TEST_SETS
 #define TEST_RELATIONS
 
 double Random(long newseed=0)
@@ -217,24 +216,6 @@ inline void fillMinterm(unsigned x, int* un, int* pr)
     }
 }
 
-inline void fillMinterm(unsigned x, minterm &mt)
-{
-    if (mt.isForSets()) {
-        for (unsigned j=1; j<=mt.getNumVars(); j++) {
-            mt.setVar(j, x % SETDOM);
-            x /= SETDOM;
-        }
-    } else {
-        for (unsigned j=1; j<=mt.getNumVars(); j++) {
-            const int from = x % RELDOM;
-            x /= RELDOM;
-            const int to = x % RELDOM;
-            x /= RELDOM;
-            mt.setVars(j, from, to);
-        }
-    }
-}
-
 inline unsigned whichMinterm(const int* mt)
 {
     unsigned x=0;
@@ -253,24 +234,6 @@ inline unsigned whichMinterm(const int* un, const int* pr)
         x |= (un[j] << (SETBITS/2)) | pr[j];
     }
     return x;
-}
-
-void showMinterms(std::ostream &out, const std::vector <bool> &elems,
-        forest* f)
-{
-    minterm mt(f);
-    out << "{ ";
-    bool printed = false;
-    for (unsigned i=0; i<elems.size(); i++) {
-        if (!elems[i]) continue;
-
-        if (printed) out << ",\n      ";
-
-        fillMinterm(i, mt);
-        ostream_output mout(out);
-        mt.show(mout);
-    }
-    out << " }";
 }
 
 void flipFullyElements(std::vector <bool> &elems, unsigned seed, unsigned k,
@@ -380,7 +343,7 @@ void randomizeIdentity(std::vector <bool> &elems, unsigned card)
 
 
 
-void set2edge(const std::vector<bool> &S, forest *F, dd_edge &s)
+void set2mdd(const std::vector<bool> &S, forest *F, dd_edge &s)
 {
     if (!F) throw "null forest";
 
@@ -397,13 +360,61 @@ void set2edge(const std::vector<bool> &S, forest *F, dd_edge &s)
     }
 
     // Convert set S to list of minterms
-    minterm_coll mtlist(card, F);
+    int** mtlist = new int* [card];
+    card = 0;
     for (unsigned i=0; i<S.size(); i++) {
         if (!S[i]) continue;
-        fillMinterm(i, mtlist.unused());
-        mtlist.pushUnused();
+        mtlist[card] = new int[VARS+1];
+        fillMinterm(i, mtlist[card]);
+        ++card;
     }
-    mtlist.buildFunction(s);
+
+    F->createEdge(mtlist, card, s);
+
+    // Cleanup
+    for (unsigned i=0; i<card; i++) {
+        delete[] mtlist[i];
+    }
+    delete[] mtlist;
+}
+
+void set2mxd(const std::vector<bool> &S, forest *F, dd_edge &s)
+{
+    if (!F) throw "null forest";
+
+    // Determine S cardinality
+    unsigned card = 0;
+    for (unsigned i=0; i<S.size(); i++) {
+        if (S[i]) ++card;
+    }
+
+    // Special case - empty set
+    if (0==card) {
+        F->createEdge(false, s);
+        return;
+    }
+
+    // Convert set S to list of minterms
+    int** unlist = new int* [card];
+    int** prlist = new int* [card];
+    card = 0;
+    for (unsigned i=0; i<S.size(); i++) {
+        if (!S[i]) continue;
+        unlist[card] = new int[VARS+1];
+        prlist[card] = new int[VARS+1];
+        fillMinterm(i, unlist[card], prlist[card]);
+        ++card;
+    }
+
+    F->createEdge(unlist, prlist, card, s);
+
+    // Cleanup
+    for (unsigned i=0; i<card; i++) {
+        delete[] unlist[i];
+        delete[] prlist[i];
+    }
+    delete[] unlist;
+    delete[] prlist;
 }
 
 
@@ -438,8 +449,8 @@ void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2,
     throw "mismatch";
 }
 
-void compare(const std::vector <bool> &Aset, const std::vector <bool> &Bset,
-        forest* f1, forest* f2, forest* fres)
+void compare_sets(const std::vector <bool> &Aset,
+        const std::vector <bool> &Bset, forest* f1, forest* f2, forest* fres)
 {
     std::vector <bool> AiBset(POTENTIAL);
     std::vector <bool> AuBset(POTENTIAL);
@@ -454,30 +465,84 @@ void compare(const std::vector <bool> &Aset, const std::vector <bool> &Bset,
     set_difference(Aset, Bset, AmBset);
     set_complement(Aset, cAset);
 
-    set2edge(Aset, f1, Add);
-    set2edge(Bset, f2, Bdd);
-    set2edge(AiBset, fres, AiBdd);
-    set2edge(AuBset, fres, AuBdd);
-    set2edge(AmBset, fres, AmBdd);
-    set2edge(cAset, fres, cABdd);
-    set2edge(Aset, fres, ccABdd);
+    set2mdd(Aset, f1, Add);
+    set2mdd(Bset, f2, Bdd);
+    set2mdd(AiBset, fres, AiBdd);
+    set2mdd(AuBset, fres, AuBdd);
+    set2mdd(AmBset, fres, AmBdd);
+    set2mdd(cAset, fres, cABdd);
+    set2mdd(Aset, fres, ccABdd);
 
     dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres),
             cAsym(fres), ccAsym(fres);
 
-#ifdef DEBUG_OPS
+#ifdef DEBUG_MDDOPS
+    ostream_output out(std::cout);
+    std::cout << "==================================================================\n";
+    std::cout << "Sets:\n";
+    std::cout << "    A: ";
+    showSet(std::cout, Aset);
+    std::cout << "\n    B: ";
+    showSet(std::cout, Bset);
+    std::cout << "\nMDDs:\n";
+    std::cout << "    A:\n";
+    Add.showGraph(out);
+    std::cout << "    B:\n";
+    Bdd.showGraph(out);
+#endif
+    apply(INTERSECTION, Add, Bdd, AiBsym);
+    apply(UNION, Add, Bdd, AuBsym);
+    apply(DIFFERENCE, Add, Bdd, AmBsym);
+    apply(COMPLEMENT, Add, cAsym);
+    apply(COMPLEMENT, cAsym, ccAsym);
+
+    checkEqual("intersection", AiBsym, AiBdd, AiBset);
+    checkEqual("union", AuBsym, AuBdd, AuBset);
+    checkEqual("difference", AmBsym, AmBdd, AmBset);
+    checkEqual("complement", cAsym, cABdd, cAset);
+    checkEqual("complement^2", ccAsym, ccABdd, Aset);
+}
+
+void compare_rels(const std::vector <bool> &Aset,
+        const std::vector <bool> &Bset, forest* f1, forest* f2, forest* fres)
+{
+    std::vector <bool> AiBset(POTENTIAL);
+    std::vector <bool> AuBset(POTENTIAL);
+    std::vector <bool> AmBset(POTENTIAL);
+    std::vector <bool> cAset(POTENTIAL);
+
+    dd_edge Add(f1), Bdd(f2), AiBdd(fres), AuBdd(fres), AmBdd(fres),
+                cABdd(fres), ccABdd(fres);
+
+    set_intersection(Aset, Bset, AiBset);
+    set_union(Aset, Bset, AuBset);
+    set_difference(Aset, Bset, AmBset);
+    set_complement(Aset, cAset);
+
+    set2mxd(Aset, f1, Add);
+    set2mxd(Bset, f2, Bdd);
+    set2mxd(AiBset, fres, AiBdd);
+    set2mxd(AuBset, fres, AuBdd);
+    set2mxd(AmBset, fres, AmBdd);
+    set2mxd(cAset, fres, cABdd);
+    set2mxd(Aset, fres, ccABdd);
+
+    dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres),
+            cAsym(fres), ccAsym(fres);
+
+#ifdef DEBUG_MXDOPS
     ostream_output out(std::cout);
     std::cout << "==================================================================\n";
     std::cout << "Sets:\n";
     std::cout << "    A: ";
     showSet(std::cout, Aset);
     std::cout << "\n  = ";
-    showMinterms(std::cout, Aset, f1);
+    showRelMinterms(std::cout, Aset);
     std::cout << "\n    B: ";
     showSet(std::cout, Bset);
     std::cout << "\n  = ";
-    showMinterms(std::cout, Bset, f2);
-    std::cout << "\nMDD/MXDs:\n";
+    showRelMinterms(std::cout, Bset);
+    std::cout << "\nMXDs:\n";
     std::cout << "    A:\n";
     Add.showGraph(out);
     std::cout << "    B:\n";
@@ -515,14 +580,14 @@ void test_sets_over(unsigned scard, forest* f1, forest* f2, forest* fres)
         randomizeSet(Aset, scard);
         randomizeSet(Bset, scard);
 
-        compare(Aset, Bset, f1, f2, fres);
+        compare_sets(Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
         randomizeFully(Aset, scard);
         randomizeFully(Bset, scard);
 
-        compare(Aset, Bset, f1, f2, fres);
+        compare_sets(Aset, Bset, f1, f2, fres);
     }
 
     std::cerr << std::endl;
@@ -572,21 +637,21 @@ void test_rels_over(unsigned scard, forest* f1, forest* f2, forest* fres)
         randomizeSet(Aset, scard);
         randomizeSet(Bset, scard);
 
-        compare(Aset, Bset, f1, f2, fres);
+        compare_rels(Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
         randomizeFully(Aset, scard);
         randomizeFully(Bset, scard);
 
-        compare(Aset, Bset, f1, f2, fres);
+        compare_rels(Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "i";
         randomizeIdentity(Aset, scard);
         randomizeIdentity(Bset, scard);
 
-        compare(Aset, Bset, f1, f2, fres);
+        compare_rels(Aset, Bset, f1, f2, fres);
     }
     std::cerr << std::endl;
 }

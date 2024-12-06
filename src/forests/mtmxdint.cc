@@ -36,7 +36,7 @@ void MEDDLY::mt_mxd_int::createEdge(long term, dd_edge& e)
     // createEdgeTempl<int_Tencoder, long>(term, e);
     createEdgeTempl<long>(term, e);
 #ifdef DEVELOPMENT_CODE
-    validateIncounts(true);
+    validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -86,7 +86,7 @@ void MEDDLY::mt_mxd_int
   free(ordered_vplist);
 
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+    validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -106,7 +106,7 @@ createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
     // createEdgeForVarTempl<int_Tencoder, long>(vh, vp, terms, a);
     createEdgeForVarTempl<long>(vh, vp, terms, a);
 #ifdef DEVELOPMENT_CODE
-    validateIncounts(true);
+    validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 

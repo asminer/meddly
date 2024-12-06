@@ -750,6 +750,31 @@ void MEDDLY::unpacked_node::MarkWritable(node_marker &M)
     } // for curr
 }
 
+void MEDDLY::unpacked_node::AddToIncomingCounts(const forest* F,
+        std::vector <unsigned> &incount)
+{
+    MEDDLY_DCASSERT(F);
+    for (const unpacked_node* curr = ForLists[F->FID()].building;
+            curr; curr=curr->next)
+    {
+#ifdef DEBUG_MARK_SWEEP
+        std::cerr   << "Traversing unpacked node at level "
+                    << curr->getLevel() << "\n\t";
+        stream_output s(std::cerr);
+        curr->show(s, true);
+        std::cerr << '\n';
+#endif
+        for (unsigned i=0; i<curr->getSize(); i++) {
+            if (curr->down(i) > 0) {
+                ++incount[curr->down(i)];
+            }
+        }
+        if (curr->mark_extra > 0) {
+            ++incount[curr->mark_extra];
+        }
+    } // for curr
+}
+
 void MEDDLY::unpacked_node::Recycle(unpacked_node* r)
 {
     if (!r) return;

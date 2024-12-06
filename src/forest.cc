@@ -79,10 +79,11 @@
 
 // Thoroughly check reference counts.
 // Very slow.  Use only for debugging.
-// #define VALIDATE_INCOUNTS
 // #define VALIDATE_INCOUNTS_ON_DELETE
 
-
+// Check reference counts after operations.
+// Very slow. Use only for debugging.
+#define ACTUALLY_VALIDATE_INCOUNTS
 
 // #define SHOW_VALIDATE_CACHECOUNTS
 
@@ -519,7 +520,7 @@ void MEDDLY::forest::deleteNode(node_handle p)
 #ifdef VALIDATE_INCOUNTS_ON_DELETE
     delete_depth--;
     if (0==delete_depth) {
-        validateIncounts(false);
+        validateIncounts(false, __FILE__, __LINE__);
     }
 #endif
 
@@ -1187,10 +1188,11 @@ void MEDDLY::forest::dumpUniqueTable(output &s) const
   unique->show(s);
 }
 
-void MEDDLY::forest::validateIncounts(bool exact)
+void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN)
+    const
 {
-#ifndef VALIDATE_INCOUNTS
-    return;
+#ifndef ACTUALLY_VALIDATE_INCOUNTS
+    return
 #endif
 
     static int idnum = 0;
@@ -1223,9 +1225,10 @@ void MEDDLY::forest::validateIncounts(bool exact)
     }
 
     //
-    // TBD: add counts for down pointers in unpacked_nodes
+    // Add counts for down pointers in unpacked_nodes
     // in the build list for this forest.
     //
+    unpacked_node::AddToIncomingCounts(this, in_validate);
 
     // Validate the incoming count stored with each active node using the
     // in_count array computed above
@@ -1237,13 +1240,13 @@ void MEDDLY::forest::validateIncounts(bool exact)
             :  in_validate[i] >  getNodeInCount(i);
 
         if (fail) {
-            printf("Validation #%d failed\n", idnum);
-            long l_i = i;
-            long l_v = in_validate[i];
-            long l_c = getNodeInCount(i);
-            printf("For node %ld\n\tcount: %ld\n\tnode:  %ld\n", l_i, l_v, l_c);
             FILE_output fout(stdout);
+            fout << "Validation #" << idnum << " failed for\n";
+            fout << "\tnode " << i << "\n";
+            fout << "\tnode's count " << getNodeInCount(i) << "\n";
+            fout << "\tactual count " << in_validate[i] << "\n";
             dump(fout, SHOW_DETAILS);
+            fout << "Requested from " << FN << " line " << LN << "\n";
             fout.flush();
             MEDDLY_DCASSERT(0);
             throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
@@ -1325,6 +1328,37 @@ void MEDDLY::forest::validateDownPointers(const unpacked_node &nb) const
 {
     switch (getReductionRule()) {
         case reduction_rule::IDENTITY_REDUCED:
+            // Check for identity rule violations
+            for (unsigned i=0; i<nb.getSize(); i++) {
+                unsigned out = nb.isSparse() ? nb.index(i) : i;
+                unsigned index;
+                node_handle down;
+                const int dnlvl = getNodeLevel(nb.down(i));
+                if (dnlvl>0) continue;
+                if (!isSingletonNode(nb.down(i), index, down)) continue;
+                if ((dnlvl != -nb.getLevel()) || (index == out))
+                {
+                    FILE_output s(stdout);
+                    s   << "Identity violation in node created at level "
+                        << nb.getLevel() << ":\n";
+                    nb.show(s, true);
+                    s   << "\nPointer " << out << " to " << nb.down(i)
+                        << " at level " << dnlvl << ":\n";
+                    showNode(s, nb.down(i), SHOW_DETAILS);
+                    s   << "\n";
+                    if (dnlvl != -nb.getLevel()) {
+                        s << "Jumps too far, from " << nb.getLevel()
+                          << " to " << dnlvl << "\n";
+                    }
+                    if (index == i) {
+                        s << "Illegal edge into singleton\n";
+                    }
+                    s.flush();
+                    MEDDLY_DCASSERT(0);
+                }
+            }
+            // NO break here; we need to fall through to below
+
         case reduction_rule::FULLY_REDUCED:
             for (unsigned i=0; i<nb.getSize(); i++) {
                 if (isTerminalNode(nb.down(i))) continue;
@@ -2186,7 +2220,7 @@ void MEDDLY::forest::readEdges(input &s, dd_edge* E, unsigned n)
         }
 
 #ifdef DEVELOPMENT_CODE
-        validateIncounts(true);
+        validateIncounts(true, __FILE__, __LINE__);
 #endif
     } // try
     catch (error& e) {

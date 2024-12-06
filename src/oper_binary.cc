@@ -91,6 +91,11 @@ void MEDDLY::binary_operation::compute(const dd_edge &ar1,
                 ar2.getEdgeValue(), ar2.getNode(),
                 res.setEdgeValue(), resp);
         res.set(resp);
+
+#ifdef DEVELOPMENT_CODE
+        resF->validateIncounts(true, __FILE__, __LINE__);
+#endif
+
     } else {
         computeDDEdge(ar1, ar2, res, true);
    }
@@ -101,6 +106,11 @@ void MEDDLY::binary_operation::compute(const dd_edge &ar1,
             ar2.getEdgeValue(), ar2.getNode(),
             res.setEdgeValue(), resp);
     res.set(resp);
+
+#ifdef DEVELOPMENT_CODE
+    resF->validateIncounts(true, __FILE__, __LINE__);
+#endif
+
 #endif
 }
 

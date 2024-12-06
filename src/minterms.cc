@@ -449,6 +449,10 @@ void MEDDLY::minterm::buildFunction(dd_edge &e) const
         fb.setPathToBottom(num_vars, *this, cv, cp);
     }
     e.set(cv, cp);
+
+#ifdef DEVELOPMENT_CODE
+    F->validateIncounts(true, __FILE__, __LINE__);
+#endif
 }
 
 void MEDDLY::minterm::initVectors()
@@ -569,6 +573,9 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
     }
 
     e.set(ev, en);
+#ifdef DEVELOPMENT_CODE
+    F->validateIncounts(true, __FILE__, __LINE__);
+#endif
 }
 
 

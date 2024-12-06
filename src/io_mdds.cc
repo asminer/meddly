@@ -359,7 +359,7 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
         }
 
 #ifdef DEVELOPMENT_CODE
-        F->validateIncounts(true);
+        F->validateIncounts(true, __FILE__, __LINE__);
 #endif
 #ifdef DEBUG_READ
     } // try
