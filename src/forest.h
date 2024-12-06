@@ -1953,7 +1953,8 @@ class MEDDLY::forest {
         void dump(output &s, display_flags flags) const;
         void dumpInternal(output &s) const;
         void dumpUniqueTable(output &s) const;
-        void validateIncounts(bool exact, const char* fn, unsigned ln) const;
+        void validateIncounts(bool exact, const char* fn, unsigned ln,
+                const char* opname=nullptr) const;
         void validateCacheCounts() const;
         void countNodesByLevel(long* active) const;
 

@@ -470,7 +470,7 @@ void MEDDLY::union_mt::_compute(int L, unsigned in,
 #ifdef TRACE
     out.indent_less();
     out.put('\n');
-    out << "inter_mt::_compute(" << L << ", " << in << ", " << A << ", "
+    out << "union_mt::_compute(" << L << ", " << in << ", " << A << ", "
         << B << ") done\n";
     out << "  A: ";
     Au->show(out, true);

@@ -22,6 +22,7 @@
 
 #define TEST_SETS
 #define TEST_RELS
+// #define SHOW_MINTERMS
 
 const int DOMSIZE = 4;       // DO NOT change
 const int SETVARS = 10;
@@ -242,6 +243,11 @@ void test_sets()
             out << ": ";
             out.flush();
         }
+
+#ifdef SHOW_MINTERMS
+        out << "\nMinterms:\n";
+        mtcoll.show(out);
+#endif
 
         //
         // Set up ddedges
@@ -496,6 +502,11 @@ void test_rels()
             out << ": ";
             out.flush();
         }
+
+#ifdef SHOW_MINTERMS
+        out << "\nMinterms:\n";
+        mtcoll.show(out);
+#endif
 
         //
         // Set up ddedges

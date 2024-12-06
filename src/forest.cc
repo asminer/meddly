@@ -520,7 +520,7 @@ void MEDDLY::forest::deleteNode(node_handle p)
 #ifdef VALIDATE_INCOUNTS_ON_DELETE
     delete_depth--;
     if (0==delete_depth) {
-        validateIncounts(false, __FILE__, __LINE__);
+        validateIncounts(false, __FILE__, __LINE__, "delete");
     }
 #endif
 
@@ -1188,8 +1188,8 @@ void MEDDLY::forest::dumpUniqueTable(output &s) const
   unique->show(s);
 }
 
-void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN)
-    const
+void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN,
+        const char* opname) const
 {
 #ifndef ACTUALLY_VALIDATE_INCOUNTS
     return
@@ -1246,7 +1246,9 @@ void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN)
             fout << "\tnode's count " << getNodeInCount(i) << "\n";
             fout << "\tactual count " << in_validate[i] << "\n";
             dump(fout, SHOW_DETAILS);
-            fout << "Requested from " << FN << " line " << LN << "\n";
+            fout << "Requested from " << FN << " line " << LN;
+            if (opname) fout << " operation " << opname;
+            fout << '\n';
             fout.flush();
             MEDDLY_DCASSERT(0);
             throw error(error::MISCELLANEOUS, __FILE__, __LINE__);

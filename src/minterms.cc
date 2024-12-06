@@ -28,6 +28,7 @@
 // #define DEBUG_MOVE_PAIRS
 // #include "operators.h"
 
+// #define DEBUG_CREATE_EDGE_SET
 // #define DEBUG_CREATE_EDGE_REL
 
 // ******************************************************************
@@ -223,11 +224,15 @@ namespace MEDDLY {
         protected:
             // computes <cv, cp> = union(<cv, cp>, <av, ap>)
             inline void accumulate(int L, unsigned in,
-                    const edge_value &av, node_handle ap,
+                    const edge_value &av, node_handle& ap,
                     edge_value &cv, node_handle& cp)
             {
                 if (union_op) {
+                    const node_handle orig_cp = cp;
                     union_op->compute(L, in, av, ap, cv, cp, cv, cp);
+                    F->unlinkNode(orig_cp);
+                    F->unlinkNode(ap);
+                    ap = 0;
                 } else {
                     throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
                 }
@@ -574,7 +579,7 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
 
     e.set(ev, en);
 #ifdef DEVELOPMENT_CODE
-    F->validateIncounts(true, __FILE__, __LINE__);
+    F->validateIncounts(true, __FILE__, __LINE__, "minterm_coll::buildFunction");
 #endif
 }
 
