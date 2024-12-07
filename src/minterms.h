@@ -96,6 +96,14 @@ class MEDDLY::minterm {
         /// Get the terminal value
         inline const terminal& getTerm()    const   { return termval; }
 
+        /// Get the memory usage, in bytes
+        inline long memoryUsage()           const
+        {
+            const long me = sizeof(minterm);
+            const long arr = sizeof(int) * (1+num_vars);
+            return _to  ? ( me + 2* arr) : ( me + arr);
+        }
+
         // set access
 
         inline int getVar(unsigned i) const {
@@ -258,6 +266,18 @@ class MEDDLY::minterm_coll {
         inline bool isForRelations()        const   { return for_relations; }
         inline unsigned getNumVars()        const   { return num_vars; }
         inline const domain* getDomain()    const   { return _D; }
+
+        /// Memory used
+        inline long memoryUsage()           const
+        {
+            long bytes = sizeof(minterm_coll);
+            if (max_coll_size) {
+                MEDDLY_DCASSERT(_mtlist);
+                MEDDLY_DCASSERT(_mtlist[0]);
+                bytes += max_coll_size * _mtlist[0]->memoryUsage();
+            }
+            return bytes;
+        }
 
         /// Current collection size
         inline unsigned size() const { return first_unused; }

@@ -24,6 +24,7 @@
 #include "forest.h"
 #include "oper_unary.h"
 #include "oper_binary.h"
+#include "minterms.h"
 
 #include <unordered_map>
 #include <map>
@@ -48,7 +49,7 @@ namespace MEDDLY {
 // TBD: still need to combine these into one general-purpose relation
 //
 
-// #define USE_MINTERMS
+#define USE_MINTERMS
 
 // ******************************************************************
 // *                                                                *
@@ -341,8 +342,12 @@ class MEDDLY::otf_event {
         int num_firing_vars;
         int* firing_vars;
         dd_edge event_mask;
+#ifdef USE_MINTERMS
+        minterm* event_mask_minterm;
+#else
         int* event_mask_from_minterm;
         int* event_mask_to_minterm;
+#endif
 
 };  // end of class event
 
@@ -889,14 +894,18 @@ class MEDDLY::hybrid_subevent {
 
 
       forest* f;
+#ifdef USE_MINTERMS
+        minterm_coll mtlist;
+#else
       int** unpminterms; // unpminterms[0] for implicit node
-      long enable;
       int** pminterms; // pminterms[0] for implicit node
-      long fire;
       int num_minterms;
+      int size_minterms;
+#endif
+      long enable;
+      long fire;
       int process_minterm_pos;
       int processed_minterm_pos;
-      int size_minterms;
       bool is_firing;
       bool uses_extensible_variables;
 
@@ -1023,8 +1032,12 @@ class MEDDLY::hybrid_event {
       int num_firing_vars;
       int* firing_vars;
       dd_edge event_mask;
+#ifdef USE_MINTERMS
+      minterm* event_mask_minterm;
+#else
       int* event_mask_from_minterm;
       int* event_mask_to_minterm;
+#endif
       bool first_time_build;
 
 

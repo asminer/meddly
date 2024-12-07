@@ -445,10 +445,11 @@ void MEDDLY::pregen_relation::finalize(splittingOption split)
 
 MEDDLY::otf_subevent::otf_subevent(forest* f, int* v, int nv, bool firing)
 : vars(0), num_vars(nv), root(dd_edge(f)), top(0),
-  f(f), is_firing(firing)
+    f(f),
 #ifdef USE_MINTERMS
-    , mtlist(16, f)
+    mtlist(16, f),
 #endif
+    is_firing(firing)
 {
   MEDDLY_DCASSERT(f != 0);
   MEDDLY_DCASSERT(v != 0);
@@ -492,6 +493,9 @@ MEDDLY::otf_subevent::~otf_subevent()
 
 void MEDDLY::otf_subevent::clearMinterms()
 {
+#ifdef USE_MINTERMS
+    mtlist.clear();
+#else
   for (int i=0; i<num_minterms; i++) {
     delete[] unpminterms[i];
     delete[] pminterms[i];
@@ -500,6 +504,7 @@ void MEDDLY::otf_subevent::clearMinterms()
   free(pminterms);
   unpminterms = pminterms = 0;
   num_minterms = 0;
+#endif
 }
 
 
@@ -519,6 +524,11 @@ bool MEDDLY::otf_subevent::addMinterm(const int* from, const int* to)
   out << "]\n";
   */
 
+#ifdef USE_MINTERMS
+    mtlist.unused().setAll(from, to, true);
+    mtlist.pushUnused();
+    mtlist.expandIfNecessary();
+#else
   if (num_minterms >= size_minterms) {
     int old_size = size_minterms;
     size_minterms = (0==size_minterms)? 8: MIN(2*size_minterms, 256 + size_minterms);
@@ -542,6 +552,9 @@ bool MEDDLY::otf_subevent::addMinterm(const int* from, const int* to)
     // out << unpminterms[num_minterms][i] << " -> " << pminterms[num_minterms][i] << " , ";
   }
   // out << "]\n";
+  num_minterms++;
+#endif
+
   domain* d = f->getDomain();
   for (int i = num_vars - 1; i >= 0; i--) {
     int level = vars[i];
@@ -553,11 +566,26 @@ bool MEDDLY::otf_subevent::addMinterm(const int* from, const int* to)
         d->enlargeVariableBound(level, false, 1+to[level]);
     }
   }
-  num_minterms++;
   return true;
 }
 
 void MEDDLY::otf_subevent::buildRoot() {
+#ifdef USE_MINTERMS
+    if (0 == mtlist.size()) return;
+    if (usesExtensibleVariables()) {
+        dd_edge sum(root);
+        mtlist.buildFunction(sum);
+        mtlist.clear();
+        //
+        // root += sum;
+        binary_operation* opPlus = UNION(root.getForest(),
+                sum.getForest(), root.getForest());
+        MEDDLY_DCASSERT(opPlus);
+        opPlus->computeTemp(root, sum, root);
+    } else {
+        mtlist.buildFunction(root);
+    }
+#else
   if (0 == num_minterms) return;
   /*
   ostream_output out(std::cout);
@@ -585,28 +613,40 @@ void MEDDLY::otf_subevent::buildRoot() {
   // out << "Equivalent event: " << root.getNode() << "\n";
   // out << "Result: ";
   // root.showGraph(out);
+#endif
 }
 
 
-void MEDDLY::otf_subevent::showInfo(output& out) const {
-  int num_levels = f->getMaxLevelIndex();
-  for (int i = 0; i < num_minterms; i++) {
-    out << "minterm[" << i << "]: ";
-    for (int lvl = num_levels; lvl > 0; lvl--) {
-      out << unpminterms[i][lvl] << " -> " << pminterms[i][lvl] << ", ";
+void MEDDLY::otf_subevent::showInfo(output& out) const
+{
+#ifdef USE_MINTERMS
+    mtlist.show(out);
+#else
+    int num_levels = f->getMaxLevelIndex();
+    for (int i = 0; i < num_minterms; i++) {
+        out << "minterm[" << i << "]: ";
+        for (int lvl = num_levels; lvl > 0; lvl--) {
+            out << unpminterms[i][lvl] << " -> " << pminterms[i][lvl] << ", ";
+        }
+        out << "]\n";
     }
-    out << "]\n";
-  }
-  root.showGraph(out);
+#endif
+    root.showGraph(out);
 }
 
-long MEDDLY::otf_subevent::mintermMemoryUsage() const {
-  long n_minterms = 0L;
-  for (int i = 0; i < size_minterms; i++) {
-    if (unpminterms[i] != 0) n_minterms++;
-  }
-  return long(n_minterms * 2) * long(f->getMaxLevelIndex()) * long(sizeof(int));
+long MEDDLY::otf_subevent::mintermMemoryUsage() const
+{
+#ifdef USE_MINTERMS
+    return mtlist.memoryUsage();
+#else
+    long n_minterms = 0L;
+    for (int i = 0; i < size_minterms; i++) {
+        if (unpminterms[i] != 0) n_minterms++;
+    }
+    return long(n_minterms * 2) * long(f->getMaxLevelIndex()) * long(sizeof(int));
+#endif
 }
+
 
 // ******************************************************************
 // *                                                                *
@@ -685,8 +725,12 @@ MEDDLY::otf_event::otf_event(otf_subevent** p, int np)
 
   root = dd_edge(f);
   event_mask = dd_edge(f);
-  event_mask_from_minterm = 0;
-  event_mask_to_minterm = 0;
+#ifdef USE_MINTERMS
+    event_mask_minterm = nullptr;
+#else
+  event_mask_from_minterm = nullptr;
+  event_mask_to_minterm = nullptr;
+#endif
   needs_rebuilding = is_disabled? false: true;
 }
 
@@ -696,8 +740,12 @@ MEDDLY::otf_event::~otf_event()
   delete[] subevents;
   delete[] vars;
   delete[] firing_vars;
+#ifdef USE_MINTERMS
+  delete event_mask_minterm;
+#else
   delete[] event_mask_from_minterm;
   delete[] event_mask_to_minterm;
+#endif
 }
 
 void MEDDLY::otf_event::buildEventMask()
@@ -705,6 +753,19 @@ void MEDDLY::otf_event::buildEventMask()
   MEDDLY_DCASSERT(num_subevents > 0);
   MEDDLY_DCASSERT(f);
 
+#ifdef USE_MINTERMS
+    if (!event_mask_minterm) {
+        event_mask_minterm = new minterm(f);
+        for (unsigned i = event_mask_minterm->getNumVars(); i; --i)
+        {
+            event_mask_minterm->setVars(i, DONT_CARE, DONT_CHANGE);
+        }
+        for (int i = 0; i < num_firing_vars; i++) {
+            event_mask_minterm->to(firing_vars[i]) = DONT_CARE;
+        }
+    }
+    event_mask_minterm->buildFunction(event_mask);
+#else
   if (0 == event_mask_from_minterm) {
     const size_t minterm_size = size_t(f->getNumVariables()+1);
     event_mask_from_minterm = new int[minterm_size];
@@ -721,6 +782,7 @@ void MEDDLY::otf_event::buildEventMask()
   }
 
   f->createEdge(&event_mask_from_minterm, &event_mask_to_minterm, 1, event_mask);
+#endif
 #ifdef DEBUG_EVENT_MASK
   printf("event_mask: %d\n" , event_mask.getNode());
   ostream_output out(std::cout);
@@ -1823,7 +1885,11 @@ MEDDLY::implicit_relation::isUnionPossible(int level, long i, relation_node **R)
 
 MEDDLY::hybrid_subevent::hybrid_subevent(forest* f, int* v, int nv, bool firing)
 : vars(0), num_vars(nv), root(dd_edge(f)), top(0),
-f(f), is_firing(firing)
+    f(f),
+#ifdef USE_MINTERMS
+    mtlist(16, f),
+#endif
+    is_firing(firing)
 {
   MEDDLY_DCASSERT(f != 0);
   MEDDLY_DCASSERT(v != 0);
@@ -1847,8 +1913,10 @@ f(f), is_firing(firing)
   }
 
   down = -1;
-  unpminterms = pminterms = 0;
+#ifndef USE_MINTERMS
+  unpminterms = pminterms = nullptr;
   num_minterms = size_minterms = 0;
+#endif
   process_minterm_pos = -1;
   processed_minterm_pos = -1;
 }
@@ -1856,16 +1924,21 @@ f(f), is_firing(firing)
 MEDDLY::hybrid_subevent::~hybrid_subevent()
 {
   if (vars) delete [] vars;
+#ifndef USE_MINTERMS
   for (int i=0; i<num_minterms; i++) {
     delete[] unpminterms[i];
     delete[] pminterms[i];
   }
   free(unpminterms);
   free(pminterms);
+#endif
 }
 
 void MEDDLY::hybrid_subevent::clearMinterms()
 {
+#ifdef USE_MINTERMS
+    mtlist.clear();
+#else
   for (int i=0; i<num_minterms; i++) {
     delete[] unpminterms[i];
     delete[] pminterms[i];
@@ -1874,6 +1947,7 @@ void MEDDLY::hybrid_subevent::clearMinterms()
   free(pminterms);
   unpminterms = pminterms = 0;
   num_minterms = 0;
+#endif
 }
 
 
@@ -1884,7 +1958,11 @@ void MEDDLY::hybrid_subevent::confirm(hybrid_relation& rel, int v, int i) {
 
 bool MEDDLY::hybrid_subevent::addMinterm(const int* from, const int* to)
 {
-
+#ifdef USE_MINTERMS
+    mtlist.unused().setAll(from, to, true);
+    mtlist.pushUnused();
+    mtlist.expandIfNecessary();
+#else
 
    ostream_output out(std::cout);
    /*out << "Adding MEDDLY minterm: [";
@@ -1916,6 +1994,9 @@ bool MEDDLY::hybrid_subevent::addMinterm(const int* from, const int* to)
     pminterms[num_minterms][i] = to[i];
     // out << unpminterms[num_minterms][i] << " -> " << pminterms[num_minterms][i] << " , ";
   }
+  num_minterms++;
+#endif
+
  //  out << "]\n";
   domain* d = f->getDomain();
   for (int i = num_vars - 1; i >= 0; i--) {
@@ -1932,14 +2013,17 @@ bool MEDDLY::hybrid_subevent::addMinterm(const int* from, const int* to)
         }
     }
   }
-  num_minterms++;
   process_minterm_pos +=1;
   return true;
 }
 
 void MEDDLY::hybrid_subevent::buildRoot() {
 //  printf("\n num_minterms in this se = %d, to be done = %d \n",num_minterms,process_minterm_pos-processed_minterm_pos );
+#ifdef USE_MINTERMS
+    if (0 == mtlist.size()) return;
+#else
   if (0 == num_minterms) return;
+#endif
   if (1 == num_vars) return ;
 
 
@@ -2068,13 +2152,22 @@ void MEDDLY::hybrid_subevent::buildRoot() {
   #if 1
   if (usesExtensibleVariables()) {
       dd_edge sum(root);
+#ifdef USE_MINTERMS
+      mtlist.buildFunction(sum);
+      mtlist.clear();
+#else
       f->createEdge(unpminterms, pminterms, num_minterms, sum);
       num_minterms = 0;
+#endif
       //
       // root += sum;
       apply(UNION, root, sum, root);
     } else {
+#ifdef USE_MINTERMS
+       mtlist.buildFunction(root);
+#else
        f->createEdge(unpminterms, pminterms, num_minterms, root);
+#endif
     }
   #endif
 
@@ -2107,6 +2200,9 @@ void MEDDLY::hybrid_subevent::buildRoot() {
 
 
 void MEDDLY::hybrid_subevent::showInfo(output& out) const {
+#ifdef USE_MINTERMS
+    mtlist.show(out);
+#else
   int num_levels = f->getMaxLevelIndex();
   for (int i = 0; i < num_minterms; i++) {
     out << "minterm[" << i << "]: ";
@@ -2116,14 +2212,19 @@ void MEDDLY::hybrid_subevent::showInfo(output& out) const {
     out << "]\n";
   }
   // root.showGraph(out);
+#endif
 }
 
 long MEDDLY::hybrid_subevent::mintermMemoryUsage() const {
+#ifdef USE_MINTERMS
+    return mtlist.memoryUsage();
+#else
   long n_minterms = 0L;
   for (int i = 0; i < size_minterms; i++) {
     if (unpminterms[i] != 0) n_minterms++;
   }
   return long(n_minterms * 2) * long(f->getMaxLevelIndex()) * long(sizeof(int));
+#endif
 }
 
 
@@ -2319,8 +2420,12 @@ MEDDLY::hybrid_event::hybrid_event(hybrid_subevent** p, int np,
   rebuild();
   root = dd_edge(f);
   event_mask = dd_edge(f);
-  event_mask_from_minterm = 0;
-  event_mask_to_minterm = 0;
+#ifdef USE_MINTERMS
+  event_mask_minterm = nullptr;
+#else
+  event_mask_from_minterm = nullptr;
+  event_mask_to_minterm = nullptr;
+#endif
   needs_rebuilding = is_disabled ? false: true;
 
 //  printf("\n Event cumulative = %d",f->getImplicitTableCount());
@@ -2336,8 +2441,12 @@ MEDDLY::hybrid_event::~hybrid_event()
   delete[] vars;
   delete[] relNode_vars;
   delete[] firing_vars;
+#ifdef USE_MINTERMS
+  delete event_mask_minterm;
+#else
   delete[] event_mask_from_minterm;
   delete[] event_mask_to_minterm;
+#endif
 }
 
 
@@ -2346,6 +2455,20 @@ void MEDDLY::hybrid_event::buildEventMask()
   MEDDLY_DCASSERT(num_subevents > 0);
   MEDDLY_DCASSERT(f);
 
+#ifdef USE_MINTERMS
+    if (!event_mask_minterm) {
+        event_mask_minterm = new minterm(f);
+        for (unsigned i = event_mask_minterm->getNumVars(); i; --i)
+        {
+            event_mask_minterm->setVars(i, DONT_CARE, DONT_CHANGE);
+        }
+        for (int i = 0; i < num_firing_vars; i++) {
+            event_mask_minterm->to(firing_vars[i]) = DONT_CARE;
+        }
+    }
+    event_mask_minterm->buildFunction(event_mask);
+
+#else
   if (0 == event_mask_from_minterm) {
     const size_t minterm_size = size_t(f->getNumVariables()+1);
     event_mask_from_minterm = new int[minterm_size];
@@ -2365,7 +2488,7 @@ void MEDDLY::hybrid_event::buildEventMask()
   }
 
    f->createEdge(&event_mask_from_minterm, &event_mask_to_minterm, 1, event_mask);
-
+#endif
 #ifdef DEBUG_EVENT_MASK
   ostream_output out(std::cout);
   event_mask.showGraph(out);

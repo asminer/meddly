@@ -103,15 +103,14 @@ int main(int argv, char *argc[])
     << "\n";
 
   // Create an element to insert in the MDD
-  // Note that this is of size (N + 1), since [0] is a special level handle
-  // dedicated to terminal nodes.
-  int* elementList[1];
-  elementList[0] = new int[N + 1];
+  minterm element(mdd);
 
   // First element
-  elementList[0][1] = 0; elementList[0][2] = 0; elementList[0][3] = 0;
+  element.setVar(1, 0);
+  element.setVar(2, 0);
+  element.setVar(3, 0);
   dd_edge first(mdd);
-  mdd->createEdge(elementList, 1, first);
+  element.buildFunction(first);
   std::cout << "\nCreated element [0 0 0]: "
     << "node: " << first.getNode()
     << ", level: " << first.getLevel()
@@ -119,9 +118,11 @@ int main(int argv, char *argc[])
   first.showGraph(meddlyout);
 
   // Second element
-  elementList[0][1] = 0; elementList[0][2] = 1; elementList[0][3] = 1;
+  element.setVar(1, 0);
+  element.setVar(2, 1);
+  element.setVar(3, 1);
   dd_edge second(mdd);
-  mdd->createEdge(elementList, 1, second);
+  element.buildFunction(second);
   std::cout << "\nCreated element [0 1 1]: "
     << "node: " << second.getNode()
     << ", level: " << second.getLevel()
@@ -129,14 +130,29 @@ int main(int argv, char *argc[])
   second.showGraph(meddlyout);
 
   // Third, Fourth, Fifth and Sixth elements are created at once
-  int* eList[4];
-  for (int i = 0; i < 4; ++i) { eList[i] = new int[N + 1]; }
-  eList[0][1] = 1; eList[0][2] = 0; eList[0][3] = 0;
-  eList[1][1] = 1; eList[1][2] = 0; eList[1][3] = 1;
-  eList[2][1] = 1; eList[2][2] = 1; eList[2][3] = 1;
-  eList[3][1] = 2; eList[3][2] = 1; eList[3][3] = 1;
+  minterm_coll elist(4, mdd);
+  // third
+  elist.unused().setVar(1, 1);
+  elist.unused().setVar(2, 0);
+  elist.unused().setVar(3, 0);
+  elist.pushUnused();
+  // fourth
+  elist.unused().setVar(1, 1);
+  elist.unused().setVar(2, 0);
+  elist.unused().setVar(3, 1);
+  elist.pushUnused();
+  // fifth
+  elist.unused().setVar(1, 1);
+  elist.unused().setVar(2, 1);
+  elist.unused().setVar(3, 1);
+  elist.pushUnused();
+  // sixth
+  elist.unused().setVar(1, 2);
+  elist.unused().setVar(2, 1);
+  elist.unused().setVar(3, 1);
+  elist.pushUnused();
   dd_edge theRest(mdd);
-  mdd->createEdge(eList, 4, theRest);
+  elist.buildFunction(theRest);
   std::cout << "\nCreated elements [1 0 0], [1 0 1], [1 1 1], [2 1 1]: "
     << "node: " << theRest.getNode()
     << ", level: " << theRest.getLevel()
