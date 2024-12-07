@@ -94,35 +94,6 @@ void showSet(std::ostream &out, const std::vector <T> &elems)
     out << " }";
 }
 
-/*
-
-void showSet(std::ostream &out, const std::vector <bool> &elems)
-{
-    out << "{ ";
-    bool printed = false;
-    for (unsigned i=0; i<elems.size(); i++) {
-        if (!elems[i]) continue;
-        if (printed) out << ", ";
-        out << i;
-        printed = true;
-    }
-    out << " }";
-}
-
-void showSet(std::ostream &out, const std::vector <char> &elems)
-{
-    out << "{ ";
-    bool printed = false;
-    for (unsigned i=0; i<elems.size(); i++) {
-        if (!elems[i]) continue;
-        if (printed) out << ", ";
-        out << i << ":" << int(elems[i]);
-        printed = true;
-    }
-    out << " }";
-}
-*/
-
 
 void EQ(const std::vector <char> &A, const std::vector <char> &B,
         std::vector<bool> &C)
@@ -406,9 +377,18 @@ void randomizeIdentity(std::vector <char> &elems, unsigned card, unsigned vals)
     }
 }
 
+inline bool convertTerm(bool x)
+{
+    return x;
+}
 
+inline int convertTerm(char x)
+{
+    return int(x);
+}
 
-void set2edge(const std::vector<bool> &S, forest *F, dd_edge &s)
+template <typename T>
+void set2edge(const std::vector<T> &S, forest *F, dd_edge &s)
 {
     if (!F) throw "null forest";
 
@@ -429,37 +409,13 @@ void set2edge(const std::vector<bool> &S, forest *F, dd_edge &s)
     for (unsigned i=0; i<S.size(); i++) {
         if (!S[i]) continue;
         fillMinterm(i, mtlist.unused());
+        mtlist.unused().setTerm( convertTerm(S[i]) );
         mtlist.pushUnused();
     }
     mtlist.buildFunction(s);
 }
 
-void set2edge(const std::vector<char> &S, forest *F, dd_edge &s)
-{
-    if (!F) throw "null forest";
 
-    // Determine S cardinality
-    unsigned card = 0;
-    for (unsigned i=0; i<S.size(); i++) {
-        if (S[i]) ++card;
-    }
-
-    // Special case - empty set
-    if (0==card) {
-        F->createEdge(false, s);
-        return;
-    }
-
-    // Convert set S to list of minterms
-    minterm_coll mtlist(card, F);
-    for (unsigned i=0; i<S.size(); i++) {
-        if (!S[i]) continue;
-        fillMinterm(i, mtlist.unused());
-        mtlist.unused().setTerm(long(S[i]));
-        mtlist.pushUnused();
-    }
-    mtlist.buildFunction(s);
-}
 
 inline char getReductionType(forest* f)
 {
