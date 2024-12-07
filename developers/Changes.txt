@@ -1,7 +1,20 @@
 
 Implement next:
-    * build MDD, MXD from minterms
-      (needed for test cases)
+
+    * Deprecate old function::createEdge methods
+
+    * dd_edge evaluate on minterms
+
+    * Deprecate old function::evaluate methods
+
+    * new iterator object that
+        + works for all forest types without templates
+          (except maybe for evaluation part)
+        + allow fixing of arbitrary variables:
+          use a minterm to "mask", with DONT_CARE allowed to change
+
+        + current path is a minterm
+
 
 Current goal:
     * Better centralized omega meanings
