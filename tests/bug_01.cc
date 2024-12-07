@@ -55,15 +55,31 @@ int main(int argc, char *argv[])
                             edge_labeling::MULTI_TERMINAL);
     assert(mxd);
 
+#ifdef VERBOSE
+    FILE_output out(stdout);
+#endif
+
     // Set up initial state
+#ifdef VERBOSE
+    out << "Building initial state\n";
+    out.flush();
+#endif
     minterm initial(mdd);
     dd_edge initialStates(mdd);
     initial.setVar(1, 0);
     initial.setVar(2, DONT_CARE);
     initial.buildFunction(initialStates);
+#ifdef VERBOSE
+    printf("Initial States:\n");
+    initialStates.showGraph(out);
+#endif
 
     // Create a matrix diagram to represent the next-state function
     //
+#ifdef VERBOSE
+    out << "Building next-state function\n";
+    out.flush();
+#endif
     minterm_coll nsf_coll(2, mxd);
     dd_edge nsf(mxd);
     nsf_coll.unused().setVars(1, DONT_CARE, 1);
@@ -73,42 +89,46 @@ int main(int argc, char *argv[])
     nsf_coll.unused().setVars(2, 0, 1);
     nsf_coll.pushUnused();
     nsf_coll.buildFunction(nsf);
+#ifdef VERBOSE
+    out << "Next-State Minterms:\n";
+    nsf_coll.show(out);
+    out << "Next-State Function:\n";
+    nsf.showGraph(out);
+#endif
+
 
     // Generate reachable states
     //
     dd_edge reachBFS(initialStates);
     dd_edge reachDFS(initialStates);
 
+#ifdef VERBOSE
+    out << "Building reachable using BFS\n";
+    out.flush();
+#endif
     apply(REACHABLE_STATES_BFS, reachBFS, nsf, reachBFS);
-    apply(REACHABLE_STATES_DFS, reachDFS, nsf, reachDFS);
-
-    int retval = (reachBFS == reachDFS)? 0: 1;
+#ifdef VERBOSE
+    out << "BFS states\n";
+    reachBFS.showGraph(out);
+#endif
 
 #ifdef VERBOSE
-    FILE_output meddlyout(stdout);
+    out << "Building reachable using DFS\n";
+    out.flush();
+#endif
+    apply(REACHABLE_STATES_DFS, reachDFS, nsf, reachDFS);
+#ifdef VERBOSE
+    out << "DFS states\n";
+    reachBFS.showGraph(out);
+#endif
 
-    printf("Initial States:\n");
-    initialStates.showGraph(meddlyout);
 
-    printf("Next-State Minterms:\n");
-    nsf_coll.show(meddlyout, nullptr, "\n");
-
-    printf("Next-State Function:\n");
-    nsf.showGraph(meddlyout);
-
-    printf("BFS states\n");
-    reachBFS.showGraph(meddlyout);
-
-    printf("DFS states\n");
-    reachDFS.showGraph(meddlyout);
-
+    int retval = (reachBFS == reachDFS)? 0: 1;
     if (retval) {
         printf("\nReachable states DO NOT match\n\n");
     } else {
         printf("\nReachable states match\n\n");
     }
-
-#endif
 
     // Cleanup
     MEDDLY::cleanup();

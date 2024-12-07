@@ -794,13 +794,14 @@ MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
         // build primed level nodes
         for (unsigned i=0; i<Uun->getSize(); i++) {
             Upr = unpacked_node::newSparse(this, -K, 1);
-            Upr->setSparse(0, i, noop_edge, (i ? linkNode(p) : p));
+            Upr->setSparse(0, i, noop_edge, linkNode(p));
             node_handle h;
             createReducedNode(Upr, ev, h);
             MEDDLY_DCASSERT(ev == noop_edge);
             Uun->setFull(i, noop_edge, h);
         }
 
+        unlinkNode(p);
         createReducedNode(Uun, ev, p);
         MEDDLY_DCASSERT(ev == noop_edge);
     } // for k
@@ -1192,7 +1193,7 @@ void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN,
         const char* opname) const
 {
 #ifndef ACTUALLY_VALIDATE_INCOUNTS
-    return
+    return;
 #endif
 
     static int idnum = 0;

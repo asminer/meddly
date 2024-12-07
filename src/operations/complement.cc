@@ -34,7 +34,12 @@ namespace MEDDLY {
 
 // #define TRACE
 
+// #define TRACE_IC
+
 #ifdef TRACE
+#include "../operators.h"
+#endif
+#ifdef TRACE_IC
 #include "../operators.h"
 #endif
 
@@ -81,6 +86,17 @@ class MEDDLY::compl_mt : public unary_operation {
             if (K==L) return p;
             MEDDLY_DCASSERT(MXD_levels::topLevel(L, K) == L);
             return _identity_complement(p, K, L, in);
+        }
+
+        inline void showCount(output &out, const char* w, node_handle p) const
+        {
+#ifdef TRACE_IC
+            out << "    " << w << " " << p;
+            if (p>0) {
+                out << " incount " << resF->getNodeInCount(p);
+            }
+            out << '\n';
+#endif
         }
 
     private:
@@ -137,6 +153,9 @@ void MEDDLY::compl_mt::compute(int L, unsigned in,
 void MEDDLY::compl_mt::_compute(int L, unsigned in,
         node_handle A, node_handle &cp)
 {
+#ifdef TRACE
+    out << "compl_mt::_compute(" << L << ", " << A << ")\n";
+#endif
     //
     // Terminal cases.
     //
@@ -144,14 +163,36 @@ void MEDDLY::compl_mt::_compute(int L, unsigned in,
         bool ta;
         argF->getValueFromHandle(A, ta);
         cp = resF->handleForValue(!ta);
+        if (!ta) {
+            //
+            // We need to build the constant 1 function
+            // even if argF is identity reduced.
+            //
+            cp = resF->makeRedundantsTo(cp, 0, L);
+#ifdef TRACE
+            out << "const 1 --> node " << cp << "\n";
+            out << "compl_mt::_compute(" << L << ", " << A << ") returning\n";
+#endif
+            return;
+        }
+
         //
         // Add nodes up to level L.
         //
         if (argF->isIdentityReduced()) {
             cp = identity_complement(cp, 0, L, in);
+#ifdef TRACE
+            out << "identity complement --> node " << cp << "\n";
+#endif
         } else {
             cp = resF->makeRedundantsTo(cp, 0, L);
+#ifdef TRACE
+            out << "redundant chain --> node " << cp << "\n";
+#endif
         }
+#ifdef TRACE
+        out << "compl_mt::_compute(" << L << ", " << A << ") returning\n";
+#endif
         return;
     }
 
@@ -159,9 +200,6 @@ void MEDDLY::compl_mt::_compute(int L, unsigned in,
     // Determine level information
     //
     const int Alevel = argF->getNodeLevel(A);
-#ifdef TRACE
-    out << "compl_mt::_compute(" << A << ")\n";
-#endif
 
     //
     // Check compute table
@@ -213,7 +251,7 @@ void MEDDLY::compl_mt::_compute(int L, unsigned in,
 #ifdef TRACE
         out.indent_less();
         out.put('\n');
-        out << "compl_mt::_compute(" << A << ") done\n";
+        out << "compl_mt::_compute(" << L << ", " << A << ") done\n";
         out << "A: ";
         Au->show(out, true);
         out << "\nC: ";
@@ -261,6 +299,10 @@ void MEDDLY::compl_mt::_compute(int L, unsigned in,
         // just check if we need to avoid a singleton.
         //
         cp = resF->redirectSingleton(in, cp);
+#ifdef TRACE
+        out << "after singleton redir: " << cp << "\n";
+        out << "compl_mt::_compute(" << L << ", " << A << ") returning\n";
+#endif
         return;
     }
 
@@ -271,14 +313,28 @@ void MEDDLY::compl_mt::_compute(int L, unsigned in,
     //
     if (argF->isIdentityReduced()) {
         cp = identity_complement(cp, Alevel, L, in);
+#ifdef TRACE
+        out << "after identity complement to level " << L << ": " << cp << "\n";
+#endif
     } else {
         cp = resF->makeRedundantsTo(cp, Alevel, L);
+#ifdef TRACE
+        out << "after redundant chain to level " << L << ": " << cp << "\n";
+#endif
     }
+#ifdef TRACE
+    out << "compl_mt::_compute(" << L << ", " << A << ") returning\n";
+#endif
 }
 
 MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
     int K, int L, unsigned in)
 {
+#ifdef TRACE_IC
+    ostream_output trout(std::cout);
+    trout << "identity_complement(" << p << ", " << K << ", "
+          << L << ", " << in << ")\n";
+#endif
     MEDDLY_DCASSERT(L!=0);
     unpacked_node* Uun;
     unpacked_node* Upr;
@@ -291,8 +347,18 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
         // this also handles the only case when we need to check
         // if p is a singleton node :)
         //
+#ifdef TRACE_IC
+        trout << "  add redundant layer\n";
+        const node_handle oldp = p;
+        showCount(trout, "old p", oldp);
+#endif
         p = resF->makeRedundantsTo(p, K, MXD_levels::upLevel(K));
+#ifdef TRACE_IC
+        trout << "    new p " << p << "\n";
+        showCount(trout, "old p", oldp);
+#endif
         K = MXD_levels::upLevel(K);
+        if (L == K) return p;
     }
 
     MEDDLY_DCASSERT(K>=0);
@@ -300,6 +366,14 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
 
     terminal ONE(true);
     node_handle chain_to_one = resF->makeRedundantsTo(ONE.getHandle(), 0, K);
+
+#ifdef TRACE_IC
+    trout << "    cto " << chain_to_one << " ";
+    resF->showNode(trout, chain_to_one, SHOW_DETAILS);
+    trout << "\n      p " << p << " ";
+    resF->showNode(trout, p, SHOW_DETAILS);
+    trout << "\n";
+#endif
 
     //
     // Proceed in unprimed, primed pairs
@@ -310,21 +384,46 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
         for (unsigned i=0; i<Uun->getSize(); i++) {
             Upr = unpacked_node::newFull(resF, -K, Uun->getSize());
             for (unsigned j=0; j<Uun->getSize(); j++) {
-                Upr->setFull(j, resF->linkNode(chain_to_one));
+                if (j==i) {
+                    Upr->setFull(j, resF->linkNode(p));
+                } else {
+                    Upr->setFull(j, resF->linkNode(chain_to_one));
+                }
             }
-            Upr->setFull(i, (i ? resF->linkNode(p) : p));
-            resF->unlinkNode(chain_to_one);
             node_handle h;
             resF->createReducedNode(Upr, voidedge, h);
             MEDDLY_DCASSERT(voidedge.isVoid());
             Uun->setFull(i, h);
         }
+#ifdef TRACE_IC
+        trout << "After level " << K << "\n";
+#endif
 
+        resF->unlinkNode(p);
+#ifdef TRACE_IC
+        trout << "      p " << p << " ";
+        resF->showNode(trout, p, SHOW_DETAILS);
+        trout << "\n      p := reduce ";
+        Uun->show(trout, true);
+        trout << "\n";
+#endif
         resF->createReducedNode(Uun, voidedge, p);
         MEDDLY_DCASSERT(voidedge.isVoid());
 
-        resF->unlinkNode(chain_to_one);
+#ifdef TRACE_IC
+        trout << "    cto " << chain_to_one << " ";
+        resF->showNode(trout, chain_to_one, SHOW_DETAILS);
+        trout << "\n";
+#endif
         chain_to_one = resF->makeRedundantsTo(chain_to_one, K-1, K);
+#ifdef TRACE_IC
+        trout << "Before next\n";
+        trout << "    cto " << chain_to_one << " ";
+        resF->showNode(trout, chain_to_one, SHOW_DETAILS);
+        trout << "\n      p " << p << " ";
+        resF->showNode(trout, p, SHOW_DETAILS);
+        trout << "\n";
+#endif
     } // for k
 
     //
@@ -334,15 +433,17 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
         MEDDLY_DCASSERT(-K == L);
         Upr = unpacked_node::newFull(resF, -K, resF->getLevelSize(-K));
         for (unsigned j=0; j<Upr->getSize(); j++) {
-            Upr->setFull(j, resF->linkNode(chain_to_one));
+            if (j == in) {
+                Upr->setFull(j, p);
+            } else {
+                Upr->setFull(j, resF->linkNode(chain_to_one));
+            }
         }
-        Upr->setFull(in, p);
-        resF->unlinkNode(chain_to_one);
         resF->createReducedNode(Upr, voidedge, p);
         MEDDLY_DCASSERT(voidedge.isVoid());
     }
-
     resF->unlinkNode(chain_to_one);
+
     return p;
 }
 
