@@ -516,7 +516,7 @@ void test_sets(domain* D)
                     edge_labeling::MULTI_TERMINAL, p);
 
     for (unsigned i=1; i<=MAX_SET_CARD; i*=2) {
-        std::cout << "Testing sets of size " << i << " out of " << POTENTIAL << "\n";
+        std::cout << "Testing set operations on sets of size " << i << " out of " << POTENTIAL << "\n";
 
         test_on_forests(i, F1, F1, F1);
         test_on_forests(i, F1, F1, F2);
@@ -551,7 +551,7 @@ void test_rels(domain* D)
 
 
     for (unsigned i=1; i<=MAX_REL_CARD; i*=2) {
-        std::cout << "Testing relations of size " << i << " out of " << POTENTIAL << "\n";
+        std::cout << "Testing set operations on relations of size " << i << " out of " << POTENTIAL << "\n";
 
         test_on_forests(i, R1, R1, R1);
         test_on_forests(i, R1, R1, R2);

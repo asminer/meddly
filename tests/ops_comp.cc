@@ -69,6 +69,33 @@ unsigned Equilikely(unsigned a, unsigned b)
     return (a + (unsigned) ((b - a + 1) * Random()));
 }
 
+inline void showElem(std::ostream &out, bool elem)
+{
+    // NOTHING
+}
+
+inline void showElem(std::ostream &out, char elem)
+{
+    out << ":" << int(elem);
+}
+
+template <typename T>
+void showSet(std::ostream &out, const std::vector <T> &elems)
+{
+    out << "{ ";
+    bool printed = false;
+    for (unsigned i=0; i<elems.size(); i++) {
+        if (!elems[i]) continue;
+        if (printed) out << ", ";
+        out << i;
+        showElem(elems[i]);
+        printed = true;
+    }
+    out << " }";
+}
+
+/*
+
 void showSet(std::ostream &out, const std::vector <bool> &elems)
 {
     out << "{ ";
@@ -78,30 +105,6 @@ void showSet(std::ostream &out, const std::vector <bool> &elems)
         if (printed) out << ", ";
         out << i;
         printed = true;
-    }
-    out << " }";
-}
-
-void showRelMinterms(std::ostream &out, const std::vector <bool> &elems)
-{
-    out << "{ ";
-    bool printed = false;
-    for (unsigned i=0; i<elems.size(); i++) {
-        if (!elems[i]) continue;
-        if (printed) out << ",\n      ";
-        out << "[";
-        printed = true;
-
-        unsigned x = i;
-        for (unsigned j=1; j<=VARS; j++) {
-            unsigned un = x % RELDOM;
-            x /= RELDOM;
-            unsigned pr = x % RELDOM;
-            x /= RELDOM;
-            if (j>1) out << ", ";
-            out << un << "->" << pr;
-        }
-        out << "]";
     }
     out << " }";
 }
@@ -118,30 +121,7 @@ void showSet(std::ostream &out, const std::vector <char> &elems)
     }
     out << " }";
 }
-
-void showRelMinterms(std::ostream &out, const std::vector <char> &elems)
-{
-    out << "{ ";
-    bool printed = false;
-    for (unsigned i=0; i<elems.size(); i++) {
-        if (!elems[i]) continue;
-        if (printed) out << ",\n      ";
-        out << "[";
-        printed = true;
-
-        unsigned x = i;
-        for (unsigned j=1; j<=VARS; j++) {
-            unsigned un = x % RELDOM;
-            x /= RELDOM;
-            unsigned pr = x % RELDOM;
-            x /= RELDOM;
-            if (j>1) out << ", ";
-            out << un << "->" << pr;
-        }
-        out << "]:" << int(elems[i]);
-    }
-    out << " }";
-}
+*/
 
 
 void EQ(const std::vector <char> &A, const std::vector <char> &B,
@@ -279,6 +259,25 @@ inline void fillMinterm(unsigned x, int* un, int* pr)
     }
 }
 
+inline void fillMinterm(unsigned x, minterm &mt)
+{
+    if (mt.isForSets()) {
+        for (unsigned j=1; j<=mt.getNumVars(); j++) {
+            mt.setVar(j, x % SETDOM);
+            x /= SETDOM;
+        }
+    } else {
+        for (unsigned j=1; j<=mt.getNumVars(); j++) {
+            const int from = x % RELDOM;
+            x /= RELDOM;
+            const int to = x % RELDOM;
+            x /= RELDOM;
+            mt.setVars(j, from, to);
+        }
+    }
+}
+
+
 inline unsigned whichMinterm(const int* mt)
 {
     unsigned x=0;
@@ -409,126 +408,7 @@ void randomizeIdentity(std::vector <char> &elems, unsigned card, unsigned vals)
 
 
 
-
-void set2mdd(const std::vector<char> &S, forest *F, dd_edge &s)
-{
-    if (!F) throw "null forest";
-
-    // Determine S cardinality
-    unsigned card = 0;
-    for (unsigned i=0; i<S.size(); i++) {
-        if (S[i]) ++card;
-    }
-
-    // Special case - zero function
-    if (0==card) {
-        F->createEdge(0L, s);
-        return;
-    }
-
-    // Convert set S to list of minterms
-    int** mtlist = new int* [card];
-    long* vals = new long[card];
-    card = 0;
-    for (unsigned i=0; i<S.size(); i++) {
-        if (!S[i]) continue;
-        vals[card] = S[i];
-        mtlist[card] = new int[VARS+1];
-        fillMinterm(i, mtlist[card]);
-
-        ++card;
-    }
-
-    F->createEdge(mtlist, vals, card, s);
-
-    // Cleanup
-    for (unsigned i=0; i<card; i++) {
-        delete[] mtlist[i];
-    }
-    delete[] vals;
-    delete[] mtlist;
-}
-
-
-void set2mdd(const std::vector<bool> &S, forest *F, dd_edge &s)
-{
-    if (!F) throw "null forest";
-
-    // Determine S cardinality
-    unsigned card = 0;
-    for (unsigned i=0; i<S.size(); i++) {
-        if (S[i]) ++card;
-    }
-
-    // Special case - zero function
-    if (0==card) {
-        F->createEdge(false, s);
-        return;
-    }
-
-    // Convert set S to list of minterms
-    int** mtlist = new int* [card];
-    card = 0;
-    for (unsigned i=0; i<S.size(); i++) {
-        if (!S[i]) continue;
-        mtlist[card] = new int[VARS+1];
-        fillMinterm(i, mtlist[card]);
-
-        ++card;
-    }
-
-    F->createEdge(mtlist, card, s);
-
-    // Cleanup
-    for (unsigned i=0; i<card; i++) {
-        delete[] mtlist[i];
-    }
-    delete[] mtlist;
-}
-
-void set2mxd(const std::vector<char> &S, forest *F, dd_edge &s)
-{
-    if (!F) throw "null forest";
-
-    // Determine S cardinality
-    unsigned card = 0;
-    for (unsigned i=0; i<S.size(); i++) {
-        if (S[i]) ++card;
-    }
-
-    // Special case - zero function
-    if (0==card) {
-        F->createEdge(0L, s);
-        return;
-    }
-
-    // Convert set S to list of minterms
-    int** unlist = new int* [card];
-    int** prlist = new int* [card];
-    long* vals = new long[card];
-    card = 0;
-    for (unsigned i=0; i<S.size(); i++) {
-        if (!S[i]) continue;
-        vals[card] = S[i];
-        unlist[card] = new int[VARS+1];
-        prlist[card] = new int[VARS+1];
-        fillMinterm(i, unlist[card], prlist[card]);
-        ++card;
-    }
-
-    F->createEdge(unlist, prlist, vals, card, s);
-
-    // Cleanup
-    for (unsigned i=0; i<card; i++) {
-        delete[] unlist[i];
-        delete[] prlist[i];
-    }
-    delete[] vals;
-    delete[] unlist;
-    delete[] prlist;
-}
-
-void set2mxd(const std::vector<bool> &S, forest *F, dd_edge &s)
+void set2edge(const std::vector<bool> &S, forest *F, dd_edge &s)
 {
     if (!F) throw "null forest";
 
@@ -545,29 +425,41 @@ void set2mxd(const std::vector<bool> &S, forest *F, dd_edge &s)
     }
 
     // Convert set S to list of minterms
-    int** unlist = new int* [card];
-    int** prlist = new int* [card];
-    card = 0;
+    minterm_coll mtlist(card, F);
     for (unsigned i=0; i<S.size(); i++) {
         if (!S[i]) continue;
-        unlist[card] = new int[VARS+1];
-        prlist[card] = new int[VARS+1];
-        fillMinterm(i, unlist[card], prlist[card]);
-        ++card;
+        fillMinterm(i, mtlist.unused());
+        mtlist.pushUnused();
     }
-
-    F->createEdge(unlist, prlist, card, s);
-
-    // Cleanup
-    for (unsigned i=0; i<card; i++) {
-        delete[] unlist[i];
-        delete[] prlist[i];
-    }
-    delete[] unlist;
-    delete[] prlist;
+    mtlist.buildFunction(s);
 }
 
+void set2edge(const std::vector<char> &S, forest *F, dd_edge &s)
+{
+    if (!F) throw "null forest";
 
+    // Determine S cardinality
+    unsigned card = 0;
+    for (unsigned i=0; i<S.size(); i++) {
+        if (S[i]) ++card;
+    }
+
+    // Special case - empty set
+    if (0==card) {
+        F->createEdge(false, s);
+        return;
+    }
+
+    // Convert set S to list of minterms
+    minterm_coll mtlist(card, F);
+    for (unsigned i=0; i<S.size(); i++) {
+        if (!S[i]) continue;
+        fillMinterm(i, mtlist.unused());
+        mtlist.unused().setTerm(long(S[i]));
+        mtlist.pushUnused();
+    }
+    mtlist.buildFunction(s);
+}
 
 inline char getReductionType(forest* f)
 {
@@ -608,8 +500,8 @@ void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
 }
 
 
-void compare_sets(const std::vector <char> &Aset,
-        const std::vector <char> &Bset, forest* f1, forest* f2, forest* fres)
+void compare(const std::vector <char> &Aset, const std::vector <char> &Bset,
+        forest* f1, forest* f2, forest* fres)
 {
     std::vector <bool> AeqBset(POTENTIAL);
     std::vector <bool> AneBset(POTENTIAL);
@@ -630,14 +522,14 @@ void compare_sets(const std::vector <char> &Aset,
     LE(Aset, Bset, AleBset);
     LT(Aset, Bset, AltBset);
 
-    set2mdd(Aset, f1, Add);
-    set2mdd(Bset, f2, Bdd);
-    set2mdd(AeqBset, fres, AeqBdd);
-    set2mdd(AneBset, fres, AneBdd);
-    set2mdd(AgtBset, fres, AgtBdd);
-    set2mdd(AgeBset, fres, AgeBdd);
-    set2mdd(AltBset, fres, AltBdd);
-    set2mdd(AleBset, fres, AleBdd);
+    set2edge(Aset, f1, Add);
+    set2edge(Bset, f2, Bdd);
+    set2edge(AeqBset, fres, AeqBdd);
+    set2edge(AneBset, fres, AneBdd);
+    set2edge(AgtBset, fres, AgtBdd);
+    set2edge(AgeBset, fres, AgeBdd);
+    set2edge(AltBset, fres, AltBdd);
+    set2edge(AleBset, fres, AleBdd);
 
     dd_edge AeqBsym(fres), AneBsym(fres),
             AgtBsym(fres), AgeBsym(fres),
@@ -662,8 +554,7 @@ void compare_sets(const std::vector <char> &Aset,
     checkEqual("less_than_equal", Add, Bdd, AleBsym, AleBdd, AleBset);
 }
 
-
-void test_sets_over(unsigned scard, forest* f1, forest* f2, forest* fres)
+void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
 {
     if (!f1) throw "null f1";
     if (!f2) throw "null f2";
@@ -680,16 +571,24 @@ void test_sets_over(unsigned scard, forest* f1, forest* f2, forest* fres)
         randomizeSet(Aset, scard, 3);
         randomizeSet(Bset, scard, 3);
 
-        compare_sets(Aset, Bset, f1, f2, fres);
+        compare(Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
         randomizeFully(Aset, scard, 3);
         randomizeFully(Bset, scard, 3);
 
-        compare_sets(Aset, Bset, f1, f2, fres);
+        compare(Aset, Bset, f1, f2, fres);
     }
+    if (fres->isForRelations()) {
+        for (unsigned i=0; i<10; i++) {
+            std::cerr << "i";
+            randomizeIdentity(Aset, scard, 3);
+            randomizeIdentity(Bset, scard, 3);
 
+            compare(Aset, Bset, f1, f2, fres);
+        }
+    }
     std::cerr << std::endl;
 }
 
@@ -716,111 +615,20 @@ void test_sets(domain* D)
 
 
     for (unsigned i=1; i<=MAX_SET_CARD; i*=2) {
-        std::cout << "Testing sets of size " << i
+        std::cout << "Testing ==, !=, >, >=, <, <= on sets of size " << i
                   << " out of " << POTENTIAL << "\n";
 
-        test_sets_over(i, in_fully, in_fully, out_fully);
-        test_sets_over(i, in_fully, in_fully, out_quasi);
-        test_sets_over(i, in_fully, in_quasi, out_fully);
-        test_sets_over(i, in_fully, in_quasi, out_quasi);
-        test_sets_over(i, in_quasi, in_fully, out_fully);
-        test_sets_over(i, in_quasi, in_fully, out_quasi);
-        test_sets_over(i, in_quasi, in_quasi, out_fully);
-        test_sets_over(i, in_quasi, in_quasi, out_quasi);
+        test_on_functions(i, in_fully, in_fully, out_fully);
+        test_on_functions(i, in_fully, in_fully, out_quasi);
+        test_on_functions(i, in_fully, in_quasi, out_fully);
+        test_on_functions(i, in_fully, in_quasi, out_quasi);
+        test_on_functions(i, in_quasi, in_fully, out_fully);
+        test_on_functions(i, in_quasi, in_fully, out_quasi);
+        test_on_functions(i, in_quasi, in_quasi, out_fully);
+        test_on_functions(i, in_quasi, in_quasi, out_quasi);
     }
 }
 
-void compare_rels(const std::vector <char> &Aset,
-        const std::vector <char> &Bset, forest* f1, forest* f2, forest* fres)
-{
-    std::vector <bool> AeqBset(POTENTIAL);
-    std::vector <bool> AneBset(POTENTIAL);
-    std::vector <bool> AgtBset(POTENTIAL);
-    std::vector <bool> AgeBset(POTENTIAL);
-    std::vector <bool> AltBset(POTENTIAL);
-    std::vector <bool> AleBset(POTENTIAL);
-
-    dd_edge Add(f1), Bdd(f2),
-            AeqBdd(fres), AneBdd(fres),
-            AgtBdd(fres), AgeBdd(fres),
-            AltBdd(fres), AleBdd(fres);
-
-    EQ(Aset, Bset, AeqBset);
-    NE(Aset, Bset, AneBset);
-    GE(Aset, Bset, AgeBset);
-    GT(Aset, Bset, AgtBset);
-    LE(Aset, Bset, AleBset);
-    LT(Aset, Bset, AltBset);
-
-    set2mxd(Aset, f1, Add);
-    set2mxd(Bset, f2, Bdd);
-    set2mxd(AeqBset, fres, AeqBdd);
-    set2mxd(AneBset, fres, AneBdd);
-    set2mxd(AgtBset, fres, AgtBdd);
-    set2mxd(AgeBset, fres, AgeBdd);
-    set2mxd(AltBset, fres, AltBdd);
-    set2mxd(AleBset, fres, AleBdd);
-
-    dd_edge AeqBsym(fres), AneBsym(fres),
-            AgtBsym(fres), AgeBsym(fres),
-            AltBsym(fres), AleBsym(fres);
-
-    apply(EQUAL,        Add, Bdd, AeqBsym);
-    checkEqual("equal", Add, Bdd, AeqBsym, AeqBdd, AeqBset);
-
-    apply(NOT_EQUAL,        Add, Bdd, AneBsym);
-    checkEqual("not_equal", Add, Bdd, AneBsym, AneBdd, AneBset);
-
-    apply(GREATER_THAN,        Add, Bdd, AgtBsym);
-    checkEqual("greater_than", Add, Bdd, AgtBsym, AgtBdd, AgtBset);
-
-    apply(GREATER_THAN_EQUAL,        Add, Bdd, AgeBsym);
-    checkEqual("greater_than_equal", Add, Bdd, AgeBsym, AgeBdd, AgeBset);
-
-    apply(LESS_THAN,        Add, Bdd, AltBsym);
-    checkEqual("less_than", Add, Bdd, AltBsym, AltBdd, AltBset);
-
-    apply(LESS_THAN_EQUAL,        Add, Bdd, AleBsym);
-    checkEqual("less_than_equal", Add, Bdd, AleBsym, AleBdd, AleBset);
-}
-
-
-void test_rels_over(unsigned scard, forest* f1, forest* f2, forest* fres)
-{
-    if (!f1) throw "null f1";
-    if (!f2) throw "null f2";
-    if (!fres) throw "null fres";
-
-    std::cerr << "    " << getReductionType(f1) << getReductionType(f2)
-              << ':' << getReductionType(fres) << ' ';
-
-    std::vector <char> Aset(POTENTIAL);
-    std::vector <char> Bset(POTENTIAL);
-
-    for (unsigned i=0; i<10; i++) {
-        std::cerr << '.';
-        randomizeSet(Aset, scard, 3);
-        randomizeSet(Bset, scard, 3);
-
-        compare_rels(Aset, Bset, f1, f2, fres);
-    }
-    for (unsigned i=0; i<10; i++) {
-        std::cerr << "x";
-        randomizeFully(Aset, scard, 3);
-        randomizeFully(Bset, scard, 3);
-
-        compare_rels(Aset, Bset, f1, f2, fres);
-    }
-    for (unsigned i=0; i<10; i++) {
-        std::cerr << "i";
-        randomizeIdentity(Aset, scard, 3);
-        randomizeIdentity(Bset, scard, 3);
-
-        compare_rels(Aset, Bset, f1, f2, fres);
-    }
-
-    std::cerr << std::endl;
-}
 void test_rels(domain* D)
 {
     policies p;
@@ -853,48 +661,48 @@ void test_rels(domain* D)
 
 
     for (unsigned i=1; i<=MAX_REL_CARD; i*=2) {
-        std::cout << "Testing relations of size " << i
+        std::cout << "Testing ==, !=, >, >=, <, <= on relations of size " << i
                   << " out of " << POTENTIAL << "\n";
 
-        test_rels_over(i, in_fully, in_fully, out_fully);
-        test_rels_over(i, in_fully, in_fully, out_quasi);
-        test_rels_over(i, in_fully, in_fully, out_ident);
+        test_on_functions(i, in_fully, in_fully, out_fully);
+        test_on_functions(i, in_fully, in_fully, out_quasi);
+        test_on_functions(i, in_fully, in_fully, out_ident);
 
-        test_rels_over(i, in_fully, in_quasi, out_fully);
-        test_rels_over(i, in_fully, in_quasi, out_quasi);
-        test_rels_over(i, in_fully, in_quasi, out_ident);
+        test_on_functions(i, in_fully, in_quasi, out_fully);
+        test_on_functions(i, in_fully, in_quasi, out_quasi);
+        test_on_functions(i, in_fully, in_quasi, out_ident);
 
-        test_rels_over(i, in_fully, in_ident, out_fully);
-        test_rels_over(i, in_fully, in_ident, out_quasi);
-        test_rels_over(i, in_fully, in_ident, out_ident);
-
-    //
-
-        test_rels_over(i, in_ident, in_fully, out_fully);
-        test_rels_over(i, in_ident, in_fully, out_quasi);
-        test_rels_over(i, in_ident, in_fully, out_ident);
-
-        test_rels_over(i, in_ident, in_quasi, out_fully);
-        test_rels_over(i, in_ident, in_quasi, out_quasi);
-        test_rels_over(i, in_ident, in_quasi, out_ident);
-
-        test_rels_over(i, in_ident, in_ident, out_fully);
-        test_rels_over(i, in_ident, in_ident, out_quasi);
-        test_rels_over(i, in_ident, in_ident, out_ident);
+        test_on_functions(i, in_fully, in_ident, out_fully);
+        test_on_functions(i, in_fully, in_ident, out_quasi);
+        test_on_functions(i, in_fully, in_ident, out_ident);
 
     //
 
-        test_rels_over(i, in_quasi, in_fully, out_fully);
-        test_rels_over(i, in_quasi, in_fully, out_quasi);
-        test_rels_over(i, in_quasi, in_fully, out_ident);
+        test_on_functions(i, in_ident, in_fully, out_fully);
+        test_on_functions(i, in_ident, in_fully, out_quasi);
+        test_on_functions(i, in_ident, in_fully, out_ident);
 
-        test_rels_over(i, in_quasi, in_quasi, out_fully);
-        test_rels_over(i, in_quasi, in_quasi, out_quasi);
-        test_rels_over(i, in_quasi, in_quasi, out_ident);
+        test_on_functions(i, in_ident, in_quasi, out_fully);
+        test_on_functions(i, in_ident, in_quasi, out_quasi);
+        test_on_functions(i, in_ident, in_quasi, out_ident);
 
-        test_rels_over(i, in_quasi, in_ident, out_fully);
-        test_rels_over(i, in_quasi, in_ident, out_quasi);
-        test_rels_over(i, in_quasi, in_ident, out_ident);
+        test_on_functions(i, in_ident, in_ident, out_fully);
+        test_on_functions(i, in_ident, in_ident, out_quasi);
+        test_on_functions(i, in_ident, in_ident, out_ident);
+
+    //
+
+        test_on_functions(i, in_quasi, in_fully, out_fully);
+        test_on_functions(i, in_quasi, in_fully, out_quasi);
+        test_on_functions(i, in_quasi, in_fully, out_ident);
+
+        test_on_functions(i, in_quasi, in_quasi, out_fully);
+        test_on_functions(i, in_quasi, in_quasi, out_quasi);
+        test_on_functions(i, in_quasi, in_quasi, out_ident);
+
+        test_on_functions(i, in_quasi, in_ident, out_fully);
+        test_on_functions(i, in_quasi, in_ident, out_quasi);
+        test_on_functions(i, in_quasi, in_ident, out_ident);
     }
 }
 
