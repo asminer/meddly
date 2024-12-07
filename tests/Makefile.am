@@ -27,7 +27,6 @@ noinst_PROGRAMS = \
     nqueens \
     ops_comp \
     ops_set \
-    ops_set_old \
     refcount \
     sat_test
 
@@ -133,9 +132,6 @@ ops_comp_LDADD = ../src/libmeddly.la
 
 ops_set_SOURCES = ops_set.cc
 ops_set_LDADD = ../src/libmeddly.la
-
-ops_set_old_SOURCES = ops_set_old.cc
-ops_set_old_LDADD = ../src/libmeddly.la
 
 refcount_SOURCES = refcount.cc
 refcount_LDADD = ../src/libmeddly.la

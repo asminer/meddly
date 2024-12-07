@@ -38,8 +38,6 @@ const unsigned MAX_REL_CARD = 64;
 using namespace MEDDLY;
 
 // #define DEBUG_OPS
-// #define DEBUG_MDDOPS
-// #define DEBUG_MXDOPS
 
 #define TEST_SETS
 #define TEST_RELATIONS
@@ -83,31 +81,6 @@ void showSet(std::ostream &out, const std::vector <bool> &elems)
     }
     out << " }";
 }
-
-void showRelMinterms(std::ostream &out, const std::vector <bool> &elems)
-{
-    out << "{ ";
-    bool printed = false;
-    for (unsigned i=0; i<elems.size(); i++) {
-        if (!elems[i]) continue;
-        if (printed) out << ",\n      ";
-        out << "[";
-        printed = true;
-
-        unsigned x = i;
-        for (unsigned j=1; j<=VARS; j++) {
-            unsigned un = x % RELDOM;
-            x /= RELDOM;
-            unsigned pr = x % RELDOM;
-            x /= RELDOM;
-            if (j>1) out << ", ";
-            out << un << "->" << pr;
-        }
-        out << "]";
-    }
-    out << " }";
-}
-
 
 void randomizeSet(std::vector <bool> &elems, unsigned card)
 {
@@ -428,13 +401,6 @@ void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2,
     out << "Obtained DD:\n";
     e1.showGraph(out);
 
-    /*
-    std::cout << "Encoding set ";
-    showSet(std::cout, set);
-    std::cout << "\nMinterms\n    ";
-    showRelMinterms(std::cout, set);
-    */
-
     throw "mismatch";
 }
 
@@ -498,7 +464,7 @@ void compare(const std::vector <bool> &Aset, const std::vector <bool> &Bset,
 }
 
 
-void test_sets_over(unsigned scard, forest* f1, forest* f2, forest* fres)
+void test_on_forests(unsigned scard, forest* f1, forest* f2, forest* fres)
 {
     if (!f1) throw "null f1";
     if (!f2) throw "null f2";
@@ -524,7 +490,15 @@ void test_sets_over(unsigned scard, forest* f1, forest* f2, forest* fres)
 
         compare(Aset, Bset, f1, f2, fres);
     }
+    if (fres->isForRelations()) {
+        for (unsigned i=0; i<10; i++) {
+            std::cerr << "i";
+            randomizeIdentity(Aset, scard);
+            randomizeIdentity(Bset, scard);
 
+            compare(Aset, Bset, f1, f2, fres);
+        }
+    }
     std::cerr << std::endl;
 }
 
@@ -544,51 +518,15 @@ void test_sets(domain* D)
     for (unsigned i=1; i<=MAX_SET_CARD; i*=2) {
         std::cout << "Testing sets of size " << i << " out of " << POTENTIAL << "\n";
 
-        test_sets_over(i, F1, F1, F1);
-        test_sets_over(i, F1, F1, F2);
-        test_sets_over(i, F1, F2, F1);
-        test_sets_over(i, F1, F2, F2);
-        test_sets_over(i, F2, F1, F1);
-        test_sets_over(i, F2, F1, F2);
-        test_sets_over(i, F2, F2, F1);
-        test_sets_over(i, F2, F2, F2);
+        test_on_forests(i, F1, F1, F1);
+        test_on_forests(i, F1, F1, F2);
+        test_on_forests(i, F1, F2, F1);
+        test_on_forests(i, F1, F2, F2);
+        test_on_forests(i, F2, F1, F1);
+        test_on_forests(i, F2, F1, F2);
+        test_on_forests(i, F2, F2, F1);
+        test_on_forests(i, F2, F2, F2);
     }
-}
-
-void test_rels_over(unsigned scard, forest* f1, forest* f2, forest* fres)
-{
-    if (!f1) throw "null f1";
-    if (!f2) throw "null f2";
-    if (!fres) throw "null fres";
-
-    std::cerr << "    " << getReductionType(f1) << getReductionType(f2)
-              << ':' << getReductionType(fres) << ' ';
-
-    std::vector <bool> Aset(POTENTIAL);
-    std::vector <bool> Bset(POTENTIAL);
-
-    for (unsigned i=0; i<10; i++) {
-        std::cerr << '.';
-        randomizeSet(Aset, scard);
-        randomizeSet(Bset, scard);
-
-        compare(Aset, Bset, f1, f2, fres);
-    }
-    for (unsigned i=0; i<10; i++) {
-        std::cerr << "x";
-        randomizeFully(Aset, scard);
-        randomizeFully(Bset, scard);
-
-        compare(Aset, Bset, f1, f2, fres);
-    }
-    for (unsigned i=0; i<10; i++) {
-        std::cerr << "i";
-        randomizeIdentity(Aset, scard);
-        randomizeIdentity(Bset, scard);
-
-        compare(Aset, Bset, f1, f2, fres);
-    }
-    std::cerr << std::endl;
 }
 
 void test_rels(domain* D)
@@ -615,41 +553,41 @@ void test_rels(domain* D)
     for (unsigned i=1; i<=MAX_REL_CARD; i*=2) {
         std::cout << "Testing relations of size " << i << " out of " << POTENTIAL << "\n";
 
-        test_rels_over(i, R1, R1, R1);
-        test_rels_over(i, R1, R1, R2);
-        test_rels_over(i, R1, R1, R3);
+        test_on_forests(i, R1, R1, R1);
+        test_on_forests(i, R1, R1, R2);
+        test_on_forests(i, R1, R1, R3);
 
-        test_rels_over(i, R1, R2, R1);
-        test_rels_over(i, R1, R2, R2);
-        test_rels_over(i, R1, R2, R3);
+        test_on_forests(i, R1, R2, R1);
+        test_on_forests(i, R1, R2, R2);
+        test_on_forests(i, R1, R2, R3);
 
-        test_rels_over(i, R1, R3, R1);
-        test_rels_over(i, R1, R3, R2);
-        test_rels_over(i, R1, R3, R3);
+        test_on_forests(i, R1, R3, R1);
+        test_on_forests(i, R1, R3, R2);
+        test_on_forests(i, R1, R3, R3);
     // ---
-        test_rels_over(i, R2, R1, R1);
-        test_rels_over(i, R2, R1, R2);
-        test_rels_over(i, R2, R1, R3);
+        test_on_forests(i, R2, R1, R1);
+        test_on_forests(i, R2, R1, R2);
+        test_on_forests(i, R2, R1, R3);
 
-        test_rels_over(i, R2, R2, R1);
-        test_rels_over(i, R2, R2, R2);
-        test_rels_over(i, R2, R2, R3);
+        test_on_forests(i, R2, R2, R1);
+        test_on_forests(i, R2, R2, R2);
+        test_on_forests(i, R2, R2, R3);
 
-        test_rels_over(i, R2, R3, R1);
-        test_rels_over(i, R2, R3, R2);
-        test_rels_over(i, R2, R3, R3);
+        test_on_forests(i, R2, R3, R1);
+        test_on_forests(i, R2, R3, R2);
+        test_on_forests(i, R2, R3, R3);
     // ---
-        test_rels_over(i, R3, R1, R1);
-        test_rels_over(i, R3, R1, R2);
-        test_rels_over(i, R3, R1, R3);
+        test_on_forests(i, R3, R1, R1);
+        test_on_forests(i, R3, R1, R2);
+        test_on_forests(i, R3, R1, R3);
 
-        test_rels_over(i, R3, R2, R1);
-        test_rels_over(i, R3, R2, R2);
-        test_rels_over(i, R3, R2, R3);
+        test_on_forests(i, R3, R2, R1);
+        test_on_forests(i, R3, R2, R2);
+        test_on_forests(i, R3, R2, R3);
 
-        test_rels_over(i, R3, R3, R1);
-        test_rels_over(i, R3, R3, R2);
-        test_rels_over(i, R3, R3, R3);
+        test_on_forests(i, R3, R3, R1);
+        test_on_forests(i, R3, R3, R2);
+        test_on_forests(i, R3, R3, R3);
     }
 }
 
