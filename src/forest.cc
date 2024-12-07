@@ -83,7 +83,7 @@
 
 // Check reference counts after operations.
 // Very slow. Use only for debugging.
-#define ACTUALLY_VALIDATE_INCOUNTS
+// #define ACTUALLY_VALIDATE_INCOUNTS
 
 // #define SHOW_VALIDATE_CACHECOUNTS
 
