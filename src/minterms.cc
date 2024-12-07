@@ -602,6 +602,27 @@ void MEDDLY::minterm_coll::show(output &s,
     }
 }
 
+void MEDDLY::minterm_coll::_expand()
+{
+    unsigned new_size;
+    if (0==max_coll_size) {
+        new_size = 16;
+    } else {
+        new_size = 2*max_coll_size;
+    }
+    minterm** new_list = new minterm*[new_size];
+    unsigned i;
+    for (i=0; i<max_coll_size; i++) {
+        new_list[i] = _mtlist[i];
+    }
+    for (   ; i<new_size; i++) {
+        new_list[i] = new minterm(_D, for_relations);
+    }
+
+    delete[] _mtlist;
+    _mtlist = new_list;
+    max_coll_size = new_size;
+}
 
 // ******************************************************************
 // *                                                                *

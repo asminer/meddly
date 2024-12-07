@@ -306,14 +306,17 @@ class MEDDLY::minterm_coll {
         }
 
         /// Add the unused element to the collection.
-        /// Returns true on success.
-        inline bool pushUnused() {
-            if (first_unused < maxsize()) {
-                ++first_unused;
-                return true;
-            } else {
-                return false;
-            }
+        inline void pushUnused() {
+            MEDDLY_DCASSERT(first_unused < maxsize());
+            ++first_unused;
+        }
+
+        /// Expand the collection if necessary.
+        /// Call this right after pushUnused(), if you want to
+        /// allow expansions.
+        inline void expandIfNecessary() {
+            if (first_unused < maxsize()) return;
+            _expand();
         }
 
         /// Swap minterms i and j
@@ -347,10 +350,12 @@ class MEDDLY::minterm_coll {
         void show(output &s, const char* pre=nullptr, const char* post="\n")
             const;
 
+    protected:
+        void _expand();
 
     private:
         minterm** _mtlist;
-        const unsigned max_coll_size;
+        unsigned max_coll_size;
 
         unsigned first_unused;
 

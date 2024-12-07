@@ -28,7 +28,6 @@
 #define NOT_KNOWN -2
 #define TERMINAL_NODE 1
 
-
 // ******************************************************************
 // Helper template function.
 // Requirements for REL type (methods):
@@ -447,6 +446,9 @@ void MEDDLY::pregen_relation::finalize(splittingOption split)
 MEDDLY::otf_subevent::otf_subevent(forest* f, int* v, int nv, bool firing)
 : vars(0), num_vars(nv), root(dd_edge(f)), top(0),
   f(f), is_firing(firing)
+#ifdef USE_MINTERMS
+    , mtlist(16, f)
+#endif
 {
   MEDDLY_DCASSERT(f != 0);
   MEDDLY_DCASSERT(v != 0);
@@ -469,19 +471,23 @@ MEDDLY::otf_subevent::otf_subevent(forest* f, int* v, int nv, bool firing)
     }
   }
 
+#ifndef USE_MINTERMS
   unpminterms = pminterms = 0;
   num_minterms = size_minterms = 0;
+#endif
 }
 
 MEDDLY::otf_subevent::~otf_subevent()
 {
   if (vars) delete [] vars;
+#ifndef USE_MINTERMS
   for (int i=0; i<num_minterms; i++) {
     delete[] unpminterms[i];
     delete[] pminterms[i];
   }
   free(unpminterms);
   free(pminterms);
+#endif
 }
 
 void MEDDLY::otf_subevent::clearMinterms()

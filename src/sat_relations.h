@@ -48,6 +48,8 @@ namespace MEDDLY {
 // TBD: still need to combine these into one general-purpose relation
 //
 
+// #define USE_MINTERMS
+
 // ******************************************************************
 // *                                                                *
 // *                     pregen_relation  class                     *
@@ -243,10 +245,14 @@ class MEDDLY::otf_subevent {
         dd_edge root;
         int top;
         forest* f;
+#ifdef USE_MINTERMS
+        minterm_coll mtlist;
+#else
         int** unpminterms;
         int** pminterms;
         int num_minterms;
         int size_minterms;
+#endif
         bool is_firing;
         bool uses_extensible_variables;
 
