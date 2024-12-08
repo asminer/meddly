@@ -12,20 +12,14 @@ knight \
 knight2 \
 libinfo \
 life \
-rubiks_cube \
-rubiks_cube_orient \
 nqueens \
 queen_cover \
 qc2 \
 slot \
-square1 \
 swaps \
-rubiks_rings \
 rebuild_mdd \
 test_reorder_mtmxd \
 test_reorder_evmdd \
-rubiks_cube_phase \
-slot_phase \
 test_union_mdd \
 test_union_mxd \
 test_mtmdd \
@@ -69,12 +63,6 @@ life_LDADD = ../src/libmeddly.la
 
 
 
-rubiks_cube_SOURCES = rubiks_cube.cc
-rubiks_cube_LDADD = ../src/libmeddly.la
-
-rubiks_cube_orient_SOURCES = rubiks_cube_orient.cc
-rubiks_cube_orient_LDADD = ../src/libmeddly.la
-
 test_evmdd_SOURCES = test_evmdd.cc
 test_evmdd_LDADD = ../src/libmeddly.la
 
@@ -91,14 +79,8 @@ qc2_LDADD = ../src/libmeddly.la
 slot_SOURCES = slot.cc simple_model.h simple_model.cc
 slot_LDADD = ../src/libmeddly.la
 
-square1_SOURCES = square1.cc
-square1_LDADD = ../src/libmeddly.la
-
 swaps_SOURCES = swaps.cc
 swaps_LDADD = ../src/libmeddly.la
-
-rubiks_rings_SOURCES = rubiks_rings.cc
-rubiks_rings_LDADD = ../src/libmeddly.la
 
 rebuild_mdd_SOURCES = rebuild_mdd.cc reorder.h
 rebuild_mdd_LDADD = ../src/libmeddly.la
@@ -108,12 +90,6 @@ test_reorder_mtmxd_LDADD = ../src/libmeddly.la
 
 test_reorder_evmdd_SOURCES = test_reorder_evmdd.cc
 test_reorder_evmdd_LDADD = ../src/libmeddly.la
-
-rubiks_cube_phase_SOURCES = rubiks_cube_phase.cc
-rubiks_cube_phase_LDADD = ../src/libmeddly.la
-
-slot_phase_SOURCES = slot_phase.cc simple_model.h simple_model.cc
-slot_phase_LDADD = ../src/libmeddly.la
 
 test_implicit_kanban_SOURCES = test_implicit_kanban.cc simple_model.h simple_model.cc
 test_implicit_kanban_LDADD = ../src/libmeddly.la

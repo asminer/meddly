@@ -404,6 +404,27 @@ void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2,
     throw "mismatch";
 }
 
+void checkCardinality(const dd_edge &e, const std::vector<bool> &set)
+{
+    long ecard;
+    apply(CARDINALITY, e, ecard);
+
+    long scard = set_cardinality(set);
+
+    if (ecard == scard) return;
+
+    ostream_output out(std::cout);
+
+    out << "\nCardinality mismatch\n";
+    out << "  Explicit set: " << scard << "\n";
+    out << "DD cardinality: " << ecard << "\n";
+
+    showMinterms(std::cout, set, e.getForest());
+    e.showGraph(out);
+
+    throw "mismatch";
+}
+
 void compare(const std::vector <bool> &Aset, const std::vector <bool> &Bset,
         forest* f1, forest* f2, forest* fres)
 {
@@ -427,6 +448,9 @@ void compare(const std::vector <bool> &Aset, const std::vector <bool> &Bset,
     set2edge(AmBset, fres, AmBdd);
     set2edge(cAset, fres, cABdd);
     set2edge(Aset, fres, ccABdd);
+
+    checkCardinality(Add, Aset);
+    checkCardinality(Bdd, Bset);
 
     dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres),
             cAsym(fres), ccAsym(fres);
@@ -632,6 +656,13 @@ int main()
 #endif
 
         MEDDLY::cleanup();
+
+        std::cout << "\nDone testing set operations:\n";
+        std::cout << "    cardinality\n";
+        std::cout << "    complement\n";
+        std::cout << "    difference\n";
+        std::cout << "    intersection\n";
+        std::cout << "    union\n";
         return 0;
     }
 
