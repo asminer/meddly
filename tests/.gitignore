@@ -15,6 +15,7 @@ chk_ct_old
 chk_evtimes_float
 chk_minterms
 chk_minterms_old
+chk_reorder
 ddedge
 domain_list
 enctest

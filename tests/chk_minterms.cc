@@ -620,9 +620,9 @@ int main(int argc, const char** argv)
         seed = atol(argv[1]);
     } else {
         seed = time(NULL);
-        if (seed < 0) seed *= -1;
-        if (0==seed)  seed = 12345; // probably never happen
     }
+    if (seed < 0) seed *= -1;
+    if (0==seed)  seed = 12345;
     cout << "Using rng seed " << seed << "\n";
 
     try {
