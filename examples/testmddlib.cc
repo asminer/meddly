@@ -60,164 +60,111 @@ using namespace MEDDLY;
 
 int main(int argc, char *argv[])
 {
-  FILE_output meddlyout(stdout);
+    FILE_output meddlyout(stdout);
 
-  initialize();
-  // Create a domain
-  domain *d = domain::create();
-  const int N = 2;
-  const int bounds[N] = {4, 2};
-  // d->createVariablesTopDown(bounds, N);
-  d->createVariablesBottomUp(bounds, N);
+    initialize();
+    // Create a domain
+    domain *d = domain::create();
+    const int N = 2;
+    const int bounds[N] = {4, 2};
+    // d->createVariablesTopDown(bounds, N);
+    d->createVariablesBottomUp(bounds, N);
 
-  // Create an MDD forest in this domain (to store states)
-  forest* states = forest::create(d, false, range_type::BOOLEAN,
-      edge_labeling::MULTI_TERMINAL, policies(false));
+    // Create an MDD forest in this domain (to store states)
+    forest* states = forest::create(d, SET, range_type::BOOLEAN,
+            edge_labeling::MULTI_TERMINAL);
 
-#if 1
-  printf("Constructing initial set of states\n");
-#if 1
-  // Create an edge in MDD forest
-  int** v = (int **) malloc(2 * sizeof(int*));
-  v[0] = (int *) malloc((N+1) * sizeof(int));
-  v[0][0] = 0; v[0][1] = 0; v[0][2] = 0;
-  v[1] = (int *) malloc((N+1) * sizeof(int));
-  v[1][0] = 0; v[1][1] = 1; v[1][2] = 0;
-  dd_edge initial_state(states);
-  states->createEdge(v, 1, initial_state);
-  initial_state.showGraph(meddlyout);
-  // states->showInfo(meddlyout);
-  // initial_state.clear();
-  // initial_state.show(meddlyout, 2);
-  // states->showInfo(meddlyout);
-#else
-  // Create an edge in MDD forest
-  int** v = (int **) malloc(1 * sizeof(int*));
-  v[0] = (int *) malloc((N+1) * sizeof(int));
+    printf("Constructing initial set of states\n");
+    dd_edge initial_state(states);
+    minterm init(states);
+    init.setVar(1, 0);
+    init.setVar(2, 0);
+    init.buildFunction(initial_state);
+    initial_state.showGraph(meddlyout);
 
-  v[0][0] = 0; v[0][1] = 0; v[0][2] = 0;
-  dd_edge stateA(states);
-  states->createEdge(v, 1, stateA);
-  stateA.show(meddlyout, 2);
 
-  dd_edge stateD = stateA;
-  stateD.show(meddlyout, 2);
-  states->showInfo(meddlyout);
+    // Create a MXD forest in domain (to store transition diagrams)
+    forest* transitions = forest::create(d, RELATION, range_type::BOOLEAN,
+            edge_labeling::MULTI_TERMINAL);
 
-  v[0][0] = 0; v[0][1] = 1; v[0][2] = 0;
-  dd_edge stateB(states);
-  states->createEdge(v, 1, stateB);
-  stateB.show(meddlyout, 2);
+    // Construct a transition diagram in the MXD forest (using +, *)
+    // Note: x here denotes "value does not change"
+    // (0, x) -> (1, x)
+    // (1, x) -> (2, x)
+    // (1, 0) -> (0, 1)
+    // (2, 0) -> (1, 1)
+    // (x, 1) -> (x, 0)
+    const unsigned num_of_transitions = 5;
+    minterm_coll tlist(num_of_transitions, transitions);
 
-  stateD += stateB;
-  stateD.show(meddlyout, 2);
-  states->showInfo(meddlyout);
+    tlist.unused().setVars(1, 0, 1);
+    tlist.unused().setVars(2, DONT_CARE, DONT_CHANGE);
+    tlist.pushUnused();
 
-  v[0][0] = 0; v[0][1] = 2; v[0][2] = 0;
-  dd_edge stateC(states);
-  states->createEdge(v, 1, stateC);
-  stateC.show(meddlyout, 2);
+    // vlist[0][0] = 0; vlist[0][1] = 0; vlist[0][2] = -1;
+    // vplist[0][0] = 0; vplist[0][1] = 1; vplist[0][2] = -2;
 
-  stateD += stateC;
-  stateD.show(meddlyout, 2);
-  states->showInfo(meddlyout);
+    tlist.unused().setVars(1, 1, 2);
+    tlist.unused().setVars(2, DONT_CARE, DONT_CHANGE);
+    tlist.pushUnused();
 
-  stateA.clear();
-  stateB.clear();
-  stateC.clear();
-  stateD.clear();
-  states->showInfo(meddlyout);
-#endif
-#endif
+    // vlist[0][0] = 0; vlist[1][1] = 1; vlist[1][2] = -1;
+    // vplist[0][0] = 0; vplist[1][1] = 2; vplist[1][2] = -2;
 
-  // Create another edge in MDD forest
-  // Union (+) the two edges
-  // Intersect (*) the two edges
+    tlist.unused().setVars(1, 1, 0);
+    tlist.unused().setVars(2, 0, 1);
+    tlist.pushUnused();
 
-  // Create a MXD forest in domain (to store transition diagrams)
-  forest* transitions = forest::create(d, true, range_type::BOOLEAN,
-      edge_labeling::MULTI_TERMINAL, policies(true));
+    // vlist[0][0] = 0; vlist[2][1] = 1; vlist[2][2] = 0;
+    // vplist[0][0] = 0; vplist[2][1] = 0; vplist[2][2] = 1;
 
-  // Construct a transition diagram in the MXD forest (using +, *)
-  // Note: x here denotes "value does not change"
-  // (0, x) -> (1, x)
-  // (1, x) -> (2, x)
-  // (1, 0) -> (0, 1)
-  // (2, 0) -> (1, 1)
-  // (x, 1) -> (x, 0)
-  const int num_of_transitions = 5;
-  int** vlist = (int **) malloc(num_of_transitions * sizeof(int*));
-  int** vplist = (int **) malloc(num_of_transitions * sizeof(int*));
-  for (int i = 0; i < num_of_transitions; ++i)
-  {
-    vlist[i] = (int *) malloc((N+1) * sizeof(int));
-    vplist[i] = (int *) malloc((N+1) * sizeof(int));
-  }
-  vlist[0][0] = 0; vlist[0][1] = 0; vlist[0][2] = -2;
-  vplist[0][0] = 0; vplist[0][1] = 1; vplist[0][2] = -2;
+    tlist.unused().setVars(1, 2, 1);
+    tlist.unused().setVars(2, 0, 1);
+    tlist.pushUnused();
 
-  vlist[0][0] = 0; vlist[1][1] = 1; vlist[1][2] = -2;
-  vplist[0][0] = 0; vplist[1][1] = 2; vplist[1][2] = -2;
+    // vlist[0][0] = 0; vlist[3][1] = 2; vlist[3][2] = 0;
+    // vplist[0][0] = 0; vplist[3][1] = 1; vplist[3][2] = 1;
 
-  vlist[0][0] = 0; vlist[2][1] = 1; vlist[2][2] = 0;
-  vplist[0][0] = 0; vplist[2][1] = 0; vplist[2][2] = 1;
+    tlist.unused().setVars(1, DONT_CARE, DONT_CHANGE);
+    tlist.unused().setVars(2, 1, 0);
+    tlist.pushUnused();
 
-  vlist[0][0] = 0; vlist[3][1] = 2; vlist[3][2] = 0;
-  vplist[0][0] = 0; vplist[3][1] = 1; vplist[3][2] = 1;
+    // vlist[0][0] = 0; vlist[4][1] = -1; vlist[4][2] = 1;
+    // vplist[0][0] = 0; vplist[4][1] = -2; vplist[4][2] = 0;
 
-  vlist[0][0] = 0; vlist[4][1] = -2; vlist[4][2] = 1;
-  vplist[0][0] = 0; vplist[4][1] = -2; vplist[4][2] = 0;
+    // Create a edge representing the model's transition diagram
+    dd_edge xd(transitions);
+    printf("Constructing transition diagram\n");
+    tlist.buildFunction(xd);
+    xd.showGraph(meddlyout);
+    // transitions->showInfo(meddlyout);
 
-  // Create a edge representing the model's transition diagram
-  dd_edge xd(transitions);
-  printf("Constructing transition diagram\n");
-  transitions->createEdge(vlist, vplist, num_of_transitions, xd);
-  xd.showGraph(meddlyout);
-  // transitions->showInfo(meddlyout);
+    printf("\nCompute Table:\n");
+    compute_table::showMonolithicComputeTable(meddlyout, true);
 
-  printf("\nCompute Table:\n");
-  compute_table::showMonolithicComputeTable(meddlyout, true);
+    dd_edge reachableStates(initial_state);
+    dd_edge prevReachableStates(states);
+    dd_edge postImage(states);
 
-  dd_edge reachableStates(initial_state);
-  dd_edge prevReachableStates(states);
-  dd_edge postImage(states);
+    while(prevReachableStates != reachableStates)
+    {
+        prevReachableStates = reachableStates;
+        printf("\nPost-Image (mdd:%ld, mxd:%ld): ",
+                long(reachableStates.getNode()), long(xd.getNode()));
+        apply(POST_IMAGE, reachableStates, xd, postImage);
+        printf("%ld\n", long(postImage.getNode()));
+        // postImage.show(meddlyout, 2);
+        printf("\nUnion (mdd:%ld, mdd:%ld): ",
+                long(reachableStates.getNode()), long(postImage.getNode()));
+        apply(UNION, reachableStates, postImage,
+                reachableStates);
+        printf("%ld\n", long(reachableStates.getNode()));
+    }
+    reachableStates.showGraph(meddlyout);
 
-  while(prevReachableStates != reachableStates)
-  {
-    prevReachableStates = reachableStates;
-    printf("\nPost-Image (mdd:%ld, mxd:%ld): ",
-        long(reachableStates.getNode()), long(xd.getNode()));
-    apply(POST_IMAGE, reachableStates, xd, postImage);
-    printf("%ld\n", long(postImage.getNode()));
-    // postImage.show(meddlyout, 2);
-    printf("\nUnion (mdd:%ld, mdd:%ld): ",
-        long(reachableStates.getNode()), long(postImage.getNode()));
-    apply(UNION, reachableStates, postImage,
-        reachableStates);
-    printf("%ld\n", long(reachableStates.getNode()));
-  }
-  reachableStates.showGraph(meddlyout);
+    // Cleanup; in this case simply delete the domain
+    domain::destroy(d);
+    cleanup();
 
-#if 0
-  // Do PreImage
-  // Do PostImage
-  compute_manager* cm = getComputeManager();
-  dd_edge post_image(states);
-  cm->apply(POST_IMAGE, initial_state, xd, post_image);
-
-  // Do Saturation
-  dd_edge reachable_states(states);
-  cm->apply(ReachableStatesDFS, initial_state, xd, reachable_states);
-
-  // Count the number of reachable states
-  long cardinality = 0;
-  cm->apply(Cardinality, reachable_states, cardinality);
-  printf("Number of reachable states: %d\n", cardinality);
-#endif
-
-  // Cleanup; in this case simply delete the domain
-  domain::destroy(d);
-  cleanup();
-
-  return 0;
+    return 0;
 }

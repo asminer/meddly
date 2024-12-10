@@ -111,8 +111,6 @@ void printStats(const char* who, const forest* f)
 
 int main(int argc, const char** argv)
 {
-  char method ;
-
   for (int i=1; i<argc; i++)
     {
     if(i==1)
