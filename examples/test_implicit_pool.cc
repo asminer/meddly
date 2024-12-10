@@ -154,75 +154,72 @@ int main(int argc, const char** argv)
     p.setPessimistic();
     // p.setQuasiReduced();
 
-    //INITIAL STATE
-    int* initialState;
-    initialState = new int[PLACES + 1];
-    for(int g = 1;g <= PLACES;g++) initialState[g] = 0;
-    initialState[p7_position]=20*N; initialState[p8_position]=15*N;initialState[p9_position]=10*N;
 
-    method ='i';
     std::cout<<"\n********************";
     std::cout<<"\n     Implicit";
     std::cout<<"\n********************";
-    if('i' == method)
-      {
 
-      //CREATE FORESTS
-      forest* inmdd = forest::create(dm, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,p);
-      forest* relmxd = forest::create(dm, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,pr);
+    //CREATE FORESTS
+    forest* inmdd = forest::create(dm, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,p);
+    forest* relmxd = forest::create(dm, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,pr);
 
-      dm->enlargeVariableBound(p7_position, false, 20*N+1);
-      dm->enlargeVariableBound(p8_position, false, 15*N+1);
-      dm->enlargeVariableBound(p9_position, false, 10*N+1);
+    dm->enlargeVariableBound(p7_position, false, 20*N+1);
+    dm->enlargeVariableBound(p8_position, false, 15*N+1);
+    dm->enlargeVariableBound(p9_position, false, 10*N+1);
 
 
 
-      //ADD INITIAL STATE
-      dd_edge first(inmdd);
-      dd_edge reachable(inmdd);
-      inmdd->createEdge(&initialState, 1, first);
-      //outmdd->createEdge(&initialState, 1, reachable);
+    //ADD INITIAL STATE
+    dd_edge first(inmdd);
+    dd_edge reachable(inmdd);
+
+    minterm initState(inmdd);
+    for(unsigned g = 1;g <= PLACES;g++) initState.setVar(g, 0);
+    initState.setVar(p7_position, 20*N);
+    initState.setVar(p8_position, 15*N);
+    initState.setVar(p9_position, 10*N);
+    initState.buildFunction(first);
+
+    //outmdd->createEdge(&initialState, 1, reachable);
 
 
-      //CREATE RELATION
-      implicit_relation* T = new implicit_relation(inmdd,relmxd,inmdd);
+    //CREATE RELATION
+    implicit_relation* T = new implicit_relation(inmdd,relmxd,inmdd);
 
 
-      start.note_time();
-      buildImplicitRelation(model, TRANS, PLACES, BOUNDS, inmdd, relmxd, T);
-      printf("\nNext-state function construction took %.4e seconds\n",
-             start.get_last_seconds());
-      saturation_operation* sat = 0;
+    start.note_time();
+    buildImplicitRelation(model, TRANS, PLACES, BOUNDS, inmdd, relmxd, T);
+    printf("\nNext-state function construction took %.4e seconds\n",
+            start.get_last_seconds());
+    saturation_operation* sat = 0;
 
 
-      printf("\nBuilding reachability set using saturation implicit relation");
-      sat = SATURATION_IMPL_FORWARD(inmdd, T, inmdd);
+    printf("\nBuilding reachability set using saturation implicit relation");
+    sat = SATURATION_IMPL_FORWARD(inmdd, T, inmdd);
 
-      if (0==sat) {
+    if (0==sat) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-      }
-      sat->compute(first, reachable);
+    }
+    sat->compute(first, reachable);
 
-      start.note_time();
-      printf("\nReachability set construction took %.4e seconds\n",
-             start.get_last_seconds());
-      fflush(stdout);
+    start.note_time();
+    printf("\nReachability set construction took %.4e seconds\n",
+            start.get_last_seconds());
+    fflush(stdout);
 
 #ifdef DUMP_REACHABLE
-      printf("Reachable states:\n");
-      reachable.show(meddlyout, 2);
+    printf("Reachable states:\n");
+    reachable.show(meddlyout, 2);
 #endif
 
-      printStats("MDD", inmdd);
-      fflush(stdout);
+    printStats("MDD", inmdd);
+    fflush(stdout);
 
-      double c;
-      apply(CARDINALITY, reachable, c);
-      compute_table::showAll(meddlyout, 3);
+    double c;
+    apply(CARDINALITY, reachable, c);
+    compute_table::showAll(meddlyout, 3);
 
-      printf("Approx. %g reachable states\n", c);
-
-      }
+    printf("Approx. %g reachable states\n", c);
 
     return 0;
   }

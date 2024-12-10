@@ -18,12 +18,6 @@ qc2 \
 slot \
 swaps \
 rebuild_mdd \
-test_union_mdd \
-test_union_mxd \
-test_mtmdd \
-test_mtmxd \
-test_evmdd \
-test_xdds \
 test_otf_sat \
 test_memory \
 test_implicit_kanban \
@@ -104,21 +98,6 @@ test_sccs_LDADD = ../src/libmeddly.la
 ## testmddlib_SOURCES = `$(CXX) testmddlib.cc -MM`
 testmddlib_SOURCES = testmddlib.cc
 testmddlib_LDADD = ../src/libmeddly.la
-
-test_union_mdd_SOURCES = test_union_mdd.cc
-test_union_mdd_LDADD = ../src/libmeddly.la
-
-test_union_mxd_SOURCES = test_union_mxd.cc
-test_union_mxd_LDADD = ../src/libmeddly.la
-
-test_mtmdd_SOURCES = test_mtmdd.cc
-test_mtmdd_LDADD = ../src/libmeddly.la
-
-test_mtmxd_SOURCES = test_mtmxd.cc
-test_mtmxd_LDADD = ../src/libmeddly.la
-
-test_xdds_SOURCES = test_xdds.cc
-test_xdds_LDADD = ../src/libmeddly.la
 
 test_otf_sat_SOURCES = test_otf_sat.cc
 test_otf_sat_LDADD = ../src/libmeddly.la

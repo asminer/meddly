@@ -290,10 +290,12 @@ void pn::buildTransition() {
 
 void pn::buildInitialState() {
   initial_state = new dd_edge(mdd);
-  int init_state[] = {0, 0, 0, 0};
-  int* init[] = {init_state};
-  mdd->createEdge((int**)(&init[0]), 1, *initial_state);
+  minterm init(mdd);
+  init.setVar(1, 0);
+  init.setVar(2, 0);
+  init.setVar(3, 0);
   assert(initial_state);
+  init.buildFunction(*initial_state);
   int index = -1;
   assert(addValue(A_level, n_tokens, index));
   assert(addValue(B_level, 0, index));

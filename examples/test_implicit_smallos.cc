@@ -165,20 +165,11 @@ policies p(false);
   p.setPessimistic();
   // p.setQuasiReduced();
 
-//INITIAL STATE
-int* initialState;
-initialState = new int[PLACES + 1];
-for(int g = 1;g <= PLACES;g++) initialState[g] = 0;
-initialState[p1_position]=initialState[p3_position]=MT;initialState[p5_position]=DC;initialState[p7_position]=2*DC;
-
 N = 2*DC>MT?(2*DC):MT;
 
-method ='i';
   std::cout<<"\n********************";
   std::cout<<"\n     implicit";
   std::cout<<"\n********************";
-if('i' == method)
-{
 
 //CREATE FORESTS
   forest* inmdd = forest::create(dm, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,p);
@@ -193,7 +184,15 @@ if('i' == method)
   //ADD INITIAL STATE
   dd_edge first(inmdd);
   dd_edge reachable(inmdd);
-  inmdd->createEdge(&initialState, 1, first);
+
+  minterm initState(inmdd);
+  for(unsigned g = 1; g <= PLACES; g++) initState.setVar(g, 0);
+  initState.setVar(p1_position, MT);
+  initState.setVar(p3_position, MT);
+  initState.setVar(p5_position, DC);
+  initState.setVar(p7_position, 2*DC);
+  initState.buildFunction(first);
+
     //outmdd->createEdge(&initialState, 1, reachable);
 
 
@@ -240,7 +239,6 @@ if('i' == method)
 
   mxd_edge_all.show(meddlyout,2);*/
 
-}
 
 return 0;
 }

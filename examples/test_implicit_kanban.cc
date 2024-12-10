@@ -180,12 +180,6 @@ int main(int argc, const char** argv)
         p.setPessimistic();
         // p.setQuasiReduced();
 
-        //INITIAL STATE
-        int* initialState;
-        initialState = new int[PLACES + 1];
-        for(int g = 1;g <= PLACES;g++) initialState[g] = 0;
-        initialState[p1_position]=initialState[p13_position]=initialState[p5_position]=initialState[p9_position]=N;
-
         std::cout<<"\n********************";
         std::cout<<"\n     Implicit";
         std::cout<<"\n********************";
@@ -204,8 +198,16 @@ int main(int argc, const char** argv)
         //ADD INITIAL STATE
         dd_edge first(inmdd);
         dd_edge reachable(inmdd);
-        inmdd->createEdge(&initialState, 1, first);
-
+        minterm initState(inmdd);
+        for (unsigned g = initState.getNumVars(); g; --g)
+        {
+            initState.setVar(g, 0);
+        }
+        initState.setVar(p1_position, N);
+        initState.setVar(p5_position, N);
+        initState.setVar(p9_position, N);
+        initState.setVar(p13_position, N);
+        initState.buildFunction(first);
 
         //CREATE RELATION
 #ifdef TEST_HYB
