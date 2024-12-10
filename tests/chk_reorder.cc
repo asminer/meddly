@@ -135,20 +135,53 @@ void reorderMinterm(const MEDDLY::minterm &in, MEDDLY::minterm &out,
     out.setTerm( in.getTerm() );
 }
 
+using namespace MEDDLY;
+
+inline const char* name(range_type rt)
+{
+    switch (rt) {
+        case range_type::BOOLEAN:
+            return "boolean";
+
+        case range_type::INTEGER:
+            return "integer";
+
+        case range_type::REAL:
+            return "real";
+
+        default:
+            throw "unknown range type";
+    }
+}
+
+inline const char* name(edge_labeling el)
+{
+    switch (el) {
+        case edge_labeling::MULTI_TERMINAL:
+            return "MT";
+
+        case edge_labeling::EVPLUS:
+            return "EV+";
+
+        case edge_labeling::EVTIMES:
+            return "EV*";
+
+        default:
+            throw "unknown edge labeling";
+    }
+}
+
 /*
  *
  * Tests for set-type forests
  *
  */
 
-using namespace MEDDLY;
-
-void compare(domain* D, range_type rt, const policies &p,
+void compare(domain* D, range_type rt, edge_labeling el, const policies &p,
         minterm_coll &mtc, const int* order)
 {
 
-    forest* F = forest::create(D, mtc.isForRelations(), rt,
-                    edge_labeling::MULTI_TERMINAL, p);
+    forest* F = forest::create(D, mtc.isForRelations(), rt, el, p);
 
     dd_edge e1(F);
     mtc.buildFunction(e1);
@@ -180,7 +213,7 @@ void compare(domain* D, range_type rt, const policies &p,
     throw "mismatch";
 }
 
-void test_sets(domain *D, range_type r)
+void test_sets(domain *D, range_type r, edge_labeling el)
 {
     //
     // Policies
@@ -211,19 +244,8 @@ void test_sets(domain *D, range_type r)
     //
     minterm_coll mtlist(128, D, SET);
 
-    switch (r) {
-        case range_type::INTEGER:
-            std::cout << "Checking reordering for integer vectors\n";
-            break;
-
-        case range_type::REAL:
-            std::cout << "Checking reordering for real vectors\n";
-            break;
-
-        default:
-            std::cout << "Checking reordering for boolean vectors\n";
-            break;
-    }
+    std::cout << "Checking reordering for " << name(el) << " "
+              << name(r) << " vectors\n";
 
     for (unsigned s=1; s <= mtlist.maxsize(); s *= 2)
     {
@@ -234,17 +256,17 @@ void test_sets(domain *D, range_type r)
             mtlist.pushUnused();
         }
 
-        compare(D, r, pq, mtlist, NICE_ORDER);
+        compare(D, r, el, pq, mtlist, NICE_ORDER);
         std::cout << "qn ";
         std::cout.flush();
-        compare(D, r, pq, mtlist, randord);
+        compare(D, r, el, pq, mtlist, randord);
         std::cout << "qr ";
         std::cout.flush();
 
-        compare(D, r, pf, mtlist, NICE_ORDER);
+        compare(D, r, el, pf, mtlist, NICE_ORDER);
         std::cout << "fn ";
         std::cout.flush();
-        compare(D, r, pf, mtlist, randord);
+        compare(D, r, el, pf, mtlist, randord);
         std::cout << "fr ";
         std::cout.flush();
 
@@ -259,7 +281,7 @@ void test_sets(domain *D, range_type r)
  *
  */
 
-void test_rels(domain *D, range_type r)
+void test_rels(domain *D, range_type r, edge_labeling el)
 {
     //
     // Policies
@@ -295,19 +317,8 @@ void test_rels(domain *D, range_type r)
     //
     minterm_coll mtlist(128, D, RELATION);
 
-    switch (r) {
-        case range_type::INTEGER:
-            std::cout << "Checking reordering for integer matrices\n";
-            break;
-
-        case range_type::REAL:
-            std::cout << "Checking reordering for real matrices\n";
-            break;
-
-        default:
-            std::cout << "Checking reordering for boolean matrices\n";
-            break;
-    }
+    std::cout << "Checking reordering for " << name(el) << " "
+              << name(r) << " matrices\n";
 
     for (unsigned s=1; s <= mtlist.maxsize(); s *= 2)
     {
@@ -318,24 +329,24 @@ void test_rels(domain *D, range_type r)
             mtlist.pushUnused();
         }
 
-        compare(D, r, pq, mtlist, NICE_ORDER);
+        compare(D, r, el, pq, mtlist, NICE_ORDER);
         std::cout << "qn ";
         std::cout.flush();
-        compare(D, r, pq, mtlist, randord);
+        compare(D, r, el, pq, mtlist, randord);
         std::cout << "qr ";
         std::cout.flush();
 
-        compare(D, r, pf, mtlist, NICE_ORDER);
+        compare(D, r, el, pf, mtlist, NICE_ORDER);
         std::cout << "fn ";
         std::cout.flush();
-        compare(D, r, pf, mtlist, randord);
+        compare(D, r, el, pf, mtlist, randord);
         std::cout << "fr ";
         std::cout.flush();
 
-        compare(D, r, pi, mtlist, NICE_ORDER);
+        compare(D, r, el, pi, mtlist, NICE_ORDER);
         std::cout << "in ";
         std::cout.flush();
-        compare(D, r, pi, mtlist, randord);
+        compare(D, r, el, pi, mtlist, randord);
         std::cout << "ir ";
         std::cout.flush();
 
@@ -377,14 +388,17 @@ int main(int argc, const char** argv)
         domain* D = domain::createBottomUp(bs, VARS);
 
 #ifdef TEST_SETS
-        test_sets(D, range_type::BOOLEAN);
-//        test_sets(D, range_type::INTEGER);
-//        test_sets(D, range_type::REAL);
+        test_sets(D, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        // test_sets(D, range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
+        // test_sets(D, range_type::INTEGER, edge_labeling::EVPLUS);
+        // test_sets(D, range_type::REAL, edge_labeling::MULTI_TERMINAL);
 #endif
 #ifdef TEST_RELS
-        test_rels(D, range_type::BOOLEAN);
-//        test_rels(D, range_type::INTEGER);
-//        test_rels(D, range_type::REAL);
+        test_rels(D, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        // test_rels(D, range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
+        // test_rels(D, range_type::INTEGER, edge_labeling::EVPLUS);
+        // test_rels(D, range_type::REAL, edge_labeling::MULTI_TERMINAL);
+        // test_rels(D, range_type::REAL, edge_labeling::EVTIMES);
 #endif
         MEDDLY::cleanup();
         return 0;

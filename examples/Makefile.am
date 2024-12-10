@@ -18,8 +18,6 @@ qc2 \
 slot \
 swaps \
 rebuild_mdd \
-test_reorder_mtmxd \
-test_reorder_evmdd \
 test_union_mdd \
 test_union_mxd \
 test_mtmdd \
@@ -84,12 +82,6 @@ swaps_LDADD = ../src/libmeddly.la
 
 rebuild_mdd_SOURCES = rebuild_mdd.cc reorder.h
 rebuild_mdd_LDADD = ../src/libmeddly.la
-
-test_reorder_mtmxd_SOURCES = test_reorder_mtmxd.cc
-test_reorder_mtmxd_LDADD = ../src/libmeddly.la
-
-test_reorder_evmdd_SOURCES = test_reorder_evmdd.cc
-test_reorder_evmdd_LDADD = ../src/libmeddly.la
 
 test_implicit_kanban_SOURCES = test_implicit_kanban.cc simple_model.h simple_model.cc
 test_implicit_kanban_LDADD = ../src/libmeddly.la
