@@ -174,6 +174,31 @@ class MEDDLY::minterm {
         }
 
         //
+        // Set all vars to a single value.
+        //
+        inline void setAllVars(int v)
+        {
+            MEDDLY_DCASSERT(isForSets());
+            MEDDLY_DCASSERT(_from);
+            for (unsigned i=num_vars; i; --i) {
+                _from[i] = v;
+            }
+        }
+        //
+        // Set all from, to pairs to (un, pr)
+        //
+        inline void setAllVars(int un, int pr)
+        {
+            MEDDLY_DCASSERT(isForRelations());
+            MEDDLY_DCASSERT(_from);
+            MEDDLY_DCASSERT(_to);
+            for (unsigned i=num_vars; i; --i) {
+                _from[i] = un;
+                _to[i] = pr;
+            }
+        }
+
+        //
         // Set from an array.
         //
         inline void setAll(const int* v, const terminal &t)

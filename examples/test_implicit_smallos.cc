@@ -184,7 +184,7 @@ N = 2*DC>MT?(2*DC):MT;
   dd_edge reachable(inmdd);
 
   minterm initState(inmdd);
-  for(unsigned g = 1; g <= PLACES; g++) initState.setVar(g, 0);
+  initState.setAllVars(0);
   initState.setVar(p1_position, MT);
   initState.setVar(p3_position, MT);
   initState.setVar(p5_position, DC);

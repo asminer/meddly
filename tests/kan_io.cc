@@ -69,7 +69,7 @@ inline domain* buildKanbanDomain(int N)
 inline void buildInitial(int N, forest* mdd, dd_edge &init_state)
 {
     minterm initial(mdd);
-    for (int i=16; i; i--) initial.setVar(i, 0);
+    initial.setAllVars(0);
     initial.setVar(1, N);
     initial.setVar(5, N);
     initial.setVar(9, N);

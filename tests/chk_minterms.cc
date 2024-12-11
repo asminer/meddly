@@ -125,13 +125,6 @@ void randomSetMinterm(minterm& m)
     }
 }
 
-void zeroSetMinterm(minterm& m)
-{
-    for (unsigned i=1; i<=m.getNumVars(); i++) {
-        m.setVar(i, 0);
-    }
-}
-
 bool nextSetMinterm(minterm& m)
 {
     for (unsigned i=1; i<=m.getNumVars(); i++) {
@@ -224,9 +217,7 @@ void test_sets()
         //
         if ('f' == testtype[i]) {
             mtcoll.clear();
-            for (int v=1; v<=SETVARS; v++) {
-                mtcoll.unused().setVar(v, MEDDLY::DONT_CARE);
-            }
+            mtcoll.unused().setAllVars(DONT_CARE);
             mtcoll.pushUnused();
             out << " fully: ";
             out.flush();
@@ -266,7 +257,7 @@ void test_sets()
         //
         // Brute force: compare functions
         //
-        zeroSetMinterm(eval);
+        eval.setAllVars(0);
         do {
             bool in_mtcoll = evaluate_set(eval, mtcoll);
             bool qval, fval;
@@ -305,7 +296,7 @@ void test_sets()
         //
         // Brute force: compare functions
         //
-        zeroSetMinterm(eval);
+        eval.setAllVars(0);
         do {
             bool in_mtcoll = matches_set(mtcoll.at(i), eval);
             bool qval, fval;
@@ -356,13 +347,6 @@ void randomRelMinterm(MEDDLY::minterm &m)
         int index = Equilikely(0, 51);
 
         m.setVars(i, unvals[index], prvals[index]);
-    }
-}
-
-void zeroRelMinterm(minterm& m)
-{
-    for (unsigned i=1; i<=m.getNumVars(); i++) {
-        m.setVars(i, 0, 0);
     }
 }
 
@@ -474,17 +458,13 @@ void test_rels()
         //
         if ('f' == testtype[i]) {
             mtcoll.clear();
-            for (int v=1; v<=RELVARS; v++) {
-                mtcoll.unused().setVars(v, DONT_CARE, DONT_CARE);
-            }
+            mtcoll.unused().setAllVars(DONT_CARE, DONT_CARE);
             mtcoll.pushUnused();
             out << " fully: ";
             out.flush();
         } else if ('i' == testtype[i]) {
             mtcoll.clear();
-            for (int v=1; v<=RELVARS; v++) {
-                mtcoll.unused().setVars(v, DONT_CARE, DONT_CHANGE);
-            }
+            mtcoll.unused().setAllVars(DONT_CARE, DONT_CHANGE);
             mtcoll.pushUnused();
             out << " ident: ";
             out.flush();
@@ -530,7 +510,7 @@ void test_rels()
         //
         // Brute force: compare functions
         //
-        zeroRelMinterm(eval);
+        eval.setAllVars(0, 0);
         do {
             bool in_mtcoll = evaluate_rel(eval, mtcoll);
             bool qval, fval, ival;
@@ -578,7 +558,7 @@ void test_rels()
         //
         // Brute force: compare functions
         //
-        zeroRelMinterm(eval);
+        eval.setAllVars(0, 0);
         do {
             bool in_mtcoll = matches_rel(mtcoll.at(i), eval);
             bool qval, fval, ival;

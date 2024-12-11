@@ -77,8 +77,7 @@ int main(int argc, char *argv[])
     printf("Constructing initial set of states\n");
     dd_edge initial_state(states);
     minterm init(states);
-    init.setVar(1, 0);
-    init.setVar(2, 0);
+    init.setAllVars(0);
     init.buildFunction(initial_state);
     initial_state.showGraph(meddlyout);
 

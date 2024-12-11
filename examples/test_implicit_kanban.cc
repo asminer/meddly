@@ -199,10 +199,7 @@ int main(int argc, const char** argv)
         dd_edge first(inmdd);
         dd_edge reachable(inmdd);
         minterm initState(inmdd);
-        for (unsigned g = initState.getNumVars(); g; --g)
-        {
-            initState.setVar(g, 0);
-        }
+        initState.setAllVars(0);
         initState.setVar(p1_position, N);
         initState.setVar(p5_position, N);
         initState.setVar(p9_position, N);

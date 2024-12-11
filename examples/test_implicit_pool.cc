@@ -172,7 +172,7 @@ int main(int argc, const char** argv)
     dd_edge reachable(inmdd);
 
     minterm initState(inmdd);
-    for(unsigned g = 1;g <= PLACES;g++) initState.setVar(g, 0);
+    initState.setAllVars(0);
     initState.setVar(p7_position, 20*N);
     initState.setVar(p8_position, 15*N);
     initState.setVar(p9_position, 10*N);

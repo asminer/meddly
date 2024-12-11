@@ -198,9 +198,7 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
     if (LOG) LOG->newPhase(mdd, "Building initial state");
     minterm initial(mdd);
     dd_edge init_state(mdd);
-    for (unsigned i=initial.getNumVars(); i; --i) {
-        initial.setVar(i, 0);
-    }
+    initial.setAllVars(0);
     for (int i=0; i<N; i++) {
         initial.setVar(i*8+3, 1);
         initial.setVar(i*8+5, 1);

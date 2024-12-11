@@ -407,9 +407,7 @@ variable** initializeVariables(const model2var &M2V)
 void buildInitialState(dd_edge &init)
 {
     minterm mt(init.getForest());
-    for (unsigned i=mt.getNumVars(); i; --i) {
-        mt.setVar(i, 0);
-    }
+    mt.setAllVars(0);
     mt.buildFunction(init);
 }
 

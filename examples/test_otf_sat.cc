@@ -291,9 +291,7 @@ void pn::buildTransition() {
 void pn::buildInitialState() {
   initial_state = new dd_edge(mdd);
   minterm init(mdd);
-  init.setVar(1, 0);
-  init.setVar(2, 0);
-  init.setVar(3, 0);
+  init.setAllVars(0);
   assert(initial_state);
   init.buildFunction(*initial_state);
   int index = -1;
