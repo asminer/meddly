@@ -25,7 +25,7 @@
 
 // #define SHOW_INDEXES
 
-#define NEW_EVAL
+// #define NEW_EVAL
 
 const char* kanban[] = {
   "X-+..............",  // Tin1
