@@ -134,19 +134,25 @@ namespace MEDDLY {
     */
     class EdgeOp_none {
         public:
+            /// Do we have edge values
+            static inline bool hasEdgeValues()
+            {
+                return false;
+            }
             /// Clear an edge value.
             static inline void clear(edge_value &v)
             {
                 v.set();
             }
-            /// Accumulate an edge value
-            static inline edge_value accumulate(const edge_value &a,
+            /// Return a + b
+            static inline edge_value applyOp(const edge_value &a,
                     const edge_value &b)
             {
                 return edge_value();
             }
-            /// Accumulate an edge value, into a terminal value
-            static inline void accumulate(const edge_value &a, terminal &term)
+            /// Accumulate a += b
+            static inline void accumulateOp(edge_value &a,
+                    const edge_value &b)
             {
             }
     };
@@ -166,13 +172,18 @@ namespace MEDDLY {
     template <class TYPE>
     class EdgeOp_plus {
         public:
+            /// Do we have edge values
+            static inline bool hasEdgeValues()
+            {
+                return true;
+            }
             /// Clear an edge value.
             static inline void clear(edge_value &v)
             {
                 v.set(TYPE(0));
             }
-            /// Accumulate an edge value
-            static inline edge_value accumulate(const edge_value &a,
+            /// Accumulate two edge values. Returns a + b
+            static inline edge_value applyOp(const edge_value &a,
                     const edge_value &b)
             {
                 TYPE av, bv;
@@ -180,11 +191,13 @@ namespace MEDDLY {
                 b.get(bv);
                 return edge_value(av+bv);
             }
-            /// Accumulate an edge value, into a terminal value
-            static inline void accumulate(const edge_value &a, terminal &term)
+            /// Accumulate one edge value into another: a += b
+            static inline void accumulateOp(edge_value &a,
+                    const edge_value &b)
             {
-                TYPE av;
-                a.get(av);
+                TYPE bv;
+                b.get(bv);
+                a.add(bv);
             }
     };
 };
@@ -202,19 +215,32 @@ namespace MEDDLY {
     template <class TYPE>
     class EdgeOp_times {
         public:
+            /// Do we have edge values
+            static inline bool hasEdgeValues()
+            {
+                return true;
+            }
             /// Clear an edge value.
             static inline void clear(edge_value &v)
             {
                 v.set(TYPE(1));
             }
-            /// Accumulate an edge value: a *= b
-            static inline edge_value accumulate(const edge_value &a,
+            /// Accumulate two edge values. Returns a * b
+            static inline edge_value applyOp(const edge_value &a,
                     const edge_value &b)
             {
                 TYPE av, bv;
                 a.get(av);
                 b.get(bv);
                 return edge_value(av*bv);
+            }
+            /// Accumulate one edge value into another: a *= b
+            static inline void accumulateOp(edge_value &a,
+                    const edge_value &b)
+            {
+                TYPE bv;
+                b.get(bv);
+                a.multiply(bv);
             }
     };
 };

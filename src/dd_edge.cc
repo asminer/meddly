@@ -34,6 +34,8 @@
 #include "io_dot.h"
 #endif
 
+#define USE_EV_EVALUATE
+
 // #define DEBUG_CLEANUP
 
 // ******************************************************************
@@ -316,6 +318,19 @@ namespace MEDDLY {
                 MEDDLY_DCASSERT(F);
             }
 
+            inline node_handle evaluate(node_handle p)
+            {
+                if (m.isForRelations()) {
+                    if (F->isIdentityReduced()) {
+                        return ident_rel_eval(p);
+                    } else {
+                        return fully_rel_eval(p);
+                    }
+                } else {
+                    return set_eval(p);
+                }
+            }
+
             inline node_handle set_eval(node_handle p)
             {
                 MEDDLY_DCASSERT( !m.isForRelations() );
@@ -376,17 +391,28 @@ namespace MEDDLY {
             }
     };
 
-    /*
-
     template <class EOP>
-    class evaluator_helper_ev {
+    class evaluator_helper {
             const forest* F;
             const minterm& m;
         public:
-            evaluator_helper_ev(const forest* _F, const minterm &_m)
+            evaluator_helper(const forest* _F, const minterm &_m)
                 : F(_F), m(_m)
             {
                 MEDDLY_DCASSERT(F);
+            }
+
+            inline void evaluate(edge_value &ev, node_handle &p)
+            {
+                if (m.isForRelations()) {
+                    if (F->isIdentityReduced()) {
+                        ident_rel_eval(ev, p);
+                    } else {
+                        fully_rel_eval(ev, p);
+                    }
+                } else {
+                    set_eval(ev, p);
+                }
             }
 
             inline void set_eval(edge_value &ev, node_handle &p)
@@ -396,8 +422,12 @@ namespace MEDDLY {
                     edge_value pv;
     	            int level = F->getNodeLevel(p);
                     MEDDLY_DCASSERT(level>0);
-                    F->getDownPtr(p, m.from(level), pv, p);
-                    ev = EOP::accumulate(ev, pv);
+                    if (EOP::hasEdgeValues()) {
+                        F->getDownPtr(p, m.from(level), pv, p);
+                        EOP::accumulateOp(ev, pv);
+                    } else {
+                        p = F->getDownPtr(p, m.from(level));
+                    }
                 }
             }
 
@@ -407,32 +437,71 @@ namespace MEDDLY {
                 while (!F->isTerminalNode(p)) {
                     edge_value pv;
     	            int level = F->getNodeLevel(p);
-                    if (level > 0) {
-                        F->getDownPtr(p, m.from(level), pv, p);
+                    if (EOP::hasEdgeValues()) {
+                        if (level > 0) {
+                            F->getDownPtr(p, m.from(level), pv, p);
+                        } else {
+                            F->getDownPtr(p, m.to(-level), pv, p);
+                        }
+                        EOP::accumulateOp(ev, pv);
                     } else {
-                        F->getDownPtr(p, m.to(-level), pv, p);
+                        if (level > 0) {
+                            p = F->getDownPtr(p, m.from(level));
+                        } else {
+                            p = F->getDownPtr(p, m.to(-level));
+                        }
                     }
-                    ev = EOP::accumulate(ev, pv);
                 }
             }
 
             inline void ident_rel_eval(edge_value &ev, node_handle &p)
             {
+                if (0==p) return;
                 MEDDLY_DCASSERT( m.isForRelations() );
-                while (!F->isTerminalNode(p)) {
+                int plvl = F->getNodeLevel(p);
+                int L = F->getNumVariables();
+                while (L) {
                     edge_value pv;
-    	            int level = F->getNodeLevel(p);
-                    if (level > 0) {
-                        F->getDownPtr(p, m.from(level), pv, p);
-                    } else {
-                        F->getDownPtr(p, m.to(-level), pv, p);
+                    //
+                    // Unprimed
+                    //
+                    MEDDLY_DCASSERT(L>0);
+                    if (plvl == L) {
+                        if (EOP::hasEdgeValues()) {
+                            F->getDownPtr(p, m.from(L), pv, p);
+                            EOP::accumulateOp(ev, pv);
+                        } else {
+                            p = F->getDownPtr(p, m.from(L));
+                        }
+                        if (0==p) return;
+                        plvl = F->getNodeLevel(p);
                     }
-                    ev = EOP::accumulate(ev, pv);
+                    L = MXD_levels::downLevel(L);
+                    //
+                    // Primed
+                    //
+                    MEDDLY_DCASSERT(L<0);
+                    if (plvl == L) {
+                        if (EOP::hasEdgeValues()) {
+                            F->getDownPtr(p, m.to(-L), pv, p);
+                            EOP::accumulateOp(ev, pv);
+                        } else {
+                            p = F->getDownPtr(p, m.to(-L));
+                        }
+                        if (0==p) return;
+                        plvl = F->getNodeLevel(p);
+                    } else {
+                        if (m.to(-L) != m.from(-L)) {
+                            // TBD
+                            p = 0;
+                            return;
+                        }
+                    }
+                    L = MXD_levels::downLevel(L);
                 }
             }
 
     };
-    */
 };
 
 
@@ -445,11 +514,6 @@ void MEDDLY::dd_edge::evaluate(const minterm& m,
     if (!fp) {
         throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
     }
-    /*
-    if (! fp->isRangeType(range_type::BOOLEAN) ) {
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-    */
     if ( fp->isForRelations() != m.isForRelations() ) {
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }
@@ -459,18 +523,42 @@ void MEDDLY::dd_edge::evaluate(const minterm& m,
 
     if ( fp->isMultiTerminal() )
     {
+#ifdef USE_EV_EVALUATE
+        evaluator_helper<EdgeOp_none> EH(fp, m);
+        EH.evaluate(ev, en);
+#else
         evaluator_helper_mt EH(fp, m);
-        if (m.isForRelations()) {
-            if (fp->isIdentityReduced()) {
-                en = EH.ident_rel_eval(node);
-            } else {
-                en = EH.fully_rel_eval(node);
-            }
-        } else {
-            en = EH.set_eval(node);
-        }
-        ev.set();
+        en = EH.evaluate(en);
+#endif
         return;
+    }
+
+    if ( fp->isEVPlus() )
+    {
+        if (edge_type::INT == fp->getEdgeType()) {
+            evaluator_helper< EdgeOp_plus <int> > EH(fp, m);
+            EH.evaluate(ev, en);
+            return;
+        }
+        if (edge_type::LONG == fp->getEdgeType()) {
+            evaluator_helper< EdgeOp_plus <long> > EH(fp, m);
+            EH.evaluate(ev, en);
+            return;
+        }
+    }
+
+    if ( fp->isEVTimes() )
+    {
+        if (edge_type::FLOAT == fp->getEdgeType()) {
+            evaluator_helper< EdgeOp_times <float> > EH(fp, m);
+            EH.evaluate(ev, en);
+            return;
+        }
+        if (edge_type::DOUBLE == fp->getEdgeType()) {
+            evaluator_helper< EdgeOp_times <double> > EH(fp, m);
+            EH.evaluate(ev, en);
+            return;
+        }
     }
 
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);

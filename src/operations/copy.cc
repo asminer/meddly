@@ -844,7 +844,7 @@ void MEDDLY::copy_EV<EdgeOp>::_compute(int L, unsigned in,
         for (unsigned i=0; i<Cu->getSize(); i++) {
             edge_value v;
             node_handle d;
-            _compute(Cnextlevel, i, EdgeOp::accumulate(av, Au->edgeval(i)),
+            _compute(Cnextlevel, i, EdgeOp::applyOp(av, Au->edgeval(i)),
                     Au->down(i), v, d);
             if (resF->isMultiTerminal()) {
                 MEDDLY_DCASSERT(v.isVoid());

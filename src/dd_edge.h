@@ -236,8 +236,8 @@ class MEDDLY::dd_edge {
         ///
         inline void evaluate(const minterm &m, bool &val) const
         {
-            edge_value ev;
-            node_handle en;
+            edge_value ev(edgeval);
+            node_handle en = node;
             evaluate(m, ev, en);
             MEDDLY_DCASSERT(ev.isVoid());
             terminal t(terminal_type::BOOLEAN, en);
@@ -250,8 +250,8 @@ class MEDDLY::dd_edge {
         ///
         inline void evaluate(const minterm &m, long &val) const
         {
-            edge_value ev;
-            node_handle en;
+            edge_value ev(edgeval);
+            node_handle en = node;
             evaluate(m, ev, en);
             if (ev.isVoid()) {
                 terminal t(terminal_type::INTEGER, en);
@@ -272,8 +272,8 @@ class MEDDLY::dd_edge {
         ///
         inline void evaluate(const minterm &m, double &val) const
         {
-            edge_value ev;
-            node_handle en;
+            edge_value ev(edgeval);
+            node_handle en = node;
             evaluate(m, ev, en);
             if (ev.isVoid()) {
                 terminal t(terminal_type::REAL, en);
