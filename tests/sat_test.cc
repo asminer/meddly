@@ -110,7 +110,10 @@ void check_solution(const char* name, forest* f, dd_edge& M, const int* sol)
     if (ns!=1) exit(2);
 
     bool ok;
-    f->evaluate(M, sol, ok);
+    minterm m(f);
+    m.setAll(sol, true);
+    M.evaluate(m, ok);
+    // f->evaluate(M, m, ok);
     if (!ok) {
         printf("Solution doesn't match\n");
         exit(3);

@@ -51,6 +51,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
       return new mtmxd_fixedcol_iter(this);
     }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
   protected:
       inline node_handle evaluateRaw(const dd_edge &f, const int* vlist,
         const int* vplist) const
@@ -63,6 +64,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
         }
         return p;
       }
+#endif
 
   protected:
     class mtmxd_iterator : public mt_iterator {
@@ -108,6 +110,8 @@ class MEDDLY::mtmxd_forest : public mt_forest {
 //
 // Helper class for createEdge
 //
+
+#ifdef ALLOW_DEPRECATED_0_17_7
 
 namespace MEDDLY {
 
@@ -667,6 +671,8 @@ namespace MEDDLY {
   }; // class mtmxd_edgemaker
 
 };  // namespace MEDDLY
+
+#endif // ALLOW_DEPRECATED_0_17_7
 
 #endif
 

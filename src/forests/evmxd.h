@@ -36,6 +36,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
     virtual void moveDownVariable(int high, int low);
     virtual void moveUpVariable(int low, int high);
 
+#ifdef ALLOW_DEPRECATED_0_17_7
   protected:
     template <class OPERATION, typename TYPE>
     inline void evaluateT(const dd_edge &f, const int* vlist,
@@ -155,12 +156,16 @@ class MEDDLY::evmxd_forest : public ev_forest {
       } // for i
     }
 
+#endif  // ALLOW_DEPRECATED_0_17_7
+
 };
 
 
 //
 // Helper class for createEdge
 //
+
+#ifdef ALLOW_DEPRECATED_0_17_7
 
 namespace MEDDLY {
 
@@ -531,5 +536,7 @@ namespace MEDDLY {
   }; // class evmxd_edgemaker
 
 }; // namespace MEDDLY
+
+#endif  // ALLOW_DEPRECATED_0_17_7
 
 #endif

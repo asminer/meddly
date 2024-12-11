@@ -1,12 +1,6 @@
 
 Implement next:
 
-    * Deprecate old function::createEdge methods
-
-    * dd_edge evaluate on minterms
-
-    * Deprecate old function::evaluate methods
-
     * new iterator object that
         + works for all forest types without templates
           (except maybe for evaluation part)
@@ -14,6 +8,12 @@ Implement next:
           use a minterm to "mask", with DONT_CARE allowed to change
 
         + current path is a minterm
+
+    * MAXIMUM, MINIMUM operations to finish off minterm builds :)
+        + and test cases (add to chk_minterm?)
+
+    * plus, minus, divide, multiply, modulo
+        -> combine into arithmetic ops, like we did for comparisons
 
 
 Current goal:

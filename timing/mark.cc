@@ -239,15 +239,16 @@ void runWithArgs(unsigned N, unsigned marks, unsigned counts)
     // Build initial state
     //
     std::cout << "Building initial state" << std::endl;
-    int* initial = new int[1+N*8];
-    for (unsigned i=N*8; i; i--) initial[i] = 0;
-    int* initLocal = initial;
+    minterm initial(mdd);
+    for (unsigned i=initial.getNumVars(); i; --i) {
+        initial.setVar(i, 0);
+    }
     for (unsigned i=0; i<N; i++) {
-        initLocal[3] = initLocal[5] = 1;
-        initLocal += 8;
+        initial.setVar(i*8+3, 1);
+        initial.setVar(i*8+5, 1);
     }
     dd_edge init_state(mdd);
-    mdd->createEdge(&initial, 1, init_state);
+    initial.buildFunction(init_state);
 
     //
     // Build next-state function
