@@ -34,8 +34,6 @@
 #include "io_dot.h"
 #endif
 
-#define USE_EV_EVALUATE
-
 // #define DEBUG_CLEANUP
 
 // ******************************************************************
@@ -318,30 +316,31 @@ namespace MEDDLY {
                 MEDDLY_DCASSERT(F);
             }
 
-            inline node_handle evaluate(node_handle p)
+            /*
+            inline void evaluate(node_handle &p)
             {
                 if (m.isForRelations()) {
                     if (F->isIdentityReduced()) {
-                        return ident_rel_eval(p);
+                        ident_rel_eval(p);
                     } else {
-                        return fully_rel_eval(p);
+                        fully_rel_eval(p);
                     }
                 } else {
-                    return set_eval(p);
+                    set_eval(p);
                 }
             }
+            */
 
-            inline node_handle set_eval(node_handle p)
+            inline void set_eval(node_handle &p)
             {
                 MEDDLY_DCASSERT( !m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
     	            int level = F->getNodeLevel(p);
                     p = F->getDownPtr(p, m.from(level));
                 }
-                return p;
             }
 
-            inline node_handle fully_rel_eval(node_handle p)
+            inline void fully_rel_eval(node_handle &p)
             {
                 MEDDLY_DCASSERT( m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
@@ -352,12 +351,11 @@ namespace MEDDLY {
                         p = F->getDownPtr(p, m.to(-level));
                     }
                 }
-                return p;
             }
 
-            inline node_handle ident_rel_eval(node_handle p)
+            inline void ident_rel_eval(node_handle &p)
             {
-                if (0==p) return 0;
+                if (0==p) return;
                 MEDDLY_DCASSERT( m.isForRelations() );
                 int plvl = F->getNodeLevel(p);
                 int L = F->getNumVariables();
@@ -368,7 +366,7 @@ namespace MEDDLY {
                     MEDDLY_DCASSERT(L>0);
                     if (plvl == L) {
                         p = F->getDownPtr(p, m.from(L));
-                        if (0==p) return 0;
+                        if (0==p) return;
                         plvl = F->getNodeLevel(p);
                     }
                     L = MXD_levels::downLevel(L);
@@ -378,16 +376,16 @@ namespace MEDDLY {
                     MEDDLY_DCASSERT(L<0);
                     if (plvl == L) {
                         p = F->getDownPtr(p, m.to(-L));
-                        if (0==p) return 0;
+                        if (0==p) return;
                         plvl = F->getNodeLevel(p);
                     } else {
                         if (m.to(-L) != m.from(-L)) {
-                            return 0;
+                            p = 0;
+                            return;
                         }
                     }
                     L = MXD_levels::downLevel(L);
                 }
-                return p;
             }
     };
 
@@ -422,12 +420,8 @@ namespace MEDDLY {
                     edge_value pv;
     	            int level = F->getNodeLevel(p);
                     MEDDLY_DCASSERT(level>0);
-                    if (EOP::hasEdgeValues()) {
-                        F->getDownPtr(p, m.from(level), pv, p);
-                        EOP::accumulateOp(ev, pv);
-                    } else {
-                        p = F->getDownPtr(p, m.from(level));
-                    }
+                    F->getDownPtr(p, m.from(level), pv, p);
+                    EOP::accumulateOp(ev, pv);
                 }
             }
 
@@ -436,21 +430,13 @@ namespace MEDDLY {
                 MEDDLY_DCASSERT( m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
                     edge_value pv;
-    	            int level = F->getNodeLevel(p);
-                    if (EOP::hasEdgeValues()) {
-                        if (level > 0) {
-                            F->getDownPtr(p, m.from(level), pv, p);
-                        } else {
-                            F->getDownPtr(p, m.to(-level), pv, p);
-                        }
-                        EOP::accumulateOp(ev, pv);
+                    int level = F->getNodeLevel(p);
+                    if (level > 0) {
+                        F->getDownPtr(p, m.from(level), pv, p);
                     } else {
-                        if (level > 0) {
-                            p = F->getDownPtr(p, m.from(level));
-                        } else {
-                            p = F->getDownPtr(p, m.to(-level));
-                        }
+                        F->getDownPtr(p, m.to(-level), pv, p);
                     }
+                    EOP::accumulateOp(ev, pv);
                 }
             }
 
@@ -467,12 +453,8 @@ namespace MEDDLY {
                     //
                     MEDDLY_DCASSERT(L>0);
                     if (plvl == L) {
-                        if (EOP::hasEdgeValues()) {
-                            F->getDownPtr(p, m.from(L), pv, p);
-                            EOP::accumulateOp(ev, pv);
-                        } else {
-                            p = F->getDownPtr(p, m.from(L));
-                        }
+                        F->getDownPtr(p, m.from(L), pv, p);
+                        EOP::accumulateOp(ev, pv);
                         if (0==p) return;
                         plvl = F->getNodeLevel(p);
                     }
@@ -482,17 +464,13 @@ namespace MEDDLY {
                     //
                     MEDDLY_DCASSERT(L<0);
                     if (plvl == L) {
-                        if (EOP::hasEdgeValues()) {
-                            F->getDownPtr(p, m.to(-L), pv, p);
-                            EOP::accumulateOp(ev, pv);
-                        } else {
-                            p = F->getDownPtr(p, m.to(-L));
-                        }
+                        F->getDownPtr(p, m.to(-L), pv, p);
+                        EOP::accumulateOp(ev, pv);
                         if (0==p) return;
                         plvl = F->getNodeLevel(p);
                     } else {
                         if (m.to(-L) != m.from(-L)) {
-                            // TBD
+                            EOP::clear(ev);
                             p = 0;
                             return;
                         }
@@ -523,13 +501,16 @@ void MEDDLY::dd_edge::evaluate(const minterm& m,
 
     if ( fp->isMultiTerminal() )
     {
-#ifdef USE_EV_EVALUATE
-        evaluator_helper<EdgeOp_none> EH(fp, m);
-        EH.evaluate(ev, en);
-#else
         evaluator_helper_mt EH(fp, m);
-        en = EH.evaluate(en);
-#endif
+        if (m.isForRelations()) {
+            if (fp->isIdentityReduced()) {
+                EH.ident_rel_eval(en);
+            } else {
+                EH.fully_rel_eval(en);
+            }
+        } else {
+            EH.set_eval(en);
+        }
         return;
     }
 
