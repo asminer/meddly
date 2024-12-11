@@ -514,7 +514,7 @@ void MEDDLY::dd_edge::evaluate(const minterm& m,
         return;
     }
 
-    if ( fp->isEVPlus() )
+    if ( fp->isEVPlus() || fp->isIndexSet() )
     {
         if (edge_type::INT == fp->getEdgeType()) {
             evaluator_helper< EdgeOp_plus <int> > EH(fp, m);

@@ -25,8 +25,6 @@
 
 // #define SHOW_INDEXES
 
-// #define NEW_EVAL
-
 const char* kanban[] = {
   "X-+..............",  // Tin1
   "X.-+.............",  // Tr1
@@ -117,18 +115,12 @@ bool checkReachset(int N)
 
   // Verify indexes
   int c = 0;
-#ifdef NEW_EVAL
   minterm assign(mdd);
-#endif
   for (enumerator s(reachable); s; ++s) {
     long index;
     const int* state = s.getAssignments();
-#ifdef NEW_EVAL
     assign.setAll(state, true);   // UGH, copy, for now
     reach_index.evaluate(assign, index);
-#else
-    evmdd->evaluate(reach_index, state, index);
-#endif
     if (c != index) {
       printf("\nState number %d has index %ld\n", c, index);
       return false;
@@ -143,12 +135,8 @@ bool checkReachset(int N)
   for (enumerator s(reach_index); s; ++s) {
     const int* state = s.getAssignments();
     bool ok;
-#ifdef NEW_EVAL
     assign.setAll(state, true);
     reachable.evaluate(assign, ok);
-#else
-    mdd->evaluate(reachable, state, ok);
-#endif
     if (!ok) {
       printf("\nIndex number %d does not appear in reachability set\n", d);
       return false;
