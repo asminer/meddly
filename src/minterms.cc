@@ -23,6 +23,7 @@
 #include "forest.h"
 #include "oper_binary.h"
 #include "ops_builtin.h"
+#include "dd_edge.h"
 
 // #define DEBUG_MOVE_VALUES
 // #define DEBUG_MOVE_PAIRS
@@ -385,6 +386,18 @@ MEDDLY::minterm::minterm(const forest* F) : termval(true)
     _D = F->getDomain();
     for_relations = F->isForRelations();
     initVectors();
+}
+
+MEDDLY::minterm::minterm(const minterm &m) : termval(true)
+{
+    _D = m._D;
+    for_relations = m.for_relations;
+    initVectors();
+    if (for_relations) {
+        setAll(m._from, m._to, m.termval);
+    } else {
+        setAll(m._from, m.termval);
+    }
 }
 
 

@@ -34,6 +34,7 @@ namespace MEDDLY {
     class output;
 
     class minterm;
+    class unpacked_node;
 };
 
 
@@ -53,6 +54,91 @@ namespace MEDDLY {
     - Checking for equality of two dd_edges, using the method equals().
 */
 class MEDDLY::dd_edge {
+    public:
+
+        class iterator {
+            public:
+                // Move constructor
+                iterator(iterator &&I);
+
+                ~iterator();
+
+                inline operator bool() const {
+                    return !atEnd;
+                }
+
+                inline void operator++() {
+                    if (atEnd)      return;
+                    if (forSets)    next_set();
+                    else            next_rel();
+                }
+                inline void operator++(int) {
+                    if (atEnd)      return;
+                    if (forSets)    next_set();
+                    else            next_rel();
+                }
+                inline bool operator!=(const iterator& I) const {
+                    if (I.atEnd && atEnd) return false;
+                    if (I.atEnd || atEnd) return true;
+                    return !equals(I);
+                }
+                inline bool operator==(const iterator& I) const {
+                    if (I.atEnd && atEnd) return true;
+                    if (I.atEnd || atEnd) return false;
+                    return equals(I);
+                }
+
+                inline const minterm& operator*() const {
+                    if (atEnd) {
+                        throw error(error::INVALID_ITERATOR, __FILE__, __LINE__);
+                    }
+                    return *M;
+                }
+
+                inline void rewind() {
+                    if (F) {
+                        atEnd = ! ( forSets
+                                    ? first_set(int(numVars))
+                                    : first_rel(int(numVars)) );
+                    }
+                }
+
+            private:
+                iterator();
+                iterator(const dd_edge &E, const minterm* mask);
+
+                iterator(const iterator &i) = delete;
+                void operator=(const iterator &i) = delete;
+
+                void next_set();
+                void next_rel();
+
+                bool first_set(int k);
+                bool first_rel(int k);
+
+                bool equals(const iterator &I) const;
+
+                friend class MEDDLY::dd_edge;
+
+            private:
+                unpacked_node** U_from;
+                unpacked_node** U_to;
+
+                unsigned* Z_from;
+                unsigned* Z_to;
+
+                edge_value  root_ev;
+                node_handle root_node;
+
+                const forest* F;
+                minterm* M;
+                const minterm* mask;
+
+                unsigned numVars;
+                bool atEnd;
+                bool forSets;
+        };
+
     public:
         /// Construct and attach to a forest.
         dd_edge(forest* p=nullptr);
@@ -231,6 +317,25 @@ class MEDDLY::dd_edge {
         }
 
         ///
+        /// Build an end iterator
+        ///
+        inline iterator end() const
+        {
+            return iterator();
+        }
+
+        ///
+        /// Build an iterator through this function
+        /// The mask tells which values we can iterate over
+        /// (set to DONT_CARE), while the others remain fixed.
+        /// A NULL mask corresponds to all DONT_CAREs.
+        ///
+        inline iterator begin(const minterm *mask = nullptr) const
+        {
+            return iterator(*this, mask);
+        }
+
+        ///
         /// Evaluate the function for variable assignments given in m,
         /// and store the result in val.
         ///
@@ -308,8 +413,6 @@ class MEDDLY::dd_edge {
         unsigned parentFID;     // ID of parent forest
         node_handle node;
         edge_value edgeval;
-
-//        friend class unpacked_node;
 
     //
     // for the dd_edge registry in the parent forest

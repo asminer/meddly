@@ -39,6 +39,151 @@
 // ******************************************************************
 // *                                                                *
 // *                                                                *
+// *                   dd_edge::iterator  methods                   *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::dd_edge::iterator::iterator(iterator &&I)
+{
+    printf("In iterator's move constructor :)\n");
+    // Take everything from I
+    U_from = I.U_from;
+    U_to = I.U_to;
+    Z_from = I.Z_from;
+    Z_to = I.Z_to;
+    root_ev = I.root_ev;
+    root_node = I.root_node;
+    F = I.F;
+    M = I.M;
+    mask = I.mask;
+    numVars = I.numVars;
+    atEnd = I.atEnd;
+    forSets = I.forSets;
+
+    // And clear out I, for anything that would be deleted
+    I.U_from = nullptr;
+    I.U_to = nullptr;
+    I.Z_from = nullptr;
+    I.Z_to = nullptr;
+    I.M = nullptr;
+    I.mask = nullptr;
+}
+
+MEDDLY::dd_edge::iterator::~iterator()
+{
+    if (U_from) {
+        for (unsigned i=numVars; i; --i) {
+            unpacked_node::Recycle(U_from[i]);
+        }
+        delete[] U_from;
+        U_from = nullptr;
+    }
+    if (U_to) {
+        for (unsigned i=numVars; i; --i) {
+            unpacked_node::Recycle(U_to[i]);
+        }
+        delete[] U_to;
+        U_to = nullptr;
+    }
+    delete[] Z_from;
+    delete[] Z_to;
+    delete M;
+    delete mask;
+}
+
+MEDDLY::dd_edge::iterator::iterator()
+{
+    // Build an empty, 'end' iterator
+    atEnd = true;
+    numVars = 0;
+    F = nullptr;
+
+    U_from = nullptr;
+    U_to = nullptr;
+    Z_from = nullptr;
+    Z_to = nullptr;
+    M = nullptr;
+    mask = nullptr;
+}
+
+MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, const minterm* _mask)
+{
+    root_ev = E.getEdgeValue();
+    root_node = E.getNode();
+
+    F = E.getForest();
+    M = new minterm(F);
+    mask = _mask;
+    numVars = M->getNumVars();
+    forSets = M->isForSets();
+
+    U_from = new unpacked_node* [1+numVars];
+    for (unsigned i=0; i<= numVars; i++) {
+        U_from[i] = unpacked_node::New(F);
+    }
+    if (forSets) {
+        U_to = nullptr;
+    } else {
+        U_to = new unpacked_node* [1+numVars];
+        for (unsigned i=0; i<= numVars; i++) {
+            U_to[i] = unpacked_node::New(F);
+        }
+    }
+
+    Z_from = new unsigned [1+numVars];
+    if (forSets) {
+        Z_to = nullptr;
+    } else {
+        Z_to = new unsigned [1+numVars];
+    }
+}
+
+void MEDDLY::dd_edge::iterator::next_set()
+{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::dd_edge::iterator::next_rel()
+{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+bool MEDDLY::dd_edge::iterator::first_set(int k)
+{
+    // TBD!
+    return false;
+}
+
+bool MEDDLY::dd_edge::iterator::first_rel(int k)
+{
+    // TBD!
+    return false;
+}
+
+bool MEDDLY::dd_edge::iterator::equals(const iterator &I) const
+{
+    if (F != I.F) return false;
+    if (root_node != I.root_node) return false;
+    if (mask != I.mask) return false;
+
+    if (forSets) {
+        for (unsigned i = numVars; i; --i) {
+            if (Z_from[i] != I.Z_from[i]) return false;
+        }
+    } else {
+        for (unsigned i = numVars; i; --i) {
+            if (Z_from[i] != I.Z_from[i]) return false;
+            if (Z_to[i] != I.Z_to[i]) return false;
+        }
+    }
+
+    return true;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
 // *                        dd_edge  methods                        *
 // *                                                                *
 // *                                                                *

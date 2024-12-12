@@ -36,7 +36,6 @@
 #include "minterms.h"
 #include "policies.h"
 #include "terminal.h"
-#include "dd_edge.h"
 
 namespace MEDDLY {
 
@@ -53,6 +52,10 @@ namespace MEDDLY {
 
     class domain;
     class output;
+    class dd_edge;
+
+    class forest;
+    class unpacked_node;
 
     class minterm;
     class minterm_coll;
@@ -81,6 +84,10 @@ class MEDDLY::minterm {
     public:
         minterm(const domain* D, set_or_rel sr);
         minterm(const forest* F);
+
+        /// Copy constructor
+        minterm(const minterm &m);
+
         ~minterm();
 
         inline bool isForSets()             const   { return !for_relations; }

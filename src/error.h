@@ -47,6 +47,8 @@ class MEDDLY::error {
             INVALID_LEVEL,
             /// A provided variable bound is out of range.
             INVALID_BOUND,
+            /// Attempt to dereference an invalid iterator.
+            INVALID_ITERATOR,
             /// We expected an empty domain, but it wasn't
             DOMAIN_NOT_EMPTY,
             /// Unknown operation (bad operation handle).

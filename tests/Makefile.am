@@ -15,6 +15,7 @@ noinst_PROGRAMS = \
     chk_ct \
     chk_ct_old \
     chk_evtimes_float \
+    chk_iters \
     chk_minterms \
     chk_reorder \
     ddedge \
@@ -96,6 +97,9 @@ chk_ct_old_LDADD = ../src/libmeddly.la
 
 chk_evtimes_float_SOURCES = chk_evtimes_float.cc
 chk_evtimes_float_LDADD = ../src/libmeddly.la
+
+chk_iters_SOURCES = chk_iters.cc
+chk_iters_LDADD = ../src/libmeddly.la
 
 chk_minterms_SOURCES = chk_minterms.cc
 chk_minterms_LDADD = ../src/libmeddly.la

@@ -108,22 +108,50 @@ void mismatch(const minterm &eval,
 }
 
 
+void randomizeMinterm(MEDDLY::minterm &m)
+{
+    const int vals[9] = { -1, 0, 0, 1, 1, 2, 2, 3, 3 };
+    const int unvals[52] = {
+        -1, -1, -1, -1,     // 4 (x,x) pairs
+        -1, -1, -1, -1,     // 4 (x,i) pairs
+        -1, -1, -1, -1,     // 4 (x, normal) pairs
+        0,  1,  2,  3,      // 4 (normal, x) pairs
+        0,  1,  2,  3,      // 4 (normal, i) pairs
+        0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3,  // 16 normal pairs
+        0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3   // 16 normal pairs
+    };
+
+    const int prvals[52] = {
+        -1, -1, -1, -1,     // 4 (x,x) pairs
+        -2, -2, -2, -2,     // 4 (x,i) pairs
+        0,  1,  2,  3,      // 4 (x, normal) pairs
+        -1, -1, -1, -1,     // 4 (normal, x) pairs
+        -2, -2, -2, -2,     // 4 (normal, i) pairs
+        0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  // 16 normal pairs
+        0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3   // 16 normal pairs
+    };
+
+
+    if (m.isForRelations()) {
+        for (unsigned i=1; i<=m.getNumVars(); i++) {
+            int index = Equilikely(0, 51);
+            m.setVars(i, unvals[index], prvals[index]);
+        }
+    } else {
+        for (unsigned i=1; i<=m.getNumVars(); i++) {
+            int index = Equilikely(0, 8);
+            m.setVar(i, vals[index]);
+        }
+    }
+}
+
+
 
 /*
  *
  * Manipulate minterms for sets
  *
  */
-
-void randomSetMinterm(minterm& m)
-{
-    const int vals[9] = { -1, 0, 0, 1, 1, 2, 2, 3, 3 };
-
-    for (unsigned i=1; i<=m.getNumVars(); i++) {
-        int index = Equilikely(0, 8);
-        m.setVar(i, vals[index]);
-    }
-}
 
 bool nextSetMinterm(minterm& m)
 {
@@ -225,7 +253,7 @@ void test_sets()
             if (1 == mtsizes[i]) mtcoll.clear();
 
             while (mtcoll.size() < mtsizes[i]) {
-                randomSetMinterm(mtcoll.unused());
+                randomizeMinterm(mtcoll.unused());
                 mtcoll.pushUnused();
             }
 
@@ -322,33 +350,6 @@ void test_sets()
  * Manipulate minterms for relations
  *
  */
-
-void randomRelMinterm(MEDDLY::minterm &m)
-{
-    const int unvals[52] =
-    { -1, -1, -1, -1,   // 4 (x,x) pairs
-      -1, -1, -1, -1,   // 4 (x,i) pairs
-      -1, -1, -1, -1,   // 4 (x, normal) pairs
-       0,  1,  2,  3,   // 4 (normal, x) pairs
-       0,  1,  2,  3,   // 4 (normal, i) pairs
-       0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3,   // 16 normal pairs
-       0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3};  // 16 normal pairs
-
-    const int prvals[52] =
-    { -1, -1, -1, -1,   // 4 (x,x) pairs
-      -2, -2, -2, -2,   // 4 (x,i) pairs
-       0,  1,  2,  3,   // 4 (x, normal) pairs
-      -1, -1, -1, -1,   // 4 (normal, x) pairs
-      -2, -2, -2, -2,   // 4 (normal, i) pairs
-       0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,   // 16 normal pairs
-       0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3};  // 16 normal pairs
-
-    for (unsigned i=1; i<=m.getNumVars(); i++) {
-        int index = Equilikely(0, 51);
-
-        m.setVars(i, unvals[index], prvals[index]);
-    }
-}
 
 bool nextRelMinterm(minterm& m)
 {
@@ -473,7 +474,7 @@ void test_rels()
             if (1 == mtsizes[i]) mtcoll.clear();
 
             while (mtcoll.size() < mtsizes[i]) {
-                randomRelMinterm(mtcoll.unused());
+                randomizeMinterm(mtcoll.unused());
                 mtcoll.pushUnused();
             }
 

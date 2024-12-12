@@ -13,8 +13,8 @@ chk_cross
 chk_ct
 chk_ct_old
 chk_evtimes_float
+chk_iters
 chk_minterms
-chk_minterms_old
 chk_reorder
 ddedge
 domain_list
