@@ -35,6 +35,7 @@
 #endif
 
 // #define DEBUG_CLEANUP
+// #define DEBUG_FIRST
 
 // ******************************************************************
 // *                                                                *
@@ -57,9 +58,9 @@ MEDDLY::dd_edge::iterator::iterator(iterator &&I)
     F = I.F;
     M = I.M;
     mask = I.mask;
-    numVars = I.numVars;
+    // numVars = I.numVars;
     atEnd = I.atEnd;
-    forSets = I.forSets;
+    // forSets = I.forSets;
 
     // And clear out I, for anything that would be deleted
     I.U_from = nullptr;
@@ -73,14 +74,16 @@ MEDDLY::dd_edge::iterator::iterator(iterator &&I)
 MEDDLY::dd_edge::iterator::~iterator()
 {
     if (U_from) {
-        for (unsigned i=numVars; i; --i) {
+        MEDDLY_DCASSERT(M);
+        for (unsigned i=M->getNumVars(); i; --i) {
             unpacked_node::Recycle(U_from[i]);
         }
         delete[] U_from;
         U_from = nullptr;
     }
     if (U_to) {
-        for (unsigned i=numVars; i; --i) {
+        MEDDLY_DCASSERT(M);
+        for (unsigned i=M->getNumVars(); i; --i) {
             unpacked_node::Recycle(U_to[i]);
         }
         delete[] U_to;
@@ -96,7 +99,7 @@ MEDDLY::dd_edge::iterator::iterator()
 {
     // Build an empty, 'end' iterator
     atEnd = true;
-    numVars = 0;
+    // numVars = 0;
     F = nullptr;
 
     U_from = nullptr;
@@ -115,51 +118,153 @@ MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, const minterm* _mask)
     F = E.getForest();
     M = new minterm(F);
     mask = _mask;
-    numVars = M->getNumVars();
-    forSets = M->isForSets();
+    // numVars = M->getNumVars();
+    // forSets = M->isForSets();
 
-    U_from = new unpacked_node* [1+numVars];
-    for (unsigned i=0; i<= numVars; i++) {
-        U_from[i] = unpacked_node::New(F);
+    U_from = new unpacked_node* [1+M->getNumVars()];
+    U_from[0] = nullptr;
+    for (unsigned i=M->getNumVars(); i; --i) {
+        if (_mask && (DONT_CARE != mask->from(i))) {
+            U_from[i] = nullptr;
+            M->from(i) = mask->from(i);
+        } else {
+            U_from[i] = unpacked_node::New(F);
+        }
     }
-    if (forSets) {
+    if (M->isForSets()) {
         U_to = nullptr;
     } else {
-        U_to = new unpacked_node* [1+numVars];
-        for (unsigned i=0; i<= numVars; i++) {
-            U_to[i] = unpacked_node::New(F);
+        U_to = new unpacked_node* [1+M->getNumVars()];
+        U_to[0] = nullptr;
+        for (unsigned i=M->getNumVars(); i; --i) {
+            if (_mask && (DONT_CARE != mask->to(i))) {
+                U_to[i] = nullptr;
+                M->to(i) = mask->to(i);
+            } else {
+                U_to[i] = unpacked_node::New(F);
+            }
         }
     }
 
-    Z_from = new unsigned [1+numVars];
-    if (forSets) {
+    Z_from = new unsigned [1+M->getNumVars()];
+    if (M->isForSets()) {
         Z_to = nullptr;
     } else {
-        Z_to = new unsigned [1+numVars];
+        Z_to = new unsigned [1+M->getNumVars()];
     }
+
+    atEnd = ! first(int(M->getNumVars()), root_node);
 }
 
-void MEDDLY::dd_edge::iterator::next_set()
+void MEDDLY::dd_edge::iterator::next()
 {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-void MEDDLY::dd_edge::iterator::next_rel()
+bool MEDDLY::dd_edge::iterator::first(int k, node_handle p)
 {
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    MEDDLY_DCASSERT(M);
+    MEDDLY_DCASSERT(F);
+
+#ifdef DEBUG_FIRST
+    printf("entering first(%d, %ld)\n", k, long(p));
+#endif
+
+    if (0==p) return false;
+    if (0==k) {
+        // set the terminal value
+        if (F->isMultiTerminal()) {
+            M->setTerm(terminal(F->getTerminalType(), p));
+#ifdef DEBUG_FIRST
+            printf("    completed minterm:\n    ");
+            FILE_output out(stdout);
+            M->show(out);
+            out.put('\n');
+#endif
+            return true;
+        }
+        // tbd - need to accumulate edge values
+        return true;
+    }
+
+    const int kdn = M->isForSets()
+                        ? MDD_levels::downLevel(k)
+                        : MXD_levels::downLevel(k)
+                    ;
+
+    bool free_var = true;
+    if (mask) {
+        free_var = (k<0)    ?   (DONT_CARE == mask->to(-k))
+                            :   (DONT_CARE == mask->from(k));
+    }
+
+    const int plvl = F->getNodeLevel(p);
+
+    if (!free_var) {
+#ifdef DEBUG_FIRST
+        const int fxd = (k<0) ? mask->to(-k) : mask->from(k);
+        printf("    value is fixed at %d\n", fxd);
+#endif
+        //
+        // This value is fixed, determine the down pointer and recurse.
+        //
+        MEDDLY_DCASSERT(mask);
+
+        if (k == plvl)  {
+            // node is at this level, determine p[i]
+            int i = (k<0) ? mask->to(-k) : mask->from(k);
+            if (DONT_CHANGE == i) {
+                MEDDLY_DCASSERT(k<0);
+                i = M->from(-k);
+            }
+            return first(kdn, F->getDownPtr(p, i));
+        }
+
+        if (k>0 || F->isFullyReduced()) {
+            //
+            // redundant node at this level
+            // all down pointers are equal
+            //
+            return first(kdn, p);
+        }
+
+        //
+        // Identity node at this level
+        //
+        MEDDLY_DCASSERT(k<0);
+        if (M->from(-k) != M->to(-k)) return false;
+        return first(kdn, p);
+    }
+
+    //
+    // Free variable.
+    // Set up the unpacked node.
+    //
+    unpacked_node* U_p = (k<0) ? U_to[-k] : U_from[k];
+    if (k != plvl) {
+        if (k>0 || F->isFullyReduced()) {
+            U_p->initRedundant(F, k, p, SPARSE_ONLY);
+        } else {
+            U_p->initIdentity(F, k, M->from(-k), p, SPARSE_ONLY);
+        }
+    } else {
+        F->unpackNode(U_p, p, SPARSE_ONLY);
+    }
+
+    unsigned& z = (k<0) ? Z_to[-k] : Z_from[k];
+    for (z=0; z<U_p->getSize(); z++) {
+        // Update the minterm
+        if (k<0) {
+            M->to(-k) = U_p->index(z);
+        } else {
+            M->from(k) = U_p->index(z);
+        }
+        if (first(kdn, U_p->down(z))) return true;
+    }
+    return false;
+
 }
 
-bool MEDDLY::dd_edge::iterator::first_set(int k)
-{
-    // TBD!
-    return false;
-}
-
-bool MEDDLY::dd_edge::iterator::first_rel(int k)
-{
-    // TBD!
-    return false;
-}
 
 bool MEDDLY::dd_edge::iterator::equals(const iterator &I) const
 {
@@ -167,12 +272,13 @@ bool MEDDLY::dd_edge::iterator::equals(const iterator &I) const
     if (root_node != I.root_node) return false;
     if (mask != I.mask) return false;
 
-    if (forSets) {
-        for (unsigned i = numVars; i; --i) {
+    MEDDLY_DCASSERT(M);
+    if (M->isForSets()) {
+        for (unsigned i = M->getNumVars(); i; --i) {
             if (Z_from[i] != I.Z_from[i]) return false;
         }
     } else {
-        for (unsigned i = numVars; i; --i) {
+        for (unsigned i = M->getNumVars(); i; --i) {
             if (Z_from[i] != I.Z_from[i]) return false;
             if (Z_to[i] != I.Z_to[i]) return false;
         }

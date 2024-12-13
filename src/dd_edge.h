@@ -69,13 +69,11 @@ class MEDDLY::dd_edge {
 
                 inline void operator++() {
                     if (atEnd)      return;
-                    if (forSets)    next_set();
-                    else            next_rel();
+                    next();
                 }
                 inline void operator++(int) {
                     if (atEnd)      return;
-                    if (forSets)    next_set();
-                    else            next_rel();
+                    next();
                 }
                 inline bool operator!=(const iterator& I) const {
                     if (I.atEnd && atEnd) return false;
@@ -95,14 +93,6 @@ class MEDDLY::dd_edge {
                     return *M;
                 }
 
-                inline void rewind() {
-                    if (F) {
-                        atEnd = ! ( forSets
-                                    ? first_set(int(numVars))
-                                    : first_rel(int(numVars)) );
-                    }
-                }
-
             private:
                 iterator();
                 iterator(const dd_edge &E, const minterm* mask);
@@ -110,20 +100,35 @@ class MEDDLY::dd_edge {
                 iterator(const iterator &i) = delete;
                 void operator=(const iterator &i) = delete;
 
-                void next_set();
-                void next_rel();
+                void next();
 
-                bool first_set(int k);
-                bool first_rel(int k);
+                //
+                // Find first matching, starting at level k from node p.
+                // return true if we found one, false otherwise.
+                //
+                bool first(int k, node_handle p);
 
                 bool equals(const iterator &I) const;
 
                 friend class MEDDLY::dd_edge;
 
             private:
+                /*
+                 * Keep a set of unpacked nodes at each level.
+                 * If the variable is free (DONT_CARE), then
+                 * the nodes are in sparse format for quick traversal.
+                 * Otherwise we have a null pointer.
+                 */
                 unpacked_node** U_from;
                 unpacked_node** U_to;
 
+                /*
+                 * Current index at each level.
+                 * For free variables, this is the nonzero index
+                 * into the sparse unpacked node.
+                 * Otherwise, it is the index into the full unpacked
+                 * node, and the index should equal the variable value.
+                 */
                 unsigned* Z_from;
                 unsigned* Z_to;
 
@@ -134,9 +139,9 @@ class MEDDLY::dd_edge {
                 minterm* M;
                 const minterm* mask;
 
-                unsigned numVars;
+                // unsigned numVars;
                 bool atEnd;
-                bool forSets;
+                // bool forSets;
         };
 
     public:

@@ -155,21 +155,25 @@ void test_sets(char reduction)
         mtcoll.pushUnused();
     }
 
-#ifdef SHOW_MINTERMS
-    out << "\nMinterms:\n";
-    mtcoll.show(out);
-#endif
-
     //
     // Set up ddedges
     //
     dd_edge E(F);
     mtcoll.buildFunction(E);
 
+
+#ifdef SHOW_MINTERMS
+    out << "\nMinterms:\n";
+    mtcoll.show(out);
+#endif
+
     out << "Iterating...\n";
 
     unsigned long count = 0;
-    for (dd_edge::iterator i = E.begin(); i != E.end(); i++) {
+    for (dd_edge::iterator i = E.begin();
+            i != E.end();
+            i++)
+    {
         out.put(count, 5);
         out << ": ";
         (*i).show(out);
@@ -178,6 +182,7 @@ void test_sets(char reduction)
         ++count;
     }
 
+    out << "Done, " << count << " minterms\n";
     domain::destroy(D);
 }
 
