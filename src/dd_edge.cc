@@ -158,6 +158,24 @@ MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, const minterm* _mask)
 
 void MEDDLY::dd_edge::iterator::next()
 {
+    if (M->isForSets()) {
+        for (int k=1; k<=M->getNumVars(); k++) {
+            // See if we can advance the nonzero ptr at level k
+            unpacked_node* U_p = U_from[k];
+            if (!U_p) continue;
+            unsigned& z = Z_from[k];
+            for (z++; z<U_p->getSize(); z++) {
+                // Update the minterm
+                M->from(k) = U_p->index(z);
+                if (first(k-1, U_p->down(z))) {
+                    return;
+                }
+            }
+        } // for k
+        atEnd = true;
+        return;
+    }
+
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
@@ -194,8 +212,7 @@ bool MEDDLY::dd_edge::iterator::first(int k, node_handle p)
 
     bool free_var = true;
     if (mask) {
-        free_var = (k<0)    ?   (DONT_CARE == mask->to(-k))
-                            :   (DONT_CARE == mask->from(k));
+        free_var = (k<0) ? U_to[-k] : U_from[k];
     }
 
     const int plvl = F->getNodeLevel(p);
@@ -216,6 +233,7 @@ bool MEDDLY::dd_edge::iterator::first(int k, node_handle p)
             if (DONT_CHANGE == i) {
                 MEDDLY_DCASSERT(k<0);
                 i = M->from(-k);
+                M->to(-k) = i;
             }
             return first(kdn, F->getDownPtr(p, i));
         }

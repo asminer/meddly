@@ -143,7 +143,8 @@ void test_sets(char reduction)
     // Set up minterm collection
     // and evaluation minterm
     //
-    minterm_coll mtcoll(16, D, SET);
+    // minterm_coll mtcoll(16, D, SET);
+    minterm_coll mtcoll(4, D, SET);
     minterm eval(D, SET);
 
     //
@@ -166,6 +167,8 @@ void test_sets(char reduction)
     out << "\nMinterms:\n";
     mtcoll.show(out);
 #endif
+    // out << "MDD:\n";
+    // E.showGraph(out);
 
     out << "Iterating...\n";
 
