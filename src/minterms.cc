@@ -407,6 +407,21 @@ MEDDLY::minterm::~minterm()
     delete[] _to;
 }
 
+void MEDDLY::minterm::setFrom(const minterm &m)
+{
+    if (_D != m._D) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+    if (for_relations != m.for_relations) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+    if (for_relations) {
+        setAll(m._from, m._to, m.termval);
+    } else {
+        setAll(m._from, m.termval);
+    }
+}
+
 void MEDDLY::minterm::show(output &s) const
 {
     //

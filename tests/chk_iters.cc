@@ -22,7 +22,7 @@
 
 #define TEST_SETS
 // #define TEST_RELS
-#define SHOW_MINTERMS
+// #define SHOW_MINTERMS
 
 const int DOMSIZE = 4;       // DO NOT change
 const int SETVARS = 10;
@@ -143,8 +143,12 @@ void test_sets(char reduction)
     // Set up minterm collection
     // and evaluation minterm
     //
-    // minterm_coll mtcoll(16, D, SET);
+#ifdef SHOW_MINTERMS
     minterm_coll mtcoll(4, D, SET);
+#else
+    minterm_coll mtcoll(16, D, SET);
+    minterm_coll mtctwo(64, D, SET);
+#endif
     minterm eval(D, SET);
 
     //
@@ -162,18 +166,17 @@ void test_sets(char reduction)
     dd_edge E(F);
     mtcoll.buildFunction(E);
 
-
 #ifdef SHOW_MINTERMS
     out << "\nMinterms:\n";
     mtcoll.show(out);
-#endif
-    // out << "MDD:\n";
-    // E.showGraph(out);
-
-    out << "Iterating...\n";
-
+    out << "Iterating over ";
+    minterm mask(F);
+    mask.setAllVars(DONT_CARE);
+    mask.setVar(1, 2);
+    mask.show(out);
+    out << "\n";
     unsigned long count = 0;
-    for (dd_edge::iterator i = E.begin();
+    for (dd_edge::iterator i = E.begin(&mask);
             i != E.end();
             i++)
     {
@@ -186,6 +189,32 @@ void test_sets(char reduction)
     }
 
     out << "Done, " << count << " minterms\n";
+#else
+    dd_edge E2(F), tmp(F);
+    F->createEdge(false, E2);
+
+    out << "Iterating...\n";
+    for (dd_edge::iterator i = E.begin();
+            i != E.end();
+            i++)
+    {
+        mtctwo.unused().setFrom(*i);
+        mtctwo.pushUnused();
+        if (mtctwo.isFull()) {
+            mtctwo.buildFunction(tmp);
+            E2 += tmp;
+            mtctwo.clear();
+        }
+    }
+    mtctwo.buildFunction(tmp);
+    E2 += tmp;
+
+    if (E != E2) {
+        throw "Function mismatch";
+    }
+    out << "    matches\n";
+#endif
+
     domain::destroy(D);
 }
 

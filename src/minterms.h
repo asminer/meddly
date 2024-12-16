@@ -88,7 +88,14 @@ class MEDDLY::minterm {
         /// Copy constructor
         minterm(const minterm &m);
 
+        /// Disallow assignment
+        void operator=(minterm) = delete;
+
         ~minterm();
+
+        /// Set from another minterm.
+        /// Like assignment, but we verify that the domains match.
+        void setFrom(const minterm &m);
 
         inline bool isForSets()             const   { return !for_relations; }
         inline bool isForRelations()        const   { return for_relations; }
@@ -316,6 +323,11 @@ class MEDDLY::minterm_coll {
 
         /// Collection max size
         inline unsigned maxsize() const { return max_coll_size; }
+
+        /// Is the collection full?
+        inline bool isFull() const {
+            return size() == maxsize();
+        }
 
         /// Clear the collection
         inline void clear() { first_unused = 0; }

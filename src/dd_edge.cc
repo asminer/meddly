@@ -92,7 +92,6 @@ MEDDLY::dd_edge::iterator::~iterator()
     delete[] Z_from;
     delete[] Z_to;
     delete M;
-    delete mask;
 }
 
 MEDDLY::dd_edge::iterator::iterator()
@@ -161,14 +160,17 @@ void MEDDLY::dd_edge::iterator::next()
     if (M->isForSets()) {
         for (int k=1; k<=M->getNumVars(); k++) {
             // See if we can advance the nonzero ptr at level k
-            unpacked_node* U_p = U_from[k];
-            if (!U_p) continue;
-            unsigned& z = Z_from[k];
-            for (z++; z<U_p->getSize(); z++) {
-                // Update the minterm
-                M->from(k) = U_p->index(z);
-                if (first(k-1, U_p->down(z))) {
-                    return;
+            const unpacked_node* U_p = U_from[k];
+            if (U_p)
+            {
+                // this is a free variable.
+                unsigned& z = Z_from[k];
+                for (z++; z<U_p->getSize(); z++) {
+                    // Update the minterm
+                    M->from(k) = U_p->index(z);
+                    if (first(k-1, U_p->down(z))) {
+                        return;
+                    }
                 }
             }
         } // for k
@@ -176,7 +178,45 @@ void MEDDLY::dd_edge::iterator::next()
         return;
     }
 
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    //
+    // For relations
+    //
+    for (int k=1; k<=M->getNumVars(); k++) {
+        //
+        // Advance primed variable x'_k
+        //
+        const unpacked_node* U_p = U_to[k];
+        if (U_p)
+        {
+            // this is a free variable.
+            unsigned& z = Z_to[k];
+            for (z++; z<U_p->getSize(); z++) {
+                // Update the minterm
+                M->to(k) = U_p->index(z);
+                if (first(-k-1, U_p->down(z))) {
+                    return;
+                }
+            }
+        }
+        //
+        // Advance unprimed variable x_k
+        //
+        const unpacked_node* U_u = U_from[k];
+        if (U_u)
+        {
+            // this is a free variable.
+            unsigned& z = Z_from[k];
+            for (z++; z<U_u->getSize(); z++) {
+                // Update the minterm
+                M->from(k) = U_u->index(z);
+                if (first(-k, U_u->down(z))) {
+                    return;
+                }
+            }
+        }
+    } // for k
+    atEnd = true;
+    return;
 }
 
 bool MEDDLY::dd_edge::iterator::first(int k, node_handle p)
