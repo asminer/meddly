@@ -25,6 +25,8 @@
 
 // #define SHOW_INDEXES
 
+#define OLD_ITERATORS
+
 const char* kanban[] = {
   "X-+..............",  // Tin1
   "X.-+.............",  // Tr1
@@ -112,25 +114,45 @@ bool checkReachset(int N)
 #endif
     fflush(stdout);
 
-
-  // Verify indexes
-  int c = 0;
-  minterm assign(mdd);
-  for (enumerator s(reachable); s; ++s) {
-    long index;
-    const int* state = s.getAssignments();
-    assign.setAll(state, true);   // UGH, copy, for now
-    reach_index.evaluate(assign, index);
-    if (c != index) {
-      printf("\nState number %d has index %ld\n", c, index);
-      return false;
+    //
+    // Iterate through reachable states, and make sure
+    // the reach_index matches.
+    //
+    long c = 0;
+    minterm assign(mdd);
+#ifdef OLD_ITERATORS
+    for (enumerator s(reachable); s; ++s)
+    {
+        long index;
+        const int* state = s.getAssignments();
+        assign.setAll(state, true);   // UGH, copy, for now
+        reach_index.evaluate(assign, index);
+        if (c != index) {
+            printf("\nState number %ld has index %ld\n", c, index);
+            return false;
+        }
+        c++;
     }
-    c++;
-  } // for s
-  printf("\tverified `forward'\n");
-  fflush(stdout);
+#else
+    for (dd_edge::iterator s = reachable.begin(); s; ++s)
+    {
+        long index;
+        reach_index.evaluate(*s, index);
+        if (c != index) {
+            printf("\nState number %ld has index %ld\n", c, index);
+            return false;
+        }
+        c++;
+    }
+#endif
+    printf("\tverified `forward'\n");
+    fflush(stdout);
 
-  // verify the other way
+    //
+    // Iterate through reach_index, and make sure all indexed
+    // states are in fact reachable.
+    //
+
   int d = 0;
   for (enumerator s(reach_index); s; ++s) {
     const int* state = s.getAssignments();
@@ -153,7 +175,7 @@ bool checkReachset(int N)
     const int* state = s.getAssignments();
     evmdd->getElement(reach_index, c, elem);
     if (!equal(state, elem, 16)) {
-      printf("\nFetch index %d got wrong state\n", c);
+      printf("\nFetch index %ld got wrong state\n", c);
       return false;
     }
     c++;
