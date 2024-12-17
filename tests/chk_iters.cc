@@ -205,9 +205,7 @@ void test_sets(char reduction, range_type rt, edge_labeling el)
     F->createEdge(false, E2);
 
     out << "Iterating...\n";
-    for (dd_edge::iterator i = E.begin();
-            i != E.end();
-            i++)
+    for (dd_edge::iterator i = E.begin(); i; ++i)
     {
         mtctwo.unused().setFrom(*i);
         mtctwo.pushUnused();
