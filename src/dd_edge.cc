@@ -190,7 +190,7 @@ void MEDDLY::dd_edge::iterator::next()
             for (z++; z<U_p->getSize(); z++) {
                 // Update the minterm
                 M->to(k) = U_p->index(z);
-                if (first(-k-1, U_p->down(z))) {
+                if (first(k-1, U_p->down(z))) {
                     return;
                 }
             }

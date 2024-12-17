@@ -21,12 +21,12 @@
 #include <iostream>
 
 #define TEST_SETS
-// #define TEST_RELS
+#define TEST_RELS
 // #define SHOW_MINTERMS
 
 const int DOMSIZE = 4;       // DO NOT change
 const int SETVARS = 10;
-const int RELVARS = 5;
+const int RELVARS = 6;
 
 /*
  *
@@ -105,8 +105,6 @@ void randomizeMinterm(MEDDLY::minterm &m)
 
 void test_sets(char reduction)
 {
-    using namespace MEDDLY;
-
     ostream_output out(std::cout);
 
     out << "Checking iterators over ";
@@ -144,12 +142,12 @@ void test_sets(char reduction)
     // and evaluation minterm
     //
 #ifdef SHOW_MINTERMS
-    minterm_coll mtcoll(4, D, SET);
+    minterm_coll mtcoll(4, F);
 #else
-    minterm_coll mtcoll(16, D, SET);
-    minterm_coll mtctwo(64, D, SET);
+    minterm_coll mtcoll(16, F);
+    minterm_coll mtctwo(64, F);
 #endif
-    minterm eval(D, SET);
+    minterm eval(F);
 
     //
     // Build the collection
@@ -220,8 +218,119 @@ void test_sets(char reduction)
 
 
 
-void test_rels()
+void test_rels(char reduction)
 {
+    ostream_output out(std::cout);
+
+    out << "Checking iterators over ";
+    out << ( ('f' == reduction) ? "fully" : "quasi" );
+    out << "-reduced relations:\n";
+    out.flush();
+
+
+    //
+    // Build domain - once
+    //
+    int bs[RELVARS];
+    for (unsigned i=0; i<RELVARS; i++) {
+        bs[i] = DOMSIZE;
+    }
+    domain* D = domain::createBottomUp(bs, RELVARS);
+
+    //
+    // Build the various types of boolean forests
+    //
+    policies p;
+    p.useDefaults(RELATION);
+
+    if ('f' == reduction) {
+        p.setFullyReduced();
+    } else if ('i' == reduction) {
+        p.setIdentityReduced();
+    } else {
+        p.setQuasiReduced();
+    }
+
+    forest* F = forest::create(D, RELATION, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, p);
+
+    //
+    // Set up minterm collection
+    // and evaluation minterm
+    //
+#ifdef SHOW_MINTERMS
+    minterm_coll mtcoll(4, F);
+#else
+    minterm_coll mtcoll(16, F);
+    minterm_coll mtctwo(64, F);
+#endif
+    minterm eval(F);
+
+    //
+    // Build the collection
+    //
+
+    while (mtcoll.size() < mtcoll.maxsize()) {
+        randomizeMinterm(mtcoll.unused());
+        mtcoll.pushUnused();
+    }
+
+    //
+    // Set up ddedges
+    //
+    dd_edge E(F);
+    mtcoll.buildFunction(E);
+
+#ifdef SHOW_MINTERMS
+    out << "\nMinterms:\n";
+    mtcoll.show(out);
+    out << "Iterating over ";
+    minterm mask(F);
+    mask.setAllVars(DONT_CARE, DONT_CARE);
+    // mask.setVars(1, 2, 1);
+    mask.show(out);
+    out << "\n";
+    unsigned long count = 0;
+    for (dd_edge::iterator i = E.begin(&mask);
+            i != E.end();
+            i++)
+    {
+        out.put(count, 5);
+        out << ": ";
+        (*i).show(out);
+        out << "\n";
+        out.flush();
+        ++count;
+    }
+
+    out << "Done, " << count << " minterms\n";
+#else
+    dd_edge E2(F), tmp(F);
+    F->createEdge(false, E2);
+
+    out << "Iterating...\n";
+    for (dd_edge::iterator i = E.begin();
+            i != E.end();
+            i++)
+    {
+        mtctwo.unused().setFrom(*i);
+        mtctwo.pushUnused();
+        if (mtctwo.isFull()) {
+            mtctwo.buildFunction(tmp);
+            E2 += tmp;
+            mtctwo.clear();
+        }
+    }
+    mtctwo.buildFunction(tmp);
+    E2 += tmp;
+
+    if (E != E2) {
+        throw "Function mismatch";
+    }
+    out << "    matches\n";
+#endif
+
+    domain::destroy(D);
 }
 
 /*
@@ -253,7 +362,9 @@ int main(int argc, const char** argv)
         test_sets('f');
 #endif
 #ifdef TEST_RELS
-        test_rels();
+        test_rels('q');
+        test_rels('f');
+        test_rels('i');
 #endif
         MEDDLY::cleanup();
         return 0;

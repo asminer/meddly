@@ -380,11 +380,13 @@ MEDDLY::minterm::minterm(const domain* D, set_or_rel sr) : termval(true)
 
 MEDDLY::minterm::minterm(const forest* F) : termval(true)
 {
-    if (!F) {
-        throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    if (F) {
+        _D = F->getDomain();
+        for_relations = F->isForRelations();
+    } else {
+        _D = nullptr;
+        for_relations = false;
     }
-    _D = F->getDomain();
-    for_relations = F->isForRelations();
     initVectors();
 }
 
@@ -490,11 +492,14 @@ void MEDDLY::minterm::buildFunction(dd_edge &e) const
 
 void MEDDLY::minterm::initVectors()
 {
-    if (_D) {
-        num_vars = _D->getNumVariables();
-    } else {
+    if (!_D) {
         num_vars = 0;
+        _from = nullptr;
+        _to = nullptr;
+        return;
     }
+
+    num_vars = _D->getNumVariables();
     _from = new int[1+num_vars];
     if (for_relations) {
         _to = new int[1+num_vars];

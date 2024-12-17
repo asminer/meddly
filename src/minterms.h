@@ -83,7 +83,7 @@ namespace MEDDLY {
 class MEDDLY::minterm {
     public:
         minterm(const domain* D, set_or_rel sr);
-        minterm(const forest* F);
+        minterm(const forest* F = nullptr);
 
         /// Copy constructor
         minterm(const minterm &m);
