@@ -42,6 +42,7 @@ TESTS = \
     chk_ct \
     chk_ct_old \
     chk_evtimes_float \
+    chk_iters \
     chk_minterms \
     chk_reorder \
     ddedge \

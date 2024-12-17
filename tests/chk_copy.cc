@@ -153,8 +153,10 @@ void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
     } // for i
 }
 
-void writeLongReduction(const forest* f)
+inline void writeLongReduction(const forest* f)
 {
+    printf("%s", nameOf(f->getReductionRule()));
+    /*
     switch(f->getReductionRule()) {
 
         case reduction_rule::FULLY_REDUCED:
@@ -173,6 +175,7 @@ void writeLongReduction(const forest* f)
             printf("unknown-reduced ");
             break;
     }
+    */
 }
 
 void writeType(const forest* f)

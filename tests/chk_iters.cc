@@ -59,7 +59,7 @@ int Equilikely(int a, int b)
 
 using namespace MEDDLY;
 
-void randomizeMinterm(MEDDLY::minterm &m)
+void randomizeMinterm(minterm &m, range_type rt)
 {
     const int vals[9] = { -1, 0, 0, 1, 1, 2, 2, 3, 3 };
     const int unvals[52] = {
@@ -82,6 +82,7 @@ void randomizeMinterm(MEDDLY::minterm &m)
         0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3   // 16 normal pairs
     };
 
+    static int count=0;
 
     if (m.isForRelations()) {
         for (unsigned i=1; i<=m.getNumVars(); i++) {
@@ -94,6 +95,20 @@ void randomizeMinterm(MEDDLY::minterm &m)
             m.setVar(i, vals[index]);
         }
     }
+
+    count = (1+count%4);
+    switch (rt) {
+        case range_type::INTEGER:
+                m.setTerm(count);
+                break;
+
+        case range_type::REAL:
+                m.setTerm(count * 1.1f);
+                break;
+
+        default:
+                m.setTerm(true);
+    }
 }
 
 
@@ -103,16 +118,8 @@ void randomizeMinterm(MEDDLY::minterm &m)
  *
  */
 
-void test_sets(char reduction)
+void test_sets(char reduction, range_type rt, edge_labeling el)
 {
-    ostream_output out(std::cout);
-
-    out << "Checking iterators over ";
-    out << ( ('f' == reduction) ? "fully" : "quasi" );
-    out << "-reduced sets:\n";
-    out.flush();
-
-
     //
     // Build domain - once
     //
@@ -123,7 +130,7 @@ void test_sets(char reduction)
     domain* D = domain::createBottomUp(bs, SETVARS);
 
     //
-    // Build the various types of boolean forests
+    // Build the forest
     //
     policies p;
     p.useDefaults(SET);
@@ -134,8 +141,14 @@ void test_sets(char reduction)
         p.setQuasiReduced();
     }
 
-    forest* F = forest::create(D, SET, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL, p);
+    forest* F = forest::create(D, SET, rt, el, p);
+
+    ostream_output out(std::cout);
+    out << "Checking iterators over ";
+    out << nameOf(F->getReductionRule()) << " "
+        << nameOf(el) << "MDDs of " << nameOf(rt) << "s\n";
+    out.flush();
+
 
     //
     // Set up minterm collection
@@ -154,7 +167,7 @@ void test_sets(char reduction)
     //
 
     while (mtcoll.size() < mtcoll.maxsize()) {
-        randomizeMinterm(mtcoll.unused());
+        randomizeMinterm(mtcoll.unused(), rt);
         mtcoll.pushUnused();
     }
 
@@ -218,16 +231,8 @@ void test_sets(char reduction)
 
 
 
-void test_rels(char reduction)
+void test_rels(char reduction, range_type rt, edge_labeling el)
 {
-    ostream_output out(std::cout);
-
-    out << "Checking iterators over ";
-    out << ( ('f' == reduction) ? "fully" : "quasi" );
-    out << "-reduced relations:\n";
-    out.flush();
-
-
     //
     // Build domain - once
     //
@@ -238,7 +243,7 @@ void test_rels(char reduction)
     domain* D = domain::createBottomUp(bs, RELVARS);
 
     //
-    // Build the various types of boolean forests
+    // Build the forest
     //
     policies p;
     p.useDefaults(RELATION);
@@ -251,8 +256,14 @@ void test_rels(char reduction)
         p.setQuasiReduced();
     }
 
-    forest* F = forest::create(D, RELATION, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL, p);
+    forest* F = forest::create(D, RELATION, rt, el, p);
+
+    ostream_output out(std::cout);
+    out << "Checking iterators over ";
+    out << nameOf(F->getReductionRule()) << " "
+        << nameOf(el) << "MxDs of " << nameOf(rt) << "s\n";
+    out.flush();
+
 
     //
     // Set up minterm collection
@@ -271,7 +282,7 @@ void test_rels(char reduction)
     //
 
     while (mtcoll.size() < mtcoll.maxsize()) {
-        randomizeMinterm(mtcoll.unused());
+        randomizeMinterm(mtcoll.unused(), rt);
         mtcoll.pushUnused();
     }
 
@@ -358,13 +369,13 @@ int main(int argc, const char** argv)
     try {
         MEDDLY::initialize();
 #ifdef TEST_SETS
-        test_sets('q');
-        test_sets('f');
+        test_sets('q', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        test_sets('f', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 #endif
 #ifdef TEST_RELS
-        test_rels('q');
-        test_rels('f');
-        test_rels('i');
+        test_rels('q', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        test_rels('f', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        test_rels('i', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
 #endif
         MEDDLY::cleanup();
         return 0;

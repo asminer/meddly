@@ -22,33 +22,40 @@
 #include "defines.h"
 
 namespace MEDDLY {
-    enum class range_type;
-    enum class range_special;
     class rangeval;
-};
 
 
-/// Types of return values allowed for functions.
-enum class MEDDLY::range_type {
-    /// boolean-valued functions.
-    BOOLEAN,
-    /// integer-valued functions.
-    INTEGER,
-    /// real-valued functions.
-    REAL
-};
+    /// Types of return values allowed for functions.
+    enum class range_type {
+        /// boolean-valued functions.
+        BOOLEAN,
+        /// integer-valued functions.
+        INTEGER,
+        /// real-valued functions.
+        REAL
+    };
 
+    inline const char* nameOf(range_type rt)
+    {
+        switch (rt) {
+            case range_type::BOOLEAN:   return "boolean";
+            case range_type::INTEGER:   return "integer";
+            case range_type::REAL:      return "real";
+        }
+    }
 
-/// Special values allowed for functions.
-enum class MEDDLY::range_special {
-    /// Normal value, not special
-    NORMAL,
+    /// Special values allowed for functions.
+    enum class range_special {
+        /// Normal value, not special
+        NORMAL,
 
-    /// Positive infinity.
-    PLUS_INFINITY
+        /// Positive infinity.
+        PLUS_INFINITY
 
-    // TBD: others? undefined?
-};
+            // TBD: others? undefined?
+    };
+
+};  // namespace
 
 /**
     Object to hold a generic return value.
