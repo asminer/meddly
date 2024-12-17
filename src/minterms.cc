@@ -577,6 +577,10 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
      */
     switch (F->getRangeType()) {
         case range_type::BOOLEAN:
+                if (0==first_unused) {
+                    F->createEdge(false, e);
+                    return;
+                }
                 if (minimize) {
                     // strange things will happen with intersection but
                     // I guess the user is always right?
@@ -589,6 +593,11 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
                 break;
 
         case range_type::INTEGER:
+                if (0==first_unused) {
+                    // TBD: what about EVPLUS
+                    F->createEdge(0L, e);
+                    return;
+                }
                 if (minimize) {
                     fbuilder<fbop_min_int> fb(F, *this, MINIMUM);
                     fb.createEdge(num_vars, 0, first_unused, ev, en);
@@ -599,6 +608,10 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
                 break;
 
         case range_type::REAL:
+                if (0==first_unused) {
+                    F->createEdge(0.0F, e);
+                    return;
+                }
                 if (minimize) {
                     fbuilder<fbop_min_real> fb(F, *this, MINIMUM);
                     fb.createEdge(num_vars, 0, first_unused, ev, en);
