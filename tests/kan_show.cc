@@ -27,6 +27,8 @@
 #include "kan_rs2.h"
 #include "kan_rs3.h"
 
+// #define OLD_ITERATOR
+
 const char* kanban[] = {
   "X-+..............",  // Tin1
   "X.-+.............",  // Tr1
@@ -95,85 +97,122 @@ dd_edge buildReachset(domain* d, int N)
     return reachable;
 }
 
+#ifdef OLD_ITERATOR
+
 bool matches(const char* mark, const int* minterm, int np)
 {
-  for (int i=0; i<np; i++)
-    if (mark[i]-48 != minterm[i]) return false;
-  return true;
+    for (int i=0; i<np; i++)
+        if (mark[i]-48 != minterm[i]) return false;
+    return true;
 }
 
-long checkRS(int N, const char* rs[])
+#else
+
+bool matches(const char* mark, const minterm &m)
 {
-  int sizes[16];
-
-  for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = domain::createBottomUp(sizes, 16);
-
-  dd_edge reachable = buildReachset(d, N);
-
-  // enumerate states
-  long c = 0;
-  for (enumerator i(reachable); i; ++i) {
-    if (c>=expected[N]) {
-      c++;
-      break;
+    for (unsigned i=m.getNumVars(); i; --i) {
+        if (mark[i-1]-48 != m.from(i)) return false;
     }
-    if (!matches(rs[c], i.getAssignments()+1, 16)) {
-      fprintf(stderr, "Marking %ld mismatched\n", c);
-      break;
-    }
-    c++;
-  }
-
-  domain::destroy(d);
-  return c;
+    return true;
 }
 
+#endif
+
+void checkRS(int N, const char* rs[])
+{
+    int sizes[16];
+
+    for (int i=15; i>=0; i--) sizes[i] = N+1;
+    domain* d = domain::createBottomUp(sizes, 16);
+
+    dd_edge reachable = buildReachset(d, N);
+
+    // enumerate states
+    long c = 0;
+
+#ifdef OLD_ITERATOR
+    for (enumerator i(reachable); i; ++i)
+#else
+    for (dd_edge::iterator i = reachable.begin(); i; ++i)
+#endif
+    {
+        if (c>=expected[N]) {
+            throw "too many markings";
+        }
+#ifdef OLD_ITERATOR
+        if (!matches(rs[c], i.getAssignments()+1, 16))
+#else
+        if (!matches(rs[c], *i))
+#endif
+        {
+            fprintf(stderr, "Marking %ld mismatched\n", c);
+            break;
+        }
+        c++;
+    }
+    if (c<expected[N]) {
+        throw "not enough markings";
+    }
+
+    domain::destroy(d);
+}
+
+
+/*
 void showRS(int N)
 {
-  int sizes[16];
+    int sizes[16];
 
-  for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* d = domain::createBottomUp(sizes, 16);
+    for (int i=15; i>=0; i--) sizes[i] = N+1;
+    domain* d = domain::createBottomUp(sizes, 16);
 
-  dd_edge reachable = buildReachset(d, N);
+    dd_edge reachable = buildReachset(d, N);
 
-  // enumerate states
-  long c = 0;
-  for (enumerator i(reachable); i; ++i) {
-    const int* minterm = i.getAssignments();
-    printf("%5ld: %d", c, minterm[1]);
-    for (int l=2; l<=16; l++) printf(", %d", minterm[l]);
-    printf("\n");
-    c++;
-  }
+    // enumerate states
+    long c = 0;
+    for (enumerator i(reachable); i; ++i) {
+        const int* minterm = i.getAssignments();
+        printf("%5ld: %d", c, minterm[1]);
+        for (int l=2; l<=16; l++) printf(", %d", minterm[l]);
+        printf("\n");
+        c++;
+    }
 
-  domain::destroy(d);
+    domain::destroy(d);
 }
+*/
 
 int main()
 {
-    MEDDLY::initialize();
+    try {
+        MEDDLY::initialize();
 
-    long c;
+        printf("Checking Kanban reachability set, N=1\n");
+        checkRS(1, kanban_rs1);
+        printf("\t%ld markings checked out\n", expected[1]);
 
-    printf("Checking Kanban reachability set, N=1\n");
-    c = checkRS(1, kanban_rs1);
-    if (c != expected[1]) return 1;
-    printf("\t%ld markings checked out\n", c);
+        printf("Checking Kanban reachability set, N=2\n");
+        checkRS(2, kanban_rs2);
+        printf("\t%ld markings checked out\n", expected[2]);
 
-    printf("Checking Kanban reachability set, N=2\n");
-    c = checkRS(2, kanban_rs2);
-    if (c != expected[2]) return 1;
-    printf("\t%ld markings checked out\n", c);
+        printf("Checking Kanban reachability set, N=3\n");
+        checkRS(3, kanban_rs3);
+        printf("\t%ld markings checked out\n", expected[3]);
 
-    printf("Checking Kanban reachability set, N=3\n");
-    c = checkRS(3, kanban_rs3);
-    if (c != expected[3]) return 1;
-    printf("\t%ld markings checked out\n", c);
-
-    MEDDLY::cleanup();
-    printf("Done\n");
-    return 0;
+        MEDDLY::cleanup();
+        printf("Done\n");
+        return 0;
+    }
+    catch (MEDDLY::error e) {
+        fprintf(stderr, "\nCaught meddly error %s\n", e.getName());
+        fprintf(stderr, "    thrown in %s line %u\n",
+                e.getFile(), e.getLine());
+        return 1;
+    }
+    catch (const char* e) {
+        fprintf(stderr, "\nCaught our own error: %s\n", e);
+        return 2;
+    }
+    return 4;
 }
 
