@@ -98,7 +98,6 @@ MEDDLY::dd_edge::iterator::iterator()
 {
     // Build an empty, 'end' iterator
     atEnd = true;
-    // numVars = 0;
     F = nullptr;
 
     U_from = nullptr;
@@ -117,8 +116,6 @@ MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, const minterm* _mask)
     F = E.getForest();
     M = new minterm(F);
     mask = _mask;
-    // numVars = M->getNumVars();
-    // forSets = M->isForSets();
 
     U_from = new unpacked_node* [1+M->getNumVars()];
     U_from[0] = nullptr;

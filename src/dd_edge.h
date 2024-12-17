@@ -139,9 +139,7 @@ class MEDDLY::dd_edge {
                 minterm* M;
                 const minterm* mask;
 
-                // unsigned numVars;
                 bool atEnd;
-                // bool forSets;
         };
 
     public:
