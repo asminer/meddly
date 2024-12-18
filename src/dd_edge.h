@@ -28,6 +28,8 @@
 
 namespace MEDDLY {
     class dd_edge;
+    class iterator_helper;
+
     class forest;
 
     class input;
@@ -100,23 +102,27 @@ class MEDDLY::dd_edge {
                 iterator(const iterator &i) = delete;
                 void operator=(const iterator &i) = delete;
 
+                //
+                // Increment
+                //
                 void next();
 
                 //
                 // Find first matching, starting at level k from node p.
                 // return true if we found one, false otherwise.
                 //
-                bool first_unprimed(unsigned k, node_handle p);
+                // bool first_unprimed(unsigned k, node_handle p);
 
                 //
                 // Find first matching, starting at level k' from node p.
                 // return true if we found one, false otherwise.
                 //
-                bool first_primed(unsigned k, node_handle p);
+                // bool first_primed(unsigned k, node_handle p);
 
                 bool equals(const iterator &I) const;
 
                 friend class MEDDLY::dd_edge;
+                friend class MEDDLY::iterator_helper;
 
             private:
                 /*

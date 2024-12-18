@@ -155,6 +155,14 @@ namespace MEDDLY {
                     const edge_value &b)
             {
             }
+            static inline terminal buildTerm(
+                            const edge_value &val, node_handle p)
+            {
+                MEDDLY_DCASSERT(false);
+                // Keep compiler happy:
+                return terminal(p, terminal_type::OMEGA);
+            }
+
     };
 };
 
@@ -199,6 +207,17 @@ namespace MEDDLY {
                 b.get(bv);
                 a.add(bv);
             }
+            /// Build terminal value for edge <val, p>
+            static inline terminal buildTerm(
+                            const edge_value &val, node_handle p)
+            {
+                if (OMEGA_NORMAL == p) {
+                    TYPE v;
+                    val.get(v);
+                    return terminal(v);
+                }
+                return terminal(p, terminal_type::OMEGA);
+            }
     };
 };
 
@@ -241,6 +260,17 @@ namespace MEDDLY {
                 TYPE bv;
                 b.get(bv);
                 a.multiply(bv);
+            }
+            /// Build terminal value for edge <val, p>
+            static inline terminal buildTerm(
+                            const edge_value &val, node_handle p)
+            {
+                if (OMEGA_NORMAL == p) {
+                    TYPE v;
+                    val.get(v);
+                    return terminal(v);
+                }
+                return terminal(p, terminal_type::OMEGA);
             }
     };
 };
