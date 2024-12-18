@@ -36,6 +36,7 @@
 
 // #define DEBUG_CLEANUP
 // #define DEBUG_FIRST
+// #define DEBUG_BINSRCH
 
 namespace MEDDLY {
     class iterator_helper;
@@ -1572,7 +1573,15 @@ bool MEDDLY::dd_edge::getElemInt(long index, minterm &m) const
     if (!fp->isIndexSet()) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     }
+    // I don't think we have index set relations?
+    if (fp->isForRelations()) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
     MEDDLY_DCASSERT(fp->getEdgeType() == edge_type::INT);
+
+    if (index < 0) return false;
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
     return false;
 }
@@ -1589,9 +1598,56 @@ bool MEDDLY::dd_edge::getElemLong(long index, minterm &m) const
     if (!fp->isIndexSet()) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     }
+    if ( fp->getDomain() != m.getDomain() ) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+    if (fp->isForRelations()) {
+        // I don't think we have index set relations?
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    if (m.isForRelations() ) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
     MEDDLY_DCASSERT(fp->getEdgeType() == edge_type::LONG);
 
-    return false;
+    if (index < 0) return false;
+
+    node_handle p = node;
+    unpacked_node* U = unpacked_node::New(fp);
+    for (unsigned k = fp->getNumVariables(); k; --k) {
+        //
+        // I don't think index sets can skip levels at all
+        //
+        MEDDLY_DCASSERT(k == fp->getNodeLevel(p));
+        fp->unpackNode(U, p, SPARSE_ONLY);
+
+        //
+        // Backward Linear search: largest i such that
+        // edge value i <= index
+        //
+        unsigned zmax = U->getSize()-1;
+        while (zmax) {
+            if (U->edgeval(zmax).getLong() <= index) break;
+            --zmax;
+        }
+
+#ifdef DEBUG_BINSRCH
+        printf("Lvl %u index %ld vals [%ld", k, index, U->edgeval(0).getLong());
+        for (unsigned z=1; z<U->getSize(); z++) {
+            printf(", %ld", U->edgeval(z).getLong());
+        }
+        printf("] --> %ld\n", U->edgeval(zmax).getLong());
+#endif
+        //
+        // go down
+        //
+        m.from(k) = U->index(zmax);
+        index -= U->edgeval(zmax).getLong();
+        p = U->down(zmax);
+    } // for k
+    unpacked_node::Recycle(U);
+    if (index > 0) return false;
+    return true;
 }
 
 //

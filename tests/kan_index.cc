@@ -25,7 +25,7 @@
 
 // #define SHOW_INDEXES
 
-#define OLD_ITERATORS
+// #define OLD_ITERATORS
 
 const char* kanban[] = {
   "X-+..............",  // Tin1
@@ -50,9 +50,19 @@ using namespace MEDDLY;
 
 bool equal(const int* a, const int* b, int N)
 {
-  for (int i=1; i<=N; i++)
-    if (a[i] != b[i]) return false;
-  return true;
+    for (int i=1; i<=N; i++)
+        if (a[i] != b[i]) return false;
+    return true;
+}
+
+bool equal(const minterm &a, const minterm &b)
+{
+    if (a.getNumVars() != b.getNumVars()) return false;
+    for (unsigned k = a.getNumVars(); k; --k)
+    {
+        if (a.from(k) != b.from(k)) return false;
+    }
+    return true;
 }
 
 bool checkReachset(int N)
@@ -153,41 +163,71 @@ bool checkReachset(int N)
     // states are in fact reachable.
     //
 
-  int d = 0;
-  for (enumerator s(reach_index); s; ++s) {
-    const int* state = s.getAssignments();
-    bool ok;
-    assign.setAll(state, true);
-    reachable.evaluate(assign, ok);
-    if (!ok) {
-      printf("\nIndex number %d does not appear in reachability set\n", d);
-      return false;
+    c = 0;
+#ifdef OLD_ITERATORS
+    for (enumerator s(reach_index); s; ++s) {
+        const int* state = s.getAssignments();
+        bool ok;
+        assign.setAll(state, true);
+        reachable.evaluate(assign, ok);
+        if (!ok) {
+            printf("\nIndex number %ld does not appear in reachability set\n", c);
+            return false;
+        }
+        c++;
     }
-    d++;
-  }
-  printf("\tverified `backward'\n");
-  fflush(stdout);
-
-  // Verify index search
-  c = 0;
-  int elem[17];
-  for (enumerator s(reachable); s; ++s) {
-    const int* state = s.getAssignments();
-    evmdd->getElement(reach_index, c, elem);
-    if (!equal(state, elem, 16)) {
-      printf("\nFetch index %ld got wrong state\n", c);
-      return false;
+#else
+    for (dd_edge::iterator s = reach_index.begin(); s; ++s)
+    {
+        long index = (*s).getTerm().getInteger();
+        if (index != c) {
+            printf("\nState number %ld has index %ld\n", c, index);
+            return false;
+        }
+        bool ok;
+        reachable.evaluate(*s, ok);
+        if (!ok) {
+            printf("\nIndex number %ld does not appear in reachability set\n", c);
+            return false;
+        }
+        c++;
     }
-    c++;
-  } // for s
-  printf("\tverified `getElement'\n");
-  fflush(stdout);
+#endif
+    printf("\tverified `backward'\n");
+    fflush(stdout);
+
+    // Verify index search
+    c = 0;
+#ifdef OLD_ITERATORS
+    int elem[17];
+    for (enumerator s(reachable); s; ++s) {
+        const int* state = s.getAssignments();
+        evmdd->getElement(reach_index, c, elem);
+        if (!equal(state, elem, 16)) {
+            printf("\nFetch index %ld got wrong state\n", c);
+            return false;
+        }
+        c++;
+    } // for s
+#else
+    for (dd_edge::iterator s = reachable.begin(); s; ++s)
+    {
+        bool ok = reach_index.getElement(c, assign);
+        if (!ok) {
+            printf("\nCan't find state with index %ld\n", c);
+            return false;
+        }
+        if (!equal(*s, assign)) {
+            printf("\nFetch index %ld got wrong state\n", c);
+            return false;
+        }
+        c++;
+    }
+#endif
+    printf("\tverified `getElement'\n");
+    fflush(stdout);
 
 
-  if (c!=d) {
-    printf("\nCardinality mismatch\n");
-    return false;
-  }
 
   domain::destroy(dom);
 
