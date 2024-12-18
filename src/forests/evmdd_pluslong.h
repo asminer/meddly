@@ -52,9 +52,12 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
     virtual void evaluate(const dd_edge &f, const int* vlist, long &term) const;
 #endif
     virtual void createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a);
+
+#ifdef ALLOW_DEPRECATED_0_17_7
     virtual enumerator::iterator* makeFullIter() const {
       return new evpimdd_iterator(this);
     }
+#endif
 
     virtual void swapAdjacentVariables(int level);
 
@@ -65,6 +68,7 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
     virtual const char* codeChars() const;
 #endif
 
+#ifdef ALLOW_DEPRECATED_0_17_7
   protected:
     class evpimdd_iterator : public enumerator::iterator {
       public:
@@ -80,6 +84,7 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
       protected:
         long* acc_evs;  // for accumulating edge values
     };
+#endif
 };
 
 
@@ -88,8 +93,10 @@ class MEDDLY::evmdd_index_set_long : public evmdd_pluslong {
     evmdd_index_set_long(domain *d, const policies &p, int* level_reduction_rule);
     ~evmdd_index_set_long();
 
+#ifdef ALLOW_DEPRECATED_0_17_7
     virtual void getElement(const dd_edge& a, int index, int* e);
     virtual void getElement(const dd_edge& a, long index, int* e);
+#endif
   protected:
     virtual void showHeaderInfo(output &s, const unpacked_node &uh) const;
     virtual void writeHeaderInfo(output &s, const unpacked_node &uh) const;

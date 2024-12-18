@@ -129,6 +129,8 @@ const char* MEDDLY::evmxd_timesreal::codeChars() const
 // *                                                                *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 MEDDLY::evmxd_timesreal::evtrmxd_baseiter::evtrmxd_baseiter(const forest *F)
 : iterator(F)
 {
@@ -499,3 +501,5 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::first(int k, node_handle do
   }
   return false;
 }
+
+#endif

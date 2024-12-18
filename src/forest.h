@@ -2338,38 +2338,6 @@ class MEDDLY::forest {
 
 
 
-    /** Returns element \a e at index \a i from an Index Set EV+MDD.
-
-        size(e) = number of variables in the forest + 1 (for terminals).
-        TODO: complete this description
-
-        on return: e[0] will be 1 if the element could be found, 0 otherwise.
-
-        @throws       INVALID_OPERATION, if this is not an Index Set EV+MDD.
-    */
-    virtual void getElement(const dd_edge& a, int index, int* e);
-    virtual void getElement(const dd_edge& a, long index, int* e);
-
-
-    /**
-        Build an iterator.
-        Used by class enumerator.
-    */
-    virtual enumerator::iterator* makeFullIter() const = 0;
-
-    /**
-        Build an iterator with a fixed row.
-        Default behavior - throw an "INVALID_FOREST" error.
-    */
-    virtual enumerator::iterator* makeFixedRowIter() const;
-
-    /**
-        Build an iterator with a fixed column.
-        Default behavior - throw an "INVALID_FOREST" error.
-    */
-    virtual enumerator::iterator* makeFixedColumnIter() const;
-
-
 
 
     //
@@ -2654,6 +2622,39 @@ class MEDDLY::forest {
     */
     virtual void evaluate(const dd_edge& f, const int* vlist,
       const int* vplist, float &term) const;
+
+
+    /** Returns element \a e at index \a i from an Index Set EV+MDD.
+
+        size(e) = number of variables in the forest + 1 (for terminals).
+        TODO: complete this description
+
+        on return: e[0] will be 1 if the element could be found, 0 otherwise.
+
+        @throws       INVALID_OPERATION, if this is not an Index Set EV+MDD.
+    */
+    virtual void getElement(const dd_edge& a, int index, int* e);
+    virtual void getElement(const dd_edge& a, long index, int* e);
+
+
+    /**
+        Build an iterator.
+        Used by class enumerator.
+    */
+    virtual enumerator::iterator* makeFullIter() const = 0;
+
+    /**
+        Build an iterator with a fixed row.
+        Default behavior - throw an "INVALID_FOREST" error.
+    */
+    virtual enumerator::iterator* makeFixedRowIter() const;
+
+    /**
+        Build an iterator with a fixed column.
+        Default behavior - throw an "INVALID_FOREST" error.
+    */
+    virtual enumerator::iterator* makeFixedColumnIter() const;
+
 #endif
 
 // ===================================================================

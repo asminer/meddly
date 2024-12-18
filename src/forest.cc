@@ -1671,30 +1671,6 @@ void MEDDLY::forest::createEdge(float val, dd_edge &e)
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::forest::getElement(const dd_edge& a, int index, int* e)
-{
-    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
-{
-    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-}
-
-//
-
-MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedRowIter() const
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedColumnIter() const
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-
-//
 
 // ===================================================================
 //
@@ -1771,6 +1747,31 @@ void MEDDLY::forest
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
+
+void MEDDLY::forest::getElement(const dd_edge& a, int index, int* e)
+{
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
+{
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+}
+
+//
+
+MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedRowIter() const
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedColumnIter() const
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+
+//
 
 #endif
 

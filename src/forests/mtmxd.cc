@@ -35,10 +35,14 @@ MEDDLY::mtmxd_forest
 // *                                                                *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 MEDDLY::mtmxd_forest::mtmxd_iterator::mtmxd_iterator(const forest *F)
  : mt_iterator(F)
 {
 }
+
+#endif
 
 void MEDDLY::mtmxd_forest::swapAdjacentVariables(int level)
 {
@@ -590,6 +594,8 @@ void MEDDLY::mtmxd_forest::moveUpVariable(int low, int high)
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 MEDDLY::mtmxd_forest::mtmxd_iterator::~mtmxd_iterator()
 {
 }
@@ -913,3 +919,4 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
   return false;
 }
 
+#endif

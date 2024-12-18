@@ -292,6 +292,8 @@ const char* MEDDLY::evmdd_pluslong::codeChars() const
 // *                                                                *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 MEDDLY::evmdd_pluslong::evpimdd_iterator::evpimdd_iterator(const forest *F)
 : iterator(F)
 {
@@ -480,4 +482,6 @@ void MEDDLY::evmdd_index_set_long::readHeaderInfo(input &s,
     std::cerr << "    got cardinality " << card << "\n";
 #endif
 }
+
+#endif
 

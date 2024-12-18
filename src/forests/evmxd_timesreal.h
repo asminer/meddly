@@ -50,7 +50,6 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
       const float* terms, int N, dd_edge &e);
     virtual void evaluate(const dd_edge &f, const int* vlist,
       const int* vplist, float &term) const;
-#endif
 
     virtual enumerator::iterator* makeFullIter() const {
       return new evtrmxd_iterator(this);
@@ -65,6 +64,7 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
     {
       return new evtrmxd_fixedcol_iter(this);
     }
+#endif
 
     virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
 
@@ -73,6 +73,7 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
     virtual const char* codeChars() const;
 #endif
 
+#ifdef ALLOW_DEPRECATED_0_17_7
   protected:
     class evtrmxd_baseiter : public enumerator::iterator {
       public:
@@ -117,7 +118,7 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
       private:
         bool first(int k, node_handle p);
     };
-
+#endif
 };
 
 #endif

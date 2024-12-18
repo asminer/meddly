@@ -121,6 +121,8 @@ const char* MEDDLY::evmdd_timesreal::codeChars() const
 // *                                                                *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 MEDDLY::evmdd_timesreal::evtrmdd_iterator::evtrmdd_iterator(const forest *F)
 : iterator(F)
 {
@@ -214,3 +216,4 @@ bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::first(int k, node_handle down)
   return true;
 }
 
+#endif

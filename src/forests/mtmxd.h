@@ -36,6 +36,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
     virtual void dynamicReorderVariables(int top, int bottom);
     void sifting(int var, int top, int bottom);
 
+#ifdef ALLOW_DEPRECATED_0_17_7
     virtual enumerator::iterator* makeFullIter() const
     {
       return new mtmxd_iterator(this);
@@ -51,7 +52,6 @@ class MEDDLY::mtmxd_forest : public mt_forest {
       return new mtmxd_fixedcol_iter(this);
     }
 
-#ifdef ALLOW_DEPRECATED_0_17_7
   protected:
       inline node_handle evaluateRaw(const dd_edge &f, const int* vlist,
         const int* vplist) const
@@ -64,7 +64,6 @@ class MEDDLY::mtmxd_forest : public mt_forest {
         }
         return p;
       }
-#endif
 
   protected:
     class mtmxd_iterator : public mt_iterator {
@@ -96,6 +95,7 @@ class MEDDLY::mtmxd_forest : public mt_forest {
       private:
         bool first(int k, node_handle p);
     };
+#endif
 
     void swapAdjacentVariablesByVarSwap(int level);
     /** Return the root node after swapping the adjacent variables

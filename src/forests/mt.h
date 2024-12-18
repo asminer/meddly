@@ -151,6 +151,7 @@ class MEDDLY::mt_forest :
         e.set(makeNodeAtTop(t.getHandle()));
     }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
   protected:
     // iterator base class for MT
     class mt_iterator : public enumerator::iterator {
@@ -161,7 +162,7 @@ class MEDDLY::mt_forest :
         virtual void getValue(int &termVal) const;
         virtual void getValue(float &termVal) const;
     };
-
+#endif
 
   // statics
 

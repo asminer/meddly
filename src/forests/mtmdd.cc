@@ -321,6 +321,8 @@ void MEDDLY::mtmdd_forest::sifting(int var, int top, int bottom)
 // *                                                                *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 MEDDLY::mtmdd_forest::mtmdd_iterator::mtmdd_iterator(const forest *_F)
  : mt_iterator(_F)
 {
@@ -389,3 +391,5 @@ bool MEDDLY::mtmdd_forest::mtmdd_iterator::first(int k, node_handle down)
   index[0] = down;
   return true;
 }
+
+#endif

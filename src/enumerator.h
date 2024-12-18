@@ -19,6 +19,8 @@
 #ifndef MEDDLY_ENUMERATOR_H
 #define MEDDLY_ENUMERATOR_H
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 namespace MEDDLY {
     class dd_edge;
     class enumerator;
@@ -214,5 +216,6 @@ class MEDDLY::enumerator {
     type T;
 };
 
+#endif
 
 #endif
