@@ -50,25 +50,30 @@ MEDDLY::dd_edge::iterator::iterator(iterator &&I)
     printf("In iterator's move constructor :)\n");
     // Take everything from I
     U_from = I.U_from;
-    U_to = I.U_to;
+    U_to   = I.U_to;
+
     Z_from = I.Z_from;
-    Z_to = I.Z_to;
-    root_ev = I.root_ev;
+    Z_to   = I.Z_to;
+
+    ev_from = I.ev_from;
+    ev_to   = I.ev_to;
+
+    root_ev   = I.root_ev;
     root_node = I.root_node;
+
     F = I.F;
     M = I.M;
     mask = I.mask;
-    // numVars = I.numVars;
     atEnd = I.atEnd;
-    // forSets = I.forSets;
 
     // And clear out I, for anything that would be deleted
     I.U_from = nullptr;
     I.U_to = nullptr;
     I.Z_from = nullptr;
     I.Z_to = nullptr;
+    I.ev_from = nullptr;
+    I.ev_to = nullptr;
     I.M = nullptr;
-    I.mask = nullptr;
 }
 
 MEDDLY::dd_edge::iterator::~iterator()
@@ -91,6 +96,8 @@ MEDDLY::dd_edge::iterator::~iterator()
     }
     delete[] Z_from;
     delete[] Z_to;
+    delete[] ev_from;
+    delete[] ev_to;
     delete M;
 }
 
@@ -104,6 +111,8 @@ MEDDLY::dd_edge::iterator::iterator()
     U_to = nullptr;
     Z_from = nullptr;
     Z_to = nullptr;
+    ev_from = nullptr;
+    ev_to = nullptr;
     M = nullptr;
     mask = nullptr;
 }
@@ -116,6 +125,10 @@ MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, const minterm* _mask)
     F = E.getForest();
     M = new minterm(F);
     mask = _mask;
+
+    //
+    // Allocate unpacked nodes, but only for free variables.
+    //
 
     U_from = new unpacked_node* [1+M->getNumVars()];
     U_from[0] = nullptr;
@@ -142,6 +155,10 @@ MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, const minterm* _mask)
         }
     }
 
+    //
+    // Allocate array of pointers into the unpacked nodes
+    //
+
     Z_from = new unsigned [1+M->getNumVars()];
     if (M->isForSets()) {
         Z_to = nullptr;
@@ -149,13 +166,29 @@ MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, const minterm* _mask)
         Z_to = new unsigned [1+M->getNumVars()];
     }
 
-    atEnd = ! first(int(M->getNumVars()), root_node);
+    //
+    // Allocate array of edge values, if we're an EV forest
+    //
+    if (F->isMultiTerminal()) {
+        ev_from = nullptr;
+        ev_to = nullptr;
+    } else {
+        ev_from = new edge_value [1+M->getNumVars()];
+        if (M->isForSets()) {
+            ev_to = nullptr;
+        } else {
+            ev_to = new edge_value [1+M->getNumVars()];
+        }
+    }
+
+    atEnd = ! first_unprimed(M->getNumVars(), root_node);
+    // atEnd = ! first(int(M->getNumVars()), root_node);
 }
 
 void MEDDLY::dd_edge::iterator::next()
 {
     if (M->isForSets()) {
-        for (int k=1; k<=M->getNumVars(); k++) {
+        for (unsigned k=1; k<=M->getNumVars(); k++) {
             // See if we can advance the nonzero ptr at level k
             const unpacked_node* U_p = U_from[k];
             if (U_p)
@@ -165,7 +198,7 @@ void MEDDLY::dd_edge::iterator::next()
                 for (z++; z<U_p->getSize(); z++) {
                     // Update the minterm
                     M->from(k) = U_p->index(z);
-                    if (first(k-1, U_p->down(z))) {
+                    if (first_unprimed(k-1, U_p->down(z))) {
                         return;
                     }
                 }
@@ -178,7 +211,7 @@ void MEDDLY::dd_edge::iterator::next()
     //
     // For relations
     //
-    for (int k=1; k<=M->getNumVars(); k++) {
+    for (unsigned k=1; k<=M->getNumVars(); k++) {
         //
         // Advance primed variable x'_k
         //
@@ -190,7 +223,7 @@ void MEDDLY::dd_edge::iterator::next()
             for (z++; z<U_p->getSize(); z++) {
                 // Update the minterm
                 M->to(k) = U_p->index(z);
-                if (first(k-1, U_p->down(z))) {
+                if (first_unprimed(k-1, U_p->down(z))) {
                     return;
                 }
             }
@@ -206,7 +239,7 @@ void MEDDLY::dd_edge::iterator::next()
             for (z++; z<U_u->getSize(); z++) {
                 // Update the minterm
                 M->from(k) = U_u->index(z);
-                if (first(-k, U_u->down(z))) {
+                if (first_primed(k, U_u->down(z))) {
                     return;
                 }
             }
@@ -216,13 +249,13 @@ void MEDDLY::dd_edge::iterator::next()
     return;
 }
 
-bool MEDDLY::dd_edge::iterator::first(int k, node_handle p)
+bool MEDDLY::dd_edge::iterator::first_unprimed(unsigned k, node_handle p)
 {
     MEDDLY_DCASSERT(M);
     MEDDLY_DCASSERT(F);
 
 #ifdef DEBUG_FIRST
-    printf("entering first(%d, %ld)\n", k, long(p));
+    printf("entering first_unprimed(%u, %ld)\n", k, long(p));
 #endif
 
     if (0==p) return false;
@@ -242,82 +275,151 @@ bool MEDDLY::dd_edge::iterator::first(int k, node_handle p)
         return true;
     }
 
-    const int kdn = M->isForSets()
-                        ? MDD_levels::downLevel(k)
-                        : MXD_levels::downLevel(k)
-                    ;
-
-    bool free_var = true;
-    if (mask) {
-        free_var = (k<0) ? U_to[-k] : U_from[k];
-    }
-
+    //
+    // Is this a bound variable?
+    //
     const int plvl = F->getNodeLevel(p);
-
-    if (!free_var) {
+    unpacked_node *U = U_from[k];
+    if (!U) {
 #ifdef DEBUG_FIRST
-        const int fxd = (k<0) ? mask->to(-k) : mask->from(k);
-        printf("    value is fixed at %d\n", fxd);
+        printf("    value is fixed at %d\n", mask->from(k));
 #endif
         //
         // This value is fixed, determine the down pointer and recurse.
         //
         MEDDLY_DCASSERT(mask);
 
-        if (k == plvl)  {
-            // node is at this level, determine p[i]
-            int i = (k<0) ? mask->to(-k) : mask->from(k);
-            if (DONT_CHANGE == i) {
-                MEDDLY_DCASSERT(k<0);
-                i = M->from(-k);
-                M->to(-k) = i;
-            }
-            return first(kdn, F->getDownPtr(p, i));
-        }
+        const node_handle pdn = (int(k) == plvl)
+            ? F->getDownPtr(p, mask->from(k))
+            : p
+        ;
 
-        if (k>0 || F->isFullyReduced()) {
-            //
-            // redundant node at this level
-            // all down pointers are equal
-            //
-            return first(kdn, p);
+        if (M->isForSets()) {
+            return first_unprimed(k-1, pdn);
+        } else {
+            return first_primed(k, pdn);
         }
-
-        //
-        // Identity node at this level
-        //
-        MEDDLY_DCASSERT(k<0);
-        if (M->from(-k) != M->to(-k)) return false;
-        return first(kdn, p);
     }
 
     //
     // Free variable.
     // Set up the unpacked node.
     //
-    unpacked_node* U_p = (k<0) ? U_to[-k] : U_from[k];
     if (k != plvl) {
-        if (k>0 || F->isFullyReduced()) {
-            U_p->initRedundant(F, k, p, SPARSE_ONLY);
-        } else {
-            U_p->initIdentity(F, k, M->from(-k), p, SPARSE_ONLY);
+        U->initRedundant(F, k, p, SPARSE_ONLY);
+    } else {
+        F->unpackNode(U, p, SPARSE_ONLY);
+    }
+
+    //
+    // Loop until we find a match
+    //
+    unsigned& z = Z_from[k];
+    if (M->isForSets()) {
+        for (z=0; z < U->getSize(); ++z)
+        {
+            // Update minterm
+            M->from(k) = U->index(z);
+            if (first_unprimed(k-1, U->down(z))) return true;
         }
     } else {
-        F->unpackNode(U_p, p, SPARSE_ONLY);
-    }
-
-    unsigned& z = (k<0) ? Z_to[-k] : Z_from[k];
-    for (z=0; z<U_p->getSize(); z++) {
-        // Update the minterm
-        if (k<0) {
-            M->to(-k) = U_p->index(z);
-        } else {
-            M->from(k) = U_p->index(z);
+        for (z=0; z < U->getSize(); ++z)
+        {
+            // Update minterm
+            M->from(k) = U->index(z);
+            if (first_primed(k, U->down(z))) return true;
         }
-        if (first(kdn, U_p->down(z))) return true;
     }
-    return false;
 
+    // Still here? couldn't find one
+    return false;
+}
+
+bool MEDDLY::dd_edge::iterator::first_primed(unsigned k, node_handle p)
+{
+    MEDDLY_DCASSERT(M);
+    MEDDLY_DCASSERT(F);
+    MEDDLY_DCASSERT(M->isForRelations());
+    MEDDLY_DCASSERT(k);
+
+#ifdef DEBUG_FIRST
+    printf("entering first_unprimed(%u, %ld)\n", k, long(p));
+#endif
+
+    if (0==p) return false;
+
+    //
+    // Is this a bound variable?
+    //
+    const int plvl = F->getNodeLevel(p);
+    unpacked_node *U = U_to[k];
+    if (!U) {
+#ifdef DEBUG_FIRST
+        printf("    value is fixed at %d\n", mask->to(k));
+#endif
+        //
+        // This value is fixed, determine the down pointer and recurse.
+        //
+        MEDDLY_DCASSERT(mask);
+
+        //
+        // Deal with identity mask
+        //
+        int i = mask->to(k);
+        if (DONT_CHANGE == i) {
+            i = M->from(k);
+            M->to(k) = i;
+        }
+
+        if (k == -plvl)  {
+            //
+            // Recurse on p[i]
+            //
+            return first_unprimed(k-1, F->getDownPtr(p, i));
+        }
+
+        if (F->isFullyReduced()) {
+            //
+            // redundant node at this level
+            // all down pointers are equal; recurse on p
+            //
+            return first_unprimed(k-1, p);
+        }
+
+        //
+        // Identity node at this level
+        //
+        if (M->from(k) != M->to(k)) return false;
+        return first_unprimed(k-1, p);
+    }
+
+    //
+    // Free variable.
+    // Set up the unpacked node.
+    //
+    if (k != -plvl) {
+        if (F->isFullyReduced()) {
+            U->initRedundant(F, -int(k), p, SPARSE_ONLY);
+        } else {
+            U->initIdentity(F, -int(k), M->from(k), p, SPARSE_ONLY);
+        }
+    } else {
+        F->unpackNode(U, p, SPARSE_ONLY);
+    }
+
+    //
+    // Loop until we find a match
+    //
+    unsigned& z = Z_to[k];
+    for (z=0; z < U->getSize(); ++z)
+    {
+        // Update minterm
+        M->to(k) = U->index(z);
+        if (first_unprimed(k-1, U->down(z))) return true;
+    }
+
+    // Still here? couldn't find one
+    return false;
 }
 
 

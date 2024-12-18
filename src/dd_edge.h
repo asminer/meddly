@@ -106,7 +106,13 @@ class MEDDLY::dd_edge {
                 // Find first matching, starting at level k from node p.
                 // return true if we found one, false otherwise.
                 //
-                bool first(int k, node_handle p);
+                bool first_unprimed(unsigned k, node_handle p);
+
+                //
+                // Find first matching, starting at level k' from node p.
+                // return true if we found one, false otherwise.
+                //
+                bool first_primed(unsigned k, node_handle p);
 
                 bool equals(const iterator &I) const;
 
@@ -132,6 +138,15 @@ class MEDDLY::dd_edge {
                 unsigned* Z_from;
                 unsigned* Z_to;
 
+                /*
+                 * Accumulated edge values through each level.
+                 */
+                edge_value* ev_from;
+                edge_value* ev_to;
+
+                /*
+                 * Root edge
+                 */
                 edge_value  root_ev;
                 node_handle root_node;
 
