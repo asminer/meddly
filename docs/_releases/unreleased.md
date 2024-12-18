@@ -22,5 +22,11 @@ layout: single
 * ```dd_edge::set()``` parameters are reversed, for consistency
     (edge value before node).
 
+* Iterating through a function is now done using
+    an instance of ```dd_edge::iterator```, created with
+    ```dd_edge::begin()```.
+
+* Old ```forest::getElement()``` replaced by ```dd_edge::getElement()```.
+
 ### Implementation
 

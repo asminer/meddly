@@ -359,6 +359,33 @@ class MEDDLY::dd_edge {
             return iterator(*this, mask);
         }
 
+        /**
+            For an index set only,
+            find the set of assignments corresponding to the given index.
+
+                @param  index   Desired index.
+                @param  m       Output: the minterm such that f(m) = index.
+
+                @throws     INVALID_OPERATION, if this is not an
+                            Index Set EV+MDD.
+
+                @return true,   if we found a minterm; false otherwise.
+        */
+        inline bool getElement(long index, minterm &m) const
+        {
+            switch (edgeval.getType()) {
+                case edge_type::INT:
+                    return  getElemInt(index, m);
+
+                case edge_type::LONG:
+                    return  getElemLong(index, m);
+
+                default:
+                    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+            }
+        }
+
+
         ///
         /// Evaluate the function for variable assignments given in m,
         /// and store the result in val.
@@ -418,6 +445,9 @@ class MEDDLY::dd_edge {
 
     private:
         void evaluate(const minterm &m, edge_value &ev, node_handle &en) const;
+
+        bool getElemInt(long index, minterm &m) const;
+        bool getElemLong(long index, minterm &m) const;
 
     private:
         void init(const dd_edge &e);

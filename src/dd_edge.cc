@@ -1558,6 +1558,42 @@ void MEDDLY::dd_edge::evaluate(const minterm& m,
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
+// **********************************************************************
+
+bool MEDDLY::dd_edge::getElemInt(long index, minterm &m) const
+{
+    //
+    // Sanity checks
+    //
+    forest* fp = forest::getForestWithID(parentFID);
+    if (!fp) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+    if (!fp->isIndexSet()) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    MEDDLY_DCASSERT(fp->getEdgeType() == edge_type::INT);
+
+    return false;
+}
+
+bool MEDDLY::dd_edge::getElemLong(long index, minterm &m) const
+{
+    //
+    // Sanity checks
+    //
+    forest* fp = forest::getForestWithID(parentFID);
+    if (!fp) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+    if (!fp->isIndexSet()) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    MEDDLY_DCASSERT(fp->getEdgeType() == edge_type::LONG);
+
+    return false;
+}
+
 //
 // Private
 //
