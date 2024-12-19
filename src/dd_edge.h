@@ -60,10 +60,18 @@ class MEDDLY::dd_edge {
 
         class iterator {
             public:
+                iterator();
+                iterator(const dd_edge &E, const minterm* mask=nullptr);
+
                 // Move constructor
                 iterator(iterator &&I);
 
                 ~iterator();
+
+                //
+                // Restart on a new edge, in the same forest though.
+                //
+                void restart(const dd_edge &E, const minterm* mask=nullptr);
 
                 inline operator bool() const {
                     return !atEnd;
@@ -96,9 +104,6 @@ class MEDDLY::dd_edge {
                 }
 
             private:
-                iterator();
-                iterator(const dd_edge &E, const minterm* mask);
-
                 iterator(const iterator &i) = delete;
                 void operator=(const iterator &i) = delete;
 
@@ -106,18 +111,6 @@ class MEDDLY::dd_edge {
                 // Increment
                 //
                 void next();
-
-                //
-                // Find first matching, starting at level k from node p.
-                // return true if we found one, false otherwise.
-                //
-                // bool first_unprimed(unsigned k, node_handle p);
-
-                //
-                // Find first matching, starting at level k' from node p.
-                // return true if we found one, false otherwise.
-                //
-                // bool first_primed(unsigned k, node_handle p);
 
                 bool equals(const iterator &I) const;
 

@@ -376,23 +376,24 @@ int main(int argc, const char** argv)
         apply(CARDINALITY, *solutions, c);
         printf("\nThere are %ld solutions to the %d-queens problem\n\n", c, N);
 
-        enumerator first(*solutions);
+        FILE_output out(stdout);
+        dd_edge::iterator first = solutions->begin();
 #ifdef SHOW_ALL_SOLUTIONS
         c = 0;
         for (; first; ++first) {
-            const int* minterm = first.getAssignments();
             c++;
-            printf("Solution %6d: [%d", c, minterm[1]);
-            for (int i=2; i<=N; i++) printf(", %d", minterm[i]);
-            printf("]\n");
+            out << "Solution ";
+            out.put(c, 6);
+            out << ": ";
+            (*first).show(out);
+            out << "\n";
         }
 #else
         // show one of the solutions
         if (first) {
-            const int* minterm = first.getAssignments();
-            printf("One solution:\n");
+            out << "One of the solutions:\n";
             for (int i=1; i<=N; i++) {
-                printf("\tQueen for row %2d in column %2d\n", i, minterm[i]+1);
+                out << "\tQueen for row " << i << " in column " << (*first).from(i)+1 << "\n";
             }
         }
 #endif

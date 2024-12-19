@@ -353,7 +353,7 @@ void process_args(int argc, const char** argv)
 
 }
 
-void showSolution(std::ostream& s, const int* minterm, const char* sep=nullptr)
+void showSolution(std::ostream& s, const MEDDLY::minterm &m, const char* sep=nullptr)
 {
     using namespace std;
     bool first = true;
@@ -364,20 +364,19 @@ void showSolution(std::ostream& s, const int* minterm, const char* sep=nullptr)
         } else {
             first = false;
         }
-        s << '(' << setfill(' ') << setw(2) << minterm[i*2];
-        s << ',' << setfill(' ') << setw(2) << minterm[i*2-1] << ')';
+        s << '(' << setfill(' ') << setw(2) << m.from(i*2);
+        s << ',' << setfill(' ') << setw(2) << m.from(i*2-1) << ')';
     }
 }
 
 void showAtMost(std::ostream& s, const MEDDLY::dd_edge &sols, long count)
 {
-    MEDDLY::enumerator iter(sols);
     long c = 0;
-    for (; iter; ++iter) {
+    for (auto iter = sols.begin(); iter; ++iter) {
         ++c;
         if (c>count) return;
         s << "#" << c << ":  ";
-        showSolution(s, iter.getAssignments(), " -> ");
+        showSolution(s, *iter, " -> ");
         s << std::endl;
     }
 }

@@ -466,6 +466,79 @@ bool MEDDLY::iterator_templ<EOP>::first_pri(unsigned k, node_handle p)
 // *                                                                *
 // ******************************************************************
 
+MEDDLY::dd_edge::iterator::iterator()
+{
+    // Build an empty, 'end' iterator
+    atEnd = true;
+    F = nullptr;
+
+    U_from = nullptr;
+    U_to = nullptr;
+    Z_from = nullptr;
+    Z_to = nullptr;
+    ev_from = nullptr;
+    ev_to = nullptr;
+    M = nullptr;
+    mask = nullptr;
+}
+
+MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, const minterm* _mask)
+{
+    F = E.getForest();
+    M = new minterm(F);
+
+    //
+    // Set up array of unpacked nodes
+    //
+
+    const unsigned K = M->getNumVars();
+    U_from = new unpacked_node* [1+K];
+    for (unsigned i=0; i<=K; i++) {
+        U_from[i] = nullptr;
+    }
+    if (M->isForSets()) {
+        U_to = nullptr;
+    } else {
+        U_to = new unpacked_node* [1+K];
+        for (unsigned i=0; i<=K; i++) {
+            U_to[i] = nullptr;
+        }
+    }
+
+    //
+    // Allocate array of pointers into the unpacked nodes
+    //
+
+    Z_from = new unsigned [1+K];
+    if (M->isForSets()) {
+        Z_to = nullptr;
+    } else {
+        Z_to = new unsigned [1+K];
+    }
+
+    //
+    // Allocate array of edge values, if we're an EV forest
+    //
+    if (F->isMultiTerminal()) {
+        ev_from = nullptr;
+        ev_to = nullptr;
+    } else {
+        if (M->isForSets()) {
+            ev_from = new edge_value [2+K];
+            ev_to = nullptr;
+        } else {
+            ev_from = new edge_value [1+K];
+            ev_to = new edge_value [2+K];
+        }
+    }
+
+    //
+    // Everything is set up except for mask specific stuff.
+    //
+
+    restart(E, _mask);
+}
+
 MEDDLY::dd_edge::iterator::iterator(iterator &&I)
 {
     printf("In iterator's move constructor :)\n");
@@ -522,87 +595,59 @@ MEDDLY::dd_edge::iterator::~iterator()
     delete M;
 }
 
-MEDDLY::dd_edge::iterator::iterator()
+void MEDDLY::dd_edge::iterator::restart(const dd_edge &E, const minterm* _mask)
 {
-    // Build an empty, 'end' iterator
-    atEnd = true;
-    F = nullptr;
+    if (F != E.getForest()) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
 
-    U_from = nullptr;
-    U_to = nullptr;
-    Z_from = nullptr;
-    Z_to = nullptr;
-    ev_from = nullptr;
-    ev_to = nullptr;
-    M = nullptr;
-    mask = nullptr;
-}
-
-MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, const minterm* _mask)
-{
+    mask = _mask;
     root_ev = E.getEdgeValue();
     root_node = E.getNode();
 
-    F = E.getForest();
-    M = new minterm(F);
-    mask = _mask;
+    //
+    // Seed the edge value array if needed
+    //
+    const unsigned K = M->getNumVars();
+    if (!F->isMultiTerminal()) {
+        if (M->isForSets()) {
+            ev_from[1+K] = root_ev;
+        } else {
+            ev_to[1+K] = root_ev;
+        }
+    }
 
     //
     // Allocate unpacked nodes, but only for free variables.
+    // Re-use old unpacked nodes when we can.
     //
 
-    const unsigned K = M->getNumVars();
-    U_from = new unpacked_node* [1+K];
-    U_from[0] = nullptr;
     for (unsigned i=K; i; --i) {
         if (_mask && (DONT_CARE != mask->from(i))) {
-            U_from[i] = nullptr;
+            if (U_from[i]) {
+                unpacked_node::Recycle(U_from[i]);
+                U_from[i] = nullptr;
+            }
             M->from(i) = mask->from(i);
         } else {
-            U_from[i] = unpacked_node::New(F);
-        }
-    }
-    if (M->isForSets()) {
-        U_to = nullptr;
-    } else {
-        U_to = new unpacked_node* [1+K];
-        U_to[0] = nullptr;
-        for (unsigned i=K; i; --i) {
-            if (_mask && (DONT_CARE != mask->to(i))) {
-                U_to[i] = nullptr;
-                M->to(i) = mask->to(i);
-            } else {
-                U_to[i] = unpacked_node::New(F);
+            if (!U_from[i]) {
+                U_from[i] = unpacked_node::New(F);
             }
         }
     }
-
-    //
-    // Allocate array of pointers into the unpacked nodes
-    //
-
-    Z_from = new unsigned [1+K];
-    if (M->isForSets()) {
-        Z_to = nullptr;
-    } else {
-        Z_to = new unsigned [1+K];
-    }
-
-    //
-    // Allocate array of edge values, if we're an EV forest
-    //
-    if (F->isMultiTerminal()) {
-        ev_from = nullptr;
-        ev_to = nullptr;
-    } else {
-        if (M->isForSets()) {
-            ev_from = new edge_value [2+K];
-            ev_from[1+K] = root_ev;
-            ev_to = nullptr;
-        } else {
-            ev_from = new edge_value [1+K];
-            ev_to = new edge_value [2+K];
-            ev_to[1+K] = root_ev;
+    if (M->isForRelations()) {
+        for (unsigned i=K; i; --i) {
+            if (_mask && (DONT_CARE != mask->to(i))) {
+                if (U_to[i]) {
+                    unpacked_node::Recycle(U_to[i]);
+                    U_to[i] = nullptr;
+                }
+                M->to(i) = mask->to(i);
+            } else {
+                if (!U_to[i]) {
+                    U_to[i] = unpacked_node::New(F);
+                }
+            }
         }
     }
 

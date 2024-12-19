@@ -388,17 +388,18 @@ int main(int argc, const char** argv)
 
             fprintf(outfile, "%d # Board dimension\n\n", N);
             // show the solutions
-            enumerator iter(solutions);
-            long counter;
-            for (counter = 1; iter; ++iter, ++counter) {
+
+            long counter = 1;
+            for (auto iter = solutions.begin(); iter; ++iter) {
                 fprintf(outfile, "solution %5ld:  ", counter);
-                const int* minterm = iter.getAssignments();
+                const minterm& M = *iter;
                 for (int i=0; i<N; i++) for (int j=0; j<N; j++) {
-                    if (minterm[ijmap(i,j)]) {
+                    if (M.from(ijmap(i,j))) {
                         fprintf(outfile, "(%2d, %2d) ", i+1, j+1);
                     }
                 }
                 fprintf(outfile, "\n");
+                ++counter;
             } // for iter
             fprintf(outfile, "\n");
         }

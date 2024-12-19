@@ -1,54 +1,6 @@
 
 Implement next:
 
-    * new iterator object that
-        + works for all forest types without templates
-          (except maybe for evaluation part)
-        + allow fixing of arbitrary variables:
-          use a minterm to "mask", with DONT_CARE allowed to change
-
-        + current path is a minterm
-
-        class dd_edge::iterator {
-            // tbd
-            // supports:
-            //   pre increment
-            //   !=, == operators
-            //   special 'end' value, quickly!
-            //   bool() operator
-            //   assignments() to give the var assignments,
-            //      as a const minterm &
-            //
-            //   eval() to give the function evaluation
-            //
-            //   rewind()   goes back to begin()
-            //   rewind(const minterm &mask)
-            //
-
-            //  implementation:
-            //      keep an array of unpacked nodes, by levels
-            //      (separated for unprimed, primed)
-            //
-            //      use sparse for free vars, full for bound vars
-            //
-            //      keep an array of sparse pointers, for
-            //          where are we in the sparse unpacked node
-            //
-        };
-
-        dd_edge::begin()
-            : start an iterator
-
-        dd_edge::end()
-            : build the special 'end' iterator
-
-        dd_edge::begin(const minterm &mask)
-            : actual values for constrained variables
-            : don't cares for free variables
-            : don't change to force primed == unprimed?
-
-
-
     * MAXIMUM, MINIMUM operations to finish off minterm builds :)
         + and test cases (add to chk_minterm?)
 

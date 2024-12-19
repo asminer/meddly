@@ -779,6 +779,15 @@ void MEDDLY::unpacked_node::Recycle(unpacked_node* r)
 {
     if (!r) return;
 
+    if (!ForLists) {
+        //
+        // Lists have all been destroyed; this must be a late recycle.
+        // Just delete it.
+        //
+        delete r;
+        return;
+    }
+
 #ifdef DEVELOPMENT_CODE
     MEDDLY_DCASSERT(r->can_be_recycled);
 #endif

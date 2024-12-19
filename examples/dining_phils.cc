@@ -98,6 +98,7 @@
 #include "../timing/timer.h"
 #include "../src/log_simple.h"
 
+// #define OLD_ITERATORS
 
 using namespace MEDDLY;
 
@@ -635,6 +636,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
 #endif
 
     if (sw.printReachableStates) {
+#ifdef OLD_ITERATORS
         // Create a EV+MDD forest in this domain (to store index set)
         forest* evplusmdd =
             forest::create(d, false, range_type::INTEGER, edge_labeling::INDEX_SET);
@@ -657,6 +659,17 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
             }
             printf("]\n");
         }
+#else
+        FILE_output out(stdout);
+        long c=0;
+        for (auto I = reachableStates.begin(); I; ++I) {
+            out << "State at index " << c << ": ";
+            (*I).show(out);
+            out << "\n";
+            ++c;
+        }
+        out << c << " reachable states\n";
+#endif
     }
 
 

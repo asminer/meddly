@@ -421,25 +421,25 @@ void AndAlongColsThenRows(dd_edge *C, const lifegrid &G)
   std::cerr << "\nDone!\n";
 }
 
-void showGeneration(const lifegrid &G, const int* minterm, const char* prefix)
+void showGeneration(const lifegrid &G, const minterm &M, const char* prefix)
 {
   using namespace std;
   for (int j=0; j<G.height; j++) {
     if (prefix) cout << prefix;
     for (int i=0; i<G.width; i++) {
-      cout << (minterm[G.getLevelOf(j, i)] ? 'A' : '.');
+      cout << (M.from(G.getLevelOf(j, i)) ? 'A' : '.');
     } // for i
     cout << "\n";
   } // for j
 }
 
-int sum(const int* minterm, int N)
+int sum(const minterm &M)
 {
-  int a = 0;
-  for (; N; N--) {
-    a += minterm[N];
-  }
-  return a;
+    int a = 0;
+    for (unsigned i=M.getNumVars(); i; --i) {
+        a += M.from(i);
+    }
+    return a;
 }
 
 
@@ -650,17 +650,15 @@ int main(int argc, const char** argv)
   // Cycle through and show solutions
   //
 
-  enumerator first(answer);
-  if (all_previous != display) {
-    first.start(ansmin);
-  }
+  dd_edge::iterator first =
+      (all_previous != display) ? ansmin.begin() : answer.begin();
+
   long n = 0;
   for (; first; ++first) {
-    const int* minterm = first.getAssignments();
     ++n;
     switch (display) {
       case all_previous:
-        cout << "Previous #" << n << " (alive=" << sum(minterm, N) << ")\n";
+        cout << "Previous #" << n << " (alive=" << sum(*first) << ")\n";
         break;
 
       case all_minimal:
@@ -674,7 +672,7 @@ int main(int argc, const char** argv)
       default:
         return 42;
     }
-    showGeneration(G, minterm, 0);
+    showGeneration(G, *first, 0);
     if (some_minimal == display) break;
   }
 

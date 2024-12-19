@@ -366,13 +366,13 @@ void buildConstraints(const coord &sq, constraint* C)
     }
 }
 
-void show_solution(std::ostream &s, const int* minterm)
+void show_solution(std::ostream &s, const MEDDLY::minterm &M)
 {
     using namespace std;
     coord c;
     for (c.n=1; c.n<=B.getN(); c.n++) {
         for (c.m=1; c.m<=B.getM(); c.m++) {
-            cout << setfill(' ') << setw(3) << minterm[B.get_var(c)] << ' ';
+            cout << setfill(' ') << setw(3) << M.from(B.get_var(c)) << ' ';
         }
         cout << '\n';
     }
@@ -608,10 +608,9 @@ int main(int argc, const char** argv)
         std::cout << allcard << " tours total\n";
 
         // Show solutions
-        enumerator sol(all);
-        for (; sol; ++sol) {
+        for (auto sol = all.begin(); sol; ++sol) {
             std::cout << "Solution:\n";
-            show_solution(std::cout, sol.getAssignments());
+            show_solution(std::cout, *sol);
         }
 
         // Memory stats
