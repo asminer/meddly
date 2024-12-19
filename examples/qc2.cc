@@ -1006,16 +1006,18 @@ int main(int argc, const char** argv)
       printf("Couldn't open %s for writing, no solutions will be written\n", ofile);
     } else {
       fprintf(OUT, "%d # Board dimension\n\n", N);
-      enumerator iter(acc[0]);
-      for (long counter=1; iter; ++iter, ++counter) {
-        fprintf(OUT, "solution %5ld:  ", counter);
-        const int* minterm = iter.getAssignments();
-        for (int q=0; q<=Q; q++) {
-          int r = minterm[V.queenRow(q)];
-          int c = minterm[V.queenCol(q)];
-          fprintf(OUT, "(%2d, %2d) ", r+1, c+1);
-        }
-        fprintf(OUT, "\n");
+      long counter = 1;
+      for (auto iter = acc[0].begin(); iter; ++iter)
+      {
+          fprintf(OUT, "solution %5ld:  ", counter);
+          const minterm &M = *iter;
+          for (int q=0; q<=Q; q++) {
+              int r = M.from(V.queenRow(q));
+              int c = M.from(V.queenCol(q));
+              fprintf(OUT, "(%2d, %2d) ", r+1, c+1);
+          }
+          fprintf(OUT, "\n");
+          ++counter;
       } // for iter
       fprintf(OUT, "\n");
       fclose(OUT);
