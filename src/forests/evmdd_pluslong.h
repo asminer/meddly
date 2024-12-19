@@ -91,7 +91,7 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
 class MEDDLY::evmdd_index_set_long : public evmdd_pluslong {
   public:
     evmdd_index_set_long(domain *d, const policies &p, int* level_reduction_rule);
-    ~evmdd_index_set_long();
+    virtual ~evmdd_index_set_long();
 
 #ifdef ALLOW_DEPRECATED_0_17_7
     virtual void getElement(const dd_edge& a, int index, int* e);

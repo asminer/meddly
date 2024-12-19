@@ -392,6 +392,8 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::first(int k, node_handle down)
   return true;
 }
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -406,6 +408,8 @@ MEDDLY::evmdd_index_set_long::evmdd_index_set_long(domain *_d, const policies &p
 
 MEDDLY::evmdd_index_set_long::~evmdd_index_set_long()
 { }
+
+#ifdef ALLOW_DEPRECATED_0_17_7
 
 void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, int index, int* e)
 {
@@ -455,6 +459,8 @@ void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, long index, int*
   unpacked_node::Recycle(R);
 }
 
+#endif
+
 void MEDDLY::evmdd_index_set_long::showHeaderInfo(output &s,
         const unpacked_node &nb) const
 {
@@ -483,5 +489,4 @@ void MEDDLY::evmdd_index_set_long::readHeaderInfo(input &s,
 #endif
 }
 
-#endif
 
