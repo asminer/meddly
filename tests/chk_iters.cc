@@ -82,8 +82,6 @@ void randomizeMinterm(minterm &m, range_type rt)
         0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3   // 16 normal pairs
     };
 
-    static int count=0;
-
     if (m.isForRelations()) {
         for (unsigned i=1; i<=m.getNumVars(); i++) {
             int index = Equilikely(0, 51);
@@ -96,6 +94,7 @@ void randomizeMinterm(minterm &m, range_type rt)
         }
     }
 
+    static int count=0;
     count = (1+count%4);
     switch (rt) {
         case range_type::INTEGER:
@@ -202,7 +201,7 @@ void test_sets(char reduction, range_type rt, edge_labeling el)
     out << "Done, " << count << " minterms\n";
 #else
     dd_edge E2(F), tmp(F);
-    F->createEdge(false, E2);
+    // F->createEdge(false, E2);
 
     out << "Iterating...\n";
     for (dd_edge::iterator i = E.begin(); i; ++i)
@@ -315,7 +314,7 @@ void test_rels(char reduction, range_type rt, edge_labeling el)
     out << "Done, " << count << " minterms\n";
 #else
     dd_edge E2(F), tmp(F);
-    F->createEdge(false, E2);
+    // F->createEdge(false, E2);
 
     out << "Iterating...\n";
     for (dd_edge::iterator i = E.begin();
@@ -369,11 +368,21 @@ int main(int argc, const char** argv)
 #ifdef TEST_SETS
         test_sets('q', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
         test_sets('f', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        test_sets('q', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
+        test_sets('f', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
+        test_sets('q', range_type::REAL, edge_labeling::MULTI_TERMINAL);
+        test_sets('f', range_type::REAL, edge_labeling::MULTI_TERMINAL);
 #endif
 #ifdef TEST_RELS
         test_rels('q', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
         test_rels('f', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
         test_rels('i', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        test_rels('q', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
+        test_rels('f', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
+        test_rels('i', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
+        test_rels('q', range_type::REAL, edge_labeling::MULTI_TERMINAL);
+        test_rels('f', range_type::REAL, edge_labeling::MULTI_TERMINAL);
+        test_rels('i', range_type::REAL, edge_labeling::MULTI_TERMINAL);
 #endif
         MEDDLY::cleanup();
         return 0;

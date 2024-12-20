@@ -25,8 +25,8 @@
 // #define SHOW_MINTERMS
 
 const int DOMSIZE = 4;       // DO NOT change
-const int SETVARS = 10;
-const int RELVARS = 5;
+const int SETVARS = 8;
+const int RELVARS = 4;
 
 /*
  *
@@ -63,18 +63,49 @@ using namespace MEDDLY;
  *  common for sets and relations
  */
 
+template <typename RTYPE>
+inline void show(MEDDLY::output &out, RTYPE v)
+{
+    out << v;
+}
+
+template <>
+inline void show(MEDDLY::output &out, bool v)
+{
+    out << (v ? "true" : "false");
+}
+
+template <typename RTYPE>
+inline bool different(RTYPE a, RTYPE b)
+{
+    return a != b;
+}
+
+template <>
+inline bool different(double a, double b)
+{
+    if (a < b) {
+        return (b-a) > 1e-5;
+    } else {
+        return (a-b) > 1e-5;
+    }
+}
+
+
+template <typename RTYPE>
 void mismatch(const minterm &eval,
-        char mddtype, const MEDDLY::dd_edge &E, bool val_mdd,
-        const minterm_coll &mtcoll, bool mtcoll_answer)
+        char mddtype, const MEDDLY::dd_edge &E, RTYPE val_mdd,
+        const minterm_coll &mtcoll, RTYPE mtcoll_answer)
 {
     const char* MDD = eval.isForRelations() ? "MxD" : "MDD";
     MEDDLY::ostream_output out(std::cout);
     out << "\nMismatch on ";
     eval.show(out);
-    out << "\n  " << mddtype << MDD << ": "
-        << (val_mdd ? "true" : "false") << "\n";
-    out << "mtlist: " << (mtcoll_answer ? "true" : "false") << "\n";
-    out << "\n";
+    out << "\n  " << mddtype << MDD << ": ";
+    show(out, val_mdd);
+    out << "\nmtlist: ";
+    show(out, mtcoll_answer);
+    out << "\n\n";
     out << "Minterm list:\n";
     mtcoll.show(out);
 
@@ -85,18 +116,20 @@ void mismatch(const minterm &eval,
     throw "mismatch";
 }
 
+template <typename RTYPE>
 void mismatch(const minterm &eval,
-        char mddtype, const MEDDLY::dd_edge &E, bool val_mdd,
-        const minterm &mt, bool mtcoll_answer)
+        char mddtype, const MEDDLY::dd_edge &E, RTYPE val_mdd,
+        const minterm &mt, RTYPE mtcoll_answer)
 {
     const char* MDD = eval.isForRelations() ? "MxD" : "MDD";
     MEDDLY::ostream_output out(std::cout);
     out << "\nMismatch on ";
     eval.show(out);
-    out << "\n  " << mddtype << MDD << ": "
-        << (val_mdd ? "true" : "false") << "\n";
-    out << "mtlist: " << (mtcoll_answer ? "true" : "false") << "\n";
-    out << "\n";
+    out << "\n  " << mddtype << MDD << ": ";
+    show(out, val_mdd);
+    out << "\nmtlist: ";
+    show(out, mtcoll_answer);
+    out << "\n\n";
     out << "Minterm:\n  ";
     mt.show(out);
 
@@ -107,8 +140,25 @@ void mismatch(const minterm &eval,
     throw "mismatch";
 }
 
+void nextTermValue(minterm &m, range_type rt)
+{
+    static int count=0;
+    count = (1+count%4);
+    switch (rt) {
+        case range_type::INTEGER:
+                m.setTerm(count);
+                break;
 
-void randomizeMinterm(MEDDLY::minterm &m)
+        case range_type::REAL:
+                m.setTerm(count * 1.1f);
+                break;
+
+        default:
+                m.setTerm(true);
+    }
+}
+
+void randomizeMinterm(minterm &m, range_type rt)
 {
     const int vals[9] = { -1, 0, 0, 1, 1, 2, 2, 3, 3 };
     const int unvals[52] = {
@@ -173,13 +223,19 @@ bool matches_set(const minterm &m, const minterm& va)
     return true;
 }
 
-bool evaluate_set(const minterm &m, const minterm_coll &MC)
+template <typename RTYPE>
+void evaluate_set(const minterm &m, const minterm_coll &MC, RTYPE &ans)
 {
+    ans = 0;
     for (unsigned i=0; i<MC.size(); i++) {
-        if (matches_set(MC.at(i), m)) return true;
+        if (matches_set(MC.at(i), m)) {
+            RTYPE tmp;
+            MC.at(i).getTerm().getValue(tmp);
+            ans = MAX(ans, tmp);
+        }
     }
-    return false;
 }
+
 
 
 
@@ -189,10 +245,9 @@ bool evaluate_set(const minterm &m, const minterm_coll &MC)
  *
  */
 
-void test_sets()
+template <typename RTYPE>
+void test_sets(range_type rt)
 {
-    using namespace MEDDLY;
-
     //
     // Build domain - once
     //
@@ -210,12 +265,12 @@ void test_sets()
 
     p.setFullyReduced();
 
-    forest* Ff = forest::create(D, SET, range_type::BOOLEAN,
+    forest* Ff = forest::create(D, SET, rt,
                     edge_labeling::MULTI_TERMINAL, p);
 
     p.setQuasiReduced();
 
-    forest* Fq = forest::create(D, SET, range_type::BOOLEAN,
+    forest* Fq = forest::create(D, SET, rt,
                     edge_labeling::MULTI_TERMINAL, p);
 
 
@@ -233,11 +288,12 @@ void test_sets()
 
     ostream_output out(std::cout);
 
-    out << "Checking sets built from minterm collections:\n";
+    out << "Checking vectors of " << nameOf(rt)
+        << " built from minterm collections:\n";
     out.flush();
 
     char     testtype[] = { 'f', 'r', 'r', 'r', 'r', 'r', 'r', 'r', 0 };
-    unsigned mtsizes[] =  {   0,   1,   2,   4,   8,  16,  32,  64 };
+    unsigned mtsizes[] =  {   0,   1,   2,   4,   8,  16,  32,  64    };
 
     for (unsigned i=0; testtype[i]; ++i) {
         //
@@ -246,6 +302,7 @@ void test_sets()
         if ('f' == testtype[i]) {
             mtcoll.clear();
             mtcoll.unused().setAllVars(DONT_CARE);
+            nextTermValue(mtcoll.unused(), rt);
             mtcoll.pushUnused();
             out << " fully: ";
             out.flush();
@@ -253,7 +310,8 @@ void test_sets()
             if (1 == mtsizes[i]) mtcoll.clear();
 
             while (mtcoll.size() < mtsizes[i]) {
-                randomizeMinterm(mtcoll.unused());
+                randomizeMinterm(mtcoll.unused(), rt);
+                nextTermValue(mtcoll.unused(), rt);
                 mtcoll.pushUnused();
             }
 
@@ -287,15 +345,15 @@ void test_sets()
         //
         eval.setAllVars(0);
         do {
-            bool in_mtcoll = evaluate_set(eval, mtcoll);
-            bool qval, fval;
+            RTYPE in_mtcoll, qval, fval;
+            evaluate_set(eval, mtcoll, in_mtcoll);
             Eq.evaluate(eval, qval);
             Ef.evaluate(eval, fval);
 
-            if (qval != in_mtcoll) {
+            if (different(qval, in_mtcoll)) {
                 mismatch(eval, 'Q', Eq, qval, mtcoll, in_mtcoll);
             }
-            if (fval != in_mtcoll) {
+            if (different(fval, in_mtcoll)) {
                 mismatch(eval, 'F', Ef, fval, mtcoll, in_mtcoll);
             }
         } while (nextSetMinterm(eval));
@@ -304,7 +362,8 @@ void test_sets()
 
     } // for mtsize
 
-    out << "Checking sets built from single minterms:\n";
+    out << "Checking vectors of " << nameOf(rt)
+        << " built from single minterms:\n";
     out.flush();
     for (unsigned i=0; i<5; ++i) {
         //
@@ -326,15 +385,19 @@ void test_sets()
         //
         eval.setAllVars(0);
         do {
-            bool in_mtcoll = matches_set(mtcoll.at(i), eval);
-            bool qval, fval;
+            RTYPE in_mtcoll, qval, fval;
+            if (matches_set(mtcoll.at(i), eval)) {
+                mtcoll.at(i).getTerm().getValue(in_mtcoll);
+            } else {
+                in_mtcoll = 0;
+            }
             Eq.evaluate(eval, qval);
             Ef.evaluate(eval, fval);
 
-            if (qval != in_mtcoll) {
+            if (different(qval, in_mtcoll)) {
                 mismatch(eval, 'Q', Eq, qval, mtcoll.at(i), in_mtcoll);
             }
-            if (fval != in_mtcoll) {
+            if (different(fval, in_mtcoll)) {
                 mismatch(eval, 'F', Ef, fval, mtcoll.at(i), in_mtcoll);
             }
         } while (nextSetMinterm(eval));
@@ -381,14 +444,18 @@ bool matches_rel(const minterm &m, const minterm& va)
     return true;
 }
 
-bool evaluate_rel(const minterm &m, const minterm_coll &MC)
+template <typename RTYPE>
+void evaluate_rel(const minterm &m, const minterm_coll &MC, RTYPE &ans)
 {
+    ans = 0;
     for (unsigned i=0; i<MC.size(); i++) {
-        if (matches_rel(MC.at(i), m)) return true;
+        if (matches_rel(MC.at(i), m)) {
+            RTYPE tmp;
+            MC.at(i).getTerm().getValue(tmp);
+            ans = MAX(ans, tmp);
+        }
     }
-    return false;
 }
-
 
 /*
  *
@@ -398,10 +465,9 @@ bool evaluate_rel(const minterm &m, const minterm_coll &MC)
 
 
 
-void test_rels()
+template <typename RTYPE>
+void test_rels(range_type rt)
 {
-    using namespace MEDDLY;
-
     //
     // Build domain - once
     //
@@ -419,17 +485,17 @@ void test_rels()
 
     p.setFullyReduced();
 
-    forest* Ff = forest::create(D, RELATION, range_type::BOOLEAN,
+    forest* Ff = forest::create(D, RELATION, rt,
                     edge_labeling::MULTI_TERMINAL, p);
 
     p.setIdentityReduced();
 
-    forest* Fi = forest::create(D, RELATION, range_type::BOOLEAN,
+    forest* Fi = forest::create(D, RELATION, rt,
                     edge_labeling::MULTI_TERMINAL, p);
 
     p.setQuasiReduced();
 
-    forest* Fq = forest::create(D, RELATION, range_type::BOOLEAN,
+    forest* Fq = forest::create(D, RELATION, rt,
                     edge_labeling::MULTI_TERMINAL, p);
 
 
@@ -447,11 +513,12 @@ void test_rels()
 
     ostream_output out(std::cout);
 
-    out << "Checking relations built from minterm collections:\n";
+    out << "Checking matrices of " << nameOf(rt)
+        << " built from minterm collections:\n";
     out.flush();
 
-    char     testtype[] = { 'f', 'i', 'r', 'r', 'r', 'r', 'r', 'r', 0 };
-    unsigned mtsizes[] =  {   0,   0,   1,   2,   4,   8,  16,  32 };
+    char     testtype[] = { 'f', 'i', 'r', 'r', 'r', 'r', 'r', 'r',  0 };
+    unsigned mtsizes[] =  {   0,   0,   1,   2,   4,   8,  16,  32     };
 
     for (unsigned i=0; testtype[i]; ++i) {
         //
@@ -460,12 +527,14 @@ void test_rels()
         if ('f' == testtype[i]) {
             mtcoll.clear();
             mtcoll.unused().setAllVars(DONT_CARE, DONT_CARE);
+            nextTermValue(mtcoll.unused(), rt);
             mtcoll.pushUnused();
             out << " fully: ";
             out.flush();
         } else if ('i' == testtype[i]) {
             mtcoll.clear();
             mtcoll.unused().setAllVars(DONT_CARE, DONT_CHANGE);
+            nextTermValue(mtcoll.unused(), rt);
             mtcoll.pushUnused();
             out << " ident: ";
             out.flush();
@@ -474,7 +543,8 @@ void test_rels()
             if (1 == mtsizes[i]) mtcoll.clear();
 
             while (mtcoll.size() < mtsizes[i]) {
-                randomizeMinterm(mtcoll.unused());
+                randomizeMinterm(mtcoll.unused(), rt);
+                nextTermValue(mtcoll.unused(), rt);
                 mtcoll.pushUnused();
             }
 
@@ -513,19 +583,19 @@ void test_rels()
         //
         eval.setAllVars(0, 0);
         do {
-            bool in_mtcoll = evaluate_rel(eval, mtcoll);
-            bool qval, fval, ival;
+            RTYPE in_mtcoll, qval, fval, ival;
+            evaluate_rel(eval, mtcoll, in_mtcoll);
             Eq.evaluate(eval, qval);
             Ef.evaluate(eval, fval);
             Ei.evaluate(eval, ival);
 
-            if (qval != in_mtcoll) {
+            if (different(qval, in_mtcoll)) {
                 mismatch(eval, 'Q', Eq, qval, mtcoll, in_mtcoll);
             }
-            if (fval != in_mtcoll) {
+            if (different(fval, in_mtcoll)) {
                 mismatch(eval, 'F', Ef, fval, mtcoll, in_mtcoll);
             }
-            if (ival != in_mtcoll) {
+            if (different(ival, in_mtcoll)) {
                 mismatch(eval, 'I', Ei, ival, mtcoll, in_mtcoll);
             }
         } while (nextRelMinterm(eval));
@@ -534,7 +604,8 @@ void test_rels()
 
     } // for mtsize
 
-    out << "Checking relations built from single minterms:\n";
+    out << "Checking matrices of " << nameOf(rt)
+        << " built from single minterms:\n";
     out.flush();
     for (unsigned i=0; i<5; ++i) {
         //
@@ -561,19 +632,23 @@ void test_rels()
         //
         eval.setAllVars(0, 0);
         do {
-            bool in_mtcoll = matches_rel(mtcoll.at(i), eval);
-            bool qval, fval, ival;
+            RTYPE in_mtcoll, qval, fval, ival;
+            if (matches_rel(mtcoll.at(i), eval)) {
+                mtcoll.at(i).getTerm().getValue(in_mtcoll);
+            } else {
+                in_mtcoll = 0;
+            }
             Eq.evaluate(eval, qval);
             Ef.evaluate(eval, fval);
             Ei.evaluate(eval, ival);
 
-            if (qval != in_mtcoll) {
+            if (different(qval, in_mtcoll)) {
                 mismatch(eval, 'Q', Eq, qval, mtcoll.at(i), in_mtcoll);
             }
-            if (fval != in_mtcoll) {
+            if (different(fval, in_mtcoll)) {
                 mismatch(eval, 'F', Ef, fval, mtcoll.at(i), in_mtcoll);
             }
-            if (ival != in_mtcoll) {
+            if (different(ival, in_mtcoll)) {
                 mismatch(eval, 'I', Ei, ival, mtcoll.at(i), in_mtcoll);
             }
         } while (nextRelMinterm(eval));
@@ -609,10 +684,14 @@ int main(int argc, const char** argv)
     try {
         MEDDLY::initialize();
 #ifdef TEST_SETS
-        test_sets();
+        test_sets<bool>(range_type::BOOLEAN);
+        test_sets<long>(range_type::INTEGER);
+        test_sets<double>(range_type::REAL);
 #endif
 #ifdef TEST_RELS
-        test_rels();
+        test_rels<bool>(range_type::BOOLEAN);
+        test_rels<long>(range_type::INTEGER);
+        test_rels<double>(range_type::REAL);
 #endif
         MEDDLY::cleanup();
         return 0;
