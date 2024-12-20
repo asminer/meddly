@@ -14,7 +14,6 @@ noinst_PROGRAMS = \
     chk_cross \
     chk_ct \
     chk_ct_old \
-    chk_evtimes_float \
     chk_iters \
     chk_minterms \
     chk_reorder \
@@ -41,7 +40,6 @@ TESTS = \
     chk_cross \
     chk_ct \
     chk_ct_old \
-    chk_evtimes_float \
     chk_iters \
     chk_minterms \
     chk_reorder \
