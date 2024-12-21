@@ -107,6 +107,60 @@ void vectorgen_base::index2minterm(unsigned x, MEDDLY::minterm &m)
 void vectorgen_base::buildIdentityFromIndex(unsigned ndx,
         unsigned k1, unsigned k2, std::vector <unsigned> &ilist) const
 {
+    if (k1 < k2) {
+        MEDDLY::SWAP(k1, k2);
+    }
+    if (k1 == k2) {
+        k2 = 0;
+    }
+
+    //
+    // Conceptually, ndx is equivalent to a VARS digit number
+    // in base SETDOM. We want to get the values of those numbers
+    // with digits k1 and k2 going over all possible digits.
+    //
+    // To do this, we determine the value when digits k1 and k2 are 0
+    // (variable mindex), and multipliers mult1 and mult2,
+    // such that the numbers we want are all those of the form
+    //      mindex + mult1 * digit1 + mult2 * digit2
+    //
+    unsigned mindex = ndx;
+    unsigned mult   = 1;
+    unsigned mult1  = 0;
+    unsigned mult2  = 0;
+    unsigned x = ndx;
+    for (unsigned j=1; j<=vars(); j++) {
+        if (k1 == j) {
+            mult1 = mult;
+            unsigned d = x % setdom();
+            mindex -= d * mult;
+        }
+        if (k2 == j) {
+            mult2 = mult;
+            unsigned d = x % setdom();
+            mindex -= d * mult;
+        }
+        x /= setdom();
+        mult *= setdom();
+    }
+
+
+    //
+    // Ready to build the list. Clear it and then
+    // loop over pairs (v1, v2) with
+    //      v1 = (r1, r1) = r1 * reldom() + r1,
+    // and similarly for v2.
+    //
+    ilist.clear();
+    for (unsigned r1=0; r1<reldom(); r1++) {
+        const unsigned v1 = r1 * reldom() + r1;
+        for (unsigned r2=0; r2<reldom(); r2++) {
+            const unsigned v2 = r2 * reldom() + r2;
+            ilist.push_back( mindex + mult1*v1 + mult2*v2 );
+            if (0==mult2) break;
+        }
+        if (0==mult1) break;
+    }
 }
 
 void vectorgen_base::buildFullyFromIndex(unsigned ndx,
@@ -152,7 +206,8 @@ void vectorgen_base::buildFullyFromIndex(unsigned ndx,
 
     //
     // Ready to build the list. Clear it and then
-    // loop over pairs
+    // loop over pairs (v1, v2) with v1 in {0, .., setdom()-1}
+    // and v2 in {0, ..., setdom()-1}
     //
     ilist.clear();
     for (unsigned v1=0; v1<setdom(); v1++) {
