@@ -155,100 +155,26 @@ void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
 
 inline void writeLongReduction(const forest* f)
 {
-    printf("%s", nameOf(f->getReductionRule()));
-    /*
-    switch(f->getReductionRule()) {
-
-        case reduction_rule::FULLY_REDUCED:
-            printf("fully-reduced ");
-            break;
-
-        case reduction_rule::QUASI_REDUCED:
-            printf("quasi-reduced ");
-            break;
-
-        case reduction_rule::IDENTITY_REDUCED:
-            printf("identity-reduced ");
-            break;
-
-        default:
-            printf("unknown-reduced ");
-            break;
-    }
-    */
+    printf("%s ", nameOf(f->getReductionRule()));
 }
 
-void writeType(const forest* f)
+inline void writeType(const forest* f)
 {
-    switch (f->getRangeType()) {
-        case range_type::BOOLEAN:
-            printf("bool ");
-            break;
-
-        case range_type::INTEGER:
-            printf("int. ");
-            break;
-
-        case range_type::REAL:
-            printf("real ");
-            break;
-
-        default:
-            printf("unk. ");
-            break;
-    }
-    switch(f->getReductionRule()) {
-
-        case reduction_rule::FULLY_REDUCED:
-            printf("FR ");
-            break;
-
-        case reduction_rule::QUASI_REDUCED:
-            printf("QR ");
-            break;
-
-        case reduction_rule::IDENTITY_REDUCED:
-            printf("IR ");
-            break;
-
-        default:
-            printf("?R ");
-            break;
-    }
-
-    switch (f->getEdgeLabeling()) {
-        case edge_labeling::MULTI_TERMINAL:
-            printf(" mt");
-            break;
-
-        case edge_labeling::EVPLUS:
-            printf("ev+");
-            break;
-
-        case edge_labeling::INDEX_SET:
-            printf("ind");
-            break;
-
-        case edge_labeling::EVTIMES:
-            printf("ev*");
-            break;
-
-        default:
-            printf(" ??");
-            break;
-    }
-
-    if (f->isForRelations())  printf("mxd");
-    else                      printf("mdd");
+    printf("%7s %3s %3s %3s",
+            nameOf(f->getRangeType()),
+            shortNameOf(f->getReductionRule()),
+            nameOf(f->getEdgeLabeling()),
+            f->isForRelations() ? "mxd" : "mdd"
+    );
 }
 
 void testCopy(forest* srcF, forest* destF)
 {
-    printf("\t");
-    writeType(srcF);
-    printf(" -> ");
-    writeType(destF);
     printf("      ");
+    writeType(srcF);
+    printf(" ->  ");
+    writeType(destF);
+    printf("  ");
     fflush(stdout);
 
     dd_edge srcE(srcF), dummy(srcF);
@@ -314,7 +240,7 @@ void testCopy(forest* srcF, forest* destF)
 
         } // for t
 
-        printf("OK\n");
+        printf("  OK\n");
     }
     catch (MEDDLY::error e) {
         printf("%s\n", e.getName());
@@ -514,7 +440,7 @@ int main(int argc, const char** argv)
             if (srcs[i]->isEVPlus() != dests[j]->isEVPlus()) {
                 // Do not compare EV+MDD with others
                 // Check the semantics of PLUS operation with EV+MDD
-                printf("\tDo not compare ");
+                printf("skip  ");
                 writeType(srcs[i]);
                 printf(" and ");
                 writeType(dests[j]);

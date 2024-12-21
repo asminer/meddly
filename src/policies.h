@@ -125,6 +125,16 @@ namespace MEDDLY {
         }
     }
 
+    inline const char* shortNameOf(reduction_rule rr)
+    {
+        switch (rr) {
+            case reduction_rule::FULLY_REDUCED:     return "FR";
+            case reduction_rule::QUASI_REDUCED:     return "QR";
+            case reduction_rule::IDENTITY_REDUCED:  return "IR";
+            case reduction_rule::USER_DEFINED:      return "uR";
+        }
+    }
+
     // ******************************************************************
     // *                       node storage  rules                      *
     // ******************************************************************
@@ -173,7 +183,7 @@ namespace MEDDLY {
             case edge_labeling::MULTI_TERMINAL: return "MT";
 
             case edge_labeling::EVPLUS:         return "EV+";
-            case edge_labeling::INDEX_SET:      return "EV+";
+            case edge_labeling::INDEX_SET:      return "ndx";
 
             case edge_labeling::EVTIMES:        return "EV*";
         }

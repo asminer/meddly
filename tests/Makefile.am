@@ -29,7 +29,8 @@ noinst_PROGRAMS = \
     ops_comp \
     ops_set \
     refcount \
-    sat_test
+    sat_test \
+    randtest
 
 TESTS = \
     bug_00 \
@@ -147,3 +148,5 @@ refcount_LDADD = ../src/libmeddly.la
 sat_test_SOURCES = sat_test.cc
 sat_test_LDADD = ../src/libmeddly.la
 
+randtest_SOURCES = randomize.cc randtest.cc
+randtest_LDADD = ../src/libmeddly.la

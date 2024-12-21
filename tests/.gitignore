@@ -28,6 +28,7 @@ nodestor
 nqueens
 ops_comp
 ops_set
+randtest
 refcount
 sat_test
 kan_io.data.*
