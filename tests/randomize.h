@@ -26,23 +26,29 @@ class vectorgen_base {
     public:
         ///
         /// Constructor.
-        ///     @param  v   number of domain variables.
-        ///     @param  rd  variable domain for relations;
-        ///                 square this for sets.
+        ///     @param  sr      Set (false) or relation (true).
+        ///     @param  vars    number of domain variables.
+        ///     @param  dom     domain; size for each variable.
+        ///     @param  range   number of distinct range values.
         ///
         /// The explicit representation will be a vector of
         /// dimension POTENTIAL = (rd*rd) ^ v
         /// so these need to be very small integers.
         ///
-        vectorgen_base(unsigned v=5, unsigned rd=2);
+        vectorgen_base(bool sr, unsigned vars, unsigned dom, unsigned range);
 
         static void setSeed(long s, bool print=true);
 
         static double random();
 
-        static inline unsigned Equilikely(unsigned a, unsigned b)
+        static inline unsigned Equilikely_U(unsigned a, unsigned b)
         {
             return (a + (unsigned) ((b - a + 1) * random()));
+        }
+
+        static inline int Equilikely_I(int a, int b)
+        {
+            return (a + (int) ((b - a + 1) * random()));
         }
 
         inline unsigned potential() const {
@@ -51,12 +57,51 @@ class vectorgen_base {
         inline unsigned vars() const {
             return VARS;
         }
-        inline unsigned reldom() const {
-            return RELDOM;
+        inline unsigned dom() const {
+            return DOM;
         }
-        inline unsigned setdom() const {
-            return RELDOM * RELDOM;
+        inline bool isForRelations() const {
+            return is_for_relations;
         }
+        inline bool isForSets() const {
+            return !is_for_relations;
+        }
+
+        ///
+        /// Increment a minterm.
+        ///
+        inline bool nextMinterm(MEDDLY::minterm &m)
+        {
+            if (m.isForSets()) {
+                for (unsigned i=1; i<=m.getNumVars(); ++i)
+                {
+                    if (++m.from(i) < dom()) {
+                        return true;
+                    }
+                    m.from(i) = 0;
+                }
+                return false;
+            } else {
+                for (unsigned i=1; i<=m.getNumVars(); ++i)
+                {
+                    if (++m.to(i) < dom()) {
+                        return true;
+                    }
+                    m.to(i) = 0;
+                    if (++m.from(i) < dom()) {
+                        return true;
+                    }
+                    m.from(i) = 0;
+                }
+                return false;
+            }
+        }
+
+        ///
+        /// Generate a random minterm.
+        /// There may be don't care or don't change values.
+        ///
+        void randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt);
 
 
         ///
@@ -118,19 +163,23 @@ class vectorgen_base {
         }
 
     private:
+        const bool is_for_relations;
         const unsigned VARS;
-        const unsigned RELDOM;
+        const unsigned DOM;
+        const unsigned RANGE;
         unsigned POTENTIAL;
 
         static long seed;
+
+        unsigned current_terminal;
 };
 
 
 template <typename TYPE>
 class vectorgen : public vectorgen_base {
     public:
-        vectorgen(unsigned v=5, unsigned rd=2) : vectorgen_base(v, rd)
-        {}
+        vectorgen(bool sr, unsigned vars, unsigned dom, unsigned range)
+            : vectorgen_base(sr, vars, dom, range) { }
 
         ///
         /// Randomly generate an explicit vector.

@@ -22,14 +22,14 @@
 
 long vectorgen_base::seed;
 
-vectorgen_base::vectorgen_base(unsigned v, unsigned rd)
-    : VARS(v), RELDOM(rd)
+vectorgen_base::vectorgen_base(bool sr, unsigned v, unsigned d, unsigned r)
+    : is_for_relations(sr), VARS(v), DOM(d), RANGE(r)
 {
-    if (rd < 2) {
-        throw "RELDOM too small (min 2)";
+    if (d < 2) {
+        throw "DOM too small (min 2)";
     }
-    if (rd > 15) {
-        throw "RELDOM too large";
+    if (d > 15) {
+        throw "DOM too large";
     }
     if (v < 2) {
         throw "VARS too small (min 2)";
@@ -39,18 +39,22 @@ vectorgen_base::vectorgen_base(unsigned v, unsigned rd)
     }
 
     //
-    // Compute POTENTIAL = (rd*rd) ^ v
+    // Compute POTENTIAL = rd ^ v for sets, rd ^ 2v for relations
     //
 
-    const unsigned rdrd = rd*rd;
     POTENTIAL = 1;
+    if (is_for_relations) {
+        v *= 2;
+    }
     while (v--) {
-        POTENTIAL *= rdrd;
+        POTENTIAL *= DOM;
     }
 
     if (POTENTIAL > 99999999) {
         throw "POTENTIAL too large";
     }
+
+    current_terminal = 0;
 }
 
 void vectorgen_base::setSeed(long s, bool print)
@@ -83,6 +87,80 @@ double vectorgen_base::random()
     return ((double) seed / MODULUS);
 }
 
+void vectorgen_base::randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt)
+{
+    const int X = MEDDLY::DONT_CARE;
+    const int I = MEDDLY::DONT_CHANGE;
+
+    if (m.isForRelations()) {
+        for (unsigned i=vars(); i; --i) {
+            int val = Equilikely_I(-5, 2*dom()-1);
+            switch (val) {
+                case -5:    // (x,x) pair
+                            m.setVars(i, X, I);
+                            continue;
+
+                case -4:    // (x,i) pair
+                            m.setVars(i, X, I);
+                            continue;
+
+                case -3:    // (x,normal) pair
+                            m.setVars(i, X, Equilikely_I(0, dom()-1));
+                            continue;
+
+                case -2:    // (normal,x) pair
+                            m.setVars(i, Equilikely_I(0, dom()-1), X);
+                            continue;
+
+                case -1:    // (normal,i) pair
+                            m.setVars(i, Equilikely_I(0, dom()-1), I);
+                            continue;
+
+                default:    // (normal, normal) pair
+                            m.setVars(i, val/2, Equilikely_I(0, dom()-1));
+
+            }
+        }
+    } else {
+        ///
+        /// Roll a die with -1 on one side,
+        /// each possible value from 0..setdom()-1
+        /// on two sides.
+        ///
+        for (unsigned i=vars(); i; --i) {
+            int val = Equilikely_I(-1, 2*dom());
+            if (val>=0) {
+                val /= 2;
+            } else {
+                val = X;
+            }
+            m.setVar(i, val);
+        }
+    }
+
+    //
+    // Randomize the terminal
+    //
+    current_terminal = 1 + (current_terminal % RANGE);
+
+    int iterm;
+    float fterm;
+    switch (rt) {
+        case MEDDLY::range_type::INTEGER:
+            vno2val(current_terminal, iterm);
+            m.setTerm(iterm);
+            break;
+
+        case MEDDLY::range_type::REAL:
+            vno2val(current_terminal, fterm);
+            m.setTerm(fterm);
+            break;
+
+        default:
+            m.setTerm(true);
+    }
+}
+
 void vectorgen_base::index2minterm(unsigned x, MEDDLY::minterm &m)
 {
     if (m.getNumVars() != vars()) {
@@ -90,15 +168,15 @@ void vectorgen_base::index2minterm(unsigned x, MEDDLY::minterm &m)
     }
     if (m.isForSets()) {
         for (unsigned j=1; j<=m.getNumVars(); j++) {
-            m.setVar(j, x % setdom());
-            x /= setdom();
+            m.setVar(j, x % dom());
+            x /= dom();
         }
     } else {
         for (unsigned j=1; j<=m.getNumVars(); j++) {
-            const int from = x % reldom();
-            x /= reldom();
-            const int to = x % reldom();
-            x /= reldom();
+            const int from = x % dom();
+            x /= dom();
+            const int to = x % dom();
+            x /= dom();
             m.setVars(j, from, to);
         }
     }
@@ -107,6 +185,9 @@ void vectorgen_base::index2minterm(unsigned x, MEDDLY::minterm &m)
 void vectorgen_base::buildIdentityFromIndex(unsigned ndx,
         unsigned k1, unsigned k2, std::vector <unsigned> &ilist) const
 {
+    if (isForSets()) {
+        throw "buildIdentityFromIndex called on set";
+    }
     if (k1 < k2) {
         MEDDLY::SWAP(k1, k2);
     }
@@ -129,33 +210,34 @@ void vectorgen_base::buildIdentityFromIndex(unsigned ndx,
     unsigned mult1  = 0;
     unsigned mult2  = 0;
     unsigned x = ndx;
+    const unsigned dom_squared = dom() * dom();
     for (unsigned j=1; j<=vars(); j++) {
         if (k1 == j) {
             mult1 = mult;
-            unsigned d = x % setdom();
+            unsigned d = x % dom_squared;
             mindex -= d * mult;
         }
         if (k2 == j) {
             mult2 = mult;
-            unsigned d = x % setdom();
+            unsigned d = x % dom_squared;
             mindex -= d * mult;
         }
-        x /= setdom();
-        mult *= setdom();
+        x /= dom_squared;
+        mult *= dom_squared;
     }
 
 
     //
     // Ready to build the list. Clear it and then
     // loop over pairs (v1, v2) with
-    //      v1 = (r1, r1) = r1 * reldom() + r1,
+    //      v1 = (r1, r1) = r1 * dom() + r1,
     // and similarly for v2.
     //
     ilist.clear();
-    for (unsigned r1=0; r1<reldom(); r1++) {
-        const unsigned v1 = r1 * reldom() + r1;
-        for (unsigned r2=0; r2<reldom(); r2++) {
-            const unsigned v2 = r2 * reldom() + r2;
+    for (unsigned r1=0; r1<dom(); r1++) {
+        const unsigned v1 = r1 * dom() + r1;
+        for (unsigned r2=0; r2<dom(); r2++) {
+            const unsigned v2 = r2 * dom() + r2;
             ilist.push_back( mindex + mult1*v1 + mult2*v2 );
             if (0==mult2) break;
         }
@@ -188,19 +270,20 @@ void vectorgen_base::buildFullyFromIndex(unsigned ndx,
     unsigned mult1  = 0;
     unsigned mult2  = 0;
     unsigned x = ndx;
+    const unsigned pairdom = isForSets() ? dom() : dom() * dom();
     for (unsigned j=1; j<=vars(); j++) {
         if (k1 == j) {
             mult1 = mult;
-            unsigned d = x % setdom();
+            unsigned d = x % pairdom;
             mindex -= d * mult;
         }
         if (k2 == j) {
             mult2 = mult;
-            unsigned d = x % setdom();
+            unsigned d = x % pairdom;
             mindex -= d * mult;
         }
-        x /= setdom();
-        mult *= setdom();
+        x /= pairdom;
+        mult *= pairdom;
     }
 
 
@@ -210,8 +293,8 @@ void vectorgen_base::buildFullyFromIndex(unsigned ndx,
     // and v2 in {0, ..., setdom()-1}
     //
     ilist.clear();
-    for (unsigned v1=0; v1<setdom(); v1++) {
-        for (unsigned v2=0; v2<setdom(); v2++) {
+    for (unsigned v1=0; v1<pairdom; v1++) {
+        for (unsigned v2=0; v2<pairdom; v2++) {
             ilist.push_back( mindex + mult1*v1 + mult2*v2 );
             if (0==mult2) break;
         }

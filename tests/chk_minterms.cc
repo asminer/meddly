@@ -24,6 +24,14 @@
 #define TEST_RELS
 // #define SHOW_MINTERMS
 
+#define NEW_RANDOMIZE
+
+#ifdef NEW_RANDOMIZE
+
+#include "randomize.h"
+
+#endif
+
 const int DOMSIZE = 4;       // DO NOT change
 const int SETVARS = 8;
 const int RELVARS = 4;
