@@ -60,6 +60,9 @@ class vectorgen_base {
         inline unsigned dom() const {
             return DOM;
         }
+        inline unsigned range() const {
+            return RANGE;
+        }
         inline bool isForRelations() const {
             return is_for_relations;
         }
@@ -174,6 +177,9 @@ class vectorgen_base {
             val = v / 2.0;
         }
 
+    protected:
+        std::vector <unsigned> ilist;
+
     private:
         const bool is_for_relations;
         const unsigned VARS;
@@ -197,13 +203,34 @@ class vectorgen : public vectorgen_base {
         /// Randomly generate an explicit vector.
         ///     @param  elems   Vector of elements; will be cleared.
         ///     @param  card    Number of non-zero elements
-        ///     @param  nv      Number of distinct values to use
-        ///                     for the non-zero elements.
-        ///                     Will be evenly distributed.
         ///
-        void randomizeVector(std::vector <TYPE> &elems, unsigned card,
-                unsigned nv) const
+        void randomizeVector(std::vector <TYPE> &elems, unsigned card)
         {
+            if (elems.size() != potential()) {
+                throw "vector size mismatch in randomizeVector";
+            }
+            unsigned v=0;
+            for (unsigned i=0; i<elems.size(); i++) {
+                if (i<card) {
+                    v = 1+ (v % range());
+                    TYPE val;
+                    vno2val(v, val);
+                    elems[i] = val;
+                } else {
+                    elems[i] = 0;
+                }
+            }
+            //
+            // Shuffle the array
+            //
+            for (unsigned i=0; i<elems.size()-1; i++) {
+                unsigned j = Equilikely_U(i, elems.size()-1);
+                if (elems[i] != elems[j]) {
+                    TYPE t = elems[i];
+                    elems[i] = elems[j];
+                    elems[j] = t;
+                }
+            }
         }
 
         ///
@@ -214,13 +241,30 @@ class vectorgen : public vectorgen_base {
         ///                     and the size of each pattern is more
         ///                     than one, this will not be the
         ///                     cardinality of the final set/vector.
-        ///     @param  nv      Number of distinct values to use
-        ///                     for the non-zero elements.
-        ///                     Will be evenly distributed.
         ///
-        void randomizeFully(std::vector <TYPE> &elems, unsigned card,
-                unsigned nv) const
+        void randomizeFully(std::vector <TYPE> &elems, unsigned card)
         {
+            if (elems.size() != potential()) {
+                throw "vector size mismatch in randomizeFully";
+            }
+            for (unsigned i=0; i<elems.size(); i++) {
+                elems[i] = 0;
+            }
+            unsigned v=0;
+            for (unsigned i=0; i<card; i++) {
+                unsigned x = Equilikely_U(0, elems.size()-1);
+                unsigned k1 = Equilikely_U(1, vars());
+                unsigned k2 = Equilikely_U(1, vars());
+                v = 1+ (v % range());
+                TYPE val;
+                vno2val(v, val);
+
+                ilist.clear();
+                buildFullyFromIndex(x, k1, k2, ilist);
+                for (unsigned z=0; z<ilist.size(); z++) {
+                    elems[ ilist[z] ] = val;
+                }
+            }
         }
 
         ///
@@ -231,16 +275,31 @@ class vectorgen : public vectorgen_base {
         ///                     and the size of each pattern is more
         ///                     than one, this will not be the
         ///                     cardinality of the final set/vector.
-        ///     @param  nv      Number of distinct values to use
-        ///                     for the non-zero elements.
-        ///                     Will be evenly distributed.
         ///
-        void randomizeIdentity(std::vector <TYPE> &elems, unsigned card,
-                unsigned nv) const
+        void randomizeIdentity(std::vector <TYPE> &elems, unsigned card)
         {
+            if (elems.size() != potential()) {
+                throw "vector size mismatch in randomizeIdentity";
+            }
+            for (unsigned i=0; i<elems.size(); i++) {
+                elems[i] = 0;
+            }
+            unsigned v=0;
+            for (unsigned i=0; i<card; i++) {
+                unsigned x = Equilikely_U(0, elems.size()-1);
+                unsigned k1 = Equilikely_U(1, vars());
+                unsigned k2 = Equilikely_U(1, vars());
+                v = 1+ (v % range());
+                TYPE val;
+                vno2val(v, val);
+
+                ilist.clear();
+                buildIdentityFromIndex(x, k1, k2, ilist);
+                for (unsigned z=0; z<ilist.size(); z++) {
+                    elems[ ilist[z] ] = val;
+                }
+            }
         }
-
-
 };
 
 #endif

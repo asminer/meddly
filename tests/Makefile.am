@@ -136,10 +136,10 @@ nodestor_LDADD = ../src/libmeddly.la
 nqueens_SOURCES = nqueens.cc
 nqueens_LDADD = ../src/libmeddly.la
 
-ops_comp_SOURCES = ops_comp.cc
+ops_comp_SOURCES = ops_comp.cc randomize.cc
 ops_comp_LDADD = ../src/libmeddly.la
 
-ops_set_SOURCES = ops_set.cc
+ops_set_SOURCES = ops_set.cc randomize.cc
 ops_set_LDADD = ../src/libmeddly.la
 
 refcount_SOURCES = refcount.cc
