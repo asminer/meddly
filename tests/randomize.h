@@ -68,6 +68,11 @@ class vectorgen_base {
         }
 
         ///
+        /// Build a domain based on the variables and domain
+        ///
+        MEDDLY::domain* makeDomain();
+
+        ///
         /// Increment a minterm.
         ///
         inline bool nextMinterm(MEDDLY::minterm &m)

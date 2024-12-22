@@ -20,96 +20,20 @@
 #include <time.h>
 #include <iostream>
 
+#include "randomize.h"
+
+//
+// Minterm generators :)
+//
+
+vectorgen_base SG(MEDDLY::SET, 12, 4, 5);
+vectorgen_base RG(MEDDLY::RELATION, 10, 4, 5);
+
 #define TEST_SETS
 #define TEST_RELS
 // #define SHOW_MINTERMS
 
-const int DOMSIZE = 4;       // DO NOT change
-const int SETVARS = 10;
-const int RELVARS = 6;
-
-/*
- *
- * RNG stuff
- *
- */
-
-long seed;
-
-double Random()
-{
-    const long MODULUS = 2147483647L;
-    const long MULTIPLIER = 48271L;
-    const long Q = MODULUS / MULTIPLIER;
-    const long R = MODULUS % MULTIPLIER;
-
-    long t = MULTIPLIER * (seed % Q) - R * (seed / Q);
-    if (t > 0) {
-        seed = t;
-    } else {
-        seed = t + MODULUS;
-    }
-    return ((double) seed / MODULUS);
-}
-
-int Equilikely(int a, int b)
-{
-    return (a + (int) ((b - a + 1) * Random()));
-}
-
 using namespace MEDDLY;
-
-void randomizeMinterm(minterm &m, range_type rt)
-{
-    const int vals[9] = { -1, 0, 0, 1, 1, 2, 2, 3, 3 };
-    const int unvals[52] = {
-        -1, -1, -1, -1,     // 4 (x,x) pairs
-        -1, -1, -1, -1,     // 4 (x,i) pairs
-        -1, -1, -1, -1,     // 4 (x, normal) pairs
-        0,  1,  2,  3,      // 4 (normal, x) pairs
-        0,  1,  2,  3,      // 4 (normal, i) pairs
-        0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3,  // 16 normal pairs
-        0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3   // 16 normal pairs
-    };
-
-    const int prvals[52] = {
-        -1, -1, -1, -1,     // 4 (x,x) pairs
-        -2, -2, -2, -2,     // 4 (x,i) pairs
-        0,  1,  2,  3,      // 4 (x, normal) pairs
-        -1, -1, -1, -1,     // 4 (normal, x) pairs
-        -2, -2, -2, -2,     // 4 (normal, i) pairs
-        0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  // 16 normal pairs
-        0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3   // 16 normal pairs
-    };
-
-    if (m.isForRelations()) {
-        for (unsigned i=1; i<=m.getNumVars(); i++) {
-            int index = Equilikely(0, 51);
-            m.setVars(i, unvals[index], prvals[index]);
-        }
-    } else {
-        for (unsigned i=1; i<=m.getNumVars(); i++) {
-            int index = Equilikely(0, 8);
-            m.setVar(i, vals[index]);
-        }
-    }
-
-    static int count=0;
-    count = (1+count%4);
-    switch (rt) {
-        case range_type::INTEGER:
-                m.setTerm(count);
-                break;
-
-        case range_type::REAL:
-                m.setTerm(count * 1.1f);
-                break;
-
-        default:
-                m.setTerm(true);
-    }
-}
-
 
 /*
  *
@@ -117,17 +41,8 @@ void randomizeMinterm(minterm &m, range_type rt)
  *
  */
 
-void test_sets(char reduction, range_type rt, edge_labeling el)
+void test_sets(domain* D, char reduction, range_type rt, edge_labeling el)
 {
-    //
-    // Build domain - once
-    //
-    int bs[SETVARS];
-    for (unsigned i=0; i<SETVARS; i++) {
-        bs[i] = DOMSIZE;
-    }
-    domain* D = domain::createBottomUp(bs, SETVARS);
-
     //
     // Build the forest
     //
@@ -166,7 +81,7 @@ void test_sets(char reduction, range_type rt, edge_labeling el)
     //
 
     while (mtcoll.size() < mtcoll.maxsize()) {
-        randomizeMinterm(mtcoll.unused(), rt);
+        SG.randomizeMinterm(mtcoll.unused(), rt);
         mtcoll.pushUnused();
     }
 
@@ -222,23 +137,12 @@ void test_sets(char reduction, range_type rt, edge_labeling el)
     }
     out << "    matches\n";
 #endif
-
-    domain::destroy(D);
 }
 
 
 
-void test_rels(char reduction, range_type rt, edge_labeling el)
+void test_rels(domain* D, char reduction, range_type rt, edge_labeling el)
 {
-    //
-    // Build domain - once
-    //
-    int bs[RELVARS];
-    for (unsigned i=0; i<RELVARS; i++) {
-        bs[i] = DOMSIZE;
-    }
-    domain* D = domain::createBottomUp(bs, RELVARS);
-
     //
     // Build the forest
     //
@@ -279,7 +183,7 @@ void test_rels(char reduction, range_type rt, edge_labeling el)
     //
 
     while (mtcoll.size() < mtcoll.maxsize()) {
-        randomizeMinterm(mtcoll.unused(), rt);
+        RG.randomizeMinterm(mtcoll.unused(), rt);
         mtcoll.pushUnused();
     }
 
@@ -337,8 +241,6 @@ void test_rels(char reduction, range_type rt, edge_labeling el)
     }
     out << "    matches\n";
 #endif
-
-    domain::destroy(D);
 }
 
 /*
@@ -354,35 +256,36 @@ int main(int argc, const char** argv)
     //
     // First argument: seed
     //
+    long seed = 0;
     if (argv[1]) {
         seed = atol(argv[1]);
-    } else {
-        seed = time(NULL);
     }
-    if (seed < 0) seed *= -1;
-    if (0==seed)  seed = 12345;
-    cout << "Using rng seed " << seed << "\n";
+    vectorgen_base::setSeed(seed);
 
     try {
         MEDDLY::initialize();
 #ifdef TEST_SETS
-        test_sets('q', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-        test_sets('f', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-        test_sets('q', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
-        test_sets('f', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
-        test_sets('q', range_type::REAL, edge_labeling::MULTI_TERMINAL);
-        test_sets('f', range_type::REAL, edge_labeling::MULTI_TERMINAL);
+        domain* SD = SG.makeDomain();
+        test_sets(SD, 'q', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        test_sets(SD, 'f', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        test_sets(SD, 'q', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
+        test_sets(SD, 'f', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
+        test_sets(SD, 'q', range_type::REAL, edge_labeling::MULTI_TERMINAL);
+        test_sets(SD, 'f', range_type::REAL, edge_labeling::MULTI_TERMINAL);
+        domain::destroy(SD);
 #endif
 #ifdef TEST_RELS
-        test_rels('q', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-        test_rels('f', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-        test_rels('i', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-        test_rels('q', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
-        test_rels('f', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
-        test_rels('i', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
-        test_rels('q', range_type::REAL, edge_labeling::MULTI_TERMINAL);
-        test_rels('f', range_type::REAL, edge_labeling::MULTI_TERMINAL);
-        test_rels('i', range_type::REAL, edge_labeling::MULTI_TERMINAL);
+        domain* RD = RG.makeDomain();
+        test_rels(RD, 'q', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        test_rels(RD, 'f', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        test_rels(RD, 'i', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        test_rels(RD, 'q', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
+        test_rels(RD, 'f', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
+        test_rels(RD, 'i', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
+        test_rels(RD, 'q', range_type::REAL, edge_labeling::MULTI_TERMINAL);
+        test_rels(RD, 'f', range_type::REAL, edge_labeling::MULTI_TERMINAL);
+        test_rels(RD, 'i', range_type::REAL, edge_labeling::MULTI_TERMINAL);
+        domain::destroy(RD);
 #endif
         MEDDLY::cleanup();
         return 0;

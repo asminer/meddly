@@ -87,6 +87,15 @@ double vectorgen_base::random()
     return ((double) seed / MODULUS);
 }
 
+MEDDLY::domain* vectorgen_base::makeDomain()
+{
+    int bs[vars()];
+    for (unsigned i=0; i<vars(); i++) {
+        bs[i] = dom();
+    }
+    return MEDDLY::domain::createBottomUp(bs, vars());
+}
+
 void vectorgen_base::randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt)
 {
     const int X = MEDDLY::DONT_CARE;
@@ -128,7 +137,7 @@ void vectorgen_base::randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt)
         /// on two sides.
         ///
         for (unsigned i=vars(); i; --i) {
-            int val = Equilikely_I(-1, 2*dom());
+            int val = Equilikely_I(-1, 2*dom()-1);
             if (val>=0) {
                 val /= 2;
             } else {
