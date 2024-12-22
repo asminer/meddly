@@ -24,46 +24,15 @@
 #define TEST_RELS
 // #define SHOW_MINTERMS
 
-#define NEW_RANDOMIZE
-
-#ifdef NEW_RANDOMIZE
-
 #include "randomize.h"
 
-#endif
+//
+// Minterm generators :)
+//
 
-const int DOMSIZE = 4;       // DO NOT change
-const int SETVARS = 8;
-const int RELVARS = 4;
+vectorgen_base SG(MEDDLY::SET, 8, 4, 5);
+vectorgen_base RG(MEDDLY::RELATION, 5, 3, 5);
 
-/*
- *
- * RNG stuff
- *
- */
-
-long seed;
-
-double Random()
-{
-    const long MODULUS = 2147483647L;
-    const long MULTIPLIER = 48271L;
-    const long Q = MODULUS / MULTIPLIER;
-    const long R = MODULUS % MULTIPLIER;
-
-    long t = MULTIPLIER * (seed % Q) - R * (seed / Q);
-    if (t > 0) {
-        seed = t;
-    } else {
-        seed = t + MODULUS;
-    }
-    return ((double) seed / MODULUS);
-}
-
-int Equilikely(int a, int b)
-{
-    return (a + (int) ((b - a + 1) * Random()));
-}
 
 using namespace MEDDLY;
 
@@ -148,79 +117,12 @@ void mismatch(const minterm &eval,
     throw "mismatch";
 }
 
-void nextTermValue(minterm &m, range_type rt)
-{
-    static int count=0;
-    count = (1+count%4);
-    switch (rt) {
-        case range_type::INTEGER:
-                m.setTerm(count);
-                break;
-
-        case range_type::REAL:
-                m.setTerm(count * 1.1f);
-                break;
-
-        default:
-                m.setTerm(true);
-    }
-}
-
-void randomizeMinterm(minterm &m, range_type rt)
-{
-    const int vals[9] = { -1, 0, 0, 1, 1, 2, 2, 3, 3 };
-    const int unvals[52] = {
-        -1, -1, -1, -1,     // 4 (x,x) pairs
-        -1, -1, -1, -1,     // 4 (x,i) pairs
-        -1, -1, -1, -1,     // 4 (x, normal) pairs
-        0,  1,  2,  3,      // 4 (normal, x) pairs
-        0,  1,  2,  3,      // 4 (normal, i) pairs
-        0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3,  // 16 normal pairs
-        0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3   // 16 normal pairs
-    };
-
-    const int prvals[52] = {
-        -1, -1, -1, -1,     // 4 (x,x) pairs
-        -2, -2, -2, -2,     // 4 (x,i) pairs
-        0,  1,  2,  3,      // 4 (x, normal) pairs
-        -1, -1, -1, -1,     // 4 (normal, x) pairs
-        -2, -2, -2, -2,     // 4 (normal, i) pairs
-        0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  // 16 normal pairs
-        0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3   // 16 normal pairs
-    };
-
-
-    if (m.isForRelations()) {
-        for (unsigned i=1; i<=m.getNumVars(); i++) {
-            int index = Equilikely(0, 51);
-            m.setVars(i, unvals[index], prvals[index]);
-        }
-    } else {
-        for (unsigned i=1; i<=m.getNumVars(); i++) {
-            int index = Equilikely(0, 8);
-            m.setVar(i, vals[index]);
-        }
-    }
-}
-
-
 
 /*
  *
  * Manipulate minterms for sets
  *
  */
-
-bool nextSetMinterm(minterm& m)
-{
-    for (unsigned i=1; i<=m.getNumVars(); i++) {
-        if (++m.from(i) < DOMSIZE) {
-            return true;
-        }
-        m.from(i) = 0;
-    }
-    return false;
-}
 
 bool matches_set(const minterm &m, const minterm& va)
 {
@@ -254,17 +156,8 @@ void evaluate_set(const minterm &m, const minterm_coll &MC, RTYPE &ans)
  */
 
 template <typename RTYPE>
-void test_sets(range_type rt)
+void test_sets(domain* D, range_type rt)
 {
-    //
-    // Build domain - once
-    //
-    int bs[SETVARS];
-    for (unsigned i=0; i<SETVARS; i++) {
-        bs[i] = DOMSIZE;
-    }
-    domain* D = domain::createBottomUp(bs, SETVARS);
-
     //
     // Build the various types of boolean forests
     //
@@ -310,7 +203,9 @@ void test_sets(range_type rt)
         if ('f' == testtype[i]) {
             mtcoll.clear();
             mtcoll.unused().setAllVars(DONT_CARE);
-            nextTermValue(mtcoll.unused(), rt);
+            RTYPE val;
+            SG.vno2val(3, val);
+            mtcoll.unused().setTerm(val);
             mtcoll.pushUnused();
             out << " fully: ";
             out.flush();
@@ -318,8 +213,7 @@ void test_sets(range_type rt)
             if (1 == mtsizes[i]) mtcoll.clear();
 
             while (mtcoll.size() < mtsizes[i]) {
-                randomizeMinterm(mtcoll.unused(), rt);
-                nextTermValue(mtcoll.unused(), rt);
+                SG.randomizeMinterm(mtcoll.unused(), rt);
                 mtcoll.pushUnused();
             }
 
@@ -364,7 +258,7 @@ void test_sets(range_type rt)
             if (different(fval, in_mtcoll)) {
                 mismatch(eval, 'F', Ef, fval, mtcoll, in_mtcoll);
             }
-        } while (nextSetMinterm(eval));
+        } while (SG.nextMinterm(eval));
         out << "=\n";
         out.flush();
 
@@ -408,12 +302,10 @@ void test_sets(range_type rt)
             if (different(fval, in_mtcoll)) {
                 mismatch(eval, 'F', Ef, fval, mtcoll.at(i), in_mtcoll);
             }
-        } while (nextSetMinterm(eval));
+        } while (SG.nextMinterm(eval));
         out << "=\n";
         out.flush();
     }
-
-    domain::destroy(D);
 }
 
 /*
@@ -421,21 +313,6 @@ void test_sets(range_type rt)
  * Manipulate minterms for relations
  *
  */
-
-bool nextRelMinterm(minterm& m)
-{
-    for (unsigned i=1; i<=m.getNumVars(); i++) {
-        if (++m.from(i) < DOMSIZE) {
-            return true;
-        }
-        m.from(i) = 0;
-        if (++m.to(i) < DOMSIZE) {
-            return true;
-        }
-        m.to(i) = 0;
-    }
-    return false;
-}
 
 bool matches_rel(const minterm &m, const minterm& va)
 {
@@ -474,17 +351,8 @@ void evaluate_rel(const minterm &m, const minterm_coll &MC, RTYPE &ans)
 
 
 template <typename RTYPE>
-void test_rels(range_type rt)
+void test_rels(domain* D, range_type rt)
 {
-    //
-    // Build domain - once
-    //
-    int bs[RELVARS];
-    for (unsigned i=0; i<RELVARS; i++) {
-        bs[i] = DOMSIZE;
-    }
-    domain* D = domain::createBottomUp(bs, RELVARS);
-
     //
     // Build the various types of boolean forests
     //
@@ -535,14 +403,18 @@ void test_rels(range_type rt)
         if ('f' == testtype[i]) {
             mtcoll.clear();
             mtcoll.unused().setAllVars(DONT_CARE, DONT_CARE);
-            nextTermValue(mtcoll.unused(), rt);
+            RTYPE val;
+            RG.vno2val(3, val);
+            mtcoll.unused().setTerm(val);
             mtcoll.pushUnused();
             out << " fully: ";
             out.flush();
         } else if ('i' == testtype[i]) {
             mtcoll.clear();
             mtcoll.unused().setAllVars(DONT_CARE, DONT_CHANGE);
-            nextTermValue(mtcoll.unused(), rt);
+            RTYPE val;
+            RG.vno2val(5, val);
+            mtcoll.unused().setTerm(val);
             mtcoll.pushUnused();
             out << " ident: ";
             out.flush();
@@ -551,8 +423,7 @@ void test_rels(range_type rt)
             if (1 == mtsizes[i]) mtcoll.clear();
 
             while (mtcoll.size() < mtsizes[i]) {
-                randomizeMinterm(mtcoll.unused(), rt);
-                nextTermValue(mtcoll.unused(), rt);
+                RG.randomizeMinterm(mtcoll.unused(), rt);
                 mtcoll.pushUnused();
             }
 
@@ -606,7 +477,7 @@ void test_rels(range_type rt)
             if (different(ival, in_mtcoll)) {
                 mismatch(eval, 'I', Ei, ival, mtcoll, in_mtcoll);
             }
-        } while (nextRelMinterm(eval));
+        } while (RG.nextMinterm(eval));
         out << "=\n";
         out.flush();
 
@@ -659,12 +530,10 @@ void test_rels(range_type rt)
             if (different(ival, in_mtcoll)) {
                 mismatch(eval, 'I', Ei, ival, mtcoll.at(i), in_mtcoll);
             }
-        } while (nextRelMinterm(eval));
+        } while (RG.nextMinterm(eval));
         out << "=\n";
         out.flush();
     }
-
-    domain::destroy(D);
 }
 
 /*
@@ -680,26 +549,27 @@ int main(int argc, const char** argv)
     //
     // First argument: seed
     //
+    long seed = 0;
     if (argv[1]) {
         seed = atol(argv[1]);
-    } else {
-        seed = time(NULL);
     }
-    if (seed < 0) seed *= -1;
-    if (0==seed)  seed = 12345;
-    cout << "Using rng seed " << seed << "\n";
+    vectorgen_base::setSeed(seed);
 
     try {
         MEDDLY::initialize();
 #ifdef TEST_SETS
-        test_sets<bool>(range_type::BOOLEAN);
-        test_sets<long>(range_type::INTEGER);
-        test_sets<double>(range_type::REAL);
+        domain* SD = SG.makeDomain();
+        test_sets<bool>(SD, range_type::BOOLEAN);
+        test_sets<long>(SD, range_type::INTEGER);
+        test_sets<double>(SD, range_type::REAL);
+        domain::destroy(SD);
 #endif
 #ifdef TEST_RELS
-        test_rels<bool>(range_type::BOOLEAN);
-        test_rels<long>(range_type::INTEGER);
-        test_rels<double>(range_type::REAL);
+        domain* RD = RG.makeDomain();
+        test_rels<bool>(RD, range_type::BOOLEAN);
+        test_rels<long>(RD, range_type::INTEGER);
+        test_rels<double>(RD, range_type::REAL);
+        domain::destroy(RD);
 #endif
         MEDDLY::cleanup();
         return 0;

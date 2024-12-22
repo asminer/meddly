@@ -101,7 +101,7 @@ chk_evtimes_float_LDADD = ../src/libmeddly.la
 chk_iters_SOURCES = chk_iters.cc randomize.cc
 chk_iters_LDADD = ../src/libmeddly.la
 
-chk_minterms_SOURCES = chk_minterms.cc
+chk_minterms_SOURCES = chk_minterms.cc randomize.cc
 chk_minterms_LDADD = ../src/libmeddly.la
 
 chk_reorder_SOURCES = chk_reorder.cc

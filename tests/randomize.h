@@ -153,7 +153,6 @@ class vectorgen_base {
         void buildFullyFromIndex(unsigned ndx, unsigned k1, unsigned k2,
                 std::vector <unsigned> &ilist) const;
 
-    protected:
         static inline void vno2val(unsigned v, bool &val)
         {
             val = true;
@@ -162,7 +161,15 @@ class vectorgen_base {
         {
             val = int(v);
         }
+        static inline void vno2val(unsigned v, long &val)
+        {
+            val = long(v);
+        }
         static inline void vno2val(unsigned v, float &val)
+        {
+            val = v / 2.0;
+        }
+        static inline void vno2val(unsigned v, double &val)
         {
             val = v / 2.0;
         }
