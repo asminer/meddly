@@ -20,9 +20,9 @@
 #include <time.h>
 #include <iostream>
 
-long vectorgen_base::seed;
+long vectorgen::seed;
 
-vectorgen_base::vectorgen_base(bool sr, unsigned v, unsigned d, unsigned r)
+vectorgen::vectorgen(bool sr, unsigned v, unsigned d, unsigned r)
     : is_for_relations(sr), VARS(v), DOM(d), RANGE(r)
 {
     if (d < 2) {
@@ -59,7 +59,7 @@ vectorgen_base::vectorgen_base(bool sr, unsigned v, unsigned d, unsigned r)
     _D = nullptr;
 }
 
-void vectorgen_base::setSeed(long s, bool print)
+void vectorgen::setSeed(long s, bool print)
 {
     if (s<1) {
         s = time(NULL);
@@ -73,7 +73,7 @@ void vectorgen_base::setSeed(long s, bool print)
     }
 }
 
-double vectorgen_base::random()
+double vectorgen::random()
 {
     const long MODULUS = 2147483647L;
     const long MULTIPLIER = 48271L;
@@ -89,7 +89,7 @@ double vectorgen_base::random()
     return ((double) seed / MODULUS);
 }
 
-MEDDLY::domain* vectorgen_base::makeDomain()
+MEDDLY::domain* vectorgen::makeDomain()
 {
     int bs[vars()];
     for (unsigned i=0; i<vars(); i++) {
@@ -100,7 +100,7 @@ MEDDLY::domain* vectorgen_base::makeDomain()
     return d;
 }
 
-void vectorgen_base::randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt)
+void vectorgen::randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt)
 {
     const int X = MEDDLY::DONT_CARE;
     const int I = MEDDLY::DONT_CHANGE;
@@ -174,7 +174,7 @@ void vectorgen_base::randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt)
     }
 }
 
-void vectorgen_base::index2minterm(unsigned x, MEDDLY::minterm &m) const
+void vectorgen::index2minterm(unsigned x, MEDDLY::minterm &m) const
 {
     if (m.getNumVars() != vars()) {
         throw "minterm mismatch in call to index2minterm";
@@ -195,7 +195,7 @@ void vectorgen_base::index2minterm(unsigned x, MEDDLY::minterm &m) const
     }
 }
 
-void vectorgen_base::buildIdentityFromIndex(unsigned ndx,
+void vectorgen::buildIdentityFromIndex(unsigned ndx,
         unsigned k1, unsigned k2, std::vector <unsigned> &ilist) const
 {
     if (isForSets()) {
@@ -258,7 +258,7 @@ void vectorgen_base::buildIdentityFromIndex(unsigned ndx,
     }
 }
 
-void vectorgen_base::buildFullyFromIndex(unsigned ndx,
+void vectorgen::buildFullyFromIndex(unsigned ndx,
         unsigned k1, unsigned k2, std::vector <unsigned> &ilist) const
 {
     if (k1 < k2) {

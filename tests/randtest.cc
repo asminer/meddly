@@ -222,7 +222,7 @@ int main(int argc, const char** argv)
     }
 
     try {
-        vectorgen_base::setSeed(seed);
+        vectorgen::setSeed(seed);
 
         //
         // Test buildFullyFromIndex
@@ -230,7 +230,7 @@ int main(int argc, const char** argv)
 
         vector <unsigned> L;
 
-        vectorgen_base G(MEDDLY::RELATION, VARS, RELDOM, 2);
+        vectorgen G(MEDDLY::RELATION, VARS, RELDOM, 2);
         cout << "Generator has potential " << G.potential() << "\n";
 
         vector <bool> gset;

@@ -29,8 +29,8 @@
 
 #include "randomize.h"
 
-vectorgen<bool> SG(MEDDLY::SET, 5, 4, 1);
-vectorgen<bool> RG(MEDDLY::RELATION, 5, 2, 1);
+vectorgen SG(MEDDLY::SET, 5, 4, 1);
+vectorgen RG(MEDDLY::RELATION, 5, 2, 1);
 
 const unsigned MAX_SET_CARD = 256;
 const unsigned MAX_REL_CARD = 32;
@@ -145,7 +145,7 @@ void checkCardinality(const dd_edge &e, const std::vector<bool> &set)
     throw "mismatch";
 }
 
-void compare(vectorgen <bool> &Gen,
+void compare(vectorgen &Gen,
         const std::vector <bool> &Aset, const std::vector <bool> &Bset,
         forest* f1, forest* f2, forest* fres)
 {
@@ -217,7 +217,7 @@ void test_on_forests(unsigned scard, forest* f1, forest* f2, forest* fres)
     if (!f2) throw "null f2";
     if (!fres) throw "null fres";
 
-    vectorgen <bool> &Gen = f1->isForRelations() ? RG : SG;
+    vectorgen &Gen = f1->isForRelations() ? RG : SG;
 
     std::cerr << "    " << shortNameOf(f1->getReductionRule())
               << " " << shortNameOf(f2->getReductionRule())
@@ -355,7 +355,7 @@ int main(int argc, const char** argv)
     if (argv[1]) {
         seed = atol(argv[1]);
     }
-    vectorgen_base::setSeed(seed);
+    vectorgen::setSeed(seed);
 
     try {
         MEDDLY::initialize();

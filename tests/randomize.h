@@ -22,7 +22,7 @@
 #include "../src/meddly.h"
 #include <vector>
 
-class vectorgen_base {
+class vectorgen {
     public:
         ///
         /// Constructor.
@@ -35,7 +35,7 @@ class vectorgen_base {
         /// dimension POTENTIAL = (rd*rd) ^ v
         /// so these need to be very small integers.
         ///
-        vectorgen_base(bool sr, unsigned vars, unsigned dom, unsigned range);
+        vectorgen(bool sr, unsigned vars, unsigned dom, unsigned range);
 
         static void setSeed(long s, bool print=true);
 
@@ -177,34 +177,15 @@ class vectorgen_base {
             val = v / 2.0;
         }
 
-    protected:
-        std::vector <unsigned> ilist;
-        const MEDDLY::domain* _D;
-
-    private:
-        const bool is_for_relations;
-        const unsigned VARS;
-        const unsigned DOM;
-        const unsigned RANGE;
-        unsigned POTENTIAL;
-
-        static long seed;
-
-        unsigned current_terminal;
-};
-
-
-template <typename TYPE>
-class vectorgen : public vectorgen_base {
     public:
-        vectorgen(bool sr, unsigned vars, unsigned dom, unsigned range)
-            : vectorgen_base(sr, vars, dom, range) { }
+        // template member functions
 
         ///
         /// Randomly generate an explicit vector.
         ///     @param  elems   Vector of elements; will be cleared.
         ///     @param  card    Number of non-zero elements
         ///
+        template <typename TYPE>
         void randomizeVector(std::vector <TYPE> &elems, unsigned card)
         {
             if (elems.size() != potential()) {
@@ -243,6 +224,7 @@ class vectorgen : public vectorgen_base {
         ///                     than one, this will not be the
         ///                     cardinality of the final set/vector.
         ///
+        template <typename TYPE>
         void randomizeFully(std::vector <TYPE> &elems, unsigned card)
         {
             if (elems.size() != potential()) {
@@ -277,6 +259,7 @@ class vectorgen : public vectorgen_base {
         ///                     than one, this will not be the
         ///                     cardinality of the final set/vector.
         ///
+        template <typename TYPE>
         void randomizeIdentity(std::vector <TYPE> &elems, unsigned card)
         {
             if (elems.size() != potential()) {
@@ -305,6 +288,7 @@ class vectorgen : public vectorgen_base {
         //
         // Build a dd_edge from an explicit vector
         //
+        template <typename TYPE>
         void explicit2edge(const std::vector<TYPE> &x, MEDDLY::dd_edge &s)
             const
         {
@@ -336,6 +320,7 @@ class vectorgen : public vectorgen_base {
         //
         // Display an explicit vector
         //
+        template <typename TYPE>
         void showSet(std::ostream &out, const std::vector <TYPE> &elems)
             const
         {
@@ -354,6 +339,7 @@ class vectorgen : public vectorgen_base {
         //
         // Display minterms corresponding to an explicit vector
         //
+        template <typename TYPE>
         void showMinterms(std::ostream &out, const std::vector <TYPE> &elems)
             const
         {
@@ -376,16 +362,30 @@ class vectorgen : public vectorgen_base {
         }
 
     protected:
+        template <typename TYPE>
         static void showElem(std::ostream &out, TYPE elem);
+
+    private:
+        const bool is_for_relations;
+        const unsigned VARS;
+        const unsigned DOM;
+        const unsigned RANGE;
+        unsigned POTENTIAL;
+        std::vector <unsigned> ilist;
+        const MEDDLY::domain* _D;
+
+        static long seed;
+
+        unsigned current_terminal;
 };
 
 template <>
-inline void vectorgen<bool>::showElem(std::ostream &out, bool elem)
+inline void vectorgen::showElem(std::ostream &out, bool elem)
 {
 }
 
 template <typename TYPE>
-inline void vectorgen<TYPE>::showElem(std::ostream &out, TYPE elem)
+inline void vectorgen::showElem(std::ostream &out, TYPE elem)
 {
     out << ":" << elem;
 }

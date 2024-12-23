@@ -26,8 +26,8 @@
 // Minterm generators :)
 //
 
-vectorgen_base SG(MEDDLY::SET, 12, 4, 5);
-vectorgen_base RG(MEDDLY::RELATION, 10, 4, 5);
+vectorgen SG(MEDDLY::SET, 12, 4, 5);
+vectorgen RG(MEDDLY::RELATION, 10, 4, 5);
 
 #define TEST_SETS
 #define TEST_RELS
@@ -260,7 +260,7 @@ int main(int argc, const char** argv)
     if (argv[1]) {
         seed = atol(argv[1]);
     }
-    vectorgen_base::setSeed(seed);
+    vectorgen::setSeed(seed);
 
     try {
         MEDDLY::initialize();
