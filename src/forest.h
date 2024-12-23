@@ -155,6 +155,11 @@ namespace MEDDLY {
                     const edge_value &b)
             {
             }
+            /// Accumulate a += -b
+            static inline void accumulateInverse(edge_value &a,
+                    const edge_value &b)
+            {
+            }
             static inline terminal buildTerm(
                             const edge_value &val, node_handle p)
             {
@@ -206,6 +211,14 @@ namespace MEDDLY {
                 TYPE bv;
                 b.get(bv);
                 a.add(bv);
+            }
+            /// Accumulate an inverse: a += -b
+            static inline void accumulateInverse(edge_value &a,
+                    const edge_value &b)
+            {
+                TYPE bv;
+                b.get(bv);
+                a.subtract(bv);
             }
             /// Build terminal value for edge <val, p>
             static inline terminal buildTerm(
@@ -260,6 +273,14 @@ namespace MEDDLY {
                 TYPE bv;
                 b.get(bv);
                 a.multiply(bv);
+            }
+            /// Accumulate an inverse: a *= 1/b
+            static inline void accumulateInverse(edge_value &a,
+                    const edge_value &b)
+            {
+                TYPE bv;
+                b.get(bv);
+                a.divide(bv);
             }
             /// Build terminal value for edge <val, p>
             static inline terminal buildTerm(

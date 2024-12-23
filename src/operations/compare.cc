@@ -46,7 +46,7 @@ namespace MEDDLY {
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *         Massive template operation for all comparisons         *
+// *            Template operations  for all comparisons            *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
@@ -73,16 +73,16 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                        compare_op class                        *
+// *                        compare_mt class                        *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
     template <class CTYPE>
-    class compare_op : public binary_operation {
+    class compare_mt : public binary_operation {
         public:
-            compare_op(forest* arg1, forest* arg2, forest* res);
-            virtual ~compare_op();
+            compare_mt(forest* arg1, forest* arg2, forest* res);
+            virtual ~compare_mt();
 
             virtual void compute(int L, unsigned in,
                     const edge_value &av, node_handle ap,
@@ -118,7 +118,7 @@ namespace MEDDLY {
 // ******************************************************************
 
 template <class CTYPE>
-MEDDLY::compare_op<CTYPE>::compare_op(forest* arg1, forest* arg2,
+MEDDLY::compare_mt<CTYPE>::compare_mt(forest* arg1, forest* arg2,
         forest* res) : binary_operation(arg1, arg2, res)
 #ifdef TRACE
       , out(std::cout), top_count(0)
@@ -157,13 +157,13 @@ MEDDLY::compare_op<CTYPE>::compare_op(forest* arg1, forest* arg2,
 }
 
 template <class CTYPE>
-MEDDLY::compare_op<CTYPE>::~compare_op()
+MEDDLY::compare_mt<CTYPE>::~compare_mt()
 {
     ct->markForDestroy();
 }
 
 template <class CTYPE>
-void MEDDLY::compare_op<CTYPE>::compute(int L, unsigned in,
+void MEDDLY::compare_mt<CTYPE>::compute(int L, unsigned in,
         const edge_value &av, node_handle ap,
         const edge_value &bv, node_handle bp,
         edge_value &cv, node_handle &cp)
@@ -186,7 +186,7 @@ void MEDDLY::compare_op<CTYPE>::compute(int L, unsigned in,
 
 
 template <class CTYPE>
-void MEDDLY::compare_op<CTYPE>::_compute(int L, unsigned in,
+void MEDDLY::compare_mt<CTYPE>::_compute(int L, unsigned in,
         node_handle A, node_handle B, node_handle &C)
 {
     // **************************************************************
@@ -637,9 +637,9 @@ MEDDLY::binary_operation* MEDDLY::EQUAL(forest* a, forest* b, forest* c)
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            return EQUAL_cache.add( new compare_op<eq_templ<float> > (a,b,c) );
+            return EQUAL_cache.add( new compare_mt<eq_templ<float> > (a,b,c) );
         } else {
-            return EQUAL_cache.add( new compare_op<eq_templ<long> > (a,b,c) );
+            return EQUAL_cache.add( new compare_mt<eq_templ<long> > (a,b,c) );
         }
     }
 
@@ -679,9 +679,9 @@ MEDDLY::binary_operation* MEDDLY::NOT_EQUAL(forest* a, forest* b, forest* c)
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            return NEQ_cache.add( new compare_op<ne_templ<float> > (a,b,c) );
+            return NEQ_cache.add( new compare_mt<ne_templ<float> > (a,b,c) );
         } else {
-            return NEQ_cache.add( new compare_op<ne_templ<long> > (a,b,c) );
+            return NEQ_cache.add( new compare_mt<ne_templ<long> > (a,b,c) );
         }
     }
 
@@ -715,9 +715,9 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN(forest* a, forest* b, forest* c)
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            return GT_cache.add( new compare_op<gt_templ<float> > (a,b,c) );
+            return GT_cache.add( new compare_mt<gt_templ<float> > (a,b,c) );
         } else {
-            return GT_cache.add( new compare_op<gt_templ<long> > (a,b,c) );
+            return GT_cache.add( new compare_mt<gt_templ<long> > (a,b,c) );
         }
     }
 
@@ -751,9 +751,9 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN_EQUAL(forest* a, forest* b, fores
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            return GE_cache.add( new compare_op<ge_templ<float> > (a,b,c) );
+            return GE_cache.add( new compare_mt<ge_templ<float> > (a,b,c) );
         } else {
-            return GE_cache.add( new compare_op<ge_templ<long> > (a,b,c) );
+            return GE_cache.add( new compare_mt<ge_templ<long> > (a,b,c) );
         }
     }
 
@@ -787,9 +787,9 @@ MEDDLY::binary_operation* MEDDLY::LESS_THAN(forest* a, forest* b, forest* c)
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            return LT_cache.add( new compare_op<lt_templ<float> > (a,b,c) );
+            return LT_cache.add( new compare_mt<lt_templ<float> > (a,b,c) );
         } else {
-            return LT_cache.add( new compare_op<lt_templ<long> > (a,b,c) );
+            return LT_cache.add( new compare_mt<lt_templ<long> > (a,b,c) );
         }
     }
 
@@ -823,9 +823,9 @@ MEDDLY::binary_operation* MEDDLY::LESS_THAN_EQUAL(forest* a, forest* b, forest* 
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            return LE_cache.add( new compare_op<le_templ<float> > (a,b,c) );
+            return LE_cache.add( new compare_mt<le_templ<float> > (a,b,c) );
         } else {
-            return LE_cache.add( new compare_op<le_templ<long> > (a,b,c) );
+            return LE_cache.add( new compare_mt<le_templ<long> > (a,b,c) );
         }
     }
 
