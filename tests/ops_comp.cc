@@ -224,6 +224,7 @@ void compare(vectorgen &Gen,
     checkEqual("less_than_equal", Add, Bdd, AleBsym, AleBdd, AleBset);
 }
 
+template <typename TYPE>
 void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
 {
     if (!f1) throw "null f1";
@@ -236,8 +237,8 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
               << ' ' << shortNameOf(f2->getReductionRule())
               << " : " << shortNameOf(fres->getReductionRule()) << ' ';
 
-    std::vector <long> Aset(Gen.potential());
-    std::vector <long> Bset(Gen.potential());
+    std::vector <TYPE> Aset(Gen.potential());
+    std::vector <TYPE> Bset(Gen.potential());
 
     for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
@@ -265,14 +266,15 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
     std::cerr << std::endl;
 }
 
-void test_sets(domain* D)
+template <typename TYPE>
+void test_sets(domain* D, range_type rt)
 {
     policies p;
     p.useDefaults(SET);
 
     p.setFullyReduced();
 
-    forest* in_fully = forest::create(D, SET, range_type::INTEGER,
+    forest* in_fully = forest::create(D, SET, rt,
                     edge_labeling::MULTI_TERMINAL, p);
 
     forest* out_fully = forest::create(D, SET, range_type::BOOLEAN,
@@ -280,7 +282,7 @@ void test_sets(domain* D)
 
     p.setQuasiReduced();
 
-    forest* in_quasi = forest::create(D, SET, range_type::INTEGER,
+    forest* in_quasi = forest::create(D, SET, rt,
                     edge_labeling::MULTI_TERMINAL, p);
 
     forest* out_quasi = forest::create(D, SET, range_type::BOOLEAN,
@@ -288,28 +290,30 @@ void test_sets(domain* D)
 
 
     for (unsigned i=MIN_SET_CARD; i<=MAX_SET_CARD; i*=MULT_SET_CARD) {
-        std::cout << "Testing ==, !=, >, >=, <, <= on sets of size " << i
-                  << " out of " << SG.potential() << "\n";
+        std::cout << "Testing ==, !=, >, >=, <, <= on "
+                  << nameOf(rt) << " vectors; " << i << " / "
+                  << SG.potential() << " nonzeroes\n";
 
-        test_on_functions(i, in_fully, in_fully, out_fully);
-        test_on_functions(i, in_fully, in_fully, out_quasi);
-        test_on_functions(i, in_fully, in_quasi, out_fully);
-        test_on_functions(i, in_fully, in_quasi, out_quasi);
-        test_on_functions(i, in_quasi, in_fully, out_fully);
-        test_on_functions(i, in_quasi, in_fully, out_quasi);
-        test_on_functions(i, in_quasi, in_quasi, out_fully);
-        test_on_functions(i, in_quasi, in_quasi, out_quasi);
+        test_on_functions<TYPE>(i, in_fully, in_fully, out_fully);
+        test_on_functions<TYPE>(i, in_fully, in_fully, out_quasi);
+        test_on_functions<TYPE>(i, in_fully, in_quasi, out_fully);
+        test_on_functions<TYPE>(i, in_fully, in_quasi, out_quasi);
+        test_on_functions<TYPE>(i, in_quasi, in_fully, out_fully);
+        test_on_functions<TYPE>(i, in_quasi, in_fully, out_quasi);
+        test_on_functions<TYPE>(i, in_quasi, in_quasi, out_fully);
+        test_on_functions<TYPE>(i, in_quasi, in_quasi, out_quasi);
     }
 }
 
-void test_rels(domain* D)
+template <typename TYPE>
+void test_rels(domain* D, range_type rt)
 {
     policies p;
     p.useDefaults(RELATION);
 
     p.setFullyReduced();
 
-    forest* in_fully = forest::create(D, RELATION, range_type::INTEGER,
+    forest* in_fully = forest::create(D, RELATION, rt,
                     edge_labeling::MULTI_TERMINAL, p);
 
     forest* out_fully = forest::create(D, RELATION, range_type::BOOLEAN,
@@ -317,7 +321,7 @@ void test_rels(domain* D)
 
     p.setQuasiReduced();
 
-    forest* in_quasi = forest::create(D, RELATION, range_type::INTEGER,
+    forest* in_quasi = forest::create(D, RELATION, rt,
                     edge_labeling::MULTI_TERMINAL, p);
 
     forest* out_quasi = forest::create(D, RELATION, range_type::BOOLEAN,
@@ -325,7 +329,7 @@ void test_rels(domain* D)
 
     p.setIdentityReduced();
 
-    forest* in_ident = forest::create(D, RELATION, range_type::INTEGER,
+    forest* in_ident = forest::create(D, RELATION, rt,
                     edge_labeling::MULTI_TERMINAL, p);
 
     forest* out_ident = forest::create(D, RELATION, range_type::BOOLEAN,
@@ -334,48 +338,49 @@ void test_rels(domain* D)
 
 
     for (unsigned i=MIN_REL_CARD; i<=MAX_REL_CARD; i*=MULT_REL_CARD) {
-        std::cout << "Testing ==, !=, >, >=, <, <= on relations of size " << i
-                  << " out of " << RG.potential() << "\n";
+        std::cout << "Testing ==, !=, >, >=, <, <= on "
+                  << nameOf(rt) << " matrices; " << i << " / "
+                  << SG.potential() << " nonzeroes\n";
 
-        test_on_functions(i, in_fully, in_fully, out_fully);
-        test_on_functions(i, in_fully, in_fully, out_quasi);
-        test_on_functions(i, in_fully, in_fully, out_ident);
+        test_on_functions<TYPE>(i, in_fully, in_fully, out_fully);
+        test_on_functions<TYPE>(i, in_fully, in_fully, out_quasi);
+        test_on_functions<TYPE>(i, in_fully, in_fully, out_ident);
 
-        test_on_functions(i, in_fully, in_quasi, out_fully);
-        test_on_functions(i, in_fully, in_quasi, out_quasi);
-        test_on_functions(i, in_fully, in_quasi, out_ident);
+        test_on_functions<TYPE>(i, in_fully, in_quasi, out_fully);
+        test_on_functions<TYPE>(i, in_fully, in_quasi, out_quasi);
+        test_on_functions<TYPE>(i, in_fully, in_quasi, out_ident);
 
-        test_on_functions(i, in_fully, in_ident, out_fully);
-        test_on_functions(i, in_fully, in_ident, out_quasi);
-        test_on_functions(i, in_fully, in_ident, out_ident);
-
-    //
-
-        test_on_functions(i, in_ident, in_fully, out_fully);
-        test_on_functions(i, in_ident, in_fully, out_quasi);
-        test_on_functions(i, in_ident, in_fully, out_ident);
-
-        test_on_functions(i, in_ident, in_quasi, out_fully);
-        test_on_functions(i, in_ident, in_quasi, out_quasi);
-        test_on_functions(i, in_ident, in_quasi, out_ident);
-
-        test_on_functions(i, in_ident, in_ident, out_fully);
-        test_on_functions(i, in_ident, in_ident, out_quasi);
-        test_on_functions(i, in_ident, in_ident, out_ident);
+        test_on_functions<TYPE>(i, in_fully, in_ident, out_fully);
+        test_on_functions<TYPE>(i, in_fully, in_ident, out_quasi);
+        test_on_functions<TYPE>(i, in_fully, in_ident, out_ident);
 
     //
 
-        test_on_functions(i, in_quasi, in_fully, out_fully);
-        test_on_functions(i, in_quasi, in_fully, out_quasi);
-        test_on_functions(i, in_quasi, in_fully, out_ident);
+        test_on_functions<TYPE>(i, in_ident, in_fully, out_fully);
+        test_on_functions<TYPE>(i, in_ident, in_fully, out_quasi);
+        test_on_functions<TYPE>(i, in_ident, in_fully, out_ident);
 
-        test_on_functions(i, in_quasi, in_quasi, out_fully);
-        test_on_functions(i, in_quasi, in_quasi, out_quasi);
-        test_on_functions(i, in_quasi, in_quasi, out_ident);
+        test_on_functions<TYPE>(i, in_ident, in_quasi, out_fully);
+        test_on_functions<TYPE>(i, in_ident, in_quasi, out_quasi);
+        test_on_functions<TYPE>(i, in_ident, in_quasi, out_ident);
 
-        test_on_functions(i, in_quasi, in_ident, out_fully);
-        test_on_functions(i, in_quasi, in_ident, out_quasi);
-        test_on_functions(i, in_quasi, in_ident, out_ident);
+        test_on_functions<TYPE>(i, in_ident, in_ident, out_fully);
+        test_on_functions<TYPE>(i, in_ident, in_ident, out_quasi);
+        test_on_functions<TYPE>(i, in_ident, in_ident, out_ident);
+
+    //
+
+        test_on_functions<TYPE>(i, in_quasi, in_fully, out_fully);
+        test_on_functions<TYPE>(i, in_quasi, in_fully, out_quasi);
+        test_on_functions<TYPE>(i, in_quasi, in_fully, out_ident);
+
+        test_on_functions<TYPE>(i, in_quasi, in_quasi, out_fully);
+        test_on_functions<TYPE>(i, in_quasi, in_quasi, out_quasi);
+        test_on_functions<TYPE>(i, in_quasi, in_quasi, out_ident);
+
+        test_on_functions<TYPE>(i, in_quasi, in_ident, out_fully);
+        test_on_functions<TYPE>(i, in_quasi, in_ident, out_quasi);
+        test_on_functions<TYPE>(i, in_quasi, in_ident, out_ident);
     }
 }
 
@@ -403,7 +408,8 @@ int main(int argc, const char** argv)
 
 #ifdef TEST_SETS
         domain* SD = SG.makeDomain();
-        test_sets(SD);
+        test_sets<int>(SD, range_type::INTEGER);
+        test_sets<float>(SD, range_type::REAL);
         domain::destroy(SD);
 #endif
 
@@ -413,7 +419,8 @@ int main(int argc, const char** argv)
 
 #ifdef TEST_RELATIONS
         domain* RD = RG.makeDomain();
-        test_rels(RD);
+        test_rels<int>(RD, range_type::INTEGER);
+        test_rels<float>(RD, range_type::REAL);
         domain::destroy(RD);
 #endif
 

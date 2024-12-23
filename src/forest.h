@@ -2322,9 +2322,11 @@ class MEDDLY::forest {
                       function f = \a val.
 
         @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN.
+                        the range type of the forest is not INTEGER.
     */
-    virtual void createEdge(long val, dd_edge &e);
+    inline  void createEdge(int val, dd_edge &e) {
+        createEdge(long(val), e);
+    }
 
     /** Create an edge for an integer constant.
         @param  val   Requested constant.
@@ -2332,10 +2334,29 @@ class MEDDLY::forest {
                       function f = \a val.
 
         @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN.
+                        the range type of the forest is not INTEGER.
+    */
+    virtual void createEdge(long val, dd_edge &e);
+
+    /** Create an edge for a real constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL.
     */
     virtual void createEdge(float val, dd_edge &e);
 
+    /** Create an edge for a real constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL.
+    */
+    virtual void createEdge(double val, dd_edge &e);
 
 
 

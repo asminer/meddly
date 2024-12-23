@@ -40,6 +40,15 @@ void MEDDLY::mt_mxd_real::createEdge(float term, dd_edge& e)
 #endif
 }
 
+void MEDDLY::mt_mxd_real::createEdge(double term, dd_edge& e)
+{
+    // createEdgeTempl<float_Tencoder, float>(term, e);
+    createEdgeTempl<double>(term, e);
+#ifdef DEVELOPMENT_CODE
+    validateIncounts(true, __FILE__, __LINE__);
+#endif
+}
+
 #ifdef ALLOW_DEPRECATED_0_17_7
 
 void MEDDLY::mt_mxd_real

@@ -4,6 +4,15 @@ Implement next:
     * MAXIMUM, MINIMUM operations to finish off minterm builds :)
         + and test cases (add to chk_minterm?)
 
+    * Comparisons for EV+, EV*
+        + add test cases to ops_comp
+
+    * forest::createEdge() for constants
+        replace with    dd_edge::setToConstant(...)   ?
+        and for internal use, add to EdgeOp_none, EdgeOp_Plus, EdgeOp_Times
+            void buildConstant(val, edge_value &ev, node_handle &p)
+        or something similar
+
     RELEASE HERE
 
 

@@ -50,6 +50,18 @@ void MEDDLY::evmxd_timesreal::createEdge(float val, dd_edge &e)
 #endif
 }
 
+void MEDDLY::evmxd_timesreal::createEdge(double val, dd_edge &e)
+{
+    if (val) {
+        createEdgeTempl<OP, double>(val, e);
+    } else {
+        e.set(0.0f, 0);
+    }
+#ifdef DEVELOPMENT_CODE
+    validateIncounts(true, __FILE__, __LINE__);
+#endif
+}
+
 #ifdef ALLOW_DEPRECATED_0_17_7
 
 void MEDDLY::evmxd_timesreal

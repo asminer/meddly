@@ -12,7 +12,6 @@ chk_copy
 chk_cross
 chk_ct
 chk_ct_old
-chk_evtimes_float
 chk_iters
 chk_minterms
 chk_reorder
@@ -26,6 +25,7 @@ kan_show
 kanban
 nodestor
 nqueens
+ops_arith
 ops_comp
 ops_set
 randtest

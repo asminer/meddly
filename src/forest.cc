@@ -1671,6 +1671,12 @@ void MEDDLY::forest::createEdge(float val, dd_edge &e)
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+void MEDDLY::forest::createEdge(double val, dd_edge &e)
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+
 
 // ===================================================================
 //
