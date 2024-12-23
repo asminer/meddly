@@ -340,7 +340,7 @@ void test_rels(domain* D, range_type rt)
     for (unsigned i=MIN_REL_CARD; i<=MAX_REL_CARD; i*=MULT_REL_CARD) {
         std::cout << "Testing ==, !=, >, >=, <, <= on "
                   << nameOf(rt) << " matrices; " << i << " / "
-                  << SG.potential() << " nonzeroes\n";
+                  << RG.potential() << " nonzeroes\n";
 
         test_on_functions<TYPE>(i, in_fully, in_fully, out_fully);
         test_on_functions<TYPE>(i, in_fully, in_fully, out_quasi);
