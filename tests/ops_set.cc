@@ -32,28 +32,19 @@
 vectorgen<bool> SG(MEDDLY::SET, 5, 4, 1);
 vectorgen<bool> RG(MEDDLY::RELATION, 5, 2, 1);
 
-const unsigned MAX_SET_CARD = 512;
-const unsigned MAX_REL_CARD = 64;
+// const unsigned MAX_SET_CARD = 512;
+// const unsigned MAX_REL_CARD = 64;
+//
+const unsigned MAX_SET_CARD = 1;
+const unsigned MAX_REL_CARD = 1;
 
 using namespace MEDDLY;
 
-// #define DEBUG_OPS
+#define DEBUG_OPS
 
 #define TEST_SETS
 #define TEST_RELATIONS
 
-void showSet(std::ostream &out, const std::vector <bool> &elems)
-{
-    out << "{ ";
-    bool printed = false;
-    for (unsigned i=0; i<elems.size(); i++) {
-        if (!elems[i]) continue;
-        if (printed) out << ", ";
-        out << i;
-        printed = true;
-    }
-    out << " }";
-}
 
 unsigned set_cardinality(const std::vector <bool> &A)
 {
@@ -120,67 +111,6 @@ void set_complement(const std::vector <bool> &A, std::vector <bool> &C)
     }
 }
 
-void showMinterms(std::ostream &out, const std::vector <bool> &elems,
-        forest* f)
-{
-    minterm mt(f);
-    out << "{ ";
-    bool printed = false;
-    for (unsigned i=0; i<elems.size(); i++) {
-        if (!elems[i]) continue;
-
-        if (printed) out << ",\n      ";
-
-        if (f->isForRelations()) {
-            RG.index2minterm(i, mt);
-        } else {
-            SG.index2minterm(i, mt);
-        }
-        ostream_output mout(out);
-        mt.show(mout);
-    }
-    out << " }";
-}
-
-void set2edge(const std::vector<bool> &S, forest *F, dd_edge &s)
-{
-    if (!F) throw "null forest";
-
-    // Determine S cardinality
-    unsigned card = 0;
-    for (unsigned i=0; i<S.size(); i++) {
-        if (S[i]) ++card;
-    }
-
-    // Special case - empty set
-    if (0==card) {
-        F->createEdge(false, s);
-        return;
-    }
-
-    // Convert set S to list of minterms
-    minterm_coll mtlist(card, F);
-    for (unsigned i=0; i<S.size(); i++) {
-        if (!S[i]) continue;
-        if (F->isForRelations()) {
-            RG.index2minterm(i, mtlist.unused());
-        } else {
-            SG.index2minterm(i, mtlist.unused());
-        }
-        mtlist.pushUnused();
-    }
-    mtlist.buildFunction(s);
-}
-
-
-inline char getReductionType(forest* f)
-{
-    if (f->isFullyReduced())    return 'f';
-    if (f->isQuasiReduced())    return 'q';
-    if (f->isIdentityReduced()) return 'i';
-    throw "Unknown reduction type";
-}
-
 void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2,
         const std::vector<bool> &set)
 {
@@ -212,16 +142,17 @@ void checkCardinality(const dd_edge &e, const std::vector<bool> &set)
     out << "  Explicit set: " << scard << "\n";
     out << "DD cardinality: " << ecard << "\n";
 
-    showMinterms(std::cout, set, e.getForest());
+    // showMinterms(std::cout, set, e.getForest());
     e.showGraph(out);
 
     throw "mismatch";
 }
 
-void compare(const std::vector <bool> &Aset, const std::vector <bool> &Bset,
+void compare(vectorgen <bool> &Gen,
+        const std::vector <bool> &Aset, const std::vector <bool> &Bset,
         forest* f1, forest* f2, forest* fres)
 {
-    const unsigned POTENTIAL = Aset.size();
+    const unsigned POTENTIAL = Gen.potential();
 
     std::vector <bool> AiBset(POTENTIAL);
     std::vector <bool> AuBset(POTENTIAL);
@@ -236,13 +167,13 @@ void compare(const std::vector <bool> &Aset, const std::vector <bool> &Bset,
     set_difference(Aset, Bset, AmBset);
     set_complement(Aset, cAset);
 
-    set2edge(Aset, f1, Add);
-    set2edge(Bset, f2, Bdd);
-    set2edge(AiBset, fres, AiBdd);
-    set2edge(AuBset, fres, AuBdd);
-    set2edge(AmBset, fres, AmBdd);
-    set2edge(cAset, fres, cABdd);
-    set2edge(Aset, fres, ccABdd);
+    Gen.explicit2edge(Aset, Add);
+    Gen.explicit2edge(Bset, Bdd);
+    Gen.explicit2edge(AiBset, AiBdd);
+    Gen.explicit2edge(AuBset, AuBdd);
+    Gen.explicit2edge(AmBset, AmBdd);
+    Gen.explicit2edge(cAset, cABdd);
+    Gen.explicit2edge(Aset, ccABdd);
 
     checkCardinality(Add, Aset);
     checkCardinality(Bdd, Bset);
@@ -255,13 +186,13 @@ void compare(const std::vector <bool> &Aset, const std::vector <bool> &Bset,
     std::cout << "==================================================================\n";
     std::cout << "Sets:\n";
     std::cout << "    A: ";
-    showSet(std::cout, Aset);
+    Gen.showSet(std::cout, Aset);
     std::cout << "\n  = ";
-    showMinterms(std::cout, Aset, f1);
+    Gen.showMinterms(std::cout, Aset);
     std::cout << "\n    B: ";
-    showSet(std::cout, Bset);
+    Gen.showSet(std::cout, Bset);
     std::cout << "\n  = ";
-    showMinterms(std::cout, Bset, f2);
+    Gen.showMinterms(std::cout, Bset);
     std::cout << "\nMDD/MXDs:\n";
     std::cout << "    A:\n";
     Add.showGraph(out);
@@ -291,8 +222,9 @@ void test_on_forests(unsigned scard, forest* f1, forest* f2, forest* fres)
 
     vectorgen <bool> &Gen = f1->isForRelations() ? RG : SG;
 
-    std::cerr << "    " << getReductionType(f1) << getReductionType(f2)
-              << ':' << getReductionType(fres) << ' ';
+    std::cerr << "    " << shortNameOf(f1->getReductionRule())
+              << " " << shortNameOf(f2->getReductionRule())
+              << " : " << shortNameOf(fres->getReductionRule()) << ' ';
 
     std::vector <bool> Aset(Gen.potential());
     std::vector <bool> Bset(Gen.potential());
@@ -302,14 +234,14 @@ void test_on_forests(unsigned scard, forest* f1, forest* f2, forest* fres)
         Gen.randomizeVector(Aset, scard);
         Gen.randomizeVector(Bset, scard);
 
-        compare(Aset, Bset, f1, f2, fres);
+        compare(Gen, Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
         Gen.randomizeFully(Aset, scard);
         Gen.randomizeFully(Bset, scard);
 
-        compare(Aset, Bset, f1, f2, fres);
+        compare(Gen, Aset, Bset, f1, f2, fres);
     }
     if (fres->isForRelations()) {
         for (unsigned i=0; i<10; i++) {
@@ -317,7 +249,7 @@ void test_on_forests(unsigned scard, forest* f1, forest* f2, forest* fres)
             Gen.randomizeIdentity(Aset, scard);
             Gen.randomizeIdentity(Bset, scard);
 
-            compare(Aset, Bset, f1, f2, fres);
+            compare(Gen, Aset, Bset, f1, f2, fres);
         }
     }
     std::cerr << std::endl;

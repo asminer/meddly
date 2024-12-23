@@ -55,6 +55,8 @@ vectorgen_base::vectorgen_base(bool sr, unsigned v, unsigned d, unsigned r)
     }
 
     current_terminal = 0;
+
+    _D = nullptr;
 }
 
 void vectorgen_base::setSeed(long s, bool print)
@@ -93,7 +95,9 @@ MEDDLY::domain* vectorgen_base::makeDomain()
     for (unsigned i=0; i<vars(); i++) {
         bs[i] = dom();
     }
-    return MEDDLY::domain::createBottomUp(bs, vars());
+    MEDDLY::domain* d = MEDDLY::domain::createBottomUp(bs, vars());
+    _D = d;
+    return d;
 }
 
 void vectorgen_base::randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt)
@@ -170,7 +174,7 @@ void vectorgen_base::randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt)
     }
 }
 
-void vectorgen_base::index2minterm(unsigned x, MEDDLY::minterm &m)
+void vectorgen_base::index2minterm(unsigned x, MEDDLY::minterm &m) const
 {
     if (m.getNumVars() != vars()) {
         throw "minterm mismatch in call to index2minterm";

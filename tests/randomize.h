@@ -78,7 +78,7 @@ class vectorgen_base {
         ///
         /// Increment a minterm.
         ///
-        inline bool nextMinterm(MEDDLY::minterm &m)
+        inline bool nextMinterm(MEDDLY::minterm &m) const
         {
             if (m.isForSets()) {
                 for (unsigned i=1; i<=m.getNumVars(); ++i)
@@ -122,7 +122,7 @@ class vectorgen_base {
         ///     @param  m   Minterm to fill.
         ///                 Should have VARS variables.
         ///
-        void index2minterm(unsigned x, MEDDLY::minterm &m);
+        void index2minterm(unsigned x, MEDDLY::minterm &m) const;
 
         ///
         /// Converts ndx into an array of digits, and then loops
@@ -179,6 +179,7 @@ class vectorgen_base {
 
     protected:
         std::vector <unsigned> ilist;
+        const MEDDLY::domain* _D;
 
     private:
         const bool is_for_relations;
@@ -300,6 +301,93 @@ class vectorgen : public vectorgen_base {
                 }
             }
         }
+
+        //
+        // Build a dd_edge from an explicit vector
+        //
+        void explicit2edge(const std::vector<TYPE> &x, MEDDLY::dd_edge &s)
+            const
+        {
+            MEDDLY::forest* F = s.getForest();
+            if (!F) throw "null forest in explicit2edge";
+            // Determine x 'cardinality'
+            unsigned card = 0;
+            for (unsigned i=0; i<x.size(); i++) {
+                if (x[i]) ++card;
+            }
+
+            if (0==card) {
+                TYPE zero = 0;
+                F->createEdge(zero, s);
+                return;
+            }
+
+            MEDDLY::minterm_coll mtlist(card, F);
+            for (unsigned i=0; i<x.size(); i++) {
+                if (!x[i]) continue;
+                index2minterm(i, mtlist.unused());
+                TYPE val = x[i];
+                mtlist.unused().setTerm(val);
+                mtlist.pushUnused();
+            }
+            mtlist.buildFunction(s);
+        }
+
+        //
+        // Display an explicit vector
+        //
+        void showSet(std::ostream &out, const std::vector <TYPE> &elems)
+            const
+        {
+            out << "{ ";
+            bool printed = false;
+            for (unsigned i=0; i<elems.size(); i++) {
+                if (!elems[i]) continue;
+                if (printed) out << ", ";
+                out << i;
+                showElem(out, elems[i]);
+                printed = true;
+            }
+            out << " }";
+        }
+
+        //
+        // Display minterms corresponding to an explicit vector
+        //
+        void showMinterms(std::ostream &out, const std::vector <TYPE> &elems)
+            const
+        {
+            if (!_D) throw "null domain, showMinterms";
+            MEDDLY::minterm mt(_D, isForRelations());
+            MEDDLY::ostream_output mout(out);
+            mout << "{ ";
+            bool printed = false;
+            for (unsigned i=0; i<elems.size(); i++) {
+                if (!elems[i]) continue;
+
+                if (printed) mout << ",\n      ";
+                printed = true;
+
+                index2minterm(i, mt);
+                mt.show(mout);
+            }
+            mout << " }";
+
+        }
+
+    protected:
+        static void showElem(std::ostream &out, TYPE elem);
 };
+
+template <>
+inline void vectorgen<bool>::showElem(std::ostream &out, bool elem)
+{
+}
+
+template <typename TYPE>
+inline void vectorgen<TYPE>::showElem(std::ostream &out, TYPE elem)
+{
+    out << ":" << elem;
+}
 
 #endif
