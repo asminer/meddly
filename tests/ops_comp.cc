@@ -27,6 +27,23 @@
 
 #include "../src/meddly.h"
 
+#include "randomize.h"
+
+vectorgen SG(MEDDLY::SET, 5, 4, 1);
+vectorgen RG(MEDDLY::RELATION, 5, 2, 1);
+
+const unsigned MAX_SET_CARD = 256;
+const unsigned MAX_REL_CARD = 32;
+
+using namespace MEDDLY;
+
+// #define DEBUG_MXDOPS
+
+#define TEST_SETS
+#define TEST_RELATIONS
+
+
+#if OLD
 const unsigned VARS = 5;
 const unsigned RELDOM = 2;
 const unsigned SETDOM = RELDOM * RELDOM;
@@ -36,11 +53,6 @@ const unsigned MAX_SET_CARD = 128;
 const unsigned MAX_REL_CARD = 16;
 
 using namespace MEDDLY;
-
-// #define DEBUG_MXDOPS
-
-#define TEST_SETS
-#define TEST_RELATIONS
 
 double Random(long newseed=0)
 {
@@ -94,8 +106,10 @@ void showSet(std::ostream &out, const std::vector <T> &elems)
     out << " }";
 }
 
+#endif
 
-void EQ(const std::vector <char> &A, const std::vector <char> &B,
+template <typename T>
+void EQ(const std::vector <T> &A, const std::vector <T> &B,
         std::vector<bool> &C)
 {
     if (A.size() != B.size()) {
@@ -109,7 +123,8 @@ void EQ(const std::vector <char> &A, const std::vector <char> &B,
     }
 }
 
-void NE(const std::vector <char> &A, const std::vector <char> &B,
+template <typename T>
+void NE(const std::vector <T> &A, const std::vector <T> &B,
         std::vector<bool> &C)
 {
     if (A.size() != B.size()) {
@@ -123,7 +138,8 @@ void NE(const std::vector <char> &A, const std::vector <char> &B,
     }
 }
 
-void GE(const std::vector <char> &A, const std::vector <char> &B,
+template <typename T>
+void GE(const std::vector <T> &A, const std::vector <T> &B,
         std::vector<bool> &C)
 {
     if (A.size() != B.size()) {
@@ -137,7 +153,8 @@ void GE(const std::vector <char> &A, const std::vector <char> &B,
     }
 }
 
-void GT(const std::vector <char> &A, const std::vector <char> &B,
+template <typename T>
+void GT(const std::vector <T> &A, const std::vector <T> &B,
         std::vector<bool> &C)
 {
     if (A.size() != B.size()) {
@@ -151,7 +168,8 @@ void GT(const std::vector <char> &A, const std::vector <char> &B,
     }
 }
 
-void LE(const std::vector <char> &A, const std::vector <char> &B,
+template <typename T>
+void LE(const std::vector <T> &A, const std::vector <T> &B,
         std::vector<bool> &C)
 {
     if (A.size() != B.size()) {
@@ -165,7 +183,8 @@ void LE(const std::vector <char> &A, const std::vector <char> &B,
     }
 }
 
-void LT(const std::vector <char> &A, const std::vector <char> &B,
+template <typename T>
+void LT(const std::vector <T> &A, const std::vector <T> &B,
         std::vector<bool> &C)
 {
     if (A.size() != B.size()) {
@@ -178,6 +197,8 @@ void LT(const std::vector <char> &A, const std::vector <char> &B,
         C[i] = (A[i] < B[i]);
     }
 }
+
+#if OLD
 
 void randomizeSet(std::vector <char> &elems, unsigned card, char vals)
 {
@@ -415,7 +436,7 @@ void set2edge(const std::vector<T> &S, forest *F, dd_edge &s)
     mtlist.buildFunction(s);
 }
 
-
+#endif
 
 inline char getReductionType(forest* f)
 {
@@ -456,9 +477,13 @@ void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
 }
 
 
-void compare(const std::vector <char> &Aset, const std::vector <char> &Bset,
+template <typename T>
+void compare(vectorgen &Gen,
+        const std::vector <T> &Aset, const std::vector <T> &Bset,
         forest* f1, forest* f2, forest* fres)
 {
+    const unsigned POTENTIAL = Gen.potential();
+
     std::vector <bool> AeqBset(POTENTIAL);
     std::vector <bool> AneBset(POTENTIAL);
     std::vector <bool> AgtBset(POTENTIAL);
@@ -478,14 +503,14 @@ void compare(const std::vector <char> &Aset, const std::vector <char> &Bset,
     LE(Aset, Bset, AleBset);
     LT(Aset, Bset, AltBset);
 
-    set2edge(Aset, f1, Add);
-    set2edge(Bset, f2, Bdd);
-    set2edge(AeqBset, fres, AeqBdd);
-    set2edge(AneBset, fres, AneBdd);
-    set2edge(AgtBset, fres, AgtBdd);
-    set2edge(AgeBset, fres, AgeBdd);
-    set2edge(AltBset, fres, AltBdd);
-    set2edge(AleBset, fres, AleBdd);
+    Gen.explicit2edge(Aset, Add);
+    Gen.explicit2edge(Bset, Bdd);
+    Gen.explicit2edge(AeqBset, AeqBdd);
+    Gen.explicit2edge(AneBset, AneBdd);
+    Gen.explicit2edge(AgtBset, AgtBdd);
+    Gen.explicit2edge(AgeBset, AgeBdd);
+    Gen.explicit2edge(AltBset, AltBdd);
+    Gen.explicit2edge(AleBset, AleBdd);
 
     dd_edge AeqBsym(fres), AneBsym(fres),
             AgtBsym(fres), AgeBsym(fres),
@@ -516,33 +541,35 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
     if (!f2) throw "null f2";
     if (!fres) throw "null fres";
 
+    vectorgen &Gen = f1->isForRelations() ? RG : SG;
+
     std::cerr << "    " << getReductionType(f1) << getReductionType(f2)
               << ':' << getReductionType(fres) << ' ';
 
-    std::vector <char> Aset(POTENTIAL);
-    std::vector <char> Bset(POTENTIAL);
+    std::vector <long> Aset(Gen.potential());
+    std::vector <long> Bset(Gen.potential());
 
     for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
-        randomizeSet(Aset, scard, 3);
-        randomizeSet(Bset, scard, 3);
+        Gen.randomizeVector(Aset, scard);
+        Gen.randomizeVector(Bset, scard);
 
-        compare(Aset, Bset, f1, f2, fres);
+        compare(Gen, Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
-        randomizeFully(Aset, scard, 3);
-        randomizeFully(Bset, scard, 3);
+        Gen.randomizeFully(Aset, scard);
+        Gen.randomizeFully(Bset, scard);
 
-        compare(Aset, Bset, f1, f2, fres);
+        compare(Gen, Aset, Bset, f1, f2, fres);
     }
     if (fres->isForRelations()) {
         for (unsigned i=0; i<10; i++) {
             std::cerr << "i";
-            randomizeIdentity(Aset, scard, 3);
-            randomizeIdentity(Bset, scard, 3);
+            Gen.randomizeIdentity(Aset, scard);
+            Gen.randomizeIdentity(Bset, scard);
 
-            compare(Aset, Bset, f1, f2, fres);
+            compare(Gen, Aset, Bset, f1, f2, fres);
         }
     }
     std::cerr << std::endl;
@@ -572,7 +599,7 @@ void test_sets(domain* D)
 
     for (unsigned i=1; i<=MAX_SET_CARD; i*=2) {
         std::cout << "Testing ==, !=, >, >=, <, <= on sets of size " << i
-                  << " out of " << POTENTIAL << "\n";
+                  << " out of " << SG.potential() << "\n";
 
         test_on_functions(i, in_fully, in_fully, out_fully);
         test_on_functions(i, in_fully, in_fully, out_quasi);
@@ -618,7 +645,7 @@ void test_rels(domain* D)
 
     for (unsigned i=1; i<=MAX_REL_CARD; i*=2) {
         std::cout << "Testing ==, !=, >, >=, <, <= on relations of size " << i
-                  << " out of " << POTENTIAL << "\n";
+                  << " out of " << RG.potential() << "\n";
 
         test_on_functions(i, in_fully, in_fully, out_fully);
         test_on_functions(i, in_fully, in_fully, out_quasi);
@@ -663,9 +690,19 @@ void test_rels(domain* D)
 }
 
 
-int main()
+int main(int argc, const char** argv)
 {
-    Random(112358);
+    using namespace std;
+
+    //
+    // First argument: seed
+    //
+    long seed = 0;
+    if (argv[1]) {
+        seed = atol(argv[1]);
+    }
+    vectorgen::setSeed(seed);
+
 
     try {
         MEDDLY::initialize();
@@ -675,15 +712,9 @@ int main()
         //
 
 #ifdef TEST_SETS
-        int bs[VARS];
-        for (unsigned i=0; i<VARS; i++) {
-            bs[i] = SETDOM;
-        }
-        domain* Ds = domain::createBottomUp(bs, VARS);
-
-        test_sets(Ds);
-
-        domain::destroy(Ds);
+        domain* SD = SG.makeDomain();
+        test_sets(SD);
+        domain::destroy(SD);
 #endif
 
         //
@@ -691,16 +722,9 @@ int main()
         //
 
 #ifdef TEST_RELATIONS
-        int br[VARS];
-        for (unsigned i=0; i<VARS; i++) {
-            br[i] = RELDOM;
-        }
-        domain* Dr = domain::createBottomUp(br, VARS);
-
-        test_rels(Dr);
-
-        domain::destroy(Dr);
-
+        domain* RD = RG.makeDomain();
+        test_rels(RD);
+        domain::destroy(RD);
 #endif
 
         MEDDLY::cleanup();
