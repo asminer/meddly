@@ -32,8 +32,14 @@
 vectorgen SG(MEDDLY::SET, 5, 4, 1);
 vectorgen RG(MEDDLY::RELATION, 5, 2, 1);
 
+const unsigned MIN_SET_CARD = 1;
 const unsigned MAX_SET_CARD = 256;
-const unsigned MAX_REL_CARD = 32;
+const unsigned MULT_SET_CARD = 4;
+
+
+const unsigned MIN_REL_CARD = 1;
+const unsigned MAX_REL_CARD = 256;
+const unsigned MULT_REL_CARD = 16;
 
 using namespace MEDDLY;
 
@@ -42,71 +48,6 @@ using namespace MEDDLY;
 #define TEST_SETS
 #define TEST_RELATIONS
 
-
-#if OLD
-const unsigned VARS = 5;
-const unsigned RELDOM = 2;
-const unsigned SETDOM = RELDOM * RELDOM;
-const unsigned SETBITS = 2;
-const unsigned POTENTIAL = 1024;    // SETDOM ^ VARS
-const unsigned MAX_SET_CARD = 128;
-const unsigned MAX_REL_CARD = 16;
-
-using namespace MEDDLY;
-
-double Random(long newseed=0)
-{
-    static long seed = 1;
-
-    if (newseed) {
-        seed = newseed;
-    }
-
-    const long MODULUS = 2147483647L;
-    const long MULTIPLIER = 48271L;
-    const long Q = MODULUS / MULTIPLIER;
-    const long R = MODULUS % MULTIPLIER;
-
-    long t = MULTIPLIER * (seed % Q) - R * (seed / Q);
-    if (t > 0) {
-        seed = t;
-    } else {
-        seed = t + MODULUS;
-    }
-    return ((double) seed / MODULUS);
-}
-
-unsigned Equilikely(unsigned a, unsigned b)
-{
-    return (a + (unsigned) ((b - a + 1) * Random()));
-}
-
-inline void showElem(std::ostream &out, bool elem)
-{
-    // NOTHING
-}
-
-inline void showElem(std::ostream &out, char elem)
-{
-    out << ":" << int(elem);
-}
-
-template <typename T>
-void showSet(std::ostream &out, const std::vector <T> &elems)
-{
-    out << "{ ";
-    bool printed = false;
-    for (unsigned i=0; i<elems.size(); i++) {
-        if (!elems[i]) continue;
-        if (printed) out << ", ";
-        out << i;
-        showElem(elems[i]);
-        printed = true;
-    }
-    out << " }";
-}
-
-#endif
 
 template <typename T>
 void EQ(const std::vector <T> &A, const std::vector <T> &B,
@@ -198,262 +139,10 @@ void LT(const std::vector <T> &A, const std::vector <T> &B,
     }
 }
 
-#if OLD
-
-void randomizeSet(std::vector <char> &elems, unsigned card, char vals)
-{
-    //
-    // Fill array with card 1s, card 2s, etc.
-    //
-    unsigned i=0;
-    for (unsigned v=1; v<=vals; v++) {
-        for (unsigned j=0; j<card; j++) {
-            if (i>=elems.size()) break;
-            elems[i++] = v;
-        }
-    }
-    for (; i<elems.size(); i++) {
-        elems[i] = 0;
-    }
-
-    //
-    // Shuffle the array
-    //
-    for (unsigned i=0; i<elems.size()-1; i++) {
-        unsigned j = Equilikely(i, elems.size()-1);
-        if (elems[i] != elems[j]) {
-            // swap
-            char t = elems[i];
-            elems[i] = elems[j];
-            elems[j] = t;
-        }
-    }
-
-}
-
-
-
-inline void fillMinterm(unsigned x, int* mt)
-{
-    for (unsigned j=1; j<=VARS; j++) {
-        mt[j] = x % SETDOM;
-        x /= SETDOM;
-    }
-}
-
-inline void fillMinterm(unsigned x, int* un, int* pr)
-{
-    for (unsigned j=1; j<=VARS; j++) {
-        un[j] = x % RELDOM;
-        x /= RELDOM;
-        pr[j] = x % RELDOM;
-        x /= RELDOM;
-    }
-}
-
-inline void fillMinterm(unsigned x, minterm &mt)
-{
-    if (mt.isForSets()) {
-        for (unsigned j=1; j<=mt.getNumVars(); j++) {
-            mt.setVar(j, x % SETDOM);
-            x /= SETDOM;
-        }
-    } else {
-        for (unsigned j=1; j<=mt.getNumVars(); j++) {
-            const int from = x % RELDOM;
-            x /= RELDOM;
-            const int to = x % RELDOM;
-            x /= RELDOM;
-            mt.setVars(j, from, to);
-        }
-    }
-}
-
-
-inline unsigned whichMinterm(const int* mt)
-{
-    unsigned x=0;
-    for (unsigned j=VARS; j; j--) {
-        x <<= SETBITS;
-        x |= mt[j];
-    }
-    return x;
-}
-
-inline unsigned whichMinterm(const int* un, const int* pr)
-{
-    unsigned x=0;
-    for (unsigned j=VARS; j; j--) {
-        x <<= SETBITS;
-        x |= (un[j] << (SETBITS/2)) | pr[j];
-    }
-    return x;
-}
-
-void flipFullyElements(std::vector <char> &elems, unsigned seed, unsigned k,
-        char val)
-{
-    // Convert 'seed' to minterm
-    int tmp[VARS+1];
-    fillMinterm(seed, tmp);
-    // Replace variable k with all possible values in minterm,
-    // and convert back to unsigned
-    for (tmp[k]=0; tmp[k]<SETDOM; tmp[k]++) {
-        unsigned x = whichMinterm(tmp);
-        elems[x] = val;
-    }
-}
-
-void flipFullyElements(std::vector <char> &elems, unsigned seed, unsigned k1,
-        unsigned k2, char val)
-{
-    // Convert 'seed' to minterm
-    int tmp[VARS+1];
-    fillMinterm(seed, tmp);
-    // Replace variable k with all possible values in minterm,
-    // and convert back to unsigned
-    for (tmp[k1]=0; tmp[k1]<SETDOM; tmp[k1]++) {
-        for (tmp[k2]=0; tmp[k2]<SETDOM; tmp[k2]++) {
-            unsigned x = whichMinterm(tmp);
-            elems[x] = val;
-        }
-    }
-}
-
-
-void flipIdentityElements(std::vector <char> &elems, unsigned seed,
-        unsigned k, char val)
-{
-    // Convert 'seed' to minterm
-    int untmp[VARS+1];
-    int prtmp[VARS+1];
-    fillMinterm(seed, untmp, prtmp);
-    for (unsigned v=0; v<RELDOM; v++) {
-        untmp[k] = v;
-        prtmp[k] = v;
-        unsigned x = whichMinterm(untmp, prtmp);
-        elems[x] = val;
-    }
-}
-
-
-void flipIdentityElements(std::vector <char> &elems, unsigned seed,
-        unsigned k1, unsigned k2, char val)
-{
-    // Convert 'seed' to minterm
-    int untmp[VARS+1];
-    int prtmp[VARS+1];
-    fillMinterm(seed, untmp, prtmp);
-    for (unsigned v1=0; v1<RELDOM; v1++) {
-        untmp[k1] = v1;
-        prtmp[k1] = v1;
-        for (unsigned v2=0; v2<RELDOM; v2++) {
-            untmp[k2] = v2;
-            prtmp[k2] = v2;
-            unsigned x = whichMinterm(untmp, prtmp);
-            elems[x] = val;
-        }
-    }
-}
-
-
-void randomizeFully(std::vector <char> &elems, unsigned card, unsigned vals)
-{
-    for (unsigned i=0; i<elems.size(); i++) {
-        elems[i] = false;
-    }
-    unsigned v=0;
-    for (unsigned i=0; i<card; i++) {
-        v = (v % vals)+1;
-        unsigned x = Equilikely(0, elems.size()-1);
-        unsigned k1 = Equilikely(1, VARS);
-        unsigned k2 = Equilikely(1, VARS);
-
-        if (k1 != k2) {
-            flipFullyElements(elems, x, k1, k2, v);
-        } else {
-            flipFullyElements(elems, x, k1, v);
-        }
-    }
-}
-
-
-void randomizeIdentity(std::vector <char> &elems, unsigned card, unsigned vals)
-{
-    for (unsigned i=0; i<elems.size(); i++) {
-        elems[i] = false;
-    }
-    unsigned v=0;
-    for (unsigned i=0; i<card; i++) {
-        v = (v % vals)+1;
-        unsigned x = Equilikely(0, elems.size()-1);
-        unsigned k1 = Equilikely(1, VARS);
-        unsigned k2 = Equilikely(1, VARS);
-
-        if (k1 != k2) {
-            flipIdentityElements(elems, x, k1, k2, v);
-        } else {
-            flipIdentityElements(elems, x, k1, v);
-        }
-    }
-}
-
-inline bool convertTerm(bool x)
-{
-    return x;
-}
-
-inline int convertTerm(char x)
-{
-    return int(x);
-}
-
-template <typename T>
-void set2edge(const std::vector<T> &S, forest *F, dd_edge &s)
-{
-    if (!F) throw "null forest";
-
-    // Determine S cardinality
-    unsigned card = 0;
-    for (unsigned i=0; i<S.size(); i++) {
-        if (S[i]) ++card;
-    }
-
-    // Special case - empty set
-    if (0==card) {
-        F->createEdge(false, s);
-        return;
-    }
-
-    // Convert set S to list of minterms
-    minterm_coll mtlist(card, F);
-    for (unsigned i=0; i<S.size(); i++) {
-        if (!S[i]) continue;
-        fillMinterm(i, mtlist.unused());
-        mtlist.unused().setTerm( convertTerm(S[i]) );
-        mtlist.pushUnused();
-    }
-    mtlist.buildFunction(s);
-}
-
-#endif
-
-inline char getReductionType(forest* f)
-{
-    if (f->isFullyReduced())    return 'f';
-    if (f->isQuasiReduced())    return 'q';
-    if (f->isIdentityReduced()) return 'i';
-    throw "Unknown reduction type";
-}
-
 inline const char* getReductionString(const dd_edge &e)
 {
     const forest* f = e.getForest();
-    if (!f) return "null";
-    if (f->isFullyReduced())    return "fully";
-    if (f->isQuasiReduced())    return "quasi";
-    if (f->isIdentityReduced()) return "identity";
-    return "unknown";
+    return shortNameOf(f->getReductionRule());
 }
 
 void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
@@ -543,8 +232,9 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
 
     vectorgen &Gen = f1->isForRelations() ? RG : SG;
 
-    std::cerr << "    " << getReductionType(f1) << getReductionType(f2)
-              << ':' << getReductionType(fres) << ' ';
+    std::cerr << "    " << shortNameOf(f1->getReductionRule())
+              << ' ' << shortNameOf(f2->getReductionRule())
+              << " : " << shortNameOf(fres->getReductionRule()) << ' ';
 
     std::vector <long> Aset(Gen.potential());
     std::vector <long> Bset(Gen.potential());
@@ -597,7 +287,7 @@ void test_sets(domain* D)
                     edge_labeling::MULTI_TERMINAL, p);
 
 
-    for (unsigned i=1; i<=MAX_SET_CARD; i*=2) {
+    for (unsigned i=MIN_SET_CARD; i<=MAX_SET_CARD; i*=MULT_SET_CARD) {
         std::cout << "Testing ==, !=, >, >=, <, <= on sets of size " << i
                   << " out of " << SG.potential() << "\n";
 
@@ -643,7 +333,7 @@ void test_rels(domain* D)
 
 
 
-    for (unsigned i=1; i<=MAX_REL_CARD; i*=2) {
+    for (unsigned i=MIN_REL_CARD; i<=MAX_REL_CARD; i*=MULT_REL_CARD) {
         std::cout << "Testing ==, !=, >, >=, <, <= on relations of size " << i
                   << " out of " << RG.potential() << "\n";
 
