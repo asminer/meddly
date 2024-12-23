@@ -32,8 +32,13 @@
 vectorgen SG(MEDDLY::SET, 5, 4, 1);
 vectorgen RG(MEDDLY::RELATION, 5, 2, 1);
 
+const unsigned MIN_SET_CARD = 1;
 const unsigned MAX_SET_CARD = 256;
-const unsigned MAX_REL_CARD = 32;
+const unsigned MULT_SET_CARD = 2;
+
+const unsigned MIN_REL_CARD = 1;
+const unsigned MAX_REL_CARD = 256;
+const unsigned MULT_REL_CARD = 4;
 
 using namespace MEDDLY;
 
@@ -265,7 +270,7 @@ void test_sets(domain* D)
     forest* F2 = forest::create(D, SET, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL, p);
 
-    for (unsigned i=1; i<=MAX_SET_CARD; i*=2)
+    for (unsigned i=MIN_SET_CARD; i<=MAX_SET_CARD; i*=MULT_SET_CARD)
     {
         std::cout << "Testing set operations on sets of size " << i
                   << " out of " << SG.potential() << "\n";
@@ -302,7 +307,8 @@ void test_rels(domain* D)
                         edge_labeling::MULTI_TERMINAL, p);
 
 
-    for (unsigned i=1; i<=MAX_REL_CARD; i*=2) {
+    for (unsigned i=MIN_REL_CARD; i<=MAX_REL_CARD; i*=MULT_REL_CARD)
+    {
         std::cout << "Testing set operations on relations of size " << i
                   << " out of " << RG.potential() << "\n";
 
