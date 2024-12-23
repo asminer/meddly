@@ -32,8 +32,8 @@
 vectorgen<bool> SG(MEDDLY::SET, 5, 4, 1);
 vectorgen<bool> RG(MEDDLY::RELATION, 5, 2, 1);
 
-const unsigned MAX_SET_CARD = 512;
-const unsigned MAX_REL_CARD = 64;
+const unsigned MAX_SET_CARD = 256;
+const unsigned MAX_REL_CARD = 32;
 
 using namespace MEDDLY;
 
