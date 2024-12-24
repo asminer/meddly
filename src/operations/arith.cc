@@ -39,6 +39,8 @@ namespace MEDDLY {
     binary_list MINIMUM_cache;
 };
 
+// #define USE_MT_OPS
+
 // ******************************************************************
 // ******************************************************************
 // ******************************************************************
@@ -85,7 +87,7 @@ namespace MEDDLY {
         ///    x OP x = c, for all x?
         /// If yes, set the value of terminal c.
         ///
-        static bool isConstOnSameOpnds(const forest* fc, node_handle &c);
+        static bool isConstOnSameOpnds(const forest*, node_handle &c)
 
         /// Apply the operation on terminals a and b,
         /// to obtain the result terminal c.
@@ -617,11 +619,12 @@ namespace MEDDLY {
         static bool isIdempotent();
 
         ///
-        /// Does x OP x = <e, 0>, for all x?
+        /// Does there exist a terminal node c such that
+        ///    x OP x = <e, c>, for all x?
+        /// Here, e is the identity edge value for the edge operator.
+        /// If yes, set the value of terminal c.
         ///
-        /// Here e is the identity element for the edge operator.
-        ///
-        static bool isIdentityOnSame();
+        static bool isConstOnSameOpnds(const forest*, node_handle &c)
 
         /// Apply the operation on terminals a and b,
         /// to obtain the result terminal c.
@@ -790,13 +793,13 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         return;
     }
 
-    if ( ATYPE::isIdentityOnSame() && A == B && arg1F == arg2F )
+    if ( ATYPE::isConstOnSameOpnds(resF, C) && A == B && arg1F == arg2F )
     {
         //
         // Result is a constant C
         //
         EOP::clear(cv);
-        C = resF->makeRedundantsTo(0, 0, L);
+        C = resF->makeRedundantsTo(C, 0, L);
         return;
     }
 
@@ -1044,11 +1047,19 @@ MEDDLY::binary_operation* MEDDLY::MAXIMUM(forest* a, forest* b, forest* c)
             a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL
         );
+#ifdef USE_MT_OPS
         if (use_reals) {
             bop = new arith_mt<mt_maximum<float> > (a,b,c);
         } else {
             bop = new arith_mt<mt_maximum<long> > (a,b,c);
         }
+#else
+        if (use_reals) {
+            bop = new arith_compat<EdgeOp_none, mt_maximum<float> > (a,b,c);
+        } else {
+            bop = new arith_compat<EdgeOp_none, mt_maximum<long> > (a,b,c);
+        }
+#endif
         return MAXIMUM_cache.add( bop );
     }
 
@@ -1083,11 +1094,19 @@ MEDDLY::binary_operation* MEDDLY::MINIMUM(forest* a, forest* b, forest* c)
             a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL
         );
+#ifdef USE_MT_OPS
         if (use_reals) {
             bop = new arith_mt<mt_minimum<float> > (a,b,c);
         } else {
             bop = new arith_mt<mt_minimum<long> > (a,b,c);
         }
+#else
+        if (use_reals) {
+            bop = new arith_compat<EdgeOp_none, mt_minimum<float> > (a,b,c);
+        } else {
+            bop = new arith_compat<EdgeOp_none, mt_minimum<long> > (a,b,c);
+        }
+#endif
         return MINIMUM_cache.add( bop );
     }
 
