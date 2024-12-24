@@ -139,6 +139,11 @@ namespace MEDDLY {
             {
                 return false;
             }
+            /// Edge value type; for CT entries
+            static inline char edgeValueTypeLetter()
+            {
+                return 0;
+            }
             /// Clear an edge value.
             static inline void clear(edge_value &v)
             {
@@ -190,6 +195,8 @@ namespace MEDDLY {
             {
                 return true;
             }
+            /// Edge value type; for CT entries
+            static char edgeValueTypeLetter();
             /// Clear an edge value.
             static inline void clear(edge_value &v)
             {
@@ -232,6 +239,14 @@ namespace MEDDLY {
                 return terminal(p, terminal_type::OMEGA);
             }
     };
+    template <>
+    inline char EdgeOp_plus<int>::edgeValueTypeLetter() {
+        return 'I';
+    }
+    template <>
+    inline char EdgeOp_plus<long>::edgeValueTypeLetter() {
+        return 'L';
+    }
 };
 
 // ******************************************************************
@@ -252,6 +267,8 @@ namespace MEDDLY {
             {
                 return true;
             }
+            /// Edge value type; for CT entries
+            static char edgeValueTypeLetter();
             /// Clear an edge value.
             static inline void clear(edge_value &v)
             {
@@ -294,6 +311,14 @@ namespace MEDDLY {
                 return terminal(p, terminal_type::OMEGA);
             }
     };
+    template <>
+    inline char EdgeOp_times<float>::edgeValueTypeLetter() {
+        return 'F';
+    }
+    template <>
+    inline char EdgeOp_times<double>::edgeValueTypeLetter() {
+        return 'D';
+    }
 };
 
 // ******************************************************************

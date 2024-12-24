@@ -717,7 +717,11 @@ MEDDLY::arith_compat<EOP, ATYPE>::arith_compat(forest* arg1, forest* arg2,
     } else {
         ct->setFixed(arg1, arg2);
     }
-    ct->setResult(res);
+    if (EOP::hasEdgeValues()) {
+        ct->setResult(EOP::edgeValueTypeLetter(), res);
+    } else {
+        ct->setResult(res);
+    }
     ct->doneBuilding();
 }
 
@@ -870,7 +874,13 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         //
         // compute table hit
         //
-        C = resF->linkNode(res[0].getN());
+        if (EOP::hasEdgeValues()) {
+            res[0].get(cv);
+            C = resF->linkNode(res[1].getN());
+        } else {
+            EOP::clear(cv);
+            C = resF->linkNode(res[0].getN());
+        }
 #ifdef TRACE
         out << "CT hit ";
         key.show(out);
@@ -885,7 +895,6 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         } else {
             C = resF->makeRedundantsTo(C, Clevel, L);
         }
-        EOP::clear(cv);
         return;
         //
         // done compute table hit
@@ -993,7 +1002,12 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
     if (Au->wasIdentity() || Bu->wasIdentity()) {
         ct->noaddCT(key);
     } else {
-        res[0].setN(C);
+        if (EOP::hasEdgeValues()) {
+            res[0].set(cv);
+            res[1].setN(C);
+        } else {
+            res[0].setN(C);
+        }
         ct->addCT(key, res);
     }
 
