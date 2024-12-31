@@ -24,33 +24,33 @@ MEDDLY::rangeval::rangeval(bool v, range_type rt)
     s_value = range_special::NORMAL;
 
     if (isReal()) {
-        f_value = v;
+        d_value = v;
     } else {
-        i_value = v;
+        l_value = v;
     }
 }
 
-MEDDLY::rangeval::rangeval(int v, range_type rt)
+MEDDLY::rangeval::rangeval(long v, range_type rt)
 {
     the_type = rt;
     s_value = range_special::NORMAL;
 
     if (isReal()) {
-        f_value = v;
+        d_value = v;
     } else {
-        i_value = v;
+        l_value = v;
     }
 }
 
-MEDDLY::rangeval::rangeval(float v, range_type rt)
+MEDDLY::rangeval::rangeval(double v, range_type rt)
 {
     the_type = rt;
     s_value = range_special::NORMAL;
 
     if (isReal()) {
-        f_value = v;
+        d_value = v;
     } else {
-        i_value = int(v);
+        l_value = int(v);
     }
 }
 
@@ -61,9 +61,9 @@ MEDDLY::rangeval::rangeval(range_special v, range_type rt)
     if (range_special::NORMAL == v) {
         // set value to 0 as default
         if (isReal()) {
-            f_value = 0.0;
+            d_value = 0.0;
         } else {
-            i_value = 0;
+            l_value = 0;
         }
     }
 }

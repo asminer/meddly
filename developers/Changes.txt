@@ -1,20 +1,32 @@
 
 Implement next:
 
+    * use rangevals for function return values, consistently
+        + minterms
+        + iterators
+        + evaluate
+
+
+    * forest::createEdge() for constants
+        make a non-virtual (inlined?) version in forest.cc
+
+        and for internal use, add to EdgeOp_none, EdgeOp_Plus, EdgeOp_Times
+            void buildConstant(val, edge_value &ev, node_handle &p)
+        or something similar
+
+
+    * minterm -> allow default value in buildFunction()
+
+    * minterm_coll -> allow default value in buildFunction()
+
     * MAXIMUM, MINIMUM operations to finish off minterm builds :)
         + and test cases (add to chk_minterm?)
 
     * Comparisons for EV+, EV*
         + add test cases to ops_comp
 
-    * forest::createEdge() for constants
-        make a non-virtual version in forest.cc
-
-        and for internal use, add to EdgeOp_none, EdgeOp_Plus, EdgeOp_Times
-            void buildConstant(val, edge_value &ev, node_handle &p)
-        or something similar
-
     RELEASE HERE
+
 
 
     * super combined element-wise arithmetic into 1-3 mega operations

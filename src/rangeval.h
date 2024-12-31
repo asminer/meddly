@@ -68,10 +68,10 @@ class MEDDLY::rangeval {
         rangeval(bool v=true, range_type rt = range_type::BOOLEAN);
 
         /// Initialize as an integer
-        rangeval(int v, range_type rt = range_type::INTEGER);
+        rangeval(long v, range_type rt = range_type::INTEGER);
 
         /// Initialize as a real
-        rangeval(float v, range_type rt = range_type::REAL);
+        rangeval(double v, range_type rt = range_type::REAL);
 
         /// Initialize as special
         rangeval(range_special v, range_type rt);
@@ -107,23 +107,23 @@ class MEDDLY::rangeval {
         inline operator bool() const {
             MEDDLY_DCASSERT(isNormal());
             MEDDLY_DCASSERT(isBoolean());
-            return i_value;
+            return l_value;
         }
-        inline operator int() const {
+        inline operator long() const {
             MEDDLY_DCASSERT(isNormal());
             MEDDLY_DCASSERT(isInteger());
-            return i_value;
+            return l_value;
         }
-        inline operator float() const {
+        inline operator double() const {
             MEDDLY_DCASSERT(isNormal());
             MEDDLY_DCASSERT(isReal());
-            return f_value;
+            return d_value;
         }
 
     private:
         union {
-            int         i_value;
-            float       f_value;
+            long        l_value;
+            double      d_value;
         };
         range_type      the_type;
         range_special   s_value;
