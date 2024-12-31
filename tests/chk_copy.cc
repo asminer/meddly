@@ -97,15 +97,15 @@ void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
 
     switch (f->getRangeType()) {
         case range_type::BOOLEAN:
-            f->createEdge(false, out);
+            f->createConstant(false, out);
             break;
 
         case range_type::INTEGER:
-            f->createEdge(long(0), out);
+            f->createConstant(0L, out);
             break;
 
         case range_type::REAL:
-            f->createEdge(float(0), out);
+            f->createConstant(0.0, out);
             break;
     }
     if (fout) {
@@ -197,13 +197,13 @@ void testCopy(forest* srcF, forest* destF)
                 if (destF->getRangeType() == range_type::INTEGER) {
                     // convert destE to boolean
                     dd_edge zero(destF);
-                    destF->createEdge(long(0), zero);
+                    destF->createConstant(0L, zero);
                     apply(NOT_EQUAL, destE, zero, destE);
                 }
                 if (destF->getRangeType() == range_type::REAL) {
                     // convert destE to boolean
                     dd_edge zero(destF);
-                    destF->createEdge(float(0), zero);
+                    destF->createConstant(0.0, zero);
                     apply(NOT_EQUAL, destE, zero, destE);
                 }
             }

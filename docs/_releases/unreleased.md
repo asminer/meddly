@@ -41,5 +41,8 @@ layout: single
 
 * Old ```forest::getElement()``` replaced by ```dd_edge::getElement()```.
 
+* Old ```forest::createEdge()``` for constant functions
+  replaced by ```forest::createConstant()```.
+
 ### Implementation
 

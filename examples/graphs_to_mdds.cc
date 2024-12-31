@@ -190,7 +190,8 @@ int main(int argv, char *argc[])
 
   // create edge reprenting terminal node TRUE
   dd_edge one(mdd);
-  mdd->createEdge(true, one);
+  // mdd->createEdge(true, one);
+  mdd->createConstant(true, one);
   std::cout << "\nTerminal node, TRUE: " << one.getNode() << "\n";
   one.showGraph(meddlyout);
 

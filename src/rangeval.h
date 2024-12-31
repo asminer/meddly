@@ -23,7 +23,7 @@
 
 namespace MEDDLY {
     class rangeval;
-
+    class forest;
 
     /// Types of return values allowed for functions.
     enum class range_type {
@@ -65,16 +65,56 @@ namespace MEDDLY {
 class MEDDLY::rangeval {
     public:
         /// Initialize as a boolean
-        rangeval(bool v=true, range_type rt = range_type::BOOLEAN);
+        rangeval(bool v=true)
+        {
+            the_type = range_type::BOOLEAN;
+            s_value = range_special::NORMAL;
+            l_value = v;
+        }
+        /// Initialize as an integer
+        rangeval(int v)
+        {
+            the_type = range_type::INTEGER;
+            s_value = range_special::NORMAL;
+            l_value = v;
+        }
+        /// Initialize as an integer
+        rangeval(long v)
+        {
+            the_type = range_type::INTEGER;
+            s_value = range_special::NORMAL;
+            l_value = v;
+        }
+        /// Initialize as a real
+        rangeval(float v)
+        {
+            the_type = range_type::REAL;
+            s_value = range_special::NORMAL;
+            d_value = v;
+        }
+        /// Initialize as a real
+        rangeval(double v)
+        {
+            the_type = range_type::REAL;
+            s_value = range_special::NORMAL;
+            d_value = v;
+        }
+        /// Initialize as special
+        rangeval(range_special v, range_type rt)
+        {
+            the_type = rt;
+            s_value = v;
+        }
+
+        /// Initialize as a boolean
+        // rangeval(bool v=true, range_type rt = range_type::BOOLEAN);
 
         /// Initialize as an integer
-        rangeval(long v, range_type rt = range_type::INTEGER);
+        // rangeval(long v, range_type rt = range_type::INTEGER);
 
         /// Initialize as a real
-        rangeval(double v, range_type rt = range_type::REAL);
+        // rangeval(double v, range_type rt = range_type::REAL);
 
-        /// Initialize as special
-        rangeval(range_special v, range_type rt);
 
         //
         // Getters for the type
@@ -109,10 +149,20 @@ class MEDDLY::rangeval {
             MEDDLY_DCASSERT(isBoolean());
             return l_value;
         }
+        inline operator int() const {
+            MEDDLY_DCASSERT(isNormal());
+            MEDDLY_DCASSERT(isInteger());
+            return l_value;
+        }
         inline operator long() const {
             MEDDLY_DCASSERT(isNormal());
             MEDDLY_DCASSERT(isInteger());
             return l_value;
+        }
+        inline operator float() const {
+            MEDDLY_DCASSERT(isNormal());
+            MEDDLY_DCASSERT(isReal());
+            return d_value;
         }
         inline operator double() const {
             MEDDLY_DCASSERT(isNormal());

@@ -43,7 +43,7 @@ void clauses2MDD(forest* f, const int** C, dd_edge &M, int verb)
             printf("\tClause: ");
         }
         dd_edge cl(f);
-        f->createEdge(false, cl);
+        f->createConstant(false, cl);
         bool vals[2];
         for (const int* term = C[0]; term[0]; term++) {
             int vh;
@@ -76,7 +76,7 @@ void clauses2MDD(forest* f, const int** C, dd_edge &M, int verb)
     } // for C
 
     if (verb>1) printf("\nMerging clauses by level\n\t");
-    f->createEdge(true, M);
+    f->createConstant(true, M);
     for (unsigned i=1; i<=d->getNumVariables(); i++) {
         if (ce[i]) {
             M *= (*ce[i]);

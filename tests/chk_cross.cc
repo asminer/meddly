@@ -120,7 +120,7 @@ void test(forest* mdd, forest* mxd, int nmt)
 {
   dd_edge rs(mdd), cs(mdd);
   dd_edge one(mdd);
-  mdd->createEdge(true, one);
+  mdd->createConstant(true, one);
 
   dd_edge rr(mxd), cr(mxd), rcr(mxd), tmp(mxd);
 

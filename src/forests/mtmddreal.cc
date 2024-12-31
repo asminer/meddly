@@ -31,6 +31,8 @@ MEDDLY::mt_mdd_real::mt_mdd_real(domain *d, const policies &p, int* level_reduct
 MEDDLY::mt_mdd_real::~mt_mdd_real()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::mt_mdd_real::createEdge(float term, dd_edge& e)
 {
   // createEdgeTempl<float_Tencoder, float>(term, e);
@@ -49,8 +51,6 @@ void MEDDLY::mt_mdd_real::createEdge(double term, dd_edge& e)
 #endif
 }
 
-
-#ifdef ALLOW_DEPRECATED_0_17_7
 
 void MEDDLY::mt_mdd_real::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 {

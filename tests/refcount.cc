@@ -88,11 +88,11 @@ int main()
 
         checkCount(5, x1);
 
-        mdd->createEdge(false, tmp);
+        mdd->createConstant(false, tmp);
 
         checkCount(1, x123);
 
-        mdd->createEdge(false, x123);
+        mdd->createConstant(false, x123);
 
         checkCount(1, x1);
 

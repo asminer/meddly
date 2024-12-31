@@ -92,7 +92,7 @@ void initEdges(forest* f, std::vector <dd_edge> &E)
             terms[1] = i+1;
             f->createEdgeForVar(1, false, terms, E[i]);
         } else {
-            f->createEdge(42L, E[i]);
+            f->createConstant(42L, E[i]);
         }
 #ifdef DEBUG
         out << "Built edge #" << i << ": " << E[i] << "\n";

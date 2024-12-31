@@ -45,8 +45,8 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
     evmdd_pluslong(domain *d, const policies &p, int* level_reduction_rule=NULL, bool index_set=false);
     ~evmdd_pluslong();
 
-    virtual void createEdge(long val, dd_edge &e);
 #ifdef ALLOW_DEPRECATED_0_17_7
+    virtual void createEdge(long val, dd_edge &e);
     virtual void createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e);
 
     virtual void evaluate(const dd_edge &f, const int* vlist, long &term) const;

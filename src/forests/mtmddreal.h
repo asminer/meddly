@@ -36,10 +36,10 @@ class MEDDLY::mt_mdd_real : public mtmdd_forest {
     mt_mdd_real(domain *d, const policies &p, int* level_reduction_rule=NULL, float tv=0);
     ~mt_mdd_real();
 
-    virtual void createEdge(float val, dd_edge &e);
-    virtual void createEdge(double val, dd_edge &e);
     virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
 #ifdef ALLOW_DEPRECATED_0_17_7
+    virtual void createEdge(float val, dd_edge &e);
+    virtual void createEdge(double val, dd_edge &e);
     virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
     virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
       const;

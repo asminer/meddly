@@ -871,6 +871,216 @@ MEDDLY::node_handle MEDDLY::forest
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// value to edge
+//
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void MEDDLY::forest::getEdgeForValue(rangeval T, edge_value &v, node_handle &p)
+    const
+{
+    if (!T.hasType(rangeType)) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+    switch (edgeLabel) {
+
+        case edge_labeling::MULTI_TERMINAL:
+                if (!T.isNormal()) {
+                    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                }
+
+                v.set();
+                switch (rangeType) {
+                    case range_type::BOOLEAN:
+                    {
+                        terminal t = terminal(bool(T));
+                        p = t.getHandle();
+                        return;
+                    }
+
+                    case range_type::INTEGER:
+                    {
+                        terminal t = terminal(long(T));
+                        p = t.getHandle();
+                        return;
+                    }
+
+                    case range_type::REAL:
+                    {
+                        terminal t = terminal(double(T));
+                        p = t.getHandle();
+                        return;
+                    }
+
+                    default:
+                        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+                } // switch
+                // shouldn't get here
+                MEDDLY_DCASSERT(false);
+                return;
+
+        case edge_labeling::INDEX_SET:
+        case edge_labeling::EVPLUS:
+                if (T.isPlusInfinity()) {
+                    v.setTempl(the_edge_type, 0);
+                    p = OMEGA_INFINITY;
+                    return;
+                }
+                if (!T.isNormal()) {
+                    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                }
+                p = OMEGA_NORMAL;
+
+                switch (the_edge_type) {
+                    case edge_type::INT:
+                        v.set(int(T));
+                        return;
+
+                    case edge_type::LONG:
+                        v.set(long(T));
+                        return;
+
+                    default:
+                        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+                } // switch
+                // shouldn't get here
+                MEDDLY_DCASSERT(false);
+                return;
+
+
+        case edge_labeling::EVTIMES:
+                if (!T.isNormal()) {
+                    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                }
+
+                switch (the_edge_type) {
+                    case edge_type::FLOAT:
+                        v.set(float(T));
+                        p = (0.0 == v.getFloat()) ? OMEGA_ZERO : OMEGA_NORMAL;
+                        return;
+
+                    case edge_type::DOUBLE:
+                        v.set(double(T));
+                        p = (0.0 == v.getDouble()) ? OMEGA_ZERO : OMEGA_NORMAL;
+                        return;
+
+                    default:
+                        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+                } // switch
+                // shouldn't get here
+                MEDDLY_DCASSERT(false);
+                return;
+
+        default:
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    }
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// edge to value
+//
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void MEDDLY::forest::getValueForEdge(const edge_value &v, node_handle p,
+        rangeval &T) const
+{
+    if (!isTerminalNode(p)) {
+        throw error(error::INVALID_LEVEL, __FILE__, __LINE__);
+    }
+    switch (edgeLabel) {
+
+        case edge_labeling::MULTI_TERMINAL:
+            {
+                MEDDLY_DCASSERT(v.isVoid());
+                terminal t(the_terminal_type, p);
+                switch (the_terminal_type) {
+                    case terminal_type::BOOLEAN:
+                    {
+                        T = rangeval(t.getBoolean());
+                        return;
+                    }
+
+                    case terminal_type::INTEGER:
+                    {
+                        T = rangeval(t.getInteger());
+                        return;
+                    }
+
+                    case terminal_type::REAL:
+                    {
+                        T = rangeval(t.getReal());
+                        return;
+                    }
+
+                    default:
+                        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+                } // switch
+                  // shouldn't get here
+                MEDDLY_DCASSERT(false);
+                return;
+            }
+
+        case edge_labeling::INDEX_SET:
+        case edge_labeling::EVPLUS:
+                if (OMEGA_INFINITY == p) {
+                    T = rangeval(range_special::PLUS_INFINITY,
+                                    range_type::INTEGER);
+                    return;
+                }
+                MEDDLY_DCASSERT(OMEGA_NORMAL == p);
+                switch (the_edge_type) {
+                    case edge_type::INT:
+                        T = rangeval(v.getInt());
+                        return;
+
+                    case edge_type::LONG:
+                        T = rangeval(v.getLong());
+                        return;
+
+                    default:
+                        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+                } // switch
+                // shouldn't get here
+                MEDDLY_DCASSERT(false);
+                return;
+
+
+        case edge_labeling::EVTIMES:
+                if (OMEGA_ZERO == p) {
+                    T = rangeval(0.0);
+                    return;
+                }
+                MEDDLY_DCASSERT(OMEGA_NORMAL == p);
+
+                switch (the_edge_type) {
+                    case edge_type::FLOAT:
+                        T = rangeval(v.getFloat());
+                        return;
+
+                    case edge_type::DOUBLE:
+                        T = rangeval(v.getDouble());
+                        return;
+
+                    default:
+                        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+                } // switch
+                // shouldn't get here
+                MEDDLY_DCASSERT(false);
+                return;
+
+        default:
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    }
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Node manager initialization
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -1656,27 +1866,6 @@ MEDDLY::node_handle MEDDLY::forest::unionOneMinterm(node_handle a,  int* from,  
 }
 
 
-void MEDDLY::forest::createEdge(bool val, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::createEdge(long val, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::createEdge(float val, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::createEdge(double val, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-
 
 // ===================================================================
 //
@@ -1720,6 +1909,29 @@ void MEDDLY::forest
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
+
+
+void MEDDLY::forest::createEdge(bool val, dd_edge &e)
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest::createEdge(long val, dd_edge &e)
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest::createEdge(float val, dd_edge &e)
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest::createEdge(double val, dd_edge &e)
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+
 
 void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, bool &t) const
 {

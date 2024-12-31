@@ -309,7 +309,7 @@ int main(int argc, const char** argv)
             dgm[i] = new dd_edge(fi);
             createQueenNodes(fi, i+1, *col[i], *dgp[i], *dgm[i]);
             constr[i] = new dd_edge(fb);
-            fb->createEdge(true, *constr[i]);
+            fb->createConstant(true, *constr[i]);
         }
         constr[N] = 0;
 

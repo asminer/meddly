@@ -321,8 +321,8 @@ int main(int argc, const char** argv)
         impl_Ax_check(x, P);
 
         // Avoid active node warning
-        evpmdds->createEdge(long(0), ss);
-        mtmxds->createEdge(float(0), P);
+        evpmdds->createConstant(0L, ss);
+        mtmxds->createConstant(0.0, P);
 
         cleanup();
         return 0;

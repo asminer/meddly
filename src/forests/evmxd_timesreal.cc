@@ -38,6 +38,8 @@ MEDDLY::evmxd_timesreal::evmxd_timesreal(domain *d, const policies &p, int* leve
 MEDDLY::evmxd_timesreal::~evmxd_timesreal()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::evmxd_timesreal::createEdge(float val, dd_edge &e)
 {
     if (val) {
@@ -61,8 +63,6 @@ void MEDDLY::evmxd_timesreal::createEdge(double val, dd_edge &e)
     validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
-
-#ifdef ALLOW_DEPRECATED_0_17_7
 
 void MEDDLY::evmxd_timesreal
 ::createEdge(const int* const* vlist, const int* const* vplist,

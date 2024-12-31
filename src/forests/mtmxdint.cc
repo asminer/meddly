@@ -31,6 +31,8 @@ MEDDLY::mt_mxd_int::mt_mxd_int(domain *d, const policies &p, int* level_reductio
 MEDDLY::mt_mxd_int::~mt_mxd_int()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::mt_mxd_int::createEdge(long term, dd_edge& e)
 {
     // createEdgeTempl<int_Tencoder, long>(term, e);
@@ -39,8 +41,6 @@ void MEDDLY::mt_mxd_int::createEdge(long term, dd_edge& e)
     validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
-
-#ifdef ALLOW_DEPRECATED_0_17_7
 
 void MEDDLY::mt_mxd_int
 ::createEdge(const int* const* vlist, const int* const* vplist, const long* terms, int N, dd_edge &e)

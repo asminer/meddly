@@ -38,6 +38,8 @@ MEDDLY::evmdd_timesreal::evmdd_timesreal(domain *d, const policies &p, int* leve
 MEDDLY::evmdd_timesreal::~evmdd_timesreal()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::evmdd_timesreal::createEdge(float val, dd_edge &e)
 {
   createEdgeTempl<OP, float>(val, e);
@@ -54,8 +56,6 @@ void MEDDLY::evmdd_timesreal::createEdge(double val, dd_edge &e)
 #endif
 }
 
-
-#ifdef ALLOW_DEPRECATED_0_17_7
 
 void MEDDLY::evmdd_timesreal
 ::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)

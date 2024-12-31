@@ -18,6 +18,7 @@
 
 #include "rangeval.h"
 
+/*
 MEDDLY::rangeval::rangeval(bool v, range_type rt)
 {
     the_type = rt;
@@ -67,4 +68,5 @@ MEDDLY::rangeval::rangeval(range_special v, range_type rt)
         }
     }
 }
+*/
 

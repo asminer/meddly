@@ -212,33 +212,33 @@ unpacked_node* build_node(forest* f, unsigned who, bool full)
 
     switch (f->getRangeType()) {
         case range_type::BOOLEAN:
-                f->createEdge(true, e[0]);
-                f->createEdge(true, e[1]);
-                f->createEdge(true, e[2]);
-                f->createEdge(true, e[3]);
-                f->createEdge(true, e[4]);
-                f->createEdge(true, e[5]);
-                f->createEdge(true, e[6]);
+                f->createConstant(true, e[0]);
+                f->createConstant(true, e[1]);
+                f->createConstant(true, e[2]);
+                f->createConstant(true, e[3]);
+                f->createConstant(true, e[4]);
+                f->createConstant(true, e[5]);
+                f->createConstant(true, e[6]);
                 break;
 
         case range_type::INTEGER:
-                f->createEdge(1L, e[0]);
-                f->createEdge(2L, e[1]);
-                f->createEdge(3L, e[2]);
-                f->createEdge(44L, e[3]);
-                f->createEdge(5L, e[4]);
-                f->createEdge(666L, e[5]);
-                f->createEdge(7777777L, e[6]);
+                f->createConstant(1L, e[0]);
+                f->createConstant(2L, e[1]);
+                f->createConstant(3L, e[2]);
+                f->createConstant(44L, e[3]);
+                f->createConstant(5L, e[4]);
+                f->createConstant(666L, e[5]);
+                f->createConstant(7777777L, e[6]);
                 break;
 
         case range_type::REAL:
-                f->createEdge(1.0f, e[0]);
-                f->createEdge(2.2f, e[1]);
-                f->createEdge(0.33333333f, e[2]);
-                f->createEdge(4.4f, e[3]);
-                f->createEdge(5.05f, e[4]);
-                f->createEdge(6.0606f, e[5]);
-                f->createEdge(0.007f, e[6]);
+                f->createConstant(1.0f, e[0]);
+                f->createConstant(2.2f, e[1]);
+                f->createConstant(0.33333333f, e[2]);
+                f->createConstant(4.4f, e[3]);
+                f->createConstant(5.05f, e[4]);
+                f->createConstant(6.0606f, e[5]);
+                f->createConstant(0.007f, e[6]);
                 break;
     }
 

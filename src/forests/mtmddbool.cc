@@ -32,6 +32,8 @@ MEDDLY::mt_mdd_bool::mt_mdd_bool(domain *d, const policies &p, int* level_reduct
 MEDDLY::mt_mdd_bool::~mt_mdd_bool()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
 {
   // createEdgeTempl<bool_Tencoder, bool>(term, e);
@@ -40,8 +42,6 @@ void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
   validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
-
-#ifdef ALLOW_DEPRECATED_0_17_7
 
 void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
 {

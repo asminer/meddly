@@ -578,7 +578,8 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
     switch (F->getRangeType()) {
         case range_type::BOOLEAN:
                 if (0==first_unused) {
-                    F->createEdge(false, e);
+                    F->createConstant(false, e);
+                    // F->createEdge(false, e);
                     return;
                 }
                 if (minimize) {
@@ -595,7 +596,8 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
         case range_type::INTEGER:
                 if (0==first_unused) {
                     // TBD: what about EVPLUS
-                    F->createEdge(0L, e);
+                    // F->createEdge(0L, e);
+                    F->createConstant(0L, e);
                     return;
                 }
                 if (minimize) {
@@ -609,7 +611,8 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
 
         case range_type::REAL:
                 if (0==first_unused) {
-                    F->createEdge(0.0F, e);
+                    // F->createEdge(0.0F, e);
+                    F->createConstant(0.0, e);
                     return;
                 }
                 if (minimize) {

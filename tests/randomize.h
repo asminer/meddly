@@ -302,7 +302,7 @@ class vectorgen {
 
             if (0==card) {
                 TYPE zero = 0;
-                F->createEdge(zero, s);
+                F->createConstant(zero, s);
                 return;
             }
 

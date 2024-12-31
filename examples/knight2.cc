@@ -303,19 +303,19 @@ void buildConstraints(const coord &sq, constraint* C)
     dd_edge xsq(mtF);
     mtF->createEdgeForVar(B.get_var(sq), false, xsq);
     dd_edge one(mtF);
-    mtF->createEdge(long(1), one);
+    mtF->createConstant(1L, one);
     xsq += one;
 
     // xsq holds 1+ visit number for the given square
 
     dd_edge NxM(mtF);
-    mtF->createEdge(long(B.getN()*B.getM()), NxM);
+    mtF->createConstant(long(B.getN()*B.getM()), NxM);
     apply(EQUAL, xsq, NxM, C->the_dd);
 
 
     for (i=0; i<moves.length(); i++) {
         dd_edge ands(boolF);
-        boolF->createEdge(true, ands);
+        boolF->createConstant(true, ands);
         if (verbose) cout << "\t";
         for (j=0; j<moves.length(); j++) {
             if (verbose) {
@@ -567,7 +567,7 @@ int main(int argc, const char** argv)
     dd_edge zero(mtF);
 
     mtF->createEdgeForVar(B.get_var(start), false, xst);
-    mtF->createEdge(long(0), zero);
+    mtF->createConstant(0L, zero);
     apply(EQUAL, xst, zero, all);
 
     std::cout << "Sorting constraints" << std::endl;

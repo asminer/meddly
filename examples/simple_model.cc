@@ -127,7 +127,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
     //
     // Initialize accumulators
     //
-    if (mono) mxd->createEdge(false, *mono);
+    if (mono) mxd->createConstant(false, *mono);
 
     for (unsigned e=0; e<nEvents; e++) {
         const char* ev = events[e];
@@ -375,7 +375,7 @@ void explicitReachset(const char* const* events, unsigned nEvents,
     dd_edge::iterator I(expl);
 #endif
     for (;;) {
-        f->createEdge(false, unexplored);
+        f->createConstant(false, unexplored);
 #ifdef OLD_ITERATORS
         I.start(expl);
 #else

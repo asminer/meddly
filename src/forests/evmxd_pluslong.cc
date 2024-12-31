@@ -38,6 +38,8 @@ MEDDLY::evmxd_pluslong::evmxd_pluslong(domain *d, const policies &p, int* level_
 MEDDLY::evmxd_pluslong::~evmxd_pluslong()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::evmxd_pluslong::createEdge(long val, dd_edge &e)
 {
   createEdgeTempl<OP, long>(val, e);
@@ -45,8 +47,6 @@ void MEDDLY::evmxd_pluslong::createEdge(long val, dd_edge &e)
   validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
-
-#ifdef ALLOW_DEPRECATED_0_17_7
 
 void MEDDLY::evmxd_pluslong
 ::createEdge(const int* const* vlist, const int* const* vplist,

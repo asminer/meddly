@@ -75,8 +75,8 @@ void setStart(int moveno, MEDDLY::dd_edge& constr)
     mtF->createEdgeForVar(thisrow, false, xtrow);
     mtF->createEdgeForVar(thiscol, false, xtcol);
 
-    mtF->createEdge(start_n, strow);
-    mtF->createEdge(start_m, stcol);
+    mtF->createConstant(start_n, strow);
+    mtF->createConstant(start_m, stcol);
 
     dd_edge term2(boolF);
 
@@ -111,7 +111,7 @@ void buildConstraint(int movea, int moveb, MEDDLY::dd_edge& constr)
     const long drow[] = {  1,  1, -1, -1,  2,  2, -2, -2, 0 };
     const long dcol[] = {  2, -2,  2, -2,  1, -1,  1, -1, 0 };
 
-    boolF->createEdge(false, constr);
+    boolF->createConstant(false, constr);
 
     for (unsigned i=0; drow[i]; i++) {
         if (verbose) {
@@ -130,8 +130,8 @@ void buildConstraint(int movea, int moveb, MEDDLY::dd_edge& constr)
         mtF->createEdgeForVar(nextrow, false, xnrow);
         mtF->createEdgeForVar(nextcol, false, xncol);
 
-        mtF->createEdge(drow[i], dr);
-        mtF->createEdge(dcol[i], dc);
+        mtF->createConstant(drow[i], dr);
+        mtF->createConstant(dcol[i], dc);
 
         xtrow += dr;
         xtcol += dc;
@@ -170,7 +170,7 @@ void uniqueDown(int pnum, MEDDLY::dd_edge &constr)
     mtF->createEdgeForVar(rowa, false, xrowa);
     mtF->createEdgeForVar(cola, false, xcola);
 
-    boolF->createEdge(true, constr);
+    boolF->createConstant(true, constr);
 
     for (int i=pnum-1; i>0; i--) {
         const int rowb = i*2;
@@ -428,15 +428,15 @@ void generate()
     moves[N*M].attach(boolF);
 
     if (reverse) {
-        boolF->createEdge(true, moves[0]);
+        boolF->createConstant(true, moves[0]);
         setStart(N*M, moves[N*M]);
     } else {
-        boolF->createEdge(true, moves[N*M]);
+        boolF->createConstant(true, moves[N*M]);
         setStart(1, moves[0]);
     }
 
     dd_edge tours(boolF);
-    boolF->createEdge(true, tours);
+    boolF->createConstant(true, tours);
 
     std::cout << "\nDetermining all " << N*M-1 << " knight moves\n";
     if (topdown) {
@@ -464,7 +464,7 @@ void generate()
     std::cout << "\tBuilding unique constraint\n";
 
     dd_edge unique(boolF), nodup(boolF);
-    boolF->createEdge(true, unique);
+    boolF->createConstant(true, unique);
     if (topdown) {
         for (int i=N*M; i>0; i--) {
             std::cout << "    " << i;
@@ -507,7 +507,7 @@ void generate()
     std::cout << "Approx. " << card << " Hamiltonian tours\n";
 
     dd_edge unsat(boolF);
-    boolF->createEdge(false, unsat);
+    boolF->createConstant(false, unsat);
 
     if (maxsols) {
         //

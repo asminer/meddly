@@ -1341,33 +1341,19 @@ class MEDDLY::forest {
             return v;
         }
 
+
         /**
-            Convenience function.
-            Build an edge for a constant value.
+            Build an edge at level 0 (i.e., always to a terminal node)
+            for a constant value.
+         */
+        void getEdgeForValue(rangeval T, edge_value &v, node_handle &p)
+            const;
+
+        /**
+            Get the value of a level 0 edge (to a terminal node).
         */
-        template <class T>
-        inline void getEdgeForValue(T constval, edge_value &v, node_handle &p)
-        const
-        {
-            if (isMultiTerminal()) {
-                v.set();
-                terminal t(constval, the_terminal_type);
-                p = t.getHandle();
-            } else {
-                v.setTempl(the_edge_type, constval);
-
-                if (isEVTimes() && (0==constval)) {
-                    p = OMEGA_ZERO;
-                } else {
-                    p = OMEGA_NORMAL;
-                }
-            }
-        }
-
-        //
-        // TBD:
-        //    getEdgeForInfinity
-        //
+        void getValueForEdge(const edge_value &v, node_handle p, rangeval &T)
+            const;
 
     // ------------------------------------------------------------
     protected: // methods to set edge info, for derived classes
@@ -2214,10 +2200,28 @@ class MEDDLY::forest {
 
 // ===================================================================
 //
-// Building methods; probably will be moved elsewhere
+// Building methods
 //
 // ===================================================================
 
+  public:
+
+    /** Create an edge for a constant function.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+    */
+    inline void createConstant(rangeval val, dd_edge &e)
+    {
+        if (!e.isAttachedTo(this)) {
+            throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+        }
+        edge_value v;
+        node_handle p;
+        getEdgeForValue(val, v, p);
+        p = makeRedundantsTo(p, 0, getNumVariables());
+        e.set(v, p);
+    }
 
 
   // ------------------------------------------------------------
@@ -2350,59 +2354,6 @@ class MEDDLY::forest {
                 throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
     };
-
-
-    /** Create an edge for a boolean constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN.
-    */
-    virtual void createEdge(bool val, dd_edge &e);
-
-    /** Create an edge for an integer constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not INTEGER.
-    */
-    inline  void createEdge(int val, dd_edge &e) {
-        createEdge(long(val), e);
-    }
-
-    /** Create an edge for an integer constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not INTEGER.
-    */
-    virtual void createEdge(long val, dd_edge &e);
-
-    /** Create an edge for a real constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not REAL.
-    */
-    virtual void createEdge(float val, dd_edge &e);
-
-    /** Create an edge for a real constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not REAL.
-    */
-    virtual void createEdge(double val, dd_edge &e);
 
 
 
@@ -2589,6 +2540,61 @@ class MEDDLY::forest {
     */
     virtual void createEdge(const int* const* vlist, const int* const* vplist,
         const float* terms, int N, dd_edge &e);
+
+
+
+    /** Create an edge for a boolean constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not BOOLEAN.
+    */
+    virtual void createEdge(bool val, dd_edge &e);
+
+    /** Create an edge for an integer constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not INTEGER.
+    */
+    inline  void createEdge(int val, dd_edge &e) {
+        createEdge(long(val), e);
+    }
+
+    /** Create an edge for an integer constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not INTEGER.
+    */
+    virtual void createEdge(long val, dd_edge &e);
+
+    /** Create an edge for a real constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL.
+    */
+    virtual void createEdge(float val, dd_edge &e);
+
+    /** Create an edge for a real constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL.
+    */
+    virtual void createEdge(double val, dd_edge &e);
+
 
 
     /** Evaluate the function encoded by an edge.

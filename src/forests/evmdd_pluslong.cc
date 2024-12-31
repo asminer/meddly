@@ -44,12 +44,12 @@ MEDDLY::evmdd_pluslong
 MEDDLY::evmdd_pluslong::~evmdd_pluslong()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::evmdd_pluslong::createEdge(long val, dd_edge &e)
 {
   createEdgeTempl<OP, long>(val, e);
 }
-
-#ifdef ALLOW_DEPRECATED_0_17_7
 
 void MEDDLY::evmdd_pluslong
 ::createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e)

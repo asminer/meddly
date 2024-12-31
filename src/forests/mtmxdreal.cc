@@ -31,6 +31,8 @@ MEDDLY::mt_mxd_real::mt_mxd_real(domain *d, const policies &p, int* level_reduct
 MEDDLY::mt_mxd_real::~mt_mxd_real()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::mt_mxd_real::createEdge(float term, dd_edge& e)
 {
     // createEdgeTempl<float_Tencoder, float>(term, e);
@@ -48,8 +50,6 @@ void MEDDLY::mt_mxd_real::createEdge(double term, dd_edge& e)
     validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
-
-#ifdef ALLOW_DEPRECATED_0_17_7
 
 void MEDDLY::mt_mxd_real
 ::createEdge(const int* const* vlist, const int* const* vplist, const float* terms, int N, dd_edge &e)

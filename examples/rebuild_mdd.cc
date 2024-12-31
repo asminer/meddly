@@ -112,7 +112,7 @@ void reorderVariablesByRebuilding(dd_edge &e)
 	  printf("Final: %lu\n", e2.getNodeCount());
 	}
 
-	f->createEdge(long(0), e);
+	f->createConstant(0L, e);
 	printf("Source Discarded: %lu\n", e.getNodeCount());
 
 	{
