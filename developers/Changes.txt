@@ -7,13 +7,6 @@ Implement next:
         + evaluate
 
 
-    * forest::createEdge() for constants
-        make a non-virtual (inlined?) version in forest.cc
-
-        and for internal use, add to EdgeOp_none, EdgeOp_Plus, EdgeOp_Times
-            void buildConstant(val, edge_value &ev, node_handle &p)
-        or something similar
-
 
     * minterm -> allow default value in buildFunction()
 
