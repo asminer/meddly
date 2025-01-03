@@ -20,10 +20,12 @@
 #define MEDDLY_RANGEVAL_H
 
 #include "defines.h"
+#include "error.h"
 
 namespace MEDDLY {
     class rangeval;
     class forest;
+    class output;
 
     /// Types of return values allowed for functions.
     enum class range_type {
@@ -106,15 +108,6 @@ class MEDDLY::rangeval {
             s_value = v;
         }
 
-        /// Initialize as a boolean
-        // rangeval(bool v=true, range_type rt = range_type::BOOLEAN);
-
-        /// Initialize as an integer
-        // rangeval(long v, range_type rt = range_type::INTEGER);
-
-        /// Initialize as a real
-        // rangeval(double v, range_type rt = range_type::REAL);
-
 
         //
         // Getters for the type
@@ -132,6 +125,9 @@ class MEDDLY::rangeval {
         inline bool isReal() const {
             return hasType(range_type::REAL);
         }
+        inline range_type getType() const {
+            return the_type;
+        }
 
         //
         // Getters for the value
@@ -145,30 +141,61 @@ class MEDDLY::rangeval {
         }
 
         inline operator bool() const {
-            MEDDLY_DCASSERT(isNormal());
             MEDDLY_DCASSERT(isBoolean());
+            if (!isNormal()) {
+                throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
+            }
             return l_value;
         }
         inline operator int() const {
-            MEDDLY_DCASSERT(isNormal());
             MEDDLY_DCASSERT(isInteger());
+            if (!isNormal()) {
+                throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
+            }
             return l_value;
         }
         inline operator long() const {
-            MEDDLY_DCASSERT(isNormal());
             MEDDLY_DCASSERT(isInteger());
+            if (!isNormal()) {
+                throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
+            }
             return l_value;
         }
         inline operator float() const {
-            MEDDLY_DCASSERT(isNormal());
             MEDDLY_DCASSERT(isReal());
+            if (!isNormal()) {
+                throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
+            }
             return d_value;
         }
         inline operator double() const {
-            MEDDLY_DCASSERT(isNormal());
             MEDDLY_DCASSERT(isReal());
+            if (!isNormal()) {
+                throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
+            }
             return d_value;
         }
+
+        inline bool operator==(const rangeval &t) const {
+            if (the_type != t.the_type) return false;
+            if (s_value != t.s_value) return false;
+            if (range_special::NORMAL == s_value) {
+                //
+                // HACK: l_value and d_value take exactly the same space,
+                // so this comparison is valid.
+                // However, it requires the d_values to be EXACTLY equal.
+                //
+                return l_value == t.l_value;
+            } else {
+                return true;
+            }
+        }
+
+        //
+        // Helpful for debugging
+        //
+
+        void write(output &s) const;
 
     private:
         union {

@@ -293,12 +293,14 @@ namespace MEDDLY {
                 const minterm_coll &mc, unsigned low, unsigned high,
                 const forest* F, edge_value &cv, node_handle &cp)
         {
-            cv.set();
+            bool val = false;
             for (unsigned i=low; i<high; i++) {
-                terminal t = mc.at(i).getTerm();
-                cp = t.getHandle();
-                if (cp) return;
+                if (mc.at(i).getValue()) {
+                    val = true;
+                    break;
+                }
             }
+            F->getEdgeForValue(val, cv, cp);
         }
     };
     struct fbop_inter_bool {
@@ -306,22 +308,51 @@ namespace MEDDLY {
                 const minterm_coll &mc, unsigned low, unsigned high,
                 const forest* F, edge_value &cv, node_handle &cp)
         {
-            cv.set();
+            bool val = true;
             for (unsigned i=low; i<high; i++) {
-                terminal t = mc.at(i).getTerm();
-                cp = t.getHandle();
-                if (!cp) return;
+                if (!mc.at(i).getValue()) {
+                    val = false;
+                    break;
+                }
             }
+            F->getEdgeForValue(val, cv, cp);
         }
     };
+    template <typename T>
+    struct fbop_min_tmpl {
+        static inline void finalize(
+                const minterm_coll &mc, unsigned low, unsigned high,
+                const forest* F, edge_value &cv, node_handle &cp)
+        {
+            T val = T(mc.at(low).getValue());
+            for (unsigned i=low+1; i<high; i++) {
+                val = MIN(val, T(mc.at(i).getValue()));
+            }
+            F->getEdgeForValue(val, cv, cp);
+        }
+    };
+    template <typename T>
+    struct fbop_max_tmpl {
+        static inline void finalize(
+                const minterm_coll &mc, unsigned low, unsigned high,
+                const forest* F, edge_value &cv, node_handle &cp)
+        {
+            T val = T(mc.at(low).getValue());
+            for (unsigned i=low+1; i<high; i++) {
+                val = MAX(val, T(mc.at(i).getValue()));
+            }
+            F->getEdgeForValue(val, cv, cp);
+        }
+    };
+/*
     struct fbop_min_int {
         static inline void finalize(
                 const minterm_coll &mc, unsigned low, unsigned high,
                 const forest* F, edge_value &cv, node_handle &cp)
         {
-            long val = mc.at(low).getTerm().getInteger();
+            long val = long(mc.at(low).getValue());
             for (unsigned i=low+1; i<high; i++) {
-                val = MIN(val, mc.at(i).getTerm().getInteger());
+                val = MIN(val, long(mc.at(i).getValue()));
             }
             F->getEdgeForValue(val, cv, cp);
         }
@@ -331,9 +362,9 @@ namespace MEDDLY {
                 const minterm_coll &mc, unsigned low, unsigned high,
                 const forest* F, edge_value &cv, node_handle &cp)
         {
-            long val = mc.at(low).getTerm().getInteger();
+            long val = long(mc.at(low).getValue());
             for (unsigned i=low+1; i<high; i++) {
-                val = MAX(val, mc.at(i).getTerm().getInteger());
+                val = MAX(val, long(mc.at(i).getValue()));
             }
             F->getEdgeForValue(val, cv, cp);
         }
@@ -343,9 +374,9 @@ namespace MEDDLY {
                 const minterm_coll &mc, unsigned low, unsigned high,
                 const forest* F, edge_value &cv, node_handle &cp)
         {
-            double val = mc.at(low).getTerm().getReal();
+            double val = double(mc.at(low).getValue());
             for (unsigned i=low+1; i<high; i++) {
-                val = MIN(val, mc.at(i).getTerm().getReal());
+                val = MIN(val, double(mc.at(i).getValue()));
             }
             F->getEdgeForValue(val, cv, cp);
         }
@@ -362,6 +393,7 @@ namespace MEDDLY {
             F->getEdgeForValue(val, cv, cp);
         }
     };
+*/
 };
 
 // ******************************************************************
@@ -371,14 +403,14 @@ namespace MEDDLY {
 // ******************************************************************
 
 
-MEDDLY::minterm::minterm(const domain* D, set_or_rel sr) : termval(true)
+MEDDLY::minterm::minterm(const domain* D, set_or_rel sr) : value(true)
 {
     _D = D;
     for_relations = sr;
     initVectors();
 }
 
-MEDDLY::minterm::minterm(const forest* F) : termval(true)
+MEDDLY::minterm::minterm(const forest* F) : value(true)
 {
     if (F) {
         _D = F->getDomain();
@@ -390,15 +422,15 @@ MEDDLY::minterm::minterm(const forest* F) : termval(true)
     initVectors();
 }
 
-MEDDLY::minterm::minterm(const minterm &m) : termval(true)
+MEDDLY::minterm::minterm(const minterm &m) : value(true)
 {
     _D = m._D;
     for_relations = m.for_relations;
     initVectors();
     if (for_relations) {
-        setAll(m._from, m._to, m.termval);
+        setAll(m._from, m._to, m.value);
     } else {
-        setAll(m._from, m.termval);
+        setAll(m._from, m.value);
     }
 }
 
@@ -418,9 +450,9 @@ void MEDDLY::minterm::setFrom(const minterm &m)
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }
     if (for_relations) {
-        setAll(m._from, m._to, m.termval);
+        setAll(m._from, m._to, m.value);
     } else {
-        setAll(m._from, m.termval);
+        setAll(m._from, m.value);
     }
 }
 
@@ -461,17 +493,17 @@ void MEDDLY::minterm::buildFunction(dd_edge &e) const
     node_handle cp;
     edge_value cv;
 
-    switch (termval.getType()) {
-        case terminal_type::BOOLEAN:
-            F->getEdgeForValue(termval.getBoolean(), cv, cp);
+    switch (value.getType()) {
+        case range_type::BOOLEAN:
+            F->getEdgeForValue(bool(value), cv, cp);
             break;
 
-        case terminal_type::INTEGER:
-            F->getEdgeForValue(termval.getInteger(), cv, cp);
+        case range_type::INTEGER:
+            F->getEdgeForValue(long(value), cv, cp);
             break;
 
-        case terminal_type::REAL:
-            F->getEdgeForValue(termval.getReal(), cv, cp);
+        case range_type::REAL:
+            F->getEdgeForValue(double(value), cv, cp);
             break;
 
         default:
@@ -601,10 +633,10 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
                     return;
                 }
                 if (minimize) {
-                    fbuilder<fbop_min_int> fb(F, *this, MINIMUM);
+                    fbuilder< fbop_min_tmpl<long> > fb(F, *this, MINIMUM);
                     fb.createEdge(num_vars, 0, first_unused, ev, en);
                 } else {
-                    fbuilder<fbop_max_int> fb(F, *this, MAXIMUM);
+                    fbuilder< fbop_max_tmpl<long> > fb(F, *this, MAXIMUM);
                     fb.createEdge(num_vars, 0, first_unused, ev, en);
                 }
                 break;
@@ -616,10 +648,10 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
                     return;
                 }
                 if (minimize) {
-                    fbuilder<fbop_min_real> fb(F, *this, MINIMUM);
+                    fbuilder< fbop_min_tmpl<double> > fb(F, *this, MINIMUM);
                     fb.createEdge(num_vars, 0, first_unused, ev, en);
                 } else {
-                    fbuilder<fbop_max_real> fb(F, *this, MAXIMUM);
+                    fbuilder< fbop_max_tmpl<double> > fb(F, *this, MAXIMUM);
                     fb.createEdge(num_vars, 0, first_unused, ev, en);
                 }
                 break;
@@ -646,7 +678,7 @@ void MEDDLY::minterm_coll::show(output &s,
         }
         _mtlist[i]->show(s);
         s.put("  ");
-        _mtlist[i]->getTerm().write(s);
+        _mtlist[i]->getValue().write(s);
         s.put(post);
     }
 }

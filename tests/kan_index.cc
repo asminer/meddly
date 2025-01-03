@@ -179,7 +179,7 @@ bool checkReachset(int N)
 #else
     for (dd_edge::iterator s = reach_index.begin(); s; ++s)
     {
-        long index = (*s).getTerm().getInteger();
+        long index = (*s).getValue();
         if (index != c) {
             printf("\nState number %ld has index %ld\n", c, index);
             return false;

@@ -113,10 +113,10 @@ void randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type r)
     val = 1 + (val % 5);
 
     if (MEDDLY::range_type::INTEGER == r) {
-        m.setTerm(val);
+        m.setValue(val);
     }
     if (MEDDLY::range_type::REAL == r) {
-        m.setTerm( float(val) );
+        m.setValue( float(val) );
     }
 }
 
@@ -132,7 +132,7 @@ void reorderMinterm(const MEDDLY::minterm &in, MEDDLY::minterm &out,
             out.setVar(i, in.from(reord[i]));
         }
     }
-    out.setTerm( in.getTerm() );
+    out.setValue( in.getValue() );
 }
 
 using namespace MEDDLY;

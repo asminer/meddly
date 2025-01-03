@@ -117,15 +117,15 @@ void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
         long i_value = Equilikely(1, 5);
         switch (f->getRangeType()) {
             case range_type::BOOLEAN:
-                mint.setTerm(true);
+                mint.setValue(true);
                 break;
 
             case range_type::INTEGER:
-                mint.setTerm(i_value);
+                mint.setValue(i_value);
                 break;
 
             case range_type::REAL:
-                mint.setTerm(double(i_value));
+                mint.setValue(double(i_value));
                 break;
         }
 

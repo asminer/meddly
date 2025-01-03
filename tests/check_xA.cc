@@ -159,7 +159,7 @@ void readVector(const dd_edge &x, double* ans)
 {
     trying("read vector");
     forest* f = x.getForest();
-    double temp;
+    rangeval temp;
     minterm Rm(f), Nm(f), Sm(f);
     Rm.setAll(R, 1.0);
     Nm.setAll(N, 1.0);

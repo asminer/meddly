@@ -161,16 +161,16 @@ void vectorgen::randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt)
     switch (rt) {
         case MEDDLY::range_type::INTEGER:
             vno2val(current_terminal, iterm);
-            m.setTerm(iterm);
+            m.setValue(iterm);
             break;
 
         case MEDDLY::range_type::REAL:
             vno2val(current_terminal, fterm);
-            m.setTerm(fterm);
+            m.setValue(fterm);
             break;
 
         default:
-            m.setTerm(true);
+            m.setValue(true);
     }
 }
 

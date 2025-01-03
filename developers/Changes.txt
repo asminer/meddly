@@ -1,13 +1,6 @@
 
 Implement next:
 
-    * use rangevals for function return values, consistently
-        + minterms
-        + iterators
-        + evaluate
-
-
-
     * minterm -> allow default value in buildFunction()
 
     * minterm_coll -> allow default value in buildFunction()

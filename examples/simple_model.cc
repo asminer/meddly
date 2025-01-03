@@ -407,7 +407,7 @@ void explicitReachset(const char* const* events, unsigned nEvents,
 #endif
 
                 // Have we seen this already in the RS
-                bool seen;
+                rangeval seen;
                 RS.evaluate(minterms.unused(), seen);
                 if (seen) continue;
 
@@ -440,7 +440,7 @@ void explicitReachset(const char* const* events, unsigned nEvents,
 #endif
 
                 // Have we seen this already in the RS
-                bool seen;
+                rangeval seen;
                 RS.evaluate(minterms.unused(), seen);
                 if (seen) continue;
 

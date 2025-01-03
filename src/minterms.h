@@ -35,7 +35,7 @@
 #include "defines.h"
 #include "minterms.h"
 #include "policies.h"
-#include "terminal.h"
+#include "rangeval.h"
 
 namespace MEDDLY {
 
@@ -104,11 +104,14 @@ class MEDDLY::minterm {
 
         inline const domain* getDomain()    const   { return _D; }
 
-        /// Set the terminal value
-        inline void setTerm(const terminal &t)      { termval = t; }
+        /// Set the value
+        inline void setValue(const rangeval &v)     { value = v; }
 
-        /// Get the terminal value
-        inline const terminal& getTerm()    const   { return termval; }
+        /// Set the value as an lvalue
+        inline rangeval& setValue()                 { return value; }
+
+        /// Get the value
+        inline const rangeval& getValue()   const   { return value; }
 
         /// Get the memory usage, in bytes
         inline long memoryUsage()           const
@@ -215,7 +218,7 @@ class MEDDLY::minterm {
         //
         // Set from an array.
         //
-        inline void setAll(const int* v, const terminal &t)
+        inline void setAll(const int* v, const rangeval &rv)
         {
             MEDDLY_DCASSERT(isForSets());
             MEDDLY_DCASSERT(v);
@@ -223,13 +226,13 @@ class MEDDLY::minterm {
             for (unsigned i=num_vars; i; --i) {
                 _from[i] = v[i];
             }
-            termval = t;
+            value = rv;
         }
 
         //
         // Set from unprimed and primed arrays.
         //
-        inline void setAll(const int* un, const int* pr, const terminal &t)
+        inline void setAll(const int* un, const int* pr, const rangeval &v)
         {
             MEDDLY_DCASSERT(isForRelations());
             MEDDLY_DCASSERT(un);
@@ -240,7 +243,7 @@ class MEDDLY::minterm {
                 _from[i] = un[i];
                 _to[i] = pr[i];
             }
-            termval = t;
+            value = v;
         }
 
         //
@@ -270,7 +273,7 @@ class MEDDLY::minterm {
         int* _from;
         int* _to;
 
-        terminal termval;
+        rangeval value;
 
         unsigned num_vars;
         bool for_relations;

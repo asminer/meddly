@@ -139,9 +139,7 @@ void evaluate_set(const minterm &m, const minterm_coll &MC, RTYPE &ans)
     ans = 0;
     for (unsigned i=0; i<MC.size(); i++) {
         if (matches_set(MC.at(i), m)) {
-            RTYPE tmp;
-            MC.at(i).getTerm().getValue(tmp);
-            ans = MAX(ans, tmp);
+            ans = MAX(ans, RTYPE(MC.at(i).getValue()) );
         }
     }
 }
@@ -205,7 +203,7 @@ void test_sets(domain* D, range_type rt)
             mtcoll.unused().setAllVars(DONT_CARE);
             RTYPE val;
             SG.vno2val(3, val);
-            mtcoll.unused().setTerm(val);
+            mtcoll.unused().setValue(val);
             mtcoll.pushUnused();
             out << " fully: ";
             out.flush();
@@ -289,7 +287,7 @@ void test_sets(domain* D, range_type rt)
         do {
             RTYPE in_mtcoll, qval, fval;
             if (matches_set(mtcoll.at(i), eval)) {
-                mtcoll.at(i).getTerm().getValue(in_mtcoll);
+                in_mtcoll = mtcoll.at(i).getValue();
             } else {
                 in_mtcoll = 0;
             }
@@ -335,9 +333,7 @@ void evaluate_rel(const minterm &m, const minterm_coll &MC, RTYPE &ans)
     ans = 0;
     for (unsigned i=0; i<MC.size(); i++) {
         if (matches_rel(MC.at(i), m)) {
-            RTYPE tmp;
-            MC.at(i).getTerm().getValue(tmp);
-            ans = MAX(ans, tmp);
+            ans = MAX(ans, RTYPE(MC.at(i).getValue()) );
         }
     }
 }
@@ -405,7 +401,7 @@ void test_rels(domain* D, range_type rt)
             mtcoll.unused().setAllVars(DONT_CARE, DONT_CARE);
             RTYPE val;
             RG.vno2val(3, val);
-            mtcoll.unused().setTerm(val);
+            mtcoll.unused().setValue(val);
             mtcoll.pushUnused();
             out << " fully: ";
             out.flush();
@@ -414,7 +410,7 @@ void test_rels(domain* D, range_type rt)
             mtcoll.unused().setAllVars(DONT_CARE, DONT_CHANGE);
             RTYPE val;
             RG.vno2val(5, val);
-            mtcoll.unused().setTerm(val);
+            mtcoll.unused().setValue(val);
             mtcoll.pushUnused();
             out << " ident: ";
             out.flush();
@@ -513,7 +509,7 @@ void test_rels(domain* D, range_type rt)
         do {
             RTYPE in_mtcoll, qval, fval, ival;
             if (matches_rel(mtcoll.at(i), eval)) {
-                mtcoll.at(i).getTerm().getValue(in_mtcoll);
+                in_mtcoll = mtcoll.at(i).getValue();
             } else {
                 in_mtcoll = 0;
             }

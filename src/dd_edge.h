@@ -21,7 +21,7 @@
 
 #include "defines.h"
 #include "edge_value.h"
-#include "terminal.h"
+#include "rangeval.h"
 
 #include <string>
 #include <vector>
@@ -37,6 +37,7 @@ namespace MEDDLY {
 
     class minterm;
     class unpacked_node;
+    class rangeval;
 };
 
 
@@ -382,63 +383,22 @@ class MEDDLY::dd_edge {
         ///
         /// Evaluate the function for variable assignments given in m,
         /// and store the result in val.
+        /// This is the safest version, as it will correctly handle
+        /// special values like infinity.
         ///
-        inline void evaluate(const minterm &m, bool &val) const
-        {
-            edge_value ev(edgeval);
-            node_handle en = node;
-            evaluate(m, ev, en);
-            MEDDLY_DCASSERT(ev.isVoid());
-            terminal t(terminal_type::BOOLEAN, en);
-            val = t.getBoolean();
-        }
+        void evaluate(const minterm &m, rangeval &val) const;
 
         ///
-        /// Evaluate the function for variable assignments given in m,
-        /// and store the result in val.
+        /// Evaluate and convert to a 'standard' range.
         ///
-        inline void evaluate(const minterm &m, long &val) const
+        template <typename T>
+        inline void evaluate(const minterm &m, T &val) const
         {
-            edge_value ev(edgeval);
-            node_handle en = node;
-            evaluate(m, ev, en);
-            if (ev.isVoid()) {
-                terminal t(terminal_type::INTEGER, en);
-                val = t.getInteger();
-            } else {
-                // check for infinity?
-                if (ev.isInt()) {
-                    val = ev.getInt();
-                } else {
-                    val = ev.getLong();
-                }
-            }
+            rangeval v;
+            evaluate(m, v);
+            val = v;
         }
-
-        ///
-        /// Evaluate the function for variable assignments given in m,
-        /// and store the result in val.
-        ///
-        inline void evaluate(const minterm &m, double &val) const
-        {
-            edge_value ev(edgeval);
-            node_handle en = node;
-            evaluate(m, ev, en);
-            if (ev.isVoid()) {
-                terminal t(terminal_type::REAL, en);
-                val = t.getReal();
-            } else {
-                if (ev.isFloat()) {
-                    val = ev.getFloat();
-                } else {
-                    val = ev.getDouble();
-                }
-            }
-        }
-
     private:
-        void evaluate(const minterm &m, edge_value &ev, node_handle &en) const;
-
         bool getElemInt(long index, minterm &m) const;
         bool getElemLong(long index, minterm &m) const;
 

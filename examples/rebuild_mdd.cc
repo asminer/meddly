@@ -200,9 +200,9 @@ int main(int argc, char *argv[])
           elements.unused().setVar(j, v);
       }
 #if USE_REALS
-      elements.unused().setTerm(nTerms * rand() / (RAND_MAX + 1.0));
+      elements.unused().setValue(nTerms * rand() / (RAND_MAX + 1.0));
 #else
-      elements.unused().setTerm(int(nTerms * rand() / (RAND_MAX + 1.0)));
+      elements.unused().setValue(int(nTerms * rand() / (RAND_MAX + 1.0)));
 #endif
       elements.pushUnused();
   }

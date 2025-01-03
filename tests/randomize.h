@@ -311,7 +311,7 @@ class vectorgen {
                 if (!x[i]) continue;
                 index2minterm(i, mtlist.unused());
                 TYPE val = x[i];
-                mtlist.unused().setTerm(val);
+                mtlist.unused().setValue(val);
                 mtlist.pushUnused();
             }
             mtlist.buildFunction(s);
