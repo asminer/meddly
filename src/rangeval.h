@@ -177,18 +177,10 @@ class MEDDLY::rangeval {
         }
 
         inline bool operator==(const rangeval &t) const {
-            if (the_type != t.the_type) return false;
-            if (s_value != t.s_value) return false;
-            if (range_special::NORMAL == s_value) {
-                //
-                // HACK: l_value and d_value take exactly the same space,
-                // so this comparison is valid.
-                // However, it requires the d_values to be EXACTLY equal.
-                //
-                return l_value == t.l_value;
-            } else {
-                return true;
-            }
+            return equals(t);
+        }
+        inline bool operator!=(const rangeval &t) const {
+            return !equals(t);
         }
 
         //
@@ -196,6 +188,40 @@ class MEDDLY::rangeval {
         //
 
         void write(output &s) const;
+
+    private:
+        inline bool equals(const rangeval &t) const
+        {
+            if (the_type != t.the_type) return false;
+            if (s_value != t.s_value) return false;
+            if (range_special::NORMAL != s_value) {
+                return true;
+            }
+            if (isReal()) {
+                //
+                // Check for a small relative difference
+                // (unless we're zero)
+                //
+                if (0.0 == d_value) {
+                    return 0.0 == t.d_value;
+                }
+                double delta;
+                if (d_value > t.d_value) {
+                    delta = d_value - t.d_value;
+                } else {
+                    delta = t.d_value - d_value;
+                }
+                delta /= d_value;
+                return delta < 1e-8;
+            } else {
+                //
+                // Integers or booleans; just check for equality
+                //
+                return l_value == t.l_value;
+            }
+        }
+
+
 
     private:
         union {

@@ -422,7 +422,8 @@ void MEDDLY::minterm::show(output &s) const
         else if (DONT_CHANGE == _to[i]) s.put('i');
         else                            s.put(_to[i]);
     }
-    s.put(", bot]");
+    s.put(", bot]  ");
+    value.write(s);
 }
 
 void MEDDLY::minterm::buildFunction(dd_edge &e) const

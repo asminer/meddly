@@ -22,7 +22,7 @@
 
 #define TEST_SETS
 #define TEST_RELS
-// #define SHOW_MINTERMS
+#define SHOW_MINTERMS
 
 #include "randomize.h"
 
@@ -33,6 +33,7 @@
 vectorgen SG(MEDDLY::SET, 8, 4, 5);
 vectorgen RG(MEDDLY::RELATION, 5, 3, 5);
 
+const unsigned NUM_MINTERMS = 9;
 
 using namespace MEDDLY;
 
@@ -51,6 +52,235 @@ inline void show(MEDDLY::output &out, bool v)
 {
     out << (v ? "true" : "false");
 }
+
+/*
+ *
+ * Testing for sets
+ *
+ */
+
+bool matches_set(const minterm &m, const minterm& vars)
+{
+    for (unsigned i=1; i<=vars.getNumVars(); i++) {
+        if (m.from(i) == DONT_CARE) continue;
+        if (m.from(i) != vars.from(i)) return false;
+    }
+    return true;
+}
+
+
+void check_equal_set(const dd_edge &E, const minterm &m, const rangeval &deflt)
+{
+    //
+    // Make sure E encodes the function: if vars match m, then
+    // the value for m; otherwise the default value.
+    //
+    // Do this by evaluating the function for all variable assignments.
+    //
+    minterm vars(E.getForest());
+    rangeval Eval;
+    do {
+        E.evaluate(vars, Eval);
+
+        const rangeval &Fval = matches_set(m, vars) ? m.getValue() : deflt;
+
+        if (Fval != Eval) {
+            MEDDLY::ostream_output out(std::cout);
+            out << "\nMismatch!";
+            out << "\n    DD says   ";
+            Eval.write(out);
+            out << "\n    Should be ";
+            Fval.write(out);
+            out << "\n    Var assignments: ";
+            vars.show(out);
+            out << "\n    Generated using: ";
+            m.show(out);
+            out << "deflt ";
+            deflt.write(out);
+            out << "\n    Func. DD encoding:\n";
+            E.showGraph(out);
+            out.flush();
+            throw "mismatch";
+        }
+
+    } while (SG.nextMinterm(vars));
+}
+
+void test_sets(forest* F, rangeval deflt)
+{
+    ostream_output out(std::cout);
+
+    out << "Checking " << nameOf(F->getRangeType())
+        << " " << shortNameOf(F->getReductionRule())
+        << " " << nameOf(F->getEdgeLabeling()) << " mdd, default ";
+    deflt.write(out);
+    out << "\n    ";
+    out.flush();
+
+    //
+    // Determine non-default value
+    //
+    rangeval fval;
+    switch (deflt.getType()) {
+        case range_type::BOOLEAN:
+            fval = ! bool(deflt);
+            break;
+
+        case range_type::INTEGER:
+            fval = 2 + long(deflt);
+            break;
+
+        case range_type::REAL:
+            fval = 2.5 + double(deflt);
+            break;
+
+        default:
+            throw "unknown type";
+    }
+
+    //
+    // Set up minterm, edge
+    //
+    minterm m(F);
+    dd_edge E(F);
+
+    //
+    // Check all don't cares
+    //
+
+    out << "x ";
+    out.flush();
+    m.setAllVars(DONT_CARE);
+    m.setValue(fval);
+#ifdef SHOW_MINTERMS
+    out << "\n  minterm: ";
+    m.show(out);
+    out << "\n";
+    out.flush();
+#endif
+    m.buildFunction(E); // TBD - default!
+    check_equal_set(E, m, deflt);
+
+    //
+    // Check a few random minterms
+    //
+    for (unsigned i=0; i<NUM_MINTERMS; i++)
+    {
+        out << "r ";
+        out.flush();
+        SG.randomizeMinterm(m, range_type::BOOLEAN);
+        m.setValue(fval);
+#ifdef SHOW_MINTERMS
+        out << "\n  minterm: ";
+        m.show(out);
+        out << "\n";
+        out.flush();
+#endif
+        m.buildFunction(E); // TBD - default!
+        check_equal_set(E, m, deflt);
+    }
+    out << "\n";
+}
+
+/*
+ *
+ * Testing for sets
+ *
+ */
+
+/*
+ *
+ * Main
+ *
+ */
+
+int main(int argc, const char** argv)
+{
+    using namespace std;
+
+    //
+    // First argument: seed
+    //
+    long seed = 0;
+    if (argv[1]) {
+        seed = atol(argv[1]);
+    }
+    vectorgen::setSeed(seed);
+
+    try {
+        MEDDLY::initialize();
+#ifdef TEST_SETS
+        domain* SD = SG.makeDomain();
+        policies Sp;
+        Sp.useDefaults(SET);
+
+        //
+        // Build fully-reduced set forests
+        //
+        Sp.setFullyReduced();
+
+        forest* S_fr_mdd_b = forest::create(SD, SET, range_type::BOOLEAN,
+                                edge_labeling::MULTI_TERMINAL, Sp);
+
+        forest* S_fr_mdd_i = forest::create(SD, SET, range_type::INTEGER,
+                                edge_labeling::MULTI_TERMINAL, Sp);
+
+        forest* S_fr_mdd_r = forest::create(SD, SET, range_type::REAL,
+                                edge_labeling::MULTI_TERMINAL, Sp);
+
+        //
+        // Build quasi-reduced set forests
+        //
+
+        Sp.setQuasiReduced();
+
+        forest* S_qr_mdd_b = forest::create(SD, SET, range_type::BOOLEAN,
+                                edge_labeling::MULTI_TERMINAL, Sp);
+
+        forest* S_qr_mdd_i = forest::create(SD, SET, range_type::INTEGER,
+                                edge_labeling::MULTI_TERMINAL, Sp);
+
+        forest* S_qr_mdd_r = forest::create(SD, SET, range_type::REAL,
+                                edge_labeling::MULTI_TERMINAL, Sp);
+
+        //
+        // Run tests
+        //
+
+        test_sets(S_fr_mdd_b, false);
+        test_sets(S_qr_mdd_b, false);
+
+        test_sets(S_fr_mdd_b, true);
+        test_sets(S_qr_mdd_b, true);
+
+        // TBD - integer and real
+
+        domain::destroy(SD);
+#endif
+#ifdef TEST_RELS
+#endif
+        MEDDLY::cleanup();
+        return 0;
+    }
+    catch (MEDDLY::error e) {
+        std::cerr   << "\nCaught meddly error " << e.getName()
+                    << "\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
+    }
+    catch (const char* e) {
+        std::cerr << "\nCaught our own error: " << e << "\n";
+        return 2;
+    }
+    std::cerr << "\nSome other error?\n";
+    return 4;
+}
+
+//
+// OLD BELOW HERE
+//
+
+#if 0
 
 template <typename RTYPE>
 inline bool different(RTYPE a, RTYPE b)
@@ -583,3 +813,4 @@ int main(int argc, const char** argv)
     std::cerr << "\nSome other error?\n";
     return 4;
 }
+#endif
