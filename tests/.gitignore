@@ -14,6 +14,7 @@ chk_ct
 chk_ct_old
 chk_iters
 chk_minterms
+chk_mtcoll
 chk_reorder
 ddedge
 domain_list

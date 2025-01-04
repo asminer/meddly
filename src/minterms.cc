@@ -344,56 +344,6 @@ namespace MEDDLY {
             F->getEdgeForValue(val, cv, cp);
         }
     };
-/*
-    struct fbop_min_int {
-        static inline void finalize(
-                const minterm_coll &mc, unsigned low, unsigned high,
-                const forest* F, edge_value &cv, node_handle &cp)
-        {
-            long val = long(mc.at(low).getValue());
-            for (unsigned i=low+1; i<high; i++) {
-                val = MIN(val, long(mc.at(i).getValue()));
-            }
-            F->getEdgeForValue(val, cv, cp);
-        }
-    };
-    struct fbop_max_int {
-        static inline void finalize(
-                const minterm_coll &mc, unsigned low, unsigned high,
-                const forest* F, edge_value &cv, node_handle &cp)
-        {
-            long val = long(mc.at(low).getValue());
-            for (unsigned i=low+1; i<high; i++) {
-                val = MAX(val, long(mc.at(i).getValue()));
-            }
-            F->getEdgeForValue(val, cv, cp);
-        }
-    };
-    struct fbop_min_real {
-        static inline void finalize(
-                const minterm_coll &mc, unsigned low, unsigned high,
-                const forest* F, edge_value &cv, node_handle &cp)
-        {
-            double val = double(mc.at(low).getValue());
-            for (unsigned i=low+1; i<high; i++) {
-                val = MIN(val, double(mc.at(i).getValue()));
-            }
-            F->getEdgeForValue(val, cv, cp);
-        }
-    };
-    struct fbop_max_real {
-        static inline void finalize(
-                const minterm_coll &mc, unsigned low, unsigned high,
-                const forest* F, edge_value &cv, node_handle &cp)
-        {
-            double val = mc.at(low).getTerm().getReal();
-            for (unsigned i=low+1; i<high; i++) {
-                val = MAX(val, mc.at(i).getTerm().getReal());
-            }
-            F->getEdgeForValue(val, cv, cp);
-        }
-    };
-*/
 };
 
 // ******************************************************************

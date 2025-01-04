@@ -16,6 +16,7 @@ noinst_PROGRAMS = \
     chk_ct_old \
     chk_iters \
     chk_minterms \
+    chk_mtcoll \
     chk_reorder \
     ddedge \
     domain_list \
@@ -44,6 +45,7 @@ TESTS = \
     chk_ct_old \
     chk_iters \
     chk_minterms \
+    chk_mtcoll \
     chk_reorder \
     ddedge \
     domain_list \
@@ -102,6 +104,9 @@ chk_iters_LDADD = ../src/libmeddly.la
 
 chk_minterms_SOURCES = chk_minterms.cc randomize.cc
 chk_minterms_LDADD = ../src/libmeddly.la
+
+chk_mtcoll_SOURCES = chk_mtcoll.cc randomize.cc
+chk_mtcoll_LDADD = ../src/libmeddly.la
 
 chk_reorder_SOURCES = chk_reorder.cc
 chk_reorder_LDADD = ../src/libmeddly.la
