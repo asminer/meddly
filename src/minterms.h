@@ -400,20 +400,6 @@ class MEDDLY::minterm_coll {
 
 
         /** Create an edge from this collection.
-            The default value is 0 except for EVPLUS which is infinity.
-
-                @param  e   On input: should be attached to the
-                            forest we want to create the function in.
-                            On output: the function.
-
-                @param  minimize    If there are overlapping minterms in the
-                                    collection, then we will take the minimum
-                                    value if this paramter is true; otherwise
-                                    we take the maximum value.
-        */
-//        void buildFunction(dd_edge &e, bool minimize=false);
-
-        /** Create an edge from this collection.
             If there are overlapping minterms in the collection, then we
             take the maximum value of all matching minterms.
 
