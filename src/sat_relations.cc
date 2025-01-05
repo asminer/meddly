@@ -574,7 +574,7 @@ void MEDDLY::otf_subevent::buildRoot() {
     if (0 == mtlist.size()) return;
     if (usesExtensibleVariables()) {
         dd_edge sum(root);
-        mtlist.buildFunction(sum);
+        mtlist.buildFunctionMax(false, sum);
         mtlist.clear();
         //
         // root += sum;
@@ -583,7 +583,7 @@ void MEDDLY::otf_subevent::buildRoot() {
         MEDDLY_DCASSERT(opPlus);
         opPlus->computeTemp(root, sum, root);
     } else {
-        mtlist.buildFunction(root);
+        mtlist.buildFunctionMax(false, root);
     }
 #else
   if (0 == num_minterms) return;
@@ -2153,7 +2153,7 @@ void MEDDLY::hybrid_subevent::buildRoot() {
   if (usesExtensibleVariables()) {
       dd_edge sum(root);
 #ifdef USE_MINTERMS
-      mtlist.buildFunction(sum);
+      mtlist.buildFunctionMax(false, sum);
       mtlist.clear();
 #else
       f->createEdge(unpminterms, pminterms, num_minterms, sum);
@@ -2164,7 +2164,7 @@ void MEDDLY::hybrid_subevent::buildRoot() {
       apply(UNION, root, sum, root);
     } else {
 #ifdef USE_MINTERMS
-       mtlist.buildFunction(root);
+       mtlist.buildFunctionMax(false, root);
 #else
        f->createEdge(unpminterms, pminterms, num_minterms, root);
 #endif

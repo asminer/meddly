@@ -152,7 +152,7 @@ int main(int argv, char *argc[])
   elist.unused().setVar(3, 1);
   elist.pushUnused();
   dd_edge theRest(mdd);
-  elist.buildFunction(theRest);
+  elist.buildFunctionMax(false, theRest);
   std::cout << "\nCreated elements [1 0 0], [1 0 1], [1 1 1], [2 1 1]: "
     << "node: " << theRest.getNode()
     << ", level: " << theRest.getLevel()

@@ -56,6 +56,8 @@ void test_sets(domain* D, char reduction, range_type rt, edge_labeling el)
     }
 
     forest* F = forest::create(D, SET, rt, el, p);
+    rangeval zero;
+    F->getValueForEdge(F->getTransparentEdge(), F->getTransparentNode(), zero);
 
     ostream_output out(std::cout);
     out << "Checking iterators over ";
@@ -89,7 +91,7 @@ void test_sets(domain* D, char reduction, range_type rt, edge_labeling el)
     // Set up ddedges
     //
     dd_edge E(F);
-    mtcoll.buildFunction(E);
+    mtcoll.buildFunctionMax(zero, E);
 
 #ifdef SHOW_MINTERMS
     out << "\nMinterms:\n";
@@ -124,12 +126,12 @@ void test_sets(domain* D, char reduction, range_type rt, edge_labeling el)
         mtctwo.unused().setFrom(*i);
         mtctwo.pushUnused();
         if (mtctwo.isFull()) {
-            mtctwo.buildFunction(tmp);
+            mtctwo.buildFunctionMax(zero, tmp);
             E2 += tmp;
             mtctwo.clear();
         }
     }
-    mtctwo.buildFunction(tmp);
+    mtctwo.buildFunctionMax(zero, tmp);
     E2 += tmp;
 
     if (E != E2) {
@@ -158,6 +160,8 @@ void test_rels(domain* D, char reduction, range_type rt, edge_labeling el)
     }
 
     forest* F = forest::create(D, RELATION, rt, el, p);
+    rangeval zero;
+    F->getValueForEdge(F->getTransparentEdge(), F->getTransparentNode(), zero);
 
     ostream_output out(std::cout);
     out << "Checking iterators over ";
@@ -191,7 +195,7 @@ void test_rels(domain* D, char reduction, range_type rt, edge_labeling el)
     // Set up ddedges
     //
     dd_edge E(F);
-    mtcoll.buildFunction(E);
+    mtcoll.buildFunctionMax(zero, E);
 
 #ifdef SHOW_MINTERMS
     out << "\nMinterms:\n";
@@ -228,12 +232,12 @@ void test_rels(domain* D, char reduction, range_type rt, edge_labeling el)
         mtctwo.unused().setFrom(*i);
         mtctwo.pushUnused();
         if (mtctwo.isFull()) {
-            mtctwo.buildFunction(tmp);
+            mtctwo.buildFunctionMax(zero, tmp);
             E2 += tmp;
             mtctwo.clear();
         }
     }
-    mtctwo.buildFunction(tmp);
+    mtctwo.buildFunctionMax(zero, tmp);
     E2 += tmp;
 
     if (E != E2) {

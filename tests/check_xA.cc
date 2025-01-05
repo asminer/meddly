@@ -68,7 +68,8 @@ void build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
     sslist.pushUnused();
     sslist.unused().setAll(S, 2L);
     sslist.pushUnused();
-    sslist.buildFunction(ss);
+    rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
+    sslist.buildFunctionMin(infty, ss);
     success();
 
     FILE_output out(stdout);
@@ -102,7 +103,7 @@ void build_oz(forest* indf, forest* mxd, dd_edge &ss, dd_edge &P)
     matrix.pushUnused();
     matrix.unused().setAll(S, S, 0.5f);
     matrix.pushUnused();
-    matrix.buildFunction(P);
+    matrix.buildFunctionMax(0.0, P);
     success();
 
 #ifdef TEST_MATRIX_ELEMS

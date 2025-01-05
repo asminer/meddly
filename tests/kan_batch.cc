@@ -98,14 +98,14 @@ dd_edge buildReachsetBatch(int b, forest* mdd, const char* rs[], long states)
     dd_edge tmp(mdd);
     for (long s=0; s<states; s++) {
         if (batch.size() >= batch.maxsize()) {
-            batch.buildFunction(tmp);
+            batch.buildFunctionMax(false, tmp);
             reachable += tmp;
             batch.clear();
         }
         mark2minterm(rs[s]-1, batch.unused());
         batch.pushUnused();
     }
-    batch.buildFunction(tmp);
+    batch.buildFunctionMax(false, tmp);
     reachable += tmp;
 
     return reachable;

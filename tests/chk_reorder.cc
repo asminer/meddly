@@ -182,9 +182,11 @@ void compare(domain* D, range_type rt, edge_labeling el, const policies &p,
 {
 
     forest* F = forest::create(D, mtc.isForRelations(), rt, el, p);
+    rangeval zero;
+    F->getValueForEdge(F->getTransparentEdge(), F->getTransparentNode(), zero);
 
     dd_edge e1(F);
-    mtc.buildFunction(e1);
+    mtc.buildFunctionMax(zero, e1);
     F->reorderVariables(order);
 
     // Compare against mtc, reordered
@@ -195,7 +197,7 @@ void compare(domain* D, range_type rt, edge_labeling el, const policies &p,
     }
 
     dd_edge e2(F);
-    mt2.buildFunction(e2);
+    mt2.buildFunctionMax(zero, e2);
 
     if (e1 == e2) {
         forest::destroy(F);

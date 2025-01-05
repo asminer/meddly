@@ -411,7 +411,7 @@ class MEDDLY::minterm_coll {
                                     value if this paramter is true; otherwise
                                     we take the maximum value.
         */
-        void buildFunction(dd_edge &e, bool minimize=false);
+//        void buildFunction(dd_edge &e, bool minimize=false);
 
         /** Create an edge from this collection.
             If there are overlapping minterms in the collection, then we

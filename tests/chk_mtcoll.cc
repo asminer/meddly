@@ -208,11 +208,11 @@ void test_sets(domain* D, range_type rt)
         dd_edge Ef(Ff);
         dd_edge Eq(Fq);
 
-        mtcoll.buildFunction(Eq);
+        mtcoll.buildFunctionMax(RTYPE(0), Eq);
         out << "q ";
         out.flush();
 
-        mtcoll.buildFunction(Ef);
+        mtcoll.buildFunctionMax(RTYPE(0), Ef);
         out << "f ";
         out.flush();
 
@@ -374,15 +374,15 @@ void test_rels(domain* D, range_type rt)
         dd_edge Ei(Fi);
         dd_edge Eq(Fq);
 
-        mtcoll.buildFunction(Eq);
+        mtcoll.buildFunctionMax(RTYPE(0), Eq);
         out << "q ";
         out.flush();
 
-        mtcoll.buildFunction(Ef);
+        mtcoll.buildFunctionMax(RTYPE(0), Ef);
         out << "f ";
         out.flush();
 
-        mtcoll.buildFunction(Ei);
+        mtcoll.buildFunctionMax(RTYPE(0), Ei);
         out << "i ";
         out.flush();
 

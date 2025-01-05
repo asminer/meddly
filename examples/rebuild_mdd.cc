@@ -214,7 +214,11 @@ int main(int argc, char *argv[])
   }
 
   dd_edge result(mtmdd);
-  elements.buildFunction(result);
+#if USE_REALS
+  elements.buildFunctionMax(0.0, result);
+#else
+  elements.buildFunctionMax(0L, result);
+#endif
   reorderVariablesByRebuilding(result);
 
 

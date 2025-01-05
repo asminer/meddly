@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
     // Create a edge representing the model's transition diagram
     dd_edge xd(transitions);
     printf("Constructing transition diagram\n");
-    tlist.buildFunction(xd);
+    tlist.buildFunctionMax(false, xd);
     xd.showGraph(meddlyout);
     // transitions->showInfo(meddlyout);
 

@@ -1,8 +1,6 @@
 
 Implement next:
 
-    * minterm -> allow default value in buildFunction()
-
     * minterm_coll -> allow default value in buildFunction()
 
     * MAXIMUM, MINIMUM operations to finish off minterm builds :)

@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
     nsf_coll.unused().setVars(1, DONT_CARE, 1);
     nsf_coll.unused().setVars(2, 0, 1);
     nsf_coll.pushUnused();
-    nsf_coll.buildFunction(nsf);
+    nsf_coll.buildFunctionMax(false, nsf);
 #ifdef VERBOSE
     out << "Next-State Minterms:\n";
     nsf_coll.show(out);

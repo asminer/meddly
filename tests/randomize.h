@@ -314,7 +314,7 @@ class vectorgen {
                 mtlist.unused().setValue(val);
                 mtlist.pushUnused();
             }
-            mtlist.buildFunction(s);
+            mtlist.buildFunctionMax(TYPE(0), s);
         }
 
         //

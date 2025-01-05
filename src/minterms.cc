@@ -624,6 +624,7 @@ MEDDLY::minterm_coll::~minterm_coll()
     delete[] _mtlist;
 }
 
+#if 0
 void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
 {
     forest* F = e.getForest();
@@ -703,6 +704,7 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
     F->validateIncounts(true, __FILE__, __LINE__, "minterm_coll::buildFunction");
 #endif
 }
+#endif
 
 void MEDDLY::minterm_coll::buildFunctionMax(rangeval def, dd_edge &e)
 {

@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     nsf_coll.unused().setVars(2, DONT_CARE, DONT_CHANGE);
     nsf_coll.unused().setVars(3, 0, DONT_CARE);
     nsf_coll.pushUnused();
-    nsf_coll.buildFunction(nsf);
+    nsf_coll.buildFunctionMax(false, nsf);
 
     // Generate reachable states
     //

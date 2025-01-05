@@ -447,7 +447,7 @@ void explicitReachset(const char* const* events, unsigned nEvents,
                 minterms.pushUnused();
                 if (minterms.size() >= batchsize) {
                     // Buffer is full; flush it
-                    minterms.buildFunction(batch);
+                    minterms.buildFunctionMax(false, batch);
                     minterms.clear();
                     unexplored += batch;
                     RS += batch;
@@ -458,7 +458,7 @@ void explicitReachset(const char* const* events, unsigned nEvents,
         // expl is empty.
         // Flush the buffer
         if (minterms.size()) {
-            minterms.buildFunction(batch);
+            minterms.buildFunctionMax(false, batch);
             minterms.clear();
             unexplored += batch;
             RS += batch;
