@@ -753,12 +753,23 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
 {
     MEDDLY_DCASSERT(L>0);
     MEDDLY_DCASSERT(m.isForRelations());
+    const bool skip_singleton = F->isIdentityReduced()
+        && F->isTransparentEdge(dv, dp);
     for (int k=1; k<=L; k++) {
         //
         // Check for identity pattern at levels (k, k')
         //
         if (DONT_CHANGE == m.to(k)) {
             MEDDLY_DCASSERT(DONT_CARE == m.from(k));
+
+            //
+            // Special and common case:
+            // we need a proper identity pattern
+            //
+            if (F->isTransparentEdge(dv, dp)) {
+                cp = F->makeIdentitiesTo(cp, k-1, k, ~0);
+                continue;
+            }
 
             //
             // Build an identity pattern except use
@@ -794,18 +805,28 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
         if (DONT_CARE == m.to(k)) {
             cp = F->makeRedundantsTo(cp, k-1, -k);
         } else {
-            // make a node with one edge <cv, cp>,
-            // all the rest <dv, dp>
-            unpacked_node* np = unpacked_node::newFull(F, -k, F->getLevelSize(-k));
-            MEDDLY_DCASSERT(m.to(k) >= 0);
-            for (unsigned i=0; i<np->getSize(); i++) {
-                if (i == m.to(k)) {
-                    np->setFull(i, cv, cp);
-                } else {
-                    np->setFull(i, dv, F->linkNode(dp));
+
+            if (!skip_singleton || m.from(k) != m.to(k)) {
+                // make a node with one edge <cv, cp>,
+                // all the rest <dv, dp>
+                unpacked_node* np = unpacked_node::newFull(F, -k, F->getLevelSize(-k));
+                MEDDLY_DCASSERT(m.to(k) >= 0);
+                for (unsigned i=0; i<np->getSize(); i++) {
+                    if (i == m.to(k)) {
+                        np->setFull(i, cv, cp);
+                    } else {
+                        np->setFull(i, dv, F->linkNode(dp));
+                    }
                 }
+                F->createReducedNode(np, cv, cp);
+            } else {
+                //
+                // We have from == to, and a default of 0.
+                // That will produce an identity pattern
+                // at the primed level.
+                // So don't build it.
+                //
             }
-            F->createReducedNode(np, cv, cp);
         }
         dp = F->makeRedundantsTo(dp, k-1, -k);
 
