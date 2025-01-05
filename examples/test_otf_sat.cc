@@ -293,7 +293,7 @@ void pn::buildInitialState() {
   minterm init(mdd);
   init.setAllVars(0);
   assert(initial_state);
-  init.buildFunction(*initial_state);
+  init.buildFunction(false, *initial_state);
   int index = -1;
   assert(addValue(A_level, n_tokens, index));
   assert(addValue(B_level, 0, index));

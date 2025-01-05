@@ -32,6 +32,8 @@
 // #define DEBUG_CREATE_EDGE_SET
 // #define DEBUG_CREATE_EDGE_REL
 
+// #define SLOW_BUILD
+
 // ******************************************************************
 // *                                                                *
 // *                    fbuilder class hierarchy                    *
@@ -53,6 +55,20 @@ namespace MEDDLY {
             ///
             void setPathToBottom(int L, const minterm &m,
                     edge_value &cv, node_handle &cp);
+
+            /// Build a chain of nodes for a single "set" minterm.
+            ///     @param L    Last level to build a node.
+            ///     @param m    Minterm to build from
+            ///     @param cv   Input: bottom value
+            ///                 Output: top value
+            ///     @param cp   Input: bottom node
+            ///                 Output: top node
+            ///     @param dv   Default value
+            ///     @param dp   Default node
+            ///
+            void setPathToBottom(int L, const minterm &m,
+                    edge_value &cv, node_handle &cp,
+                    const edge_value &dv, node_handle dp);
 
             inline void relPathToBottom(int L, const minterm &m,
                     edge_value &cv, node_handle &cp)
@@ -426,7 +442,8 @@ void MEDDLY::minterm::show(output &s) const
     value.write(s);
 }
 
-void MEDDLY::minterm::buildFunction(dd_edge &e) const
+
+void MEDDLY::minterm::buildFunction(rangeval def, dd_edge &e) const
 {
     forest* F = e.getForest();
     if (!F) {
@@ -441,33 +458,30 @@ void MEDDLY::minterm::buildFunction(dd_edge &e) const
     }
 
     fbuilder_forest fb(F);
-    node_handle cp;
-    edge_value cv;
+    node_handle cp, dp;
+    edge_value cv, dv;
 
-    switch (value.getType()) {
-        case range_type::BOOLEAN:
-            F->getEdgeForValue(bool(value), cv, cp);
-            break;
+    F->getEdgeForValue(value, cv, cp);
+    F->getEdgeForValue(def, dv, dp);
 
-        case range_type::INTEGER:
-            F->getEdgeForValue(long(value), cv, cp);
-            break;
-
-        case range_type::REAL:
-            F->getEdgeForValue(double(value), cv, cp);
-            break;
-
-        default:
-            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-
-    if (isForRelations()) {
-        fb.relPathToBottom(num_vars, *this, cv, cp);
+#ifndef SLOW_BUILD
+    if (F->isTransparentEdge(dv, dp)) {
+        if (isForRelations()) {
+            fb.relPathToBottom(num_vars, *this, cv, cp);
+        } else {
+            fb.setPathToBottom(num_vars, *this, cv, cp);
+        }
     } else {
-        fb.setPathToBottom(num_vars, *this, cv, cp);
+#endif
+        if (isForRelations()) {
+            fb.relPathToBottom(num_vars, *this, cv, cp);
+        } else {
+            fb.setPathToBottom(num_vars, *this, cv, cp, dv, dp);
+        }
+#ifndef SLOW_BUILD
     }
+#endif
     e.set(cv, cp);
-
 #ifdef DEVELOPMENT_CODE
     F->validateIncounts(true, __FILE__, __LINE__);
 #endif
@@ -679,6 +693,34 @@ void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
         }
     } // for i
 }
+
+void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
+        edge_value &cv, node_handle &cp,
+        const edge_value &dv, node_handle dp)
+{
+    MEDDLY_DCASSERT(L>0);
+    MEDDLY_DCASSERT(!m.isForRelations());
+    for (int k=1; k<=L; k++) {
+        if (DONT_CARE == m.from(k)) {
+            cp = F->makeRedundantsTo(cp, k-1, k);
+        } else {
+            // make a singleton node
+            unpacked_node* nb = unpacked_node::newFull(F, k, F->getLevelSize(k));
+            MEDDLY_DCASSERT(m.from(k) >= 0);
+            for (unsigned i=0; i<nb->getSize(); i++) {
+                if (i == m.from(k)) {
+                    nb->setFull(i, cv, cp);
+                } else {
+                    nb->setFull(i, dv, F->linkNode(dp));
+                }
+            }
+            F->createReducedNode(nb, cv, cp);
+        }
+        // make redundant chain to dp if needed
+        dp = F->makeRedundantsTo(dp, k-1, k);
+    } // for i
+}
+
 
 template <bool IDENT>
 void MEDDLY::fbuilder_forest::_relPathToBottom(int L, const minterm &m,

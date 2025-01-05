@@ -248,7 +248,7 @@ void runWithArgs(unsigned N, unsigned marks, unsigned counts)
         initial.setVar(i*8+5, 1);
     }
     dd_edge init_state(mdd);
-    initial.buildFunction(init_state);
+    initial.buildFunction(false, init_state);
 
     //
     // Build next-state function

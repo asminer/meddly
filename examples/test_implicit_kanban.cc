@@ -204,7 +204,7 @@ int main(int argc, const char** argv)
         initState.setVar(p5_position, N);
         initState.setVar(p9_position, N);
         initState.setVar(p13_position, N);
-        initState.buildFunction(first);
+        initState.buildFunction(false, first);
 
         //CREATE RELATION
 #ifdef TEST_HYB

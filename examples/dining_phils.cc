@@ -261,7 +261,7 @@ void philsModel::Idle2WaitBoth(dd_edge &e)
 {
     /* I(ph) -> WB(ph) */
     mint.setVars(ph, 0, 1);
-    mint.buildFunction(e);
+    mint.buildFunction(false, e);
     mint.setVars(ph, DONT_CARE, DONT_CHANGE);
 }
 
@@ -270,7 +270,7 @@ void philsModel::WaitBoth2HaveRight(dd_edge &e)
     /* WB(ph) -> HR(ph), A(rf) -> NA(rf) */
     mint.setVars(ph, 1, 3);
     mint.setVars(rf, 0, 1);
-    mint.buildFunction(e);
+    mint.buildFunction(false, e);
     mint.setVars(ph, DONT_CARE, DONT_CHANGE);
     mint.setVars(rf, DONT_CARE, DONT_CHANGE);
 }
@@ -280,7 +280,7 @@ void philsModel::WaitBoth2HaveLeft(dd_edge &e)
     /* WB(ph) -> HR(ph), A(lf) -> NA(lf) */
     mint.setVars(lf, 0, 1);
     mint.setVars(ph, 1, 2);
-    mint.buildFunction(e);
+    mint.buildFunction(false, e);
     mint.setVars(lf, DONT_CARE, DONT_CHANGE);
     mint.setVars(ph, DONT_CARE, DONT_CHANGE);
 }
@@ -290,7 +290,7 @@ void philsModel::HaveRight2Eat(dd_edge &e)
     /* HR(ph) -> E(ph), A(lf) -> NA(lf) */
     mint.setVars(lf, 0, 1);
     mint.setVars(ph, 3, 4);
-    mint.buildFunction(e);
+    mint.buildFunction(false, e);
     mint.setVars(lf, DONT_CARE, DONT_CHANGE);
     mint.setVars(ph, DONT_CARE, DONT_CHANGE);
 }
@@ -300,7 +300,7 @@ void philsModel::HaveLeft2Eat(dd_edge &e)
     /* HL(ph) -> E(ph), A(rf) -> NA(rf) */
     mint.setVars(ph, 2, 4);
     mint.setVars(rf, 0, 1);
-    mint.buildFunction(e);
+    mint.buildFunction(false, e);
     mint.setVars(ph, DONT_CARE, DONT_CHANGE);
     mint.setVars(rf, DONT_CARE, DONT_CHANGE);
 }
@@ -311,7 +311,7 @@ void philsModel::Eat2Idle(dd_edge &e)
     mint.setVars(lf, 1, 0);
     mint.setVars(ph, 4, 0);
     mint.setVars(rf, 1, 0);
-    mint.buildFunction(e);
+    mint.buildFunction(false, e);
     mint.setVars(lf, DONT_CARE, DONT_CHANGE);
     mint.setVars(ph, DONT_CARE, DONT_CHANGE);
     mint.setVars(rf, DONT_CARE, DONT_CHANGE);
@@ -409,7 +409,7 @@ void buildInitialState(dd_edge &init)
 {
     minterm mt(init.getForest());
     mt.setAllVars(0);
-    mt.buildFunction(init);
+    mt.buildFunction(false, init);
 }
 
 

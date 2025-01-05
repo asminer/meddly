@@ -203,7 +203,7 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
         initial.setVar(i*8+3, 1);
         initial.setVar(i*8+5, 1);
     }
-    initial.buildFunction(init_state);
+    initial.buildFunction(false, init_state);
 
     //
     // Build next-state function

@@ -176,7 +176,7 @@ int main(int argc, const char** argv)
     initState.setVar(p7_position, 20*N);
     initState.setVar(p8_position, 15*N);
     initState.setVar(p9_position, 10*N);
-    initState.buildFunction(first);
+    initState.buildFunction(false, first);
 
     //outmdd->createEdge(&initialState, 1, reachable);
 

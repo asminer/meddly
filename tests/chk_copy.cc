@@ -115,22 +115,26 @@ void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
         randomizeMinterm(mint, 4);
 
         long i_value = Equilikely(1, 5);
+        rangeval zero;
         switch (f->getRangeType()) {
             case range_type::BOOLEAN:
                 mint.setValue(true);
+                zero = false;
                 break;
 
             case range_type::INTEGER:
                 mint.setValue(i_value);
+                zero = 0L;
                 break;
 
             case range_type::REAL:
                 mint.setValue(double(i_value));
+                zero = 0.0;
                 break;
         }
 
         dd_edge temp(out);
-        mint.buildFunction(temp);
+        mint.buildFunction(zero, temp);
 
         if (fout) {
             if (f->getRangeType() != range_type::BOOLEAN) {

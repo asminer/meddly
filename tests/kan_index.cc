@@ -90,7 +90,7 @@ bool checkReachset(int N)
     initial.setVar(5, N);
     initial.setVar(9, N);
     initial.setVar(13, N);
-    initial.buildFunction(init_state);
+    initial.buildFunction(false, init_state);
     printf("\tbuilt initial state\n");
     fflush(stdout);
 

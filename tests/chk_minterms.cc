@@ -22,7 +22,7 @@
 
 #define TEST_SETS
 #define TEST_RELS
-#define SHOW_MINTERMS
+// #define SHOW_MINTERMS
 
 #include "randomize.h"
 
@@ -108,15 +108,6 @@ void check_equal_set(const dd_edge &E, const minterm &m, const rangeval &deflt)
 
 void test_sets(forest* F, rangeval deflt)
 {
-    ostream_output out(std::cout);
-
-    out << "Checking " << nameOf(F->getRangeType())
-        << " " << shortNameOf(F->getReductionRule())
-        << " " << nameOf(F->getEdgeLabeling()) << " mdd, default ";
-    deflt.write(out);
-    out << "\n    ";
-    out.flush();
-
     //
     // Determine non-default value
     //
@@ -139,6 +130,20 @@ void test_sets(forest* F, rangeval deflt)
     }
 
     //
+    // Display what we're doing
+    //
+    ostream_output out(std::cout);
+
+    out << "Checking " << shortNameOf(F->getRangeType())
+        << " " << shortNameOf(F->getReductionRule())
+        << " " << nameOf(F->getEdgeLabeling()) << " MDD with ";
+    deflt.write(out);
+    out << "off, ";
+    fval.write(out);
+    out << "on\n    ";
+    out.flush();
+
+    //
     // Set up minterm, edge
     //
     minterm m(F);
@@ -158,7 +163,7 @@ void test_sets(forest* F, rangeval deflt)
     out << "\n";
     out.flush();
 #endif
-    m.buildFunction(E); // TBD - default!
+    m.buildFunction(deflt, E);
     check_equal_set(E, m, deflt);
 
     //
@@ -176,7 +181,7 @@ void test_sets(forest* F, rangeval deflt)
         out << "\n";
         out.flush();
 #endif
-        m.buildFunction(E); // TBD - default!
+        m.buildFunction(deflt, E);
         check_equal_set(E, m, deflt);
     }
     out << "\n";
@@ -244,14 +249,48 @@ int main(int argc, const char** argv)
                                 edge_labeling::MULTI_TERMINAL, Sp);
 
         //
-        // Run tests
+        // Run tests for transparent defaults
         //
 
-        test_sets(S_fr_mdd_b, false);
-        test_sets(S_qr_mdd_b, false);
+        // Fully reduced boolean
 
+        test_sets(S_fr_mdd_b, false);
         test_sets(S_fr_mdd_b, true);
+
+        // Fully reduced integer
+
+        test_sets(S_fr_mdd_i, 0L);
+        test_sets(S_fr_mdd_i, -1L);
+        test_sets(S_fr_mdd_i, -2L);
+
+        // Fully reduced real
+
+        test_sets(S_fr_mdd_r, 0.0);
+        test_sets(S_fr_mdd_r, -1.25);
+        test_sets(S_fr_mdd_r, -2.5);
+
+        // Quasi reduced boolean
+
+        test_sets(S_qr_mdd_b, false);
         test_sets(S_qr_mdd_b, true);
+
+        // Quasi reduced integer
+
+        test_sets(S_qr_mdd_i, 0L);
+        test_sets(S_qr_mdd_i, -1L);
+        test_sets(S_qr_mdd_i, -2L);
+
+        // Quasi reduced real
+
+        test_sets(S_qr_mdd_r, 0.0);
+        test_sets(S_qr_mdd_r, -1.25);
+        test_sets(S_qr_mdd_r, -2.5);
+
+
+        //
+        // Run tests for other defaults
+        //
+
 
         // TBD - integer and real
 

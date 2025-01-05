@@ -251,7 +251,7 @@ void runWithArgs(int N, char method, bool alternate)
         initial.setVar(i, i-1);
     }
     dd_edge init_state(mdd);
-    initial.buildFunction(init_state);
+    initial.buildFunction(false, init_state);
 
 
     /*

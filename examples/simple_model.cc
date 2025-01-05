@@ -147,7 +147,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
                 mt.setVars(i, DONT_CARE, DONT_CARE);
             }
         }
-        mt.buildFunction(nsf_ev);
+        mt.buildFunction(false, nsf_ev);
 #ifdef DEBUG_EVENTS
         printf("Initial nsf for event %d\n", e);
         nsf_ev.showGraph(out);

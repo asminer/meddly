@@ -189,7 +189,7 @@ N = 2*DC>MT?(2*DC):MT;
   initState.setVar(p3_position, MT);
   initState.setVar(p5_position, DC);
   initState.setVar(p7_position, 2*DC);
-  initState.buildFunction(first);
+  initState.buildFunction(false, first);
 
     //outmdd->createEdge(&initialState, 1, reachable);
 

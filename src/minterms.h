@@ -251,13 +251,15 @@ class MEDDLY::minterm {
         void show(output &s) const;
 
         /** Create an edge from this minterm.
-            The default value is 0.
 
-                @param  e   On input: should be attached to the
-                            forest we want to create the function in.
-                            On output: the function.
+                @param  deflt   Value for the function to return
+                                everywhere except for this minterm.
+
+                @param  e       On input: should be attached to the
+                                forest we want to create the function in.
+                                On output: the function.
         */
-        void buildFunction(dd_edge &e) const;
+        void buildFunction(rangeval deflt, dd_edge &e) const;
 
     private:
         /// PRE:    _D, termval, and for_relations are set.

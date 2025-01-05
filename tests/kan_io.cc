@@ -74,7 +74,7 @@ inline void buildInitial(int N, forest* mdd, dd_edge &init_state)
     initial.setVar(5, N);
     initial.setVar(9, N);
     initial.setVar(13, N);
-    initial.buildFunction(init_state);
+    initial.buildFunction(false, init_state);
 }
 
 /*

@@ -73,7 +73,7 @@ long buildReachset(int N, bool useSat)
     initial.setVar(5, N);
     initial.setVar(9, N);
     initial.setVar(13, N);
-    initial.buildFunction(init_state);
+    initial.buildFunction(false, init_state);
 
 #ifdef PROGRESS
     fputc('i', stdout);

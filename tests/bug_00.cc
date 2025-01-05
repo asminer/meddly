@@ -32,7 +32,7 @@ int main()
         init_mt.setVar(1, 2);
         init_mt.setVar(2, 0);
         init_mt.setVar(3, 0);
-        init_mt.buildFunction(init_state);
+        init_mt.buildFunction(false, init_state);
 
         // build next-state function
         dd_edge nsf(mxd);
@@ -43,7 +43,7 @@ int main()
         mask_mt.setVars(3, 0, 0);
         mask_mt.setVars(2, DONT_CARE, DONT_CARE);
         mask_mt.setVars(1, DONT_CARE, DONT_CARE);
-        mask_mt.buildFunction(mask);
+        mask_mt.buildFunction(false, mask);
         nsf *= mask;
 
         // build rs using traditional & saturation

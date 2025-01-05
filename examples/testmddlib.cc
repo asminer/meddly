@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     dd_edge initial_state(states);
     minterm init(states);
     init.setAllVars(0);
-    init.buildFunction(initial_state);
+    init.buildFunction(false, initial_state);
     initial_state.showGraph(meddlyout);
 
 

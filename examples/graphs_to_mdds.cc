@@ -110,7 +110,7 @@ int main(int argv, char *argc[])
   element.setVar(2, 0);
   element.setVar(3, 0);
   dd_edge first(mdd);
-  element.buildFunction(first);
+  element.buildFunction(false, first);
   std::cout << "\nCreated element [0 0 0]: "
     << "node: " << first.getNode()
     << ", level: " << first.getLevel()
@@ -122,7 +122,7 @@ int main(int argv, char *argc[])
   element.setVar(2, 1);
   element.setVar(3, 1);
   dd_edge second(mdd);
-  element.buildFunction(second);
+  element.buildFunction(false, second);
   std::cout << "\nCreated element [0 1 1]: "
     << "node: " << second.getNode()
     << ", level: " << second.getLevel()

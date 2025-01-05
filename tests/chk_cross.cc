@@ -89,7 +89,7 @@ void makeRandomSet(forest* f, int nmt, dd_edge &x)
     minterm mint(f);
     for (; nmt; nmt--) {
         randomizeMinterm(mint);
-        mint.buildFunction(tmp);
+        mint.buildFunction(false, tmp);
         x += tmp;
     }
 }
@@ -100,7 +100,7 @@ void makeRandomRows(forest* f, int nmt, dd_edge &x)
     minterm mint(f);
     for (; nmt; nmt--) {
         randomizeMinterm(mint, true);
-        mint.buildFunction(tmp);
+        mint.buildFunction(false, tmp);
         x += tmp;
     }
 }
@@ -111,7 +111,7 @@ void makeRandomCols(forest* f, int nmt, dd_edge &x)
     minterm mint(f);
     for (; nmt; nmt--) {
         randomizeMinterm(mint, false);
-        mint.buildFunction(tmp);
+        mint.buildFunction(false, tmp);
         x += tmp;
     }
 }

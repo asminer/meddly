@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     initial.setVar(1, 0);
     initial.setVar(2, DONT_CARE);
     initial.setVar(3, 0);
-    initial.buildFunction(initialStates);
+    initial.buildFunction(false, initialStates);
 
     // Create a matrix diagram to represent the next-state function
     //

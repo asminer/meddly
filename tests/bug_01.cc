@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
     dd_edge initialStates(mdd);
     initial.setVar(1, 0);
     initial.setVar(2, DONT_CARE);
-    initial.buildFunction(initialStates);
+    initial.buildFunction(false, initialStates);
 #ifdef VERBOSE
     printf("Initial States:\n");
     initialStates.showGraph(out);

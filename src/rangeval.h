@@ -46,6 +46,15 @@ namespace MEDDLY {
         }
     }
 
+    inline const char* shortNameOf(range_type rt)
+    {
+        switch (rt) {
+            case range_type::BOOLEAN:   return "bool";
+            case range_type::INTEGER:   return "int ";
+            case range_type::REAL:      return "real";
+        }
+    }
+
     /// Special values allowed for functions.
     enum class range_special {
         /// Normal value, not special

@@ -764,7 +764,7 @@ void MEDDLY::otf_event::buildEventMask()
             event_mask_minterm->to(firing_vars[i]) = DONT_CARE;
         }
     }
-    event_mask_minterm->buildFunction(event_mask);
+    event_mask_minterm->buildFunction(false, event_mask);
 #else
   if (0 == event_mask_from_minterm) {
     const size_t minterm_size = size_t(f->getNumVariables()+1);
@@ -2466,7 +2466,7 @@ void MEDDLY::hybrid_event::buildEventMask()
             event_mask_minterm->to(firing_vars[i]) = DONT_CARE;
         }
     }
-    event_mask_minterm->buildFunction(event_mask);
+    event_mask_minterm->buildFunction(false, event_mask);
 
 #else
   if (0 == event_mask_from_minterm) {

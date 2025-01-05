@@ -180,7 +180,7 @@ void impl_xA_check(dd_edge &x, const dd_edge &P)
     forest* f = x.getForest();
     minterm init(f);
     init.setAll(N, 1.0f);
-    init.buildFunction(x);
+    init.buildFunction(0.0, x);
 
     for (int i=0; ; i++) {
         double ex[3];
@@ -241,7 +241,7 @@ void impl_Ax_check(dd_edge &x, const dd_edge &P)
     forest* f = x.getForest();
     minterm init(f);
     init.setAll(N, 1.0f);
-    init.buildFunction(x);
+    init.buildFunction(0.0, x);
 
     for (int i=0; ; i++) {
         double ex[3];
