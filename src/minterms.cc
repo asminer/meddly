@@ -32,7 +32,7 @@
 // #define DEBUG_CREATE_EDGE_SET
 // #define DEBUG_CREATE_EDGE_REL
 
-// #define SLOW_BUILD
+#define SLOW_BUILD
 
 // ******************************************************************
 // *                                                                *
@@ -45,6 +45,7 @@ namespace MEDDLY {
         public:
             fbuilder_forest(forest* f) { F = f; }
 
+#ifndef SLOW_BUILD
             /// Build a chain of nodes for a single "set" minterm.
             ///     @param L    Last level to build a node.
             ///     @param m    Minterm to build from
@@ -55,6 +56,7 @@ namespace MEDDLY {
             ///
             void setPathToBottom(int L, const minterm &m,
                     edge_value &cv, node_handle &cp);
+#endif
 
             /// Build a chain of nodes for a single "set" minterm.
             ///     @param L    Last level to build a node.
@@ -70,6 +72,23 @@ namespace MEDDLY {
                     edge_value &cv, node_handle &cp,
                     const edge_value &dv, node_handle dp);
 
+            /// Build a chain of nodes for a single "relation" minterm.
+            ///
+            ///     @param L    Last level to build a node.
+            ///     @param m    Minterm to build from
+            ///     @param cv   Input: bottom value
+            ///                 Output: top value
+            ///     @param cp   Input: bottom node
+            ///                 Output: top node
+            ///     @param dv   Default value
+            ///     @param dp   Default node
+            ///
+            void relPathToBottom(int L, const minterm &m,
+                    edge_value &cv, node_handle &cp,
+                    const edge_value &dv, node_handle dp);
+
+#ifndef SLOW_BUILD
+
             inline void relPathToBottom(int L, const minterm &m,
                     edge_value &cv, node_handle &cp)
             {
@@ -79,6 +98,7 @@ namespace MEDDLY {
                     _relPathToBottom<false>(L, m, cv, cp);
                 }
             }
+
 
         protected:
             /// Build a chain of nodes for a single "relation" minterm.
@@ -93,6 +113,8 @@ namespace MEDDLY {
             template <bool IDENT>
             void _relPathToBottom(int L, const minterm &m,
                     edge_value &cv, node_handle &cp);
+
+#endif
 
         protected:
             forest* F;
@@ -474,7 +496,7 @@ void MEDDLY::minterm::buildFunction(rangeval def, dd_edge &e) const
     } else {
 #endif
         if (isForRelations()) {
-            fb.relPathToBottom(num_vars, *this, cv, cp);
+            fb.relPathToBottom(num_vars, *this, cv, cp, dv, dp);
         } else {
             fb.setPathToBottom(num_vars, *this, cv, cp, dv, dp);
         }
@@ -676,6 +698,8 @@ void MEDDLY::minterm_coll::_expand()
 // *                                                                *
 // ******************************************************************
 
+#ifndef SLOW_BUILD
+
 void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
         edge_value &cv, node_handle &cp)
 {
@@ -694,6 +718,8 @@ void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
     } // for i
 }
 
+#endif
+
 void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
         edge_value &cv, node_handle &cp,
         const edge_value &dv, node_handle dp)
@@ -704,7 +730,8 @@ void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
         if (DONT_CARE == m.from(k)) {
             cp = F->makeRedundantsTo(cp, k-1, k);
         } else {
-            // make a singleton node
+            // make a node with one edge <cv, cp>,
+            // all the rest <dv, dp>
             unpacked_node* nb = unpacked_node::newFull(F, k, F->getLevelSize(k));
             MEDDLY_DCASSERT(m.from(k) >= 0);
             for (unsigned i=0; i<nb->getSize(); i++) {
@@ -721,6 +748,92 @@ void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
     } // for i
 }
 
+void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
+        edge_value &cv, node_handle &cp, const edge_value& dv, node_handle dp)
+{
+    MEDDLY_DCASSERT(L>0);
+    MEDDLY_DCASSERT(m.isForRelations());
+    for (int k=1; k<=L; k++) {
+        //
+        // Check for identity pattern at levels (k, k')
+        //
+        if (DONT_CHANGE == m.to(k)) {
+            MEDDLY_DCASSERT(DONT_CARE == m.from(k));
+
+            //
+            // Build an identity pattern except use
+            // the default value off the diagonal.
+            //
+            unpacked_node* nu = unpacked_node::newFull(F, k, F->getLevelSize(k));
+            for (unsigned i=0; i<nu->getSize(); i++) {
+                unpacked_node* np = unpacked_node::newFull(F, -k, F->getLevelSize(-k));
+                for (unsigned j=0; j<np->getSize(); j++) {
+                    if (i==j) {
+                        np->setFull(j, cv, F->linkNode(cp));
+                    } else {
+                        np->setFull(j, dv, F->linkNode(dp));
+                    }
+                }
+                edge_value cpv;
+                node_handle cpp;
+                F->createReducedNode(np, cpv, cpp);
+                nu->setFull(i, cpv, cpp);
+            }
+            F->unlinkNode(cp);
+            F->createReducedNode(nu, cv, cp);
+
+            // make redundant chain to dp if needed
+            dp = F->makeRedundantsTo(dp, k-1, k);
+
+            continue;
+        }
+
+        //
+        // Process the primed level only.
+        //
+        if (DONT_CARE == m.to(k)) {
+            cp = F->makeRedundantsTo(cp, k-1, -k);
+        } else {
+            // make a node with one edge <cv, cp>,
+            // all the rest <dv, dp>
+            unpacked_node* np = unpacked_node::newFull(F, -k, F->getLevelSize(-k));
+            MEDDLY_DCASSERT(m.to(k) >= 0);
+            for (unsigned i=0; i<np->getSize(); i++) {
+                if (i == m.to(k)) {
+                    np->setFull(i, cv, cp);
+                } else {
+                    np->setFull(i, dv, F->linkNode(dp));
+                }
+            }
+            F->createReducedNode(np, cv, cp);
+        }
+        dp = F->makeRedundantsTo(dp, k-1, -k);
+
+        //
+        // Process the unprimed level.
+        //
+        if (DONT_CARE == m.from(k)) {
+            cp = F->makeRedundantsTo(cp, -k, k);
+        } else {
+            // make a node with one edge <cv, cp>,
+            // all the rest <dv, dp>
+            unpacked_node* nu = unpacked_node::newFull(F, k, F->getLevelSize(k));
+            MEDDLY_DCASSERT(m.from(k) >= 0);
+            for (unsigned i=0; i<nu->getSize(); i++) {
+                if (i == m.from(k)) {
+                    nu->setFull(i, cv, cp);
+                } else {
+                    nu->setFull(i, dv, F->linkNode(dp));
+                }
+            }
+            F->createReducedNode(nu, cv, cp);
+        }
+        dp = F->makeRedundantsTo(dp, -k, k);
+
+    } // for k
+}
+
+#ifndef SLOW_BUILD
 
 template <bool IDENT>
 void MEDDLY::fbuilder_forest::_relPathToBottom(int L, const minterm &m,
@@ -772,6 +885,7 @@ void MEDDLY::fbuilder_forest::_relPathToBottom(int L, const minterm &m,
     } // for k
 }
 
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -895,7 +1009,8 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
     //
     if (high - low == 1) {
         OP::finalize(mtc, low, high, F, cv, cp);
-        setPathToBottom(L, mtc.at(low), cv, cp);
+        setPathToBottom(L, mtc.at(low), cv, cp,
+                F->getTransparentEdge(), F->getTransparentNode());
         return;
     }
 
@@ -1010,7 +1125,8 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     //
     if (high - low == 1) {
         OP::finalize(mtc, low, high, F, cv, cp);
-        relPathToBottom(L, mtc.at(low), cv, cp);
+        relPathToBottom(L, mtc.at(low), cv, cp,
+                F->getTransparentEdge(), F->getTransparentNode());
         return;
     }
 

@@ -87,7 +87,7 @@ void check_equal_set(const dd_edge &E, const minterm &m, const rangeval &deflt)
         if (Fval != Eval) {
             MEDDLY::ostream_output out(std::cout);
             out << "\nMismatch!";
-            out << "\n    DD says   ";
+            out << "\n    MDD says   ";
             Eval.write(out);
             out << "\n    Should be ";
             Fval.write(out);
@@ -97,7 +97,7 @@ void check_equal_set(const dd_edge &E, const minterm &m, const rangeval &deflt)
             m.show(out);
             out << "deflt ";
             deflt.write(out);
-            out << "\n    Func. DD encoding:\n";
+            out << "\n    Func. MDD encoding:\n";
             E.showGraph(out);
             out.flush();
             throw "mismatch";
@@ -187,11 +187,229 @@ void test_sets(forest* F, rangeval deflt)
     out << "\n";
 }
 
+void test_sets_with_policies(domain *D, policies p)
+{
+    //
+    // Boolean
+    //
+    forest* Fbool = forest::create(D, SET, range_type::BOOLEAN,
+            edge_labeling::MULTI_TERMINAL, p);
+
+    test_sets(Fbool, false);
+    test_sets(Fbool, true);
+
+    forest::destroy(Fbool);
+
+    //
+    // Integer
+    //
+    forest* Fint  = forest::create(D, SET, range_type::INTEGER,
+            edge_labeling::MULTI_TERMINAL, p);
+
+    test_sets(Fint, 0L);
+    test_sets(Fint, -1L);
+    test_sets(Fint, -2L);
+
+    //
+    // Real
+    //
+    forest* Freal = forest::create(D, SET, range_type::REAL,
+            edge_labeling::MULTI_TERMINAL, p);
+
+    test_sets(Freal, 0.0);
+    test_sets(Freal, -1.25);
+    test_sets(Freal, -2.5);
+}
+
 /*
  *
- * Testing for sets
+ * Testing for relations
  *
  */
+
+bool matches_rel(const minterm &m, const minterm& vars)
+{
+    for (unsigned i=1; i<=vars.getNumVars(); i++) {
+        if ((m.from(i) != DONT_CARE) && (m.from(i) != vars.from(i)))  {
+            return false;
+        }
+        if (m.to(i) == DONT_CARE) continue;
+        if (m.to(i) == DONT_CHANGE) {
+            if (vars.to(i) == vars.from(i)) continue;
+        }
+        if (m.to(i) != vars.to(i)) return false;
+    }
+    return true;
+}
+
+void check_equal_rel(const dd_edge &E, const minterm &m, const rangeval &deflt)
+{
+    //
+    // Make sure E encodes the function: if vars match m, then
+    // the value for m; otherwise the default value.
+    //
+    // Do this by evaluating the function for all variable assignments.
+    //
+    minterm vars(E.getForest());
+    rangeval Eval;
+    do {
+        E.evaluate(vars, Eval);
+
+        const rangeval &Fval = matches_rel(m, vars) ? m.getValue() : deflt;
+
+        if (Fval != Eval) {
+            MEDDLY::ostream_output out(std::cout);
+            out << "\nMismatch!";
+            out << "\n    MxD says   ";
+            Eval.write(out);
+            out << "\n    Should be ";
+            Fval.write(out);
+            out << "\n    Var assignments: ";
+            vars.show(out);
+            out << "\n    Generated using: ";
+            m.show(out);
+            out << "deflt ";
+            deflt.write(out);
+            out << "\n    Func. MxD encoding:\n";
+            E.showGraph(out);
+            out.flush();
+            throw "mismatch";
+        }
+
+    } while (RG.nextMinterm(vars));
+}
+
+void test_rels(forest* F, rangeval deflt)
+{
+    //
+    // Determine non-default value
+    //
+    rangeval fval;
+    switch (deflt.getType()) {
+        case range_type::BOOLEAN:
+            fval = ! bool(deflt);
+            break;
+
+        case range_type::INTEGER:
+            fval = 2 + long(deflt);
+            break;
+
+        case range_type::REAL:
+            fval = 2.5 + double(deflt);
+            break;
+
+        default:
+            throw "unknown type";
+    }
+
+    //
+    // Display what we're doing
+    //
+    ostream_output out(std::cout);
+
+    out << "Checking " << shortNameOf(F->getRangeType())
+        << " " << shortNameOf(F->getReductionRule())
+        << " " << nameOf(F->getEdgeLabeling()) << " MxD with ";
+    deflt.write(out);
+    out << "off, ";
+    fval.write(out);
+    out << "on\n    ";
+    out.flush();
+
+    //
+    // Set up minterm, edge
+    //
+    minterm m(F);
+    dd_edge E(F);
+
+    //
+    // Check all don't cares
+    //
+
+    out << "x ";
+    out.flush();
+    m.setAllVars(DONT_CARE, DONT_CARE);
+    m.setValue(fval);
+#ifdef SHOW_MINTERMS
+    out << "\n  minterm: ";
+    m.show(out);
+    out << "\n";
+    out.flush();
+#endif
+    m.buildFunction(deflt, E);
+    check_equal_rel(E, m, deflt);
+
+    //
+    // Check all 'identity'
+    //
+
+    out << "i ";
+    out.flush();
+    m.setAllVars(DONT_CARE, DONT_CHANGE);
+    m.setValue(fval);
+#ifdef SHOW_MINTERMS
+    out << "\n  minterm: ";
+    m.show(out);
+    out << "\n";
+    out.flush();
+#endif
+    m.buildFunction(deflt, E);
+    check_equal_rel(E, m, deflt);
+
+    //
+    // Check a few random minterms
+    //
+    for (unsigned i=0; i<NUM_MINTERMS; i++)
+    {
+        out << "r ";
+        out.flush();
+        RG.randomizeMinterm(m, range_type::BOOLEAN);
+        m.setValue(fval);
+#ifdef SHOW_MINTERMS
+        out << "\n  minterm: ";
+        m.show(out);
+        out << "\n";
+        out.flush();
+#endif
+        m.buildFunction(deflt, E);
+        check_equal_rel(E, m, deflt);
+    }
+    out << "\n";
+}
+
+void test_rels_with_policies(domain *D, policies p)
+{
+    //
+    // Boolean
+    //
+    forest* Fbool = forest::create(D, RELATION, range_type::BOOLEAN,
+            edge_labeling::MULTI_TERMINAL, p);
+
+    test_rels(Fbool, false);
+    test_rels(Fbool, true);
+
+    forest::destroy(Fbool);
+
+    //
+    // Integer
+    //
+    forest* Fint  = forest::create(D, RELATION, range_type::INTEGER,
+            edge_labeling::MULTI_TERMINAL, p);
+
+    test_rels(Fint, 0L);
+    test_rels(Fint, -1L);
+    test_rels(Fint, -2L);
+
+    //
+    // Real
+    //
+    forest* Freal = forest::create(D, RELATION, range_type::REAL,
+            edge_labeling::MULTI_TERMINAL, p);
+
+    test_rels(Freal, 0.0);
+    test_rels(Freal, -1.25);
+    test_rels(Freal, -2.5);
+}
 
 /*
  *
@@ -219,621 +437,33 @@ int main(int argc, const char** argv)
         policies Sp;
         Sp.useDefaults(SET);
 
-        //
-        // Build fully-reduced set forests
-        //
+        // Test fully-reduced set forests
         Sp.setFullyReduced();
+        test_sets_with_policies(SD, Sp);
 
-        forest* S_fr_mdd_b = forest::create(SD, SET, range_type::BOOLEAN,
-                                edge_labeling::MULTI_TERMINAL, Sp);
-
-        forest* S_fr_mdd_i = forest::create(SD, SET, range_type::INTEGER,
-                                edge_labeling::MULTI_TERMINAL, Sp);
-
-        forest* S_fr_mdd_r = forest::create(SD, SET, range_type::REAL,
-                                edge_labeling::MULTI_TERMINAL, Sp);
-
-        //
-        // Build quasi-reduced set forests
-        //
-
+        // Test quasi-reduced set forests
         Sp.setQuasiReduced();
+        test_sets_with_policies(SD, Sp);
 
-        forest* S_qr_mdd_b = forest::create(SD, SET, range_type::BOOLEAN,
-                                edge_labeling::MULTI_TERMINAL, Sp);
-
-        forest* S_qr_mdd_i = forest::create(SD, SET, range_type::INTEGER,
-                                edge_labeling::MULTI_TERMINAL, Sp);
-
-        forest* S_qr_mdd_r = forest::create(SD, SET, range_type::REAL,
-                                edge_labeling::MULTI_TERMINAL, Sp);
-
-        //
-        // Run tests for transparent defaults
-        //
-
-        // Fully reduced boolean
-
-        test_sets(S_fr_mdd_b, false);
-        test_sets(S_fr_mdd_b, true);
-
-        // Fully reduced integer
-
-        test_sets(S_fr_mdd_i, 0L);
-        test_sets(S_fr_mdd_i, -1L);
-        test_sets(S_fr_mdd_i, -2L);
-
-        // Fully reduced real
-
-        test_sets(S_fr_mdd_r, 0.0);
-        test_sets(S_fr_mdd_r, -1.25);
-        test_sets(S_fr_mdd_r, -2.5);
-
-        // Quasi reduced boolean
-
-        test_sets(S_qr_mdd_b, false);
-        test_sets(S_qr_mdd_b, true);
-
-        // Quasi reduced integer
-
-        test_sets(S_qr_mdd_i, 0L);
-        test_sets(S_qr_mdd_i, -1L);
-        test_sets(S_qr_mdd_i, -2L);
-
-        // Quasi reduced real
-
-        test_sets(S_qr_mdd_r, 0.0);
-        test_sets(S_qr_mdd_r, -1.25);
-        test_sets(S_qr_mdd_r, -2.5);
-
-
-        //
-        // Run tests for other defaults
-        //
-
-
-        // TBD - integer and real
-
-        domain::destroy(SD);
-#endif
-#ifdef TEST_RELS
-#endif
-        MEDDLY::cleanup();
-        return 0;
-    }
-    catch (MEDDLY::error e) {
-        std::cerr   << "\nCaught meddly error " << e.getName()
-                    << "\n    thrown in " << e.getFile()
-                    << " line " << e.getLine() << "\n";
-        return 1;
-    }
-    catch (const char* e) {
-        std::cerr << "\nCaught our own error: " << e << "\n";
-        return 2;
-    }
-    std::cerr << "\nSome other error?\n";
-    return 4;
-}
-
-//
-// OLD BELOW HERE
-//
-
-#if 0
-
-template <typename RTYPE>
-inline bool different(RTYPE a, RTYPE b)
-{
-    return a != b;
-}
-
-template <>
-inline bool different(double a, double b)
-{
-    if (a < b) {
-        return (b-a) > 1e-5;
-    } else {
-        return (a-b) > 1e-5;
-    }
-}
-
-
-template <typename RTYPE>
-void mismatch(const minterm &eval,
-        char mddtype, const MEDDLY::dd_edge &E, RTYPE val_mdd,
-        const minterm_coll &mtcoll, RTYPE mtcoll_answer)
-{
-    const char* MDD = eval.isForRelations() ? "MxD" : "MDD";
-    MEDDLY::ostream_output out(std::cout);
-    out << "\nMismatch on ";
-    eval.show(out);
-    out << "\n  " << mddtype << MDD << ": ";
-    show(out, val_mdd);
-    out << "\nmtlist: ";
-    show(out, mtcoll_answer);
-    out << "\n\n";
-    out << "Minterm list:\n";
-    mtcoll.show(out);
-
-    out << mddtype << MDD << ":\n";
-    E.showGraph(out);
-    out.flush();
-
-    throw "mismatch";
-}
-
-template <typename RTYPE>
-void mismatch(const minterm &eval,
-        char mddtype, const MEDDLY::dd_edge &E, RTYPE val_mdd,
-        const minterm &mt, RTYPE mtcoll_answer)
-{
-    const char* MDD = eval.isForRelations() ? "MxD" : "MDD";
-    MEDDLY::ostream_output out(std::cout);
-    out << "\nMismatch on ";
-    eval.show(out);
-    out << "\n  " << mddtype << MDD << ": ";
-    show(out, val_mdd);
-    out << "\nmtlist: ";
-    show(out, mtcoll_answer);
-    out << "\n\n";
-    out << "Minterm:\n  ";
-    mt.show(out);
-
-    out << "\n" << mddtype << MDD << ":\n";
-    E.showGraph(out);
-    out.flush();
-
-    throw "mismatch";
-}
-
-
-/*
- *
- * Manipulate minterms for sets
- *
- */
-
-bool matches_set(const minterm &m, const minterm& va)
-{
-    for (unsigned i=1; i<=va.getNumVars(); i++) {
-        if (m.from(i) == DONT_CARE) continue;
-        if (m.from(i) != va.from(i)) return false;
-    }
-    return true;
-}
-
-template <typename RTYPE>
-void evaluate_set(const minterm &m, const minterm_coll &MC, RTYPE &ans)
-{
-    ans = 0;
-    for (unsigned i=0; i<MC.size(); i++) {
-        if (matches_set(MC.at(i), m)) {
-            ans = MAX(ans, RTYPE(MC.at(i).getValue()) );
-        }
-    }
-}
-
-
-
-
-/*
- *
- * Tests for set-type forests
- *
- */
-
-template <typename RTYPE>
-void test_sets(domain* D, range_type rt)
-{
-    //
-    // Build the various types of boolean forests
-    //
-    policies p;
-    p.useDefaults(SET);
-
-    p.setFullyReduced();
-
-    forest* Ff = forest::create(D, SET, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
-
-    p.setQuasiReduced();
-
-    forest* Fq = forest::create(D, SET, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
-
-
-    //
-    // Set up minterm collection
-    // and evaluation minterm
-    //
-    minterm_coll mtcoll(64, D, SET);
-    minterm eval(D, SET);
-
-    //
-    // For various collections of minterms,
-    //  (1) build sets
-    //  (2) explicitly verify sets against minterms
-
-    ostream_output out(std::cout);
-
-    out << "Checking vectors of " << nameOf(rt)
-        << " built from minterm collections:\n";
-    out.flush();
-
-    char     testtype[] = { 'f', 'r', 'r', 'r', 'r', 'r', 'r', 'r', 0 };
-    unsigned mtsizes[] =  {   0,   1,   2,   4,   8,  16,  32,  64    };
-
-    for (unsigned i=0; testtype[i]; ++i) {
-        //
-        // Build the collection
-        //
-        if ('f' == testtype[i]) {
-            mtcoll.clear();
-            mtcoll.unused().setAllVars(DONT_CARE);
-            RTYPE val;
-            SG.vno2val(3, val);
-            mtcoll.unused().setValue(val);
-            mtcoll.pushUnused();
-            out << " fully: ";
-            out.flush();
-        } else {
-            if (1 == mtsizes[i]) mtcoll.clear();
-
-            while (mtcoll.size() < mtsizes[i]) {
-                SG.randomizeMinterm(mtcoll.unused(), rt);
-                mtcoll.pushUnused();
-            }
-
-            out << "    ";
-            out.put((unsigned long) mtsizes[i], 2);
-            out << ": ";
-            out.flush();
-        }
-
-#ifdef SHOW_MINTERMS
-        out << "\nMinterms:\n";
-        mtcoll.show(out);
-#endif
-
-        //
-        // Set up ddedges
-        //
-        dd_edge Ef(Ff);
-        dd_edge Eq(Fq);
-
-        mtcoll.buildFunction(Eq);
-        out << "q ";
-        out.flush();
-
-        mtcoll.buildFunction(Ef);
-        out << "f ";
-        out.flush();
-
-        //
-        // Brute force: compare functions
-        //
-        eval.setAllVars(0);
-        do {
-            RTYPE in_mtcoll, qval, fval;
-            evaluate_set(eval, mtcoll, in_mtcoll);
-            Eq.evaluate(eval, qval);
-            Ef.evaluate(eval, fval);
-
-            if (different(qval, in_mtcoll)) {
-                mismatch(eval, 'Q', Eq, qval, mtcoll, in_mtcoll);
-            }
-            if (different(fval, in_mtcoll)) {
-                mismatch(eval, 'F', Ef, fval, mtcoll, in_mtcoll);
-            }
-        } while (SG.nextMinterm(eval));
-        out << "=\n";
-        out.flush();
-
-    } // for mtsize
-
-    out << "Checking vectors of " << nameOf(rt)
-        << " built from single minterms:\n";
-    out.flush();
-    for (unsigned i=0; i<5; ++i) {
-        //
-        // Set up ddedges
-        //
-        dd_edge Ef(Ff);
-        dd_edge Eq(Fq);
-
-        mtcoll.at(i).buildFunction(Eq);
-        out << "        q ";
-        out.flush();
-
-        mtcoll.at(i).buildFunction(Ef);
-        out << "f ";
-        out.flush();
-
-        //
-        // Brute force: compare functions
-        //
-        eval.setAllVars(0);
-        do {
-            RTYPE in_mtcoll, qval, fval;
-            if (matches_set(mtcoll.at(i), eval)) {
-                in_mtcoll = mtcoll.at(i).getValue();
-            } else {
-                in_mtcoll = 0;
-            }
-            Eq.evaluate(eval, qval);
-            Ef.evaluate(eval, fval);
-
-            if (different(qval, in_mtcoll)) {
-                mismatch(eval, 'Q', Eq, qval, mtcoll.at(i), in_mtcoll);
-            }
-            if (different(fval, in_mtcoll)) {
-                mismatch(eval, 'F', Ef, fval, mtcoll.at(i), in_mtcoll);
-            }
-        } while (SG.nextMinterm(eval));
-        out << "=\n";
-        out.flush();
-    }
-}
-
-/*
- *
- * Manipulate minterms for relations
- *
- */
-
-bool matches_rel(const minterm &m, const minterm& va)
-{
-    for (unsigned i=1; i<=va.getNumVars(); i++) {
-        if ((m.from(i) != DONT_CARE) && (m.from(i) != va.from(i)))  {
-            return false;
-        }
-        if (m.to(i) == DONT_CARE) continue;
-        if (m.to(i) == DONT_CHANGE) {
-            if (va.to(i) == va.from(i)) continue;
-        }
-        if (m.to(i) != va.to(i)) return false;
-    }
-    return true;
-}
-
-template <typename RTYPE>
-void evaluate_rel(const minterm &m, const minterm_coll &MC, RTYPE &ans)
-{
-    ans = 0;
-    for (unsigned i=0; i<MC.size(); i++) {
-        if (matches_rel(MC.at(i), m)) {
-            ans = MAX(ans, RTYPE(MC.at(i).getValue()) );
-        }
-    }
-}
-
-/*
- *
- * Tests for relation-type forests
- *
- */
-
-
-
-template <typename RTYPE>
-void test_rels(domain* D, range_type rt)
-{
-    //
-    // Build the various types of boolean forests
-    //
-    policies p;
-    p.useDefaults(RELATION);
-
-    p.setFullyReduced();
-
-    forest* Ff = forest::create(D, RELATION, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
-
-    p.setIdentityReduced();
-
-    forest* Fi = forest::create(D, RELATION, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
-
-    p.setQuasiReduced();
-
-    forest* Fq = forest::create(D, RELATION, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
-
-
-    //
-    // Set up minterm collection
-    // and evaluation minterm
-    //
-    minterm_coll mtcoll(32, D, RELATION);
-    minterm eval(D, RELATION);
-
-    //
-    // For various collections of minterms,
-    //  (1) build sets
-    //  (2) explicitly verify sets against minterms
-
-    ostream_output out(std::cout);
-
-    out << "Checking matrices of " << nameOf(rt)
-        << " built from minterm collections:\n";
-    out.flush();
-
-    char     testtype[] = { 'f', 'i', 'r', 'r', 'r', 'r', 'r', 'r',  0 };
-    unsigned mtsizes[] =  {   0,   0,   1,   2,   4,   8,  16,  32     };
-
-    for (unsigned i=0; testtype[i]; ++i) {
-        //
-        // Build the collection
-        //
-        if ('f' == testtype[i]) {
-            mtcoll.clear();
-            mtcoll.unused().setAllVars(DONT_CARE, DONT_CARE);
-            RTYPE val;
-            RG.vno2val(3, val);
-            mtcoll.unused().setValue(val);
-            mtcoll.pushUnused();
-            out << " fully: ";
-            out.flush();
-        } else if ('i' == testtype[i]) {
-            mtcoll.clear();
-            mtcoll.unused().setAllVars(DONT_CARE, DONT_CHANGE);
-            RTYPE val;
-            RG.vno2val(5, val);
-            mtcoll.unused().setValue(val);
-            mtcoll.pushUnused();
-            out << " ident: ";
-            out.flush();
-
-        } else {
-            if (1 == mtsizes[i]) mtcoll.clear();
-
-            while (mtcoll.size() < mtsizes[i]) {
-                RG.randomizeMinterm(mtcoll.unused(), rt);
-                mtcoll.pushUnused();
-            }
-
-            out << "    ";
-            out.put((unsigned long) mtsizes[i], 2);
-            out << ": ";
-            out.flush();
-        }
-
-#ifdef SHOW_MINTERMS
-        out << "\nMinterms:\n";
-        mtcoll.show(out);
-#endif
-
-        //
-        // Set up ddedges
-        //
-        dd_edge Ef(Ff);
-        dd_edge Ei(Fi);
-        dd_edge Eq(Fq);
-
-        mtcoll.buildFunction(Eq);
-        out << "q ";
-        out.flush();
-
-        mtcoll.buildFunction(Ef);
-        out << "f ";
-        out.flush();
-
-        mtcoll.buildFunction(Ei);
-        out << "i ";
-        out.flush();
-
-        //
-        // Brute force: compare functions
-        //
-        eval.setAllVars(0, 0);
-        do {
-            RTYPE in_mtcoll, qval, fval, ival;
-            evaluate_rel(eval, mtcoll, in_mtcoll);
-            Eq.evaluate(eval, qval);
-            Ef.evaluate(eval, fval);
-            Ei.evaluate(eval, ival);
-
-            if (different(qval, in_mtcoll)) {
-                mismatch(eval, 'Q', Eq, qval, mtcoll, in_mtcoll);
-            }
-            if (different(fval, in_mtcoll)) {
-                mismatch(eval, 'F', Ef, fval, mtcoll, in_mtcoll);
-            }
-            if (different(ival, in_mtcoll)) {
-                mismatch(eval, 'I', Ei, ival, mtcoll, in_mtcoll);
-            }
-        } while (RG.nextMinterm(eval));
-        out << "=\n";
-        out.flush();
-
-    } // for mtsize
-
-    out << "Checking matrices of " << nameOf(rt)
-        << " built from single minterms:\n";
-    out.flush();
-    for (unsigned i=0; i<5; ++i) {
-        //
-        // Set up ddedges
-        //
-        dd_edge Ef(Ff);
-        dd_edge Eq(Fq);
-        dd_edge Ei(Fi);
-
-        mtcoll.at(i).buildFunction(Eq);
-        out << "        q ";
-        out.flush();
-
-        mtcoll.at(i).buildFunction(Ef);
-        out << "f ";
-        out.flush();
-
-        mtcoll.at(i).buildFunction(Ei);
-        out << "i ";
-        out.flush();
-
-        //
-        // Brute force: compare functions
-        //
-        eval.setAllVars(0, 0);
-        do {
-            RTYPE in_mtcoll, qval, fval, ival;
-            if (matches_rel(mtcoll.at(i), eval)) {
-                in_mtcoll = mtcoll.at(i).getValue();
-            } else {
-                in_mtcoll = 0;
-            }
-            Eq.evaluate(eval, qval);
-            Ef.evaluate(eval, fval);
-            Ei.evaluate(eval, ival);
-
-            if (different(qval, in_mtcoll)) {
-                mismatch(eval, 'Q', Eq, qval, mtcoll.at(i), in_mtcoll);
-            }
-            if (different(fval, in_mtcoll)) {
-                mismatch(eval, 'F', Ef, fval, mtcoll.at(i), in_mtcoll);
-            }
-            if (different(ival, in_mtcoll)) {
-                mismatch(eval, 'I', Ei, ival, mtcoll.at(i), in_mtcoll);
-            }
-        } while (RG.nextMinterm(eval));
-        out << "=\n";
-        out.flush();
-    }
-}
-
-/*
- *
- * Main
- *
- */
-
-int main(int argc, const char** argv)
-{
-    using namespace std;
-
-    //
-    // First argument: seed
-    //
-    long seed = 0;
-    if (argv[1]) {
-        seed = atol(argv[1]);
-    }
-    vectorgen::setSeed(seed);
-
-    try {
-        MEDDLY::initialize();
-#ifdef TEST_SETS
-        domain* SD = SG.makeDomain();
-        test_sets<bool>(SD, range_type::BOOLEAN);
-        test_sets<long>(SD, range_type::INTEGER);
-        test_sets<double>(SD, range_type::REAL);
         domain::destroy(SD);
 #endif
 #ifdef TEST_RELS
         domain* RD = RG.makeDomain();
-        test_rels<bool>(RD, range_type::BOOLEAN);
-        test_rels<long>(RD, range_type::INTEGER);
-        test_rels<double>(RD, range_type::REAL);
+        policies Rp;
+        Rp.useDefaults(RELATION);
+
+        // Test fully-reduced set forests
+        Rp.setFullyReduced();
+        test_rels_with_policies(RD, Rp);
+
+        // Test identity-reduced set forests
+        Rp.setIdentityReduced();
+        test_rels_with_policies(RD, Rp);
+
+        // Test quasi-reduced set forests
+        Rp.setQuasiReduced();
+        test_rels_with_policies(RD, Rp);
+
         domain::destroy(RD);
 #endif
         MEDDLY::cleanup();
@@ -852,4 +482,4 @@ int main(int argc, const char** argv)
     std::cerr << "\nSome other error?\n";
     return 4;
 }
-#endif
+
