@@ -726,22 +726,30 @@ void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
 {
     MEDDLY_DCASSERT(L>0);
     MEDDLY_DCASSERT(!m.isForRelations());
+    const bool zero_default = F->isTransparentEdge(dv, dp);
+
     for (int k=1; k<=L; k++) {
         if (DONT_CARE == m.from(k)) {
             cp = F->makeRedundantsTo(cp, k-1, k);
         } else {
             // make a node with one edge <cv, cp>,
             // all the rest <dv, dp>
-            unpacked_node* nb = unpacked_node::newFull(F, k, F->getLevelSize(k));
             MEDDLY_DCASSERT(m.from(k) >= 0);
-            for (unsigned i=0; i<nb->getSize(); i++) {
-                if (i == m.from(k)) {
-                    nb->setFull(i, cv, cp);
-                } else {
-                    nb->setFull(i, dv, F->linkNode(dp));
+            unpacked_node* n = nullptr;
+            if (zero_default) {
+                n = unpacked_node::newSparse(F, k, 1);
+                n->setSparse(0, m.from(k), cv, cp);
+            } else {
+                n = unpacked_node::newFull(F, k, F->getLevelSize(k));
+                for (unsigned i=0; i<n->getSize(); i++) {
+                    if (i == m.from(k)) {
+                        n->setFull(i, cv, cp);
+                    } else {
+                        n->setFull(i, dv, F->linkNode(dp));
+                    }
                 }
             }
-            F->createReducedNode(nb, cv, cp);
+            F->createReducedNode(n, cv, cp);
         }
         // make redundant chain to dp if needed
         dp = F->makeRedundantsTo(dp, k-1, k);
@@ -753,60 +761,112 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
 {
     MEDDLY_DCASSERT(L>0);
     MEDDLY_DCASSERT(m.isForRelations());
-    const bool skip_singleton = F->isIdentityReduced()
-        && F->isTransparentEdge(dv, dp);
-    for (int k=1; k<=L; k++) {
-        //
-        // Check for identity pattern at levels (k, k')
-        //
-        if (DONT_CHANGE == m.to(k)) {
-            MEDDLY_DCASSERT(DONT_CARE == m.from(k));
 
+    if (F->isIdentityReduced() && F->isTransparentEdge(dv, dp)) {
+        //
+        //
+        // Special case: we're identity reduced, and <dv, dp> is the zero edge
+        //
+        //
+        for (int k=1; k<=L; k++) {
             //
-            // Special and common case:
-            // we need a proper identity pattern
+            // Check for identity pattern at levels (k, k')
             //
-            if (F->isTransparentEdge(dv, dp)) {
-                cp = F->makeIdentitiesTo(cp, k-1, k, ~0);
+            if (DONT_CHANGE == m.to(k)) {
+                MEDDLY_DCASSERT(DONT_CARE == m.from(k));
                 continue;
             }
 
             //
-            // Build an identity pattern except use
-            // the default value off the diagonal.
+            // Build node at primed level
             //
-            unpacked_node* nu = unpacked_node::newFull(F, k, F->getLevelSize(k));
-            for (unsigned i=0; i<nu->getSize(); i++) {
-                unpacked_node* np = unpacked_node::newFull(F, -k, F->getLevelSize(-k));
-                for (unsigned j=0; j<np->getSize(); j++) {
-                    if (i==j) {
-                        np->setFull(j, cv, F->linkNode(cp));
-                    } else {
-                        np->setFull(j, dv, F->linkNode(dp));
-                    }
+            if (DONT_CARE == m.to(k)) {
+                /*
+                if (DONT_CARE == m.from(k)) {
+                    cp = F->makeRedundantsTo(cp, k-1, k);
+                    continue;
                 }
-                edge_value cpv;
-                node_handle cpp;
-                F->createReducedNode(np, cpv, cpp);
-                nu->setFull(i, cpv, cpp);
+                */
+                cp = F->makeRedundantsTo(cp, k-1, -k);
+            } else {
+                if (m.from(k) != m.to(k)) {
+                    unpacked_node* nb
+                        = unpacked_node::newSparse(F, -k, 1);
+                    nb->setSparse(0, m.to(k), cv, cp);
+                    F->createReducedNode(nb, cv, cp);
+                }
             }
-            F->unlinkNode(cp);
-            F->createReducedNode(nu, cv, cp);
 
-            // make redundant chain to dp if needed
-            dp = F->makeRedundantsTo(dp, k-1, k);
-
-            continue;
-        }
-
+            //
+            // Build node at unprimed level
+            //
+            if (DONT_CARE == m.from(k)) {
+                cp = F->makeRedundantsTo(cp, -k, k);
+            } else {
+                unpacked_node* nb
+                    = unpacked_node::newSparse(F, k, 1);
+                nb->setSparse(0, m.from(k), cv, cp);
+                F->createReducedNode(nb, cv, cp);
+            }
+        } // for k
+    } else {
         //
-        // Process the primed level only.
         //
-        if (DONT_CARE == m.to(k)) {
-            cp = F->makeRedundantsTo(cp, k-1, -k);
-        } else {
+        // General case
+        //
+        //
+        for (int k=1; k<=L; k++) {
+            //
+            // Check for identity pattern at levels (k, k')
+            //
+            if (DONT_CHANGE == m.to(k)) {
+                MEDDLY_DCASSERT(DONT_CARE == m.from(k));
 
-            if (!skip_singleton || m.from(k) != m.to(k)) {
+                /*
+                //
+                // Special and common case:
+                // we need a proper identity pattern
+                //
+                if (F->isTransparentEdge(dv, dp)) {
+                cp = F->makeIdentitiesTo(cp, k-1, k, ~0);
+                continue;
+                }
+                */
+
+                //
+                // Build an identity pattern except use
+                // the default value off the diagonal.
+                //
+                unpacked_node* nu = unpacked_node::newFull(F, k, F->getLevelSize(k));
+                for (unsigned i=0; i<nu->getSize(); i++) {
+                    unpacked_node* np = unpacked_node::newFull(F, -k, F->getLevelSize(-k));
+                    for (unsigned j=0; j<np->getSize(); j++) {
+                        if (i==j) {
+                            np->setFull(j, cv, F->linkNode(cp));
+                        } else {
+                            np->setFull(j, dv, F->linkNode(dp));
+                        }
+                    }
+                    edge_value cpv;
+                    node_handle cpp;
+                    F->createReducedNode(np, cpv, cpp);
+                    nu->setFull(i, cpv, cpp);
+                }
+                F->unlinkNode(cp);
+                F->createReducedNode(nu, cv, cp);
+
+                // make redundant chain to dp if needed
+                dp = F->makeRedundantsTo(dp, k-1, k);
+
+                continue;
+            }
+
+            //
+            // Process the primed level only.
+            //
+            if (DONT_CARE == m.to(k)) {
+                cp = F->makeRedundantsTo(cp, k-1, -k);
+            } else {
                 // make a node with one edge <cv, cp>,
                 // all the rest <dv, dp>
                 unpacked_node* np = unpacked_node::newFull(F, -k, F->getLevelSize(-k));
@@ -819,39 +879,33 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
                     }
                 }
                 F->createReducedNode(np, cv, cp);
+            }
+            dp = F->makeRedundantsTo(dp, k-1, -k);
+
+            //
+            // Process the unprimed level.
+            //
+            if (DONT_CARE == m.from(k)) {
+                cp = F->makeRedundantsTo(cp, -k, k);
             } else {
-                //
-                // We have from == to, and a default of 0.
-                // That will produce an identity pattern
-                // at the primed level.
-                // So don't build it.
-                //
-            }
-        }
-        dp = F->makeRedundantsTo(dp, k-1, -k);
-
-        //
-        // Process the unprimed level.
-        //
-        if (DONT_CARE == m.from(k)) {
-            cp = F->makeRedundantsTo(cp, -k, k);
-        } else {
-            // make a node with one edge <cv, cp>,
-            // all the rest <dv, dp>
-            unpacked_node* nu = unpacked_node::newFull(F, k, F->getLevelSize(k));
-            MEDDLY_DCASSERT(m.from(k) >= 0);
-            for (unsigned i=0; i<nu->getSize(); i++) {
-                if (i == m.from(k)) {
-                    nu->setFull(i, cv, cp);
-                } else {
-                    nu->setFull(i, dv, F->linkNode(dp));
+                // make a node with one edge <cv, cp>,
+                // all the rest <dv, dp>
+                unpacked_node* nu =
+                    unpacked_node::newFull(F, k, F->getLevelSize(k));
+                MEDDLY_DCASSERT(m.from(k) >= 0);
+                for (unsigned i=0; i<nu->getSize(); i++) {
+                    if (i == m.from(k)) {
+                        nu->setFull(i, cv, cp);
+                    } else {
+                        nu->setFull(i, dv, F->linkNode(dp));
+                    }
                 }
+                F->createReducedNode(nu, cv, cp);
             }
-            F->createReducedNode(nu, cv, cp);
-        }
-        dp = F->makeRedundantsTo(dp, -k, k);
+            dp = F->makeRedundantsTo(dp, -k, k);
 
-    } // for k
+        } // for k
+    }
 }
 
 #ifndef SLOW_BUILD
