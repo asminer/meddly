@@ -940,23 +940,6 @@ void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
             unsigned z=0;
             addToNode(n, z, m.from(k), cv, cp);
 
-            /*
-            unpacked_node* n = nullptr;
-            if (default_is_zero) {
-                n = unpacked_node::newSparse(F, k, 1);
-                n->setSparse(0, m.from(k), cv, cp);
-            } else {
-                MEDDLY_DCASSERT(dp_unp);
-                n = unpacked_node::newFull(F, k, F->getLevelSize(k));
-                for (unsigned i=0; i<n->getSize(); i++) {
-                    if (i == m.from(k)) {
-                        n->setFull(i, cv, cp);
-                    } else {
-                        n->setFull(i, dv, F->linkNode(dp_unp[k-1]));
-                    }
-                }
-            }
-            */
             F->createReducedNode(n, cv, cp);
         }
     } // for i
@@ -994,13 +977,6 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
                     unsigned z=0;
                     addToNode(n, z, m.to(k), cv, cp);
                     F->createReducedNode(n, cv, cp);
-
-                    /*
-                    unpacked_node* nb
-                        = unpacked_node::newSparse(F, -k, 1);
-                    nb->setSparse(0, m.to(k), cv, cp);
-                    F->createReducedNode(nb, cv, cp);
-                    */
                 }
             }
 
@@ -1014,12 +990,6 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
                 unsigned z=0;
                 addToNode(n, z, m.from(k), cv, cp);
                 F->createReducedNode(n, cv, cp);
-                /*
-                unpacked_node* nb
-                    = unpacked_node::newSparse(F, k, 1);
-                nb->setSparse(0, m.from(k), cv, cp);
-                F->createReducedNode(nb, cv, cp);
-                */
             }
         } // for k
     } else {
@@ -1046,17 +1016,6 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
                     unpacked_node* nu =
                         unpacked_node::newFull(F, k, F->getLevelSize(k));
                     for (unsigned i=0; i<nu->getSize(); i++) {
-                        /*
-                        unpacked_node* np =
-                            unpacked_node::newFull(F, -k, F->getLevelSize(-k));
-                        for (unsigned j=0; j<np->getSize(); j++) {
-                            if (i==j) {
-                                np->setFull(j, cv, F->linkNode(cp));
-                            } else {
-                                np->setFull(j, dv, F->linkNode(dp_unp[k-1]));
-                            }
-                        }
-                        */
                         unpacked_node* np = newPrimedNode(k, 1);
                         unsigned z = 0;
                         addToNode(np, z, i, cv, F->linkNode(cp));
@@ -1082,23 +1041,6 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
                 // all the rest <dv, dp>
                 MEDDLY_DCASSERT(m.to(k) >= 0);
 
-                /*
-                unpacked_node* np = nullptr;
-                if (default_is_zero) {
-                    np = unpacked_node::newSparse(F, -k, 1);
-                    np->setSparse(0, m.to(k), cv, cp);
-                } else {
-                    MEDDLY_DCASSERT(dp_unp);
-                    np = unpacked_node::newFull(F, -k, F->getLevelSize(-k));
-                    for (unsigned i=0; i<np->getSize(); i++) {
-                        if (i == m.to(k)) {
-                            np->setFull(i, cv, cp);
-                        } else {
-                            np->setFull(i, dv, F->linkNode(dp_unp[k-1]));
-                        }
-                    }
-                }
-                */
                 unpacked_node* np = newPrimedNode(k, 1);
                 unsigned z=0;
                 addToNode(np, z, m.to(k), cv, cp);
@@ -1115,26 +1057,11 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
                 // make a node with one edge <cv, cp>,
                 // all the rest <dv, dp>
                 MEDDLY_DCASSERT(m.from(k) >= 0);
-                /*
-                unpacked_node* nu = nullptr;
-                if (default_is_zero) {
-                    nu = unpacked_node::newSparse(F, k, 1);
-                    nu->setSparse(0, m.from(k), cv, cp);
-                } else {
-                    MEDDLY_DCASSERT(dp_pri);
-                    nu = unpacked_node::newFull(F, k, F->getLevelSize(k));
-                    for (unsigned i=0; i<nu->getSize(); i++) {
-                        if (i == m.from(k)) {
-                            nu->setFull(i, cv, cp);
-                        } else {
-                            nu->setFull(i, dv, F->linkNode(dp_pri[k]));
-                        }
-                    }
-                }
-                */
+
                 unpacked_node* nu = newUnprimedNode(k, 1);
                 unsigned z=0;
                 addToNode(nu, z, m.from(k), cv, cp);
+
                 F->createReducedNode(nu, cv, cp);
             }
 
@@ -1299,18 +1226,6 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
     const unsigned L_size = F->getLevelSize(L);
     unsigned z = 0;
     unpacked_node* Cu = newSetNode(L, L_size);
-    /*
-    // If the default value is "zero", then use sparse nodes;
-    // otherwise use full nodes and fill them with the default.
-    if (default_is_zero) {
-        Cu = unpacked_node::newSparse(F, L, L_size);
-    } else {
-        Cu = unpacked_node::newFull(F, L, L_size);
-        for (z=0; z<L_size; z++) {
-            Cu->setFull(z, dv, F->linkNode(dp_unp[L-1]));
-        }
-    }
-    */
 
     //
     // Recursion loop
@@ -1349,18 +1264,6 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
             // add to unpacked node
             //
             addToNode(Cu, z, currV, cz_val, cz_node);
-
-            /*
-            if (default_is_zero) {
-                if (!F->isTransparentEdge(cz_val, cz_node)) {
-                    Cu->setSparse(z, currV, cz_val, cz_node);
-                    z++;
-                }
-            } else {
-                F->unlinkNode(Cu->down(currV));
-                Cu->setFull(currV, cz_val, cz_node);
-            }
-            */
         }
 
         low = mid;
@@ -1465,22 +1368,6 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     unsigned zp = 0;
     int cpin = -10;
 
-    /*
-    if (default_is_zero) {
-        Cu = unpacked_node::newSparse(F, L, L_size);
-        Cp = unpacked_node::newSparse(F, -L, L_size);
-    } else {
-        Cu = unpacked_node::newFull(F, L, L_size);
-        for (unsigned i=0; i<L_size; i++) {
-            Cu->setFull(i, dv, F->linkNode(dp_pri[L]));
-        }
-        Cp = unpacked_node::newFull(F, -L, L_size);
-        for (unsigned i=0; i<L_size; i++) {
-            Cp->setFull(i, dv, F->linkNode(dp_unp[L-1]));
-        }
-    }
-    */
-
     //
     // Recursion loop
     //
@@ -1542,16 +1429,6 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
             // Reset Cp
             //
             Cp = newPrimedNode(L, L_size);
-            /*
-            if (default_is_zero) {
-                Cp = unpacked_node::newSparse(F, -L, L_size);
-            } else {
-                Cp = unpacked_node::newFull(F, -L, L_size);
-                for (unsigned i=0; i<L_size; i++) {
-                    Cp->setFull(i, dv, F->linkNode(dp_unp[L-1]));
-                }
-            }
-            */
             zp = 0;
             has_primed_extra = false;
             cpin = currU;
@@ -1595,15 +1472,6 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
                 //
                 createEdgeRel(L-1, low, mid, tv, tp);
                 addToNode(Cp, zp, currP, tv, tp);
-                /*
-                if (default_is_zero) {
-                    Cp->setSparse(zp, currP, tv, tp);
-                    ++zp;
-                } else {
-                    F->unlinkNode(Cp->down(currP));
-                    Cp->setFull(currP, tv, tp);
-                }
-                */
 #ifdef DEBUG_CREATE_EDGE_REL
                 printf("Adding to Cp level %d in %d\n", -L, cpin);
                 printf("  down[%d] = %d level %d\n",
@@ -1641,10 +1509,6 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
                 //
                 createEdgeRel(L-1, low, mid, tv, tp);
                 addToNode(Cp, zp, currP, tv, tp);
-                /*
-                Cp->setSparse(zp, currP, tv, tp);
-                ++zp;
-                */
 #ifdef DEBUG_CREATE_EDGE_REL
                 printf("Adding to Cp level %d in %d\n", -L, cpin);
                 printf("  down[%d] = %d level %d\n",
@@ -1685,10 +1549,6 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
         // Connect to cpin in Cu
         //
         addToNode(Cu, zu, cpin, tv, tp);
-        /*
-        Cu->setSparse(zu, cpin, tv, tp);
-        ++zu;
-        */
     }
 
     //
