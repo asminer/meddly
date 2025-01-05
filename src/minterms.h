@@ -413,6 +413,34 @@ class MEDDLY::minterm_coll {
         */
         void buildFunction(dd_edge &e, bool minimize=false);
 
+        /** Create an edge from this collection.
+            If there are overlapping minterms in the collection, then we
+            take the maximum value of all matching minterms.
+
+                @param  deflt   Value for the function to return
+                                everywhere except for variable assignments
+                                that match some minterm in the collection.
+
+                @param  e       On input: should be attached to the
+                                forest we want to create the function in.
+                                On output: the function.
+        */
+        void buildFunctionMax(rangeval deflt, dd_edge &e);
+
+        /** Create an edge from this collection.
+            If there are overlapping minterms in the collection, then we
+            take the minimum value of all matching minterms.
+
+                @param  deflt   Value for the function to return
+                                everywhere except for variable assignments
+                                that match some minterm in the collection.
+
+                @param  e       On input: should be attached to the
+                                forest we want to create the function in.
+                                On output: the function.
+        */
+        void buildFunctionMin(rangeval deflt, dd_edge &e);
+
 
         //
         // For convenience and debugging: show all minterms.

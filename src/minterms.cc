@@ -595,6 +595,134 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
 #endif
 }
 
+void MEDDLY::minterm_coll::buildFunctionMax(rangeval def, dd_edge &e)
+{
+    forest* F = e.getForest();
+    if (!F) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+    if (F->getDomain() != _D) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+    if (F->isForRelations() != isForRelations())
+    {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    //
+    // <dv, dn> is the default
+    // <ev, en> is the function we're building
+    //
+    node_handle en, dn;
+    edge_value ev, dv;
+    F->getEdgeForValue(def, dv, dn);
+
+    /*
+     * Special case: empty collection
+     */
+    if (0==first_unused) {
+        dn = F->makeRedundantsTo(dn, 0, num_vars);
+        e.set(dv, dn);
+        return;
+    }
+
+    /*
+     * Determine operation, based on the forest type.
+     */
+    switch (F->getRangeType()) {
+        case range_type::BOOLEAN:
+        {
+            fbuilder<fbop_union_bool> fb(F, *this, UNION);
+            fb.createEdge(num_vars, 0, first_unused, ev, en);
+            break;
+        }
+
+        case range_type::INTEGER:
+        {
+            fbuilder< fbop_max_tmpl<long> > fb(F, *this, MAXIMUM);
+            fb.createEdge(num_vars, 0, first_unused, ev, en);
+            break;
+        }
+
+        case range_type::REAL:
+        {
+            fbuilder< fbop_max_tmpl<double> > fb(F, *this, MAXIMUM);
+            fb.createEdge(num_vars, 0, first_unused, ev, en);
+            break;
+        }
+    }
+
+    e.set(ev, en);
+#ifdef DEVELOPMENT_CODE
+    F->validateIncounts(true, __FILE__, __LINE__,
+            "minterm_coll::buildFunctionMax");
+#endif
+}
+
+void MEDDLY::minterm_coll::buildFunctionMin(rangeval def, dd_edge &e)
+{
+    forest* F = e.getForest();
+    if (!F) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+    if (F->getDomain() != _D) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+    if (F->isForRelations() != isForRelations())
+    {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    //
+    // <dv, dn> is the default
+    // <ev, en> is the function we're building
+    //
+    node_handle en, dn;
+    edge_value ev, dv;
+    F->getEdgeForValue(def, dv, dn);
+
+    /*
+     * Special case: empty collection
+     */
+    if (0==first_unused) {
+        dn = F->makeRedundantsTo(dn, 0, num_vars);
+        e.set(dv, dn);
+        return;
+    }
+
+    /*
+     * Determine operation, based on the forest type.
+     */
+    switch (F->getRangeType()) {
+        case range_type::BOOLEAN:
+        {
+            fbuilder<fbop_union_bool> fb(F, *this, INTERSECTION);
+            fb.createEdge(num_vars, 0, first_unused, ev, en);
+            break;
+        }
+
+        case range_type::INTEGER:
+        {
+            fbuilder< fbop_max_tmpl<long> > fb(F, *this, MINIMUM);
+            fb.createEdge(num_vars, 0, first_unused, ev, en);
+            break;
+        }
+
+        case range_type::REAL:
+        {
+            fbuilder< fbop_max_tmpl<double> > fb(F, *this, MINIMUM);
+            fb.createEdge(num_vars, 0, first_unused, ev, en);
+            break;
+        }
+    }
+
+    e.set(ev, en);
+#ifdef DEVELOPMENT_CODE
+    F->validateIncounts(true, __FILE__, __LINE__,
+            "minterm_coll::buildFunctionMax");
+#endif
+}
+
 
 void MEDDLY::minterm_coll::show(output &s,
         const char* pre, const char* post) const
