@@ -44,11 +44,10 @@ namespace MEDDLY {
             ///
             /// Initialize for forest f, and default value <dv, dp>.
             ///
-            ///     @param  f   Forest we're building in
-            ///     @param dv   Default value
-            ///     @param dp   Default node
+            ///     @param f    Forest we're building in
+            ///     @param def  Default value
             ///
-            fbuilder_forest(forest* f, const edge_value &dv, node_handle dp);
+            fbuilder_forest(forest* f, const rangeval &def);
             ~fbuilder_forest();
 
             /// Build a chain of nodes for a single "set" minterm.
@@ -76,6 +75,13 @@ namespace MEDDLY {
 
         protected:
             forest* F;
+
+            //
+            // Default value.
+            //
+            rangeval deflt;
+            bool default_is_zero;
+
             //
             // Default value, node at each level.
             // If we're quasi-reduced, these will be actual nodes;
@@ -91,9 +97,9 @@ namespace MEDDLY {
 
     class fbuilder_common : public fbuilder_forest {
         public:
-            fbuilder_common(forest* f, const edge_value &dv, node_handle dp,
+            fbuilder_common(forest* f, const rangeval &def,
                     minterm_coll &mtl, binary_builtin Union)
-                    : fbuilder_forest(f, dv, dp), mtc(mtl)
+                    : fbuilder_forest(f, def), mtc(mtl)
             {
                 union_op = Union(f, f, f);
             }
@@ -269,9 +275,9 @@ namespace MEDDLY {
     template <class OP>
     class fbuilder : public fbuilder_common {
         public:
-            fbuilder(forest* f, const edge_value &dv, node_handle dp,
+            fbuilder(forest* f, const rangeval &def,
                     minterm_coll &mtl, binary_builtin Union)
-                    : fbuilder_common(f, dv, dp, mtl, Union) { }
+                    : fbuilder_common(f, def, mtl, Union) { }
 
             inline void createEdge(int L, unsigned low, unsigned high,
                     edge_value &cv, node_handle &cp)
@@ -450,13 +456,12 @@ void MEDDLY::minterm::buildFunction(rangeval def, dd_edge &e) const
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }
 
-    node_handle cp, dp;
-    edge_value cv, dv;
+    node_handle cp;
+    edge_value cv;
 
     F->getEdgeForValue(value, cv, cp);
-    F->getEdgeForValue(def, dv, dp);
 
-    fbuilder_forest fb(F, dv, dp);
+    fbuilder_forest fb(F, def);
 
     if (isForRelations()) {
         fb.relPathToBottom(num_vars, *this, cv, cp);
@@ -547,10 +552,10 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }
 
-    node_handle en, dn;
-    edge_value ev, dv;
-    dv = F->getTransparentEdge();
-    dn = F->getTransparentNode();
+    node_handle en;
+    edge_value ev;
+    rangeval deflt;
+    F->getValueForEdge(F->getTransparentEdge(), F->getTransparentNode(), deflt);
 
     /*
      * Determine operation, based on parameter "minimize"
@@ -566,10 +571,10 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
                 if (minimize) {
                     // strange things will happen with intersection but
                     // I guess the user is always right?
-                    fbuilder<fbop_inter_bool> fb(F, dv, dn, *this, INTERSECTION);
+                    fbuilder<fbop_inter_bool> fb(F, deflt, *this, INTERSECTION);
                     fb.createEdge(num_vars, 0, first_unused, ev, en);
                 } else {
-                    fbuilder<fbop_union_bool> fb(F, dv, dn, *this, UNION);
+                    fbuilder<fbop_union_bool> fb(F, deflt, *this, UNION);
                     fb.createEdge(num_vars, 0, first_unused, ev, en);
                 }
                 break;
@@ -582,10 +587,10 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
                     return;
                 }
                 if (minimize) {
-                    fbuilder< fbop_min_tmpl<long> > fb(F, dv, dn, *this, MINIMUM);
+                    fbuilder< fbop_min_tmpl<long> > fb(F, deflt, *this, MINIMUM);
                     fb.createEdge(num_vars, 0, first_unused, ev, en);
                 } else {
-                    fbuilder< fbop_max_tmpl<long> > fb(F, dv, dn, *this, MAXIMUM);
+                    fbuilder< fbop_max_tmpl<long> > fb(F, deflt, *this, MAXIMUM);
                     fb.createEdge(num_vars, 0, first_unused, ev, en);
                 }
                 break;
@@ -597,10 +602,10 @@ void MEDDLY::minterm_coll::buildFunction(dd_edge &e, bool minimize)
                     return;
                 }
                 if (minimize) {
-                    fbuilder< fbop_min_tmpl<double> > fb(F, dv, dn, *this, MINIMUM);
+                    fbuilder< fbop_min_tmpl<double> > fb(F, deflt, *this, MINIMUM);
                     fb.createEdge(num_vars, 0, first_unused, ev, en);
                 } else {
-                    fbuilder< fbop_max_tmpl<double> > fb(F, dv, dn, *this, MAXIMUM);
+                    fbuilder< fbop_max_tmpl<double> > fb(F, deflt, *this, MAXIMUM);
                     fb.createEdge(num_vars, 0, first_unused, ev, en);
                 }
                 break;
@@ -628,19 +633,18 @@ void MEDDLY::minterm_coll::buildFunctionMax(rangeval def, dd_edge &e)
     }
 
     //
-    // <dv, dn> is the default
     // <ev, en> is the function we're building
     //
-    node_handle en, dn;
-    edge_value ev, dv;
-    F->getEdgeForValue(def, dv, dn);
+    node_handle en;
+    edge_value ev;
 
     /*
      * Special case: empty collection
      */
     if (0==first_unused) {
-        dn = F->makeRedundantsTo(dn, 0, num_vars);
-        e.set(dv, dn);
+        F->getEdgeForValue(def, ev, en);
+        en = F->makeRedundantsTo(en, 0, num_vars);
+        e.set(ev, en);
         return;
     }
 
@@ -650,21 +654,21 @@ void MEDDLY::minterm_coll::buildFunctionMax(rangeval def, dd_edge &e)
     switch (F->getRangeType()) {
         case range_type::BOOLEAN:
         {
-            fbuilder<fbop_union_bool> fb(F, dv, dn, *this, UNION);
+            fbuilder<fbop_union_bool> fb(F, def, *this, UNION);
             fb.createEdge(num_vars, 0, first_unused, ev, en);
             break;
         }
 
         case range_type::INTEGER:
         {
-            fbuilder< fbop_max_tmpl<long> > fb(F, dv, dn, *this, MAXIMUM);
+            fbuilder< fbop_max_tmpl<long> > fb(F, def, *this, MAXIMUM);
             fb.createEdge(num_vars, 0, first_unused, ev, en);
             break;
         }
 
         case range_type::REAL:
         {
-            fbuilder< fbop_max_tmpl<double> > fb(F, dv, dn, *this, MAXIMUM);
+            fbuilder< fbop_max_tmpl<double> > fb(F, def, *this, MAXIMUM);
             fb.createEdge(num_vars, 0, first_unused, ev, en);
             break;
         }
@@ -692,19 +696,18 @@ void MEDDLY::minterm_coll::buildFunctionMin(rangeval def, dd_edge &e)
     }
 
     //
-    // <dv, dn> is the default
     // <ev, en> is the function we're building
     //
-    node_handle en, dn;
-    edge_value ev, dv;
-    F->getEdgeForValue(def, dv, dn);
+    node_handle en;
+    edge_value ev;
 
     /*
      * Special case: empty collection
      */
     if (0==first_unused) {
-        dn = F->makeRedundantsTo(dn, 0, num_vars);
-        e.set(dv, dn);
+        F->getEdgeForValue(def, ev, en);
+        en = F->makeRedundantsTo(en, 0, num_vars);
+        e.set(ev, en);
         return;
     }
 
@@ -714,21 +717,21 @@ void MEDDLY::minterm_coll::buildFunctionMin(rangeval def, dd_edge &e)
     switch (F->getRangeType()) {
         case range_type::BOOLEAN:
         {
-            fbuilder<fbop_union_bool> fb(F, dv, dn, *this, INTERSECTION);
+            fbuilder<fbop_union_bool> fb(F, def, *this, INTERSECTION);
             fb.createEdge(num_vars, 0, first_unused, ev, en);
             break;
         }
 
         case range_type::INTEGER:
         {
-            fbuilder< fbop_max_tmpl<long> > fb(F, dv, dn, *this, MINIMUM);
+            fbuilder< fbop_max_tmpl<long> > fb(F, def, *this, MINIMUM);
             fb.createEdge(num_vars, 0, first_unused, ev, en);
             break;
         }
 
         case range_type::REAL:
         {
-            fbuilder< fbop_max_tmpl<double> > fb(F, dv, dn, *this, MINIMUM);
+            fbuilder< fbop_max_tmpl<double> > fb(F, def, *this, MINIMUM);
             fb.createEdge(num_vars, 0, first_unused, ev, en);
             break;
         }
@@ -788,38 +791,49 @@ void MEDDLY::minterm_coll::_expand()
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::fbuilder_forest::fbuilder_forest(forest* f, const edge_value &defv,
-        node_handle defp)
+MEDDLY::fbuilder_forest::fbuilder_forest(forest* f, const rangeval &def)
 {
     F = f;
-    dv = defv;
-    const unsigned L = F->getNumVariables();
+    deflt = def;
 
-    if (F->isForRelations()) {
-        dp_unp = new node_handle[L+1];
-        dp_pri = new node_handle[L+1];
-        dp_unp[0] = defp;
-        dp_pri[0] = 0;
-        for (int k=1; k<=L; k++) {
-            dp_pri[k] = F->makeRedundantsTo(dp_unp[k-1], k-1, -k);
-            dp_unp[k] = F->makeRedundantsTo(dp_pri[k], -k, k);
-        }
-    } else {
-        dp_unp = new node_handle[L+1];
+    node_handle dp;
+    F->getEdgeForValue(deflt, dv, dp);
+
+    default_is_zero = F->isTransparentEdge(dv, dp);
+
+    if (default_is_zero) {
+        dp_unp = nullptr;
         dp_pri = nullptr;
-        dp_unp[0] = defp;
-        for (unsigned k=1; k<=L; k++) {
-            dp_unp[k] = F->makeRedundantsTo(dp_unp[k-1], k-1, k);
+    } else {
+        const unsigned L = F->getNumVariables();
+        if (F->isForRelations()) {
+            dp_unp = new node_handle[L+1];
+            dp_pri = new node_handle[L+1];
+            dp_unp[0] = dp;
+            dp_pri[0] = 0;
+            for (int k=1; k<=L; k++) {
+                dp_pri[k] = F->makeRedundantsTo(dp_unp[k-1], k-1, -k);
+                dp_unp[k] = F->makeRedundantsTo(dp_pri[k], -k, k);
+            }
+        } else {
+            dp_unp = new node_handle[L+1];
+            dp_pri = nullptr;
+            dp_unp[0] = dp;
+            for (unsigned k=1; k<=L; k++) {
+                dp_unp[k] = F->makeRedundantsTo(dp_unp[k-1], k-1, k);
+            }
         }
     }
 }
 
 MEDDLY::fbuilder_forest::~fbuilder_forest()
 {
-    const unsigned L = F->getNumVariables();
-    F->unlinkNode(dp_unp[L]);
-    delete[] dp_unp;
-    delete[] dp_pri;
+    if (!default_is_zero) {
+        const unsigned L = F->getNumVariables();
+        F->unlinkNode(dp_unp[L]);
+        delete[] dp_unp;
+        delete[] dp_pri;
+    }
 }
 
 void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
@@ -827,7 +841,6 @@ void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
 {
     MEDDLY_DCASSERT(L>0);
     MEDDLY_DCASSERT(!m.isForRelations());
-    const bool zero_default = F->isTransparentEdge(dv, dp_unp[0]);
 
     for (int k=1; k<=L; k++) {
         if (DONT_CARE == m.from(k)) {
@@ -837,10 +850,11 @@ void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
             // all the rest <dv, dp>
             MEDDLY_DCASSERT(m.from(k) >= 0);
             unpacked_node* n = nullptr;
-            if (zero_default) {
+            if (default_is_zero) {
                 n = unpacked_node::newSparse(F, k, 1);
                 n->setSparse(0, m.from(k), cv, cp);
             } else {
+                MEDDLY_DCASSERT(dp_unp);
                 n = unpacked_node::newFull(F, k, F->getLevelSize(k));
                 for (unsigned i=0; i<n->getSize(); i++) {
                     if (i == m.from(k)) {
@@ -861,7 +875,7 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
     MEDDLY_DCASSERT(L>0);
     MEDDLY_DCASSERT(m.isForRelations());
 
-    if (F->isIdentityReduced() && F->isTransparentEdge(dv, dp_unp[0])) {
+    if (F->isIdentityReduced() && default_is_zero) {
         //
         //
         // Special case: we're identity reduced, and <dv, dp> is the zero edge
@@ -915,29 +929,34 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
             if (DONT_CHANGE == m.to(k)) {
                 MEDDLY_DCASSERT(DONT_CARE == m.from(k));
 
-                //
-                // Build an identity pattern except use
-                // the default value off the diagonal.
-                //
-                unpacked_node* nu =
-                    unpacked_node::newFull(F, k, F->getLevelSize(k));
-                for (unsigned i=0; i<nu->getSize(); i++) {
-                    unpacked_node* np =
-                        unpacked_node::newFull(F, -k, F->getLevelSize(-k));
-                    for (unsigned j=0; j<np->getSize(); j++) {
-                        if (i==j) {
-                            np->setFull(j, cv, F->linkNode(cp));
-                        } else {
-                            np->setFull(j, dv, F->linkNode(dp_unp[k-1]));
+                if (default_is_zero) {
+                    cp = F->makeIdentitiesTo(cp, k-1, k, ~0);
+                } else {
+                    //
+                    // Build an identity pattern except use
+                    // the default value off the diagonal.
+                    //
+                    MEDDLY_DCASSERT(dp_unp);
+                    unpacked_node* nu =
+                        unpacked_node::newFull(F, k, F->getLevelSize(k));
+                    for (unsigned i=0; i<nu->getSize(); i++) {
+                        unpacked_node* np =
+                            unpacked_node::newFull(F, -k, F->getLevelSize(-k));
+                        for (unsigned j=0; j<np->getSize(); j++) {
+                            if (i==j) {
+                                np->setFull(j, cv, F->linkNode(cp));
+                            } else {
+                                np->setFull(j, dv, F->linkNode(dp_unp[k-1]));
+                            }
                         }
+                        edge_value cpv;
+                        node_handle cpp;
+                        F->createReducedNode(np, cpv, cpp);
+                        nu->setFull(i, cpv, cpp);
                     }
-                    edge_value cpv;
-                    node_handle cpp;
-                    F->createReducedNode(np, cpv, cpp);
-                    nu->setFull(i, cpv, cpp);
+                    F->unlinkNode(cp);
+                    F->createReducedNode(nu, cv, cp);
                 }
-                F->unlinkNode(cp);
-                F->createReducedNode(nu, cv, cp);
                 continue;
             }
 
@@ -949,14 +968,20 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
             } else {
                 // make a node with one edge <cv, cp>,
                 // all the rest <dv, dp>
-                unpacked_node* np =
-                    unpacked_node::newFull(F, -k, F->getLevelSize(-k));
                 MEDDLY_DCASSERT(m.to(k) >= 0);
-                for (unsigned i=0; i<np->getSize(); i++) {
-                    if (i == m.to(k)) {
-                        np->setFull(i, cv, cp);
-                    } else {
-                        np->setFull(i, dv, F->linkNode(dp_unp[k-1]));
+                unpacked_node* np = nullptr;
+                if (default_is_zero) {
+                    np = unpacked_node::newSparse(F, -k, 1);
+                    np->setSparse(0, m.to(k), cv, cp);
+                } else {
+                    MEDDLY_DCASSERT(dp_unp);
+                    np = unpacked_node::newFull(F, -k, F->getLevelSize(-k));
+                    for (unsigned i=0; i<np->getSize(); i++) {
+                        if (i == m.to(k)) {
+                            np->setFull(i, cv, cp);
+                        } else {
+                            np->setFull(i, dv, F->linkNode(dp_unp[k-1]));
+                        }
                     }
                 }
                 F->createReducedNode(np, cv, cp);
@@ -970,14 +995,20 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
             } else {
                 // make a node with one edge <cv, cp>,
                 // all the rest <dv, dp>
-                unpacked_node* nu =
-                    unpacked_node::newFull(F, k, F->getLevelSize(k));
                 MEDDLY_DCASSERT(m.from(k) >= 0);
-                for (unsigned i=0; i<nu->getSize(); i++) {
-                    if (i == m.from(k)) {
-                        nu->setFull(i, cv, cp);
-                    } else {
-                        nu->setFull(i, dv, F->linkNode(dp_pri[k]));
+                unpacked_node* nu = nullptr;
+                if (default_is_zero) {
+                    nu = unpacked_node::newSparse(F, k, 1);
+                    nu->setSparse(0, m.from(k), cv, cp);
+                } else {
+                    MEDDLY_DCASSERT(dp_pri);
+                    nu = unpacked_node::newFull(F, k, F->getLevelSize(k));
+                    for (unsigned i=0; i<nu->getSize(); i++) {
+                        if (i == m.from(k)) {
+                            nu->setFull(i, cv, cp);
+                        } else {
+                            nu->setFull(i, dv, F->linkNode(dp_pri[k]));
+                        }
                     }
                 }
                 F->createReducedNode(nu, cv, cp);
