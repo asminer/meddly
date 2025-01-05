@@ -106,29 +106,8 @@ void check_equal_set(const dd_edge &E, const minterm &m, const rangeval &deflt)
     } while (SG.nextMinterm(vars));
 }
 
-void test_sets(forest* F, rangeval deflt)
+void test_sets(forest* F, rangeval deflt, rangeval fval)
 {
-    //
-    // Determine non-default value
-    //
-    rangeval fval;
-    switch (deflt.getType()) {
-        case range_type::BOOLEAN:
-            fval = ! bool(deflt);
-            break;
-
-        case range_type::INTEGER:
-            fval = 2 + long(deflt);
-            break;
-
-        case range_type::REAL:
-            fval = 2.5 + double(deflt);
-            break;
-
-        default:
-            throw "unknown type";
-    }
-
     //
     // Display what we're doing
     //
@@ -195,8 +174,8 @@ void test_sets_with_policies(domain *D, policies p)
     forest* Fbool = forest::create(D, SET, range_type::BOOLEAN,
             edge_labeling::MULTI_TERMINAL, p);
 
-    test_sets(Fbool, false);
-    test_sets(Fbool, true);
+    test_sets(Fbool, false, true);
+    test_sets(Fbool, true, false);
 
     forest::destroy(Fbool);
 
@@ -206,9 +185,9 @@ void test_sets_with_policies(domain *D, policies p)
     forest* Fint  = forest::create(D, SET, range_type::INTEGER,
             edge_labeling::MULTI_TERMINAL, p);
 
-    test_sets(Fint, 0L);
-    test_sets(Fint, -1L);
-    test_sets(Fint, -2L);
+    test_sets(Fint,  0L, 2L);
+    test_sets(Fint, -1L, 1L);
+    test_sets(Fint, -2L, 0L);
 
     //
     // Real
@@ -216,9 +195,25 @@ void test_sets_with_policies(domain *D, policies p)
     forest* Freal = forest::create(D, SET, range_type::REAL,
             edge_labeling::MULTI_TERMINAL, p);
 
-    test_sets(Freal, 0.0);
-    test_sets(Freal, -1.25);
-    test_sets(Freal, -2.5);
+    test_sets(Freal, 0.0, 2.5);
+    test_sets(Freal, -1.25, 1.25);
+    test_sets(Freal, -2.5, 0.0);
+
+    //
+    // EV+ Integer
+    //
+    forest* Fevp  = forest::create(D, SET, range_type::INTEGER,
+            edge_labeling::EVPLUS, p);
+
+    rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
+
+    test_sets(Fevp,  0L, 2L);
+    test_sets(Fevp, -1L, 1L);
+    test_sets(Fevp, -2L, 0L);
+    test_sets(Fevp,  infty, 0L);
+    test_sets(Fevp,  infty, 8L);
+    test_sets(Fevp,  0L, infty);
+    test_sets(Fevp,  8L, infty);
 }
 
 /*
@@ -279,29 +274,8 @@ void check_equal_rel(const dd_edge &E, const minterm &m, const rangeval &deflt)
     } while (RG.nextMinterm(vars));
 }
 
-void test_rels(forest* F, rangeval deflt)
+void test_rels(forest* F, rangeval deflt, rangeval fval)
 {
-    //
-    // Determine non-default value
-    //
-    rangeval fval;
-    switch (deflt.getType()) {
-        case range_type::BOOLEAN:
-            fval = ! bool(deflt);
-            break;
-
-        case range_type::INTEGER:
-            fval = 2 + long(deflt);
-            break;
-
-        case range_type::REAL:
-            fval = 2.5 + double(deflt);
-            break;
-
-        default:
-            throw "unknown type";
-    }
-
     //
     // Display what we're doing
     //
@@ -385,8 +359,8 @@ void test_rels_with_policies(domain *D, policies p)
     forest* Fbool = forest::create(D, RELATION, range_type::BOOLEAN,
             edge_labeling::MULTI_TERMINAL, p);
 
-    test_rels(Fbool, false);
-    test_rels(Fbool, true);
+    test_rels(Fbool, false, true);
+    test_rels(Fbool, true, false);
 
     forest::destroy(Fbool);
 
@@ -396,9 +370,25 @@ void test_rels_with_policies(domain *D, policies p)
     forest* Fint  = forest::create(D, RELATION, range_type::INTEGER,
             edge_labeling::MULTI_TERMINAL, p);
 
-    test_rels(Fint, 0L);
-    test_rels(Fint, -1L);
-    test_rels(Fint, -2L);
+    test_rels(Fint,  0L, 2L);
+    test_rels(Fint, -1L, 1L);
+    test_rels(Fint, -2L, 0L);
+
+    //
+    // EV+ Integer
+    //
+    forest* Fevp  = forest::create(D, RELATION, range_type::INTEGER,
+            edge_labeling::EVPLUS, p);
+
+    rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
+
+    test_rels(Fevp,  0L, 2L);
+    test_rels(Fevp, -1L, 1L);
+    test_rels(Fevp, -2L, 0L);
+    test_rels(Fevp,  infty, 0L);
+    test_rels(Fevp,  infty, 8L);
+    test_rels(Fevp,  0L, infty);
+    test_rels(Fevp,  8L, infty);
 
     //
     // Real
@@ -406,9 +396,20 @@ void test_rels_with_policies(domain *D, policies p)
     forest* Freal = forest::create(D, RELATION, range_type::REAL,
             edge_labeling::MULTI_TERMINAL, p);
 
-    test_rels(Freal, 0.0);
-    test_rels(Freal, -1.25);
-    test_rels(Freal, -2.5);
+    test_rels(Freal, 0.0, 2.5);
+    test_rels(Freal, -1.25, 1.25);
+    test_rels(Freal, -2.5, 0.0);
+
+    //
+    // EV* real
+    //
+    forest* Fevt = forest::create(D, RELATION, range_type::REAL,
+            edge_labeling::EVTIMES, p);
+
+    test_rels(Fevt, 0.0, 2.5);
+    test_rels(Fevt, 0.0, 5.0);
+    test_rels(Fevt, -1.25, 1.25);
+    test_rels(Fevt, -2.5, 0.0);
 }
 
 /*
