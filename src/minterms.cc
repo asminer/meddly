@@ -389,6 +389,7 @@ namespace MEDDLY {
     // *                                                                *
     // ******************************************************************
 
+    /*
     struct fbop_union_bool {
         static inline void finalize(
                 const minterm_coll &mc, unsigned low, unsigned high,
@@ -419,6 +420,7 @@ namespace MEDDLY {
             F->getEdgeForValue(val, cv, cp);
         }
     };
+    */
     template <typename T>
     struct fbop_min_tmpl {
         static inline void finalize(
@@ -661,7 +663,8 @@ void MEDDLY::minterm_coll::buildFunctionMax(rangeval def, dd_edge &e)
     switch (F->getRangeType()) {
         case range_type::BOOLEAN:
         {
-            fbuilder<fbop_union_bool> fb(F, def, *this, UNION);
+            // fbuilder<fbop_union_bool> fb(F, def, *this, UNION);
+            fbuilder< fbop_max_tmpl<bool> > fb(F, def, *this, UNION);
             fb.createEdge(num_vars, 0, first_unused, ev, en);
             break;
         }
@@ -724,21 +727,22 @@ void MEDDLY::minterm_coll::buildFunctionMin(rangeval def, dd_edge &e)
     switch (F->getRangeType()) {
         case range_type::BOOLEAN:
         {
-            fbuilder<fbop_union_bool> fb(F, def, *this, INTERSECTION);
+            // fbuilder<fbop_union_bool> fb(F, def, *this, INTERSECTION);
+            fbuilder< fbop_min_tmpl <bool> > fb(F, def, *this, INTERSECTION);
             fb.createEdge(num_vars, 0, first_unused, ev, en);
             break;
         }
 
         case range_type::INTEGER:
         {
-            fbuilder< fbop_max_tmpl<long> > fb(F, def, *this, MINIMUM);
+            fbuilder< fbop_min_tmpl<long> > fb(F, def, *this, MINIMUM);
             fb.createEdge(num_vars, 0, first_unused, ev, en);
             break;
         }
 
         case range_type::REAL:
         {
-            fbuilder< fbop_max_tmpl<double> > fb(F, def, *this, MINIMUM);
+            fbuilder< fbop_min_tmpl<double> > fb(F, def, *this, MINIMUM);
             fb.createEdge(num_vars, 0, first_unused, ev, en);
             break;
         }
@@ -758,14 +762,10 @@ void MEDDLY::minterm_coll::show(output &s,
     for (unsigned i=0; i<size(); i++) {
         if (pre) {
             s.put(pre);
-        } else {
-            s.put("  ");
-            s.put(i, 4);
-            s.put("  ");
         }
-        _mtlist[i]->show(s);
+        s.put(i, 4);
         s.put("  ");
-        _mtlist[i]->getValue().write(s);
+        _mtlist[i]->show(s);
         s.put(post);
     }
 }

@@ -38,22 +38,6 @@ const unsigned NUM_MINTERMS = 9;
 using namespace MEDDLY;
 
 /*
- *  common for sets and relations
- */
-
-template <typename RTYPE>
-inline void show(MEDDLY::output &out, RTYPE v)
-{
-    out << v;
-}
-
-template <>
-inline void show(MEDDLY::output &out, bool v)
-{
-    out << (v ? "true" : "false");
-}
-
-/*
  *
  * Testing for sets
  *
