@@ -9,15 +9,22 @@ layout: single
 
 * Added classes ```minterm``` and ```minterm_coll``` to deal
     with variable assignments and truth tables over sets and relations.
+    Both of these are in ```minterms.h``` and ```minterms.cc```.
 
-* Can create functions from single minterms or minterm collections
-    using methods ```minterm::buildFunction()``` and
-    ```minterm_coll::buildFunction```.
-    This replaces several ```forest::createEdge()``` methods,
-    which are now deprecated. (TBD)
+* Creating functions from single minterms or minterm collections
+    is now done using methods ```minterm::buildFunction()```,
+    ```minterm_coll::buildFunctionMax()```, and
+    ```minterm_coll::buildFunctionMin()```.
+    These methods allow specification of a default value,
+    and in the case of minterm collections, specify how to
+    deal with overlapping minterms in the collection
+    (take the max or min value).
+    These replace several ```forest::createEdge()``` methods,
+    which are now deprecated.
 
 * Function evaluation is now done through ```dd_edge::evaluate```.
-    TBD: deprecate the old function evaluate
+    This replaces several ```forest::evaluate()``` methods,
+    which are now deprecated.
 
 * ```dd_edge::set()``` parameters are reversed, for consistency
     (edge value before node).
@@ -37,12 +44,20 @@ layout: single
     ```DONT_CHANGE``` for relation "to" variables that must equal
     their "from" counterpart, or a regular non-negative integer value
     to fix a variable.
+  The old ```enumerator``` class is now deprecated.
 
-
-* Old ```forest::getElement()``` replaced by ```dd_edge::getElement()```.
+* Old ```forest::getElement()``` is deprecated,
+    in favor of ```dd_edge::getElement()```.
 
 * Old ```forest::createEdge()``` for constant functions
-  replaced by ```forest::createConstant()```.
+    are deprecated, in favor of ```forest::createConstant()```.
 
 ### Implementation
+
+* TBD: updated min, max operations
+
+### Tests
+
+* Most of these features are thoroughly tested in ```chk_minterms```
+    and ```chk_mtcoll```.
 
