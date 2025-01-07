@@ -159,6 +159,40 @@ namespace MEDDLY {
                 }
             }
 
+            /// Build an identity pattern.
+            /// Except here we might have default values, not zeroes,
+            /// off the diagonals.
+            ///     @param  k   Build the pattern for levels (k, k')
+            ///     @param  dn  Downward pointer for diagonals
+            ///
+            inline void identityPattern(int k, edge_value &dv, node_handle &dn)
+                const
+            {
+                if (default_is_zero) {
+                    dn = F->makeIdentitiesTo(dn, k-1, k, ~0);
+                } else {
+                    //
+                    // Build an identity pattern except use
+                    // the default value off the diagonal.
+                    //
+                    MEDDLY_DCASSERT(dp_unp);
+                    unpacked_node* nu =
+                        unpacked_node::newFull(F, k, F->getLevelSize(k));
+                    for (unsigned i=0; i<nu->getSize(); i++) {
+                        unpacked_node* np = newPrimedNode(k, 1);
+                        unsigned z = 0;
+                        addToNode(np, z, i, dv, F->linkNode(dn));
+
+                        edge_value cv;
+                        node_handle cp;
+                        F->createReducedNode(np, cv, cp);
+                        nu->setFull(i, cv, cp);
+                    }
+                    F->unlinkNode(dn);
+                    F->createReducedNode(nu, dv, dn);
+                }
+            }
+
         protected:
             forest* F;
 
@@ -926,29 +960,8 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
             if (DONT_CHANGE == m.to(k)) {
                 MEDDLY_DCASSERT(DONT_CARE == m.from(k));
 
-                if (default_is_zero) {
-                    cp = F->makeIdentitiesTo(cp, k-1, k, ~0);
-                } else {
-                    //
-                    // Build an identity pattern except use
-                    // the default value off the diagonal.
-                    //
-                    MEDDLY_DCASSERT(dp_unp);
-                    unpacked_node* nu =
-                        unpacked_node::newFull(F, k, F->getLevelSize(k));
-                    for (unsigned i=0; i<nu->getSize(); i++) {
-                        unpacked_node* np = newPrimedNode(k, 1);
-                        unsigned z = 0;
-                        addToNode(np, z, i, cv, F->linkNode(cp));
+                identityPattern(k, cv, cp);
 
-                        edge_value cpv;
-                        node_handle cpp;
-                        F->createReducedNode(np, cpv, cpp);
-                        nu->setFull(i, cpv, cpp);
-                    }
-                    F->unlinkNode(cp);
-                    F->createReducedNode(nu, cv, cp);
-                }
                 continue;
             }
 
@@ -1254,7 +1267,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     {
         MEDDLY_DCASSERT(DONT_CARE == minU);
         createEdgeRel(L-1, low, high, cv, cp);
-        cp = F->makeIdentitiesTo(cp, L-1, L, ~0);
+        identityPattern(L, cv, cp);
         return;
     }
 
@@ -1369,7 +1382,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
                 //
                 createEdgeRel(L-1, low, mid, tv, tp);
                 if (DONT_CHANGE == currP) {
-                    tp = F->makeIdentitiesTo(tp, L-1, L, ~0);
+                    identityPattern(L, tv, tp);
                 } else {
                     tp = F->makeRedundantsTo(tp, L-1, L);
                 }

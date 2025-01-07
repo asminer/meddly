@@ -20,7 +20,7 @@
 #include <time.h>
 #include <iostream>
 
-// #define TEST_SETS
+#define TEST_SETS
 #define TEST_RELS
 // #define SHOW_MINTERMS
 
@@ -508,7 +508,7 @@ void test_rels_with_policies(domain *D, policies p)
     forest* Fbool = forest::create(D, RELATION, range_type::BOOLEAN,
             edge_labeling::MULTI_TERMINAL, p);
 
-    // test_rels<true >(Fbool, false, allT);
+    test_rels<true >(Fbool, false, allT);
     test_rels<false>(Fbool, true,  allF);
 
     forest::destroy(Fbool);
