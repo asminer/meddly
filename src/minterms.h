@@ -406,6 +406,8 @@ class MEDDLY::minterm_coll {
                 @param  deflt   Value for the function to return
                                 everywhere except for variable assignments
                                 that match some minterm in the collection.
+                                Should be less or equal to all minterm
+                                values in the collection.
 
                 @param  e       On input: should be attached to the
                                 forest we want to create the function in.
@@ -420,6 +422,8 @@ class MEDDLY::minterm_coll {
                 @param  deflt   Value for the function to return
                                 everywhere except for variable assignments
                                 that match some minterm in the collection.
+                                Should be greater or equal to all minterm
+                                values in the collection.
 
                 @param  e       On input: should be attached to the
                                 forest we want to create the function in.

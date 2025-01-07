@@ -1,10 +1,8 @@
 
 Implement next:
 
-    * minterm_coll -> allow default value in buildFunction()
-
-    * MAXIMUM, MINIMUM operations to finish off minterm builds :)
-        + and test cases (add to chk_minterm?)
+    * MAXIMUM, MINIMUM operations to finish off minterm collection builds
+        + and test cases (add to chk_mtcoll)
 
     * Comparisons for EV+, EV*
         + add test cases to ops_comp
