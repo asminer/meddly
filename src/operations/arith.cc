@@ -555,7 +555,8 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         /// (For example, if OP is - and the second argument is 0;
         /// or OP is + and the first argument is infinity.)
         ///
-        static bool simplifiesToFirstArg(edge_value &a, node_handle &b,
+        static bool simplifiesToFirstArg(
+            edge_value &a, node_handle &b,
             const edge_value &c, node_handle d);
 
 
@@ -564,7 +565,8 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         /// (For example, if OP is + and the first argument is 0;
         /// or OP is max and the second argument is infinity.)
         ///
-        static bool simplifiesToSecondArg(const edge_value &a, node_handle b,
+        static bool simplifiesToSecondArg(
+            const edge_value &a, node_handle b,
             edge_value &c, node_handle &d);
 
 
@@ -1016,7 +1018,8 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
         /// (For example, if OP is - and the second argument is 0;
         /// or OP is + and the first argument is infinity.)
         ///
-        static bool simplifiesToFirstArg(edge_value &a, node_handle &b,
+        static bool simplifiesToFirstArg(
+            edge_value &a, node_handle &b,
             const edge_value &c, node_handle d);
 
 
@@ -1025,7 +1028,8 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
         /// (For example, if OP is + and the first argument is 0;
         /// or OP is max and the second argument is infinity.)
         ///
-        static bool simplifiesToSecondArg(const edge_value &a, node_handle b,
+        static bool simplifiesToSecondArg(
+            const edge_value &a, node_handle b,
             edge_value &c, node_handle &d);
 
 
@@ -1546,6 +1550,107 @@ namespace MEDDLY {
 // ******************************************************************
 //  ****************************************************************
 //   **************************************************************
+
+/*
+
+
+        /// Apply the operation on constant functions,
+        ///     <a,b> = <c,d> OP <e,f>
+        static void apply(const edge_value &c, node_handle d,
+                          const edge_value &e, node_handle f,
+                          edge_value &a, node_handle &b);
+
+ */
+
+// ******************************************************************
+// *                                                                *
+// *                      evplus_maximum class                      *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class EDGETYPE>
+    struct evplus_maximum {
+        inline static const char* name() {
+            return "max";
+        }
+        inline static bool commutes() {
+            return true;
+        }
+        inline static bool stopOnEqualArgs() {
+            return true;
+        }
+        inline static void makeEqualResult(const forest*, node_handle &a) {
+            // max(a, a) = a; do nothing to a
+        }
+        inline static bool simplifiesToFirstArg(
+                const edge_value &av, node_handle &a,
+                const edge_value &bv, node_handle b)
+        {
+            return (OMEGA_INFINITY == a);
+        }
+        inline static bool simplifiesToSecondArg(
+                const edge_value &av, node_handle a,
+                const edge_value &bv, node_handle &b)
+        {
+            return (OMEGA_INFINITY == b);
+        }
+
+        inline static void factor(
+                edge_value &c, node_handle d,
+                edge_value &e, node_handle f,
+                edge_value &a)
+        {
+            if (OMEGA_INFINITY == d) {
+                //
+                // left operand is infinity;
+                // factor using the right operand.
+                //
+                if (OMEGA_INFINITY == f) {
+                    a = edge_value(EDGETYPE(0));
+                } else {
+                    a = e;
+                    e = edge_value(EDGETYPE(0));
+                }
+            } else {
+                //
+                // Factor on left operand
+                //
+                a = c;
+                c = edge_value(EDGETYPE(0));
+                EDGETYPE av;
+                a.get(av);
+                e.subtract(av);
+            }
+        }
+
+        inline static bool alwaysFactorsToIdentity()
+        {
+            return true;
+        }
+
+        inline static void apply(const edge_value &c, node_handle d,
+                          const edge_value &e, node_handle f,
+                          edge_value &a, node_handle &b)
+        {
+            if ((OMEGA_INFINITY == d) || (OMEGA_INFINITY == f))
+            {
+                a = edge_value(EDGETYPE(0));
+                b = OMEGA_INFINITY;
+            } else {
+                //
+                // both finite
+                //
+                b = OMEGA_NORMAL;
+                EDGETYPE cv, ev;
+                c.get(cv);
+                e.get(ev);
+                a = edge_value(MAX(cv, ev));
+            }
+        }
+
+    };
+};
 
 
 //   **************************************************************
