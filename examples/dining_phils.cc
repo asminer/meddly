@@ -431,7 +431,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
     FILE_output meddlyout(stdout);
 
     // Number of levels in domain (excluding terminals)
-    int nLevels = nPhilosophers * 2;
+    // int nLevels = nPhilosophers * 2;
 
 
     const char* order_description = 0;

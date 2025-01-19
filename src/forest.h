@@ -247,6 +247,14 @@ namespace MEDDLY {
     inline char EdgeOp_plus<long>::edgeValueTypeLetter() {
         return 'L';
     }
+    template <>
+    inline char EdgeOp_plus<float>::edgeValueTypeLetter() {
+        return 'F';
+    }
+    template <>
+    inline char EdgeOp_plus<double>::edgeValueTypeLetter() {
+        return 'D';
+    }
 };
 
 // ******************************************************************

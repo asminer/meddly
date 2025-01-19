@@ -122,6 +122,7 @@ namespace MEDDLY {
             case reduction_rule::QUASI_REDUCED:     return "quasi-reduced";
             case reduction_rule::IDENTITY_REDUCED:  return "identity-reduced";
             case reduction_rule::USER_DEFINED:      return "userdef-reduced";
+            default:                                return "unknown reduction";
         }
     }
 
@@ -132,6 +133,7 @@ namespace MEDDLY {
             case reduction_rule::QUASI_REDUCED:     return "QR";
             case reduction_rule::IDENTITY_REDUCED:  return "IR";
             case reduction_rule::USER_DEFINED:      return "uR";
+            default:                                return "?R";
         }
     }
 
@@ -186,6 +188,7 @@ namespace MEDDLY {
             case edge_labeling::INDEX_SET:      return "ndx";
 
             case edge_labeling::EVTIMES:        return "EV*";
+            default:                            return "?el";
         }
     }
 

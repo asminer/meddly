@@ -43,6 +43,7 @@ namespace MEDDLY {
             case range_type::BOOLEAN:   return "boolean";
             case range_type::INTEGER:   return "integer";
             case range_type::REAL:      return "real";
+            default:                    return "unknown range type";
         }
     }
 
@@ -52,6 +53,7 @@ namespace MEDDLY {
             case range_type::BOOLEAN:   return "bool";
             case range_type::INTEGER:   return "int ";
             case range_type::REAL:      return "real";
+            default:                    return "????";
         }
     }
 

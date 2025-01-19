@@ -19,6 +19,7 @@
 #include "../src/meddly.h"
 #include <time.h>
 #include <iostream>
+#include <iomanip>
 
 #define TEST_SETS
 #define TEST_RELS
