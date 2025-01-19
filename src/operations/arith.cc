@@ -867,14 +867,18 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
     // Set up unpacked nodes
     //
 
+    edge_value zero;
+    EOP::clear(zero);
     unpacked_node* Au;
     if (Alevel != Clevel) {
         if (arg1F->isIdentityReduced() && Clevel<0) {
             MEDDLY_DCASSERT(Clevel == L);
-            Au = unpacked_node::newIdentity(arg1F, Clevel, in, A, FULL_ONLY);
+            Au = unpacked_node::newIdentity(arg1F, Clevel, in, zero, A,
+                    FULL_ONLY);
             MEDDLY_DCASSERT(Au->wasIdentity());
         } else {
-            Au = unpacked_node::newRedundant(arg1F, Clevel, A, FULL_ONLY);
+            Au = unpacked_node::newRedundant(arg1F, Clevel, zero, A,
+                    FULL_ONLY);
             MEDDLY_DCASSERT(!Au->wasIdentity());
         }
     } else {
@@ -886,10 +890,12 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
     if (Blevel != Clevel) {
         if (arg2F->isIdentityReduced() && Clevel<0) {
             MEDDLY_DCASSERT(Clevel == L);
-            Bu = unpacked_node::newIdentity(arg2F, Clevel, in, B, FULL_ONLY);
+            Bu = unpacked_node::newIdentity(arg2F, Clevel, in, zero, B,
+                    FULL_ONLY);
             MEDDLY_DCASSERT(Bu->wasIdentity());
         } else {
-            Bu = unpacked_node::newRedundant(arg2F, Clevel, B, FULL_ONLY);
+            Bu = unpacked_node::newRedundant(arg2F, Clevel, zero, B,
+                    FULL_ONLY);
             MEDDLY_DCASSERT(!Bu->wasIdentity());
         }
     } else {
@@ -1314,14 +1320,18 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
     // Set up unpacked nodes
     //
 
+    edge_value zero;
+    EOP::clear(zero);
     unpacked_node* Au;
     if (Alevel != Clevel) {
         if (arg1F->isIdentityReduced() && Clevel<0) {
             MEDDLY_DCASSERT(Clevel == L);
-            Au = unpacked_node::newIdentity(arg1F, Clevel, in, A, FULL_ONLY);
+            Au = unpacked_node::newIdentity(arg1F, Clevel, in, zero, A,
+                    FULL_ONLY);
             MEDDLY_DCASSERT(Au->wasIdentity());
         } else {
-            Au = unpacked_node::newRedundant(arg1F, Clevel, A, FULL_ONLY);
+            Au = unpacked_node::newRedundant(arg1F, Clevel, zero, A,
+                    FULL_ONLY);
             MEDDLY_DCASSERT(!Au->wasIdentity());
         }
     } else {
@@ -1333,10 +1343,12 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
     if (Blevel != Clevel) {
         if (arg2F->isIdentityReduced() && Clevel<0) {
             MEDDLY_DCASSERT(Clevel == L);
-            Bu = unpacked_node::newIdentity(arg2F, Clevel, in, B, FULL_ONLY);
+            Bu = unpacked_node::newIdentity(arg2F, Clevel, in, zero, B,
+                    FULL_ONLY);
             MEDDLY_DCASSERT(Bu->wasIdentity());
         } else {
-            Bu = unpacked_node::newRedundant(arg2F, Clevel, B, FULL_ONLY);
+            Bu = unpacked_node::newRedundant(arg2F, Clevel, zero, B,
+                    FULL_ONLY);
             MEDDLY_DCASSERT(!Bu->wasIdentity());
         }
     } else {

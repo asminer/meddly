@@ -48,9 +48,7 @@ using namespace MEDDLY;
 // #define DEBUG_MXDOPS
 
 #define TEST_SETS
-// #define TEST_RELATIONS
-
-// #define EVPLUS_ONLY
+#define TEST_RELATIONS
 
 template <typename T>
 void Max(const std::vector <T> &A, const std::vector <T> &B,
@@ -264,16 +262,15 @@ void test_sets(domain* D, edge_labeling el, range_type rt)
     p.setFullyReduced();
 
     forest* fully = forest::create(D, SET, rt, el, p);
-                    // edge_labeling::MULTI_TERMINAL, p);
 
     p.setQuasiReduced();
 
     forest* quasi = forest::create(D, SET, rt, el, p);
-                    // edge_labeling::MULTI_TERMINAL, p);
 
 
     for (unsigned i=MIN_SET_CARD; i<=MAX_SET_CARD; i*=MULT_SET_CARD) {
-        std::cout << "Testing " << OPS << " on " << nameOf(rt) << " vectors; "
+        std::cout << "Testing " << OPS << " on "
+                  << nameOf(el) << " " << nameOf(rt) << " vectors; "
                   << i << " / " << SG.potential() << " nonzeroes\n";
 
         test_on_functions<TYPE>(i, fully, fully, fully);
@@ -288,29 +285,27 @@ void test_sets(domain* D, edge_labeling el, range_type rt)
 }
 
 template <typename TYPE>
-void test_rels(domain* D, range_type rt)
+void test_rels(domain* D, edge_labeling el, range_type rt)
 {
     policies p;
     p.useDefaults(RELATION);
 
     p.setFullyReduced();
 
-    forest* fully = forest::create(D, RELATION, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
+    forest* fully = forest::create(D, RELATION, rt, el, p);
 
     p.setQuasiReduced();
 
-    forest* quasi = forest::create(D, RELATION, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
+    forest* quasi = forest::create(D, RELATION, rt, el, p);
 
     p.setIdentityReduced();
 
-    forest* ident = forest::create(D, RELATION, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
+    forest* ident = forest::create(D, RELATION, rt, el, p);
 
 
     for (unsigned i=MIN_REL_CARD; i<=MAX_REL_CARD; i*=MULT_REL_CARD) {
-        std::cout << "Testing " << OPS << " on " << nameOf(rt) << " matrices; "
+        std::cout << "Testing " << OPS << " on "
+                  << nameOf(el) << " " << nameOf(rt) << " matrices; "
                   << i << " / " << RG.potential() << " nonzeroes\n";
 
         test_on_functions<TYPE>(i, fully, fully, fully);
@@ -379,12 +374,9 @@ int main(int argc, const char** argv)
 
 #ifdef TEST_SETS
         domain* SD = SG.makeDomain();
-#ifndef EVPLUS_ONLY
         test_sets<int>(SD, edge_labeling::MULTI_TERMINAL, range_type::INTEGER);
         test_sets<float>(SD, edge_labeling::MULTI_TERMINAL, range_type::REAL);
-#else
         test_sets<long>(SD, edge_labeling::EVPLUS, range_type::INTEGER);
-#endif
         domain::destroy(SD);
 #endif
 
@@ -394,8 +386,8 @@ int main(int argc, const char** argv)
 
 #ifdef TEST_RELATIONS
         domain* RD = RG.makeDomain();
-        test_rels<int>(RD, range_type::INTEGER);
-        test_rels<float>(RD, range_type::REAL);
+        test_rels<int>(RD, edge_labeling::MULTI_TERMINAL, range_type::INTEGER);
+        test_rels<float>(RD, edge_labeling::MULTI_TERMINAL, range_type::REAL);
         domain::destroy(RD);
 #endif
 
