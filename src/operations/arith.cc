@@ -173,7 +173,7 @@ MEDDLY::arith_compat<EOP, ATYPE>::arith_compat(forest* arg1, forest* arg2,
     } else {
         checkAllRelations(__FILE__, __LINE__, SET);
     }
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+    checkAllLabelings(__FILE__, __LINE__, res->getEdgeLabeling());
 
     if (arg1->getRangeType() != arg2->getRangeType()) {
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -649,7 +649,7 @@ MEDDLY::arith_factor<EOP, ATYPE>::arith_factor(forest* arg1, forest* arg2,
     } else {
         checkAllRelations(__FILE__, __LINE__, SET);
     }
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+    checkAllLabelings(__FILE__, __LINE__, res->getEdgeLabeling());
 
     if (arg1->getRangeType() != arg2->getRangeType()) {
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -677,7 +677,7 @@ MEDDLY::arith_factor<EOP, ATYPE>::arith_factor(forest* arg1, forest* arg2,
     }
     // If we can't always factor to identity, then we need to store
     // the edge value for the first operand.
-    if (!EOP::alwaysFactorsToIdentity()) {
+    if (!ATYPE::alwaysFactorsToIdentity()) {
         ct->appendFixed(EOP::edgeValueTypeLetter());
     }
     ct->appendFixed(arg1);
@@ -820,7 +820,7 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
     if (forced_by_levels) {
         key[keyind++].setI(L);
     }
-    if (!EOP::alwaysFactorsToIdentity()) {
+    if (!ATYPE::alwaysFactorsToIdentity()) {
         key[keyind++].set(av);
     }
     key[keyind++].setN(A);
@@ -1446,13 +1446,13 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
 
 // ******************************************************************
 // *                                                                *
-// *                        mt_maximum class                        *
+// *                          mt_max class                          *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
     template <class RANGE>
-    struct mt_maximum {
+    struct mt_max {
         inline static const char* name() {
             return "max";
         }
@@ -1492,13 +1492,13 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                        mt_minimum class                        *
+// *                          mt_min class                          *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
     template <class RANGE>
-    struct mt_minimum {
+    struct mt_min {
         inline static const char* name() {
             return "min";
         }
@@ -1551,36 +1551,29 @@ namespace MEDDLY {
 //  ****************************************************************
 //   **************************************************************
 
-/*
-
-
-        /// Apply the operation on constant functions,
-        ///     <a,b> = <c,d> OP <e,f>
-        static void apply(const edge_value &c, node_handle d,
-                          const edge_value &e, node_handle f,
-                          edge_value &a, node_handle &b);
-
- */
-
 // ******************************************************************
 // *                                                                *
-// *                      evplus_maximum class                      *
+// *                        evplus_max class                        *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
     template <class EDGETYPE>
-    struct evplus_maximum {
-        inline static const char* name() {
+    struct evplus_max {
+        inline static const char* name()
+        {
             return "max";
         }
-        inline static bool commutes() {
+        inline static bool commutes()
+        {
             return true;
         }
-        inline static bool stopOnEqualArgs() {
+        inline static bool stopOnEqualArgs()
+        {
             return true;
         }
-        inline static void makeEqualResult(const forest*, node_handle &a) {
+        inline static void makeEqualResult(edge_value &av, node_handle &a)
+        {
             // max(a, a) = a; do nothing to a
         }
         inline static bool simplifiesToFirstArg(
@@ -1651,6 +1644,106 @@ namespace MEDDLY {
 
     };
 };
+// ******************************************************************
+// *                                                                *
+// *                        evplus_min class                        *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class EDGETYPE>
+    struct evplus_min {
+        inline static const char* name()
+        {
+            return "min";
+        }
+        inline static bool commutes()
+        {
+            return true;
+        }
+        inline static bool stopOnEqualArgs()
+        {
+            return true;
+        }
+        inline static void makeEqualResult(edge_value &av, node_handle &a)
+        {
+            // max(a, a) = a; do nothing to a
+        }
+        inline static bool simplifiesToFirstArg(
+                const edge_value &av, node_handle &a,
+                const edge_value &bv, node_handle b)
+        {
+            return (OMEGA_INFINITY == b);
+        }
+        inline static bool simplifiesToSecondArg(
+                const edge_value &av, node_handle a,
+                const edge_value &bv, node_handle &b)
+        {
+            return (OMEGA_INFINITY == a);
+        }
+
+        inline static void factor(
+                edge_value &c, node_handle d,
+                edge_value &e, node_handle f,
+                edge_value &a)
+        {
+            if (OMEGA_INFINITY == d) {
+                //
+                // left operand is infinity;
+                // factor using the right operand.
+                //
+                if (OMEGA_INFINITY == f) {
+                    a = edge_value(EDGETYPE(0));
+                } else {
+                    a = e;
+                    e = edge_value(EDGETYPE(0));
+                }
+            } else {
+                //
+                // Factor on left operand
+                //
+                a = c;
+                c = edge_value(EDGETYPE(0));
+                EDGETYPE av;
+                a.get(av);
+                e.subtract(av);
+            }
+        }
+
+        inline static bool alwaysFactorsToIdentity()
+        {
+            return true;
+        }
+
+        inline static void apply(const edge_value &c, node_handle d,
+                          const edge_value &e, node_handle f,
+                          edge_value &a, node_handle &b)
+        {
+            if (OMEGA_INFINITY == d)
+            {
+                a = e;
+                b = f;
+                return;
+            }
+            if (OMEGA_INFINITY == f)
+            {
+                a = c;
+                b = d;
+                return;
+            }
+
+            //
+            // both finite
+            //
+            b = OMEGA_NORMAL;
+            EDGETYPE cv, ev;
+            c.get(cv);
+            e.get(ev);
+            a = edge_value(MIN(cv, ev));
+        }
+
+    };
+};
 
 
 //   **************************************************************
@@ -1684,19 +1777,46 @@ MEDDLY::binary_operation* MEDDLY::MAXIMUM(forest* a, forest* b, forest* c)
     if (bop) {
         return bop;
     }
-    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+    if (c->isMultiTerminal()) {
         bool use_reals = (
             a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            bop = new arith_compat<EdgeOp_none, mt_maximum<float> > (a,b,c);
+            bop = new arith_compat<EdgeOp_none, mt_max<float> > (a,b,c);
         } else {
-            bop = new arith_compat<EdgeOp_none, mt_maximum<long> > (a,b,c);
+            bop = new arith_compat<EdgeOp_none, mt_max<long> > (a,b,c);
         }
         return MAXIMUM_cache.add( bop );
     }
 
+    if (c->isEVPlus()) {
+        switch (c->getEdgeType()) {
+            case edge_type::INT:
+                bop = new arith_factor<EdgeOp_plus<int>, evplus_max<int> >
+                        (a,b,c);
+                break;
+
+            case edge_type::LONG:
+                bop = new arith_factor<EdgeOp_plus<long>, evplus_max<long> >
+                        (a,b,c);
+                break;
+
+            case edge_type::FLOAT:
+                bop = new arith_factor<EdgeOp_plus<float>, evplus_max<float> >
+                        (a,b,c);
+                break;
+
+            case edge_type::DOUBLE:
+                bop = new arith_factor<EdgeOp_plus<double>, evplus_max<double> >
+                        (a,b,c);
+                break;
+
+            default:
+                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+        }
+        return MAXIMUM_cache.add( bop );
+    }
 
     // throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
     return nullptr;
@@ -1729,9 +1849,37 @@ MEDDLY::binary_operation* MEDDLY::MINIMUM(forest* a, forest* b, forest* c)
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            bop = new arith_compat<EdgeOp_none, mt_minimum<float> > (a,b,c);
+            bop = new arith_compat<EdgeOp_none, mt_min<float> > (a,b,c);
         } else {
-            bop = new arith_compat<EdgeOp_none, mt_minimum<long> > (a,b,c);
+            bop = new arith_compat<EdgeOp_none, mt_min<long> > (a,b,c);
+        }
+        return MINIMUM_cache.add( bop );
+    }
+
+    if (c->isEVPlus()) {
+        switch (c->getEdgeType()) {
+            case edge_type::INT:
+                bop = new arith_factor<EdgeOp_plus<int>, evplus_min<int> >
+                        (a,b,c);
+                break;
+
+            case edge_type::LONG:
+                bop = new arith_factor<EdgeOp_plus<long>, evplus_min<long> >
+                        (a,b,c);
+                break;
+
+            case edge_type::FLOAT:
+                bop = new arith_factor<EdgeOp_plus<float>, evplus_min<float> >
+                        (a,b,c);
+                break;
+
+            case edge_type::DOUBLE:
+                bop = new arith_factor<EdgeOp_plus<double>, evplus_min<double> >
+                        (a,b,c);
+                break;
+
+            default:
+                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         }
         return MINIMUM_cache.add( bop );
     }

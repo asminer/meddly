@@ -255,20 +255,20 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
 }
 
 template <typename TYPE>
-void test_sets(domain* D, range_type rt)
+void test_sets(domain* D, edge_labeling el, range_type rt)
 {
     policies p;
     p.useDefaults(SET);
 
     p.setFullyReduced();
 
-    forest* fully = forest::create(D, SET, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
+    forest* fully = forest::create(D, SET, rt, el, p);
+                    // edge_labeling::MULTI_TERMINAL, p);
 
     p.setQuasiReduced();
 
-    forest* quasi = forest::create(D, SET, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
+    forest* quasi = forest::create(D, SET, rt, el, p);
+                    // edge_labeling::MULTI_TERMINAL, p);
 
 
     for (unsigned i=MIN_SET_CARD; i<=MAX_SET_CARD; i*=MULT_SET_CARD) {
@@ -378,8 +378,10 @@ int main(int argc, const char** argv)
 
 #ifdef TEST_SETS
         domain* SD = SG.makeDomain();
-        test_sets<int>(SD, range_type::INTEGER);
-        test_sets<float>(SD, range_type::REAL);
+        test_sets<int>(SD, edge_labeling::MULTI_TERMINAL, range_type::INTEGER);
+        test_sets<float>(SD, edge_labeling::MULTI_TERMINAL, range_type::REAL);
+
+        test_sets<long>(SD, edge_labeling::EVPLUS, range_type::INTEGER);
         domain::destroy(SD);
 #endif
 
