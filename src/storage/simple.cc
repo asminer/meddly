@@ -1109,6 +1109,7 @@ MEDDLY::node_handle
 MEDDLY::simple_separated
 ::getDownPtr(node_address addr, int i) const
 {
+    MEDDLY_DCASSERT(i>=0);
   if (i<0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
 
   const node_handle* chunk = getChunkAddress(addr);

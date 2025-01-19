@@ -63,6 +63,7 @@ void check_equal_set(const dd_edge &E, const minterm &m, const rangeval &deflt)
     //
     minterm vars(E.getForest());
     rangeval Eval;
+    vars.setAllVars(0);
     do {
         E.evaluate(vars, Eval);
 
@@ -231,6 +232,7 @@ void check_equal_rel(const dd_edge &E, const minterm &m, const rangeval &deflt)
     //
     minterm vars(E.getForest());
     rangeval Eval;
+    vars.setAllVars(0, 0);
     do {
         E.evaluate(vars, Eval);
 
