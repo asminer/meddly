@@ -25,7 +25,7 @@
 #include "../oper_unary.h"
 #include "../ct_vector.h"
 
-// #define TRACE
+#define TRACE
 
 #ifdef TRACE
 #include "../operators.h"
@@ -802,8 +802,11 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
     ;
 
 #ifdef TRACE
-    out << ATYPE::name() << " arith_factor::compute(" << L << ", " << in << ", "
-        << A << ", " << B << ")\n";
+    out << ATYPE::name() << " arith_factor::compute(" << L << ", " << in << ", ";
+    arg1F->showEdge(out, av, A);
+    out << ", ";
+    arg2F->showEdge(out, bv, B);
+    out << ")\n";
     out << A << " level " << Alevel << "\n";
     out << B << " level " << Blevel << "\n";
     out << "result level " << Clevel << "\n";
@@ -922,8 +925,11 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
 #ifdef TRACE
     out.indent_less();
     out.put('\n');
-    out << ATYPE::name() << " arith_factor::compute(" << L << ", " << in << ", "
-        << A << ", " << B << ") done\n";
+    out << ATYPE::name() << " arith_factor::compute(" << L << ", " << in << ", ";
+    arg1F->showEdge(out, av, A);
+    out << ", ";
+    arg2F->showEdge(out, bv, B);
+    out << ") done\n";
     out << "  A: ";
     Au->show(out, true);
     out << "\n  B: ";
@@ -1246,12 +1252,11 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
     ;
 
 #ifdef TRACE
-    out << ATYPE::name() << " arith_pushdn::compute(" << L << ", " << in << ", "
-        << "<";
-    av.show(out);
-    out << ", " << A << ">, <";
-    bv.show(out);
-    out << ", " << B << ">)\n";
+    out << ATYPE::name() << " arith_pushdn::compute(" << L << ", " << in << ", ";
+    arg1F->showEdge(out, av, A);
+    out << ", ";
+    arg2F->showEdge(out, bv, B);
+    out << ")\n";
     out << A << " level " << Alevel << "\n";
     out << B << " level " << Blevel << "\n";
     out << "result level " << Clevel << "\n";
@@ -1367,12 +1372,11 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
 #ifdef TRACE
     out.indent_less();
     out.put('\n');
-    out << ATYPE::name() << " arith_pushdn::compute(" << L << ", " << in << ", "
-        << "<";
-    av.show(out);
-    out << ", " << A << ">, <";
-    bv.show(out);
-    out << ", " << B << ">) done\n";
+    out << ATYPE::name() << " arith_pushdn::compute(" << L << ", " << in << ", ";
+    arg1F->showEdge(out, av, A);
+    out << ", ";
+    arg2F->showEdge(out, bv, B);
+    out << ") done\n";
     out << "  A: ";
     Au->show(out, true);
     out << "\n  B: ";
