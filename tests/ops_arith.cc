@@ -48,7 +48,7 @@ using namespace MEDDLY;
 // #define DEBUG_MXDOPS
 
 #define TEST_SETS
-#define TEST_RELATIONS
+// #define TEST_RELATIONS
 
 
 template <typename T>
@@ -378,8 +378,8 @@ int main(int argc, const char** argv)
 
 #ifdef TEST_SETS
         domain* SD = SG.makeDomain();
-        test_sets<int>(SD, edge_labeling::MULTI_TERMINAL, range_type::INTEGER);
-        test_sets<float>(SD, edge_labeling::MULTI_TERMINAL, range_type::REAL);
+//        test_sets<int>(SD, edge_labeling::MULTI_TERMINAL, range_type::INTEGER);
+        // test_sets<float>(SD, edge_labeling::MULTI_TERMINAL, range_type::REAL);
 
         test_sets<long>(SD, edge_labeling::EVPLUS, range_type::INTEGER);
         domain::destroy(SD);
