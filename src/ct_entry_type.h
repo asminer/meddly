@@ -616,7 +616,7 @@ class MEDDLY::ct_entry_type {
 
               @return Total number of slots in the key.
         */
-        inline unsigned getKeySize(unsigned reps) const {
+        inline unsigned getKeySize(unsigned reps=0) const {
             return key_fixed.size() + (reps * key_repeating.size());
         }
 

@@ -25,7 +25,7 @@
 #include "../oper_unary.h"
 #include "../ct_vector.h"
 
-#define TRACE
+// #define TRACE
 
 #ifdef TRACE
 #include "../operators.h"
@@ -334,8 +334,8 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
     // Check the compute table
     //
     // **************************************************************
-    ct_vector key(forced_by_levels ? 3 : 2);
-    ct_vector res(1);
+    ct_vector key(ct->getKeySize());
+    ct_vector res(ct->getResultSize());
     if (forced_by_levels) {
         key[0].setI(L);
         key[1].setN(A);
@@ -817,8 +817,8 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
     // Check the compute table
     //
     // **************************************************************
-    ct_vector key(forced_by_levels ? 3 : 2);
-    ct_vector res(1);
+    ct_vector key(ct->getKeySize());
+    ct_vector res(ct->getResultSize());
     unsigned keyind=0;
     if (forced_by_levels) {
         key[keyind++].setI(L);
@@ -1267,8 +1267,8 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
     // Check the compute table
     //
     // **************************************************************
-    ct_vector key(forced_by_levels ? 3 : 2);
-    ct_vector res(1);
+    ct_vector key(ct->getKeySize());
+    ct_vector res(ct->getResultSize());
     unsigned keyind=0;
     if (forced_by_levels) {
         key[keyind++].setI(L);

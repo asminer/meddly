@@ -185,7 +185,11 @@ class MEDDLY::unpacked_node {
         {
             unpacked_node* U = New(f);
             MEDDLY_DCASSERT(U);
-            U->initIdentity(f, k, i, ev, node, fs);
+            if (ev.isVoid()) {
+                U->initIdentity(f, k, i, node, fs);
+            } else {
+                U->initIdentity(f, k, i, ev, node, fs);
+            }
             return U;
         }
 

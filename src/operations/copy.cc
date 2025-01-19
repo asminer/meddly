@@ -242,8 +242,8 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
     //
     // Check compute table
     //
-    ct_vector key(1);
-    ct_vector res( resF->isMultiTerminal() ? 1 : 2 );
+    ct_vector key(ct->getKeySize());
+    ct_vector res(ct->getResultSize());
     key[0].setN(A);
     if (ct->findCT(key, res)) {
         //

@@ -181,8 +181,8 @@ void MEDDLY::card_templ<RTYPE>::_compute(int L, node_handle A,
     //
     // Check compute table
     //
-    ct_vector key(1);
-    ct_vector res(1);
+    ct_vector key(ct->getKeySize());
+    ct_vector res(ct->getResultSize());
     key[0].setN(A);
     if (ct->findCT(key, res)) {
         RTYPE::set(result, res[0]);

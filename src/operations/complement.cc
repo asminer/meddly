@@ -204,8 +204,8 @@ void MEDDLY::compl_mt::_compute(int L, unsigned in,
     //
     // Check compute table
     //
-    ct_vector key(1);
-    ct_vector res(1);
+    ct_vector key(ct->getKeySize());
+    ct_vector res(ct->getResultSize());
     key[0].setN(A);
     if (ct->findCT(key, res)) {
         //

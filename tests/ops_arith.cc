@@ -50,6 +50,7 @@ using namespace MEDDLY;
 #define TEST_SETS
 // #define TEST_RELATIONS
 
+// #define EVPLUS_ONLY
 
 template <typename T>
 void Max(const std::vector <T> &A, const std::vector <T> &B,
@@ -378,10 +379,12 @@ int main(int argc, const char** argv)
 
 #ifdef TEST_SETS
         domain* SD = SG.makeDomain();
-//        test_sets<int>(SD, edge_labeling::MULTI_TERMINAL, range_type::INTEGER);
-        // test_sets<float>(SD, edge_labeling::MULTI_TERMINAL, range_type::REAL);
-
+#ifndef EVPLUS_ONLY
+        test_sets<int>(SD, edge_labeling::MULTI_TERMINAL, range_type::INTEGER);
+        test_sets<float>(SD, edge_labeling::MULTI_TERMINAL, range_type::REAL);
+#else
         test_sets<long>(SD, edge_labeling::EVPLUS, range_type::INTEGER);
+#endif
         domain::destroy(SD);
 #endif
 
