@@ -192,18 +192,22 @@ void MEDDLY::edge_value::show(output &s) const
 
         case edge_type::INT:
             s.put(ev_int);
+            s.put('I');
             return;
 
         case edge_type::LONG:
             s.put(ev_long);
+            s.put('L');
             return;
 
         case edge_type::FLOAT:
             s.put(ev_float);
+            s.put('F');
             return;
 
         case edge_type::DOUBLE:
             s.put(ev_double);
+            s.put('D');
             return;
 
         default:

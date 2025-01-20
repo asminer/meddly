@@ -47,7 +47,7 @@ using namespace MEDDLY;
 
 // #define DEBUG_MXDOPS
 
-#define TEST_SETS
+// #define TEST_SETS
 #define TEST_RELATIONS
 
 template <typename T>
@@ -386,8 +386,12 @@ int main(int argc, const char** argv)
 
 #ifdef TEST_RELATIONS
         domain* RD = RG.makeDomain();
+        /*
         test_rels<int>(RD, edge_labeling::MULTI_TERMINAL, range_type::INTEGER);
         test_rels<float>(RD, edge_labeling::MULTI_TERMINAL, range_type::REAL);
+        test_rels<long>(RD, edge_labeling::EVPLUS, range_type::INTEGER);
+        */
+        test_rels<float>(RD, edge_labeling::EVTIMES, range_type::REAL);
         domain::destroy(RD);
 #endif
 

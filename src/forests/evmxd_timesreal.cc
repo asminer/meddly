@@ -108,12 +108,12 @@ void MEDDLY::evmxd_timesreal
 void MEDDLY::evmxd_timesreal::showEdge(output &s, const edge_value &ev,
         node_handle d) const
 {
+    s.put('<');
+    ev.show(s);
+    s.put(", ");
     if (d == 0) {
-        s.put("<0, w>");
+        s.put("zero>");
     } else {
-        s.put('<');
-        s.put(ev.getFloat());
-        s.put("f, ");
         if (d < 0) {
             s.put('w');
         } else {

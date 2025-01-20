@@ -270,7 +270,7 @@ namespace MEDDLY {
         {
             nnz = 0;
             ev.set(EDGETYPE(0));
-            EDGETYPE firstval;
+            EDGETYPE firstval = 0;
             //
             // First scan: find the first non-zero edge
             //
