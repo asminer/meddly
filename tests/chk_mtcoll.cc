@@ -281,7 +281,6 @@ void test_sets_with_policies(domain *D, policies p)
     // EV+ Integer
     //
 
-    /*
     forest* Fevp  = forest::create(D, SET, range_type::INTEGER,
             edge_labeling::EVPLUS, p);
 
@@ -293,7 +292,6 @@ void test_sets_with_policies(domain *D, policies p)
     test_sets<false>(Fevp,  infty, intvals);
 
     forest::destroy(Fevp);
-    */
 }
 
 /*
@@ -541,7 +539,6 @@ void test_rels_with_policies(domain *D, policies p)
     // EV+ Integer
     //
 
-    /*
     forest* Fevp  = forest::create(D, RELATION, range_type::INTEGER,
             edge_labeling::EVPLUS, p);
 
@@ -553,7 +550,6 @@ void test_rels_with_policies(domain *D, policies p)
     test_rels<false>(Fevp,  infty, intvals);
 
     forest::destroy(Fevp);
-    */
 }
 
 /*

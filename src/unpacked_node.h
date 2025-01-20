@@ -38,6 +38,7 @@ namespace MEDDLY {
 
 #define ALLOW_SET_FROM_DDEDGE
 #define ALLOW_SET_FROM_POINTER
+// #define DEBUG_UNPACKED_HASH
 
 #define USE_STRUCT
 
@@ -423,6 +424,7 @@ class MEDDLY::unpacked_node {
             return _edge[n];
 #endif
         }
+
 
         /** Subtract from an edge value.
             @param  n       Which pointer
@@ -838,6 +840,10 @@ class MEDDLY::unpacked_node {
 
         /// Compute the node's hash
         void computeHash();
+
+#ifdef DEBUG_UNPACKED_HASH
+        void debugHash(output &s) const;
+#endif
 
         /// Checks if the node has no trailing redundant edges.
         /// I.e., the node does NOT have trailing edges that can

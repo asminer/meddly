@@ -244,9 +244,14 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
         case edge_labeling::EVPLUS:
         case edge_labeling::INDEX_SET:
                 MEDDLY_DCASSERT(isRangeType(range_type::INTEGER));
+                // TBD: allow other edge types other than long?
+                MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
                 ev.set(0L);
                 for (unsigned i=0; i<un->getSize(); i++) {
-                    if (0 == un->down(i)) continue;
+                    if (0 == un->down(i)) {
+                        un->setEdgeval(i, 0L);
+                        continue;
+                    }
                     ++nnz;
                     if (minplusone) {
                         if (un->edgeval(i).getLong() < ev.getLong()) {
@@ -262,14 +267,17 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
                     // non-zero adjustment
                     //
                     for (unsigned i=0; i<un->getSize(); i++) {
-                        if (0 == un->down(i)) continue;
-                        un->subtractFromEdge(i, ev.getLong());
+                        if (un->down(i)) {
+                            un->subtractFromEdge(i, ev.getLong());
+                        }
                     }
                 }
                 break;
 
         case edge_labeling::EVTIMES:
                 MEDDLY_DCASSERT(isRangeType(range_type::REAL));
+                // TBD: allow other edge types other than float?
+                MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
                 ev.set(0.0f);
                 minplusone = 0;
                 for (unsigned i=0; i<un->getSize(); i++) {
@@ -446,6 +454,23 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
 #ifdef DEVELOPMENT_CODE
     unpacked_node* key = newUnpacked(node, SPARSE_ONLY);
     key->computeHash();
+    if (key->hash() != un->hash())
+    {
+        FILE_output s(stderr);
+        s << "Hash mismatch\n";
+        s << "Original node: ";
+        un->show(s, true);
+        s << "\n";
+#ifdef DEBUG_UNPACKED_HASH
+        un->debugHash(s);
+#endif
+        s << "Sparse version: ";
+        key->show(s, true);
+        s << "\n";
+#ifdef DEBUG_UNPACKED_HASH
+        key->debugHash(s);
+#endif
+    }
     MEDDLY_DCASSERT(key->hash() == un->hash());
     node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
     MEDDLY_DCASSERT(f == node);
