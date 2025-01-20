@@ -216,8 +216,95 @@ MEDDLY::relation_node* MEDDLY::forest
     return implUT->getNode(rnh);
 }
 
+namespace MEDDLY {
+
+    //
+    // Template helper: normalizing EV+
+    //
+    template <typename EDGETYPE>
+    inline void normalize_evplus(unpacked_node &un, edge_value &ev,
+            unsigned &nnz)
+        {
+            nnz = 0;
+            ev.set(EDGETYPE(0));
+            EDGETYPE minval;
+            //
+            // First scan: find smallest value
+            //
+            for (unsigned i=0; i<un.getSize(); i++) {
+                if (0 == un.down(i)) {
+                    un.setEdgeval(i, ev);
+                    continue;
+                }
+                EDGETYPE uni;
+                un.edgeval(i).get(uni);
+                if (nnz) {
+                    if (uni < minval)
+                    {
+                        minval = uni;
+                    }
+                } else {
+                    minval = uni;
+                }
+                ++nnz;
+            }
+            //
+            // Second scan: adjust; unless adjustment is zero
+            //
+            if (minval) {
+                for (unsigned i=0; i<un.getSize(); i++) {
+                    if (un.down(i)) {
+                        un.subtractFromEdge(i, minval);
+                    }
+                }
+            }
+            ev.set(minval);
+        }
+
+    //
+    // Template helper: normalizing EV*
+    //
+    template <typename EDGETYPE>
+    inline void normalize_evstar(unpacked_node &un, edge_value &ev,
+            unsigned &nnz)
+        {
+            nnz = 0;
+            ev.set(EDGETYPE(0));
+            EDGETYPE firstval;
+            //
+            // First scan: find the first non-zero edge
+            //
+            for (unsigned i=0; i<un.getSize(); i++) {
+                if (0 == un.down(i)) {
+                    un.setEdgeval(i, ev);
+                    continue;
+                }
+                EDGETYPE uni;
+                un.edgeval(i).get(uni);
+                MEDDLY_DCASSERT(uni);
+                //
+                // Actual nonzero edge
+                //
+                if (!nnz) {
+                    firstval = uni;
+                }
+                ++nnz;
+            }
+            //
+            // Second scan: adjust; unless adjustment is zero or one
+            //
+            if (firstval && (firstval != 1)) {
+                for (unsigned i=0; i<un.getSize(); i++) {
+                    un.divideEdge(i, firstval);
+                }
+            }
+            ev.set(firstval);
+        }
+
+}
+
 void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
-                node_handle &node, int in)
+        node_handle &node, int in)
 {
     MEDDLY_DCASSERT(un);
 #ifdef DEBUG_CREATE_REDUCED
@@ -231,7 +318,6 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     // Normalize the node and count nonzeroes.
     //
     //
-    unsigned minplusone = 0;
     unsigned nnz = 0;
     switch (edgeLabel) {
         case edge_labeling::MULTI_TERMINAL:
@@ -244,6 +330,10 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
         case edge_labeling::EVPLUS:
         case edge_labeling::INDEX_SET:
                 MEDDLY_DCASSERT(isRangeType(range_type::INTEGER));
+
+                normalize_evplus<long>(*un, ev, nnz);
+
+                /*
                 // TBD: allow other edge types other than long?
                 MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
                 ev.set(0L);
@@ -272,10 +362,15 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
                         }
                     }
                 }
+                */
                 break;
 
         case edge_labeling::EVTIMES:
                 MEDDLY_DCASSERT(isRangeType(range_type::REAL));
+
+                normalize_evstar<float>(*un, ev, nnz);
+
+                /*
                 // TBD: allow other edge types other than float?
                 MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
                 ev.set(0.0f);
@@ -295,6 +390,7 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
                         un->divideEdge(i, ev.getFloat());
                     }
                 }
+                */
                 break;
 
         default:
