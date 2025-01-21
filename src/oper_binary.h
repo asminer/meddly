@@ -159,6 +159,19 @@ class MEDDLY::binary_operation : public operation {
                 throw error(error::TYPE_MISMATCH, file, line);
             }
         }
+        /// Make sure the arguments match the edge type
+        inline void checkAllEdgeTypes(const char* file, unsigned line,
+                edge_type et) const
+        {
+            if  (
+                    (arg1F->getEdgeType() != et)  ||
+                    (arg2F->getEdgeType() != et)  ||
+                    (resF->getEdgeType() != et)
+                )
+            {
+                throw error(error::TYPE_MISMATCH, file, line);
+            }
+        }
 
     public:
         /**

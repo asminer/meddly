@@ -174,10 +174,8 @@ MEDDLY::arith_compat<EOP, ATYPE>::arith_compat(forest* arg1, forest* arg2,
         checkAllRelations(__FILE__, __LINE__, SET);
     }
     checkAllLabelings(__FILE__, __LINE__, res->getEdgeLabeling());
-
-    if (arg1->getRangeType() != arg2->getRangeType()) {
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
+    checkAllRanges(__FILE__, __LINE__, res->getRangeType());
+    checkAllEdgeTypes(__FILE__, __LINE__, res->getEdgeType());
 
     //
     // Quick copying, even across forests, for terminal cases :)
@@ -650,10 +648,8 @@ MEDDLY::arith_factor<EOP, ATYPE>::arith_factor(forest* arg1, forest* arg2,
         checkAllRelations(__FILE__, __LINE__, SET);
     }
     checkAllLabelings(__FILE__, __LINE__, res->getEdgeLabeling());
-
-    if (arg1->getRangeType() != arg2->getRangeType()) {
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
+    checkAllRanges(__FILE__, __LINE__, res->getRangeType());
+    checkAllEdgeTypes(__FILE__, __LINE__, res->getEdgeType());
 
     //
     // Quick copying, even across forests, for terminal cases :)
@@ -1113,11 +1109,9 @@ MEDDLY::arith_pushdn<EOP, ATYPE>::arith_pushdn(forest* arg1, forest* arg2,
     } else {
         checkAllRelations(__FILE__, __LINE__, SET);
     }
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-
-    if (arg1->getRangeType() != arg2->getRangeType()) {
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
+    checkAllLabelings(__FILE__, __LINE__, res->getEdgeLabeling());
+    checkAllRanges(__FILE__, __LINE__, res->getRangeType());
+    checkAllEdgeTypes(__FILE__, __LINE__, res->getEdgeType());
 
     //
     // Quick copying, even across forests, for terminal cases :)
@@ -1815,13 +1809,13 @@ namespace MEDDLY {
                 } else {
                     EDGETYPE av;
                     e.get(av);
-                    a = av;
                     if (av < 0) {
                         av = -av;
                         e = EDGETYPE(-1);
                     } else {
                         e = EDGETYPE(1);
                     }
+                    a = av;
                 }
             } else {
                 //
@@ -1829,7 +1823,6 @@ namespace MEDDLY {
                 //
                 EDGETYPE av;
                 c.get(av);
-                a = av;
                 // normalize left operand
                 if (av < 0) {
                     av = -av;
@@ -1837,6 +1830,7 @@ namespace MEDDLY {
                 } else {
                     c = EDGETYPE(1);
                 }
+                a = av;
                 // normalize right operand
                 e.divide(av);
             }
@@ -1915,13 +1909,13 @@ namespace MEDDLY {
                 } else {
                     EDGETYPE av;
                     e.get(av);
-                    a = av;
                     if (av < 0) {
                         av = -av;
                         e = EDGETYPE(-1);
                     } else {
                         e = EDGETYPE(1);
                     }
+                    a = av;
                 }
             } else {
                 //
@@ -1929,7 +1923,6 @@ namespace MEDDLY {
                 //
                 EDGETYPE av;
                 c.get(av);
-                a = av;
                 // normalize left operand
                 if (av < 0) {
                     av = -av;
@@ -1937,6 +1930,7 @@ namespace MEDDLY {
                 } else {
                     c = EDGETYPE(1);
                 }
+                a = av;
                 // normalize right operand
                 e.divide(av);
             }
