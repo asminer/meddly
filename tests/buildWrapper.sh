@@ -8,8 +8,8 @@ for args; do
     then
         cmdline=`sed 's/\./ /g' <<< "$noext"`
         echo "#!/bin/bash" > $script
-        echo "echo \"Running $cmdline\"" >> $script
-        echo "./$cmdline" >> $script
+        echo "echo \"Running $cmdline \$@\"" >> $script
+        echo "./$cmdline \$@" >> $script
         chmod +x $script
     fi
 done

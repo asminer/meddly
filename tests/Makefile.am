@@ -98,90 +98,90 @@ AM_CXXFLAGS = -Wall
 #
 ###########################################
 
-chk_minterms.--set.--fully._sh:
+chk_minterms.--set.--fully._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-chk_minterms.--set.--quasi._sh:
+chk_minterms.--set.--quasi._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-chk_minterms.--rel.--fully._sh:
+chk_minterms.--rel.--fully._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-chk_minterms.--rel.--quasi._sh:
+chk_minterms.--rel.--quasi._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-chk_minterms.--rel.--ident._sh:
-	./buildWrapper.sh $@
-
-###########################################
-
-chk_mtcoll.--set.--fully._sh:
-	./buildWrapper.sh $@
-
-chk_mtcoll.--set.--quasi._sh:
-	./buildWrapper.sh $@
-
-chk_mtcoll.--rel.--fully._sh:
-	./buildWrapper.sh $@
-
-chk_mtcoll.--rel.--quasi._sh:
-	./buildWrapper.sh $@
-
-chk_mtcoll.--rel.--ident._sh:
+chk_minterms.--rel.--ident._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
 ###########################################
 
-ops_arith.--set.--MT.--int._sh:
+chk_mtcoll.--set.--fully._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-ops_arith.--set.--MT.--float._sh:
+chk_mtcoll.--set.--quasi._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-ops_arith.--set.--EVp.--long._sh:
+chk_mtcoll.--rel.--fully._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-ops_arith.--rel.--MT.--int._sh:
+chk_mtcoll.--rel.--quasi._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-ops_arith.--rel.--MT.--float._sh:
-	./buildWrapper.sh $@
-
-ops_arith.--rel.--EVp.--long._sh:
-	./buildWrapper.sh $@
-
-ops_arith.--rel.--EVs.--float._sh:
+chk_mtcoll.--rel.--ident._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
 ###########################################
 
-ops_comp.--set.--MT.--int._sh:
+ops_arith.--set.--MT.--int._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-ops_comp.--set.--MT.--float._sh:
+ops_arith.--set.--MT.--float._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-ops_comp.--set.--EVp.--long._sh:
+ops_arith.--set.--EVp.--long._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-ops_comp.--rel.--MT.--int._sh:
+ops_arith.--rel.--MT.--int._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-ops_comp.--rel.--MT.--float._sh:
+ops_arith.--rel.--MT.--float._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-ops_comp.--rel.--EVp.--long._sh:
+ops_arith.--rel.--EVp.--long._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-ops_comp.--rel.--EVs.--float._sh:
+ops_arith.--rel.--EVs.--float._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
 ###########################################
 
-ops_set.--set._sh:
+ops_comp.--set.--MT.--int._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-ops_set.--rel._sh:
+ops_comp.--set.--MT.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_comp.--set.--EVp.--long._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_comp.--rel.--MT.--int._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_comp.--rel.--MT.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_comp.--rel.--EVp.--long._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_comp.--rel.--EVs.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+###########################################
+
+ops_set.--set._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_set.--rel._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
 ###########################################
