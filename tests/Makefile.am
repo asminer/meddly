@@ -67,7 +67,15 @@ TESTS = \
     kanban \
     nodestor \
     nqueens \
-    ops_arith \
+    \
+    ops_arith.--set.--MT.--int._sh \
+    ops_arith.--set.--MT.--float._sh \
+    ops_arith.--set.--EVp.--long._sh \
+    ops_arith.--rel.--MT.--int._sh \
+    ops_arith.--rel.--MT.--float._sh \
+    ops_arith.--rel.--EVp.--long._sh \
+    ops_arith.--rel.--EVs.--float._sh \
+    \
     ops_comp \
     ops_set \
     refcount \
@@ -79,6 +87,7 @@ AM_CXXFLAGS = -Wall
 # Automatically build a wrapper script,
 # for tests with command line arguments.
 #
+###########################################
 
 chk_minterms.--set.--fully._sh:
 	./buildWrapper.sh $@
@@ -110,6 +119,29 @@ chk_mtcoll.--rel.--quasi._sh:
 	./buildWrapper.sh $@
 
 chk_mtcoll.--rel.--ident._sh:
+	./buildWrapper.sh $@
+
+###########################################
+
+ops_arith.--set.--MT.--int._sh:
+	./buildWrapper.sh $@
+
+ops_arith.--set.--MT.--float._sh:
+	./buildWrapper.sh $@
+
+ops_arith.--set.--EVp.--long._sh:
+	./buildWrapper.sh $@
+
+ops_arith.--rel.--MT.--int._sh:
+	./buildWrapper.sh $@
+
+ops_arith.--rel.--MT.--float._sh:
+	./buildWrapper.sh $@
+
+ops_arith.--rel.--EVp.--long._sh:
+	./buildWrapper.sh $@
+
+ops_arith.--rel.--EVs.--float._sh:
 	./buildWrapper.sh $@
 
 ###########################################

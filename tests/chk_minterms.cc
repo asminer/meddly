@@ -447,8 +447,6 @@ void setReductionLetter(policies &p, char letter)
 
 int main(int argc, const char** argv)
 {
-    using namespace std;
-
     bool sets = true;
     char reduction = 'F';
     long seed = 0;
