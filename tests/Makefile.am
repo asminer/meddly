@@ -112,6 +112,10 @@ chk_mtcoll.--rel.--quasi._sh:
 chk_mtcoll.--rel.--ident._sh:
 	./buildWrapper.sh $@
 
+###########################################
+
+clean-local:
+	rm -f *._sh
 
 #
 # non-test programs
