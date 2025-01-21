@@ -1,118 +1,23 @@
 
 Implement next:
 
+    * Migrate plus, minus, multiply, divide, and modulo
+        to arith.cc
 
-    RELEASE HERE
+    * cross product operation, and test case for it
 
+    * mdd2index operation, and test case(s) for it
 
+    * select operation, and test case for it
 
-    * super combined element-wise arithmetic into 1-3 mega operations
-        like we did for comparisons. Templatized using class with
-        inlined static methods.
+    RELEASE HERE PROBABLY
 
-        For multi-terminal:
+    * Design general purpose 'model' or 'transition relation' interface
 
-            // name for display purposes
-            const char* name();
+    * Relational product operations, using new interface
 
-            // does the operation commute, a OP b always equals b OP a
-            bool commutes();
+    * Saturation operations, using new interface
 
-            // does the given value act as an identity
-            // as the first operand: does x OP ? = ?
-            bool isLeftIdentity(node_handle x);
-
-            // does the given value act as an identity
-            // as the second operand: does ? OP x = ?
-            bool isRightIdentity(node_handle x);
-
-            // Apply on terminals
-            node_handle applyTerminals(const forest* fa, node_handle a,
-                            const forest* fb, node_handle b);
-
-
-
-        For "compatible" operators with the EV operator
-            (e.g., + or - on EV+; * or / on EV* )
-
-            // name for display purposes
-            const char* name();
-
-            // does the operation commute?
-            // this means its the same operation.
-            bool commutes();
-
-            // does the given edge value act as an identity
-            // as the second operand (also first, if we commute)
-            bool isIdentity(const edge_value& ev);
-
-            // Apply on two edge values
-            // c = a op b
-            applyEV(const edge_value &a, const edge_value &b, edge_value &c);
-
-
-            // For EV+ we can always strip off edge values:
-            //
-            //      (av + an()) - (bv + bn()) =
-            //      av-bv + an()-bn()
-            //
-            //      (av + an()) + (bv + bn()) =
-            //      av+bv + an()+bn()
-            //
-
-            // For EV* we can always strip off edge values:
-            //
-            //      (av * an()) / (bv * bn()) =
-            //      (av / bv) * (an() / bn())
-            //
-            //      (av * an()) * (bv * bn()) =
-            //      (av * bv) * (an() * bn())
-            //
-
-
-        For "factoring" operators w.r.t. the EV operator
-            (e.g., + or - on EV*; max or min on EV+)
-
-            // We can factor common EV out, meaning we can
-            // always normalize so that the first edge value is identity.
-            //
-            // (av * an()) + (bv * bn()) =
-            // av * [ (1 * an()) + (bv/av * bn()) ]
-            //
-            // (av + an()) max (bv + bn()) =
-            // av + [ (0 + an()) max (bv-av + bn()) ]
-            //
-
-
-        For "push down" operators
-
-
-        Operators: plus, minus, divide, multiply, modulo, max, min
-
-
-
-
-Current goal:
-    * Better centralized omega meanings
-    * Use 0 handle for "normal" omega, non-zeroes for special values
-        (could break lots of things)
-
-    * use COPY operation where it makes sense, e.g.,
-        terminal cases in cross-forest unions
-
-
-Interface changes (aside from moving header files around)
-======================================================================
-
-Make compute table interface easier to use for simple operations
-    (i.e., most of the time)
-
-Updates to operation interface:
-
-    * Add a 'temporary' node handle in unpacked_node,
-      will be marked during mark and sweep
-
-    * Allow (back) low-level interface
 
 
 Operation updates, to do:
@@ -124,24 +29,6 @@ Operation updates, to do:
 
 
 
-Next release:
-
-Finish Reimplementing operations.
-
-
-======================================================================
-
-generic EV 'operator' for edges should provide:
-
-    // Combine edge values a and b, store result in c
-    static inline void apply(const edge_value &a, const edge_value &b,
-        edge_value &c);
-
-    // Combine edge values a and b, store result in a
-    static inline void update(edge_value &a, const edge_value &b);
-
-    // "Clear" an edge value; i.e., make it the identity element
-    static inline void clear(edge_value &a);
 
 ======================================================================
 Completely reimplemented operations
@@ -274,27 +161,18 @@ relation_node.h         relation_node.cc
 ======================================================================
 Non-critical to do list (side quests)
 ======================================================================
-* Minterm collections, unioning with existing sets
-    full / sparse minterms
-    sets / relations
 
-* Evaluation by overloading() on dd_edge?
-    Using a single minterm? Or vector of integers?
-
-* Enumeration
-    Tie to evaluation?
-    Have 'fixed' variables and 'free' variables
-        all fixed: evaluation
-        all free:  old enumeration
-        primed / unprimed are fixed: like old row / col enumerators
-
-    Fixed levels: use full unpacked
-    Free levels : use sparse unpacked
+* unpacked nodes:
+    maintain 2 different free lists, one for sparse (has index array),
+    one for full.
+    Go back to non-struct form, see if it is faster
 
 * Creating functions for variables
     also functions of single variables
     currently in forest, does it belong there?
     maybe goes with sparse minterm collections?
+
+* remove or re-design logger class
 
 * all different operation
     intersect a function with 'this set of vars
