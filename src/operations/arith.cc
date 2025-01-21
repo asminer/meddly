@@ -2114,7 +2114,7 @@ MEDDLY::binary_operation* MEDDLY::MINIMUM(forest* a, forest* b, forest* c)
             default:
                 throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         }
-        return MAXIMUM_cache.add( bop );
+        return MINIMUM_cache.add( bop );
     }
 
 
