@@ -45,10 +45,6 @@ using namespace MEDDLY;
 
 // #define DEBUG_MXDOPS
 
-#define TEST_SETS
-#define TEST_RELATIONS
-
-
 template <typename T>
 void EQ(const std::vector <T> &A, const std::vector <T> &B,
         std::vector<bool> &C)
@@ -526,59 +522,4 @@ int main(int argc, const char** argv)
     }
     std::cerr << "\nSome other error?\n";
     return 4;
-    /*
-    using namespace std;
-
-    //
-    // First argument: seed
-    //
-    long seed = 0;
-    if (argv[1]) {
-        seed = atol(argv[1]);
-    }
-    vectorgen::setSeed(seed);
-
-
-    try {
-        MEDDLY::initialize();
-
-        //
-        // Test sets
-        //
-
-#ifdef TEST_SETS
-        domain* SD = SG.makeDomain();
-        test_sets<int>(SD, range_type::INTEGER);
-        test_sets<float>(SD, range_type::REAL);
-        domain::destroy(SD);
-#endif
-
-        //
-        // Test relations
-        //
-
-#ifdef TEST_RELATIONS
-        domain* RD = RG.makeDomain();
-        test_rels<int>(RD, range_type::INTEGER);
-        test_rels<float>(RD, range_type::REAL);
-        domain::destroy(RD);
-#endif
-
-        MEDDLY::cleanup();
-        return 0;
-    }
-
-    catch (MEDDLY::error e) {
-        std::cerr   << "\nCaught meddly error " << e.getName()
-                    << "\n    thrown in " << e.getFile()
-                    << " line " << e.getLine() << "\n";
-        return 1;
-    }
-    catch (const char* e) {
-        std::cerr << "\nCaught our own error: " << e << "\n";
-        return 2;
-    }
-    std::cerr << "\nSome other error?\n";
-    return 4;
-    */
 }

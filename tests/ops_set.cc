@@ -44,7 +44,6 @@ using namespace MEDDLY;
 
 // #define DEBUG_OPS
 
-
 unsigned set_cardinality(const std::vector <bool> &A)
 {
     unsigned card = 0;
