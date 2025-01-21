@@ -398,6 +398,47 @@ void test_rels_with_policies(domain *D, policies p)
     test_rels(Fevt, -2.5, 0.0);
 }
 
+void usage(const char* arg0)
+{
+    /* Strip leading directory, if any: */
+    const char* name = arg0;
+    for (const char* ptr=arg0; *ptr; ptr++) {
+        if ('/' == *ptr) name = ptr+1;
+    }
+    std::cerr << "\nUsage: " << name << "options seed\n\n";
+    std::cerr << "Options:\n";
+    std::cerr << "    --set:    Test sets (default).\n";
+    std::cerr << "    --rel:    Test relations\n";
+    std::cerr << "\n";
+    std::cerr << "    --quasi:  Test quasi reduced\n";
+    std::cerr << "    --fully:  Test fully reduced (default).\n";
+    std::cerr << "    --ident:  Test identity reduced (relations only)\n";
+    std::cerr << "\n";
+
+    exit(1);
+}
+
+void setReductionLetter(policies &p, char letter)
+{
+    switch (letter)
+    {
+        case 'Q':
+            p.setQuasiReduced();
+            return;
+
+        case 'F':
+            p.setFullyReduced();
+            return;
+
+        case 'I':
+            p.setIdentityReduced();
+            return;
+
+        default:
+            throw "Unknown reduction";
+    }
+}
+
 /*
  *
  * Main
@@ -408,51 +449,68 @@ int main(int argc, const char** argv)
 {
     using namespace std;
 
-    //
-    // First argument: seed
-    //
+    bool sets = true;
+    char reduction = 'F';
     long seed = 0;
-    if (argv[1]) {
-        seed = atol(argv[1]);
+
+    for (int i=1; i<argc; i++) {
+
+        if (0==strcmp("--set", argv[i])) {
+            sets = true;
+            continue;
+        }
+        if (0==strcmp("--rel", argv[i])) {
+            sets = false;
+            continue;
+        }
+        if (0==strcmp("--quasi", argv[i])) {
+            reduction = 'Q';
+            continue;
+        }
+        if (0==strcmp("--fully", argv[i])) {
+            reduction = 'F';
+            continue;
+        }
+        if (0==strcmp("--ident", argv[i])) {
+            reduction = 'I';
+            continue;
+        }
+
+        if ((argv[i][0] < '0') || (argv[i][0] > '9')) {
+            usage(argv[0]);
+        }
+
+        seed = atol(argv[i]);
     }
+
+    if (('I' == reduction) && sets) {
+        std::cerr << "Cannot use identity with sets.\n";
+        usage(argv[0]);
+    }
+
+    //
+    // Set seed
+    //
     vectorgen::setSeed(seed);
 
     try {
         MEDDLY::initialize();
-#ifdef TEST_SETS
-        domain* SD = SG.makeDomain();
-        policies Sp;
-        Sp.useDefaults(SET);
 
-        // Test fully-reduced set forests
-        Sp.setFullyReduced();
-        test_sets_with_policies(SD, Sp);
-
-        // Test quasi-reduced set forests
-        Sp.setQuasiReduced();
-        test_sets_with_policies(SD, Sp);
-
-        domain::destroy(SD);
-#endif
-#ifdef TEST_RELS
-        domain* RD = RG.makeDomain();
-        policies Rp;
-        Rp.useDefaults(RELATION);
-
-        // Test fully-reduced set forests
-        Rp.setFullyReduced();
-        test_rels_with_policies(RD, Rp);
-
-        // Test identity-reduced set forests
-        Rp.setIdentityReduced();
-        test_rels_with_policies(RD, Rp);
-
-        // Test quasi-reduced set forests
-        Rp.setQuasiReduced();
-        test_rels_with_policies(RD, Rp);
-
-        domain::destroy(RD);
-#endif
+        if (sets) {
+            domain* D = SG.makeDomain();
+            policies p;
+            p.useDefaults(SET);
+            setReductionLetter(p, reduction);
+            test_sets_with_policies(D, p);
+            domain::destroy(D);
+        } else {
+            domain* D = RG.makeDomain();
+            policies p;
+            p.useDefaults(RELATION);
+            setReductionLetter(p, reduction);
+            test_rels_with_policies(D, p);
+            domain::destroy(D);
+        }
         MEDDLY::cleanup();
         return 0;
     }

@@ -3,6 +3,7 @@
 .dirstamp
 *.log
 *.trs
+*._sh
 .libs
 bug_00
 bug_01

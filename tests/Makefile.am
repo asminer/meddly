@@ -44,8 +44,19 @@ TESTS = \
     chk_ct \
     chk_ct_old \
     chk_iters \
-    chk_minterms \
-    chk_mtcoll \
+    \
+    chk_minterms.--set.--fully._sh \
+    chk_minterms.--set.--quasi._sh \
+    chk_minterms.--rel.--fully._sh \
+    chk_minterms.--rel.--quasi._sh \
+    chk_minterms.--rel.--ident._sh \
+    \
+    chk_mtcoll.--set.--fully._sh \
+    chk_mtcoll.--set.--quasi._sh \
+    chk_mtcoll.--rel.--fully._sh \
+    chk_mtcoll.--rel.--quasi._sh \
+    chk_mtcoll.--rel.--ident._sh \
+    \
     chk_reorder \
     ddedge \
     domain_list \
@@ -63,6 +74,44 @@ TESTS = \
     sat_test
 
 AM_CXXFLAGS = -Wall
+
+#
+# Automatically build a wrapper script,
+# for tests with command line arguments.
+#
+
+chk_minterms.--set.--fully._sh:
+	./buildWrapper.sh $@
+
+chk_minterms.--set.--quasi._sh:
+	./buildWrapper.sh $@
+
+chk_minterms.--rel.--fully._sh:
+	./buildWrapper.sh $@
+
+chk_minterms.--rel.--quasi._sh:
+	./buildWrapper.sh $@
+
+chk_minterms.--rel.--ident._sh:
+	./buildWrapper.sh $@
+
+###########################################
+
+chk_mtcoll.--set.--fully._sh:
+	./buildWrapper.sh $@
+
+chk_mtcoll.--set.--quasi._sh:
+	./buildWrapper.sh $@
+
+chk_mtcoll.--rel.--fully._sh:
+	./buildWrapper.sh $@
+
+chk_mtcoll.--rel.--quasi._sh:
+	./buildWrapper.sh $@
+
+chk_mtcoll.--rel.--ident._sh:
+	./buildWrapper.sh $@
+
 
 #
 # non-test programs
