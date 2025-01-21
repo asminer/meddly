@@ -1,9 +1,6 @@
 
 Implement next:
 
-    * MAXIMUM, MINIMUM operations to finish off minterm collection builds
-        + and test cases (add to chk_mtcoll)
-
     * Comparisons for EV+, EV*
         + add test cases to ops_comp
 

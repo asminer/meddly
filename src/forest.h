@@ -172,6 +172,11 @@ namespace MEDDLY {
                 // Keep compiler happy:
                 return terminal(p, terminal_type::OMEGA);
             }
+            static inline bool isZeroFunction(const edge_value &val,
+                    node_handle p)
+            {
+                return (0==p);
+            }
 
     };
 };
@@ -237,6 +242,14 @@ namespace MEDDLY {
                     return terminal(v);
                 }
                 return terminal(p, terminal_type::OMEGA);
+            }
+            static inline bool isZeroFunction(const edge_value &val,
+                    node_handle p)
+            {
+                if (p != OMEGA_NORMAL) return false;
+                TYPE bv;
+                val.get(bv);
+                return (0==bv);
             }
     };
     template <>
@@ -317,6 +330,11 @@ namespace MEDDLY {
                     return terminal(v);
                 }
                 return terminal(p, terminal_type::OMEGA);
+            }
+            static inline bool isZeroFunction(const edge_value &val,
+                    node_handle p)
+            {
+                return (OMEGA_ZERO == p);
             }
     };
     template <>

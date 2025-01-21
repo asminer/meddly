@@ -51,8 +51,15 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
+// ******************************************************************
+// *                                                                *
+// *                        compare_mt class                        *
+// *                                                                *
+// ******************************************************************
+
 /*
-    Required methods for CTYPE classes (should be inlined):
+    Required methods for CTYPE classes (should be inlined)
+    for multi-terminal comparisons:
 
         /// Get the operation name, for display purposes
         static const char* name();
@@ -70,12 +77,6 @@ namespace MEDDLY {
                             const forest* fb, node_handle b);
 
  */
-
-// ******************************************************************
-// *                                                                *
-// *                        compare_mt class                        *
-// *                                                                *
-// ******************************************************************
 
 namespace MEDDLY {
     template <class CTYPE>
@@ -420,25 +421,263 @@ void MEDDLY::compare_mt<CTYPE>::_compute(int L, unsigned in,
 
 // ******************************************************************
 // *                                                                *
-// *                         eq_templ class                         *
+// *                        compare_ev class                        *
+// *                                                                *
+// ******************************************************************
+
+/*
+    Required methods for CTYPE classes (should be inlined)
+    for edge-valued comparisons:
+
+        /// Get the operation name, for display purposes
+        static const char* name();
+
+        /// Is the comparison relation symmetric?
+        /// Should be true for == and !=, false for the others.
+        static bool isSymmetric();
+
+        /// Is the comparison relation reflexive?
+        /// I.e., does x ~ x always evaluate to true, or to false?
+        static bool isReflexive();
+
+        /// Is the comparison always true or false?
+        /// E.g., x < infinity
+        static bool isSpecialCase(
+                const edge_value& av, node_handle ap,
+                const edge_value& bv, node_handle bp,
+                bool &answer);
+
+        ///
+        /// Factor for <c,d> OP <e,f>.
+        ///     On output, c will be -a + c, and e will be -a + e.
+        ///
+        static void factor(edge_value &c, node_handle d, edge_value &e,
+            node_handle f, edge_value &a);
+
+        ///
+        /// Will factoring always produce the identity edge value
+        /// for the first element?
+        ///
+        static bool alwaysFactorsToIdentity();
+
+
+        /// Compare constant functions <av, ap> and <bv, bp>
+        static bool compare(const edge_value& av, node_handle ap,
+                            const edge_value& bv, node_handle bp);
+
+ */
+
+namespace MEDDLY {
+    template <class EOP, class CTYPE>
+    class compare_ev : public binary_operation {
+        public:
+            compare_ev(forest* arg1, forest* arg2, forest* res);
+            virtual ~compare_ev();
+
+            virtual void compute(int L, unsigned in,
+                    const edge_value &av, node_handle ap,
+                    const edge_value &bv, node_handle bp,
+                    edge_value &cv, node_handle &cp);
+
+        protected:
+            void _compute(int L, unsigned in,
+                    edge_value av, node_handle A,
+                    edge_value bv, node_handle B,
+                    node_handle &C);
+
+        private:
+
+            inline int topLevelOf(int L, int alevel, int blevel) const
+            {
+                if (forced_by_levels) return L;
+                if (resF->isForRelations()) {
+                    return MXD_levels::topLevel(alevel, blevel);
+                } else {
+                    return MDD_levels::topLevel(alevel, blevel);
+                }
+            }
+
+        private:
+            ct_entry_type* ct;
+#ifdef TRACE
+            ostream_output out;
+            unsigned top_count;
+#endif
+            bool forced_by_levels;
+    };
+};
+
+// ******************************************************************
+
+template <class EOP, class CTYPE>
+MEDDLY::compare_ev<EOP, CTYPE>::compare_ev(forest* arg1, forest* arg2,
+        forest* res) : binary_operation(arg1, arg2, res)
+#ifdef TRACE
+      , out(std::cout), top_count(0)
+#endif
+{
+    checkDomains(__FILE__, __LINE__);
+    if (res->isForRelations()) {
+        checkAllRelations(__FILE__, __LINE__, RELATION);
+    } else {
+        checkAllRelations(__FILE__, __LINE__, SET);
+    }
+    if (arg1->getEdgeLabeling() != arg2->getEdgeLabeling()) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+    if (arg1->getRangeType() != arg2->getRangeType()) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    //
+    // Do we need to recurse by levels and store level info in the CT?
+    // YES, if either forest is identity-reduced
+    //      (even if the other is quasi-reduced, because we can
+    //       still jump to terminal 0)
+    //
+    forced_by_levels = arg1->isIdentityReduced() || arg2->isIdentityReduced();
+
+    // Build compute table key and result types.
+    // If we recurse by levels, then we need the level as part of the key.
+    ct = new ct_entry_type(CTYPE::name());
+    if (forced_by_levels) {
+        ct->appendFixed('I');
+    }
+    // If we can't always factor to identity, then we need to store
+    // the edge value for the first operand.
+    if (!CTYPE::alwaysFactorsToIdentity()) {
+        ct->appendFixed(EOP::edgeValueTypeLetter());
+    }
+    ct->appendFixed(arg1);
+    ct->appendFixed(EOP::edgeValueTypeLetter());
+    ct->appendFixed(arg2);
+    ct->setResult(res);
+    ct->doneBuilding();
+}
+
+template <class EOP, class CTYPE>
+MEDDLY::compare_ev<EOP, CTYPE>::~compare_ev()
+{
+    ct->markForDestroy();
+}
+
+template <class EOP, class CTYPE>
+void MEDDLY::compare_ev<EOP, CTYPE>::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap,
+        const edge_value &bv, node_handle bp,
+        edge_value &cv, node_handle &cp)
+{
+#ifdef TRACE
+    out.indentation(0);
+    ++top_count;
+    out << CTYPE::name() << " #" << top_count << " begin\n";
+#endif
+    MEDDLY_DCASSERT(av.isVoid());
+    MEDDLY_DCASSERT(bv.isVoid());
+
+    _compute(L, in, av, ap, bv, bp, cp);
+
+#ifdef TRACE
+    out << CTYPE::name() << " #" << top_count << " end\n";
+#endif
+    cv.set();
+}
+
+template <class EOP, class CTYPE>
+void MEDDLY::compare_ev<EOP, CTYPE>::_compute(int L, unsigned in,
+        edge_value av, node_handle A,
+        edge_value bv, node_handle B, node_handle &C)
+{
+    // **************************************************************
+    //
+    // Check terminal cases
+    //
+    // **************************************************************
+
+    //
+    // Both are the zero function.
+    //
+    if (EOP::isZeroFunction(av, A) && EOP::isZeroFunction(bv, B))
+    {
+        terminal tt(CTYPE::isReflexive(), resF->getTerminalType());
+        C = resF->makeRedundantsTo(tt.getHandle(), 0, L);
+        return;
+    }
+
+    //
+    // Arguments are equal.
+    //
+    if ((arg1F == arg2F) && (A == B) && (av == bv)) {
+        terminal tt(CTYPE::isReflexive(), resF->getTerminalType());
+        C = resF->makeRedundantsTo(tt.getHandle(), 0, L);
+        return;
+    }
+
+    //
+    // Other special cases, like everything is less than infinity
+    //
+    bool answer;
+    if (CTYPE::isSpecialCase(av, A, bv, B, answer)) {
+        terminal tt(answer, resF->getTerminalType());
+        C = resF->makeRedundantsTo(tt.getHandle(), 0, L);
+        return;
+    }
+
+    //
+    // Both are constant functions.
+    //
+    if (arg1F->isTerminalNode(A) && arg2F->isTerminalNode(B)) {
+        if (0==L || !forced_by_levels) {
+            terminal tt( CTYPE::compare(av, A, bv, B), resF->getTerminalType() );
+            C = resF->makeRedundantsTo(tt.getHandle(), 0, L);
+            return;
+        }
+    }
+
+    //
+    // Reorder A and B if the comparison is symmetric
+    // and A,B are from the same forest
+    //
+    if (CTYPE::isSymmetric() && arg1F == arg2F) {
+        if (A > B) {
+            SWAP(A, B);
+            SWAP(av, bv);
+        }
+    }
+
+    //
+    // "normalize" the edge values
+    //
+    edge_value fac;
+    CTYPE::factor(av, A, bv, B, fac);
+
+
+
+// TBD HERE
+
+}
+
+// ******************************************************************
+// *                                                                *
+// *                          eq_mt  class                          *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
-    template <class RANGE>
-    struct eq_templ {
+    struct eq_base {
         inline static const char* name() {
             return "==";
         }
-
         inline static bool isSymmetric() {
             return true;    // x == y is the same as y == x
         }
-
         inline static bool isReflexive() {
             return true;    // x == x is true
         }
+    };
 
+    template <class RANGE>
+    struct eq_mt : public eq_base {
         inline static bool compare(const forest* fa, node_handle a,
                 const forest* fb, node_handle b)
         {
@@ -453,25 +692,24 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                         ne_templ class                         *
+// *                          ne_mt  class                          *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
-    template <class RANGE>
-    struct ne_templ {
+    struct ne_base {
         inline static const char* name() {
             return "!=";
         }
-
         inline static bool isSymmetric() {
             return true;    // x != y is the same as y != x
         }
-
         inline static bool isReflexive() {
             return false;   // x != x is false
         }
-
+    };
+    template <class RANGE>
+    struct ne_mt : public ne_base {
         inline static bool compare(const forest* fa, node_handle a,
                 const forest* fb, node_handle b)
         {
@@ -485,25 +723,24 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                         gt_templ class                         *
+// *                          gt_mt  class                          *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
-    template <class RANGE>
-    struct gt_templ {
+    struct gt_base {
         inline static const char* name() {
             return ">";
         }
-
         inline static bool isSymmetric() {
             return false;   // x > y is not the same as y > x
         }
-
         inline static bool isReflexive() {
             return false;   // x > x is false
         }
-
+    };
+    template <class RANGE>
+    struct gt_mt : public gt_base {
         inline static bool compare(const forest* fa, node_handle a,
                 const forest* fb, node_handle b)
         {
@@ -517,25 +754,24 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                         ge_templ class                         *
+// *                          ge_mt  class                          *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
-    template <class RANGE>
-    struct ge_templ {
+    struct ge_base {
         inline static const char* name() {
             return ">=";
         }
-
         inline static bool isSymmetric() {
             return false;   // x >= y is not the same as y >= x
         }
-
         inline static bool isReflexive() {
             return true;    // x >= x is true
         }
-
+    };
+    template <class RANGE>
+    struct ge_mt : public ge_base {
         inline static bool compare(const forest* fa, node_handle a,
                 const forest* fb, node_handle b)
         {
@@ -549,25 +785,24 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                         lt_templ class                         *
+// *                          lt_mt  class                          *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
-    template <class RANGE>
-    struct lt_templ {
+    struct lt_base {
         inline static const char* name() {
             return "<";
         }
-
         inline static bool isSymmetric() {
             return false;   // x < y is not the same as y < x
         }
-
         inline static bool isReflexive() {
             return false;   // x < x is false
         }
-
+    };
+    template <class RANGE>
+    struct lt_mt : public lt_base {
         inline static bool compare(const forest* fa, node_handle a,
                 const forest* fb, node_handle b)
         {
@@ -581,25 +816,24 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                         le_templ class                         *
+// *                          le_mt  class                          *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
-    template <class RANGE>
-    struct le_templ {
+    struct le_base {
         inline static const char* name() {
             return "<=";
         }
-
         inline static bool isSymmetric() {
             return false;   // x <= y is not the same as y <= x
         }
-
         inline static bool isReflexive() {
             return true;    // x <= x is true
         }
-
+    };
+    template <class RANGE>
+    struct le_mt : public le_base {
         inline static bool compare(const forest* fa, node_handle a,
                 const forest* fb, node_handle b)
         {
@@ -637,9 +871,9 @@ MEDDLY::binary_operation* MEDDLY::EQUAL(forest* a, forest* b, forest* c)
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            return EQUAL_cache.add( new compare_mt<eq_templ<float> > (a,b,c) );
+            return EQUAL_cache.add( new compare_mt<eq_mt<float> > (a,b,c) );
         } else {
-            return EQUAL_cache.add( new compare_mt<eq_templ<long> > (a,b,c) );
+            return EQUAL_cache.add( new compare_mt<eq_mt<long> > (a,b,c) );
         }
     }
 
@@ -679,9 +913,9 @@ MEDDLY::binary_operation* MEDDLY::NOT_EQUAL(forest* a, forest* b, forest* c)
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            return NEQ_cache.add( new compare_mt<ne_templ<float> > (a,b,c) );
+            return NEQ_cache.add( new compare_mt<ne_mt<float> > (a,b,c) );
         } else {
-            return NEQ_cache.add( new compare_mt<ne_templ<long> > (a,b,c) );
+            return NEQ_cache.add( new compare_mt<ne_mt<long> > (a,b,c) );
         }
     }
 
@@ -715,9 +949,9 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN(forest* a, forest* b, forest* c)
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            return GT_cache.add( new compare_mt<gt_templ<float> > (a,b,c) );
+            return GT_cache.add( new compare_mt<gt_mt<float> > (a,b,c) );
         } else {
-            return GT_cache.add( new compare_mt<gt_templ<long> > (a,b,c) );
+            return GT_cache.add( new compare_mt<gt_mt<long> > (a,b,c) );
         }
     }
 
@@ -751,9 +985,9 @@ MEDDLY::binary_operation* MEDDLY::GREATER_THAN_EQUAL(forest* a, forest* b, fores
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            return GE_cache.add( new compare_mt<ge_templ<float> > (a,b,c) );
+            return GE_cache.add( new compare_mt<ge_mt<float> > (a,b,c) );
         } else {
-            return GE_cache.add( new compare_mt<ge_templ<long> > (a,b,c) );
+            return GE_cache.add( new compare_mt<ge_mt<long> > (a,b,c) );
         }
     }
 
@@ -787,9 +1021,9 @@ MEDDLY::binary_operation* MEDDLY::LESS_THAN(forest* a, forest* b, forest* c)
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            return LT_cache.add( new compare_mt<lt_templ<float> > (a,b,c) );
+            return LT_cache.add( new compare_mt<lt_mt<float> > (a,b,c) );
         } else {
-            return LT_cache.add( new compare_mt<lt_templ<long> > (a,b,c) );
+            return LT_cache.add( new compare_mt<lt_mt<long> > (a,b,c) );
         }
     }
 
@@ -823,9 +1057,9 @@ MEDDLY::binary_operation* MEDDLY::LESS_THAN_EQUAL(forest* a, forest* b, forest* 
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            return LE_cache.add( new compare_mt<le_templ<float> > (a,b,c) );
+            return LE_cache.add( new compare_mt<le_mt<float> > (a,b,c) );
         } else {
-            return LE_cache.add( new compare_mt<le_templ<long> > (a,b,c) );
+            return LE_cache.add( new compare_mt<le_mt<long> > (a,b,c) );
         }
     }
 
