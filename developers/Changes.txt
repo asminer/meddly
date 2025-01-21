@@ -147,15 +147,18 @@ generic EV 'operator' for edges should provide:
 Completely reimplemented operations
 ======================================================================
 
+arith.cc            max, min            working
+                    +, -, *, /, %       not done yet
+
 cardinality.cc      yes
 compare.cc          yes
 complement.cc       yes
 copy.cc             yes
 
 difference.cc       yes
-intersection.cc     yes         tbd: evplus (move to max)
+intersection.cc     yes
 maxmin_range.cc     yes
-union.cc            yes         tbd: evplus (move to min)
+union.cc            yes
 
 ======================================================================
 Operations that need updating
@@ -176,12 +179,6 @@ cycle.cc
 divide.cc
         NO      divide_mdd
         NO      divide_mxd
-
-maxmin.cc
-        NO      maximum_mdd
-        NO      maximum_mxd
-        NO      minimum_mdd
-        NO      minimum_mxd
 
 mdd2index.cc
         NO      mdd2index_operation
@@ -250,14 +247,6 @@ select.cc
 
 transitive_closure.cc
         NO      transitive_closure_forwd_dfs
-
-union.cc
-        tbd     union_mt    (combines old union_mdd and union_mxd)
-
-        YES*    union_mdd
-        YES*    union_mxd
-        NO      union_min_evplus
-        NO      union_min_evplus_mxd
 
 vect_matr.cc
         N/A     VM_evplus_mt

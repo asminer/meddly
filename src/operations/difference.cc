@@ -510,11 +510,7 @@ MEDDLY::DIFFERENCE(forest* a, forest* b, forest* c)
         return bop;
     }
 
-    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-        return DIFFR_cache.add(new diffr_mt(a, b, c));
-    }
-
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    return DIFFR_cache.add(new diffr_mt(a, b, c));
 }
 
 void MEDDLY::DIFFERENCE_init()

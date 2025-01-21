@@ -165,17 +165,17 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
 #endif
     level = k;
 
-    if (SPARSE_ONLY == fs) {
-        setSparse();
-        for (unsigned i=0; i<getSize(); i++) {
-            setSparse(i, i, node);
-        }
-    } else {
+    if (FULL_ONLY == fs) {
         setFull();
         for (unsigned i=0; i<getSize(); i++) {
             setFull(i, node);
         }
         is_full = true;
+    } else {
+        setSparse();
+        for (unsigned i=0; i<getSize(); i++) {
+            setSparse(i, i, node);
+        }
     }
 
     setRedundant();
@@ -196,15 +196,15 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
 #endif
     level = k;
 
-    if (SPARSE_ONLY == fs) {
-        setSparse();
-        for (unsigned i=0; i<getSize(); i++) {
-            setSparse(i, i, ev, node);
-        }
-    } else {
+    if (FULL_ONLY == fs) {
         setFull();
         for (unsigned i=0; i<getSize(); i++) {
             setFull(i, ev, node);
+        }
+    } else {
+        setSparse();
+        for (unsigned i=0; i<getSize(); i++) {
+            setSparse(i, i, ev, node);
         }
     }
 
