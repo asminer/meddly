@@ -78,8 +78,11 @@ TESTS = \
     \
     ops_comp.--set.--MT.--int._sh \
     ops_comp.--set.--MT.--float._sh \
+    ops_comp.--set.--EVp.--long._sh \
     ops_comp.--rel.--MT.--int._sh \
     ops_comp.--rel.--MT.--float._sh \
+    ops_comp.--rel.--EVp.--long._sh \
+    ops_comp.--rel.--EVs.--float._sh \
     \
     ops_set.--set._sh \
     ops_set.--rel._sh \
@@ -158,10 +161,19 @@ ops_comp.--set.--MT.--int._sh:
 ops_comp.--set.--MT.--float._sh:
 	./buildWrapper.sh $@
 
+ops_comp.--set.--EVp.--long._sh:
+	./buildWrapper.sh $@
+
 ops_comp.--rel.--MT.--int._sh:
 	./buildWrapper.sh $@
 
 ops_comp.--rel.--MT.--float._sh:
+	./buildWrapper.sh $@
+
+ops_comp.--rel.--EVp.--long._sh:
+	./buildWrapper.sh $@
+
+ops_comp.--rel.--EVs.--float._sh:
 	./buildWrapper.sh $@
 
 ###########################################

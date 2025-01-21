@@ -30,8 +30,8 @@
 // Minterm generators :)
 //
 
-vectorgen SG(MEDDLY::SET, 8, 4, 5);
-vectorgen RG(MEDDLY::RELATION, 5, 3, 5);
+vectorgen SG(MEDDLY::SET, 8, 4);
+vectorgen RG(MEDDLY::RELATION, 5, 3);
 
 const unsigned NUM_MINTERMS = 9;
 

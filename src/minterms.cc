@@ -150,8 +150,10 @@ namespace MEDDLY {
             {
                 if (default_is_zero) {
                     // n is sparse
-                    n->setSparse(z, ndx, cv, cn);
-                    ++z;
+                    if (!F->isTransparentEdge(cv, cn)) {
+                        n->setSparse(z, ndx, cv, cn);
+                        ++z;
+                    }
                 } else {
                     // n is full; unlink old pointer first
                     F->unlinkNode(n->down(ndx));

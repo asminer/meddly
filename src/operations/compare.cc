@@ -580,8 +580,8 @@ void MEDDLY::compare_ev<EOP, FACTOR, CTYPE>::compute(int L, unsigned in,
     ++top_count;
     out << CTYPE::name() << " #" << top_count << " begin\n";
 #endif
-    MEDDLY_DCASSERT(av.isVoid());
-    MEDDLY_DCASSERT(bv.isVoid());
+    MEDDLY_DCASSERT(!av.isVoid());
+    MEDDLY_DCASSERT(!bv.isVoid());
 
     _compute(L, in, av, ap, bv, bp, cp);
 

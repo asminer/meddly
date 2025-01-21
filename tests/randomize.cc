@@ -22,8 +22,8 @@
 
 long vectorgen::seed;
 
-vectorgen::vectorgen(bool sr, unsigned v, unsigned d, unsigned r)
-    : is_for_relations(sr), VARS(v), DOM(d), RANGE(r)
+vectorgen::vectorgen(bool sr, unsigned v, unsigned d)
+    : is_for_relations(sr), VARS(v), DOM(d)
 {
     if (d < 2) {
         throw "DOM too small (min 2)";
@@ -154,6 +154,7 @@ void vectorgen::randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt)
     //
     // Randomize the terminal
     //
+    /*
     current_terminal = 1 + (current_terminal % RANGE);
 
     int iterm;
@@ -172,6 +173,7 @@ void vectorgen::randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt)
         default:
             m.setValue(true);
     }
+    */
 }
 
 void vectorgen::index2minterm(unsigned x, MEDDLY::minterm &m) const

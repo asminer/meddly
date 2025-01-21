@@ -29,17 +29,18 @@
 
 #include "randomize.h"
 
-vectorgen SG(MEDDLY::SET, 5, 4, 1);
-vectorgen RG(MEDDLY::RELATION, 5, 2, 1);
+vectorgen SG(MEDDLY::SET, 5, 4);
+vectorgen RG(MEDDLY::RELATION, 5, 2);
 
 const unsigned MIN_SET_CARD = 1;
 const unsigned MAX_SET_CARD = 256;
 const unsigned MULT_SET_CARD = 4;
 
-
 const unsigned MIN_REL_CARD = 1;
 const unsigned MAX_REL_CARD = 256;
 const unsigned MULT_REL_CARD = 16;
+
+const char* OPS = "==, !=, >, >=, <, <=";
 
 using namespace MEDDLY;
 
@@ -236,25 +237,31 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
     std::vector <TYPE> Aset(Gen.potential());
     std::vector <TYPE> Bset(Gen.potential());
 
+    std::vector <TYPE> values(4);
+    values[0] =  6;
+    values[1] =  4;
+    values[2] =  2;
+    values[3] = -2;
+
     for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
-        Gen.randomizeVector(Aset, scard);
-        Gen.randomizeVector(Bset, scard);
+        Gen.randomizeVector(Aset, scard, values);
+        Gen.randomizeVector(Bset, scard, values);
 
         compare(Gen, Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
-        Gen.randomizeFully(Aset, scard);
-        Gen.randomizeFully(Bset, scard);
+        Gen.randomizeFully(Aset, scard, values);
+        Gen.randomizeFully(Bset, scard, values);
 
         compare(Gen, Aset, Bset, f1, f2, fres);
     }
     if (fres->isForRelations()) {
         for (unsigned i=0; i<10; i++) {
             std::cerr << "i";
-            Gen.randomizeIdentity(Aset, scard);
-            Gen.randomizeIdentity(Bset, scard);
+            Gen.randomizeIdentity(Aset, scard, values);
+            Gen.randomizeIdentity(Bset, scard, values);
 
             compare(Gen, Aset, Bset, f1, f2, fres);
         }
@@ -284,9 +291,9 @@ void test_sets(domain* D, edge_labeling el, range_type rt)
 
 
     for (unsigned i=MIN_SET_CARD; i<=MAX_SET_CARD; i*=MULT_SET_CARD) {
-        std::cout << "Testing ==, !=, >, >=, <, <= on "
-                  << nameOf(rt) << " vectors; " << i << " / "
-                  << SG.potential() << " nonzeroes\n";
+        std::cout << "Testing " << OPS << " on "
+                  << nameOf(el) << " " << nameOf(rt) << " vectors; "
+                  << i << " / " << RG.potential() << " nonzeroes\n";
 
         test_on_functions<TYPE>(i, in_fully, in_fully, out_fully);
         test_on_functions<TYPE>(i, in_fully, in_fully, out_quasi);
@@ -329,9 +336,9 @@ void test_rels(domain* D, edge_labeling el, range_type rt)
 
 
     for (unsigned i=MIN_REL_CARD; i<=MAX_REL_CARD; i*=MULT_REL_CARD) {
-        std::cout << "Testing ==, !=, >, >=, <, <= on "
-                  << nameOf(rt) << " matrices; " << i << " / "
-                  << RG.potential() << " nonzeroes\n";
+        std::cout << "Testing " << OPS << " on "
+                  << nameOf(el) << " " << nameOf(rt) << " matrices; "
+                  << i << " / " << RG.potential() << " nonzeroes\n";
 
         test_on_functions<TYPE>(i, in_fully, in_fully, out_fully);
         test_on_functions<TYPE>(i, in_fully, in_fully, out_quasi);

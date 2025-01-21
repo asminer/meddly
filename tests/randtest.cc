@@ -230,7 +230,7 @@ int main(int argc, const char** argv)
 
         vector <unsigned> L;
 
-        vectorgen G(MEDDLY::RELATION, VARS, RELDOM, 2);
+        vectorgen G(MEDDLY::RELATION, VARS, RELDOM);
         cout << "Generator has potential " << G.potential() << "\n";
 
         vector <bool> gset;

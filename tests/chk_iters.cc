@@ -26,8 +26,8 @@
 // Minterm generators :)
 //
 
-vectorgen SG(MEDDLY::SET, 12, 4, 5);
-vectorgen RG(MEDDLY::RELATION, 10, 4, 5);
+vectorgen SG(MEDDLY::SET, 12, 4);
+vectorgen RG(MEDDLY::RELATION, 10, 4);
 
 #define TEST_SETS
 #define TEST_RELS
@@ -41,7 +41,8 @@ using namespace MEDDLY;
  *
  */
 
-void test_sets(domain* D, char reduction, range_type rt, edge_labeling el)
+void test_sets(domain* D, char reduction, range_type rt, edge_labeling el,
+        const std::vector <rangeval> &vals)
 {
     //
     // Build the forest
@@ -84,6 +85,7 @@ void test_sets(domain* D, char reduction, range_type rt, edge_labeling el)
 
     while (mtcoll.size() < mtcoll.maxsize()) {
         SG.randomizeMinterm(mtcoll.unused(), rt);
+        mtcoll.unused().setValue( vals[mtcoll.size() % vals.size()] );
         mtcoll.pushUnused();
     }
 
@@ -143,7 +145,8 @@ void test_sets(domain* D, char reduction, range_type rt, edge_labeling el)
 
 
 
-void test_rels(domain* D, char reduction, range_type rt, edge_labeling el)
+void test_rels(domain* D, char reduction, range_type rt, edge_labeling el,
+        const std::vector <rangeval> &vals)
 {
     //
     // Build the forest
@@ -188,6 +191,7 @@ void test_rels(domain* D, char reduction, range_type rt, edge_labeling el)
 
     while (mtcoll.size() < mtcoll.maxsize()) {
         RG.randomizeMinterm(mtcoll.unused(), rt);
+        mtcoll.unused().setValue( vals[mtcoll.size() % vals.size()] );
         mtcoll.pushUnused();
     }
 
@@ -266,29 +270,66 @@ int main(int argc, const char** argv)
     }
     vectorgen::setSeed(seed);
 
+    //
+    // Initialize function values
+    //
+    std::vector<rangeval> boolvals(1);
+    boolvals[0] = true;
+
+    std::vector<rangeval> intvals(6);
+    intvals[0] =  6;
+    intvals[1] =  4;
+    intvals[2] =  2;
+    intvals[3] = -2;
+    intvals[4] = -4;
+    intvals[5] = -6;
+
+    std::vector<rangeval> realvals(6);
+    realvals[0] =  6.0;
+    realvals[1] =  4.0;
+    realvals[2] =  2.0;
+    realvals[3] = -2.0;
+    realvals[4] = -4.0;
+    realvals[5] = -6.0;
+
     try {
         MEDDLY::initialize();
 #ifdef TEST_SETS
         domain* SD = SG.makeDomain();
-        test_sets(SD, 'q', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-        test_sets(SD, 'f', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-        test_sets(SD, 'q', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
-        test_sets(SD, 'f', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
-        test_sets(SD, 'q', range_type::REAL, edge_labeling::MULTI_TERMINAL);
-        test_sets(SD, 'f', range_type::REAL, edge_labeling::MULTI_TERMINAL);
+        test_sets(SD, 'q', range_type::BOOLEAN,
+                edge_labeling::MULTI_TERMINAL, boolvals);
+        test_sets(SD, 'f', range_type::BOOLEAN,
+                edge_labeling::MULTI_TERMINAL, boolvals);
+        test_sets(SD, 'q', range_type::INTEGER,
+                edge_labeling::MULTI_TERMINAL, intvals);
+        test_sets(SD, 'f', range_type::INTEGER,
+                edge_labeling::MULTI_TERMINAL, intvals);
+        test_sets(SD, 'q', range_type::REAL,
+                edge_labeling::MULTI_TERMINAL, realvals);
+        test_sets(SD, 'f', range_type::REAL,
+                edge_labeling::MULTI_TERMINAL, realvals);
         domain::destroy(SD);
 #endif
 #ifdef TEST_RELS
         domain* RD = RG.makeDomain();
-        test_rels(RD, 'q', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-        test_rels(RD, 'f', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-        test_rels(RD, 'i', range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-        test_rels(RD, 'q', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
-        test_rels(RD, 'f', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
-        test_rels(RD, 'i', range_type::INTEGER, edge_labeling::MULTI_TERMINAL);
-        test_rels(RD, 'q', range_type::REAL, edge_labeling::MULTI_TERMINAL);
-        test_rels(RD, 'f', range_type::REAL, edge_labeling::MULTI_TERMINAL);
-        test_rels(RD, 'i', range_type::REAL, edge_labeling::MULTI_TERMINAL);
+        test_rels(RD, 'q', range_type::BOOLEAN,
+                edge_labeling::MULTI_TERMINAL, boolvals);
+        test_rels(RD, 'f', range_type::BOOLEAN,
+                edge_labeling::MULTI_TERMINAL, boolvals);
+        test_rels(RD, 'i', range_type::BOOLEAN,
+                edge_labeling::MULTI_TERMINAL, boolvals);
+        test_rels(RD, 'q', range_type::INTEGER,
+                edge_labeling::MULTI_TERMINAL, intvals);
+        test_rels(RD, 'f', range_type::INTEGER,
+                edge_labeling::MULTI_TERMINAL, intvals);
+        test_rels(RD, 'i', range_type::INTEGER,
+                edge_labeling::MULTI_TERMINAL, intvals);
+        test_rels(RD, 'q', range_type::REAL,
+                edge_labeling::MULTI_TERMINAL, realvals);
+        test_rels(RD, 'f', range_type::REAL,
+                edge_labeling::MULTI_TERMINAL, realvals);
+        test_rels(RD, 'i', range_type::REAL,
+                edge_labeling::MULTI_TERMINAL, realvals);
         domain::destroy(RD);
 #endif
         MEDDLY::cleanup();

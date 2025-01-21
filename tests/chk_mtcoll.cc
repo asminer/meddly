@@ -30,8 +30,8 @@
 // Minterm generators :)
 //
 
-vectorgen SG(MEDDLY::SET, 8, 4, 5);
-vectorgen RG(MEDDLY::RELATION, 5, 3, 5);
+vectorgen SG(MEDDLY::SET, 8, 4);
+vectorgen RG(MEDDLY::RELATION, 5, 3);
 
 const unsigned SET_COLL_SIZE = 64;
 const unsigned REL_COLL_SIZE = 32;

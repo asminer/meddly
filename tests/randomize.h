@@ -29,13 +29,12 @@ class vectorgen {
         ///     @param  sr      Set (false) or relation (true).
         ///     @param  vars    number of domain variables.
         ///     @param  dom     domain; size for each variable.
-        ///     @param  range   number of distinct range values.
         ///
         /// The explicit representation will be a vector of
         /// dimension POTENTIAL = (rd*rd) ^ v
         /// so these need to be very small integers.
         ///
-        vectorgen(bool sr, unsigned vars, unsigned dom, unsigned range);
+        vectorgen(bool sr, unsigned vars, unsigned dom);
 
         static void setSeed(long s, bool print=true);
 
@@ -59,9 +58,6 @@ class vectorgen {
         }
         inline unsigned dom() const {
             return DOM;
-        }
-        inline unsigned range() const {
-            return RANGE;
         }
         inline bool isForRelations() const {
             return is_for_relations;
@@ -156,27 +152,6 @@ class vectorgen {
         void buildFullyFromIndex(unsigned ndx, unsigned k1, unsigned k2,
                 std::vector <unsigned> &ilist) const;
 
-        static inline void vno2val(unsigned v, bool &val)
-        {
-            val = true;
-        }
-        static inline void vno2val(unsigned v, int &val)
-        {
-            val = int(v);
-        }
-        static inline void vno2val(unsigned v, long &val)
-        {
-            val = long(v);
-        }
-        static inline void vno2val(unsigned v, float &val)
-        {
-            val = v / 2.0;
-        }
-        static inline void vno2val(unsigned v, double &val)
-        {
-            val = v / 2.0;
-        }
-
     public:
         // template member functions
 
@@ -184,9 +159,11 @@ class vectorgen {
         /// Randomly generate an explicit vector.
         ///     @param  elems   Vector of elements; will be cleared.
         ///     @param  card    Number of non-zero elements
+        ///     @param  values  Values to sample from
         ///
         template <typename TYPE>
-        void randomizeVector(std::vector <TYPE> &elems, unsigned card)
+        void randomizeVector(std::vector <TYPE> &elems, unsigned card,
+                const std::vector <TYPE> &values)
         {
             if (elems.size() != potential()) {
                 throw "vector size mismatch in randomizeVector";
@@ -194,10 +171,8 @@ class vectorgen {
             unsigned v=0;
             for (unsigned i=0; i<elems.size(); i++) {
                 if (i<card) {
-                    v = 1+ (v % range());
-                    TYPE val;
-                    vno2val(v, val);
-                    elems[i] = val;
+                    elems[i] = values[v];
+                    v = (v+1) % values.size();
                 } else {
                     elems[i] = 0;
                 }
@@ -223,9 +198,11 @@ class vectorgen {
         ///                     and the size of each pattern is more
         ///                     than one, this will not be the
         ///                     cardinality of the final set/vector.
+        ///     @param  values  Values to sample from
         ///
         template <typename TYPE>
-        void randomizeFully(std::vector <TYPE> &elems, unsigned card)
+        void randomizeFully(std::vector <TYPE> &elems, unsigned card,
+                const std::vector <TYPE> &values)
         {
             if (elems.size() != potential()) {
                 throw "vector size mismatch in randomizeFully";
@@ -238,15 +215,13 @@ class vectorgen {
                 unsigned x = Equilikely_U(0, elems.size()-1);
                 unsigned k1 = Equilikely_U(1, vars());
                 unsigned k2 = Equilikely_U(1, vars());
-                v = 1+ (v % range());
-                TYPE val;
-                vno2val(v, val);
 
                 ilist.clear();
                 buildFullyFromIndex(x, k1, k2, ilist);
                 for (unsigned z=0; z<ilist.size(); z++) {
-                    elems[ ilist[z] ] = val;
+                    elems[ ilist[z] ] = values[v];
                 }
+                v = (v+1) % values.size();
             }
         }
 
@@ -258,9 +233,11 @@ class vectorgen {
         ///                     and the size of each pattern is more
         ///                     than one, this will not be the
         ///                     cardinality of the final set/vector.
+        ///     @param  values  Values to sample from
         ///
         template <typename TYPE>
-        void randomizeIdentity(std::vector <TYPE> &elems, unsigned card)
+        void randomizeIdentity(std::vector <TYPE> &elems, unsigned card,
+                const std::vector <TYPE> &values)
         {
             if (elems.size() != potential()) {
                 throw "vector size mismatch in randomizeIdentity";
@@ -273,15 +250,14 @@ class vectorgen {
                 unsigned x = Equilikely_U(0, elems.size()-1);
                 unsigned k1 = Equilikely_U(1, vars());
                 unsigned k2 = Equilikely_U(1, vars());
-                v = 1+ (v % range());
-                TYPE val;
-                vno2val(v, val);
 
                 ilist.clear();
                 buildIdentityFromIndex(x, k1, k2, ilist);
                 for (unsigned z=0; z<ilist.size(); z++) {
-                    elems[ ilist[z] ] = val;
+                    elems[ ilist[z] ] = values[v];
                 }
+
+                v = (1+v) % values.size();
             }
         }
 
@@ -369,7 +345,6 @@ class vectorgen {
         const bool is_for_relations;
         const unsigned VARS;
         const unsigned DOM;
-        const unsigned RANGE;
         unsigned POTENTIAL;
         std::vector <unsigned> ilist;
         const MEDDLY::domain* _D;

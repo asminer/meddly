@@ -29,8 +29,8 @@
 
 #include "randomize.h"
 
-vectorgen SG(MEDDLY::SET, 5, 4, 1);
-vectorgen RG(MEDDLY::RELATION, 5, 2, 1);
+vectorgen SG(MEDDLY::SET, 5, 4);
+vectorgen RG(MEDDLY::RELATION, 5, 2);
 
 const unsigned MIN_SET_CARD = 1;
 const unsigned MAX_SET_CARD = 256;
@@ -227,25 +227,28 @@ void test_on_forests(unsigned scard, forest* f1, forest* f2, forest* fres)
     std::vector <bool> Aset(Gen.potential());
     std::vector <bool> Bset(Gen.potential());
 
+    std::vector <bool> values(1);
+    values[0] = true;
+
     for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
-        Gen.randomizeVector(Aset, scard);
-        Gen.randomizeVector(Bset, scard);
+        Gen.randomizeVector(Aset, scard, values);
+        Gen.randomizeVector(Bset, scard, values);
 
         compare(Gen, Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
-        Gen.randomizeFully(Aset, scard);
-        Gen.randomizeFully(Bset, scard);
+        Gen.randomizeFully(Aset, scard, values);
+        Gen.randomizeFully(Bset, scard, values);
 
         compare(Gen, Aset, Bset, f1, f2, fres);
     }
     if (fres->isForRelations()) {
         for (unsigned i=0; i<10; i++) {
             std::cerr << "i";
-            Gen.randomizeIdentity(Aset, scard);
-            Gen.randomizeIdentity(Bset, scard);
+            Gen.randomizeIdentity(Aset, scard, values);
+            Gen.randomizeIdentity(Bset, scard, values);
 
             compare(Gen, Aset, Bset, f1, f2, fres);
         }
