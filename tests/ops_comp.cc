@@ -267,23 +267,21 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
 }
 
 template <typename TYPE>
-void test_sets(domain* D, range_type rt)
+void test_sets(domain* D, edge_labeling el, range_type rt)
 {
     policies p;
     p.useDefaults(SET);
 
     p.setFullyReduced();
 
-    forest* in_fully = forest::create(D, SET, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
+    forest* in_fully = forest::create(D, SET, rt, el, p);
 
     forest* out_fully = forest::create(D, SET, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL, p);
 
     p.setQuasiReduced();
 
-    forest* in_quasi = forest::create(D, SET, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
+    forest* in_quasi = forest::create(D, SET, rt, el, p);
 
     forest* out_quasi = forest::create(D, SET, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL, p);
@@ -306,31 +304,28 @@ void test_sets(domain* D, range_type rt)
 }
 
 template <typename TYPE>
-void test_rels(domain* D, range_type rt)
+void test_rels(domain* D, edge_labeling el, range_type rt)
 {
     policies p;
     p.useDefaults(RELATION);
 
     p.setFullyReduced();
 
-    forest* in_fully = forest::create(D, RELATION, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
+    forest* in_fully = forest::create(D, RELATION, rt, el, p);
 
     forest* out_fully = forest::create(D, RELATION, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL, p);
 
     p.setQuasiReduced();
 
-    forest* in_quasi = forest::create(D, RELATION, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
+    forest* in_quasi = forest::create(D, RELATION, rt, el, p);
 
     forest* out_quasi = forest::create(D, RELATION, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL, p);
 
     p.setIdentityReduced();
 
-    forest* in_ident = forest::create(D, RELATION, rt,
-                    edge_labeling::MULTI_TERMINAL, p);
+    forest* in_ident = forest::create(D, RELATION, rt, el, p);
 
     forest* out_ident = forest::create(D, RELATION, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL, p);
@@ -385,8 +380,153 @@ void test_rels(domain* D, range_type rt)
 }
 
 
+void usage(const char* arg0)
+{
+    /* Strip leading directory, if any: */
+    const char* name = arg0;
+    for (const char* ptr=arg0; *ptr; ptr++) {
+        if ('/' == *ptr) name = ptr+1;
+    }
+    std::cerr << "\nUsage: " << name << "options seed\n\n";
+    std::cerr << "Options:\n";
+    std::cerr << "    --set:    Test sets (default).\n";
+    std::cerr << "    --rel:    Test relations\n";
+    std::cerr << "\n";
+    std::cerr << "    --int:    Test int range/edge values (default)\n";
+    std::cerr << "    --long:   Test long range/edge values\n";
+    std::cerr << "    --float:  Test float range/edge values\n";
+    std::cerr << "    --double: Test double range/edge values\n";
+    std::cerr << "\n";
+    std::cerr << "    --MT:     Multi-terminal (default)\n";
+    std::cerr << "    --EVp:    EV+\n";
+    std::cerr << "    --EVs:    EV*\n";
+    std::cerr << "\n";
+
+    exit(1);
+}
+
 int main(int argc, const char** argv)
 {
+    /*
+     * Command-line options
+     */
+    bool sets = true;
+    edge_labeling EL = edge_labeling::MULTI_TERMINAL;
+    range_type    RT = range_type::INTEGER;
+    char type = 'I';
+    long seed = 0;
+
+    for (int i=1; i<argc; i++) {
+
+        if (0==strcmp("--set", argv[i])) {
+            sets = true;
+            continue;
+        }
+        if (0==strcmp("--rel", argv[i])) {
+            sets = false;
+            continue;
+        }
+
+        if (0==strcmp("--MT", argv[i])) {
+            EL = edge_labeling::MULTI_TERMINAL;
+            continue;
+        }
+        if (0==strcmp("--EVp", argv[i])) {
+            EL = edge_labeling::EVPLUS;
+            continue;
+        }
+        if (0==strcmp("--EVs", argv[i])) {
+            EL = edge_labeling::EVTIMES;
+            continue;
+        }
+
+        if (0==strcmp("--int", argv[i])) {
+            RT = range_type::INTEGER;
+            type = 'I';
+            continue;
+        }
+        if (0==strcmp("--long", argv[i])) {
+            RT = range_type::INTEGER;
+            type = 'L';
+            continue;
+        }
+        if (0==strcmp("--float", argv[i])) {
+            RT = range_type::REAL;
+            type = 'F';
+            continue;
+        }
+        if (0==strcmp("--double", argv[i])) {
+            RT = range_type::REAL;
+            type = 'D';
+            continue;
+        }
+
+        if ((argv[i][0] < '0') || (argv[i][0] > '9')) {
+            usage(argv[0]);
+        }
+
+        seed = atol(argv[i]);
+    }
+    vectorgen::setSeed(seed);
+
+    /*
+     * Run requested test
+     */
+
+    try {
+        MEDDLY::initialize();
+
+        domain* D = sets ? SG.makeDomain() : RG.makeDomain();
+        if (sets) {
+            switch (type) {
+                case 'I':   test_sets<int>(D, EL, RT);
+                            break;
+
+                case 'L':   test_sets<long>(D, EL, RT);
+                            break;
+
+                case 'F':   test_sets<float>(D, EL, RT);
+                            break;
+
+                case 'D':   test_sets<double>(D, EL, RT);
+                            break;
+
+                default:    throw "Unknown type";
+            }
+        } else {
+            switch (type) {
+                case 'I':   test_rels<int>(D, EL, RT);
+                            break;
+
+                case 'L':   test_rels<long>(D, EL, RT);
+                            break;
+
+                case 'F':   test_rels<float>(D, EL, RT);
+                            break;
+
+                case 'D':   test_rels<double>(D, EL, RT);
+                            break;
+
+                default:    throw "Unknown type";
+            }
+        }
+        domain::destroy(D);
+        MEDDLY::cleanup();
+        return 0;
+    }
+    catch (MEDDLY::error e) {
+        std::cerr   << "\nCaught meddly error " << e.getName()
+                    << "\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
+    }
+    catch (const char* e) {
+        std::cerr << "\nCaught our own error: " << e << "\n";
+        return 2;
+    }
+    std::cerr << "\nSome other error?\n";
+    return 4;
+    /*
     using namespace std;
 
     //
@@ -440,4 +580,5 @@ int main(int argc, const char** argv)
     }
     std::cerr << "\nSome other error?\n";
     return 4;
+    */
 }

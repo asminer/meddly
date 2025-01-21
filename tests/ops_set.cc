@@ -44,9 +44,6 @@ using namespace MEDDLY;
 
 // #define DEBUG_OPS
 
-#define TEST_SETS
-#define TEST_RELATIONS
-
 
 unsigned set_cardinality(const std::vector <bool> &A)
 {
@@ -350,42 +347,65 @@ void test_rels(domain* D)
     }
 }
 
+void usage(const char* arg0)
+{
+    /* Strip leading directory, if any: */
+    const char* name = arg0;
+    for (const char* ptr=arg0; *ptr; ptr++) {
+        if ('/' == *ptr) name = ptr+1;
+    }
+    std::cerr << "\nUsage: " << name << "options seed\n\n";
+    std::cerr << "Options:\n";
+    std::cerr << "    --set:    Test sets (default).\n";
+    std::cerr << "    --rel:    Test relations\n";
+    std::cerr << "\n";
+
+    exit(1);
+}
+
+
 int main(int argc, const char** argv)
 {
-    using namespace std;
-
-    //
-    // First argument: seed
-    //
+    /*
+     * Command-line options
+     */
+    bool sets = true;
     long seed = 0;
-    if (argv[1]) {
-        seed = atol(argv[1]);
+
+    for (int i=1; i<argc; i++) {
+
+        if (0==strcmp("--set", argv[i])) {
+            sets = true;
+            continue;
+        }
+        if (0==strcmp("--rel", argv[i])) {
+            sets = false;
+            continue;
+        }
+
+        if ((argv[i][0] < '0') || (argv[i][0] > '9')) {
+            usage(argv[0]);
+        }
+
+        seed = atol(argv[i]);
     }
     vectorgen::setSeed(seed);
 
+    /*
+     * Run requested test
+     */
+
     try {
         MEDDLY::initialize();
-
-        //
-        // Test sets
-        //
-
-#ifdef TEST_SETS
-        domain* SD = SG.makeDomain();
-        test_sets(SD);
-        domain::destroy(SD);
-#endif
-
-        //
-        // Test relations
-        //
-
-#ifdef TEST_RELATIONS
-        domain* RD = RG.makeDomain();
-        test_rels(RD);
-        domain::destroy(RD);
-#endif
-
+        if (sets) {
+            domain* SD = SG.makeDomain();
+            test_sets(SD);
+            domain::destroy(SD);
+        } else {
+            domain* RD = RG.makeDomain();
+            test_rels(RD);
+            domain::destroy(RD);
+        }
         MEDDLY::cleanup();
 
         std::cout << "\nDone testing set operations:\n";
