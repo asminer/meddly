@@ -1,8 +1,6 @@
 
 Implement next:
 
-    * Comparisons for EV+, EV*
-        + add test cases to ops_comp
 
     RELEASE HERE
 

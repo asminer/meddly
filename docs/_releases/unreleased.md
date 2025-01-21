@@ -54,7 +54,11 @@ layout: single
 
 ### Implementation
 
-* TBD: updated min, max operations
+* Updated minimum and maximum operations; works for all forest types.
+  MINIMUM should be used instead of UNION for EV+MDDs,
+  and MAXIMUM should be used instead of INTERSECTION for EV+MDDs.
+
+* Added comparison operations for EV+ and EV*.
 
 ### Tests
 
