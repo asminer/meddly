@@ -128,7 +128,7 @@ long writeReachset(FILE* s, int N)
     fflush(stdout);
 #endif
 
-    long c;
+    long c = -1;
     apply(CARDINALITY, reachable, c);
 
 #ifdef PROGRESS

@@ -181,7 +181,7 @@ class MEDDLY::terminal {
                         return;
 
                 default:
-                        MEDDLY_DCASSERT(false);
+                        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             }
 
         }

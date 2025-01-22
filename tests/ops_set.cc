@@ -127,7 +127,7 @@ void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2,
 
 void checkCardinality(const dd_edge &e, const std::vector<bool> &set)
 {
-    long ecard;
+    long ecard = -1;
     apply(CARDINALITY, e, ecard);
 
     long scard = set_cardinality(set);

@@ -227,7 +227,7 @@ namespace MEDDLY {
         {
             nnz = 0;
             ev.set(EDGETYPE(0));
-            EDGETYPE minval;
+            EDGETYPE minval = 0;
             //
             // First scan: find smallest value
             //

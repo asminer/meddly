@@ -104,7 +104,7 @@ forest* makeBinaryForest(unsigned N)
 
 void check_solution(const char* name, forest* f, dd_edge& M, const int* sol)
 {
-    long ns;
+    long ns = -1;
     apply(CARDINALITY, M, ns);
     printf("%s has %ld solutions\n", name, ns);
     if (ns!=1) exit(2);

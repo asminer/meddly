@@ -181,7 +181,7 @@ long buildQueenSolutions(int N)
 
     intersect(constr, N);
     assert(constr[0]);
-    long c;
+    long c = -1;
     apply(CARDINALITY, *constr[0], c);
     // cleanup
     for (int i=0; i<N; i++) {
