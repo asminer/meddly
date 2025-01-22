@@ -30,28 +30,34 @@ const unsigned DOTS = 16;
 
 #ifdef DEVELOPMENT_CODE
 const unsigned CREATIONS = 16*1024;
-const unsigned RCREATE   = 8*1024;
+const unsigned RCREATE   = 4*1024;
 #else
-const unsigned CREATIONS = 512*1024;
-const unsigned RCREATE   =  64*1024;
+//
+// We have a new implementation; these constants (725 and 225)
+// were chosen to keep the running times equal due to the
+// change in implementation.
+//
+const unsigned CREATIONS = 725*1024;
+const unsigned RCREATE   = 225*1024;
 #endif
 
-// #define USE_NEW_CT_INTERFACE
+#define USE_NEW_CT_INTERFACE
 
+const ct_entry_type* global_CTE;
 int global_i;
 int global_j;
 
-void _reqKeys(const ct_entry_type* CTE, unsigned L)
+void _reqKeys(unsigned L)
 {
     if (0==L) return;
 
 #ifdef USE_NEW_CT_INTERFACE
-    ct_vector key(CTE->getKeySize());
+    ct_vector key(global_CTE->getKeySize());
 #else
-    ct_entry_key* key = compute_table::useEntryKey(CTE, 0);
+    ct_entry_key* key = compute_table::useEntryKey(global_CTE, 0);
 #endif
 
-    _reqKeys(CTE, --L);
+    _reqKeys(--L);
 
 #ifndef USE_NEW_CT_INTERFACE
     compute_table::recycle(key);
@@ -67,12 +73,13 @@ void reqKeys(const ct_entry_type *CTE)
     cout << "Requesting " << setw(10) << DOTS * CREATIONS * LEVELS << " keys ";
 
     timer T;
+    global_CTE = CTE;
 
     for (global_i=0; global_i<DOTS; global_i++) {
         cout << ".";
         cout.flush();
         for (global_j=0; global_j<CREATIONS; global_j++) {
-            _reqKeys(CTE, LEVELS);
+            _reqKeys(LEVELS);
         } // for j
     } // for i
 
@@ -85,23 +92,22 @@ void reqKeys(const ct_entry_type *CTE)
     }
 }
 
-void _makeKeys(const ct_entry_type* CTE, unsigned L)
+void _makeKeys(unsigned L)
 {
     if (0==L) return;
 #ifdef USE_NEW_CT_INTERFACE
-    ct_vector key(CTE->getKeySize());
+    ct_vector key(global_CTE->getKeySize());
     key[0].setI( int(L) );
     key[1].setN(global_i);
     key[2].setN(global_j);
 #else
-    ct_entry_key* key = compute_table::useEntryKey(CTE, 0);
+    ct_entry_key* key = compute_table::useEntryKey(global_CTE, 0);
     key->writeI( int(L) );
     key->writeN(global_i);
     key->writeN(global_j);
 #endif
 
-
-    _makeKeys(CTE, --L);
+    _makeKeys(--L);
 
 #ifndef USE_NEW_CT_INTERFACE
     compute_table::recycle(key);
@@ -116,12 +122,13 @@ void makeKeys(const ct_entry_type *CTE)
     cout << "Building   " << setw(10) << DOTS * CREATIONS * LEVELS << " keys ";
 
     timer T;
+    global_CTE = CTE;
 
     for (global_i=0; global_i<DOTS; global_i++) {
         cout << ".";
         cout.flush();
         for (global_j=0; global_j<CREATIONS; global_j++) {
-            _makeKeys(CTE, LEVELS);
+            _makeKeys(LEVELS);
         } // for j
     } // for i
 
@@ -134,12 +141,12 @@ void makeKeys(const ct_entry_type *CTE)
     }
 }
 
-void _makeRKeys(const ct_entry_type* CTE, unsigned L)
+void _makeRKeys(unsigned L)
 {
     if (0==L) return;
     const unsigned repeats = L % 16;
 #ifdef USE_NEW_CT_INTERFACE
-    ct_vector key(CTE->getKeySize(repeats));
+    ct_vector key(global_CTE->getKeySize(repeats));
     unsigned slot = 0;
     key[slot++].setI(int(L));
     key[slot++].setN(global_i);
@@ -148,17 +155,16 @@ void _makeRKeys(const ct_entry_type* CTE, unsigned L)
         key[slot++].setN(global_j);
     }
 #else
-    ct_entry_key* key = compute_table::useEntryKey(CTE, repeats);
+    ct_entry_key* key = compute_table::useEntryKey(global_CTE, repeats);
     key->writeI(int(L));
     key->writeN(global_i);
     for (unsigned r=0; r<repeats; r++) {
         key->writeI(int(r));
         key->writeN(global_j);
     }
-
 #endif
 
-    _makeRKeys(CTE, --L);
+    _makeRKeys(--L);
 
 #ifndef USE_NEW_CT_INTERFACE
     compute_table::recycle(key);
@@ -173,12 +179,13 @@ void makeRKeys(const ct_entry_type *CTE)
     cout << "Building   " << setw(10) << DOTS * RCREATE * LEVELS << " keys ";
 
     timer T;
+    global_CTE = CTE;
 
     for (global_i=0; global_i<DOTS; global_i++) {
         cout << ".";
         cout.flush();
         for (global_j=0; global_j<RCREATE; global_j++) {
-            _makeRKeys(CTE, LEVELS);
+            _makeRKeys(LEVELS);
         } // for j
     } // for i
 

@@ -106,18 +106,18 @@ void MEDDLY::ct_vector::show(output &s) const
 
 // ******************************************************************
 
-MEDDLY::ct_item* MEDDLY::ct_vector::lists[16];
+MEDDLY::ct_item* MEDDLY::ct_vector::lists[64];
 
 void MEDDLY::ct_vector::initStatics()
 {
-    for (unsigned u=0; u<16; u++) {
+    for (unsigned u=0; u<64; u++) {
         lists[u] = nullptr;
     }
 }
 
 void MEDDLY::ct_vector::doneStatics()
 {
-    for (unsigned u=0; u<16; u++) {
+    for (unsigned u=0; u<64; u++) {
         while (lists[u]) {
             ct_item* nxt = lists[u][0].getNext();
             delete[] lists[u];
@@ -129,7 +129,7 @@ void MEDDLY::ct_vector::doneStatics()
 MEDDLY::ct_item* MEDDLY::ct_vector::useArray(unsigned sz)
 {
     if (0==sz) return nullptr;
-    if (sz<=16) {
+    if (sz<=64) {
         ct_item* curr = lists[sz-1];
         if (curr) {
             lists[sz-1] = curr->getNext();
@@ -143,7 +143,7 @@ void MEDDLY::ct_vector::recycleArray(ct_item* v, unsigned sz)
 {
     if (!v) return;
     MEDDLY_DCASSERT(sz);
-    if (sz<=16) {
+    if (sz<=64) {
         v->setNext(lists[sz-1]);
         lists[sz-1] = v;
     } else {
