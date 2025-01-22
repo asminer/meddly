@@ -18,6 +18,8 @@ Implement next:
 
     * Saturation operations, using new interface
 
+    * Again explore mark and sweep vs reference counts
+      try a 'mark and count down' approach also
 
 
 Operation updates, to do:
