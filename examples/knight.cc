@@ -456,7 +456,7 @@ void generate()
     moves = nullptr;
     std::cout << "\n";
 
-    double card;
+    double card = 0;
     apply(CARDINALITY, tours, card);
     std::cout << "Approx. " << card << " total moves\n";
 

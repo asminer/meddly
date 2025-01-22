@@ -983,7 +983,7 @@ int main(int argc, const char** argv)
 
     printf("\n%d QUEENS MINIMAL SOLUTION\n\n", Q+1);
 
-    long c;
+    long c = 0;
     apply(CARDINALITY, acc[0], c);
     printf("For a %dx%d chessboard, ", N, N);
     printf("there are %ld covers with %d queens\n", c, Q+1);

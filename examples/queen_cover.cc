@@ -378,7 +378,7 @@ int main(int argc, const char** argv)
                 );
         compute_table::showAll(myout, 3);
 
-        long c;
+        long c = 0;
         apply(CARDINALITY, solutions, c);
         printf("\nFor a %dx%d chessboard, ", N, N);
         printf("there are %ld covers with %d queens\n\n", c, q);

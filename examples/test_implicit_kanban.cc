@@ -253,7 +253,7 @@ int main(int argc, const char** argv)
         printStats("MDD", inmdd);
         fflush(stdout);
 
-        double c;
+        double c = 0;
         apply(CARDINALITY, reachable, c);
         compute_table::showAll(meddlyout, 3);
         printf("Approx. %g reachable states\n", c);

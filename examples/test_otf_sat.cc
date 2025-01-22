@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
 
   ostream_output s(std::cout);
   rss.showGraph(s);
-  double rss_card;
+  double rss_card = 0;
   apply(CARDINALITY, rss, rss_card);
   std::cout << "\n\nNumber of states: " << rss_card << std::endl;
 }

@@ -355,7 +355,7 @@ void runWithArgs(int N, char method, bool alternate)
     /*
        Determine cardinality
        */
-    double c;
+    double c = 0;
     apply(CARDINALITY, reachable, c);
     printf("Counted (approx) %g reachable states\n", c);
     printf("(There should be %g states)\n", factorial(N));

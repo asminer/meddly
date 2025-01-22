@@ -419,7 +419,7 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
 {
     apply(CONVERT_TO_INDEX_SET, mdd, indexSet);
     FILE_output mout(stdout);
-    double card;
+    double card = 0;
     apply(CARDINALITY, indexSet, card);
     mout << "Index set has cardinality " << card << "\n";
     indexSet.showGraph(mout);
@@ -617,7 +617,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
 
     compute_table::showAll(meddlyout, 3);
 
-    double c;
+    double c = 0;
     apply(CARDINALITY, reachableStates, c);
     printf("Approximately %e reachable states\n", c);
     fflush(stdout);

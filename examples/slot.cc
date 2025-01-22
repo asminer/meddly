@@ -304,7 +304,7 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
     printStats("MDD", mdd);
     fflush(stdout);
 
-    double c;
+    double c = 0;
     apply(CARDINALITY, reachable, c);
     compute_table::showAll(meddlyout, 3);
 

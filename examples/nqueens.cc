@@ -372,7 +372,7 @@ int main(int argc, const char** argv)
                 HOLE_MANAGER_STATS | HOLE_MANAGER_DETAILED
                 );
 
-        long c;
+        long c = 0;
         apply(CARDINALITY, *solutions, c);
         printf("\nThere are %ld solutions to the %d-queens problem\n\n", c, N);
 

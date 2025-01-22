@@ -603,7 +603,7 @@ int main(int argc, const char** argv)
                 << std::endl;
         }
 
-        long allcard;
+        long allcard = 0;
         apply(CARDINALITY, all, allcard);
         std::cout << allcard << " tours total\n";
 

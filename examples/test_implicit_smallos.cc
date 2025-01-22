@@ -225,7 +225,7 @@ N = 2*DC>MT?(2*DC):MT;
   printStats("MDD", inmdd);
   fflush(stdout);
 
-  double c;
+  double c = 0;
   apply(CARDINALITY, reachable, c);
   compute_table::showAll(meddlyout, 3);
 
