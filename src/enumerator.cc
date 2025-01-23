@@ -17,10 +17,11 @@
 */
 
 
-
 #include "defines.h"
 #include "enumerator.h"
 #include "forest.h"
+
+#ifdef ALLOW_DEPRECATED_0_17_7
 
 // #define DEBUG_ITER_BEGIN
 
@@ -113,7 +114,7 @@ void MEDDLY::enumerator::iterator::getValue(int &) const
 
 void MEDDLY::enumerator::iterator::getValue(long &) const
 {
-  throw error(error::TYPE_MISMATCH);
+  throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::enumerator::iterator::getValue(float &) const
@@ -212,4 +213,6 @@ void MEDDLY::enumerator::startFixedColumn(const dd_edge &e, const int* minterm)
   MEDDLY_DCASSERT(I);
   is_valid = I->start(e, minterm);
 }
+
+#endif
 

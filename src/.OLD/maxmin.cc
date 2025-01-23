@@ -234,7 +234,8 @@ MEDDLY::binary_operation* MEDDLY::MAXIMUM(forest* a, forest* b, forest* c)
             return MAXIMUM_cache.add(new maximum_mdd(a, b, c));
     }
 
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    return nullptr;
+    // throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::MAXIMUM_init()
@@ -262,7 +263,8 @@ MEDDLY::binary_operation* MEDDLY::MINIMUM(forest* a, forest* b, forest* c)
             return MINIMUM_cache.add(new minimum_mdd(a, b, c));
     }
 
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    // throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    return nullptr;
 }
 
 void MEDDLY::MINIMUM_init()

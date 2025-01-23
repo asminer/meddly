@@ -29,35 +29,57 @@ const unsigned LEVELS = 128;
 const unsigned DOTS = 16;
 
 #ifdef DEVELOPMENT_CODE
-const unsigned CREATIONS = 32*1024;
-const unsigned RCREATE   = 8*1024;
+const unsigned CREATIONS = 16*1024;
+const unsigned RCREATE   = 4*1024;
 #else
-const unsigned CREATIONS = 1024*1024;
-const unsigned RCREATE   = 256*1024;
+//
+// We have a new implementation; these constants (725 and 225)
+// were chosen to keep the running times equal due to the
+// change in implementation.
+//
+const unsigned CREATIONS = 725*1024;
+const unsigned RCREATE   = 225*1024;
 #endif
+
+#define USE_NEW_CT_INTERFACE
+
+const ct_entry_type* global_CTE;
+int global_i;
+int global_j;
+
+void _reqKeys(unsigned L)
+{
+    if (0==L) return;
+
+#ifdef USE_NEW_CT_INTERFACE
+    ct_vector key(global_CTE->getKeySize());
+#else
+    ct_entry_key* key = compute_table::useEntryKey(global_CTE, 0);
+#endif
+
+    _reqKeys(--L);
+
+#ifndef USE_NEW_CT_INTERFACE
+    compute_table::recycle(key);
+#endif
+}
+
 
 // Request and recycle lots of compute table keys
 void reqKeys(const ct_entry_type *CTE)
 {
-    static ct_entry_key* keys[LEVELS];
-
     using namespace std;
     cout << "\nTiming test: CT key creation / recycling\n\n";
     cout << "Requesting " << setw(10) << DOTS * CREATIONS * LEVELS << " keys ";
 
     timer T;
+    global_CTE = CTE;
 
-    for (unsigned i=0; i<DOTS; i++) {
+    for (global_i=0; global_i<DOTS; global_i++) {
         cout << ".";
         cout.flush();
-        for (unsigned j=0; j<CREATIONS; j++) {
-            unsigned k = 0;
-            while (k<LEVELS) {
-                keys[k++] = compute_table::useEntryKey(CTE, 0);
-            }
-            while (k) {
-                compute_table::recycle(keys[--k]);
-            }
+        for (global_j=0; global_j<CREATIONS; global_j++) {
+            _reqKeys(LEVELS);
         } // for j
     } // for i
 
@@ -70,32 +92,43 @@ void reqKeys(const ct_entry_type *CTE)
     }
 }
 
+void _makeKeys(unsigned L)
+{
+    if (0==L) return;
+#ifdef USE_NEW_CT_INTERFACE
+    ct_vector key(global_CTE->getKeySize());
+    key[0].setI( int(L) );
+    key[1].setN(global_i);
+    key[2].setN(global_j);
+#else
+    ct_entry_key* key = compute_table::useEntryKey(global_CTE, 0);
+    key->writeI( int(L) );
+    key->writeN(global_i);
+    key->writeN(global_j);
+#endif
+
+    _makeKeys(--L);
+
+#ifndef USE_NEW_CT_INTERFACE
+    compute_table::recycle(key);
+#endif
+}
+
 // Request, build, and recycle lots of compute table keys
 void makeKeys(const ct_entry_type *CTE)
 {
-    static ct_entry_key* keys[LEVELS];
-
     using namespace std;
     cout << "\nTiming test: CT key building\n\n";
     cout << "Building   " << setw(10) << DOTS * CREATIONS * LEVELS << " keys ";
 
     timer T;
+    global_CTE = CTE;
 
-    for (unsigned i=0; i<DOTS; i++) {
+    for (global_i=0; global_i<DOTS; global_i++) {
         cout << ".";
         cout.flush();
-        for (unsigned j=0; j<CREATIONS; j++) {
-            unsigned k = 0;
-            while (k<LEVELS) {
-                keys[k] = compute_table::useEntryKey(CTE, 0);
-                keys[k]->writeI(int(k));
-                keys[k]->writeN(i);
-                keys[k]->writeN(j);
-                k++;
-            }
-            while (k) {
-                compute_table::recycle(keys[--k]);
-            }
+        for (global_j=0; global_j<CREATIONS; global_j++) {
+            _makeKeys(LEVELS);
         } // for j
     } // for i
 
@@ -108,36 +141,51 @@ void makeKeys(const ct_entry_type *CTE)
     }
 }
 
+void _makeRKeys(unsigned L)
+{
+    if (0==L) return;
+    const unsigned repeats = L % 16;
+#ifdef USE_NEW_CT_INTERFACE
+    ct_vector key(global_CTE->getKeySize(repeats));
+    unsigned slot = 0;
+    key[slot++].setI(int(L));
+    key[slot++].setN(global_i);
+    for (unsigned r=0; r<repeats; r++) {
+        key[slot++].setI(int(r));
+        key[slot++].setN(global_j);
+    }
+#else
+    ct_entry_key* key = compute_table::useEntryKey(global_CTE, repeats);
+    key->writeI(int(L));
+    key->writeN(global_i);
+    for (unsigned r=0; r<repeats; r++) {
+        key->writeI(int(r));
+        key->writeN(global_j);
+    }
+#endif
+
+    _makeRKeys(--L);
+
+#ifndef USE_NEW_CT_INTERFACE
+    compute_table::recycle(key);
+#endif
+}
+
 // Request, build, and recycle lots of 'repeating' compute table keys
 void makeRKeys(const ct_entry_type *CTE)
 {
-    static ct_entry_key* keys[LEVELS];
-
     using namespace std;
     cout << "\nTiming test: Repeating CT key building\n\n";
     cout << "Building   " << setw(10) << DOTS * RCREATE * LEVELS << " keys ";
 
     timer T;
+    global_CTE = CTE;
 
-    for (unsigned i=0; i<DOTS; i++) {
+    for (global_i=0; global_i<DOTS; global_i++) {
         cout << ".";
         cout.flush();
-        for (unsigned j=0; j<RCREATE; j++) {
-            unsigned k = 0;
-            while (k<LEVELS) {
-                const unsigned repeats = k % 16;
-                keys[k] = compute_table::useEntryKey(CTE, repeats);
-                keys[k]->writeI(int(k));
-                keys[k]->writeN(i);
-                for (unsigned r=0; r<repeats; r++) {
-                    keys[k]->writeI(int(r));
-                    keys[k]->writeN(j);
-                }
-                k++;
-            }
-            while (k) {
-                compute_table::recycle(keys[--k]);
-            }
+        for (global_j=0; global_j<RCREATE; global_j++) {
+            _makeRKeys(LEVELS);
         } // for j
     } // for i
 

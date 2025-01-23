@@ -38,6 +38,7 @@ namespace MEDDLY {
 
 #define ALLOW_SET_FROM_DDEDGE
 #define ALLOW_SET_FROM_POINTER
+// #define DEBUG_UNPACKED_HASH
 
 #define USE_STRUCT
 
@@ -185,7 +186,11 @@ class MEDDLY::unpacked_node {
         {
             unpacked_node* U = New(f);
             MEDDLY_DCASSERT(U);
-            U->initIdentity(f, k, i, ev, node, fs);
+            if (ev.isVoid()) {
+                U->initIdentity(f, k, i, node, fs);
+            } else {
+                U->initIdentity(f, k, i, ev, node, fs);
+            }
             return U;
         }
 
@@ -419,6 +424,7 @@ class MEDDLY::unpacked_node {
             return _edge[n];
 #endif
         }
+
 
         /** Subtract from an edge value.
             @param  n       Which pointer
@@ -689,6 +695,20 @@ class MEDDLY::unpacked_node {
 #endif
 
 
+        /**
+            Hack for mark and sweep.
+            Add an extra, temporary node to the list of roots
+            for mark and sweep.
+            Do this for example in an "APPLY" operation that
+            needs to create a temporary result.
+            We can hold one such result and make sure it's marked,
+            by calling this method.
+                @param  t   Node handle for temporary result.
+         */
+        inline void setTempRoot(node_handle t)
+        {
+            mark_extra = t;
+        }
 
     public:
         //
@@ -821,6 +841,10 @@ class MEDDLY::unpacked_node {
         /// Compute the node's hash
         void computeHash();
 
+#ifdef DEBUG_UNPACKED_HASH
+        void debugHash(output &s) const;
+#endif
+
         /// Checks if the node has no trailing redundant edges.
         /// I.e., the node does NOT have trailing edges that can
         /// be collapsed into the extensible edge.
@@ -898,6 +922,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(parent == mp);
             modparent = mp;
             AddToBuildList(this);
+            mark_extra = 0;
         }
 
         // Set edges to transparent
@@ -935,6 +960,13 @@ class MEDDLY::unpacked_node {
         /// and add r back to its forest's recycle list.
         static void Recycle(unpacked_node* r);
 
+        /// Update counts of children in writable nodes.
+        ///     @param  F           Forest we care about.
+        ///     @param  incounts    Vector of counts for each
+        ///                         nonterminal node.
+        ///
+        static void AddToIncomingCounts(const forest* F,
+                        std::vector <unsigned> &incounts);
 
         /// forest should call this in its constructor, after it has its FID.
         /// Initializes empty lists for forest f.
@@ -1017,6 +1049,9 @@ class MEDDLY::unpacked_node {
         /// Edge values; or null if void edges
         edge_value* _edge;
 #endif
+
+        /// Extra, temporary, node handle for marking.
+        node_handle mark_extra;
 
         /// Allocated sizes of arrays
         unsigned alloc;

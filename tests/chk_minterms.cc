@@ -20,436 +20,423 @@
 #include <time.h>
 #include <iostream>
 
-#define RESTRICT_DONT_CHANGE
+#define TEST_SETS
+#define TEST_RELS
+// #define SHOW_MINTERMS
 
-const unsigned MAXTERMS = 32;
+#include "randomize.h"
 
-const int DOMSIZE = 4;       // DO NOT change
-const int SETVARS = 10;
-const int RELVARS = 6;
+//
+// Minterm generators :)
+//
 
-/*
- *
- * RNG stuff
- *
- */
+vectorgen SG(MEDDLY::SET, 8, 4);
+vectorgen RG(MEDDLY::RELATION, 5, 3);
 
-long seed;
+const unsigned NUM_MINTERMS = 9;
 
-double Random()
-{
-    const long MODULUS = 2147483647L;
-    const long MULTIPLIER = 48271L;
-    const long Q = MODULUS / MULTIPLIER;
-    const long R = MODULUS % MULTIPLIER;
-
-    long t = MULTIPLIER * (seed % Q) - R * (seed / Q);
-    if (t > 0) {
-        seed = t;
-    } else {
-        seed = t + MODULUS;
-    }
-    return ((double) seed / MODULUS);
-}
-
-int Equilikely(int a, int b)
-{
-    return (a + (int) ((b - a + 1) * Random()));
-}
-
+using namespace MEDDLY;
 
 /*
  *
- * Manipulate minterms for sets
+ * Testing for sets
  *
  */
 
-void randomSetMinterm(int* mt, unsigned vars)
+bool matches_set(const minterm &m, const minterm& vars)
 {
-    const int vals[9] = { -1, 0, 0, 1, 1, 2, 2, 3, 3 };
-
-    for (unsigned i=1; i<=vars; i++) {
-        int index = Equilikely(0, 8);
-        mt[i] = vals[index];
-    }
-}
-
-void showMinterm(const int* mt, unsigned vars)
-{
-    using namespace std;
-
-    cout << "[ bot";
-    for (unsigned i=1; i<=vars; i++) {
-        cout << ", ";
-        if (mt[i] < 0)  cout << 'x';
-        else            cout << mt[i];
-    }
-    cout << "]";
-}
-
-bool mintermMatches(const int* mt, const int* vals, unsigned vars)
-{
-    for (unsigned i=1; i<=vars; i++) {
-        if (mt[i] == -1) continue;  // don't care
-        if (mt[i] != vals[i]) return false;
+    for (unsigned i=1; i<=vars.getNumVars(); i++) {
+        if (m.from(i) == DONT_CARE) continue;
+        if (m.from(i) != vars.from(i)) return false;
     }
     return true;
 }
 
-bool evaluate(const int* vals, unsigned vars, int** mt, unsigned nmt)
+
+void check_equal_set(const dd_edge &E, const minterm &m, const rangeval &deflt)
 {
-    for (unsigned i=0; i<nmt; i++) {
-        if (mintermMatches(mt[i], vals, vars)) return true;
-    }
-    return false;
-}
+    //
+    // Make sure E encodes the function: if vars match m, then
+    // the value for m; otherwise the default value.
+    //
+    // Do this by evaluating the function for all variable assignments.
+    //
+    minterm vars(E.getForest());
+    rangeval Eval;
+    vars.setAllVars(0);
+    do {
+        E.evaluate(vars, Eval);
 
-void zeroMinterm(int* mt, unsigned vars)
-{
-    for (unsigned i=1; i<=vars; i++) {
-        mt[i] = 0;
-    }
-}
+        const rangeval &Fval = matches_set(m, vars) ? m.getValue() : deflt;
 
-bool nextMinterm(int* mt, unsigned vars)
-{
-    for (unsigned i=1; i<=vars; i++) {
-        mt[i]++;
-        if (mt[i] < DOMSIZE) return true;
-        mt[i] = 0;
-    }
-    return false;
-}
-
-/*
- *
- * Tests for set-type forests
- *
- */
-
-void check_set_eq(char mddtype, const MEDDLY::dd_edge &E, const int* eval,
-        int** mtlist, const unsigned mtsize)
-{
-    bool val_mdd;
-    bool val_mts = evaluate(eval, SETVARS, mtlist, mtsize);
-    const MEDDLY::forest* F = E.getForest();
-    F->evaluate(E, eval, val_mdd);
-
-    if (val_mdd != val_mts) {
-        std::cout << "\nMismatch on ";
-        showMinterm(eval, SETVARS);
-        std::cout << "\n  " << mddtype << "MDD: " << (val_mdd ? "true" : "false") << "\n";
-        std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
-
-        std::cout << "\n";
-        std::cout << "Minterm list:\n";
-
-        for (unsigned n=0; n<mtsize; n++) {
-            std::cout << "    ";
-            showMinterm(mtlist[n], RELVARS);
-            std::cout << "\n";
+        if (Fval != Eval) {
+            MEDDLY::ostream_output out(std::cout);
+            out << "\nMismatch!";
+            out << "\n    MDD says   ";
+            Eval.write(out);
+            out << "\n    Should be ";
+            Fval.write(out);
+            out << "\n    Var assignments: ";
+            vars.show(out);
+            out << "\n    Generated using: ";
+            m.show(out);
+            out << "deflt ";
+            deflt.write(out);
+            out << "\n    Func. MDD encoding:\n";
+            E.showGraph(out);
+            out.flush();
+            throw "mismatch";
         }
 
-        std::cout << mddtype << "MDD:\n";
-        MEDDLY::ostream_output out(std::cout);
-        E.showGraph(out);
-
-        throw "mismatch";
-    }
+    } while (SG.nextMinterm(vars));
 }
 
-void test_sets()
-{
-    using namespace MEDDLY;
-
-    //
-    // Build domain - once
-    //
-    int bs[SETVARS];
-    for (unsigned i=0; i<SETVARS; i++) {
-        bs[i] = DOMSIZE;
-    }
-    domain* D = domain::createBottomUp(bs, SETVARS);
-
-    //
-    // Build the various types of boolean forests
-    //
-    policies p;
-    p.useDefaults(SET);
-
-    forest* Ff = forest::create(D, SET, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL, p);
-
-    p.setQuasiReduced();
-
-    forest* Fq = forest::create(D, SET, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL, p);
-
-
-    //
-    // Build random minterms
-    //
-    int* mtlist[MAXTERMS];
-    for (unsigned i=0; i<MAXTERMS; i++) {
-        mtlist[i] = new int[1+SETVARS];
-        randomSetMinterm(mtlist[i], SETVARS);
-    }
-
-    int eval[1+SETVARS];
-
-    //
-    // For various collections of minterms,
-    //  (1) build sets
-    //  (2) explicitly verify sets against minterms
-
-    std::cout << "Checking sets built from minterms:\n";
-    std::cout.flush();
-    for (unsigned mtsize=1; mtsize<=MAXTERMS; mtsize*=2)
-    {
-        std::cout << "    ";
-        if (mtsize<10) std::cout << ' ';
-        std::cout << mtsize << ": ";
-        std::cout.flush();
-        dd_edge Ef(Ff);
-        dd_edge Eq(Fq);
-
-        Fq->createEdge(mtlist, mtsize, Eq);
-        std::cout << "q ";
-        std::cout.flush();
-        Ff->createEdge(mtlist, mtsize, Ef);
-        std::cout << "f ";
-        std::cout.flush();
-
-        zeroMinterm(eval, SETVARS);
-        do {
-            check_set_eq('Q', Eq, eval, mtlist, mtsize);
-            check_set_eq('F', Ef, eval, mtlist, mtsize);
-        } while (nextMinterm(eval, SETVARS));
-        std::cout << "=" << std::endl;
-    }
-
-    domain::destroy(D);
-}
-
-/*
- *
- * Manipulate minterms for relations
- *
- */
-
-void randomRelMinterm(int* un, int* pr, unsigned vars)
+void test_sets(forest* F, rangeval deflt, rangeval fval)
 {
     //
-    // Separated
+    // Display what we're doing
     //
+    ostream_output out(std::cout);
+
+    out << "Checking " << shortNameOf(F->getRangeType())
+        << " " << shortNameOf(F->getReductionRule())
+        << " " << nameOf(F->getEdgeLabeling()) << " MDD with ";
+    deflt.write(out);
+    out << "off, ";
+    fval.write(out);
+    out << "on\n    ";
+    out.flush();
+
     //
+    // Set up minterm, edge
+    //
+    minterm m(F);
+    dd_edge E(F);
+
+    //
+    // Check all don't cares
     //
 
-    const int unvals[52] =
-    { -1, -1, -1, -1,   // 4 (x,x) pairs
-      -1, -1, -1, -1,   // 4 (x,i) pairs
-      -1, -1, -1, -1,   // 4 (x, normal) pairs
-       0,  1,  2,  3,   // 4 (normal, x) pairs
-       0,  1,  2,  3,   // 4 (normal, i) pairs
-       0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3,   // 16 normal pairs
-       0, 0, 0, 0,  1, 1, 1, 1,  2, 2, 2, 2,  3, 3, 3, 3};  // 16 normal pairs
-
-    const int prvals[52] =
-    { -1, -1, -1, -1,   // 4 (x,x) pairs
-      -2, -2, -2, -2,   // 4 (x,i) pairs
-       0,  1,  2,  3,   // 4 (x, normal) pairs
-      -1, -1, -1, -1,   // 4 (normal, x) pairs
-      -2, -2, -2, -2,   // 4 (normal, i) pairs
-       0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,   // 16 normal pairs
-       0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3,  0, 1, 2, 3};  // 16 normal pairs
-
-    for (unsigned i=1; i<=vars; i++) {
-        int index = Equilikely(0, 51);
-        un[i] = unvals[index];
-        pr[i] = prvals[index];
-#ifdef RESTRICT_DONT_CHANGE
-        if (pr[i] == -2) {
-            un[i] = -1;
-        }
+    out << "x ";
+    out.flush();
+    m.setAllVars(DONT_CARE);
+    m.setValue(fval);
+#ifdef SHOW_MINTERMS
+    out << "\n  minterm: ";
+    m.show(out);
+    out << "\n";
+    out.flush();
 #endif
+    m.buildFunction(deflt, E);
+    check_equal_set(E, m, deflt);
+
+    //
+    // Check a few random minterms
+    //
+    for (unsigned i=0; i<NUM_MINTERMS; i++)
+    {
+        out << "r ";
+        out.flush();
+        SG.randomizeMinterm(m, range_type::BOOLEAN);
+        m.setValue(fval);
+#ifdef SHOW_MINTERMS
+        out << "\n  minterm: ";
+        m.show(out);
+        out << "\n";
+        out.flush();
+#endif
+        m.buildFunction(deflt, E);
+        check_equal_set(E, m, deflt);
     }
+    out << "\n";
 }
 
-void showMinterm(const int* un, const int* pr, unsigned vars)
+void test_sets_with_policies(domain *D, policies p)
 {
-    using namespace std;
+    //
+    // Boolean
+    //
+    forest* Fbool = forest::create(D, SET, range_type::BOOLEAN,
+            edge_labeling::MULTI_TERMINAL, p);
 
-    cout << "[ bot";
-    for (unsigned i=1; i<=vars; i++) {
-        cout << ", ";
-        if (un[i] < 0)  cout << 'x';
-        else            cout << un[i];
-        cout << "->";
-        if (pr[i] == -2)    cout << 'i';
-        else if (pr[i] < 0) cout << 'x';
-        else                cout << pr[i];
-    }
-    cout << "]";
-}
+    test_sets(Fbool, false, true);
+    test_sets(Fbool, true, false);
 
-bool mintermMatches(const int* mtun, const int* mtpr,
-        const int* valun, const int* valpr, unsigned vars)
-{
-    for (unsigned i=1; i<=vars; i++) {
-        if ((mtun[i] != -1) && (mtun[i] != valun[i])) return false;
-        if (mtpr[i] == -1) continue;
-        if (mtpr[i] == -2) {
-            if (valpr[i] == valun[i]) continue;
-        }
-        if (mtpr[i] != valpr[i]) return false;
-    }
-    return true;
-}
+    forest::destroy(Fbool);
 
-bool evaluate(const int* vun, const int* vpr, unsigned vars,
-        int** mtun, int** mtpr, unsigned nmt)
-{
-    for (unsigned i=0; i<nmt; i++) {
-        if (mintermMatches(mtun[i], mtpr[i], vun, vpr, vars)) return true;
-    }
-    return false;
-}
+    //
+    // Integer
+    //
+    forest* Fint  = forest::create(D, SET, range_type::INTEGER,
+            edge_labeling::MULTI_TERMINAL, p);
 
-void zeroMinterm(int* vun, int* vpr, unsigned vars)
-{
-    for (unsigned i=1; i<=vars; i++) {
-        vun[i] = 0;
-        vpr[i] = 0;
-    }
-}
+    test_sets(Fint,  0L, 2L);
+    test_sets(Fint, -1L, 1L);
+    test_sets(Fint, -2L, 0L);
 
-bool nextMinterm(int* vun, int* vpr, unsigned vars)
-{
-    for (unsigned i=1; i<=vars; i++) {
-        vpr[i]++;
-        if (vpr[i] < DOMSIZE) return true;
-        vpr[i] = 0;
-        vun[i]++;
-        if (vun[i] < DOMSIZE) return true;
-        vun[i] = 0;
-    }
-    return false;
+    //
+    // Real
+    //
+    forest* Freal = forest::create(D, SET, range_type::REAL,
+            edge_labeling::MULTI_TERMINAL, p);
+
+    test_sets(Freal, 0.0, 2.5);
+    test_sets(Freal, -1.25, 1.25);
+    test_sets(Freal, -2.5, 0.0);
+
+    //
+    // EV+ Integer
+    //
+    forest* Fevp  = forest::create(D, SET, range_type::INTEGER,
+            edge_labeling::EVPLUS, p);
+
+    rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
+
+    test_sets(Fevp,  0L, 2L);
+    test_sets(Fevp, -1L, 1L);
+    test_sets(Fevp, -2L, 0L);
+    test_sets(Fevp,  infty, 0L);
+    test_sets(Fevp,  infty, 8L);
+    test_sets(Fevp,  0L, infty);
+    test_sets(Fevp,  8L, infty);
 }
 
 /*
  *
- * Tests for relation-type forests
+ * Testing for relations
  *
  */
 
-void check_rel_eq(char mxdtype, const MEDDLY::dd_edge &E,
-        const int* uneval, const int* preval,
-        int** unlist, int** prlist, const unsigned mtsize)
+bool matches_rel(const minterm &m, const minterm& vars)
 {
-    bool val_mxd;
-    bool val_mts = evaluate(uneval, preval, RELVARS, unlist, prlist, mtsize);
-    const MEDDLY::forest* F = E.getForest();
-    F->evaluate(E, uneval, preval, val_mxd);
-
-    if (val_mxd != val_mts) {
-        std::cout << "\nMismatch on ";
-        showMinterm(uneval, preval, RELVARS);
-        std::cout << "\n  " << mxdtype << "MxD: " << (val_mxd ? "true" : "false") << "\n";
-        std::cout << "mtlist: " << (val_mts ? "true" : "false") << "\n";
-
-        std::cout << "\n";
-        std::cout << "Minterm list:\n";
-
-        for (unsigned n=0; n<mtsize; n++) {
-            std::cout << "    ";
-            showMinterm(unlist[n], prlist[n], RELVARS);
-            std::cout << "\n";
+    for (unsigned i=1; i<=vars.getNumVars(); i++) {
+        if ((m.from(i) != DONT_CARE) && (m.from(i) != vars.from(i)))  {
+            return false;
         }
-
-        std::cout << mxdtype << "Mxd:\n";
-        MEDDLY::ostream_output out(std::cout);
-        E.showGraph(out);
-
-        throw "mismatch";
+        if (m.to(i) == DONT_CARE) continue;
+        if (m.to(i) == DONT_CHANGE) {
+            if (vars.to(i) == vars.from(i)) continue;
+        }
+        if (m.to(i) != vars.to(i)) return false;
     }
-
+    return true;
 }
 
-
-void test_rels()
+void check_equal_rel(const dd_edge &E, const minterm &m, const rangeval &deflt)
 {
-    using namespace MEDDLY;
+    //
+    // Make sure E encodes the function: if vars match m, then
+    // the value for m; otherwise the default value.
+    //
+    // Do this by evaluating the function for all variable assignments.
+    //
+    minterm vars(E.getForest());
+    rangeval Eval;
+    vars.setAllVars(0, 0);
+    do {
+        E.evaluate(vars, Eval);
+
+        const rangeval &Fval = matches_rel(m, vars) ? m.getValue() : deflt;
+
+        if (Fval != Eval) {
+            MEDDLY::ostream_output out(std::cout);
+            out << "\nMismatch!";
+            out << "\n    MxD says   ";
+            Eval.write(out);
+            out << "\n    Should be ";
+            Fval.write(out);
+            out << "\n    Var assignments: ";
+            vars.show(out);
+            out << "\n    Generated using: ";
+            m.show(out);
+            out << "deflt ";
+            deflt.write(out);
+            out << "\n    Func. MxD encoding:\n";
+            E.showGraph(out);
+            out.flush();
+            throw "mismatch";
+        }
+
+    } while (RG.nextMinterm(vars));
+}
+
+void test_rels(forest* F, rangeval deflt, rangeval fval)
+{
+    //
+    // Display what we're doing
+    //
+    ostream_output out(std::cout);
+
+    out << "Checking " << shortNameOf(F->getRangeType())
+        << " " << shortNameOf(F->getReductionRule())
+        << " " << nameOf(F->getEdgeLabeling()) << " MxD with ";
+    deflt.write(out);
+    out << "off, ";
+    fval.write(out);
+    out << "on\n    ";
+    out.flush();
 
     //
-    // Build domain - once
+    // Set up minterm, edge
     //
-    int bs[RELVARS];
-    for (unsigned i=0; i<RELVARS; i++) {
-        bs[i] = DOMSIZE;
-    }
-    domain* D = domain::createBottomUp(bs, RELVARS);
+    minterm m(F);
+    dd_edge E(F);
 
     //
-    // Build the various types of boolean forests
+    // Check all don't cares
     //
-    policies p;
-    p.useDefaults(SET);
 
-    forest* Ff = forest::create(D, RELATION, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL, p);
-
-    p.setQuasiReduced();
-
-    forest* Fq = forest::create(D, RELATION, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL, p);
-
-
-    //
-    // Build random minterms
-    //
-    int* unlist[MAXTERMS];
-    int* prlist[MAXTERMS];
-    for (unsigned i=0; i<MAXTERMS; i++) {
-        unlist[i] = new int[1+RELVARS];
-        prlist[i] = new int[1+RELVARS];
-        randomRelMinterm(unlist[i], prlist[i], RELVARS);
-    }
-
-    int uneval[1+RELVARS];
-    int preval[1+RELVARS];
+    out << "x ";
+    out.flush();
+    m.setAllVars(DONT_CARE, DONT_CARE);
+    m.setValue(fval);
+#ifdef SHOW_MINTERMS
+    out << "\n  minterm: ";
+    m.show(out);
+    out << "\n";
+    out.flush();
+#endif
+    m.buildFunction(deflt, E);
+    check_equal_rel(E, m, deflt);
 
     //
-    // For various collections of minterms,
-    //  (1) build relations
-    //  (2) explicitly verify sets against minterms
+    // Check all 'identity'
+    //
 
-    std::cout << "Checking relations built from minterms:\n";
-    std::cout.flush();
-    for (unsigned mtsize=1; mtsize<=MAXTERMS; mtsize*=2)
+    out << "i ";
+    out.flush();
+    m.setAllVars(DONT_CARE, DONT_CHANGE);
+    m.setValue(fval);
+#ifdef SHOW_MINTERMS
+    out << "\n  minterm: ";
+    m.show(out);
+    out << "\n";
+    out.flush();
+#endif
+    m.buildFunction(deflt, E);
+    check_equal_rel(E, m, deflt);
+
+    //
+    // Check a few random minterms
+    //
+    for (unsigned i=0; i<NUM_MINTERMS; i++)
     {
-        std::cout << "    ";
-        if (mtsize<10) std::cout << ' ';
-        std::cout << mtsize << ": ";
-        std::cout.flush();
-        dd_edge Ef(Ff);
-        dd_edge Eq(Fq);
-
-        Fq->createEdge(unlist, prlist, mtsize, Eq);
-        std::cout << "q ";
-        std::cout.flush();
-        Ff->createEdge(unlist, prlist, mtsize, Ef);
-        std::cout << "f ";
-        std::cout.flush();
-
-        zeroMinterm(uneval, preval, RELVARS);
-        do {
-            check_rel_eq('Q', Eq, uneval, preval, unlist, prlist, mtsize);
-            check_rel_eq('F', Ef, uneval, preval, unlist, prlist, mtsize);
-        } while (nextMinterm(uneval, preval, RELVARS));
-        std::cout << "=" << std::endl;
+        out << "r ";
+        out.flush();
+        RG.randomizeMinterm(m, range_type::BOOLEAN);
+        m.setValue(fval);
+#ifdef SHOW_MINTERMS
+        out << "\n  minterm: ";
+        m.show(out);
+        out << "\n";
+        out.flush();
+#endif
+        m.buildFunction(deflt, E);
+        check_equal_rel(E, m, deflt);
     }
+    out << "\n";
+}
 
-    domain::destroy(D);
+void test_rels_with_policies(domain *D, policies p)
+{
+    //
+    // Boolean
+    //
+    forest* Fbool = forest::create(D, RELATION, range_type::BOOLEAN,
+            edge_labeling::MULTI_TERMINAL, p);
+
+    test_rels(Fbool, false, true);
+    test_rels(Fbool, true, false);
+
+    forest::destroy(Fbool);
+
+    //
+    // Integer
+    //
+    forest* Fint  = forest::create(D, RELATION, range_type::INTEGER,
+            edge_labeling::MULTI_TERMINAL, p);
+
+    test_rels(Fint,  0L, 2L);
+    test_rels(Fint, -1L, 1L);
+    test_rels(Fint, -2L, 0L);
+
+    //
+    // EV+ Integer
+    //
+    forest* Fevp  = forest::create(D, RELATION, range_type::INTEGER,
+            edge_labeling::EVPLUS, p);
+
+    rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
+
+    test_rels(Fevp,  0L, 2L);
+    test_rels(Fevp, -1L, 1L);
+    test_rels(Fevp, -2L, 0L);
+    test_rels(Fevp,  infty, 0L);
+    test_rels(Fevp,  infty, 8L);
+    test_rels(Fevp,  0L, infty);
+    test_rels(Fevp,  8L, infty);
+
+    //
+    // Real
+    //
+    forest* Freal = forest::create(D, RELATION, range_type::REAL,
+            edge_labeling::MULTI_TERMINAL, p);
+
+    test_rels(Freal, 0.0, 2.5);
+    test_rels(Freal, -1.25, 1.25);
+    test_rels(Freal, -2.5, 0.0);
+
+    //
+    // EV* real
+    //
+    forest* Fevt = forest::create(D, RELATION, range_type::REAL,
+            edge_labeling::EVTIMES, p);
+
+    test_rels(Fevt, 0.0, 2.5);
+    test_rels(Fevt, 0.0, 5.0);
+    test_rels(Fevt, -1.25, 1.25);
+    test_rels(Fevt, -2.5, 0.0);
+}
+
+void usage(const char* arg0)
+{
+    /* Strip leading directory, if any: */
+    const char* name = arg0;
+    for (const char* ptr=arg0; *ptr; ptr++) {
+        if ('/' == *ptr) name = ptr+1;
+    }
+    std::cerr << "\nUsage: " << name << "options seed\n\n";
+    std::cerr << "Options:\n";
+    std::cerr << "    --set:    Test sets (default).\n";
+    std::cerr << "    --rel:    Test relations\n";
+    std::cerr << "\n";
+    std::cerr << "    --quasi:  Test quasi reduced\n";
+    std::cerr << "    --fully:  Test fully reduced (default).\n";
+    std::cerr << "    --ident:  Test identity reduced (relations only)\n";
+    std::cerr << "\n";
+
+    exit(1);
+}
+
+void setReductionLetter(policies &p, char letter)
+{
+    switch (letter)
+    {
+        case 'Q':
+            p.setQuasiReduced();
+            return;
+
+        case 'F':
+            p.setFullyReduced();
+            return;
+
+        case 'I':
+            p.setIdentityReduced();
+            return;
+
+        default:
+            throw "Unknown reduction";
+    }
 }
 
 /*
@@ -460,24 +447,68 @@ void test_rels()
 
 int main(int argc, const char** argv)
 {
-    using namespace std;
+    bool sets = true;
+    char reduction = 'F';
+    long seed = 0;
+
+    for (int i=1; i<argc; i++) {
+
+        if (0==strcmp("--set", argv[i])) {
+            sets = true;
+            continue;
+        }
+        if (0==strcmp("--rel", argv[i])) {
+            sets = false;
+            continue;
+        }
+        if (0==strcmp("--quasi", argv[i])) {
+            reduction = 'Q';
+            continue;
+        }
+        if (0==strcmp("--fully", argv[i])) {
+            reduction = 'F';
+            continue;
+        }
+        if (0==strcmp("--ident", argv[i])) {
+            reduction = 'I';
+            continue;
+        }
+
+        if ((argv[i][0] < '0') || (argv[i][0] > '9')) {
+            usage(argv[0]);
+        }
+
+        seed = atol(argv[i]);
+    }
+
+    if (('I' == reduction) && sets) {
+        std::cerr << "Cannot use identity with sets.\n";
+        usage(argv[0]);
+    }
 
     //
-    // First argument: seed
+    // Set seed
     //
-    if (argv[1]) {
-        seed = atol(argv[1]);
-    } else {
-        seed = time(NULL);
-        if (seed < 0) seed *= -1;
-        if (0==seed)  seed = 12345; // probably never happen
-    }
-    cout << "Using rng seed " << seed << "\n";
+    vectorgen::setSeed(seed);
 
     try {
         MEDDLY::initialize();
-        test_sets();
-        test_rels();
+
+        if (sets) {
+            domain* D = SG.makeDomain();
+            policies p;
+            p.useDefaults(SET);
+            setReductionLetter(p, reduction);
+            test_sets_with_policies(D, p);
+            domain::destroy(D);
+        } else {
+            domain* D = RG.makeDomain();
+            policies p;
+            p.useDefaults(RELATION);
+            setReductionLetter(p, reduction);
+            test_rels_with_policies(D, p);
+            domain::destroy(D);
+        }
         MEDDLY::cleanup();
         return 0;
     }
@@ -494,3 +525,4 @@ int main(int argc, const char** argv)
     std::cerr << "\nSome other error?\n";
     return 4;
 }
+

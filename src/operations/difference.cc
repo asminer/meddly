@@ -295,8 +295,8 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
     // Check the compute table or primed compute table
     //
     // **************************************************************
-    ct_vector key( force_by_levels ? 3 : 2);
-    ct_vector res(1);
+    ct_vector key(ct->getKeySize());
+    ct_vector res(ct->getResultSize());
     if (force_by_levels) {
         key[0].setI(L);
         key[1].setN(A);
@@ -510,11 +510,7 @@ MEDDLY::DIFFERENCE(forest* a, forest* b, forest* c)
         return bop;
     }
 
-    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-        return DIFFR_cache.add(new diffr_mt(a, b, c));
-    }
-
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    return DIFFR_cache.add(new diffr_mt(a, b, c));
 }
 
 void MEDDLY::DIFFERENCE_init()

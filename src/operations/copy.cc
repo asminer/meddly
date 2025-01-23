@@ -131,7 +131,7 @@ MEDDLY::copy_MT::copy_MT(forest* arg, forest* res)
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__);
     if (!arg->isMultiTerminal()) {
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
     ct = new ct_entry_type("copy_mt");
@@ -242,8 +242,8 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
     //
     // Check compute table
     //
-    ct_vector key(1);
-    ct_vector res( resF->isMultiTerminal() ? 1 : 2 );
+    ct_vector key(ct->getKeySize());
+    ct_vector res(ct->getResultSize());
     key[0].setN(A);
     if (ct->findCT(key, res)) {
         //
@@ -428,7 +428,7 @@ MEDDLY::copy_EV_fast::copy_EV_fast(forest* arg, forest* res)
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__);
     if (arg->isMultiTerminal() || res->isMultiTerminal()) {
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
     ct = new ct_entry_type("copy_ev_fast");
@@ -664,7 +664,7 @@ MEDDLY::copy_EV<EdgeOp>::copy_EV(forest* arg, forest* res)
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__);
     if (arg->isMultiTerminal()) {
-        throw error(error::TYPE_MISMATCH);
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
     ct = new ct_entry_type("copy_ev");
@@ -844,7 +844,7 @@ void MEDDLY::copy_EV<EdgeOp>::_compute(int L, unsigned in,
         for (unsigned i=0; i<Cu->getSize(); i++) {
             edge_value v;
             node_handle d;
-            _compute(Cnextlevel, i, EdgeOp::accumulate(av, Au->edgeval(i)),
+            _compute(Cnextlevel, i, EdgeOp::applyOp(av, Au->edgeval(i)),
                     Au->down(i), v, d);
             if (resF->isMultiTerminal()) {
                 MEDDLY_DCASSERT(v.isVoid());

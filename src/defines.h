@@ -23,12 +23,11 @@
 #include "config.h"
 #endif
 
-// #define ALLOW_DEPRECATED_0_17_2  "11/11/2023"
 // #define ALLOW_DEPRECATED_0_17_3  "12/03/2023"
 // #define ALLOW_DEPRECATED_0_17_4  "12/19/2023"
 // #define ALLOW_DEPRECATED_0_17_5  "04/05/2024"
 #define ALLOW_DEPRECATED_0_17_6  "11/11/2024"
-#define ALLOW_DEPRECATED_0_17_7
+// #define ALLOW_DEPRECATED_0_17_7
 
 // ==================================================================
 // ^ This line is important for the release script, don't remove it

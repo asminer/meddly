@@ -76,6 +76,8 @@ MEDDLY::unpacked_node::unpacked_node(const forest* f)
     _edge = nullptr;
 #endif
 
+    mark_extra = 0;
+
     alloc = 0;
     size = 0;
 
@@ -163,17 +165,17 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
 #endif
     level = k;
 
-    if (SPARSE_ONLY == fs) {
-        setSparse();
-        for (unsigned i=0; i<getSize(); i++) {
-            setSparse(i, i, node);
-        }
-    } else {
+    if (FULL_ONLY == fs) {
         setFull();
         for (unsigned i=0; i<getSize(); i++) {
             setFull(i, node);
         }
         is_full = true;
+    } else {
+        setSparse();
+        for (unsigned i=0; i<getSize(); i++) {
+            setSparse(i, i, node);
+        }
     }
 
     setRedundant();
@@ -194,15 +196,15 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
 #endif
     level = k;
 
-    if (SPARSE_ONLY == fs) {
-        setSparse();
-        for (unsigned i=0; i<getSize(); i++) {
-            setSparse(i, i, ev, node);
-        }
-    } else {
+    if (FULL_ONLY == fs) {
         setFull();
         for (unsigned i=0; i<getSize(); i++) {
             setFull(i, ev, node);
+        }
+    } else {
+        setSparse();
+        for (unsigned i=0; i<getSize(); i++) {
+            setSparse(i, i, ev, node);
         }
     }
 
@@ -473,7 +475,7 @@ void MEDDLY::unpacked_node::computeHash()
     if (isSparse()) {
         if (parent->areEdgeValuesHashed()) {
             for (unsigned z=0; z<getSize(); z++) {
-                MEDDLY_DCASSERT(!parent->isTransparentEdge(down(z), edgeval(z)));
+                MEDDLY_DCASSERT(!parent->isTransparentEdge(edgeval(z), down(z)));
                 s.push(index(z), unsigned(down(z)));
                 edgeval(z).hash(s);
             }
@@ -486,7 +488,7 @@ void MEDDLY::unpacked_node::computeHash()
     } else {
         if (parent->areEdgeValuesHashed()) {
             for (unsigned n=0; n<getSize(); n++) {
-                if (!parent->isTransparentEdge(down(n), edgeval(n))) {
+                if (!parent->isTransparentEdge(edgeval(n), down(n))) {
                     s.push(n, unsigned(down(n)));
                     edgeval(n).hash(s);
                 }
@@ -506,6 +508,66 @@ void MEDDLY::unpacked_node::computeHash()
 #endif
 }
 
+#ifdef DEBUG_UNPACKED_HASH
+void MEDDLY::unpacked_node::debugHash(output &debug) const
+{
+    debug << "Hash computation:\n";
+    hash_stream s;
+    s.start(0);
+
+    if (extra_hashed_size) {
+        debug << "    push extra hashed info\n";
+        s.push(extra_hashed, extra_hashed_size);
+    }
+
+    if (isSparse()) {
+        if (parent->areEdgeValuesHashed()) {
+            for (unsigned z=0; z<getSize(); z++) {
+                MEDDLY_DCASSERT(!parent->isTransparentEdge(edgeval(z), down(z)));
+                debug << "    push " << index(z) << ", "
+                      << down(z) << ", ";
+                edgeval(z).show(debug);
+                debug << "\n";
+
+                s.push(index(z), unsigned(down(z)));
+                edgeval(z).hash(s);
+            }
+        } else {
+            for (unsigned z=0; z<getSize(); z++) {
+                MEDDLY_DCASSERT(down(z)!=parent->getTransparentNode());
+                debug << "    push " << index(z) << ", " << down(z) << "\n";
+
+                s.push(index(z), unsigned(down(z)));
+            }
+        }
+    } else {
+        if (parent->areEdgeValuesHashed()) {
+            for (unsigned n=0; n<getSize(); n++) {
+                if (!parent->isTransparentEdge(edgeval(n), down(n))) {
+
+                    debug << "    push " << n << ", "
+                        << down(n) << ", ";
+                    edgeval(n).show(debug);
+                    debug << "\n";
+
+                    s.push(n, unsigned(down(n)));
+                    edgeval(n).hash(s);
+                }
+            }
+        } else {
+            for (unsigned n=0; n<getSize(); n++) {
+                if (down(n)!=parent->getTransparentNode()) {
+                    debug << "    push " << index(n) << ", " << down(n) << "\n";
+                    s.push(n, unsigned(down(n)));
+                }
+            }
+        }
+    }
+
+    debug << "stream finish: " << s.finish() << "\n";
+    debug << "stored hash  : " << the_hash << "\n";
+}
+#endif
 
 // remove all edges starting at the given index
 void MEDDLY::unpacked_node::trim()
@@ -638,7 +700,7 @@ void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
 
     if (hasEdges()) {
         for (unsigned i=low; i<high; i++) {
-            parent->getTransparentEdge(_idev[i].down, _idev[i].edgeval);
+            parent->getTransparentEdge(_idev[i].edgeval, _idev[i].down);
         }
     } else {
         for (unsigned i=low; i<high; i++) {
@@ -651,7 +713,7 @@ void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
     if (hasEdges()) {
         MEDDLY_DCASSERT(_edge);
         for (unsigned i=low; i<high; i++) {
-            parent->getTransparentEdge(_down[i], _edge[i]);
+            parent->getTransparentEdge(_edge[i], _down[i]);
         }
     } else {
         for (unsigned i=low; i<high; i++) {
@@ -744,12 +806,47 @@ void MEDDLY::unpacked_node::MarkWritable(node_marker &M)
         for (unsigned i=0; i<curr->getSize(); i++) {
             M.mark(curr->down(i));
         }
+        M.mark(curr->mark_extra);
+    } // for curr
+}
+
+void MEDDLY::unpacked_node::AddToIncomingCounts(const forest* F,
+        std::vector <unsigned> &incount)
+{
+    MEDDLY_DCASSERT(F);
+    for (const unpacked_node* curr = ForLists[F->FID()].building;
+            curr; curr=curr->next)
+    {
+#ifdef DEBUG_MARK_SWEEP
+        std::cerr   << "Traversing unpacked node at level "
+                    << curr->getLevel() << "\n\t";
+        stream_output s(std::cerr);
+        curr->show(s, true);
+        std::cerr << '\n';
+#endif
+        for (unsigned i=0; i<curr->getSize(); i++) {
+            if (curr->down(i) > 0) {
+                ++incount[curr->down(i)];
+            }
+        }
+        if (curr->mark_extra > 0) {
+            ++incount[curr->mark_extra];
+        }
     } // for curr
 }
 
 void MEDDLY::unpacked_node::Recycle(unpacked_node* r)
 {
     if (!r) return;
+
+    if (!ForLists) {
+        //
+        // Lists have all been destroyed; this must be a late recycle.
+        // Just delete it.
+        //
+        delete r;
+        return;
+    }
 
 #ifdef DEVELOPMENT_CODE
     MEDDLY_DCASSERT(r->can_be_recycled);

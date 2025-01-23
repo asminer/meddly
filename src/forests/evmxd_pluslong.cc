@@ -38,11 +38,13 @@ MEDDLY::evmxd_pluslong::evmxd_pluslong(domain *d, const policies &p, int* level_
 MEDDLY::evmxd_pluslong::~evmxd_pluslong()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::evmxd_pluslong::createEdge(long val, dd_edge &e)
 {
   createEdgeTempl<OP, long>(val, e);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -64,18 +66,9 @@ void MEDDLY::evmxd_pluslong
   long ev;
   node_handle ep;
   EM.createEdge(ev, ep);
-  e.set(ep, ev);
+  e.set(ev, ep);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
-#endif
-}
-
-void MEDDLY::evmxd_pluslong
-::createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
-{
-  createEdgeForVarTempl<OP, long>(vh, vp, terms, a);
-#ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -84,6 +77,17 @@ void MEDDLY::evmxd_pluslong
   long &term) const
 {
   evaluateT<OP, long>(f, vlist, vplist, term);
+}
+
+#endif
+
+void MEDDLY::evmxd_pluslong
+::createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
+{
+  createEdgeForVarTempl<OP, long>(vh, vp, terms, a);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true, __FILE__, __LINE__);
+#endif
 }
 
 void MEDDLY::evmxd_pluslong::showEdge(output &s, const edge_value &ev,
@@ -121,6 +125,9 @@ const char* MEDDLY::evmxd_pluslong::codeChars() const
 // *                                                                *
 // *                                                                *
 // ******************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 
 MEDDLY::evmxd_pluslong::evtrmxd_baseiter::evtrmxd_baseiter(const forest *F)
 : iterator(F)
@@ -493,3 +500,5 @@ bool MEDDLY::evmxd_pluslong::evtrmxd_fixedcol_iter::first(int k, node_handle dow
   }
   return false;
 }
+
+#endif

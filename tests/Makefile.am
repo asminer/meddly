@@ -14,8 +14,10 @@ noinst_PROGRAMS = \
     chk_cross \
     chk_ct \
     chk_ct_old \
-    chk_evtimes_float \
+    chk_iters \
     chk_minterms \
+    chk_mtcoll \
+    chk_reorder \
     ddedge \
     domain_list \
     kan_batch \
@@ -25,10 +27,12 @@ noinst_PROGRAMS = \
     kanban \
     nodestor \
     nqueens \
+    ops_arith \
     ops_comp \
     ops_set \
     refcount \
-    sat_test
+    sat_test \
+    randtest
 
 TESTS = \
     bug_00 \
@@ -39,8 +43,21 @@ TESTS = \
     chk_cross \
     chk_ct \
     chk_ct_old \
-    chk_evtimes_float \
-    chk_minterms \
+    chk_iters \
+    \
+    chk_minterms.--set.--fully._sh \
+    chk_minterms.--set.--quasi._sh \
+    chk_minterms.--rel.--fully._sh \
+    chk_minterms.--rel.--quasi._sh \
+    chk_minterms.--rel.--ident._sh \
+    \
+    chk_mtcoll.--set.--fully._sh \
+    chk_mtcoll.--set.--quasi._sh \
+    chk_mtcoll.--rel.--fully._sh \
+    chk_mtcoll.--rel.--quasi._sh \
+    chk_mtcoll.--rel.--ident._sh \
+    \
+    chk_reorder \
     ddedge \
     domain_list \
     kan_batch \
@@ -50,12 +67,127 @@ TESTS = \
     kanban \
     nodestor \
     nqueens \
-    ops_comp \
-    ops_set \
+    \
+    ops_arith.--set.--MT.--int._sh \
+    ops_arith.--set.--MT.--float._sh \
+    ops_arith.--set.--EVp.--long._sh \
+    ops_arith.--rel.--MT.--int._sh \
+    ops_arith.--rel.--MT.--float._sh \
+    ops_arith.--rel.--EVp.--long._sh \
+    ops_arith.--rel.--EVs.--float._sh \
+    \
+    ops_comp.--set.--MT.--int._sh \
+    ops_comp.--set.--MT.--float._sh \
+    ops_comp.--set.--EVp.--long._sh \
+    ops_comp.--rel.--MT.--int._sh \
+    ops_comp.--rel.--MT.--float._sh \
+    ops_comp.--rel.--EVp.--long._sh \
+    ops_comp.--rel.--EVs.--float._sh \
+    \
+    ops_set.--set._sh \
+    ops_set.--rel._sh \
+    \
     refcount \
     sat_test
 
 AM_CXXFLAGS = -Wall
+
+#
+# Automatically build a wrapper script,
+# for tests with command line arguments.
+#
+###########################################
+
+chk_minterms.--set.--fully._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+chk_minterms.--set.--quasi._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+chk_minterms.--rel.--fully._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+chk_minterms.--rel.--quasi._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+chk_minterms.--rel.--ident._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+###########################################
+
+chk_mtcoll.--set.--fully._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+chk_mtcoll.--set.--quasi._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+chk_mtcoll.--rel.--fully._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+chk_mtcoll.--rel.--quasi._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+chk_mtcoll.--rel.--ident._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+###########################################
+
+ops_arith.--set.--MT.--int._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_arith.--set.--MT.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_arith.--set.--EVp.--long._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_arith.--rel.--MT.--int._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_arith.--rel.--MT.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_arith.--rel.--EVp.--long._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_arith.--rel.--EVs.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+###########################################
+
+ops_comp.--set.--MT.--int._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_comp.--set.--MT.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_comp.--set.--EVp.--long._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_comp.--rel.--MT.--int._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_comp.--rel.--MT.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_comp.--rel.--EVp.--long._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_comp.--rel.--EVs.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+###########################################
+
+ops_set.--set._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_set.--rel._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+###########################################
+
+clean-local:
+	rm -f *._sh
 
 #
 # non-test programs
@@ -92,11 +224,17 @@ chk_ct_LDADD = ../src/libmeddly.la
 chk_ct_old_SOURCES = chk_ct_old.cc
 chk_ct_old_LDADD = ../src/libmeddly.la
 
-chk_evtimes_float_SOURCES = chk_evtimes_float.cc
-chk_evtimes_float_LDADD = ../src/libmeddly.la
+chk_iters_SOURCES = chk_iters.cc randomize.cc
+chk_iters_LDADD = ../src/libmeddly.la
 
-chk_minterms_SOURCES = chk_minterms.cc
+chk_minterms_SOURCES = chk_minterms.cc randomize.cc
 chk_minterms_LDADD = ../src/libmeddly.la
+
+chk_mtcoll_SOURCES = chk_mtcoll.cc randomize.cc
+chk_mtcoll_LDADD = ../src/libmeddly.la
+
+chk_reorder_SOURCES = chk_reorder.cc
+chk_reorder_LDADD = ../src/libmeddly.la
 
 ddedge_SOURCES = ddedge.cc
 ddedge_LDADD = ../src/libmeddly.la
@@ -127,10 +265,13 @@ nodestor_LDADD = ../src/libmeddly.la
 nqueens_SOURCES = nqueens.cc
 nqueens_LDADD = ../src/libmeddly.la
 
-ops_comp_SOURCES = ops_comp.cc
+ops_arith_SOURCES = ops_arith.cc randomize.cc
+ops_arith_LDADD = ../src/libmeddly.la
+
+ops_comp_SOURCES = ops_comp.cc randomize.cc
 ops_comp_LDADD = ../src/libmeddly.la
 
-ops_set_SOURCES = ops_set.cc
+ops_set_SOURCES = ops_set.cc randomize.cc
 ops_set_LDADD = ../src/libmeddly.la
 
 refcount_SOURCES = refcount.cc
@@ -139,3 +280,5 @@ refcount_LDADD = ../src/libmeddly.la
 sat_test_SOURCES = sat_test.cc
 sat_test_LDADD = ../src/libmeddly.la
 
+randtest_SOURCES = randomize.cc randtest.cc
+randtest_LDADD = ../src/libmeddly.la

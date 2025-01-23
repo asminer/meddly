@@ -47,6 +47,8 @@ class MEDDLY::error {
             INVALID_LEVEL,
             /// A provided variable bound is out of range.
             INVALID_BOUND,
+            /// Attempt to dereference an invalid iterator.
+            INVALID_ITERATOR,
             /// We expected an empty domain, but it wasn't
             DOMAIN_NOT_EMPTY,
             /// Unknown operation (bad operation handle).
@@ -79,7 +81,7 @@ class MEDDLY::error {
             MISCELLANEOUS
         };
     public:
-        error(code c, const char* fn=nullptr, unsigned ln=0);
+        error(code c, const char* fn, unsigned ln);
 
         /// Return a human-readable error message
         const char* getName() const;

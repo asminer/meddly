@@ -148,6 +148,8 @@ void MEDDLY::mt_forest::clearStatics()
 // *                                                                *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 MEDDLY::mt_forest::mt_iterator::mt_iterator(const forest *F)
  : iterator(F)
 {
@@ -172,3 +174,4 @@ void MEDDLY::mt_forest::mt_iterator::getValue(float &termVal) const
   termVal = t.getReal();
 }
 
+#endif

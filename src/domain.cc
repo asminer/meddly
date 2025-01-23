@@ -50,11 +50,7 @@ MEDDLY::domain* MEDDLY::domain::create(variable** vars, unsigned N)
     if (!initializer_list::libraryIsRunning()) {
         throw error(error::UNINITIALIZED, __FILE__, __LINE__);
     }
-#ifdef ALLOW_DEPRECATED_0_17_2
-    return new expert_domain(vars, N);
-#else
     return new domain(vars, N);
-#endif
 }
 
 MEDDLY::domain* MEDDLY::domain::createBottomUp(const int* bounds, unsigned N)
@@ -62,11 +58,7 @@ MEDDLY::domain* MEDDLY::domain::createBottomUp(const int* bounds, unsigned N)
     if (!initializer_list::libraryIsRunning()) {
         throw error(error::UNINITIALIZED, __FILE__, __LINE__);
     }
-#ifdef ALLOW_DEPRECATED_0_17_2
-    domain* d = new expert_domain(nullptr, 0);
-#else
     domain* d = new domain(nullptr, 0);
-#endif
     d->createVariablesBottomUp(bounds, N);
     return d;
 }
@@ -449,23 +441,3 @@ void MEDDLY::domain::deleteDomList()
 }
 
 
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// OLD: Forest building
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-#ifdef ALLOW_DEPRECATED_0_17_2
-
-MEDDLY::forest* MEDDLY::domain::createForest(bool rel, range_type t,
-    edge_labeling e, const policies &p, int* level_reduction_rule, int tv)
-{
-    return forest::create(this, rel, t, e, p, level_reduction_rule, tv);
-}
-
-MEDDLY::forest*
-MEDDLY::domain
-::createForest(bool rel, range_type t, edge_labeling e)
-{
-    return forest::create(this, rel, t, e);
-}
-
-#endif

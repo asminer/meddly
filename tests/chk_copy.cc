@@ -63,97 +63,84 @@ int Equilikely(int a, int b)
     return (a + (int) ((b - a + 1) * Random()));
 }
 
-void randomizeMinterm(bool primed, int max, int* mt, unsigned N)
+void randomizeMinterm(minterm &m, int max)
 {
-    int min = primed ? -2 : -1;
-    for (unsigned i=1; i<N; i++) {
-        mt[i] = Equilikely(min, max);
-    }
-#ifdef DEBUG_RANDSET
-    printf("Random minterm: [%d", minterm[1]);
-    for (unsigned i=2; i<N; i++) printf(", %d", minterm[i]);
-    printf("]\n");
-#endif
-}
-
-void adjustMinterms(int* mtu, int* mtp, unsigned N)
-{
-    for (unsigned i=1; i<N; i++) {
-        if (mtp[i] == -2) mtu[i] = -1;
+    if (m.isForRelations()) {
+        for (unsigned i=1; i<=m.getNumVars(); i++) {
+            int from = Equilikely(-1, max);
+            int to = Equilikely(-2, max);
+            if (DONT_CHANGE == to) {
+                from = DONT_CARE;
+            }
+            m.setVars(i, from, to);
+        }
+    } else {
+        for (unsigned i=1; i<=m.getNumVars(); i++) {
+            m.setVar(i, Equilikely(-1, max));
+        }
     }
 }
 
-void printMinterm(FILE* out, const char* which, const int* mt, unsigned N)
+void printMinterm(FILE* fout, const minterm& m)
 {
-    if (0 == mt) return;
-    fprintf(out, "    %s (bottom) [ %d", which, mt[0]);
-    for (unsigned i=1; i<N; i++ ) {
-        fprintf(out, ", %d", mt[i]);
-    }
-    fprintf(out, "] (top)\n");
+    FILE_output out(fout);
+    out << "    ";
+    m.show(out);
+    out << "\n";
 }
 
 void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
 {
     seed = s;
     forest* f = out.getForest();
-    const unsigned Vars = f->getNumVariables();
-
-    int* minterm = new int[Vars+1];
-    int* minprime = 0;
-    if (f->isForRelations()) minprime = new int[Vars+1];
-
+    minterm mint(f);
 
     switch (f->getRangeType()) {
         case range_type::BOOLEAN:
-            f->createEdge(false, out);
+            f->createConstant(false, out);
             break;
 
         case range_type::INTEGER:
-            f->createEdge(long(0), out);
+            f->createConstant(0L, out);
             break;
 
         case range_type::REAL:
-            f->createEdge(float(0), out);
+            f->createConstant(0.0, out);
             break;
     }
     if (fout) {
         fprintf(fout, "Function(s) based on %d terms:\n", terms);
     }
     for (int i=0; i<terms; i++) {
-        randomizeMinterm(false, 4, minterm, Vars+1);
-        if (minprime) {
-            randomizeMinterm(true, 4, minprime, Vars+1);
-            adjustMinterms(minterm, minprime, Vars+1);
-        }
+        randomizeMinterm(mint, 4);
+
         long i_value = Equilikely(1, 5);
-        float f_value = i_value;
-
-        dd_edge temp(out);
-
+        rangeval zero;
         switch (f->getRangeType()) {
             case range_type::BOOLEAN:
-                if (minprime) f->createEdge(&minterm, &minprime, 1, temp);
-                else          f->createEdge(&minterm, 1, temp);
+                mint.setValue(true);
+                zero = false;
                 break;
 
             case range_type::INTEGER:
-                if (minprime) f->createEdge(&minterm, &minprime, &i_value, 1, temp);
-                else          f->createEdge(&minterm, &i_value, 1, temp);
+                mint.setValue(i_value);
+                zero = 0L;
                 break;
 
             case range_type::REAL:
-                if (minprime) f->createEdge(&minterm, &minprime, &f_value, 1, temp);
-                else          f->createEdge(&minterm, &f_value, 1, temp);
+                mint.setValue(double(i_value));
+                zero = 0.0;
                 break;
         }
+
+        dd_edge temp(out);
+        mint.buildFunction(zero, temp);
 
         if (fout) {
             if (f->getRangeType() != range_type::BOOLEAN) {
                 fprintf(fout, "    value %ld\n", i_value);
             }
-            printMinterm(fout, "unprimed", minterm, Vars+1);
-            printMinterm(fout, "  primed", minprime, Vars+1);
+            printMinterm(fout, mint);
         }
 
         out += temp;
@@ -168,105 +155,30 @@ void buildRandomFunc(long s, int terms, dd_edge &out, FILE* fout)
 #endif
 
     } // for i
-
-    // cleanup
-    delete[] minprime;
-    delete[] minterm;
 }
 
-void writeLongReduction(const forest* f)
+inline void writeLongReduction(const forest* f)
 {
-    switch(f->getReductionRule()) {
-
-        case reduction_rule::FULLY_REDUCED:
-            printf("fully-reduced ");
-            break;
-
-        case reduction_rule::QUASI_REDUCED:
-            printf("quasi-reduced ");
-            break;
-
-        case reduction_rule::IDENTITY_REDUCED:
-            printf("identity-reduced ");
-            break;
-
-        default:
-            printf("unknown-reduced ");
-            break;
-    }
+    printf("%s ", nameOf(f->getReductionRule()));
 }
 
-void writeType(const forest* f)
+inline void writeType(const forest* f)
 {
-    switch (f->getRangeType()) {
-        case range_type::BOOLEAN:
-            printf("bool ");
-            break;
-
-        case range_type::INTEGER:
-            printf("int. ");
-            break;
-
-        case range_type::REAL:
-            printf("real ");
-            break;
-
-        default:
-            printf("unk. ");
-            break;
-    }
-    switch(f->getReductionRule()) {
-
-        case reduction_rule::FULLY_REDUCED:
-            printf("FR ");
-            break;
-
-        case reduction_rule::QUASI_REDUCED:
-            printf("QR ");
-            break;
-
-        case reduction_rule::IDENTITY_REDUCED:
-            printf("IR ");
-            break;
-
-        default:
-            printf("?R ");
-            break;
-    }
-
-    switch (f->getEdgeLabeling()) {
-        case edge_labeling::MULTI_TERMINAL:
-            printf(" mt");
-            break;
-
-        case edge_labeling::EVPLUS:
-            printf("ev+");
-            break;
-
-        case edge_labeling::INDEX_SET:
-            printf("ind");
-            break;
-
-        case edge_labeling::EVTIMES:
-            printf("ev*");
-            break;
-
-        default:
-            printf(" ??");
-            break;
-    }
-
-    if (f->isForRelations())  printf("mxd");
-    else                      printf("mdd");
+    printf("%7s %3s %3s %3s",
+            nameOf(f->getRangeType()),
+            shortNameOf(f->getReductionRule()),
+            nameOf(f->getEdgeLabeling()),
+            f->isForRelations() ? "mxd" : "mdd"
+    );
 }
 
 void testCopy(forest* srcF, forest* destF)
 {
-    printf("\t");
-    writeType(srcF);
-    printf(" -> ");
-    writeType(destF);
     printf("      ");
+    writeType(srcF);
+    printf(" ->  ");
+    writeType(destF);
+    printf("  ");
     fflush(stdout);
 
     dd_edge srcE(srcF), dummy(srcF);
@@ -289,13 +201,13 @@ void testCopy(forest* srcF, forest* destF)
                 if (destF->getRangeType() == range_type::INTEGER) {
                     // convert destE to boolean
                     dd_edge zero(destF);
-                    destF->createEdge(long(0), zero);
+                    destF->createConstant(0L, zero);
                     apply(NOT_EQUAL, destE, zero, destE);
                 }
                 if (destF->getRangeType() == range_type::REAL) {
                     // convert destE to boolean
                     dd_edge zero(destF);
-                    destF->createEdge(float(0), zero);
+                    destF->createConstant(0.0, zero);
                     apply(NOT_EQUAL, destE, zero, destE);
                 }
             }
@@ -332,7 +244,7 @@ void testCopy(forest* srcF, forest* destF)
 
         } // for t
 
-        printf("OK\n");
+        printf("  OK\n");
     }
     catch (MEDDLY::error e) {
         printf("%s\n", e.getName());
@@ -532,7 +444,7 @@ int main(int argc, const char** argv)
             if (srcs[i]->isEVPlus() != dests[j]->isEVPlus()) {
                 // Do not compare EV+MDD with others
                 // Check the semantics of PLUS operation with EV+MDD
-                printf("\tDo not compare ");
+                printf("skip  ");
                 writeType(srcs[i]);
                 printf(" and ");
                 writeType(dests[j]);

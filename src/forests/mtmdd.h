@@ -35,12 +35,15 @@ class MEDDLY::mtmdd_forest : public mt_forest {
 
     virtual void dynamicReorderVariables(int top, int bottom);
 
+#ifdef ALLOW_DEPRECATED_0_17_7
     virtual enumerator::iterator* makeFullIter() const
     {
       return new mtmdd_iterator(this);
     }
+#endif
 
   protected:
+#ifdef ALLOW_DEPRECATED_0_17_7
     inline node_handle evaluateRaw(const dd_edge &f, const int* vlist) const {
       node_handle p = f.getNode();
       while (!isTerminalNode(p)) {
@@ -50,10 +53,6 @@ class MEDDLY::mtmdd_forest : public mt_forest {
       return p;
     }
 
-    // Move the variable to the optimal level between top and bottom
-    void sifting(int var, int top, int bottom);
-
-  protected:
     class mtmdd_iterator : public mt_iterator {
       public:
         mtmdd_iterator(const forest* F);
@@ -63,12 +62,19 @@ class MEDDLY::mtmdd_forest : public mt_forest {
       private:
         bool first(int k, node_handle p);
     };
+#endif
+
+    // Move the variable to the optimal level between top and bottom
+    void sifting(int var, int top, int bottom);
+
 };
 
 
 //
 // Helper class for createEdge
 //
+
+#ifdef ALLOW_DEPRECATED_0_17_7
 
 namespace MEDDLY {
 
@@ -376,5 +382,7 @@ namespace MEDDLY {
   }; // class mtmdd_edgemaker
 
 }; // namespace MEDDLY
+
+#endif // ALLOW_DEPRECATED_0_17_7
 
 #endif

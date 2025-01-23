@@ -36,6 +36,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
     virtual void moveDownVariable(int high, int low);
     virtual void moveUpVariable(int low, int high);
 
+#ifdef ALLOW_DEPRECATED_0_17_7
   protected:
     template <class OPERATION, typename TYPE>
     inline void evaluateT(const dd_edge &f, const int* vlist,
@@ -155,12 +156,16 @@ class MEDDLY::evmxd_forest : public ev_forest {
       } // for i
     }
 
+#endif  // ALLOW_DEPRECATED_0_17_7
+
 };
 
 
 //
 // Helper class for createEdge
 //
+
+#ifdef ALLOW_DEPRECATED_0_17_7
 
 namespace MEDDLY {
 
@@ -301,7 +306,7 @@ namespace MEDDLY {
           node_handle dc;
           createEdgeUn(k-1, start, dch, dc_ev, dc);
           makeIdentityEdge(k, dc_ev, dc);
-          dontcare.set(dc, dc_ev);
+          dontcare.set(dc_ev, dc);
           // done with those
           start = dch;
         }
@@ -316,7 +321,7 @@ namespace MEDDLY {
           createEdgePr(-1, -k, start, batchP, dcnormal_ev, dcnormal_nh);
           F->makeNodeAtLevel<OPERATION, T>(k, dcnormal_ev, dcnormal_nh);
           dd_edge dcnormal(F);
-          dcnormal.set(dcnormal_nh, dcnormal_ev);
+          dcnormal.set(dcnormal_ev, dcnormal_nh);
 
           MEDDLY_DCASSERT(unionOp);
           unionOp->computeTemp(dontcare, dcnormal, dontcare);
@@ -376,7 +381,7 @@ namespace MEDDLY {
         nb->shrink(z);
         F->createReducedNode(-1, nb, built_ev, built_nh);
         dd_edge built(F);
-        built.set(built_nh, built_ev);
+        built.set(built_ev, built_nh);
 
         unionOp->computeTemp(dontcare, built, built);
         ed = F->linkNode(built);
@@ -424,7 +429,7 @@ namespace MEDDLY {
           node_handle dc_ptr;
           T dc_val;
           createEdgeUn(-k-1, start, batchP, dc_val, dc_ptr);
-          dontcare.set(dc_ptr, dc_val);
+          dontcare.set(dc_val, dc_ptr);
         } else {
           F->getTransparentEdge(dontcare);
         }
@@ -477,7 +482,7 @@ namespace MEDDLY {
             node_handle these_ptr;
             T these_val;
             createEdgeUn(-k-1, start, batchP, these_val, these_ptr);
-            these.set(these_ptr, these_val);
+            these.set(these_val, these_ptr);
           } else {
             F->getTransparentEdge(dontcare);
           }
@@ -531,5 +536,7 @@ namespace MEDDLY {
   }; // class evmxd_edgemaker
 
 }; // namespace MEDDLY
+
+#endif  // ALLOW_DEPRECATED_0_17_7
 
 #endif

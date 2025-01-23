@@ -115,6 +115,27 @@ namespace MEDDLY {
         USER_DEFINED
     };
 
+    inline const char* nameOf(reduction_rule rr)
+    {
+        switch (rr) {
+            case reduction_rule::FULLY_REDUCED:     return "fully-reduced";
+            case reduction_rule::QUASI_REDUCED:     return "quasi-reduced";
+            case reduction_rule::IDENTITY_REDUCED:  return "identity-reduced";
+            case reduction_rule::USER_DEFINED:      return "userdef-reduced";
+            default:                                return "unknown reduction";
+        }
+    }
+
+    inline const char* shortNameOf(reduction_rule rr)
+    {
+        switch (rr) {
+            case reduction_rule::FULLY_REDUCED:     return "FR";
+            case reduction_rule::QUASI_REDUCED:     return "QR";
+            case reduction_rule::IDENTITY_REDUCED:  return "IR";
+            case reduction_rule::USER_DEFINED:      return "uR";
+            default:                                return "?R";
+        }
+    }
 
     // ******************************************************************
     // *                       node storage  rules                      *
@@ -159,6 +180,17 @@ namespace MEDDLY {
         // TBD: there may be others in the future :^)
     };
 
+    inline const char* nameOf(edge_labeling el) {
+        switch (el) {
+            case edge_labeling::MULTI_TERMINAL: return "MT";
+
+            case edge_labeling::EVPLUS:         return "EV+";
+            case edge_labeling::INDEX_SET:      return "ndx";
+
+            case edge_labeling::EVTIMES:        return "EV*";
+            default:                            return "?el";
+        }
+    }
 
     // ******************************************************************
     // *                         reporting flags                        *

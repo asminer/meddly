@@ -60,16 +60,20 @@ long buildReachset(int N, bool useSat)
 
     for (int i=15; i>=0; i--) sizes[i] = N+1;
     domain* d = domain::createBottomUp(sizes, 16);
+    forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
+            edge_labeling::MULTI_TERMINAL);
+    forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
+            edge_labeling::MULTI_TERMINAL);
 
     // Build initial state
-    int* initial = new int[17];
-    for (int i=16; i; i--) initial[i] = 0;
-    initial[1] = initial[5] = initial[9] = initial[13] = N;
-    forest* mdd = forest::create(d, 0, range_type::BOOLEAN,
-            edge_labeling::MULTI_TERMINAL);
+    minterm initial(mdd);
     dd_edge init_state(mdd);
-    mdd->createEdge(&initial, 1, init_state);
-    delete[] initial;
+    initial.setAllVars(0);
+    initial.setVar(1, N);
+    initial.setVar(5, N);
+    initial.setVar(9, N);
+    initial.setVar(13, N);
+    initial.buildFunction(false, init_state);
 
 #ifdef PROGRESS
     fputc('i', stdout);
@@ -77,8 +81,6 @@ long buildReachset(int N, bool useSat)
 #endif
 
     // Build next-state function
-    forest* mxd = forest::create(d, 1, range_type::BOOLEAN,
-            edge_labeling::MULTI_TERMINAL);
     dd_edge nsf(mxd);
     buildNextStateFunction(kanban, 16, mxd, nsf);
 
@@ -99,7 +101,7 @@ long buildReachset(int N, bool useSat)
     fflush(stdout);
 #endif
 
-    long c;
+    long c = -1;
     apply(CARDINALITY, reachable, c);
 
 #ifdef PROGRESS

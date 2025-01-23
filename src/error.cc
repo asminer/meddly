@@ -37,6 +37,7 @@ const char* MEDDLY::error::getName() const
         case  error::INVALID_VARIABLE:      return "Invalid variable";
         case  error::INVALID_LEVEL:         return "Invalid level";
         case  error::INVALID_BOUND:         return "Invalid bound";
+        case  error::INVALID_ITERATOR:      return "Invalid iterator";
         case  error::DOMAIN_NOT_EMPTY:      return "Domain not empty";
         case  error::UNKNOWN_OPERATION:     return "Unknown operation";
         case  error::DOMAIN_MISMATCH:       return "Domain mismatch";

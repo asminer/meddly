@@ -468,7 +468,7 @@ void MEDDLY::saturation_evplus_op::saturate(const dd_edge& in, dd_edge& out)
   long cev = Inf<long>();
   node_handle cnode = 0;
   saturate(aev, in.getNode(), argF->getMaxLevelIndex(), cev, cnode);
-  out.set(cnode, cev);
+  out.set(cev, cnode);
 }
 
 void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, long& resEv, node_handle& resEvmdd)
@@ -1359,8 +1359,8 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
 //        nb.d_ref(j) = -1;
 //      }
       else {
-        nbdj.set(nb.down(j), nb.edge_long(j));
-        temp.set(rec, recev);  // clobbers rec; that's what we want
+        nbdj.set(nb.edge_long(j), nb.down(j));
+        temp.set(recev, rec);  // clobbers rec; that's what we want
         mddUnion->computeTemp(nbdj, temp, nbdj);
         updated = (nbdj.getNode() != nb.down(j));
         nb.setFull(j, nbdj);
@@ -1494,8 +1494,8 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
         }
 
         // there's new states and existing states; union them.
-        newst.set(n, nev); // clobber when done
-        nbdj.set(nb->down(j), nb->edge_long(j));   // also clobber when done
+        newst.set(nev, n); // clobber when done
+        nbdj.set(nb->edge_long(j), nb->down(j));   // also clobber when done
         mddUnion->computeTemp(newst, nbdj, nbdj);
         nb->setFull(j, nbdj);
       } // for j

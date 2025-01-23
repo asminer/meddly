@@ -191,7 +191,7 @@ MEDDLY::transitive_closure_forwd_bfs
     plusOp = POST_PLUS(resF, arg1F, resF);
     minOp = UNION(resF, resF, resF);
   } else {
-    throw error(error::INVALID_OPERATION);
+    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
   imageOp = TC_POST_IMAGE(arg2F, arg3F, resF);
 }
@@ -212,7 +212,7 @@ void MEDDLY::transitive_closure_forwd_bfs::compute(const dd_edge &a, const dd_ed
   node_handle cnode = 0;
   iterate(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, cnode);
 
-  res.set(cnode, cev);
+  res.set(cev, cnode);
   */
   iterate(a, b, r, res);
 }
@@ -434,7 +434,7 @@ void MEDDLY::transitive_closure_dfs::computeDDEdge(const dd_edge& a, const dd_ed
   node_handle c = 0;
   _compute(aev, a.getNode(), bev, b.getNode(), r.getNode(), cev, c);
 
-  res.set(c, cev);
+  res.set(cev, c);
 }
 
 void MEDDLY::transitive_closure_dfs::_compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
@@ -559,8 +559,8 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
         // nb.d_ref(jp) = rec;
       }
       else {
-        nbdj.set(nb.down(jp), nb.edge_long(jp));
-        newst.set(rec, recev);
+        nbdj.set(nb.edge_long(jp), nb.down(jp));
+        newst.set(recev, rec);
         minOp->computeTemp(nbdj, newst, nbdj);
         updated = (nbdj.getNode() != nb.down(jp));
         nb.setFull(jp, nbdj);
@@ -757,8 +757,8 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
           */
 
           // there's new states and existing states; union them.
-          Tdj.set(Tp->down(jp), Tp->edge_long(jp));
-          newst.set(n, nev);
+          Tdj.set(Tp->edge_long(jp), Tp->down(jp));
+          newst.set(nev, n);
           minOp->computeTemp(newst, Tdj, Tdj);
           Tp->setFull(jp, Tdj);
         } // for j

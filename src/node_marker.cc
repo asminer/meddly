@@ -130,6 +130,8 @@ void MEDDLY::node_marker::showByLevels(output &s) const
             //
             s << "    node:";
             s.put(i, nwid);
+            s << " incount: ";
+            s.put(For->getNodeInCount(i));
             s.put(' ');
             For->unpackNode(M, i, FULL_OR_SPARSE);
             M->show(s, true);

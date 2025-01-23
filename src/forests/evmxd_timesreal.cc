@@ -38,15 +38,29 @@ MEDDLY::evmxd_timesreal::evmxd_timesreal(domain *d, const policies &p, int* leve
 MEDDLY::evmxd_timesreal::~evmxd_timesreal()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::evmxd_timesreal::createEdge(float val, dd_edge &e)
 {
     if (val) {
         createEdgeTempl<OP, float>(val, e);
     } else {
-        e.set(0, 0.0f);
+        e.set(0.0f, 0);
     }
 #ifdef DEVELOPMENT_CODE
-    validateIncounts(true);
+    validateIncounts(true, __FILE__, __LINE__);
+#endif
+}
+
+void MEDDLY::evmxd_timesreal::createEdge(double val, dd_edge &e)
+{
+    if (val) {
+        createEdgeTempl<OP, double>(val, e);
+    } else {
+        e.set(0.0f, 0);
+    }
+#ifdef DEVELOPMENT_CODE
+    validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -67,18 +81,9 @@ void MEDDLY::evmxd_timesreal
   float ev;
   node_handle ep;
   EM.createEdge(ev, ep);
-  e.set(ep, ev);
+  e.set(ev, ep);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
-#endif
-}
-
-void MEDDLY::evmxd_timesreal
-::createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
-{
-  createEdgeForVarTempl<OP, float>(vh, vp, terms, a);
-#ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -89,15 +94,26 @@ void MEDDLY::evmxd_timesreal
   evaluateT<OP, float>(f, vlist, vplist, term);
 }
 
+#endif
+
+void MEDDLY::evmxd_timesreal
+::createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
+{
+  createEdgeForVarTempl<OP, float>(vh, vp, terms, a);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true, __FILE__, __LINE__);
+#endif
+}
+
 void MEDDLY::evmxd_timesreal::showEdge(output &s, const edge_value &ev,
         node_handle d) const
 {
+    s.put('<');
+    ev.show(s);
+    s.put(", ");
     if (d == 0) {
-        s.put("<0, w>");
+        s.put("zero>");
     } else {
-        s.put('<');
-        s.put(ev.getFloat());
-        s.put("f, ");
         if (d < 0) {
             s.put('w');
         } else {
@@ -124,6 +140,8 @@ const char* MEDDLY::evmxd_timesreal::codeChars() const
 // *                                                                *
 // *                                                                *
 // ******************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_7
 
 MEDDLY::evmxd_timesreal::evtrmxd_baseiter::evtrmxd_baseiter(const forest *F)
 : iterator(F)
@@ -495,3 +513,5 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::first(int k, node_handle do
   }
   return false;
 }
+
+#endif

@@ -30,10 +30,6 @@
 namespace MEDDLY {
     class inter_mt;
 
-    class inter_mdd;
-    class inter_mxd;
-    class inter_max_evplus;
-
     binary_list INTER_cache;
 };
 
@@ -313,8 +309,8 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
     // Check the compute table or primed compute table
     //
     // **************************************************************
-    ct_vector key(2);
-    ct_vector res(1);
+    ct_vector key(ct->getKeySize());
+    ct_vector res(ct->getResultSize());
     key[0].setN(A);
     key[1].setN(B);
 
@@ -534,121 +530,6 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
     }
 }
 
-
-// ******************************************************************
-// *                                                                *
-// *                     inter_max_evplus  class                    *
-// *                                                                *
-// ******************************************************************
-
-class MEDDLY::inter_max_evplus : public generic_binary_evplus {
-    public:
-        inter_max_evplus(forest* arg1, forest* arg2, forest* res);
-
-        virtual ct_entry_key* findResult(long aev, node_handle a,
-            long bev, node_handle b, long& cev, node_handle &c);
-        virtual void saveResult(ct_entry_key* key, long aev, node_handle a,
-            long bev, node_handle b, long cev, node_handle c);
-
-        virtual bool checkTerminals(long aev, node_handle a,
-            long bev, node_handle b, long& cev, node_handle& c);
-};
-
-MEDDLY::inter_max_evplus::inter_max_evplus(forest* arg1, forest* arg2,
-        forest* res) : generic_binary_evplus(INTER_cache, arg1, arg2, res)
-{
-    operationCommutes();
-
-    checkDomains(__FILE__, __LINE__);
-    checkAllRelations(__FILE__, __LINE__, SET);
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
-}
-
-MEDDLY::ct_entry_key* MEDDLY::inter_max_evplus::findResult(long aev, node_handle a,
-  long bev, node_handle b, long& cev, node_handle &c)
-{
-  ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-  MEDDLY_DCASSERT(CTsrch);
-  if (canCommute() && a > b) {
-    CTsrch->writeL(0);
-    CTsrch->writeN(b);
-    CTsrch->writeL(aev - bev);
-    CTsrch->writeN(a);
-  } else {
-    CTsrch->writeL(0);
-    CTsrch->writeN(a);
-    CTsrch->writeL(bev - aev);
-    CTsrch->writeN(b);
-  }
-  CT0->find(CTsrch, CTresult[0]);
-  if (!CTresult[0]) return CTsrch;
-  cev = CTresult[0].readL();
-  c = resF->linkNode(CTresult[0].readN());
-  if (c != 0) {
-    cev += (a > b ? bev : aev);
-  }
-  else {
-    MEDDLY_DCASSERT(cev == 0);
-  }
-  CT0->recycle(CTsrch);
-  return 0;
-}
-
-void MEDDLY::inter_max_evplus::saveResult(ct_entry_key* key,
-  long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
-{
-  if (c == 0) {
-    CTresult[0].writeL(0);
-  }
-  else {
-    CTresult[0].writeL(cev - (a > b ? bev : aev));
-  }
-  CTresult[0].writeN(c);
-  CT0->addEntry(key, CTresult[0]);
-}
-
-bool MEDDLY::inter_max_evplus::checkTerminals(long aev, node_handle a, long bev, node_handle b,
-    long& cev, node_handle& c)
-{
-  if (a == 0 || b == 0) {
-    cev = 0;
-    c = 0;
-    return true;
-  }
-  if (arg1F->isTerminalNode(a) && bev >= aev) {
-    if (arg2F == resF) {
-      cev = bev;
-      c = resF->linkNode(b);
-      return true;
-    }
-    else {
-      return false;
-    }
-  }
-  if (arg2F->isTerminalNode(b) && aev >= bev) {
-    if (arg1F == resF) {
-      cev = aev;
-      c = resF->linkNode(a);
-      return true;
-    }
-    else {
-      return false;
-    }
-  }
-  if (a == b) {
-    if (arg1F == arg2F && arg2F == resF) {
-      cev = MAX(aev, bev);
-      c = resF->linkNode(a);
-      return true;
-    }
-    else {
-      return false;
-    }
-  }
-  return false;
-}
-
-
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
@@ -667,17 +548,7 @@ MEDDLY::INTERSECTION(forest* a, forest* b, forest* c)
         return bop;
     }
 
-    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-        return INTER_cache.add(new inter_mt(a, b, c));
-    }
-
-    if (c->getEdgeLabeling() == edge_labeling::EVPLUS) {
-        if (! c->isForRelations()) {
-            return INTER_cache.add(new inter_max_evplus(a, b, c));
-        }
-    }
-
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    return INTER_cache.add(new inter_mt(a, b, c));
 }
 
 void MEDDLY::INTERSECTION_init()

@@ -118,8 +118,6 @@ STORAGE_STATS | HOLE_MANAGER_STATS
 
 int main(int argc, const char** argv)
 {
-char method ;
-
 for (int i=1; i<argc; i++)
 {
   if(i==1)
@@ -165,20 +163,11 @@ policies p(false);
   p.setPessimistic();
   // p.setQuasiReduced();
 
-//INITIAL STATE
-int* initialState;
-initialState = new int[PLACES + 1];
-for(int g = 1;g <= PLACES;g++) initialState[g] = 0;
-initialState[p1_position]=initialState[p3_position]=MT;initialState[p5_position]=DC;initialState[p7_position]=2*DC;
-
 N = 2*DC>MT?(2*DC):MT;
 
-method ='i';
   std::cout<<"\n********************";
   std::cout<<"\n     implicit";
   std::cout<<"\n********************";
-if('i' == method)
-{
 
 //CREATE FORESTS
   forest* inmdd = forest::create(dm, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL,p);
@@ -193,7 +182,15 @@ if('i' == method)
   //ADD INITIAL STATE
   dd_edge first(inmdd);
   dd_edge reachable(inmdd);
-  inmdd->createEdge(&initialState, 1, first);
+
+  minterm initState(inmdd);
+  initState.setAllVars(0);
+  initState.setVar(p1_position, MT);
+  initState.setVar(p3_position, MT);
+  initState.setVar(p5_position, DC);
+  initState.setVar(p7_position, 2*DC);
+  initState.buildFunction(false, first);
+
     //outmdd->createEdge(&initialState, 1, reachable);
 
 
@@ -228,7 +225,7 @@ if('i' == method)
   printStats("MDD", inmdd);
   fflush(stdout);
 
-  double c;
+  double c = 0;
   apply(CARDINALITY, reachable, c);
   compute_table::showAll(meddlyout, 3);
 
@@ -240,7 +237,6 @@ if('i' == method)
 
   mxd_edge_all.show(meddlyout,2);*/
 
-}
 
 return 0;
 }

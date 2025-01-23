@@ -38,13 +38,24 @@ MEDDLY::evmdd_timesreal::evmdd_timesreal(domain *d, const policies &p, int* leve
 MEDDLY::evmdd_timesreal::~evmdd_timesreal()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::evmdd_timesreal::createEdge(float val, dd_edge &e)
 {
   createEdgeTempl<OP, float>(val, e);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
+
+void MEDDLY::evmdd_timesreal::createEdge(double val, dd_edge &e)
+{
+  createEdgeTempl<OP, double>(val, e);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true, __FILE__, __LINE__);
+#endif
+}
+
 
 void MEDDLY::evmdd_timesreal
 ::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
@@ -59,18 +70,9 @@ void MEDDLY::evmdd_timesreal
   float ev;
   node_handle ep;
   EM.createEdge(ev, ep);
-  e.set(ep, ev);
+  e.set(ev, ep);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
-#endif
-}
-
-void MEDDLY::evmdd_timesreal
-::createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
-{
-  createEdgeForVarTempl<OP, float>(vh, vp, terms, a);
-#ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -78,6 +80,17 @@ void MEDDLY::evmdd_timesreal
 ::evaluate(const dd_edge &f, const int* vlist, float &term) const
 {
   evaluateT<OP, float>(f, vlist, term);
+}
+
+#endif
+
+void MEDDLY::evmdd_timesreal
+::createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
+{
+  createEdgeForVarTempl<OP, float>(vh, vp, terms, a);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true, __FILE__, __LINE__);
+#endif
 }
 
 void MEDDLY::evmdd_timesreal::showEdge(output &s, const edge_value &ev,
@@ -116,6 +129,8 @@ const char* MEDDLY::evmdd_timesreal::codeChars() const
 // *                                                                *
 // *                                                                *
 // ******************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_7
 
 MEDDLY::evmdd_timesreal::evtrmdd_iterator::evtrmdd_iterator(const forest *F)
 : iterator(F)
@@ -210,3 +225,4 @@ bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::first(int k, node_handle down)
   return true;
 }
 
+#endif

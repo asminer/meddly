@@ -35,82 +35,102 @@ using namespace MEDDLY;
 
 int main(int argc, char *argv[])
 {
-  // Initialize MEDDLY
-  MEDDLY::initialize();
+    // Initialize MEDDLY
+    MEDDLY::initialize();
 
-  // Number of levels in domain (excluding terminals)
-  const int nLevels = 2;
+    // Create a domain
+    const int varsizes[] = { 2, 2 };
+    domain *d = domain::createBottomUp(varsizes, 2);
+    assert(d);
 
-  // Set up arrays bounds
-  variable** vars = (variable**) malloc((1+nLevels) * sizeof(void*));
-  vars[0] = 0;
-  for (int i = nLevels; i; i--) { vars[i] = createVariable(2, ""); }
+    // Create an MDD forest in this domain (to store states)
+    policies pmdd(false);
+    pmdd.setFullyReduced();
+    forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
+                            edge_labeling::MULTI_TERMINAL, pmdd);
+    assert(mdd);
 
-  // Create a domain and set up the state variables.
-  domain *d = domain::create(vars, nLevels);
-  assert(d != NULL);
-
-  // Create an MDD forest in this domain (to store states)
-  policies pmdd(false);
-  // pmdd.setQuasiReduced();
-  pmdd.setFullyReduced();
-  forest* mdd =
-    forest::create(d,false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
-  assert(mdd != NULL);
-
-  // Create a MXD forest in domain (to store transition diagrams)
-  forest* mxd = forest::create(d,true, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  assert(mxd != NULL);
-
-  // Set up initial state array
-  int state1[nLevels+1] = {0, 0, DONT_CARE};
-  int *states[1] = { state1 };
-  dd_edge initialStates(mdd);
-  mdd->createEdge(reinterpret_cast<int**>(states), 1, initialStates);
-
-  // Create a matrix diagram to represent the next-state function
-  int from1[nLevels+1] = {0, DONT_CARE, 0};
-  int from2[nLevels+1] = {0, DONT_CARE, 0};
-  int to1[nLevels+1] = {0, 1, 0};
-  int to2[nLevels+1] = {0, 1, 1};
-  int *from[2] = { from1, from2 };
-  int *to[2] = { to1, to2 };
-  dd_edge nsf(mxd);
-  mxd->createEdge(reinterpret_cast<int**>(from),
-      reinterpret_cast<int**>(to), 2, nsf);
-
-  dd_edge reachBFS(initialStates);
-  dd_edge reachDFS(initialStates);
-
-  apply(REACHABLE_STATES_BFS, reachBFS, nsf, reachBFS);
-  apply(REACHABLE_STATES_DFS, reachDFS, nsf, reachDFS);
-
-  int retval = (reachBFS == reachDFS)? 0: 1;
+    // Create a MXD forest in domain (to store transition diagrams)
+    forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
+                            edge_labeling::MULTI_TERMINAL);
+    assert(mxd);
 
 #ifdef VERBOSE
-  FILE_output meddlyout(stdout);
-
-  printf("Initial States:\n");
-  initialStates.showGraph(meddlyout);
-
-  printf("Next-State Function:\n");
-  nsf.showGraph(meddlyout);
-
-  printf("BFS states\n");
-  reachBFS.showGraph(meddlyout);
-
-  printf("DFS states\n");
-  reachDFS.showGraph(meddlyout);
-
-  if (retval) {
-    printf("\nReachable states DO NOT match\n\n");
-  } else {
-    printf("\nReachable states match\n\n");
-  }
-
+    FILE_output out(stdout);
 #endif
 
-  // Cleanup
-  MEDDLY::cleanup();
-  return retval;
+    // Set up initial state
+#ifdef VERBOSE
+    out << "Building initial state\n";
+    out.flush();
+#endif
+    minterm initial(mdd);
+    dd_edge initialStates(mdd);
+    initial.setVar(1, 0);
+    initial.setVar(2, DONT_CARE);
+    initial.buildFunction(false, initialStates);
+#ifdef VERBOSE
+    printf("Initial States:\n");
+    initialStates.showGraph(out);
+#endif
+
+    // Create a matrix diagram to represent the next-state function
+    //
+#ifdef VERBOSE
+    out << "Building next-state function\n";
+    out.flush();
+#endif
+    minterm_coll nsf_coll(2, mxd);
+    dd_edge nsf(mxd);
+    nsf_coll.unused().setVars(1, DONT_CARE, 1);
+    nsf_coll.unused().setVars(2, 0, 0);
+    nsf_coll.pushUnused();
+    nsf_coll.unused().setVars(1, DONT_CARE, 1);
+    nsf_coll.unused().setVars(2, 0, 1);
+    nsf_coll.pushUnused();
+    nsf_coll.buildFunctionMax(false, nsf);
+#ifdef VERBOSE
+    out << "Next-State Minterms:\n";
+    nsf_coll.show(out);
+    out << "Next-State Function:\n";
+    nsf.showGraph(out);
+#endif
+
+
+    // Generate reachable states
+    //
+    dd_edge reachBFS(initialStates);
+    dd_edge reachDFS(initialStates);
+
+#ifdef VERBOSE
+    out << "Building reachable using BFS\n";
+    out.flush();
+#endif
+    apply(REACHABLE_STATES_BFS, reachBFS, nsf, reachBFS);
+#ifdef VERBOSE
+    out << "BFS states\n";
+    reachBFS.showGraph(out);
+#endif
+
+#ifdef VERBOSE
+    out << "Building reachable using DFS\n";
+    out.flush();
+#endif
+    apply(REACHABLE_STATES_DFS, reachDFS, nsf, reachDFS);
+#ifdef VERBOSE
+    out << "DFS states\n";
+    reachBFS.showGraph(out);
+#endif
+
+
+    int retval = (reachBFS == reachDFS)? 0: 1;
+    if (retval) {
+        printf("\nReachable states DO NOT match\n\n");
+    } else {
+        printf("\nReachable states match\n\n");
+    }
+
+    // Cleanup
+    MEDDLY::cleanup();
+    return retval;
 }

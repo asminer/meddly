@@ -44,9 +44,9 @@ void test_MT_full_Reductions(forest* f, const char* what)
 {
     dd_edge zero(f), one(f), two(f), x1(f), x2(f);
 
-    f->createEdge(0L, zero);
-    f->createEdge(1L, one);
-    f->createEdge(2L, two);
+    f->createConstant(0L, zero);
+    f->createConstant(1L, one);
+    f->createConstant(2L, two);
 
     f->createEdgeForVar(1, false, x1);
     f->createEdgeForVar(2, false, x2);
@@ -104,7 +104,7 @@ void test_EV_full_Reductions(forest* f, const char* what)
 {
     dd_edge zero(f), x1(f), x2(f);
 
-    f->createEdge(0L, zero);
+    f->createConstant(0L, zero);
 
     f->createEdgeForVar(1, false, x1);
     f->createEdgeForVar(2, false, x2);

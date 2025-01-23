@@ -21,16 +21,23 @@
 
 #include "defines.h"
 #include "edge_value.h"
+#include "rangeval.h"
 
 #include <string>
 #include <vector>
 
 namespace MEDDLY {
     class dd_edge;
+    class iterator_helper;
+
     class forest;
 
     class input;
     class output;
+
+    class minterm;
+    class unpacked_node;
+    class rangeval;
 };
 
 
@@ -50,6 +57,106 @@ namespace MEDDLY {
     - Checking for equality of two dd_edges, using the method equals().
 */
 class MEDDLY::dd_edge {
+    public:
+
+        class iterator {
+            public:
+                iterator();
+                iterator(const dd_edge &E, const minterm* mask=nullptr);
+
+                // Move constructor
+                iterator(iterator &&I);
+
+                ~iterator();
+
+                //
+                // Restart on a new edge, in the same forest though.
+                //
+                void restart(const dd_edge &E, const minterm* mask=nullptr);
+
+                inline operator bool() const {
+                    return !atEnd;
+                }
+
+                inline void operator++() {
+                    if (atEnd)      return;
+                    next();
+                }
+                inline void operator++(int) {
+                    if (atEnd)      return;
+                    next();
+                }
+                inline bool operator!=(const iterator& I) const {
+                    if (I.atEnd && atEnd) return false;
+                    if (I.atEnd || atEnd) return true;
+                    return !equals(I);
+                }
+                inline bool operator==(const iterator& I) const {
+                    if (I.atEnd && atEnd) return true;
+                    if (I.atEnd || atEnd) return false;
+                    return equals(I);
+                }
+
+                inline const minterm& operator*() const {
+                    if (atEnd) {
+                        throw error(error::INVALID_ITERATOR, __FILE__, __LINE__);
+                    }
+                    return *M;
+                }
+
+            private:
+                iterator(const iterator &i) = delete;
+                void operator=(const iterator &i) = delete;
+
+                //
+                // Increment
+                //
+                void next();
+
+                bool equals(const iterator &I) const;
+
+                friend class MEDDLY::dd_edge;
+                friend class MEDDLY::iterator_helper;
+
+            private:
+                /*
+                 * Keep a set of unpacked nodes at each level.
+                 * If the variable is free (DONT_CARE), then
+                 * the nodes are in sparse format for quick traversal.
+                 * Otherwise we have a null pointer.
+                 */
+                unpacked_node** U_from;
+                unpacked_node** U_to;
+
+                /*
+                 * Current index at each level.
+                 * For free variables, this is the nonzero index
+                 * into the sparse unpacked node.
+                 * Otherwise, it is the index into the full unpacked
+                 * node, and the index should equal the variable value.
+                 */
+                unsigned* Z_from;
+                unsigned* Z_to;
+
+                /*
+                 * Accumulated edge values through each level.
+                 */
+                edge_value* ev_from;
+                edge_value* ev_to;
+
+                /*
+                 * Root edge
+                 */
+                edge_value  root_ev;
+                node_handle root_node;
+
+                const forest* F;
+                minterm* M;
+                const minterm* mask;
+
+                bool atEnd;
+        };
+
     public:
         /// Construct and attach to a forest.
         dd_edge(forest* p=nullptr);
@@ -105,11 +212,15 @@ class MEDDLY::dd_edge {
             h = node; node = 0;
         }
         inline const edge_value& getEdgeValue() const { return edgeval; }
-        inline long getEdgeInt() const { return edgeval.getLong(); }
+        inline int getEdgeInt() const { return edgeval.getInt(); }
+        inline long getEdgeLong() const { return edgeval.getLong(); }
         inline float getEdgeFloat() const { return edgeval.getFloat(); }
+        inline double getEdgeDouble() const { return edgeval.getDouble(); }
 
+        inline void getEdgeValue(int &v) const { edgeval.get(v); }
         inline void getEdgeValue(long &v) const { edgeval.get(v); }
         inline void getEdgeValue(float &v) const { edgeval.get(v); }
+        inline void getEdgeValue(double &v) const { edgeval.get(v); }
 
         /** Counts the number of unique nodes below this edge.
             @return     The number of unique nodes starting at the root node
@@ -207,6 +318,7 @@ class MEDDLY::dd_edge {
             return edgeval;
         }
 
+        /*
         inline void set(node_handle n, long value) {
             set(n);
             setEdgeValue(value);
@@ -215,10 +327,80 @@ class MEDDLY::dd_edge {
             set(n);
             setEdgeValue(value);
         }
-        inline void set(node_handle n, edge_value v) {
+        */
+
+        inline void set(edge_value v, node_handle n) {
             set(n);
             edgeval = v;
         }
+
+        ///
+        /// Build an end iterator
+        ///
+        inline iterator end() const
+        {
+            return iterator();
+        }
+
+        ///
+        /// Build an iterator through this function
+        /// The mask tells which values we can iterate over
+        /// (set to DONT_CARE), while the others remain fixed.
+        /// A NULL mask corresponds to all DONT_CAREs.
+        ///
+        inline iterator begin(const minterm *mask = nullptr) const
+        {
+            return iterator(*this, mask);
+        }
+
+        /**
+            For an index set only,
+            find the set of assignments corresponding to the given index.
+
+                @param  index   Desired index.
+                @param  m       Output: the minterm such that f(m) = index.
+
+                @throws     INVALID_OPERATION, if this is not an
+                            Index Set EV+MDD.
+
+                @return true,   if we found a minterm; false otherwise.
+        */
+        inline bool getElement(long index, minterm &m) const
+        {
+            switch (edgeval.getType()) {
+                case edge_type::INT:
+                    return  getElemInt(index, m);
+
+                case edge_type::LONG:
+                    return  getElemLong(index, m);
+
+                default:
+                    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+            }
+        }
+
+
+        ///
+        /// Evaluate the function for variable assignments given in m,
+        /// and store the result in val.
+        /// This is the safest version, as it will correctly handle
+        /// special values like infinity.
+        ///
+        void evaluate(const minterm &m, rangeval &val) const;
+
+        ///
+        /// Evaluate and convert to a 'standard' range.
+        ///
+        template <typename T>
+        inline void evaluate(const minterm &m, T &val) const
+        {
+            rangeval v;
+            evaluate(m, v);
+            val = v;
+        }
+    private:
+        bool getElemInt(long index, minterm &m) const;
+        bool getElemLong(long index, minterm &m) const;
 
     private:
         void init(const dd_edge &e);
@@ -238,8 +420,6 @@ class MEDDLY::dd_edge {
         unsigned parentFID;     // ID of parent forest
         node_handle node;
         edge_value edgeval;
-
-//        friend class unpacked_node;
 
     //
     // for the dd_edge registry in the parent forest

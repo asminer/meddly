@@ -79,10 +79,11 @@
 
 // Thoroughly check reference counts.
 // Very slow.  Use only for debugging.
-// #define VALIDATE_INCOUNTS
 // #define VALIDATE_INCOUNTS_ON_DELETE
 
-
+// Check reference counts after operations.
+// Very slow. Use only for debugging.
+// #define ACTUALLY_VALIDATE_INCOUNTS
 
 // #define SHOW_VALIDATE_CACHECOUNTS
 
@@ -215,8 +216,95 @@ MEDDLY::relation_node* MEDDLY::forest
     return implUT->getNode(rnh);
 }
 
+namespace MEDDLY {
+
+    //
+    // Template helper: normalizing EV+
+    //
+    template <typename EDGETYPE>
+    inline void normalize_evplus(unpacked_node &un, edge_value &ev,
+            unsigned &nnz)
+        {
+            nnz = 0;
+            ev.set(EDGETYPE(0));
+            EDGETYPE minval = 0;
+            //
+            // First scan: find smallest value
+            //
+            for (unsigned i=0; i<un.getSize(); i++) {
+                if (0 == un.down(i)) {
+                    un.setEdgeval(i, ev);
+                    continue;
+                }
+                EDGETYPE uni;
+                un.edgeval(i).get(uni);
+                if (nnz) {
+                    if (uni < minval)
+                    {
+                        minval = uni;
+                    }
+                } else {
+                    minval = uni;
+                }
+                ++nnz;
+            }
+            //
+            // Second scan: adjust; unless adjustment is zero
+            //
+            if (minval) {
+                for (unsigned i=0; i<un.getSize(); i++) {
+                    if (un.down(i)) {
+                        un.subtractFromEdge(i, minval);
+                    }
+                }
+            }
+            ev.set(minval);
+        }
+
+    //
+    // Template helper: normalizing EV*
+    //
+    template <typename EDGETYPE>
+    inline void normalize_evstar(unpacked_node &un, edge_value &ev,
+            unsigned &nnz)
+        {
+            nnz = 0;
+            ev.set(EDGETYPE(0));
+            EDGETYPE firstval = 0;
+            //
+            // First scan: find the first non-zero edge
+            //
+            for (unsigned i=0; i<un.getSize(); i++) {
+                if (0 == un.down(i)) {
+                    un.setEdgeval(i, ev);
+                    continue;
+                }
+                EDGETYPE uni;
+                un.edgeval(i).get(uni);
+                MEDDLY_DCASSERT(uni);
+                //
+                // Actual nonzero edge
+                //
+                if (!nnz) {
+                    firstval = uni;
+                }
+                ++nnz;
+            }
+            //
+            // Second scan: adjust; unless adjustment is zero or one
+            //
+            if (firstval && (firstval != 1)) {
+                for (unsigned i=0; i<un.getSize(); i++) {
+                    un.divideEdge(i, firstval);
+                }
+            }
+            ev.set(firstval);
+        }
+
+}
+
 void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
-                node_handle &node, int in)
+        node_handle &node, int in)
 {
     MEDDLY_DCASSERT(un);
 #ifdef DEBUG_CREATE_REDUCED
@@ -230,7 +318,6 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     // Normalize the node and count nonzeroes.
     //
     //
-    unsigned minplusone = 0;
     unsigned nnz = 0;
     switch (edgeLabel) {
         case edge_labeling::MULTI_TERMINAL:
@@ -243,9 +330,18 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
         case edge_labeling::EVPLUS:
         case edge_labeling::INDEX_SET:
                 MEDDLY_DCASSERT(isRangeType(range_type::INTEGER));
+
+                normalize_evplus<long>(*un, ev, nnz);
+
+                /*
+                // TBD: allow other edge types other than long?
+                MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
                 ev.set(0L);
                 for (unsigned i=0; i<un->getSize(); i++) {
-                    if (0 == un->down(i)) continue;
+                    if (0 == un->down(i)) {
+                        un->setEdgeval(i, 0L);
+                        continue;
+                    }
                     ++nnz;
                     if (minplusone) {
                         if (un->edgeval(i).getLong() < ev.getLong()) {
@@ -261,14 +357,22 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
                     // non-zero adjustment
                     //
                     for (unsigned i=0; i<un->getSize(); i++) {
-                        if (0 == un->down(i)) continue;
-                        un->subtractFromEdge(i, ev.getLong());
+                        if (un->down(i)) {
+                            un->subtractFromEdge(i, ev.getLong());
+                        }
                     }
                 }
+                */
                 break;
 
         case edge_labeling::EVTIMES:
                 MEDDLY_DCASSERT(isRangeType(range_type::REAL));
+
+                normalize_evstar<float>(*un, ev, nnz);
+
+                /*
+                // TBD: allow other edge types other than float?
+                MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
                 ev.set(0.0f);
                 minplusone = 0;
                 for (unsigned i=0; i<un->getSize(); i++) {
@@ -286,6 +390,7 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
                         un->divideEdge(i, ev.getFloat());
                     }
                 }
+                */
                 break;
 
         default:
@@ -445,6 +550,23 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
 #ifdef DEVELOPMENT_CODE
     unpacked_node* key = newUnpacked(node, SPARSE_ONLY);
     key->computeHash();
+    if (key->hash() != un->hash())
+    {
+        FILE_output s(stderr);
+        s << "Hash mismatch\n";
+        s << "Original node: ";
+        un->show(s, true);
+        s << "\n";
+#ifdef DEBUG_UNPACKED_HASH
+        un->debugHash(s);
+#endif
+        s << "Sparse version: ";
+        key->show(s, true);
+        s << "\n";
+#ifdef DEBUG_UNPACKED_HASH
+        key->debugHash(s);
+#endif
+    }
     MEDDLY_DCASSERT(key->hash() == un->hash());
     node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
     MEDDLY_DCASSERT(f == node);
@@ -519,7 +641,7 @@ void MEDDLY::forest::deleteNode(node_handle p)
 #ifdef VALIDATE_INCOUNTS_ON_DELETE
     delete_depth--;
     if (0==delete_depth) {
-        validateIncounts(false);
+        validateIncounts(false, __FILE__, __LINE__, "delete");
     }
 #endif
 
@@ -793,13 +915,14 @@ MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
         // build primed level nodes
         for (unsigned i=0; i<Uun->getSize(); i++) {
             Upr = unpacked_node::newSparse(this, -K, 1);
-            Upr->setSparse(0, i, noop_edge, (i ? linkNode(p) : p));
+            Upr->setSparse(0, i, noop_edge, linkNode(p));
             node_handle h;
             createReducedNode(Upr, ev, h);
             MEDDLY_DCASSERT(ev == noop_edge);
             Uun->setFull(i, noop_edge, h);
         }
 
+        unlinkNode(p);
         createReducedNode(Uun, ev, p);
         MEDDLY_DCASSERT(ev == noop_edge);
     } // for k
@@ -866,6 +989,216 @@ MEDDLY::node_handle MEDDLY::forest
 
     unpacked_node::Recycle(un);
     return p;
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// value to edge
+//
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void MEDDLY::forest::getEdgeForValue(rangeval T, edge_value &v, node_handle &p)
+    const
+{
+    if (!T.hasType(rangeType)) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+    switch (edgeLabel) {
+
+        case edge_labeling::MULTI_TERMINAL:
+                if (!T.isNormal()) {
+                    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                }
+
+                v.set();
+                switch (rangeType) {
+                    case range_type::BOOLEAN:
+                    {
+                        terminal t = terminal(bool(T));
+                        p = t.getHandle();
+                        return;
+                    }
+
+                    case range_type::INTEGER:
+                    {
+                        terminal t = terminal(long(T));
+                        p = t.getHandle();
+                        return;
+                    }
+
+                    case range_type::REAL:
+                    {
+                        terminal t = terminal(double(T));
+                        p = t.getHandle();
+                        return;
+                    }
+
+                    default:
+                        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+                } // switch
+                // shouldn't get here
+                MEDDLY_DCASSERT(false);
+                return;
+
+        case edge_labeling::INDEX_SET:
+        case edge_labeling::EVPLUS:
+                if (T.isPlusInfinity()) {
+                    v.setTempl(the_edge_type, 0);
+                    p = OMEGA_INFINITY;
+                    return;
+                }
+                if (!T.isNormal()) {
+                    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                }
+                p = OMEGA_NORMAL;
+
+                switch (the_edge_type) {
+                    case edge_type::INT:
+                        v.set(int(T));
+                        return;
+
+                    case edge_type::LONG:
+                        v.set(long(T));
+                        return;
+
+                    default:
+                        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+                } // switch
+                // shouldn't get here
+                MEDDLY_DCASSERT(false);
+                return;
+
+
+        case edge_labeling::EVTIMES:
+                if (!T.isNormal()) {
+                    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                }
+
+                switch (the_edge_type) {
+                    case edge_type::FLOAT:
+                        v.set(float(T));
+                        p = (0.0 == v.getFloat()) ? OMEGA_ZERO : OMEGA_NORMAL;
+                        return;
+
+                    case edge_type::DOUBLE:
+                        v.set(double(T));
+                        p = (0.0 == v.getDouble()) ? OMEGA_ZERO : OMEGA_NORMAL;
+                        return;
+
+                    default:
+                        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+                } // switch
+                // shouldn't get here
+                MEDDLY_DCASSERT(false);
+                return;
+
+        default:
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    }
+}
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// edge to value
+//
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+void MEDDLY::forest::getValueForEdge(const edge_value &v, node_handle p,
+        rangeval &T) const
+{
+    if (!isTerminalNode(p)) {
+        throw error(error::INVALID_LEVEL, __FILE__, __LINE__);
+    }
+    switch (edgeLabel) {
+
+        case edge_labeling::MULTI_TERMINAL:
+            {
+                MEDDLY_DCASSERT(v.isVoid());
+                terminal t(the_terminal_type, p);
+                switch (the_terminal_type) {
+                    case terminal_type::BOOLEAN:
+                    {
+                        T = rangeval(t.getBoolean());
+                        return;
+                    }
+
+                    case terminal_type::INTEGER:
+                    {
+                        T = rangeval(t.getInteger());
+                        return;
+                    }
+
+                    case terminal_type::REAL:
+                    {
+                        T = rangeval(t.getReal());
+                        return;
+                    }
+
+                    default:
+                        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+                } // switch
+                  // shouldn't get here
+                MEDDLY_DCASSERT(false);
+                return;
+            }
+
+        case edge_labeling::INDEX_SET:
+        case edge_labeling::EVPLUS:
+                if (OMEGA_INFINITY == p) {
+                    T = rangeval(range_special::PLUS_INFINITY,
+                                    range_type::INTEGER);
+                    return;
+                }
+                MEDDLY_DCASSERT(OMEGA_NORMAL == p);
+                switch (the_edge_type) {
+                    case edge_type::INT:
+                        T = rangeval(v.getInt());
+                        return;
+
+                    case edge_type::LONG:
+                        T = rangeval(v.getLong());
+                        return;
+
+                    default:
+                        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+                } // switch
+                // shouldn't get here
+                MEDDLY_DCASSERT(false);
+                return;
+
+
+        case edge_labeling::EVTIMES:
+                if (OMEGA_ZERO == p) {
+                    T = rangeval(0.0);
+                    return;
+                }
+                MEDDLY_DCASSERT(OMEGA_NORMAL == p);
+
+                switch (the_edge_type) {
+                    case edge_type::FLOAT:
+                        T = rangeval(v.getFloat());
+                        return;
+
+                    case edge_type::DOUBLE:
+                        T = rangeval(v.getDouble());
+                        return;
+
+                    default:
+                        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+                } // switch
+                // shouldn't get here
+                MEDDLY_DCASSERT(false);
+                return;
+
+        default:
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    }
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1187,9 +1520,10 @@ void MEDDLY::forest::dumpUniqueTable(output &s) const
   unique->show(s);
 }
 
-void MEDDLY::forest::validateIncounts(bool exact)
+void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN,
+        const char* opname) const
 {
-#ifndef VALIDATE_INCOUNTS
+#ifndef ACTUALLY_VALIDATE_INCOUNTS
     return;
 #endif
 
@@ -1223,9 +1557,10 @@ void MEDDLY::forest::validateIncounts(bool exact)
     }
 
     //
-    // TBD: add counts for down pointers in unpacked_nodes
+    // Add counts for down pointers in unpacked_nodes
     // in the build list for this forest.
     //
+    unpacked_node::AddToIncomingCounts(this, in_validate);
 
     // Validate the incoming count stored with each active node using the
     // in_count array computed above
@@ -1237,13 +1572,15 @@ void MEDDLY::forest::validateIncounts(bool exact)
             :  in_validate[i] >  getNodeInCount(i);
 
         if (fail) {
-            printf("Validation #%d failed\n", idnum);
-            long l_i = i;
-            long l_v = in_validate[i];
-            long l_c = getNodeInCount(i);
-            printf("For node %ld\n\tcount: %ld\n\tnode:  %ld\n", l_i, l_v, l_c);
             FILE_output fout(stdout);
+            fout << "Validation #" << idnum << " failed for\n";
+            fout << "\tnode " << i << "\n";
+            fout << "\tnode's count " << getNodeInCount(i) << "\n";
+            fout << "\tactual count " << in_validate[i] << "\n";
             dump(fout, SHOW_DETAILS);
+            fout << "Requested from " << FN << " line " << LN;
+            if (opname) fout << " operation " << opname;
+            fout << '\n';
             fout.flush();
             MEDDLY_DCASSERT(0);
             throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
@@ -1325,6 +1662,37 @@ void MEDDLY::forest::validateDownPointers(const unpacked_node &nb) const
 {
     switch (getReductionRule()) {
         case reduction_rule::IDENTITY_REDUCED:
+            // Check for identity rule violations
+            for (unsigned i=0; i<nb.getSize(); i++) {
+                unsigned out = nb.isSparse() ? nb.index(i) : i;
+                unsigned index;
+                node_handle down;
+                const int dnlvl = getNodeLevel(nb.down(i));
+                if (dnlvl>0) continue;
+                if (!isSingletonNode(nb.down(i), index, down)) continue;
+                if ((dnlvl != -nb.getLevel()) || (index == out))
+                {
+                    FILE_output s(stdout);
+                    s   << "Identity violation in node created at level "
+                        << nb.getLevel() << ":\n";
+                    nb.show(s, true);
+                    s   << "\nPointer " << out << " to " << nb.down(i)
+                        << " at level " << dnlvl << ":\n";
+                    showNode(s, nb.down(i), SHOW_DETAILS);
+                    s   << "\n";
+                    if (dnlvl != -nb.getLevel()) {
+                        s << "Jumps too far, from " << nb.getLevel()
+                          << " to " << dnlvl << "\n";
+                    }
+                    if (index == i) {
+                        s << "Illegal edge into singleton\n";
+                    }
+                    s.flush();
+                    MEDDLY_DCASSERT(0);
+                }
+            }
+            // NO break here; we need to fall through to below
+
         case reduction_rule::FULLY_REDUCED:
             for (unsigned i=0; i<nb.getSize(); i++) {
                 if (isTerminalNode(nb.down(i))) continue;
@@ -1619,6 +1987,15 @@ MEDDLY::node_handle MEDDLY::forest::unionOneMinterm(node_handle a,  int* from,  
 }
 
 
+
+// ===================================================================
+//
+// Deprecated as of version 0.17.7
+//
+// ===================================================================
+
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::forest::createEdge(const int* const* vlist, int N, dd_edge &e)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1654,6 +2031,7 @@ void MEDDLY::forest
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+
 void MEDDLY::forest::createEdge(bool val, dd_edge &e)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1668,6 +2046,13 @@ void MEDDLY::forest::createEdge(float val, dd_edge &e)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
+
+void MEDDLY::forest::createEdge(double val, dd_edge &e)
+{
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+}
+
+
 
 void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, bool &t) const
 {
@@ -1693,7 +2078,7 @@ void MEDDLY::forest
 void MEDDLY::forest
 ::evaluate(const dd_edge& f, const int* vl, const int* vpl, long &t) const
 {
-    throw error(error::TYPE_MISMATCH);
+    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 void MEDDLY::forest
@@ -1727,7 +2112,7 @@ MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedColumnIter() const
 
 //
 
-
+#endif
 
 // ===================================================================
 //
@@ -2178,7 +2563,7 @@ void MEDDLY::forest::readEdges(input &s, dd_edge* E, unsigned n)
         }
 
 #ifdef DEVELOPMENT_CODE
-        validateIncounts(true);
+        validateIncounts(true, __FILE__, __LINE__);
 #endif
     } // try
     catch (error& e) {

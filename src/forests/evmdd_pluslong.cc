@@ -44,6 +44,8 @@ MEDDLY::evmdd_pluslong
 MEDDLY::evmdd_pluslong::~evmdd_pluslong()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::evmdd_pluslong::createEdge(long val, dd_edge &e)
 {
   createEdgeTempl<OP, long>(val, e);
@@ -86,11 +88,19 @@ void MEDDLY::evmdd_pluslong
   long ev = Inf<long>();
   node_handle ep = 0;
   EM.createEdge(ev, ep);
-  e.set(ep, ev);
+  e.set(ev, ep);
 
   free(ordered_vlist);
   free(terms_long);
 }
+
+void MEDDLY::evmdd_pluslong
+::evaluate(const dd_edge &f, const int* vlist, long &term) const
+{
+  evaluateT<OP, long>(f, vlist, term);
+}
+
+#endif
 
 void MEDDLY::evmdd_pluslong
 ::createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
@@ -113,12 +123,6 @@ void MEDDLY::evmdd_pluslong
   delete[] terms_long;
 }
 
-
-void MEDDLY::evmdd_pluslong
-::evaluate(const dd_edge &f, const int* vlist, long &term) const
-{
-  evaluateT<OP, long>(f, vlist, term);
-}
 
 void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
 {
@@ -288,6 +292,8 @@ const char* MEDDLY::evmdd_pluslong::codeChars() const
 // *                                                                *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 MEDDLY::evmdd_pluslong::evpimdd_iterator::evpimdd_iterator(const forest *F)
 : iterator(F)
 {
@@ -386,6 +392,8 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::first(int k, node_handle down)
   return true;
 }
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                                                                *
@@ -400,6 +408,8 @@ MEDDLY::evmdd_index_set_long::evmdd_index_set_long(domain *_d, const policies &p
 
 MEDDLY::evmdd_index_set_long::~evmdd_index_set_long()
 { }
+
+#ifdef ALLOW_DEPRECATED_0_17_7
 
 void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, int index, int* e)
 {
@@ -449,6 +459,8 @@ void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, long index, int*
   unpacked_node::Recycle(R);
 }
 
+#endif
+
 void MEDDLY::evmdd_index_set_long::showHeaderInfo(output &s,
         const unpacked_node &nb) const
 {
@@ -476,4 +488,5 @@ void MEDDLY::evmdd_index_set_long::readHeaderInfo(input &s,
     std::cerr << "    got cardinality " << card << "\n";
 #endif
 }
+
 

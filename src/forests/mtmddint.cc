@@ -31,12 +31,14 @@ MEDDLY::mt_mdd_int::mt_mdd_int(domain *d, const policies &p, int* level_reductio
 MEDDLY::mt_mdd_int::~mt_mdd_int()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::mt_mdd_int::createEdge(long term, dd_edge& e)
 {
   // createEdgeTempl<int_Tencoder, long>(term, e);
   createEdgeTempl<long>(term, e);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -74,17 +76,7 @@ void MEDDLY::mt_mdd_int::createEdge(const int* const* vlist, const long* terms, 
   free(ordered_vlist);
 
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
-#endif
-}
-
-void MEDDLY::mt_mdd_int::
-createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
-{
-  // createEdgeForVarTempl<int_Tencoder, long>(vh, vp, terms, a);
-  createEdgeForVarTempl<long>(vh, vp, terms, a);
-#ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -94,6 +86,18 @@ void MEDDLY::mt_mdd_int
     terminal t(terminal_type::INTEGER, evaluateRaw(f, vlist));
     term = t.getInteger();
     // term = int_Tencoder::handle2value(evaluateRaw(f, vlist));
+}
+
+#endif
+
+void MEDDLY::mt_mdd_int::
+createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
+{
+  // createEdgeForVarTempl<int_Tencoder, long>(vh, vp, terms, a);
+  createEdgeForVarTempl<long>(vh, vp, terms, a);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true, __FILE__, __LINE__);
+#endif
 }
 
 void MEDDLY::mt_mdd_int::showEdge(output &s, const edge_value &ev,

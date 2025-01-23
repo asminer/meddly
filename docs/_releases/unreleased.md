@@ -7,5 +7,61 @@ layout: single
 
 ### Interface Changes
 
+* Added classes ```minterm``` and ```minterm_coll``` to deal
+    with variable assignments and truth tables over sets and relations.
+    Both of these are in ```minterms.h``` and ```minterms.cc```.
+
+* Creating functions from single minterms or minterm collections
+    is now done using methods ```minterm::buildFunction()```,
+    ```minterm_coll::buildFunctionMax()```, and
+    ```minterm_coll::buildFunctionMin()```.
+    These methods allow specification of a default value,
+    and in the case of minterm collections, specify how to
+    deal with overlapping minterms in the collection
+    (take the max or min value).
+    These replace several ```forest::createEdge()``` methods,
+    which are now deprecated.
+
+* Function evaluation is now done through ```dd_edge::evaluate```.
+    This replaces several ```forest::evaluate()``` methods,
+    which are now deprecated.
+
+* ```dd_edge::set()``` parameters are reversed, for consistency
+    (edge value before node).
+
+* Iterating through a function is now done using
+    an instance of ```dd_edge::iterator```, created with
+    ```dd_edge::begin()```.
+  The interface is similar to STL iterators, except it is slightly
+  faster to use the boolean operator than to compare with ```end()```,
+  i.e., to use a loop of the form
+  ```c++
+  for (dd_edge::iterator I = e.begin(); I; ++I)
+  ```
+  You can pass a mask as a parameter to ```begin()```;
+  this should be a pointer to a (const) ```minterm``` with values set to
+    ```DONT_CARE``` for variables that are free to take any value,
+    ```DONT_CHANGE``` for relation "to" variables that must equal
+    their "from" counterpart, or a regular non-negative integer value
+    to fix a variable.
+  The old ```enumerator``` class is now deprecated.
+
+* Old ```forest::getElement()``` is deprecated,
+    in favor of ```dd_edge::getElement()```.
+
+* Old ```forest::createEdge()``` for constant functions
+    are deprecated, in favor of ```forest::createConstant()```.
+
 ### Implementation
+
+* Updated minimum and maximum operations; works for all forest types.
+  MINIMUM should be used instead of UNION for EV+MDDs,
+  and MAXIMUM should be used instead of INTERSECTION for EV+MDDs.
+
+* Added comparison operations for EV+ and EV*.
+
+### Tests
+
+* Most of these features are thoroughly tested in ```chk_minterms```
+    and ```chk_mtcoll```.
 

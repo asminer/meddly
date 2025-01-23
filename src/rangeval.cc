@@ -17,54 +17,42 @@
 */
 
 #include "rangeval.h"
+#include "io.h"
 
-MEDDLY::rangeval::rangeval(bool v, range_type rt)
+void MEDDLY::rangeval::write(output &s) const
 {
-    the_type = rt;
-    s_value = range_special::NORMAL;
+    switch (the_type) {
+        case range_type::BOOLEAN:
+            MEDDLY_DCASSERT(range_special::NORMAL == s_value);
+            s.put("b ");
+            s.put( l_value ? 'T' : 'F' );
+            break;
 
-    if (isReal()) {
-        f_value = v;
-    } else {
-        i_value = v;
+        case range_type::INTEGER:
+            s.put("i ");
+            switch (s_value) {
+                case range_special::NORMAL:
+                    s.put(l_value);
+                    break;
+
+                case range_special::PLUS_INFINITY:
+                    s.put("oo");
+                    break;
+
+                default:
+                    MEDDLY_DCASSERT(false);
+            }
+            break;
+
+        case range_type::REAL:
+            MEDDLY_DCASSERT(range_special::NORMAL == s_value);
+            s.put("r ");
+            s.put(d_value, 0, 10, 'e');
+            break;
+
+        default:
+            MEDDLY_DCASSERT(false);
     }
-}
-
-MEDDLY::rangeval::rangeval(int v, range_type rt)
-{
-    the_type = rt;
-    s_value = range_special::NORMAL;
-
-    if (isReal()) {
-        f_value = v;
-    } else {
-        i_value = v;
-    }
-}
-
-MEDDLY::rangeval::rangeval(float v, range_type rt)
-{
-    the_type = rt;
-    s_value = range_special::NORMAL;
-
-    if (isReal()) {
-        f_value = v;
-    } else {
-        i_value = int(v);
-    }
-}
-
-MEDDLY::rangeval::rangeval(range_special v, range_type rt)
-{
-    the_type = rt;
-    s_value = v;
-    if (range_special::NORMAL == v) {
-        // set value to 0 as default
-        if (isReal()) {
-            f_value = 0.0;
-        } else {
-            i_value = 0;
-        }
-    }
+    s.put(' ');
 }
 

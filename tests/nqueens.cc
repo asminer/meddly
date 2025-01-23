@@ -150,7 +150,7 @@ long buildQueenSolutions(int N)
         dgm[i] = new dd_edge(fi);
         createQueenNodes(fi, i+1, N, *col[i], *dgp[i], *dgm[i]);
         constr[i] = new dd_edge(fb);
-        fb->createEdge(true, *constr[i]);
+        fb->createConstant(true, *constr[i]);
     }
     constr[N] = nullptr;
 
@@ -181,7 +181,7 @@ long buildQueenSolutions(int N)
 
     intersect(constr, N);
     assert(constr[0]);
-    long c;
+    long c = -1;
     apply(CARDINALITY, *constr[0], c);
     // cleanup
     for (int i=0; i<N; i++) {

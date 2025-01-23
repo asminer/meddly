@@ -504,7 +504,7 @@ class MEDDLY::ct_vector {
         static void recycleArray(ct_item* v, unsigned sz);
 
     private:
-        static ct_item* lists[16];
+        static ct_item* lists[64];
 };
 
 #endif

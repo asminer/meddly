@@ -69,7 +69,7 @@ void MEDDLY::generic_binary_mdd::computeDDEdge(const dd_edge &a, const dd_edge &
 #endif
     c.set(cnode);
 #ifdef DEVELOPMENT_CODE
-    resF->validateIncounts(true);
+    resF->validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -349,7 +349,7 @@ void MEDDLY::generic_binary_mxd::computeDDEdge(const dd_edge &a, const dd_edge &
   node_handle cnode = compute(a.getNode(), b.getNode());
   c.set(cnode);
 #ifdef DEVELOPMENT_CODE
-  resF->validateIncounts(true);
+  resF->validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -809,7 +809,7 @@ void MEDDLY::generic_binbylevel_mxd
   );
   c.set(result);
 #ifdef DEVELOPMENT_CODE
-  resF->validateIncounts(true);
+  resF->validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -951,9 +951,9 @@ void MEDDLY::generic_binary_evplus
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
-  c.set(result, ev);
+  c.set(ev, result);
 #ifdef DEVELOPMENT_CODE
-  resF->validateIncounts(true);
+  resF->validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -1050,9 +1050,9 @@ void MEDDLY::generic_binary_evplus_mxd
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
-  c.set(result, ev);
+  c.set(ev, result);
 #ifdef DEVELOPMENT_CODE
-  resF->validateIncounts(true);
+  resF->validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -1207,9 +1207,9 @@ void MEDDLY::generic_binary_evtimes
   a.getEdgeValue(aev);
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
-  c.set(result, ev);
+  c.set(ev, result);
 #ifdef DEVELOPMENT_CODE
-  resF->validateIncounts(true);
+  resF->validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 

@@ -107,7 +107,7 @@ checkDir $TDIR
 #
 # Grab revision information
 #
-declare -r VERSION=$($EXDIR/libinfo | awk '{print $3}')
+declare -r VERSION=$($EXDIR/libinfo 0 | awk '{print $3}')
 declare -r REVDATE=$($EXDIR/libinfo 5)
 if [ ! "$MPATH" ]; then
     declare -r BRANCH=$(git status | head -n 1 | awk '{print $3}')

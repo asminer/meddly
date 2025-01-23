@@ -3,6 +3,7 @@
 .dirstamp
 *.log
 *.trs
+*._sh
 .libs
 bug_00
 bug_01
@@ -12,8 +13,10 @@ chk_copy
 chk_cross
 chk_ct
 chk_ct_old
-chk_evtimes_float
+chk_iters
 chk_minterms
+chk_mtcoll
+chk_reorder
 ddedge
 domain_list
 enctest
@@ -24,8 +27,10 @@ kan_show
 kanban
 nodestor
 nqueens
+ops_arith
 ops_comp
 ops_set
+randtest
 refcount
 sat_test
 kan_io.data.*

@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
 
   ostream_output s(std::cout);
   rss.showGraph(s);
-  double rss_card;
+  double rss_card = 0;
   apply(CARDINALITY, rss, rss_card);
   std::cout << "\n\nNumber of states: " << rss_card << std::endl;
 }
@@ -290,10 +290,10 @@ void pn::buildTransition() {
 
 void pn::buildInitialState() {
   initial_state = new dd_edge(mdd);
-  int init_state[] = {0, 0, 0, 0};
-  int* init[] = {init_state};
-  mdd->createEdge((int**)(&init[0]), 1, *initial_state);
+  minterm init(mdd);
+  init.setAllVars(0);
   assert(initial_state);
+  init.buildFunction(false, *initial_state);
   int index = -1;
   assert(addValue(A_level, n_tokens, index));
   assert(addValue(B_level, 0, index));

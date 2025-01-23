@@ -31,14 +31,26 @@ MEDDLY::mt_mdd_real::mt_mdd_real(domain *d, const policies &p, int* level_reduct
 MEDDLY::mt_mdd_real::~mt_mdd_real()
 { }
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::mt_mdd_real::createEdge(float term, dd_edge& e)
 {
   // createEdgeTempl<float_Tencoder, float>(term, e);
   createEdgeTempl<float>(term, e);
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
+
+void MEDDLY::mt_mdd_real::createEdge(double term, dd_edge& e)
+{
+  // createEdgeTempl<float_Tencoder, float>(term, e);
+  createEdgeTempl<double>(term, e);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true, __FILE__, __LINE__);
+#endif
+}
+
 
 void MEDDLY::mt_mdd_real::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
 {
@@ -74,17 +86,7 @@ void MEDDLY::mt_mdd_real::createEdge(const int* const* vlist, const float* terms
   free(ordered_vlist);
 
 #ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
-#endif
-}
-
-void MEDDLY::mt_mdd_real::
-createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
-{
-  // createEdgeForVarTempl<float_Tencoder, float>(vh, vp, terms, a);
-  createEdgeForVarTempl<float>(vh, vp, terms, a);
-#ifdef DEVELOPMENT_CODE
-  validateIncounts(true);
+  validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
 
@@ -95,6 +97,18 @@ void MEDDLY::mt_mdd_real
     terminal t(terminal_type::REAL, evaluateRaw(f, vlist));
     term = t.getReal();
     // term = float_Tencoder::handle2value(evaluateRaw(f, vlist));
+}
+
+#endif
+
+void MEDDLY::mt_mdd_real::
+createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
+{
+  // createEdgeForVarTempl<float_Tencoder, float>(vh, vp, terms, a);
+  createEdgeForVarTempl<float>(vh, vp, terms, a);
+#ifdef DEVELOPMENT_CODE
+  validateIncounts(true, __FILE__, __LINE__);
+#endif
 }
 
 void MEDDLY::mt_mdd_real::showEdge(output &s, const edge_value &ev,

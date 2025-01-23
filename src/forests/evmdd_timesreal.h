@@ -44,14 +44,18 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
     evmdd_timesreal(domain *d, const policies &p, int* level_reduction_rule=NULL);
     ~evmdd_timesreal();
 
-    virtual void createEdge(float val, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
     virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
+
+#ifdef ALLOW_DEPRECATED_0_17_7
+    virtual void createEdge(float val, dd_edge &e);
+    virtual void createEdge(double val, dd_edge &e);
+    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
     virtual void evaluate(const dd_edge &f, const int* vlist, float &term) const;
 
     virtual enumerator::iterator* makeFullIter() const {
       return new evtrmdd_iterator(this);
     }
+#endif
 
     virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
 
@@ -60,6 +64,7 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
     virtual const char* codeChars() const;
 #endif
 
+#ifdef ALLOW_DEPRECATED_0_17_7
   protected:
     class evtrmdd_iterator : public enumerator::iterator {
       public:
@@ -75,6 +80,7 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
       protected:
         double* acc_evs;  // for accumulating edge values
     };
+#endif
 };
 
 #endif

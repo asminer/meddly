@@ -35,6 +35,7 @@ class MEDDLY::evmdd_forest : public ev_forest {
     virtual void moveDownVariable(int high, int low);
     virtual void moveUpVariable(int low, int high);
 
+#ifdef ALLOW_DEPRECATED_0_17_7
   protected:
     template <class OPERATION, typename TYPE>
     inline void evaluateT(const dd_edge &f, const int* vlist, TYPE &val) const
@@ -80,6 +81,7 @@ class MEDDLY::evmdd_forest : public ev_forest {
           }
         } // for i
     }
+#endif // ALLOW_DEPRECATED_0_17_7
 
 };
 
@@ -87,6 +89,8 @@ class MEDDLY::evmdd_forest : public ev_forest {
 //
 // Helper class for createEdge
 //
+
+#ifdef ALLOW_DEPRECATED_0_17_7
 
 namespace MEDDLY {
 
@@ -192,7 +196,7 @@ namespace MEDDLY {
           T dc_val;
           node_handle dc_ptr;
           createEdge(k-1, start, batchP, dc_val, dc_ptr);
-          dontcare.set(dc_ptr, dc_val);
+          dontcare.set(dc_val, dc_ptr);
         } else {
           F->getTransparentEdge(dontcare);
         }
@@ -243,7 +247,7 @@ namespace MEDDLY {
             T these_val;
             node_handle these_ptr;
             createEdge(k-1, start, batchP, these_val, these_ptr);
-            these.set(these_ptr, these_val);
+            these.set(these_val, these_ptr);
           } else {
             F->getTransparentEdge(dontcare);
           }
@@ -286,5 +290,7 @@ namespace MEDDLY {
   }; // class evmdd_edgemaker
 
 }; // namespace MEDDLY
+
+#endif // ALLOW_DEPRECATED_0_17_7
 
 #endif

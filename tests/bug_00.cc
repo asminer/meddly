@@ -2,6 +2,8 @@
 #include "../src/meddly.h"
 #include "simple_model.h"
 
+#include <assert.h>
+
 #define VERBOSE
 
 using namespace MEDDLY;
@@ -14,31 +16,34 @@ int main()
         MEDDLY::initialize();
 
         // Initialize domain
-        int* tmp = new int[4];
-        tmp[0] = 3;
-        tmp[1] = 3;
-        tmp[2] = 3;
-        domain* d = domain::createBottomUp(tmp, 3);
+        const int varsizes[] = { 3, 3, 3};
+        domain* d = domain::createBottomUp(varsizes, 3);
+        assert(d);
 
         // Initialize forests
-        forest* mdd = forest::create(d,0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-        forest* mxd = forest::create(d,1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL);
+        forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL);
 
         // build initial state
-        tmp[1] = 2;
-        tmp[2] = 0;
-        tmp[3] = 0;
+        minterm init_mt(mdd);
         dd_edge init_state(mdd);
-        mdd->createEdge(&tmp, 1, init_state);
+        init_mt.setVar(1, 2);
+        init_mt.setVar(2, 0);
+        init_mt.setVar(3, 0);
+        init_mt.buildFunction(false, init_state);
 
         // build next-state function
         dd_edge nsf(mxd);
         buildNextStateFunction(mdl, 1, mxd, nsf);
-        tmp[3] = 0;
-        tmp[2] = -1;
-        tmp[1] = -1;
+
+        minterm mask_mt(mxd);
         dd_edge mask(mxd);
-        mxd->createEdge(&tmp, &tmp, 1, mask);
+        mask_mt.setVars(3, 0, 0);
+        mask_mt.setVars(2, DONT_CARE, DONT_CARE);
+        mask_mt.setVars(1, DONT_CARE, DONT_CARE);
+        mask_mt.buildFunction(false, mask);
         nsf *= mask;
 
         // build rs using traditional & saturation
@@ -80,7 +85,6 @@ int main()
 
         // cleanup
         MEDDLY::cleanup();
-        delete[] tmp;
         return retval;
     }
     catch (MEDDLY::error e) {

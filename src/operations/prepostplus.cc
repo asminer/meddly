@@ -356,7 +356,7 @@ MEDDLY::binary_operation* MEDDLY::PRE_PLUS(forest* a, forest* b, forest* c)
         return PREPLUS_cache.add(new preplus_evplus(a, b, c));
     }
 
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::PRE_PLUS_init()
@@ -390,7 +390,7 @@ MEDDLY::binary_operation* MEDDLY::POST_PLUS(forest* a, forest* b, forest* c)
         return POSTPLUS_cache.add(new postplus_evplus(a, b, c));
     }
 
-    throw error(error::NOT_IMPLEMENTED);
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
 void MEDDLY::POST_PLUS_init()

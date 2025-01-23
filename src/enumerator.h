@@ -19,6 +19,8 @@
 #ifndef MEDDLY_ENUMERATOR_H
 #define MEDDLY_ENUMERATOR_H
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 namespace MEDDLY {
     class dd_edge;
     class enumerator;
@@ -45,7 +47,9 @@ class MEDDLY::enumerator {
         iterator(const forest* F);
         virtual ~iterator();
 
-        bool build_error() const;
+        inline bool build_error() const {
+            return 0==F;
+        }
 
         virtual bool start(const dd_edge &e);
         virtual bool start(const dd_edge &e, const int* m);
@@ -54,13 +58,18 @@ class MEDDLY::enumerator {
         /**
             Return the highest level changed during the last increment.
         */
-        int levelChanged() const;
+        inline int levelChanged() const {
+            return level_change;
+        }
+
 
         /** Get the current variable assignments.
             For variable i, use index i for the
             unprimed variable, and index -i for the primed variable.
         */
-        const int* getAssignments() const;
+        inline const int* getAssignments() const {
+            return index;
+        }
 
         /** Get primed assignments.
             It is much faster to use getAssigments()
@@ -77,6 +86,7 @@ class MEDDLY::enumerator {
 
         /// For real-ranged edges, get the current non-zero value.
         virtual void getValue(float& edgeValue) const;
+
 
 
       protected:
@@ -130,9 +140,15 @@ class MEDDLY::enumerator {
     /// Re-initialize
     void init(type t, const forest* F);
 
-    operator bool() const;
+    inline operator bool() const {
+        return is_valid;
+    }
 
-    void operator++();
+    inline void operator++() {
+        is_valid &= I->next();
+    }
+
+
 
     /**
         Start iterating through edge e.
@@ -166,18 +182,33 @@ class MEDDLY::enumerator {
         For variable i, use index i for the
         unprimed variable, and index -i for the primed variable.
     */
-    const int* getAssignments() const;
+    inline const int* getAssignments() const {
+        if (I && is_valid) return I->getAssignments(); else return 0;
+    }
 
     /// Get the current primed variable assignments.
-    const int* getPrimedAssignments() const;
+    inline const int* getPrimedAssignments() const {
+        if (I && is_valid) return I->getPrimedAssignments(); else return 0;
+    }
 
-    void getValue(int &v) const;
-    void getValue(long &v) const;
-    void getValue(float &v) const;
+    inline void getValue(int &v) const {
+        if (I && is_valid) I->getValue(v);
+    }
+    inline void getValue(long &v) const {
+        if (I && is_valid) I->getValue(v);
+    }
+    inline void getValue(float &v) const {
+        if (I && is_valid) I->getValue(v);
+    }
 
-    int levelChanged() const;
+    inline int levelChanged() const {
+        if (I) return I->levelChanged();
+        return 0;
+    }
 
-    type getType() const;
+    inline type getType() const {
+        return T;
+    }
 
   private:
     iterator* I;
@@ -185,63 +216,6 @@ class MEDDLY::enumerator {
     type T;
 };
 
-// ******************************************************************
-// *                                                                *
-// *                   inlined enumerator methods                   *
-// *                                                                *
-// ******************************************************************
-
-
-// enumerator::iterator::
-inline bool MEDDLY::enumerator::iterator::build_error() const {
-  return 0==F;
-}
-
-inline int MEDDLY::enumerator::iterator::levelChanged() const {
-  return level_change;
-}
-
-inline const int* MEDDLY::enumerator::iterator::getAssignments() const {
-  return index;
-}
-
-// enumerator::
-inline MEDDLY::enumerator::operator bool() const {
-  return is_valid;
-}
-
-inline void MEDDLY::enumerator::operator++() {
-  is_valid &= I->next();
-}
-
-inline const int* MEDDLY::enumerator::getAssignments() const {
-  if (I && is_valid) return I->getAssignments(); else return 0;
-}
-
-inline const int* MEDDLY::enumerator::getPrimedAssignments() const {
-  if (I && is_valid) return I->getPrimedAssignments(); else return 0;
-}
-
-inline void MEDDLY::enumerator::getValue(int &v) const {
-  if (I && is_valid) I->getValue(v);
-}
-
-inline void MEDDLY::enumerator::getValue(long &v) const {
-  if (I && is_valid) I->getValue(v);
-}
-
-inline void MEDDLY::enumerator::getValue(float &v) const {
-  if (I && is_valid) I->getValue(v);
-}
-
-inline int MEDDLY::enumerator::levelChanged() const {
-  if (I) return I->levelChanged();
-  return 0;
-}
-
-inline MEDDLY::enumerator::type MEDDLY::enumerator::getType() const {
-  return T;
-}
-
+#endif
 
 #endif

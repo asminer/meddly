@@ -102,6 +102,9 @@ void MEDDLY::binary_operation::compute(const dd_edge &ar1,
             res.setEdgeValue(), resp);
     res.set(resp);
 #endif
+#ifdef DEVELOPMENT_CODE
+    resF->validateIncounts(true, __FILE__, __LINE__, getName());
+#endif
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_6

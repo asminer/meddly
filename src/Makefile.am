@@ -45,7 +45,7 @@ libmeddly_la_SOURCES = \
     log_simple.h            log_simple.cc \
     memory.h                memory.cc \
     memstats.h              memstats.cc \
-    minterms.h              \
+    minterms.h              minterms.cc \
     node_headers.h          node_headers.cc \
     node_marker.h           node_marker.cc \
     node_storage.h          node_storage.cc \
@@ -96,6 +96,7 @@ libmeddly_la_SOURCES = \
     memory_managers/orig_grid.h         memory_managers/orig_grid.cc  \
     \
     operations/apply_base.h             operations/apply_base.cc   \
+    operations/arith.h                  operations/arith.cc        \
     operations/cardinality.h            operations/cardinality.cc  \
     operations/compare.h                operations/compare.cc      \
     operations/complement.h             operations/complement.cc   \
@@ -106,7 +107,6 @@ libmeddly_la_SOURCES = \
     operations/difference.h             operations/difference.cc   \
     operations/divide.h                 operations/divide.cc       \
     operations/intersection.h           operations/intersection.cc \
-    operations/maxmin.h                 operations/maxmin.cc       \
     operations/maxmin_range.h           operations/maxmin_range.cc \
     operations/mdd2index.h              operations/mdd2index.cc    \
     operations/minus.h                  operations/minus.cc        \

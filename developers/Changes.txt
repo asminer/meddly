@@ -1,29 +1,25 @@
 
 Implement next:
-    * build MDD, MXD from minterms
-      (needed for test cases)
 
-Current goal:
-    * Better centralized omega meanings
-    * Use 0 handle for "normal" omega, non-zeroes for special values
-        (could break lots of things)
+    * Migrate plus, minus, multiply, divide, and modulo
+        to arith.cc
 
-    * use COPY operation where it makes sense, e.g.,
-        terminal cases in cross-forest unions
+    * cross product operation, and test case for it
 
+    * mdd2index operation, and test case(s) for it
 
-Interface changes (aside from moving header files around)
-======================================================================
+    * select operation, and test case for it
 
-Make compute table interface easier to use for simple operations
-    (i.e., most of the time)
+    RELEASE HERE PROBABLY
 
-Updates to operation interface:
+    * Design general purpose 'model' or 'transition relation' interface
 
-    * Add a 'temporary' node handle in unpacked_node,
-      will be marked during mark and sweep
+    * Relational product operations, using new interface
 
-    * Allow (back) low-level interface
+    * Saturation operations, using new interface
+
+    * Again explore mark and sweep vs reference counts
+      try a 'mark and count down' approach also
 
 
 Operation updates, to do:
@@ -35,28 +31,13 @@ Operation updates, to do:
 
 
 
-Next release:
-
-Finish Reimplementing operations.
-
-
-======================================================================
-
-generic EV 'operator' for edges should provide:
-
-    // Combine edge values a and b, store result in c
-    static inline void apply(const edge_value &a, const edge_value &b,
-        edge_value &c);
-
-    // Combine edge values a and b, store result in a
-    static inline void update(edge_value &a, const edge_value &b);
-
-    // "Clear" an edge value; i.e., make it the identity element
-    static inline void clear(edge_value &a);
 
 ======================================================================
 Completely reimplemented operations
 ======================================================================
+
+arith.cc            max, min            working
+                    +, -, *, /, %       not done yet
 
 cardinality.cc      yes
 compare.cc          yes
@@ -64,9 +45,9 @@ complement.cc       yes
 copy.cc             yes
 
 difference.cc       yes
-intersection.cc     yes         tbd: evplus (move to max)
+intersection.cc     yes
 maxmin_range.cc     yes
-union.cc            yes         tbd: evplus (move to min)
+union.cc            yes
 
 ======================================================================
 Operations that need updating
@@ -87,12 +68,6 @@ cycle.cc
 divide.cc
         NO      divide_mdd
         NO      divide_mxd
-
-maxmin.cc
-        NO      maximum_mdd
-        NO      maximum_mxd
-        NO      minimum_mdd
-        NO      minimum_mxd
 
 mdd2index.cc
         NO      mdd2index_operation
@@ -162,14 +137,6 @@ select.cc
 transitive_closure.cc
         NO      transitive_closure_forwd_dfs
 
-union.cc
-        tbd     union_mt    (combines old union_mdd and union_mxd)
-
-        YES*    union_mdd
-        YES*    union_mxd
-        NO      union_min_evplus
-        NO      union_min_evplus_mxd
-
 vect_matr.cc
         N/A     VM_evplus_mt
         N/A     MV_evplus_mt
@@ -196,27 +163,18 @@ relation_node.h         relation_node.cc
 ======================================================================
 Non-critical to do list (side quests)
 ======================================================================
-* Minterm collections, unioning with existing sets
-    full / sparse minterms
-    sets / relations
 
-* Evaluation by overloading() on dd_edge?
-    Using a single minterm? Or vector of integers?
-
-* Enumeration
-    Tie to evaluation?
-    Have 'fixed' variables and 'free' variables
-        all fixed: evaluation
-        all free:  old enumeration
-        primed / unprimed are fixed: like old row / col enumerators
-
-    Fixed levels: use full unpacked
-    Free levels : use sparse unpacked
+* unpacked nodes:
+    maintain 2 different free lists, one for sparse (has index array),
+    one for full.
+    Go back to non-struct form, see if it is faster
 
 * Creating functions for variables
     also functions of single variables
     currently in forest, does it belong there?
     maybe goes with sparse minterm collections?
+
+* remove or re-design logger class
 
 * all different operation
     intersect a function with 'this set of vars

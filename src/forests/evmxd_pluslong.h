@@ -46,11 +46,12 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
 
     // using evmxd_forest::createEdgeForVar;
 
+    virtual void createEdgeForVar(int vh, bool vp, const long* terms,
+      dd_edge& a);
+#ifdef ALLOW_DEPRECATED_0_17_7
     virtual void createEdge(long val, dd_edge &e);
     virtual void createEdge(const int* const* vlist, const int* const* vplist,
       const long* terms, int N, dd_edge &e);
-    virtual void createEdgeForVar(int vh, bool vp, const long* terms,
-      dd_edge& a);
     virtual void evaluate(const dd_edge &f, const int* vlist,
       const int* vplist, long &term) const;
 
@@ -68,6 +69,7 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
     {
       return new evtrmxd_fixedcol_iter(this);
     }
+#endif
 
     virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
 
@@ -76,6 +78,7 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
     virtual const char* codeChars() const;
 #endif
 
+#ifdef ALLOW_DEPRECATED_0_17_7
   protected:
     class evtrmxd_baseiter : public enumerator::iterator {
       public:
@@ -120,7 +123,7 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
       private:
         bool first(int k, node_handle p);
     };
-
+#endif
 };
 
 #endif

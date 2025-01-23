@@ -35,6 +35,8 @@
 
 // #define SAME_FOREST_OPERATIONS
 
+// #define OLD_ITERATORS
+
 inline unsigned MAX(unsigned a, int b) {
     if (b<0) return a;
     return (a> unsigned(b)) ? a : unsigned(b);
@@ -69,8 +71,8 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
   MEDDLY::pregen_relation* pnsf,
   MEDDLY::dd_edge* mono, int verb)
 {
-  using namespace MEDDLY;
-  if (verb) fprintf(stderr, "Building next-state function\n");
+    using namespace MEDDLY;
+    if (verb) fprintf(stderr, "Building next-state function\n");
 
 #ifdef DEBUG_INTERSECTION
     unsigned intercount = 0;
@@ -78,99 +80,96 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 #endif
 
 #ifdef DEBUG_EVENTS
-  FILE_output out(stdout);
+    FILE_output out(stdout);
 #endif
 
-  // set up auxiliary mtmxd forest and edges
-  domain* d = mxd->getDomain();
-  forest* mtmxd = forest::create(d,
-    true, range_type::INTEGER, edge_labeling::MULTI_TERMINAL,
-    mxd->getPolicies()
-  );
-  const unsigned nVars = d->getNumVariables();
-  unsigned maxBound = 1;
-  for (unsigned i=1; i<=nVars; i++) {
-    maxBound = MAX(maxBound, d->getVariableBound(i, false));
-  }
-  maxBound++;
-  long* temp = new long[maxBound];
-  int* minterm = new int[nVars+1];
-  int* mtprime = new int[nVars+1];
-  dd_edge** varP  = new dd_edge*[nVars+1];
-  varP[0] = 0;
-  dd_edge** inc   = new dd_edge*[nVars+1];
-  inc[0] = 0;
-  dd_edge** dec   = new dd_edge*[nVars+1];
-  dec[0] = 0;
-
-  //  Create edge for each variable xi'
-  for (unsigned i=1; i<=nVars; i++) {
-    varP[i] = new dd_edge(mtmxd);
-    mtmxd->createEdgeForVar(int(i), true, varP[i][0]);
-  }
-
-  // Create edge for each function xi+1
-  for (unsigned i=0; i<maxBound; i++) temp[i] = i+1;
-  for (unsigned i=1; i<=nVars; i++) {
-    inc[i] = new dd_edge(mtmxd);
-    mtmxd->createEdgeForVar(int(i), false, temp, inc[i][0]);
-  }
-
-  // Create edge for each function xi-1
-  for (unsigned i=0; i<maxBound; i++) temp[i] = i-1;
-  for (unsigned i=1; i<=nVars; i++) {
-    dec[i] = new dd_edge(mtmxd);
-    mtmxd->createEdgeForVar(int(i), false, temp, dec[i][0]);
-  }
-
-  //
-  // Initialize accumulators
-  //
-  if (mono) mxd->createEdge(false, *mono);
-
-  for (unsigned e=0; e<nEvents; e++) {
-    const char* ev = events[e];
-    if (2==verb) fprintf(stderr, "%5d", e);
-    if (verb>2) fprintf(stderr, "Event %5d", e);
-
-    dd_edge nsf_ev(mxd);
-    dd_edge term(mxd);
-
-    //
-    // build mask for this event
-    //
+    // set up auxiliary mtmxd forest and edges
+    domain* d = mxd->getDomain();
+    forest* mtmxd = forest::create(d,
+            RELATION, range_type::INTEGER, edge_labeling::MULTI_TERMINAL,
+            mxd->getPolicies()
+            );
+    const unsigned nVars = d->getNumVariables();
+    unsigned maxBound = 1;
     for (unsigned i=1; i<=nVars; i++) {
-      if ('.' == ev[i]) {
-        minterm[i] = DONT_CARE;
-        mtprime[i] = DONT_CHANGE;
-      } else {
-        minterm[i] = DONT_CARE;
-        mtprime[i] = DONT_CARE;
-      }
+        maxBound = MAX(maxBound, d->getVariableBound(i, false));
     }
-    mxd->createEdge(&minterm, &mtprime, 1, nsf_ev);
-#ifdef DEBUG_EVENTS
-    printf("Initial nsf for event %d\n", e);
-    nsf_ev.showGraph(out);
-#endif
-    if (verb>2) fprintf(stderr, " : ");
+    maxBound++;
+    long* temp = new long[maxBound];
+    minterm mt(mtmxd);
+    dd_edge** varP  = new dd_edge*[nVars+1];
+    varP[0] = 0;
+    dd_edge** inc   = new dd_edge*[nVars+1];
+    inc[0] = 0;
+    dd_edge** dec   = new dd_edge*[nVars+1];
+    dec[0] = 0;
 
-    //
-    // 'and' with the "do care" levels
-    //
+    //  Create edge for each variable xi'
     for (unsigned i=1; i<=nVars; i++) {
+        varP[i] = new dd_edge(mtmxd);
+        mtmxd->createEdgeForVar(int(i), true, varP[i][0]);
+    }
+
+    // Create edge for each function xi+1
+    for (unsigned i=0; i<maxBound; i++) temp[i] = int(i)+1;
+    for (unsigned i=1; i<=nVars; i++) {
+        inc[i] = new dd_edge(mtmxd);
+        mtmxd->createEdgeForVar(int(i), false, temp, inc[i][0]);
+    }
+
+    // Create edge for each function xi-1
+    for (unsigned i=0; i<maxBound; i++) temp[i] = int(i)-1;
+    for (unsigned i=1; i<=nVars; i++) {
+        dec[i] = new dd_edge(mtmxd);
+        mtmxd->createEdgeForVar(int(i), false, temp, dec[i][0]);
+    }
+
+    //
+    // Initialize accumulators
+    //
+    if (mono) mxd->createConstant(false, *mono);
+
+    for (unsigned e=0; e<nEvents; e++) {
+        const char* ev = events[e];
+        if (2==verb) fprintf(stderr, "%5d", e);
+        if (verb>2) fprintf(stderr, "Event %5d", e);
+
+        dd_edge nsf_ev(mxd);
+        dd_edge term(mxd);
+
+        //
+        // build mask for this event
+        //
+        for (unsigned i=1; i<=nVars; i++) {
+            if ('.' == ev[i]) {
+                mt.setVars(i, DONT_CARE, DONT_CHANGE);
+            } else {
+                mt.setVars(i, DONT_CARE, DONT_CARE);
+            }
+        }
+        mt.buildFunction(false, nsf_ev);
+#ifdef DEBUG_EVENTS
+        printf("Initial nsf for event %d\n", e);
+        nsf_ev.showGraph(out);
+#endif
+        if (verb>2) fprintf(stderr, " : ");
+
+        //
+        // 'and' with the "do care" levels
+        //
+        for (unsigned i=1; i<=nVars; i++) {
 #ifdef SAME_FOREST_OPERATIONS
-      dd_edge docare(mtmxd);
+            dd_edge docare(mtmxd);
 #endif
 
-      if ('.' == ev[i]) {
-        if (verb>3) fputc('.', stderr);
-        continue;
-      } else {
-        if (verb>2) fputc(ev[i], stderr);
-      }
-      switch (ev[i]) {
-        case '+':
+            if ('.' == ev[i]) {
+                if (verb>3) fputc('.', stderr);
+                continue;
+            } else {
+                if (verb>2) fputc(ev[i], stderr);
+            }
+            switch (ev[i]) {
+                case '+':
 #ifdef SAME_FOREST_OPERATIONS
                     apply(EQUAL, varP[i][0], inc[i][0], docare);
 #else
@@ -178,7 +177,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 #endif
                     break;
 
-        case '-':
+                case '-':
 #ifdef SAME_FOREST_OPERATIONS
                     apply(EQUAL, varP[i][0], dec[i][0], docare);
 #else
@@ -186,112 +185,111 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 #endif
                     break;
 
-        default:    throw 1;
-      } // switch
+                default:    throw 1;
+            } // switch
 #ifdef SAME_FOREST_OPERATIONS
-      apply(COPY, docare, term);
+            apply(COPY, docare, term);
 #endif
 #ifdef DEBUG_EVENTS
-      printf("Term for event %d, level %d\n", e, i);
-      term.showGraph(out);
+            printf("Term for event %d, level %d\n", e, i);
+            term.showGraph(out);
 #endif
 
 #ifdef DEBUG_INTERSECTION
-      printf("Intersection #%u\n", ++intercount);
-      printf("Arg1: nsf_ev\n");
-      nsf_ev.showGraph(out);
-      printf("Arg2: term %c %u\n", ev[i], i);
-      term.showGraph(out);
+            printf("Intersection #%u\n", ++intercount);
+            printf("Arg1: nsf_ev\n");
+            nsf_ev.showGraph(out);
+            printf("Arg2: term %c %u\n", ev[i], i);
+            term.showGraph(out);
 #endif
 
-      nsf_ev *= term;
+            nsf_ev *= term;
 
 #ifdef DEBUG_INTERSECTION
-      printf("Result:\n");
-      nsf_ev.showGraph(out);
-      printf("=====================================================================\n");
+            printf("Result:\n");
+            nsf_ev.showGraph(out);
+            printf("=====================================================================\n");
 #endif
 
 
-    } // for i
+        } // for i
 
 #ifdef DEBUG_EVENTS
-    printf("Complete nsf for event %d:\n", e);
-    nsf_ev.showGraph(out);
+        printf("Complete nsf for event %d:\n", e);
+        nsf_ev.showGraph(out);
 #endif
-    if (verb>2) fputc(' ', stderr);
+        if (verb>2) fputc(' ', stderr);
 #ifdef SHOW_EVENT_HANDLES
-    fprintf(stderr, "%d", nsf_ev.getNode());
+        fprintf(stderr, "%d", nsf_ev.getNode());
 #endif
 
-    if (pnsf) {
-      //
-      //  Add event to relation
-      //
-      pnsf->addToRelation(nsf_ev);
-    }
+        if (pnsf) {
+            //
+            //  Add event to relation
+            //
+            pnsf->addToRelation(nsf_ev);
+        }
 
-    if (mono) {
-      //
-      //  union with overall
-      //
-      *mono += nsf_ev;
+        if (mono) {
+            //
+            //  union with overall
+            //
+            *mono += nsf_ev;
 #ifdef DEBUG_EVENTS_LONG
-      printf("Complete after adding event %d:\n", e);
-      mono->show(stdout, 2);
+            printf("Complete after adding event %d:\n", e);
+            mono->show(stdout, 2);
 #endif
+        }
+
+        if (verb>2) fputc('\n', stderr);
+    } // for e
+    if (verb==2) fputc('\n', stderr);
+
+    // cleanup
+    delete[] temp;
+    for (unsigned i=1; i<=nVars; i++) {
+        delete varP[i];
+        delete inc[i];
+        delete dec[i];
     }
-
-    if (verb>2) fputc('\n', stderr);
-  } // for e
-  if (verb==2) fputc('\n', stderr);
-
-  // cleanup
-  delete[] mtprime;
-  delete[] minterm;
-  delete[] temp;
-  for (unsigned i=1; i<=nVars; i++) {
-    delete varP[i];
-    delete inc[i];
-    delete dec[i];
-  }
-  delete[] varP;
-  delete[] inc;
-  delete[] dec;
-  forest::destroy(mtmxd);
+    delete[] varP;
+    delete[] inc;
+    delete[] dec;
+    forest::destroy(mtmxd);
 
 #ifdef DEBUG_EVENTS
-  printf("Complete NSF:\n");
-  mono->showGraph(out);
+    printf("Complete NSF:\n");
+    mono->showGraph(out);
 #endif
 }
 
 
 void buildNextStateFunction(const char* const* events, unsigned nEvents,
-  MEDDLY::forest* mxd, MEDDLY::dd_edge &nsf, int verb)
+    MEDDLY::forest* mxd, MEDDLY::dd_edge &nsf, int verb)
 {
-  buildNextStateFunction(events, nEvents, mxd, 0, &nsf, verb);
+    buildNextStateFunction(events, nEvents, mxd, nullptr, &nsf, verb);
 }
 
 void buildNextStateFunction(const char* const* events, unsigned nEvents,
-  MEDDLY::pregen_relation* pnsf, int verb)
+    MEDDLY::pregen_relation* pnsf, int verb)
 {
-  if (0==pnsf) return;
-  buildNextStateFunction(events, nEvents, pnsf->getRelForest(), pnsf, 0, verb);
-  pnsf->finalize();
+    if (!pnsf) return;
+    buildNextStateFunction(events, nEvents, pnsf->getRelForest(), pnsf,
+            nullptr, verb);
+    pnsf->finalize();
 
 #ifdef SHOW_EVENT_HANDLES
-  using namespace MEDDLY;
-  // check what we got
-  for (unsigned k=16; k; k--) {
-    int len = pnsf->lengthForLevel(k);
-    if (0==len) continue;
-    printf("Events at level %d:\n\t", k);
-    node_handle* List = pnsf->arrayForLevel(k);
-    for (int i=0; i<len; i++)
-      printf("%d ", List[i]);
-    printf("\n");
-  }
+    using namespace MEDDLY;
+    // check what we got
+    for (unsigned k=16; k; k--) {
+        int len = pnsf->lengthForLevel(k);
+        if (0==len) continue;
+        printf("Events at level %d:\n\t", k);
+        node_handle* List = pnsf->arrayForLevel(k);
+        for (int i=0; i<len; i++)
+            printf("%d ", List[i]);
+        printf("\n");
+    }
 #endif
 }
 
@@ -302,100 +300,172 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 //  Explicit RS construction
 //
 
-bool fireEvent(const char* event, const int* current, int* next, unsigned nVars)
+#ifdef OLD_ITERATORS
+
+bool fireEvent(const char* event, const int* current,
+        MEDDLY::minterm& next)
 {
-  for (unsigned i=nVars; i; i--) {
-    if ('.' == event[i]) {
-      next[i] = current[i];
-      continue;
+    for (unsigned i=next.getNumVars(); i; i--) {
+        if ('.' == event[i]) {
+            next.from(i) = current[i];
+            continue;
+        }
+        if ('-' == event[i]) {
+            next.from(i) = current[i] - 1;
+            if (next.from(i) < 0) return false;
+            continue;
+        }
+        if ('+' == event[i]) {
+            next.from(i) = current[i] + 1;
+            // TBD ... check for overflow
+            continue;
+        }
+        throw 1;  // bad event string
     }
-    if ('-' == event[i]) {
-      next[i] = current[i] - 1;
-      if (next[i] < 0) return false;
-      continue;
-    }
-    if ('+' == event[i]) {
-      next[i] = current[i] + 1;
-      // TBD ... check for overflow
-      continue;
-    }
-    throw 1;  // bad event string
-  }
-  return true;
+    return true;
 }
+
+#else
+
+bool fireEvent(const char* event, const MEDDLY::minterm &current,
+        MEDDLY::minterm& next)
+{
+    for (unsigned i=next.getNumVars(); i; i--) {
+        if ('.' == event[i]) {
+            next.from(i) = current.from(i);
+            continue;
+        }
+        if ('-' == event[i]) {
+            next.from(i) = current.from(i) - 1;
+            if (next.from(i) < 0) return false;
+            continue;
+        }
+        if ('+' == event[i]) {
+            next.from(i) = current.from(i) + 1;
+            // TBD ... check for overflow
+            continue;
+        }
+        throw 1;  // bad event string
+    }
+    return true;
+}
+
+#endif
 
 void explicitReachset(const char* const* events, unsigned nEvents,
   MEDDLY::forest* f, MEDDLY::dd_edge &expl, MEDDLY::dd_edge &RS,
   unsigned batchsize)
 {
-  unsigned b;
-  unsigned nVars = f->getNumVariables();
-  if (batchsize < 1) batchsize = 256;
+    using namespace MEDDLY;
 
-  // initialize batch memory
-  int** minterms = new int*[batchsize];
-  for (b=0; b<batchsize; b++) {
-    minterms[b] = new int[1+nVars];
-  }
+    if (batchsize < 1) batchsize = 256;
 
-  // unexplored states
-  MEDDLY::dd_edge unexplored(f);
-  // batch of states
-  MEDDLY::dd_edge batch(f);
-  b = 0;
-  // exploration loop.
-  MEDDLY::enumerator I(expl);
-  for (;;) {
-    f->createEdge(false, unexplored);
-    I.start(expl);
-    if (!I) break;    // nothing left to explore, bail out
-    // explore everything in expl
-    for (; I; ++I) {
-      const int* curr = I.getAssignments();
-#ifdef DEBUG_GENERATE
-      printf("Exploring state: (%d", curr[1]);
-      for (int n=2; n<=nVars; n++) printf(", %d", curr[n]);
-      printf(")\n");
+    // initialize batch memory
+    minterm_coll minterms(batchsize, f);
+
+    // unexplored states
+    dd_edge unexplored(f);
+    // batch of states
+    dd_edge batch(f);
+#ifdef OLD_ITERATORS
+    // exploration loop.
+    enumerator I(expl);
+#else
+    // exploration loop.
+    dd_edge::iterator I(expl);
 #endif
-      // what's enabled?
-      for (unsigned e=0; e<nEvents; e++) {
-        if (!fireEvent(events[e], curr, minterms[b], nVars)) continue;
-#ifdef DEBUG_GENERATE
-        printf("  -- (event %d) --> (%d", e, minterms[b][1]);
-        for (int n=2; n<=nVars; n++) printf(", %d", minterms[b][n]);
-        printf(")\n");
+    for (;;) {
+        f->createConstant(false, unexplored);
+#ifdef OLD_ITERATORS
+        I.start(expl);
+#else
+        I.restart(expl);
 #endif
-        bool seen;
-        f->evaluate(RS, minterms[b], seen);
-        if (seen) continue;     // already known in RS
-        f->evaluate(unexplored, minterms[b], seen);
-        if (seen) continue;     // already in unexplored list
-        b++;
-        if (b>=batchsize) {
-          // Buffer is full; flush it
-          f->createEdge(minterms, int(b), batch);
-          unexplored += batch;
-          RS += batch;
-          b = 0;
+        if (!I) break;    // nothing left to explore, bail out
+        // explore everything in expl
+        for (; I; ++I) {
+#ifdef OLD_ITERATORS
+            //
+            // old iterators
+            //
+            const int* curr = I.getAssignments();
+#ifdef DEBUG_GENERATE
+            printf("Exploring state: (%d", curr[1]);
+            for (int n=2; n<=minterms.getNumVars(); n++) {
+                printf(", %d", curr[n]);
+            }
+            printf(")\n");
+#endif
+            // what's enabled?
+            for (unsigned e=0; e<nEvents; e++) {
+                if (!fireEvent(events[e], curr, minterms.unused())) continue;
+#ifdef DEBUG_GENERATE
+                printf("  -- (event %d) --> ", e);
+                MEDDLY::FILE_output fout(stdout);
+                minterms.unused().show(fout);
+                printf("\n");
+#endif
+
+                // Have we seen this already in the RS
+                rangeval seen;
+                RS.evaluate(minterms.unused(), seen);
+                if (seen) continue;
+
+                minterms.pushUnused();
+                if (minterms.size() >= batchsize) {
+                    // Buffer is full; flush it
+                    minterms.buildFunction(batch);
+                    minterms.clear();
+                    unexplored += batch;
+                    RS += batch;
+                }
+            } // for e
+#else
+            //
+            // New iterators
+            //
+#ifdef DEBUG_GENERATE
+            FILE_output out(stdout);
+            out << "Exploring state: ";
+            (*I).show(out);
+            out << "\n";
+#endif
+            // what's enabled
+            for (unsigned e=0; e<nEvents; e++) {
+                if (!fireEvent(events[e], *I, minterms.unused())) continue;
+#ifdef DEBUG_GENERATE
+                out << "  -- (event " << e << ") --> ";
+                minterms.unused().show(fout);
+                out << "\n";
+#endif
+
+                // Have we seen this already in the RS
+                rangeval seen;
+                RS.evaluate(minterms.unused(), seen);
+                if (seen) continue;
+
+                minterms.pushUnused();
+                if (minterms.size() >= batchsize) {
+                    // Buffer is full; flush it
+                    minterms.buildFunctionMax(false, batch);
+                    minterms.clear();
+                    unexplored += batch;
+                    RS += batch;
+                }
+            } // for e
+#endif
+        } // for I
+        // expl is empty.
+        // Flush the buffer
+        if (minterms.size()) {
+            minterms.buildFunctionMax(false, batch);
+            minterms.clear();
+            unexplored += batch;
+            RS += batch;
         }
-      }
-    }
-    // expl is empty.
-    // Flush the buffer
-    if (b) {
-      f->createEdge(minterms, int(b), batch);
-      unexplored += batch;
-      b = 0;
-    }
-    RS += unexplored;
-    expl = unexplored;
-  }
 
-  // cleanup batch memory
-  for (b=0; b<batchsize; b++) {
-    delete[] minterms[b];
-  }
-  delete[] minterms;
+        expl = unexplored;
+    }
 }
 
 

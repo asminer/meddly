@@ -21,6 +21,7 @@
 #include "defines.h"
 #include "dd_edge.h"
 #include "forest.h"
+#include "minterms.h"
 #include "io.h"
 
 #include "node_marker.h"
@@ -32,6 +33,759 @@
 #ifdef ALLOW_DEPRECATED_0_17_3
 #include "io_dot.h"
 #endif
+
+// #define DEBUG_CLEANUP
+// #define DEBUG_FIRST
+// #define DEBUG_BINSRCH
+
+namespace MEDDLY {
+    class iterator_helper;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                     iterator_helper  class                     *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::iterator_helper {
+    public:
+        iterator_helper(dd_edge::iterator &it) : I(it) { }
+
+        inline unpacked_node* U_from(unsigned k) {
+            MEDDLY_DCASSERT(I.U_from);
+            return I.U_from[k];
+        }
+        inline unpacked_node* U_to(unsigned k) {
+            MEDDLY_DCASSERT(I.U_to);
+            return I.U_to[k];
+        }
+        inline unsigned& Z_from(unsigned k) {
+            MEDDLY_DCASSERT(I.Z_from);
+            return I.Z_from[k];
+        }
+        inline unsigned& Z_to(unsigned k) {
+            MEDDLY_DCASSERT(I.Z_to);
+            return I.Z_to[k];
+        }
+        inline edge_value& ev_from(unsigned k) {
+            MEDDLY_DCASSERT(I.ev_from);
+            return I.ev_from[k];
+        }
+        inline edge_value& ev_to(unsigned k) {
+            MEDDLY_DCASSERT(I.ev_to);
+            return I.ev_to[k];
+        }
+
+        inline unsigned getNumVars() const {
+            MEDDLY_DCASSERT(I.M);
+            return I.M->getNumVars();
+        }
+        inline int& M_from(unsigned k) {
+            MEDDLY_DCASSERT(I.M);
+            return I.M->from(k);
+        }
+        inline int& M_to(unsigned k) {
+            MEDDLY_DCASSERT(I.M);
+            return I.M->to(k);
+        }
+        inline void M_setTerm(node_handle p) const {
+            edge_value none;
+            I.F->getValueForEdge(none, p, I.M->setValue());
+        }
+        inline void M_setTerm(const edge_value &v, node_handle p) const {
+            I.F->getValueForEdge(v, p, I.M->setValue());
+        }
+        inline bool isForSets() const {
+            MEDDLY_DCASSERT(I.M);
+            return I.M->isForSets();
+        }
+
+        inline int mask_from(unsigned k) const {
+            MEDDLY_DCASSERT(I.mask);
+            return I.mask->from(k);
+        }
+        inline int mask_to(unsigned k) const {
+            MEDDLY_DCASSERT(I.mask);
+            return I.mask->to(k);
+        }
+
+        inline void setAtEnd(bool e) {
+            I.atEnd = e;
+        }
+
+        inline bool isMultiTerminal() const {
+            MEDDLY_DCASSERT(I.F);
+            return I.F->isMultiTerminal();
+        }
+        inline terminal_type getTerminalType() const {
+            MEDDLY_DCASSERT(I.F);
+            return I.F->getTerminalType();
+        }
+        inline int getNodeLevel(node_handle p) const {
+            MEDDLY_DCASSERT(I.F);
+            return I.F->getNodeLevel(p);
+        }
+
+        inline const forest* F() {
+            MEDDLY_DCASSERT(I.F);
+            return I.F;
+        }
+
+    private:
+        dd_edge::iterator &I;
+};
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                      iterator_templ class                      *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class EOP>
+    class iterator_templ : public iterator_helper {
+        public:
+            iterator_templ(dd_edge::iterator &it)
+                : iterator_helper(it) { }
+
+            void next();
+
+            bool first_unpr(unsigned k, node_handle p);
+            bool first_pri(unsigned k, node_handle p);
+    };
+};
+
+// ******************************************************************
+// *                     iterator_templ methods                     *
+// ******************************************************************
+
+template <class EOP>
+void MEDDLY::iterator_templ<EOP>::next()
+{
+    if (isForSets()) {
+        //
+        // Set version
+        //
+        for (unsigned k=1; k<=getNumVars(); k++) {
+            // See if we can advance the nonzero ptr at level k
+            const unpacked_node* U_p = U_from(k);
+            if (U_p)
+            {
+                // this is a free variable.
+                unsigned& z = Z_from(k);
+                for (z++; z<U_p->getSize(); z++) {
+                    // Update the minterm
+                    M_from(k) = U_p->index(z);
+                    if (EOP::hasEdgeValues()) {
+                        // accumulate edge value to here
+                        ev_from(k) =
+                            EOP::applyOp(ev_from(k+1), U_p->edgeval(z));
+                    }
+                    if (first_unpr(k-1, U_p->down(z))) {
+                        return;
+                    }
+                }
+            }
+        } // for k
+    } else {
+        //
+        // Relation version
+        //
+        for (unsigned k=1; k<=getNumVars(); k++) {
+            //
+            // Advance primed variable x'_k
+            //
+            const unpacked_node* U_p = U_to(k);
+            if (U_p)
+            {
+                // this is a free variable.
+                unsigned& z = Z_to(k);
+                for (z++; z<U_p->getSize(); z++) {
+                    // Update the minterm
+                    M_to(k) = U_p->index(z);
+                    if (EOP::hasEdgeValues()) {
+                        // accumulate edge value to here
+                        ev_to(k) = EOP::applyOp(ev_from(k), U_p->edgeval(z));
+                    }
+                    if (first_unpr(k-1, U_p->down(z))) {
+                        return;
+                    }
+                }
+            }
+            //
+            // Advance unprimed variable x_k
+            //
+            const unpacked_node* U_u = U_from(k);
+            if (U_u)
+            {
+                // this is a free variable.
+                unsigned& z = Z_from(k);
+                for (z++; z<U_u->getSize(); z++) {
+                    // Update the minterm
+                    M_from(k) = U_u->index(z);
+                    if (EOP::hasEdgeValues()) {
+                        // accumulate edge value to here
+                        ev_from(k) = EOP::applyOp(ev_to(k+1), U_u->edgeval(z));
+                    }
+                    if (first_pri(k, U_u->down(z))) {
+                        return;
+                    }
+                }
+            }
+        } // for k
+    }
+    setAtEnd(true);
+}
+
+template <class EOP>
+bool MEDDLY::iterator_templ<EOP>::first_unpr(unsigned k, node_handle p)
+{
+    if (0==p) return false;
+    if (0==k) {
+        // set the terminal value
+        if (isMultiTerminal()) {
+            M_setTerm(p);
+            return true;
+        }
+        if (isForSets()) {
+            M_setTerm( ev_from(1), p );
+        } else {
+            M_setTerm( ev_to(1), p );
+        }
+        return true;
+    }
+
+    //
+    // Is this a bound variable?
+    //
+    const int plvl = getNodeLevel(p);
+    unpacked_node *U = U_from(k);
+    if (!U) {
+        //
+        // This value is fixed, determine the down pointer and recurse.
+        //
+        node_handle pdn = p;
+        MEDDLY_DCASSERT(mask_from(k) >= 0);
+
+        if (EOP::hasEdgeValues()) {
+            //
+            // There are edge values to update.
+            //
+            const edge_value& up = isForSets() ? ev_from(k+1) : ev_to(k+1);
+
+            if (int(k) == plvl) {
+                F()->getDownPtr(p, mask_from(k), ev_from(k), pdn);
+                EOP::accumulateOp(ev_from(k), up);
+            } else {
+                ev_from(k) = up;
+            }
+        } else {
+            if (int(k) == plvl) {
+                pdn = F()->getDownPtr(p, mask_from(k));
+            }
+        }
+
+        if (isForSets()) {
+            return first_unpr(k-1, pdn);
+        } else {
+            return first_pri(k, pdn);
+        }
+    }
+
+    //
+    // Free variable.
+    // Set up the unpacked node.
+    //
+    if (k != plvl) {
+        if (EOP::hasEdgeValues()) {
+            edge_value zero;
+            EOP::clear(zero);
+            U->initRedundant(F(), k, zero, p, SPARSE_ONLY);
+        } else {
+            U->initRedundant(F(), k, p, SPARSE_ONLY);
+        }
+    } else {
+        F()->unpackNode(U, p, SPARSE_ONLY);
+    }
+
+    //
+    // Loop until we find a match
+    //
+    unsigned& z = Z_from(k);
+    if (isForSets()) {
+        //
+        // set version
+        //
+        for (z=0; z < U->getSize(); ++z)
+        {
+            // Update minterm
+            M_from(k) = U->index(z);
+            if (EOP::hasEdgeValues()) {
+                // accumulate edge value to here
+                ev_from(k) = EOP::applyOp(U->edgeval(z), ev_from(k+1));
+            }
+            if (first_unpr(k-1, U->down(z))) return true;
+        }
+    } else {
+        //
+        // relation version
+        //
+        for (z=0; z < U->getSize(); ++z)
+        {
+            // Update minterm
+            M_from(k) = U->index(z);
+            if (EOP::hasEdgeValues()) {
+                // accumulate edge value to here
+                ev_from(k) = EOP::applyOp(U->edgeval(z), ev_to(k+1));
+            }
+            if (first_pri(k, U->down(z))) return true;
+        }
+    }
+
+    // Still here? couldn't find one
+    return false;
+}
+
+template <class EOP>
+bool MEDDLY::iterator_templ<EOP>::first_pri(unsigned k, node_handle p)
+{
+    MEDDLY_DCASSERT(!isForSets());
+    MEDDLY_DCASSERT(k);
+
+    if (0==p) return false;
+
+    //
+    // Is this a bound variable?
+    //
+    const int plvl = getNodeLevel(p);
+    unpacked_node *U = U_to(k);
+    if (!U) {
+        //
+        // This value is fixed, determine the down pointer and recurse.
+        //
+
+        //
+        // Deal with identity mask
+        //
+        int i = mask_to(k);
+        if (DONT_CHANGE == i) {
+            i = M_from(k);
+            M_to(k) = i;
+        }
+        MEDDLY_DCASSERT(i>=0);
+
+        if (EOP::hasEdgeValues()) {
+            //
+            // There are edge values to update.
+            //
+            const edge_value& up = ev_from(k);
+
+            if (k == -plvl) {
+                //
+                // Node at this level.
+                //
+                node_handle pdn;
+                F()->getDownPtr(p, i, ev_to(k), pdn);
+                EOP::accumulateOp(ev_to(k), up);
+                return first_unpr(k-1, pdn);
+            }
+            //
+            // Recurse for redundant nodes, or identity
+            // if from == to.
+            //
+            ev_to(k) = up;
+            if (F()->isFullyReduced() || (M_from(k) == M_to(k))) {
+                return first_unpr(k-1, p);
+            }
+            return false;
+
+        } else {
+
+            //
+            // No edge values
+            //
+            if (k == -plvl) {
+                return first_unpr(k-1, F()->getDownPtr(p, i));
+            }
+            if (F()->isFullyReduced() || (M_from(k) == M_to(k))) {
+                return first_unpr(k-1, p);
+            }
+            return false;
+        }
+    }
+
+    //
+    // Free variable.
+    // Set up the unpacked node.
+    //
+    if (k != -plvl) {
+        if (EOP::hasEdgeValues()) {
+            edge_value zero;
+            EOP::clear(zero);
+            if (F()->isFullyReduced()) {
+                U->initRedundant(F(), -int(k), zero, p, SPARSE_ONLY);
+            } else {
+                U->initIdentity(F(), -int(k), M_from(k), zero, p, SPARSE_ONLY);
+            }
+        } else {
+            if (F()->isFullyReduced()) {
+                U->initRedundant(F(), -int(k), p, SPARSE_ONLY);
+            } else {
+                U->initIdentity(F(), -int(k), M_from(k), p, SPARSE_ONLY);
+            }
+        }
+    } else {
+        F()->unpackNode(U, p, SPARSE_ONLY);
+    }
+
+    //
+    // Loop until we find a match
+    //
+    unsigned& z = Z_to(k);
+    for (z=0; z < U->getSize(); ++z)
+    {
+        // Update minterm
+        M_to(k) = U->index(z);
+        if (EOP::hasEdgeValues()) {
+            // accumulate edge value to here
+            ev_to(k) = EOP::applyOp(ev_from(k), U->edgeval(z));
+        }
+        if (first_unpr(k-1, U->down(z))) return true;
+    }
+
+    // Still here? couldn't find one
+    return false;
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                   dd_edge::iterator  methods                   *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::dd_edge::iterator::iterator()
+{
+    // Build an empty, 'end' iterator
+    atEnd = true;
+    F = nullptr;
+
+    U_from = nullptr;
+    U_to = nullptr;
+    Z_from = nullptr;
+    Z_to = nullptr;
+    ev_from = nullptr;
+    ev_to = nullptr;
+    M = nullptr;
+    mask = nullptr;
+}
+
+MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, const minterm* _mask)
+{
+    F = E.getForest();
+    M = new minterm(F);
+
+    //
+    // Set up array of unpacked nodes
+    //
+
+    const unsigned K = M->getNumVars();
+    U_from = new unpacked_node* [1+K];
+    for (unsigned i=0; i<=K; i++) {
+        U_from[i] = nullptr;
+    }
+    if (M->isForSets()) {
+        U_to = nullptr;
+    } else {
+        U_to = new unpacked_node* [1+K];
+        for (unsigned i=0; i<=K; i++) {
+            U_to[i] = nullptr;
+        }
+    }
+
+    //
+    // Allocate array of pointers into the unpacked nodes
+    //
+
+    Z_from = new unsigned [1+K];
+    if (M->isForSets()) {
+        Z_to = nullptr;
+    } else {
+        Z_to = new unsigned [1+K];
+    }
+
+    //
+    // Allocate array of edge values, if we're an EV forest
+    //
+    if (F->isMultiTerminal()) {
+        ev_from = nullptr;
+        ev_to = nullptr;
+    } else {
+        if (M->isForSets()) {
+            ev_from = new edge_value [2+K];
+            ev_to = nullptr;
+        } else {
+            ev_from = new edge_value [1+K];
+            ev_to = new edge_value [2+K];
+        }
+    }
+
+    //
+    // Everything is set up except for mask specific stuff.
+    //
+
+    restart(E, _mask);
+}
+
+MEDDLY::dd_edge::iterator::iterator(iterator &&I)
+{
+    printf("In iterator's move constructor :)\n");
+    // Take everything from I
+    U_from = I.U_from;
+    U_to   = I.U_to;
+
+    Z_from = I.Z_from;
+    Z_to   = I.Z_to;
+
+    ev_from = I.ev_from;
+    ev_to   = I.ev_to;
+
+    root_ev   = I.root_ev;
+    root_node = I.root_node;
+
+    F = I.F;
+    M = I.M;
+    mask = I.mask;
+    atEnd = I.atEnd;
+
+    // And clear out I, for anything that would be deleted
+    I.U_from = nullptr;
+    I.U_to = nullptr;
+    I.Z_from = nullptr;
+    I.Z_to = nullptr;
+    I.ev_from = nullptr;
+    I.ev_to = nullptr;
+    I.M = nullptr;
+}
+
+MEDDLY::dd_edge::iterator::~iterator()
+{
+    if (U_from) {
+        MEDDLY_DCASSERT(M);
+        for (unsigned i=M->getNumVars(); i; --i) {
+            unpacked_node::Recycle(U_from[i]);
+        }
+        delete[] U_from;
+        U_from = nullptr;
+    }
+    if (U_to) {
+        MEDDLY_DCASSERT(M);
+        for (unsigned i=M->getNumVars(); i; --i) {
+            unpacked_node::Recycle(U_to[i]);
+        }
+        delete[] U_to;
+        U_to = nullptr;
+    }
+    delete[] Z_from;
+    delete[] Z_to;
+    delete[] ev_from;
+    delete[] ev_to;
+    delete M;
+}
+
+void MEDDLY::dd_edge::iterator::restart(const dd_edge &E, const minterm* _mask)
+{
+    if (F != E.getForest()) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+
+    mask = _mask;
+    root_ev = E.getEdgeValue();
+    root_node = E.getNode();
+
+    //
+    // Seed the edge value array if needed
+    //
+    const unsigned K = M->getNumVars();
+    if (!F->isMultiTerminal()) {
+        if (M->isForSets()) {
+            ev_from[1+K] = root_ev;
+        } else {
+            ev_to[1+K] = root_ev;
+        }
+    }
+
+    //
+    // Allocate unpacked nodes, but only for free variables.
+    // Re-use old unpacked nodes when we can.
+    //
+
+    for (unsigned i=K; i; --i) {
+        if (_mask && (DONT_CARE != mask->from(i))) {
+            if (U_from[i]) {
+                unpacked_node::Recycle(U_from[i]);
+                U_from[i] = nullptr;
+            }
+            M->from(i) = mask->from(i);
+        } else {
+            if (!U_from[i]) {
+                U_from[i] = unpacked_node::New(F);
+            }
+        }
+    }
+    if (M->isForRelations()) {
+        for (unsigned i=K; i; --i) {
+            if (_mask && (DONT_CARE != mask->to(i))) {
+                if (U_to[i]) {
+                    unpacked_node::Recycle(U_to[i]);
+                    U_to[i] = nullptr;
+                }
+                M->to(i) = mask->to(i);
+            } else {
+                if (!U_to[i]) {
+                    U_to[i] = unpacked_node::New(F);
+                }
+            }
+        }
+    }
+
+    //
+    // Invoke appropriate 'first'
+    //
+    switch (F->getEdgeLabeling()) {
+        case edge_labeling::MULTI_TERMINAL:
+            {
+                iterator_templ< EdgeOp_none > IT(*this);
+                atEnd = ! IT.first_unpr(K, root_node);
+                return;
+            }
+
+        case edge_labeling::EVTIMES:
+            switch (F->getEdgeType()) {
+                case edge_type::FLOAT:
+                    {
+                        iterator_templ< EdgeOp_times<float> > IT(*this);
+                        atEnd = ! IT.first_unpr(K, root_node);
+                        return;
+                    }
+                case edge_type::DOUBLE:
+                    {
+                        iterator_templ< EdgeOp_times<double> > IT(*this);
+                        atEnd = ! IT.first_unpr(K, root_node);
+                        return;
+                    }
+                default:
+                    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            }
+
+        case edge_labeling::EVPLUS:
+        case edge_labeling::INDEX_SET:
+            switch (F->getEdgeType()) {
+                case edge_type::INT:
+                    {
+                        iterator_templ< EdgeOp_plus<int> > IT(*this);
+                        atEnd = ! IT.first_unpr(K, root_node);
+                        return;
+                    }
+                case edge_type::LONG:
+                    {
+                        iterator_templ< EdgeOp_plus<long> > IT(*this);
+                        atEnd = ! IT.first_unpr(K, root_node);
+                        return;
+                    }
+                default:
+                    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            }
+
+        default:
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+    }
+}
+
+void MEDDLY::dd_edge::iterator::next()
+{
+    MEDDLY_DCASSERT(F);
+
+    switch (F->getEdgeLabeling()) {
+        case edge_labeling::MULTI_TERMINAL:
+            {
+                iterator_templ< EdgeOp_none > IT(*this);
+                IT.next();
+                return;
+            }
+
+        case edge_labeling::EVTIMES:
+            switch (F->getEdgeType()) {
+                case edge_type::FLOAT:
+                    {
+                        iterator_templ< EdgeOp_times<float> > IT(*this);
+                        IT.next();
+                        return;
+                    }
+                case edge_type::DOUBLE:
+                    {
+                        iterator_templ< EdgeOp_times<double> > IT(*this);
+                        IT.next();
+                        return;
+                    }
+                default:
+                    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            }
+
+        case edge_labeling::EVPLUS:
+        case edge_labeling::INDEX_SET:
+            switch (F->getEdgeType()) {
+                case edge_type::INT:
+                    {
+                        iterator_templ< EdgeOp_plus<int> > IT(*this);
+                        IT.next();
+                        return;
+                    }
+                case edge_type::LONG:
+                    {
+                        iterator_templ< EdgeOp_plus<long> > IT(*this);
+                        IT.next();
+                        return;
+                    }
+                default:
+                    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            }
+
+        default:
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+    }
+}
+
+
+bool MEDDLY::dd_edge::iterator::equals(const iterator &I) const
+{
+    if (F != I.F) return false;
+    if (root_node != I.root_node) return false;
+    if (mask != I.mask) return false;
+
+    MEDDLY_DCASSERT(M);
+    if (M->isForSets()) {
+        for (unsigned i = M->getNumVars(); i; --i) {
+            if (Z_from[i] != I.Z_from[i]) return false;
+        }
+    } else {
+        for (unsigned i = M->getNumVars(); i; --i) {
+            if (Z_from[i] != I.Z_from[i]) return false;
+            if (Z_to[i] != I.Z_to[i]) return false;
+        }
+    }
+
+    return true;
+}
 
 // ******************************************************************
 // *                                                                *
@@ -195,6 +949,15 @@ void MEDDLY::dd_edge::showGraph(output &s) const
     } else {
         s.put("MDD");
     }
+    if (efp->isIdentityReduced()) {
+        s.put(" (identity reduced)");
+    }
+    if (efp->isFullyReduced()) {
+        s.put(" (fully reduced)");
+    }
+    if (efp->isQuasiReduced()) {
+        s.put(" (quasi reduced)");
+    }
     s.put(" rooted at edge ");
     efp->showEdge(s, edgeval, node);
     s.put('\n');
@@ -284,6 +1047,374 @@ void MEDDLY::dd_edge::read(input &s, const std::vector <node_handle> &map)
 #endif
 }
 
+
+// **********************************************************************
+//
+// Function evaluation
+// Eventually replacing evaluate() in the forest class
+//
+// **********************************************************************
+
+namespace MEDDLY {
+
+    class evaluator_helper_mt {
+            const forest* F;
+            const minterm& m;
+        public:
+            evaluator_helper_mt(const forest* _F, const minterm &_m)
+                : F(_F), m(_m)
+            {
+                MEDDLY_DCASSERT(F);
+            }
+
+            inline void set_eval(node_handle &p)
+            {
+                MEDDLY_DCASSERT( !m.isForRelations() );
+                while (!F->isTerminalNode(p)) {
+    	            int level = F->getNodeLevel(p);
+                    MEDDLY_DCASSERT(m.from(level)>=0);
+                    p = F->getDownPtr(p, m.from(level));
+                }
+            }
+
+            inline void fully_rel_eval(node_handle &p)
+            {
+                MEDDLY_DCASSERT( m.isForRelations() );
+                while (!F->isTerminalNode(p)) {
+    	            int level = F->getNodeLevel(p);
+                    if (level > 0) {
+                        MEDDLY_DCASSERT(m.from(level)>=0);
+                        p = F->getDownPtr(p, m.from(level));
+                    } else {
+                        MEDDLY_DCASSERT(m.to(-level)>=0);
+                        p = F->getDownPtr(p, m.to(-level));
+                    }
+                }
+            }
+
+            inline void ident_rel_eval(node_handle &p)
+            {
+                if (0==p) return;
+                MEDDLY_DCASSERT( m.isForRelations() );
+                int plvl = F->getNodeLevel(p);
+                int L = F->getNumVariables();
+                while (L) {
+                    //
+                    // Unprimed
+                    //
+                    MEDDLY_DCASSERT(L>0);
+                    if (plvl == L) {
+                        MEDDLY_DCASSERT(m.from(L)>=0);
+                        p = F->getDownPtr(p, m.from(L));
+                        if (0==p) return;
+                        plvl = F->getNodeLevel(p);
+                    }
+                    L = MXD_levels::downLevel(L);
+                    //
+                    // Primed
+                    //
+                    MEDDLY_DCASSERT(L<0);
+                    if (plvl == L) {
+                        MEDDLY_DCASSERT(m.to(-L)>=0);
+                        p = F->getDownPtr(p, m.to(-L));
+                        if (0==p) return;
+                        plvl = F->getNodeLevel(p);
+                    } else {
+                        if (m.to(-L) != m.from(-L)) {
+                            p = 0;
+                            return;
+                        }
+                    }
+                    L = MXD_levels::downLevel(L);
+                }
+            }
+    };
+
+    template <class EOP>
+    class evaluator_helper {
+            const forest* F;
+            const minterm& m;
+        public:
+            evaluator_helper(const forest* _F, const minterm &_m)
+                : F(_F), m(_m)
+            {
+                MEDDLY_DCASSERT(F);
+            }
+
+            inline void evaluate(edge_value &ev, node_handle &p)
+            {
+                if (m.isForRelations()) {
+                    if (F->isIdentityReduced()) {
+                        ident_rel_eval(ev, p);
+                    } else {
+                        fully_rel_eval(ev, p);
+                    }
+                } else {
+                    set_eval(ev, p);
+                }
+            }
+
+            inline void set_eval(edge_value &ev, node_handle &p)
+            {
+                MEDDLY_DCASSERT( !m.isForRelations() );
+                while (!F->isTerminalNode(p)) {
+                    edge_value pv;
+    	            int level = F->getNodeLevel(p);
+                    MEDDLY_DCASSERT(level>0);
+                    MEDDLY_DCASSERT(m.from(level)>=0);
+                    F->getDownPtr(p, m.from(level), pv, p);
+                    EOP::accumulateOp(ev, pv);
+                }
+            }
+
+            inline void fully_rel_eval(edge_value &ev, node_handle &p)
+            {
+                MEDDLY_DCASSERT( m.isForRelations() );
+                while (!F->isTerminalNode(p)) {
+                    edge_value pv;
+                    int level = F->getNodeLevel(p);
+                    if (level > 0) {
+                        MEDDLY_DCASSERT(m.from(level)>=0);
+                        F->getDownPtr(p, m.from(level), pv, p);
+                    } else {
+                        MEDDLY_DCASSERT(m.to(-level)>=0);
+                        F->getDownPtr(p, m.to(-level), pv, p);
+                    }
+                    EOP::accumulateOp(ev, pv);
+                }
+            }
+
+            inline void ident_rel_eval(edge_value &ev, node_handle &p)
+            {
+                if (0==p) return;
+                MEDDLY_DCASSERT( m.isForRelations() );
+                int plvl = F->getNodeLevel(p);
+                int L = F->getNumVariables();
+                while (L) {
+                    edge_value pv;
+                    //
+                    // Unprimed
+                    //
+                    MEDDLY_DCASSERT(L>0);
+                    if (plvl == L) {
+                        MEDDLY_DCASSERT(m.from(L)>=0);
+                        F->getDownPtr(p, m.from(L), pv, p);
+                        EOP::accumulateOp(ev, pv);
+                        if (0==p) return;
+                        plvl = F->getNodeLevel(p);
+                    }
+                    L = MXD_levels::downLevel(L);
+                    //
+                    // Primed
+                    //
+                    MEDDLY_DCASSERT(L<0);
+                    if (plvl == L) {
+                        MEDDLY_DCASSERT(m.to(-L)>=0);
+                        F->getDownPtr(p, m.to(-L), pv, p);
+                        EOP::accumulateOp(ev, pv);
+                        if (0==p) return;
+                        plvl = F->getNodeLevel(p);
+                    } else {
+                        if (m.to(-L) != m.from(-L)) {
+                            EOP::clear(ev);
+                            p = 0;
+                            return;
+                        }
+                    }
+                    L = MXD_levels::downLevel(L);
+                }
+            }
+
+    };
+};
+
+
+// **********************************************************************
+
+void MEDDLY::dd_edge::evaluate(const minterm& m, rangeval &v) const
+{
+    forest* fp = forest::getForestWithID(parentFID);
+    if (!fp) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+    if ( fp->isForRelations() != m.isForRelations() ) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+    if ( fp->getDomain() != m.getDomain() ) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    edge_value ev(edgeval);
+    node_handle en = node;
+
+    if ( fp->isMultiTerminal() )
+    {
+        evaluator_helper_mt EH(fp, m);
+        if (m.isForRelations()) {
+            if (fp->isIdentityReduced()) {
+                EH.ident_rel_eval(en);
+            } else {
+                EH.fully_rel_eval(en);
+            }
+        } else {
+            EH.set_eval(en);
+        }
+
+        fp->getValueForEdge(ev, en, v);
+        return;
+    }
+
+    if ( fp->isEVPlus() || fp->isIndexSet() )
+    {
+        if (edge_type::INT == fp->getEdgeType()) {
+            evaluator_helper< EdgeOp_plus <int> > EH(fp, m);
+            EH.evaluate(ev, en);
+            fp->getValueForEdge(ev, en, v);
+            return;
+        }
+        if (edge_type::LONG == fp->getEdgeType()) {
+            evaluator_helper< EdgeOp_plus <long> > EH(fp, m);
+            EH.evaluate(ev, en);
+            fp->getValueForEdge(ev, en, v);
+            return;
+        }
+    }
+
+    if ( fp->isEVTimes() )
+    {
+        if (edge_type::FLOAT == fp->getEdgeType()) {
+            evaluator_helper< EdgeOp_times <float> > EH(fp, m);
+            EH.evaluate(ev, en);
+            fp->getValueForEdge(ev, en, v);
+            return;
+        }
+        if (edge_type::DOUBLE == fp->getEdgeType()) {
+            evaluator_helper< EdgeOp_times <double> > EH(fp, m);
+            EH.evaluate(ev, en);
+            fp->getValueForEdge(ev, en, v);
+            return;
+        }
+    }
+
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+
+// **********************************************************************
+
+bool MEDDLY::dd_edge::getElemInt(long index, minterm &m) const
+{
+    //
+    // Sanity checks
+    //
+    forest* fp = forest::getForestWithID(parentFID);
+    if (!fp) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+    if (!fp->isIndexSet()) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    if ( fp->getDomain() != m.getDomain() ) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+    if (fp->isForRelations()) {
+        // I don't think we have index set relations?
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    if (m.isForRelations() ) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+    MEDDLY_DCASSERT(fp->getEdgeType() == edge_type::LONG);
+
+    if (index < 0) return false;
+
+    node_handle p = node;
+    unpacked_node* U = unpacked_node::New(fp);
+    for (unsigned k = fp->getNumVariables(); k; --k) {
+        //
+        // I don't think index sets can skip levels at all
+        //
+        MEDDLY_DCASSERT(k == fp->getNodeLevel(p));
+        fp->unpackNode(U, p, SPARSE_ONLY);
+
+        //
+        // Backward Linear search: largest i such that
+        // edge value i <= index
+        //
+        unsigned zmax = U->getSize()-1;
+        while (zmax) {
+            if (U->edgeval(zmax).getInt() <= index) break;
+            --zmax;
+        }
+
+        //
+        // go down
+        //
+        m.from(k) = U->index(zmax);
+        index -= U->edgeval(zmax).getInt();
+        p = U->down(zmax);
+    } // for k
+    unpacked_node::Recycle(U);
+    if (index > 0) return false;
+    return true;
+}
+
+bool MEDDLY::dd_edge::getElemLong(long index, minterm &m) const
+{
+    //
+    // Sanity checks
+    //
+    forest* fp = forest::getForestWithID(parentFID);
+    if (!fp) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
+    if (!fp->isIndexSet()) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    if ( fp->getDomain() != m.getDomain() ) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+    if (fp->isForRelations()) {
+        // I don't think we have index set relations?
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    if (m.isForRelations() ) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+    MEDDLY_DCASSERT(fp->getEdgeType() == edge_type::LONG);
+
+    if (index < 0) return false;
+
+    node_handle p = node;
+    unpacked_node* U = unpacked_node::New(fp);
+    for (unsigned k = fp->getNumVariables(); k; --k) {
+        //
+        // I don't think index sets can skip levels at all
+        //
+        MEDDLY_DCASSERT(k == fp->getNodeLevel(p));
+        fp->unpackNode(U, p, SPARSE_ONLY);
+
+        //
+        // Backward Linear search: largest i such that
+        // edge value i <= index
+        //
+        unsigned zmax = U->getSize()-1;
+        while (zmax) {
+            if (U->edgeval(zmax).getLong() <= index) break;
+            --zmax;
+        }
+
+        //
+        // go down
+        //
+        m.from(k) = U->index(zmax);
+        index -= U->edgeval(zmax).getLong();
+        p = U->down(zmax);
+    } // for k
+    unpacked_node::Recycle(U);
+    if (index > 0) return false;
+    return true;
+}
 
 //
 // Private

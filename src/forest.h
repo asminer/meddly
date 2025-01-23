@@ -124,6 +124,66 @@ class MEDDLY::MXD_levels {
 
 // ******************************************************************
 // *                                                                *
+// *                       EdgeOp_none  class                       *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    /**
+        Small class for MT behavior on edges.
+    */
+    class EdgeOp_none {
+        public:
+            /// Do we have edge values
+            static inline bool hasEdgeValues()
+            {
+                return false;
+            }
+            /// Edge value type; for CT entries
+            static inline char edgeValueTypeLetter()
+            {
+                return 0;
+            }
+            /// Clear an edge value.
+            static inline void clear(edge_value &v)
+            {
+                v.set();
+            }
+            /// Return a + b
+            static inline edge_value applyOp(const edge_value &a,
+                    const edge_value &b)
+            {
+                return edge_value();
+            }
+            /// Accumulate a += b
+            static inline void accumulateOp(edge_value &a,
+                    const edge_value &b)
+            {
+            }
+            /// Accumulate a += -b
+            static inline void accumulateInverse(edge_value &a,
+                    const edge_value &b)
+            {
+            }
+            static inline terminal buildTerm(
+                            const edge_value &val, node_handle p)
+            {
+                MEDDLY_DCASSERT(false);
+                // Keep compiler happy:
+                return terminal(p, terminal_type::OMEGA);
+            }
+            static inline bool isZeroFunction(const edge_value &val,
+                    node_handle p)
+            {
+                return (0==p);
+            }
+
+    };
+};
+
+
+// ******************************************************************
+// *                                                                *
 // *                       EdgeOp_plus  class                       *
 // *                                                                *
 // ******************************************************************
@@ -135,13 +195,20 @@ namespace MEDDLY {
     template <class TYPE>
     class EdgeOp_plus {
         public:
+            /// Do we have edge values
+            static inline bool hasEdgeValues()
+            {
+                return true;
+            }
+            /// Edge value type; for CT entries
+            static char edgeValueTypeLetter();
             /// Clear an edge value.
             static inline void clear(edge_value &v)
             {
                 v.set(TYPE(0));
             }
-            /// Accumulate an edge value
-            static inline edge_value accumulate(const edge_value &a,
+            /// Accumulate two edge values. Returns a + b
+            static inline edge_value applyOp(const edge_value &a,
                     const edge_value &b)
             {
                 TYPE av, bv;
@@ -149,7 +216,58 @@ namespace MEDDLY {
                 b.get(bv);
                 return edge_value(av+bv);
             }
+            /// Accumulate one edge value into another: a += b
+            static inline void accumulateOp(edge_value &a,
+                    const edge_value &b)
+            {
+                TYPE bv;
+                b.get(bv);
+                a.add(bv);
+            }
+            /// Accumulate an inverse: a += -b
+            static inline void accumulateInverse(edge_value &a,
+                    const edge_value &b)
+            {
+                TYPE bv;
+                b.get(bv);
+                a.subtract(bv);
+            }
+            /// Build terminal value for edge <val, p>
+            static inline terminal buildTerm(
+                            const edge_value &val, node_handle p)
+            {
+                if (OMEGA_NORMAL == p) {
+                    TYPE v;
+                    val.get(v);
+                    return terminal(v);
+                }
+                return terminal(p, terminal_type::OMEGA);
+            }
+            static inline bool isZeroFunction(const edge_value &val,
+                    node_handle p)
+            {
+                if (p != OMEGA_NORMAL) return false;
+                TYPE bv;
+                val.get(bv);
+                return (0==bv);
+            }
     };
+    template <>
+    inline char EdgeOp_plus<int>::edgeValueTypeLetter() {
+        return 'I';
+    }
+    template <>
+    inline char EdgeOp_plus<long>::edgeValueTypeLetter() {
+        return 'L';
+    }
+    template <>
+    inline char EdgeOp_plus<float>::edgeValueTypeLetter() {
+        return 'F';
+    }
+    template <>
+    inline char EdgeOp_plus<double>::edgeValueTypeLetter() {
+        return 'D';
+    }
 };
 
 // ******************************************************************
@@ -165,13 +283,20 @@ namespace MEDDLY {
     template <class TYPE>
     class EdgeOp_times {
         public:
+            /// Do we have edge values
+            static inline bool hasEdgeValues()
+            {
+                return true;
+            }
+            /// Edge value type; for CT entries
+            static char edgeValueTypeLetter();
             /// Clear an edge value.
             static inline void clear(edge_value &v)
             {
                 v.set(TYPE(1));
             }
-            /// Accumulate an edge value: a *= b
-            static inline edge_value accumulate(const edge_value &a,
+            /// Accumulate two edge values. Returns a * b
+            static inline edge_value applyOp(const edge_value &a,
                     const edge_value &b)
             {
                 TYPE av, bv;
@@ -179,7 +304,47 @@ namespace MEDDLY {
                 b.get(bv);
                 return edge_value(av*bv);
             }
+            /// Accumulate one edge value into another: a *= b
+            static inline void accumulateOp(edge_value &a,
+                    const edge_value &b)
+            {
+                TYPE bv;
+                b.get(bv);
+                a.multiply(bv);
+            }
+            /// Accumulate an inverse: a *= 1/b
+            static inline void accumulateInverse(edge_value &a,
+                    const edge_value &b)
+            {
+                TYPE bv;
+                b.get(bv);
+                a.divide(bv);
+            }
+            /// Build terminal value for edge <val, p>
+            static inline terminal buildTerm(
+                            const edge_value &val, node_handle p)
+            {
+                if (OMEGA_NORMAL == p) {
+                    TYPE v;
+                    val.get(v);
+                    return terminal(v);
+                }
+                return terminal(p, terminal_type::OMEGA);
+            }
+            static inline bool isZeroFunction(const edge_value &val,
+                    node_handle p)
+            {
+                return (OMEGA_ZERO == p);
+            }
     };
+    template <>
+    inline char EdgeOp_times<float>::edgeValueTypeLetter() {
+        return 'F';
+    }
+    template <>
+    inline char EdgeOp_times<double>::edgeValueTypeLetter() {
+        return 'D';
+    }
 };
 
 // ******************************************************************
@@ -1105,10 +1270,12 @@ class MEDDLY::forest {
         /**
             Is the given edge transparent?
             If so it may be "skipped" in a sparse node.
-                @param  ep    Node part of the edge to check
                 @param  ev    Value part of the edge to check
+                @param  ep    Node part of the edge to check
         */
-        inline bool isTransparentEdge(node_handle ep, const edge_value &ev) const {
+        inline bool isTransparentEdge(const edge_value &ev, node_handle ep)
+                    const
+        {
             if (ep != transparent_node) return false;
             return ev == transparent_edge;
         }
@@ -1117,19 +1284,21 @@ class MEDDLY::forest {
             Get the transparent edge value.
             This is the default edge value for "skipped" edges in sparse nodes.
             Copy the transparent edge value into the parameters.
-                @param  ep      Put node part of the edge here.
                 @param  ev      Put value part of the edge here.
+                @param  ep      Put node part of the edge here.
         */
-        inline void getTransparentEdge(node_handle &ep, edge_value &ptr) const {
-            ep = transparent_node;
+        inline void getTransparentEdge(edge_value &ptr, node_handle &ep)
+                    const
+        {
             ptr = transparent_edge;
+            ep = transparent_node;
         }
 
         /**
             Make a transparent edge
         */
         inline void getTransparentEdge(dd_edge &e) const {
-            e.set(transparent_node, transparent_edge);
+            e.set(transparent_edge, transparent_node);
         }
 
         /// Get the edge type.
@@ -1198,29 +1367,19 @@ class MEDDLY::forest {
             return v;
         }
 
+
         /**
-            Convenience function.
-            Build an edge for a constant value.
+            Build an edge at level 0 (i.e., always to a terminal node)
+            for a constant value.
+         */
+        void getEdgeForValue(rangeval T, edge_value &v, node_handle &p)
+            const;
+
+        /**
+            Get the value of a level 0 edge (to a terminal node).
         */
-        template <class T>
-        inline void getEdgeForValue(T constval, edge_value &v, node_handle &p)
-        const
-        {
-            MEDDLY_DCASSERT(!isMultiTerminal());
-
-            v.setTempl(the_edge_type, constval);
-
-            if (isEVTimes() && (0==constval)) {
-                p = OMEGA_ZERO;
-            } else {
-                p = OMEGA_NORMAL;
-            }
-        }
-
-        //
-        // TBD:
-        //    getEdgeForInfinity
-        //
+        void getValueForEdge(const edge_value &v, node_handle p, rangeval &T)
+            const;
 
     // ------------------------------------------------------------
     protected: // methods to set edge info, for derived classes
@@ -1908,7 +2067,8 @@ class MEDDLY::forest {
         void dump(output &s, display_flags flags) const;
         void dumpInternal(output &s) const;
         void dumpUniqueTable(output &s) const;
-        void validateIncounts(bool exact);
+        void validateIncounts(bool exact, const char* fn, unsigned ln,
+                const char* opname=nullptr) const;
         void validateCacheCounts() const;
         void countNodesByLevel(long* active) const;
 
@@ -2066,10 +2226,28 @@ class MEDDLY::forest {
 
 // ===================================================================
 //
-// Building methods; probably will be moved elsewhere
+// Building methods
 //
 // ===================================================================
 
+  public:
+
+    /** Create an edge for a constant function.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+    */
+    inline void createConstant(rangeval val, dd_edge &e)
+    {
+        if (!e.isAttachedTo(this)) {
+            throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+        }
+        edge_value v;
+        node_handle p;
+        getEdgeForValue(val, v, p);
+        p = makeRedundantsTo(p, 0, getNumVariables());
+        e.set(v, p);
+    }
 
 
   // ------------------------------------------------------------
@@ -2203,6 +2381,36 @@ class MEDDLY::forest {
         }
     };
 
+
+
+
+    //
+    // misc.
+    //
+
+  // ------------------------------------------------------------
+  // Ugly details from here down.
+  private:  // Defaults
+    static policies mddDefaults;
+    static policies mxdDefaults;
+
+  private:
+    bool isRelation;
+    range_type rangeType;
+    edge_labeling edgeLabel;
+
+    /// Mark for deletion.
+    void markForDeletion();
+
+
+// ===================================================================
+//
+// Deprecated as of version 0.17.7
+//
+// ===================================================================
+
+#ifdef ALLOW_DEPRECATED_0_17_7
+    public:
 
     /** Create an edge as the union of several explicit vectors.
         @param  vlist Array of vectors. Each vector has dimension equal
@@ -2360,6 +2568,7 @@ class MEDDLY::forest {
         const float* terms, int N, dd_edge &e);
 
 
+
     /** Create an edge for a boolean constant.
         @param  val   Requested constant.
         @param  e     returns a handle to a node in the forest for
@@ -2376,9 +2585,11 @@ class MEDDLY::forest {
                       function f = \a val.
 
         @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN.
+                        the range type of the forest is not INTEGER.
     */
-    virtual void createEdge(long val, dd_edge &e);
+    inline  void createEdge(int val, dd_edge &e) {
+        createEdge(long(val), e);
+    }
 
     /** Create an edge for an integer constant.
         @param  val   Requested constant.
@@ -2386,17 +2597,30 @@ class MEDDLY::forest {
                       function f = \a val.
 
         @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN.
+                        the range type of the forest is not INTEGER.
+    */
+    virtual void createEdge(long val, dd_edge &e);
+
+    /** Create an edge for a real constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
+
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL.
     */
     virtual void createEdge(float val, dd_edge &e);
 
-// ===================================================================
-//
-// Evaluation methods; probably will be moved elsewhere
-//
-// ===================================================================
+    /** Create an edge for a real constant.
+        @param  val   Requested constant.
+        @param  e     returns a handle to a node in the forest for
+                      function f = \a val.
 
-    public:
+        @throws       TYPE_MISMATCH, if
+                        the range type of the forest is not REAL.
+    */
+    virtual void createEdge(double val, dd_edge &e);
+
 
 
     /** Evaluate the function encoded by an edge.
@@ -2498,6 +2722,7 @@ class MEDDLY::forest {
     virtual void evaluate(const dd_edge& f, const int* vlist,
       const int* vplist, float &term) const;
 
+
     /** Returns element \a e at index \a i from an Index Set EV+MDD.
 
         size(e) = number of variables in the forest + 1 (for terminals).
@@ -2529,33 +2754,7 @@ class MEDDLY::forest {
     */
     virtual enumerator::iterator* makeFixedColumnIter() const;
 
-
-
-
-    //
-    // misc.
-    //
-
-  // ------------------------------------------------------------
-  // Ugly details from here down.
-  private:  // Defaults
-    static policies mddDefaults;
-    static policies mxdDefaults;
-
-  private:
-    bool isRelation;
-    range_type rangeType;
-    edge_labeling edgeLabel;
-
-    /// Mark for deletion.
-    void markForDeletion();
-
-
-// ===================================================================
-//
-// Deprecated as of version 0.17.6
-//
-// ===================================================================
+#endif
 
 // ===================================================================
 //

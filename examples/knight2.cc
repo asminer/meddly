@@ -303,19 +303,19 @@ void buildConstraints(const coord &sq, constraint* C)
     dd_edge xsq(mtF);
     mtF->createEdgeForVar(B.get_var(sq), false, xsq);
     dd_edge one(mtF);
-    mtF->createEdge(long(1), one);
+    mtF->createConstant(1L, one);
     xsq += one;
 
     // xsq holds 1+ visit number for the given square
 
     dd_edge NxM(mtF);
-    mtF->createEdge(long(B.getN()*B.getM()), NxM);
+    mtF->createConstant(long(B.getN()*B.getM()), NxM);
     apply(EQUAL, xsq, NxM, C->the_dd);
 
 
     for (i=0; i<moves.length(); i++) {
         dd_edge ands(boolF);
-        boolF->createEdge(true, ands);
+        boolF->createConstant(true, ands);
         if (verbose) cout << "\t";
         for (j=0; j<moves.length(); j++) {
             if (verbose) {
@@ -366,13 +366,13 @@ void buildConstraints(const coord &sq, constraint* C)
     }
 }
 
-void show_solution(std::ostream &s, const int* minterm)
+void show_solution(std::ostream &s, const MEDDLY::minterm &M)
 {
     using namespace std;
     coord c;
     for (c.n=1; c.n<=B.getN(); c.n++) {
         for (c.m=1; c.m<=B.getM(); c.m++) {
-            cout << setfill(' ') << setw(3) << minterm[B.get_var(c)] << ' ';
+            cout << setfill(' ') << setw(3) << M.from(B.get_var(c)) << ' ';
         }
         cout << '\n';
     }
@@ -567,7 +567,7 @@ int main(int argc, const char** argv)
     dd_edge zero(mtF);
 
     mtF->createEdgeForVar(B.get_var(start), false, xst);
-    mtF->createEdge(long(0), zero);
+    mtF->createConstant(0L, zero);
     apply(EQUAL, xst, zero, all);
 
     std::cout << "Sorting constraints" << std::endl;
@@ -603,15 +603,14 @@ int main(int argc, const char** argv)
                 << std::endl;
         }
 
-        long allcard;
+        long allcard = 0;
         apply(CARDINALITY, all, allcard);
         std::cout << allcard << " tours total\n";
 
         // Show solutions
-        enumerator sol(all);
-        for (; sol; ++sol) {
+        for (auto sol = all.begin(); sol; ++sol) {
             std::cout << "Solution:\n";
-            show_solution(std::cout, sol.getAssignments());
+            show_solution(std::cout, *sol);
         }
 
         // Memory stats

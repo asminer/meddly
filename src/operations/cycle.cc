@@ -97,7 +97,7 @@ void MEDDLY::cycle_EV2EV::computeDDEdge(const dd_edge &arg, dd_edge &res, bool u
   long bev = Inf<long>();
   node_handle b = 0;
   compute_r(aev, arg.getNode(), argF->getMaxLevelIndex(), bev, b);
-  res.set(b, bev);
+  res.set(bev, b);
 }
 
 void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, node_handle& b)

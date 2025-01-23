@@ -181,6 +181,7 @@ namespace MEDDLY {
     numerical_operation* MATR_EXPLVECT_MULT(const dd_edge &xind,
             const dd_edge &A, const dd_edge &yind);
 
+
     // ******************************************************************
     // *                                                                *
     // *                  Named saturation operations                   *

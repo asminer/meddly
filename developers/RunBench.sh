@@ -24,7 +24,7 @@ statName=(
 )
 statCmd=(
     "date +\"%Y %h %d %H:%M:%S\""
-    "#e/libinfo | awk '{print \$3}'"
+    "#e/libinfo 0 | awk '{print \$3}'"
     "#e/libinfo 5"
     "ls #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc | wc -l"
     "wc -l #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc | tail -n 1 | awk '{print \$1}'"

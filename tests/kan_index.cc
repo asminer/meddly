@@ -25,6 +25,8 @@
 
 // #define SHOW_INDEXES
 
+// #define OLD_ITERATORS
+
 const char* kanban[] = {
   "X-+..............",  // Tin1
   "X.-+.............",  // Tr1
@@ -48,106 +50,184 @@ using namespace MEDDLY;
 
 bool equal(const int* a, const int* b, int N)
 {
-  for (int i=1; i<=N; i++)
-    if (a[i] != b[i]) return false;
-  return true;
+    for (int i=1; i<=N; i++)
+        if (a[i] != b[i]) return false;
+    return true;
+}
+
+bool equal(const minterm &a, const minterm &b)
+{
+    if (a.getNumVars() != b.getNumVars()) return false;
+    for (unsigned k = a.getNumVars(); k; --k)
+    {
+        if (a.from(k) != b.from(k)) return false;
+    }
+    return true;
 }
 
 bool checkReachset(int N)
 {
-  printf("Running test for N=%d...\n", N);
+    printf("Running test for N=%d...\n", N);
 
-  int sizes[16];
+    int sizes[16];
 
-  for (int i=15; i>=0; i--) sizes[i] = N+1;
-  domain* dom = domain::createBottomUp(sizes, 16);
+    for (int i=15; i>=0; i--) sizes[i] = N+1;
+    domain* dom = domain::createBottomUp(sizes, 16);
+    forest* mdd = forest::create(dom, SET, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL);
+    forest* mxd = forest::create(dom, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL);
+    forest* evmdd = forest::create(dom, SET, range_type::INTEGER,
+                        edge_labeling::INDEX_SET);
 
-  // Build initial state
-  int* initial = new int[17];
-  for (int i=16; i; i--) initial[i] = 0;
-  initial[1] = initial[5] = initial[9] = initial[13] = N;
-  forest* mdd = forest::create(dom, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  dd_edge init_state(mdd);
-  mdd->createEdge(&initial, 1, init_state);
-  delete[] initial;
-  printf("\tbuilt initial state\n");
-  fflush(stdout);
+    //
+    // Build initial state
+    //
+    minterm initial(mdd);
+    dd_edge init_state(mdd);
+    initial.setAllVars(0);
+    initial.setVar(1, N);
+    initial.setVar(5, N);
+    initial.setVar(9, N);
+    initial.setVar(13, N);
+    initial.buildFunction(false, init_state);
+    printf("\tbuilt initial state\n");
+    fflush(stdout);
 
-  // Build next-state function
-  forest* mxd = forest::create(dom, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf, 0);
-  printf("\tbuilt next-state function\n");
-  fflush(stdout);
+    //
+    // Build next-state function
+    //
+    dd_edge nsf(mxd);
+    buildNextStateFunction(kanban, 16, mxd, nsf);
+    printf("\tbuilt next-state function\n");
+    fflush(stdout);
 
-  // Build reachable states
-  dd_edge reachable(mdd);
-  apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-  printf("\tbuilt reachable states\n");
-  fflush(stdout);
+    //
+    // Build reachable states
+    //
+    dd_edge reachable(mdd);
+    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    printf("\tbuilt reachable states\n");
+    fflush(stdout);
 
-  // Build index set for reachable states
-  forest* evmdd = forest::create(dom, 0, range_type::INTEGER, edge_labeling::INDEX_SET);
-  dd_edge reach_index(evmdd);
-  apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
+    //
+    // Build index set for reachable states
+    //
+    dd_edge reach_index(evmdd);
+    apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 #ifdef SHOW_INDEXES
-  printf("\tbuilt index set:\n");
-  reach_index.show(stdout, 2);
+    FILE_output out(stdout);
+    printf("\tbuilt index set:\n");
+    reach_index.showGraph(out);
 #else
-  printf("\tbuilt index set\n");
+    printf("\tbuilt index set\n");
 #endif
-  fflush(stdout);
+    fflush(stdout);
 
-  // Verify indexes
-  int c = 0;
-  for (enumerator s(reachable); s; ++s) {
-    const int* state = s.getAssignments();
-    long index;
-    evmdd->evaluate(reach_index, state, index);
-    if (c != index) {
-      printf("\nState number %d has index %ld\n", c, index);
-      return false;
+    //
+    // Iterate through reachable states, and make sure
+    // the reach_index matches.
+    //
+    long c = 0;
+    minterm assign(mdd);
+#ifdef OLD_ITERATORS
+    for (enumerator s(reachable); s; ++s)
+    {
+        long index;
+        const int* state = s.getAssignments();
+        assign.setAll(state, true);   // UGH, copy, for now
+        reach_index.evaluate(assign, index);
+        if (c != index) {
+            printf("\nState number %ld has index %ld\n", c, index);
+            return false;
+        }
+        c++;
     }
-    c++;
-  } // for s
-  printf("\tverified `forward'\n");
-  fflush(stdout);
-
-  // verify the other way
-  int d = 0;
-  for (enumerator s(reach_index); s; ++s) {
-    const int* state = s.getAssignments();
-    bool ok;
-    mdd->evaluate(reachable, state, ok);
-    if (!ok) {
-      printf("\nIndex number %d does not appear in reachability set\n", d);
-      return false;
+#else
+    for (dd_edge::iterator s = reachable.begin(); s; ++s)
+    {
+        long index;
+        reach_index.evaluate(*s, index);
+        if (c != index) {
+            printf("\nState number %ld has index %ld\n", c, index);
+            return false;
+        }
+        c++;
     }
-    d++;
-  }
-  printf("\tverified `backward'\n");
-  fflush(stdout);
+#endif
+    printf("\tverified `forward'\n");
+    fflush(stdout);
 
-  // Verify index search
-  c = 0;
-  int elem[17];
-  for (enumerator s(reachable); s; ++s) {
-    const int* state = s.getAssignments();
-    evmdd->getElement(reach_index, c, elem);
-    if (!equal(state, elem, 16)) {
-      printf("\nFetch index %d got wrong state\n", c);
-      return false;
+    //
+    // Iterate through reach_index, and make sure all indexed
+    // states are in fact reachable.
+    //
+
+    c = 0;
+#ifdef OLD_ITERATORS
+    for (enumerator s(reach_index); s; ++s) {
+        const int* state = s.getAssignments();
+        bool ok;
+        assign.setAll(state, true);
+        reachable.evaluate(assign, ok);
+        if (!ok) {
+            printf("\nIndex number %ld does not appear in reachability set\n", c);
+            return false;
+        }
+        c++;
     }
-    c++;
-  } // for s
-  printf("\tverified `getElement'\n");
-  fflush(stdout);
+#else
+    for (dd_edge::iterator s = reach_index.begin(); s; ++s)
+    {
+        long index = (*s).getValue();
+        if (index != c) {
+            printf("\nState number %ld has index %ld\n", c, index);
+            return false;
+        }
+        bool ok;
+        reachable.evaluate(*s, ok);
+        if (!ok) {
+            printf("\nIndex number %ld does not appear in reachability set\n", c);
+            return false;
+        }
+        c++;
+    }
+#endif
+    printf("\tverified `backward'\n");
+    fflush(stdout);
+
+    // Verify index search
+    c = 0;
+#ifdef OLD_ITERATORS
+    int elem[17];
+    for (enumerator s(reachable); s; ++s) {
+        const int* state = s.getAssignments();
+        evmdd->getElement(reach_index, c, elem);
+        if (!equal(state, elem, 16)) {
+            printf("\nFetch index %ld got wrong state\n", c);
+            return false;
+        }
+        c++;
+    } // for s
+#else
+    for (dd_edge::iterator s = reachable.begin(); s; ++s)
+    {
+        bool ok = reach_index.getElement(c, assign);
+        if (!ok) {
+            printf("\nCan't find state with index %ld\n", c);
+            return false;
+        }
+        if (!equal(*s, assign)) {
+            printf("\nFetch index %ld got wrong state\n", c);
+            return false;
+        }
+        c++;
+    }
+#endif
+    printf("\tverified `getElement'\n");
+    fflush(stdout);
 
 
-  if (c!=d) {
-    printf("\nCardinality mismatch\n");
-    return false;
-  }
 
   domain::destroy(dom);
 
@@ -156,14 +236,14 @@ bool checkReachset(int N)
 
 int main()
 {
-  MEDDLY::initialize();
+    MEDDLY::initialize();
 
-  for (int n=1; n<4; n++) {
-    if (!checkReachset(n)) return 1;
-  }
+    for (int n=1; n<4; n++) {
+        if (!checkReachset(n)) return 1;
+    }
 
-  MEDDLY::cleanup();
-  printf("Done\n");
-  return 0;
+    MEDDLY::cleanup();
+    printf("Done\n");
+    return 0;
 }
 

@@ -118,6 +118,9 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
             arg.getEdgeValue(), arg.getNode(), res.setEdgeValue(), resp);
     res.set(resp);
 #endif
+#ifdef DEVELOPMENT_CODE
+    resF->validateIncounts(true, __FILE__, __LINE__, getName());
+#endif
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_6

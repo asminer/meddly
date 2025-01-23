@@ -204,6 +204,19 @@ void MEDDLY::mtmdd_forest::dynamicReorderVariables(int top, int bottom)
   }
 }
 
+/*
+void MEDDLY::mtmdd_forest::evaluate(const dd_edge &f, const minterm &m,
+        terminal &term) const
+{
+    node_handle p = f.getNode();
+    while (!isTerminalNode(p)) {
+        const int level = getNodeLevel(p);
+        p = getDownPtr(p, m.from(getVarByLevel(level)));
+    }
+    term.setFromHandle(getTerminalType(), p);
+}
+*/
+
 void MEDDLY::mtmdd_forest::sifting(int var, int top, int bottom)
 {
   int level = getLevelByVar(var);
@@ -308,6 +321,8 @@ void MEDDLY::mtmdd_forest::sifting(int var, int top, int bottom)
 // *                                                                *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 MEDDLY::mtmdd_forest::mtmdd_iterator::mtmdd_iterator(const forest *_F)
  : mt_iterator(_F)
 {
@@ -376,3 +391,5 @@ bool MEDDLY::mtmdd_forest::mtmdd_iterator::first(int k, node_handle down)
   index[0] = down;
   return true;
 }
+
+#endif
