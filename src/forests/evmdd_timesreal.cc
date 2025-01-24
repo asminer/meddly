@@ -113,15 +113,6 @@ void MEDDLY::evmdd_timesreal::showEdge(output &s, const edge_value &ev,
 }
 
 
-#ifdef ALLOW_DEPRECATED_0_17_3
-
-const char* MEDDLY::evmdd_timesreal::codeChars() const
-{
-  return "dd_etvr";
-}
-
-#endif
-
 // ******************************************************************
 // *                                                                *
 // *                                                                *

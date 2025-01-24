@@ -124,15 +124,6 @@ void MEDDLY::evmxd_timesreal::showEdge(output &s, const edge_value &ev,
     }
 }
 
-#ifdef ALLOW_DEPRECATED_0_17_3
-
-const char* MEDDLY::evmxd_timesreal::codeChars() const
-{
-  return "dd_etxr";
-}
-
-#endif
-
 // ******************************************************************
 // *                                                                *
 // *                                                                *

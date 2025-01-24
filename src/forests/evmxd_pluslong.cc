@@ -109,15 +109,6 @@ void MEDDLY::evmxd_pluslong::showEdge(output &s, const edge_value &ev,
     }
 }
 
-#ifdef ALLOW_DEPRECATED_0_17_3
-
-const char* MEDDLY::evmxd_pluslong::codeChars() const
-{
-  return "dd_etxr";
-}
-
-#endif
-
 // ******************************************************************
 // *                                                                *
 // *                                                                *

@@ -30,10 +30,6 @@
 #include "ops_builtin.h"
 #include "operators.h"
 
-#ifdef ALLOW_DEPRECATED_0_17_3
-#include "io_dot.h"
-#endif
-
 // #define DEBUG_CLEANUP
 // #define DEBUG_FIRST
 // #define DEBUG_BINSRCH
@@ -966,20 +962,6 @@ void MEDDLY::dd_edge::showGraph(output &s) const
     M.mark(node);
     M.showByLevels(s);
 }
-
-#ifdef ALLOW_DEPRECATED_0_17_3
-
-void MEDDLY::dd_edge::writePicture(const char* filename,
-        const char* extension) const
-{
-    dot_maker DM(forest::getForestWithID(parentFID), filename);
-
-    DM.addRootEdge(*this);
-    DM.doneGraph();
-    DM.runDot(extension);
-}
-
-#endif
 
 
 void MEDDLY::dd_edge::write(output &s, const std::vector <unsigned> &map) const

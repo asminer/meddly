@@ -272,18 +272,6 @@ class MEDDLY::dd_edge {
         */
         void showGraph(output &s) const;
 
-#ifdef ALLOW_DEPRECATED_0_17_3
-
-        /** DEPRECATED; use dot_maker object instead (see io_dot.h).
-            Draws a pictographical representation of the graph with
-            this node as the root.
-                @param  filename  Name of output file (without extension)
-                @param  extension File extension (without ".").
-                        E.g. "dot", "pdf", "ps"
-        */
-        void writePicture(const char* filename, const char* extension) const;
-#endif
-
         /**
             Write the edge information to a file (stream).
                 @param  s       Stream to write to

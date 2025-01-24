@@ -275,15 +275,6 @@ void MEDDLY::evmdd_pluslong::showEdge(output &s, const edge_value &ev,
 }
 
 
-#ifdef ALLOW_DEPRECATED_0_17_3
-
-const char* MEDDLY::evmdd_pluslong::codeChars() const
-{
-  return "dd_epvi";
-}
-
-#endif
-
 // ******************************************************************
 // *                                                                *
 // *                                                                *

@@ -59,11 +59,6 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
 
     virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
 
-  protected:
-#ifdef ALLOW_DEPRECATED_0_17_3
-    virtual const char* codeChars() const;
-#endif
-
 #ifdef ALLOW_DEPRECATED_0_17_7
   protected:
     class evtrmdd_iterator : public enumerator::iterator {
