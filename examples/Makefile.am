@@ -55,9 +55,6 @@ life_LDADD = ../src/libmeddly.la
 
 
 
-test_evmdd_SOURCES = test_evmdd.cc
-test_evmdd_LDADD = ../src/libmeddly.la
-
 nqueens_SOURCES = nqueens.cc
 nqueens_LDADD = ../src/libmeddly.la
 
