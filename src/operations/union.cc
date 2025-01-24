@@ -18,7 +18,6 @@
 
 #include "../defines.h"
 #include "union.h"
-#include "apply_base.h" // remove this when we can
 
 #include "../ops_builtin.h" // for COPY
 #include "../oper_binary.h"
