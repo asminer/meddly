@@ -31,11 +31,7 @@ int  MEDDLY::ev_forest::order_size;
 
 MEDDLY::ev_forest::ev_forest(domain *d, bool rel,
   range_type t, edge_labeling ev, const policies &p, int* level_reduction_rule)
-#ifdef ALLOW_DEPRECATED_0_17_4
-: expert_forest(d, rel, t, ev, p, level_reduction_rule)
-#else
 : forest(d, rel, t, ev, p, level_reduction_rule)
-#endif
 {
   MEDDLY_DCASSERT(ev != edge_labeling::MULTI_TERMINAL);
 }

@@ -2756,79 +2756,7 @@ class MEDDLY::forest {
 
 #endif
 
-// ===================================================================
-//
-// Deprecated as of version 0.17.4
-//
-// ===================================================================
-
-#ifdef ALLOW_DEPRECATED_0_17_4
-    public:
-        /// Status indicators for nodes.
-        enum node_status {
-            /// Node is active: it can be used without issue.
-            ACTIVE,
-            /// Node is recoverable: it has been marked for garbage collection
-            /// but it can still be used without issue.
-            RECOVERABLE,
-            /// Node is not-recoverable: it has been marked for garbage collection
-            /// and it cannot be used.
-            DEAD
-        };
-
-    public:
-        /// A node can be discarded once it goes stale. Whether a node is
-        /// considered stale depends on the forest's deletion policy.
-        /// Optimistic deletion: A node is said to be stale only when both the
-        ///   in-count and cache-count are zero.
-        /// Pessimistic deletion: A node is said to be stale when the in-count
-        ///  is zero regardless of the cache-count.
-        /// If we don't use reference counts and instead mark and sweep,
-        ///  then a node cannot be recovered once it is "unreachable"
-        ///  because its children might have been recycled
-        MEDDLY::forest::node_status getNodeStatus(node_handle node) const;
-
-    protected:
-        /// Should a terminal node be considered a stale entry in a compute table.
-        /// per-forest policy, derived classes may change as appropriate.
-        MEDDLY::forest::node_status terminalNodesStatus;
-#endif
-
-
 };
-
-// ===================================================================
-//
-// Deprecated classes / methods as of version 0.17.4
-//
-// ===================================================================
-
-
-#ifdef ALLOW_DEPRECATED_0_17_4
-namespace MEDDLY {
-
-    /// DEPRECATED: expert_forest class
-    class expert_forest: public forest
-    {
-        public:
-            expert_forest(domain *d, bool rel, range_type t,
-                  edge_labeling ev, const policies &p, int* level_reduction_rule);
-
-        protected:
-            virtual ~expert_forest();
-
-    };
-
-
-
-    /** Front-end function to destroy a forest.
-        DEPRECATED; use forest::destroy() instead.
-    */
-    inline void destroyForest(forest* &f) {
-        forest::destroy(f);
-    }
-};
-#endif
 
 
 #endif

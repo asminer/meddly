@@ -41,12 +41,7 @@ namespace MEDDLY {
     Common things, that do not depend on the terminal type,
     are implemented here.
 */
-class MEDDLY::mt_forest :
-#ifdef ALLOW_DEPRECATED_0_17_4
-    public expert_forest
-#else
-    public forest
-#endif
+class MEDDLY::mt_forest : public forest
 {
   protected:
     mt_forest(domain *d, bool rel, range_type t, const policies &p, int* level_reduction_rule=NULL);

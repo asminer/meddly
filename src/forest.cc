@@ -1879,13 +1879,6 @@ MEDDLY::forest
          throw error(error::INVALID_POLICY, __FILE__, __LINE__);
   }
 
-#ifdef ALLOW_DEPRECATED_0_17_4
-    //
-    // Initialize misc. protected data
-    //
-    terminalNodesStatus = MEDDLY::forest::ACTIVE;
-#endif
-
     //
     // Initialize the root edges
     //
@@ -2107,62 +2100,6 @@ MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedColumnIter() const
 
 
 //
-
-#endif
-
-// ===================================================================
-//
-// Deprecated as of version 0.17.4
-//
-// ===================================================================
-
-#ifdef ALLOW_DEPRECATED_0_17_4
-MEDDLY::forest::node_status
-MEDDLY::forest::getNodeStatus(MEDDLY::node_handle node) const
-{
-    if (isMarkedForDeletion()) {
-        return MEDDLY::forest::DEAD;
-    }
-    if (isTerminalNode(node)) {
-        return terminalNodesStatus;
-    }
-    if (isDeletedNode(node)) {
-        return MEDDLY::forest::DEAD;
-    }
-    // Active node.
-
-    // If we're using reference counts,
-    // and the incoming count is zero,
-    // then we must be using optimistic
-    // and the node is stale but recoverable.
-
-    // If we're NOT using reference counts,
-    // since we're not a deleted node,
-    // assume we are still active.
-
-    if (deflt.useReferenceCounts) {
-        if (getNodeInCount(node) == 0) {
-            return MEDDLY::forest::RECOVERABLE;
-        }
-    }
-
-    return MEDDLY::forest::ACTIVE;
-}
-
-
-// ******************************************************************
-// *                     expert_forest  methods                     *
-// ******************************************************************
-
-MEDDLY::expert_forest::expert_forest(domain *d, bool rel, range_type t,
-  edge_labeling ev, const policies &p, int* level_reduction_rule)
-: forest(d, rel, t, ev, p, level_reduction_rule)
-{
-}
-
-MEDDLY::expert_forest::~expert_forest()
-{
-}
 
 #endif
 
