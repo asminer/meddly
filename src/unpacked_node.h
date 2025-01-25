@@ -28,12 +28,17 @@
 #include <cstring> // for memcpy
 
 namespace MEDDLY {
-    class unpacked_node;
     class forest;
     class initializer_list;
     class node_marker;
 
+#ifdef ALLOW_DEPRECATED_0_17_8
+    class unpacked_node;
     struct unpacked_lists;
+#endif
+
+
+    class unreduced_node;
 }
 
 #define ALLOW_SET_FROM_DDEDGE
@@ -41,6 +46,8 @@ namespace MEDDLY {
 // #define DEBUG_UNPACKED_HASH
 
 #define USE_STRUCT
+
+#ifdef ALLOW_DEPRECATED_0_17_8
 
 // ******************************************************************
 // *                                                                *
@@ -1108,5 +1115,267 @@ class MEDDLY::unpacked_node {
 
 };
 
+#endif // ALLOW_DEPRECATED_0_17_8
+
+// ******************************************************************
+// *                                                                *
+// *                      unreduced_node class                      *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Class for unreduced nodes, i.e., copies of nodes outside a forest.
+    Ideally - used anywhere we want to read node data, or create nodes.
+    Unreduced nodes may be "full" or "sparse", independent of how
+    the actual node is stored in the forest.
+
+    Currently, an unreduced node contains the following arrays.
+        _header:    array of chars. will be partitioned into
+                    hashed and unhashed headers.
+
+        _down:      array of node_handles, for downward pointers.
+        _index:     array of unsigned, for indexes (sparse storage).
+        _edge:      array of edge_values, for EV forests.
+
+    Arrays are null if not needed. Otherwise, arrays _down, _index,
+    and _edge will be the same size.
+
+    Arrays are pulled from static free lists, and recycled to the same,
+    automatically. Free lists are by size, and since nodes may be expanded
+    on demand, we may allocate more than needed. Also by reducing the
+    number of sizes allocated, we reduce the number of free lists.
+
+    The constructor sets up a blank node. It cannot be used effectively
+    until one of the init methods is called.
+*/
+
+class MEDDLY::unreduced_node {
+        friend class initializer_list;
+    public:
+        unreduced_node();
+        ~unreduced_node();
+
+        /// Are we attached to f
+        inline bool isAttachedTo(const forest* f) {
+            return f == parent;
+        }
+
+    protected:
+        void clear();
+        void allocNode(const forest* f, unsigned size, node_storage_flags fs);
+
+    private:
+        /// Forest where the node belongs
+        const forest* parent;
+        /// Modifiable parent forest; required for writable nodes
+        forest* modparent;
+
+
+    // **********************************************************************
+    // Statics
+    // **********************************************************************
+
+    public:
+        /// Mark children in writable nodes.
+        ///     @param  M   node marker we should use to mark nodes;
+        ///                 this also gives us the forest to check.
+        ///
+        static void MarkWritable(node_marker &M);
+
+        /// Update counts of children in writable nodes.
+        ///     @param  F           Forest we care about.
+        ///     @param  incounts    Vector of counts for each
+        ///                         nonterminal node.
+        ///
+        static void AddToIncomingCounts(const forest* F,
+                        std::vector <unsigned> &incounts);
+
+    private:
+        /// Per-forest free and build lists.
+        /// Stored as an array, indexed by the forest's FID.
+        static unpacked_lists* ForLists;
+
+        /// Allocated size of ForLists
+        static unsigned ForListsAlloc;
+
+
+    private:
+        inline static unsigned slot2size(unsigned slot)
+        {
+            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
+            static const unsigned size[16] = {
+                16, 24, 36, 54,
+                81, 120, 180, 270,
+                405, 606, 909, 1362,
+                2043, 3063, 4593, 6888};
+            return size[slot];
+        }
+
+        inline static unsigned size2slot(unsigned size)
+        {
+            /*
+             * By hand, binary search
+             */
+            if (size <= slot2size(0)) {
+                return 0;
+                // By stripping this one off, we
+                // (1) give priority to small sizes (more likely), and
+                // (2) set up a perfect binary search for the remaining
+            }
+
+            if (size <= slot2size(8)) {
+                // 1..8
+                if (size <= slot2size(4)) {
+                    // 1,2,3,4
+                    if (size <= slot2size(2)) {
+                        // 1,2
+                        if (size <= slot2size(1))   return 1;
+                        else                        return 2;
+                    } else {
+                        // 3,4
+                        if (size <= slot2size(3))   return 3;
+                        else                        return 4;
+                    }
+                } else {
+                    // 5,6,7,8
+                    if (size <= slot2size(6)) {
+                        // 5,6
+                        if (size <= slot2size(5))   return 5;
+                        else                        return 6;
+                    } else {
+                        // 7,8
+                        if (size <= slot2size(7))   return 7;
+                        else                        return 8;
+                    }
+                }
+            } else {
+                // 9..16
+                if (size <= slot2size(12)) {
+                    // 9,10,11,12
+                    if (size <= slot2size(10)) {
+                        // 9,10
+                        if (size <= slot2size(9))   return 9;
+                        else                        return 10;
+                    } else {
+                        // 11,12
+                        if (size <= slot2size(11))  return 11;
+                        else                        return 12;
+                    }
+                } else {
+                    // 13,14,15,16
+                    if (size <= slot2size(14)) {
+                        // 13,14
+                        if (size <= slot2size(13))  return 13;
+                        else                        return 14;
+                    } else {
+                        // 15,16
+                        if (size <= slot2size(15))  return 15;
+                        else                        return 16;
+                    }
+                }
+            }
+        }
+
+        template <typename T>
+        inline static T* getNextFree(const T* array) {
+            return (reinterpret_cast<T* const*>(array))[0];
+        }
+        template <typename T>
+        inline static void setNextFree(T* array, const T* next) {
+            (reinterpret_cast<const T**>(array))[0] = next;
+        }
+
+        inline static char* popFreeHeader(unsigned slot)
+        {
+            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
+            if (free_headers[slot]) {
+                char* ptr = free_headers[slot];
+                free_headers[slot] = getNextFree(ptr);
+                return ptr;
+            } else {
+                return nullptr;
+            }
+        }
+
+        inline static void pushFreeHeader(char* ptr, unsigned slot)
+        {
+            MEDDLY_DCASSERT(ptr);
+            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
+            setNextFree(ptr, free_headers[slot]);
+            free_headers[slot] = ptr;
+        }
+
+        inline static node_handle* popFreeDown(unsigned slot)
+        {
+            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
+            if (free_down[slot]) {
+                node_handle* ptr = free_down[slot];
+                free_down[slot] = getNextFree(ptr);
+                return ptr;
+            } else {
+                return nullptr;
+            }
+        }
+
+        inline static void pushFreeDown(node_handle* ptr, unsigned slot)
+        {
+            MEDDLY_DCASSERT(ptr);
+            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
+            setNextFree(ptr, free_down[slot]);
+            free_down[slot] = ptr;
+        }
+
+        inline static unsigned* popFreeIndex(unsigned slot)
+        {
+            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
+            if (free_index[slot]) {
+                unsigned* ptr = free_index[slot];
+                free_index[slot] = getNextFree(ptr);
+                return ptr;
+            } else {
+                return nullptr;
+            }
+        }
+
+        inline static void pushFreeIndex(unsigned* ptr, unsigned slot)
+        {
+            MEDDLY_DCASSERT(ptr);
+            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
+            setNextFree(ptr, free_index[slot]);
+            free_index[slot] = ptr;
+        }
+
+        inline static edge_value* popFreeEdge(unsigned slot)
+        {
+            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
+            if (free_edge[slot]) {
+                edge_value* ptr = free_edge[slot];
+                free_edge[slot] = getNextFree(ptr);
+                return ptr;
+            } else {
+                return nullptr;
+            }
+        }
+
+        inline static void pushFreeEdge(edge_value* ptr, unsigned slot)
+        {
+            MEDDLY_DCASSERT(ptr);
+            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
+            setNextFree(ptr, free_edge[slot]);
+            free_edge[slot] = ptr;
+        }
+
+    private:
+        // Free lists by size and type
+        static char*           free_headers[16];
+        static node_handle*    free_down[16];
+        static unsigned*       free_index[16];
+        static edge_value*     free_edge[16];
+
+    private:
+        static void initStatics();
+        static void doneStatics();
+
+};
 
 #endif
