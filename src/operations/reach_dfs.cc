@@ -396,7 +396,7 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
 
   unpacked_node* C = unpacked_node::newFull(resF, k, sz);
   // Initialize mdd reader
-  unpacked_node *mddDptrs = unpacked_node::New(argF);
+  unpacked_node *mddDptrs = unpacked_node::New(argF, FULL_ONLY);
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, FULL_ONLY);
   } else {
@@ -500,7 +500,7 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
 
   unpacked_node* C = unpacked_node::newFull(resF, k, sz);
   // Initialize evmdd reader
-  unpacked_node *evmddDptrs = unpacked_node::New(argF);
+  unpacked_node *evmddDptrs = unpacked_node::New(argF, FULL_ONLY);
   if (evmdd_level < k) {
     evmddDptrs->initRedundant(argF, k, evmdd, FULL_ONLY);
   } else {
@@ -585,8 +585,8 @@ void MEDDLY::common_dfs::splitMxd(node_handle mxd_nh)
     MEDDLY_DCASSERT(ABS(mxdLevel) <= level);
 
     // Initialize readers
-    unpacked_node *Mu = unpacked_node::New(arg2F);
-    unpacked_node *Mp = unpacked_node::New(arg2F);
+    unpacked_node *Mu = unpacked_node::New(arg2F, FULL_ONLY);
+    unpacked_node *Mp = unpacked_node::New(arg2F, FULL_ONLY);
     if (isLevelAbove(level, mxdLevel)) {
       Mu->initRedundant(arg2F, level, mxd.getNode(), FULL_ONLY);
     } else {
@@ -786,8 +786,8 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
-  unpacked_node *Ru = unpacked_node::New(arg2F);
-  unpacked_node *Rp = unpacked_node::New(arg2F);
+  unpacked_node *Ru = unpacked_node::New(arg2F, FULL_ONLY);
+  unpacked_node *Rp = unpacked_node::New(arg2F, SPARSE_ONLY);
   if (mxdLevel < 0) {
     Ru->initRedundant(arg2F, nb.getLevel(), mxd, FULL_ONLY);
   } else {
@@ -904,7 +904,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New(arg1F);
+  unpacked_node *A = unpacked_node::New(arg1F, FULL_ONLY);
   if (mddLevel < rLevel) {
     A->initRedundant(arg1F, rLevel, mdd, FULL_ONLY);
   } else {
@@ -927,8 +927,8 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::New(arg2F);
-    unpacked_node *Rp = unpacked_node::New(arg2F);
+    unpacked_node *Ru = unpacked_node::New(arg2F, SPARSE_ONLY);
+    unpacked_node *Rp = unpacked_node::New(arg2F, SPARSE_ONLY);
     if (mxdLevel < 0) {
       Ru->initRedundant(arg2F, rLevel, mxd, SPARSE_ONLY);
     } else {
@@ -1024,8 +1024,8 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(unpacked_node& nb)
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
-  unpacked_node *Ru = unpacked_node::New(arg2F);
-  unpacked_node *Rp = unpacked_node::New(arg2F);
+  unpacked_node *Ru = unpacked_node::New(arg2F, SPARSE_ONLY);
+  unpacked_node *Rp = unpacked_node::New(arg2F, SPARSE_ONLY);
   if (mxdLevel < 0) {
     Ru->initRedundant(arg2F, nb.getLevel(), mxd, SPARSE_ONLY);
   } else {
@@ -1129,7 +1129,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
   dd_edge nbdi(resF), temp(resF);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New(arg1F);
+  unpacked_node *A = unpacked_node::New(arg1F, FULL_ONLY);
   if (mddLevel < rLevel) {
     A->initRedundant(arg1F, rLevel, mdd, FULL_ONLY);
   } else {
@@ -1150,8 +1150,8 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::New(arg2F);
-    unpacked_node *Rp = unpacked_node::New(arg2F);
+    unpacked_node *Ru = unpacked_node::New(arg2F, SPARSE_ONLY);
+    unpacked_node *Rp = unpacked_node::New(arg2F, SPARSE_ONLY);
     if (mxdLevel < 0) {
       Ru->initRedundant(arg2F, rLevel, mxd, SPARSE_ONLY);
     } else {
@@ -1291,8 +1291,8 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
-  unpacked_node *Ru = unpacked_node::New(arg2F);
-  unpacked_node *Rp = unpacked_node::New(arg2F);
+  unpacked_node *Ru = unpacked_node::New(arg2F, FULL_ONLY);
+  unpacked_node *Rp = unpacked_node::New(arg2F, SPARSE_ONLY);
   if (mxdLevel < 0) {
     Ru->initRedundant(arg2F, nb.getLevel(), mxd, FULL_ONLY);
   } else {
@@ -1428,7 +1428,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize evmdd reader
-  unpacked_node *A = unpacked_node::New(arg1F);
+  unpacked_node *A = unpacked_node::New(arg1F, FULL_ONLY);
   if (evmddLevel < rLevel) {
     A->initRedundant(arg1F, rLevel, evmdd, FULL_ONLY);
   } else {
@@ -1455,8 +1455,8 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
     MEDDLY_DCASSERT(ABS(mxdLevel) >= evmddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::New(arg2F);
-    unpacked_node *Rp = unpacked_node::New(arg2F);
+    unpacked_node *Ru = unpacked_node::New(arg2F, SPARSE_ONLY);
+    unpacked_node *Rp = unpacked_node::New(arg2F, SPARSE_ONLY);
     if (mxdLevel < 0) {
       Ru->initRedundant(arg2F, rLevel, mxd, SPARSE_ONLY);
     } else {

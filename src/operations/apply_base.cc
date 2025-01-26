@@ -618,8 +618,8 @@ MEDDLY::generic_binary_mxd::compute_r_normal(int in, int k, node_handle a, node_
   unpacked_node* C = unpacked_node::newFull(resF, k, resultSize);
 
   // Initialize readers
-  unpacked_node *A = unpacked_node::New(arg1F);
-  unpacked_node *B = unpacked_node::New(arg2F);
+  unpacked_node *A = unpacked_node::New(arg1F, FULL_ONLY);
+  unpacked_node *B = unpacked_node::New(arg2F, FULL_ONLY);
 
   if (aLevel == k) {
     arg1F->unpackNode(A, a, FULL_ONLY);
@@ -846,8 +846,8 @@ MEDDLY::generic_binbylevel_mxd
   bool canSaveResult = true;
 
   // Initialize readers
-  unpacked_node* A = unpacked_node::New(arg1F);
-  unpacked_node* B = unpacked_node::New(arg2F);
+  unpacked_node* A = unpacked_node::New(arg1F, FULL_ONLY);
+  unpacked_node* B = unpacked_node::New(arg2F, FULL_ONLY);
 
   if (aLevel == resultLevel) {
     arg1F->unpackNode(A, a, FULL_ONLY);
@@ -1132,8 +1132,8 @@ void MEDDLY::generic_binary_evplus_mxd
   unpacked_node* C = unpacked_node::newFull(resF, level, resultSize);
 
   // Initialize readers
-  unpacked_node *A = unpacked_node::New(arg1F);
-  unpacked_node *B = unpacked_node::New(arg2F);
+  unpacked_node *A = unpacked_node::New(arg1F, FULL_ONLY);
+  unpacked_node *B = unpacked_node::New(arg2F, FULL_ONLY);
 
   if (aLevel == level) {
     arg1F->unpackNode(A, a, FULL_ONLY);
@@ -1308,8 +1308,8 @@ void MEDDLY::generic_binary_evtimes
   unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
 
   // Initialize readers
-  unpacked_node *A = unpacked_node::New(arg1F);
-  unpacked_node *B = unpacked_node::New(arg2F);
+  unpacked_node *A = unpacked_node::New(arg1F, FULL_ONLY);
+  unpacked_node *B = unpacked_node::New(arg2F, FULL_ONLY);
 
   if (aLevel == resultLevel) {
     arg1F->unpackNode(A, a, FULL_ONLY);

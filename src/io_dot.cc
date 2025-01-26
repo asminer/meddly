@@ -139,7 +139,7 @@ void MEDDLY::dot_maker::doneGraph()
     int prev_level = 0;
     const int TopLevel = int(For->getNumVariables());
     const domain* D = For->getDomain();
-    unpacked_node* M = unpacked_node::New(For);
+    unpacked_node* M = unpacked_node::New(For, SPARSE_ONLY);
 
     for (int k= For->isForRelations() ? -1 : 1; ABS(k) <= TopLevel; )
     {

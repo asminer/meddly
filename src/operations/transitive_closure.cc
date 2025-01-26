@@ -488,7 +488,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
   unpacked_node* Ru = (mxdLevel < 0)
     ? unpacked_node::newRedundant(arg3F, -nb.getLevel(), mxd.getNode(), FULL_ONLY)
     : arg3F->newUnpacked(mxd.getNode(), FULL_ONLY);
-  unpacked_node* Rp = unpacked_node::New(arg3F);
+  unpacked_node* Rp = unpacked_node::New(arg3F, SPARSE_ONLY);
 
   unpacked_node* A = isLevelAbove(-nb.getLevel(), arg1F->getNodeLevel(a))
     ? unpacked_node::newRedundant(arg1F, -nb.getLevel(), 0L, a, FULL_ONLY)
@@ -647,7 +647,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
   unpacked_node* B = isLevelAbove(level, bLevel)
     ? unpacked_node::newRedundant(arg2F, level, 0L, b, FULL_ONLY)
     : arg2F->newUnpacked(b, FULL_ONLY);
-  unpacked_node* D = unpacked_node::New(arg2F);
+  unpacked_node* D = unpacked_node::New(arg2F, FULL_ONLY);
 
   unpacked_node* T = unpacked_node::newFull(resF, level, size);
 
@@ -699,7 +699,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
       unpacked_node* Ru = (rLevel < 0)
         ? unpacked_node::newRedundant(arg3F, level, r, SPARSE_ONLY)
         : arg3F->newUnpacked(r, SPARSE_ONLY);
-      unpacked_node* Rp = unpacked_node::New(arg3F);
+      unpacked_node* Rp = unpacked_node::New(arg3F, SPARSE_ONLY);
 
       // loop over mxd "rows"
       for (int ipz = 0; ipz < Ru->getSize(); ipz++) {

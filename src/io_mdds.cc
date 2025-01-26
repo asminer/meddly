@@ -185,7 +185,7 @@ void MEDDLY::mdd_writer::finish()
     // Write the nodes
     //
     out << block << " " << num_nodes << "\n";
-    unpacked_node* un = unpacked_node::New(For);
+    unpacked_node* un = unpacked_node::New(For, FULL_OR_SPARSE);
     for (unsigned i=0; i<output2handle.size(); i++) {
         out << For->getNodeLevel(output2handle[i]) << " ";
         For->unpackNode(un, output2handle[i], FULL_OR_SPARSE);

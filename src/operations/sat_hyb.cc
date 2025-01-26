@@ -334,7 +334,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   int* event_Ru_Rn_index = (int*)malloc(nEventsAtThisLevel*sizeof(int));
   unpacked_node** Ru = new unpacked_node*[nEventsAtThisLevel];
   relation_node** Rn = new relation_node*[nEventsAtThisLevel];
-  unpacked_node* Rp = unpacked_node::New(relF());
+  unpacked_node* Rp = unpacked_node::New(relF(), SPARSE_ONLY);
   int i_Ru = 0;
   int i_Rn = 0;
 
@@ -347,7 +347,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       event_Ru_Rn_index[ei] = i_Rn;
       i_Rn++;
     } else {
-      Ru[i_Ru] = unpacked_node::New(relF());
+      Ru[i_Ru] = unpacked_node::New(relF(), SPARSE_ONLY);
       if(relF()->getNodeLevel(se_nh) == level)
           relF()->unpackNode(Ru[i_Ru], se_nh, FULL_ONLY);  // node is present at unprime-level
       else
@@ -568,7 +568,7 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
   dd_edge nbdj(resF), newst(resF);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New(argF);
+  unpacked_node *A = unpacked_node::New(argF, FULL_ONLY);
   if (mddLevel < rLevel) {
     A->initRedundant(argF, rLevel, mdd, FULL_ONLY);
   } else {
@@ -595,8 +595,8 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
     bool imFlag = relF()->isImplicit(mxd);
     int row_size = rSize;
     relation_node* relNode;
-    unpacked_node *Ru = unpacked_node::New(relF());
-    unpacked_node *Rp = unpacked_node::New(relF());
+    unpacked_node *Ru = unpacked_node::New(relF(), SPARSE_ONLY);
+    unpacked_node *Rp = unpacked_node::New(relF(), SPARSE_ONLY);
 
     if(imFlag) {
       relNode = relF()->buildImplicitNode(mxd);
@@ -988,7 +988,7 @@ MEDDLY::saturation_hyb_by_events_op::saturate(node_handle mdd, int k)
 
   unpacked_node* nb = unpacked_node::newFull(resF, k, sz);
   // Initialize mdd reader
-  unpacked_node *mddDptrs = unpacked_node::New(argF);
+  unpacked_node *mddDptrs = unpacked_node::New(argF, FULL_ONLY);
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, FULL_ONLY);
   } else {

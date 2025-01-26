@@ -32,10 +32,8 @@ namespace MEDDLY {
     class initializer_list;
     class node_marker;
 
-#ifdef ALLOW_DEPRECATED_0_17_8
     class unpacked_node;
     struct unpacked_lists;
-#endif
 
     class unreduced_node;
     struct unreduced_lists;
@@ -46,8 +44,6 @@ namespace MEDDLY {
 // #define DEBUG_UNPACKED_HASH
 
 #define USE_STRUCT
-
-#ifdef ALLOW_DEPRECATED_0_17_8
 
 // ******************************************************************
 // *                                                                *
@@ -150,7 +146,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newRedundant(const forest *f, int k,
                 node_handle node, node_storage_flags fs)
         {
-            unpacked_node* U = New(f);
+            unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
             U->initRedundant(f, k, node, fs);
             return U;
@@ -159,7 +155,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newRedundant(const forest *f, int k,
                 const edge_value &ev, node_handle node, node_storage_flags fs)
         {
-            unpacked_node* U = New(f);
+            unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
             if (ev.isVoid()) {
                 U->initRedundant(f, k, node, fs);
@@ -181,7 +177,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newIdentity(const forest *f, int k,
                 unsigned i, node_handle node, node_storage_flags fs)
         {
-            unpacked_node* U = New(f);
+            unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
             U->initIdentity(f, k, i, node, fs);
             return U;
@@ -191,7 +187,7 @@ class MEDDLY::unpacked_node {
                 unsigned i, const edge_value &ev, node_handle node,
                 node_storage_flags fs)
         {
-            unpacked_node* U = New(f);
+            unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
             if (ev.isVoid()) {
                 U->initIdentity(f, k, i, node, fs);
@@ -213,7 +209,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newFull(forest *f,
                 int levl, T tsz)
         {
-            unpacked_node* U = New(f);
+            unpacked_node* U = New(f, FULL_ONLY);
             MEDDLY_DCASSERT(U);
             MEDDLY_DCASSERT(tsz >= 0);
             U->level = levl;
@@ -229,7 +225,7 @@ class MEDDLY::unpacked_node {
         static inline unpacked_node* newSparse(forest *f,
                 int levl, T nnzs)
         {
-            unpacked_node* U = New(f);
+            unpacked_node* U = New(f, SPARSE_ONLY);
             MEDDLY_DCASSERT(U);
             U->level = levl;
             U->resize(unsigned(nnzs));
@@ -952,7 +948,7 @@ class MEDDLY::unpacked_node {
 
         /// Pull a recycled node off of f's free list,
         /// or create a new one if needed.
-        static unpacked_node* New(const forest* f);
+        static unpacked_node* New(const forest* f, node_storage_flags ns);
 
         /// Add a node to the build list for the appropriate forest.
         static void AddToBuildList(unpacked_node* n);
@@ -1116,7 +1112,6 @@ class MEDDLY::unpacked_node {
 
 };
 
-#endif // ALLOW_DEPRECATED_0_17_8
 
 // ******************************************************************
 // *                                                                *

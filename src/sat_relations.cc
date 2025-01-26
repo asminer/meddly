@@ -220,7 +220,7 @@ void MEDDLY::pregen_relation::splitMxd(splittingOption split)
       :   mxdF->newUnpacked(events[k].getNode(), FULL_ONLY)
     ;
 
-    unpacked_node* Mp = unpacked_node::New(mxdF);
+    unpacked_node* Mp = unpacked_node::New(mxdF, FULL_ONLY);
 
     // Read "rows"
     for (unsigned i = 0; i < Mu->getSize(); i++) {

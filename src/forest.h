@@ -451,7 +451,7 @@ class MEDDLY::forest {
         inline unpacked_node* newUnpacked(node_handle p,
                 node_storage_flags f) const
         {
-            unpacked_node* un = unpacked_node::New(this);
+            unpacked_node* un = unpacked_node::New(this, f);
             unpackNode(un, p, f);
             return un;
         }

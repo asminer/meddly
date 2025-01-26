@@ -632,7 +632,7 @@ void MEDDLY::dd_edge::iterator::restart(const dd_edge &E, const minterm* _mask)
             M->from(i) = mask->from(i);
         } else {
             if (!U_from[i]) {
-                U_from[i] = unpacked_node::New(F);
+                U_from[i] = unpacked_node::New(F, SPARSE_ONLY);
             }
         }
     }
@@ -646,7 +646,7 @@ void MEDDLY::dd_edge::iterator::restart(const dd_edge &E, const minterm* _mask)
                 M->to(i) = mask->to(i);
             } else {
                 if (!U_to[i]) {
-                    U_to[i] = unpacked_node::New(F);
+                    U_to[i] = unpacked_node::New(F, SPARSE_ONLY);
                 }
             }
         }
@@ -1311,7 +1311,7 @@ bool MEDDLY::dd_edge::getElemInt(long index, minterm &m) const
     if (index < 0) return false;
 
     node_handle p = node;
-    unpacked_node* U = unpacked_node::New(fp);
+    unpacked_node* U = unpacked_node::New(fp, SPARSE_ONLY);
     for (unsigned k = fp->getNumVariables(); k; --k) {
         //
         // I don't think index sets can skip levels at all
@@ -1368,7 +1368,7 @@ bool MEDDLY::dd_edge::getElemLong(long index, minterm &m) const
     if (index < 0) return false;
 
     node_handle p = node;
-    unpacked_node* U = unpacked_node::New(fp);
+    unpacked_node* U = unpacked_node::New(fp, SPARSE_ONLY);
     for (unsigned k = fp->getNumVariables(); k; --k) {
         //
         // I don't think index sets can skip levels at all

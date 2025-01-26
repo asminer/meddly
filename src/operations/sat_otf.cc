@@ -297,7 +297,7 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
 
   unpacked_node* nb = unpacked_node::newFull(resF, k, sz);
   // Initialize mdd reader
-  unpacked_node *mddDptrs = unpacked_node::New(argF);
+  unpacked_node *mddDptrs = unpacked_node::New(argF, FULL_ONLY);
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, FULL_ONLY);
   } else {
@@ -515,7 +515,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     if (0==mxd.getNode()) {
       Ru[ei] = 0;
     } else {
-      Ru[ei] = unpacked_node::New(relF);
+      Ru[ei] = unpacked_node::New(relF, FULL_ONLY);
       const int eventLevel = mxd.getLevel();
       if (ABS(eventLevel) < level || eventLevel < 0) {
         // Takes care of two situations:
@@ -527,7 +527,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       }
     }
   }
-  unpacked_node* Rp = unpacked_node::New(relF);
+  unpacked_node* Rp = unpacked_node::New(relF, SPARSE_ONLY);
 
   dd_edge nbdj(resF), newst(resF);
 
@@ -560,7 +560,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
           }
         } else {
           if (0==Ru[ei]) {
-            Ru[ei] = unpacked_node::New(relF);
+            Ru[ei] = unpacked_node::New(relF, FULL_ONLY);
           }
           const int eventLevel = mxd.getLevel();
           if (ABS(eventLevel) < level || eventLevel < 0) {
@@ -693,7 +693,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New(argF);
+  unpacked_node *A = unpacked_node::New(argF, FULL_ONLY);
   if (mddLevel < rLevel) {
     A->initRedundant(argF, rLevel, mdd, FULL_ONLY);
   } else {
@@ -716,8 +716,8 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
-    unpacked_node *Ru = unpacked_node::New(relF);
-    unpacked_node *Rp = unpacked_node::New(relF);
+    unpacked_node *Ru = unpacked_node::New(relF, SPARSE_ONLY);
+    unpacked_node *Rp = unpacked_node::New(relF, SPARSE_ONLY);
     if (mxdLevel < 0) {
       Ru->initRedundant(relF, rLevel, mxd, SPARSE_ONLY);
     } else {

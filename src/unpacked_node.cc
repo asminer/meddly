@@ -32,8 +32,6 @@
 #include "node_marker.h"
 #include "operators.h"
 
-#ifdef ALLOW_DEPRECATED_0_17_8
-
 // #define DEBUG_FORLISTS
 
 // ******************************************************************
@@ -732,7 +730,8 @@ void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
 // Static methods for free lists
 //
 
-MEDDLY::unpacked_node* MEDDLY::unpacked_node::New(const forest* f)
+MEDDLY::unpacked_node* MEDDLY::unpacked_node::New(const forest* f,
+        node_storage_flags ns)
 {
     MEDDLY_DCASSERT(f);
     const unsigned FID = f->FID();
@@ -1000,8 +999,6 @@ void MEDDLY::unpacked_node::showDoubly(const unpacked_node* list)
     }
     std::cerr << " -|\n";
 }
-
-#endif // ALLOW_DEPRECATED_0_17_8
 
 // ******************************************************************
 // *                                                                *

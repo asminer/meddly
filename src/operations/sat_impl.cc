@@ -501,7 +501,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   dd_edge nbdj(resF), newst(resF);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New(argF);
+  unpacked_node *A = unpacked_node::New(argF, FULL_ONLY);
   if (mddLevel < rLevel) {
     A->initRedundant(argF, rLevel, mdd, FULL_ONLY);
   } else {
@@ -840,7 +840,7 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
 
   unpacked_node* nb = unpacked_node::newFull(resF, k, sz);
   // Initialize mdd reader
-  unpacked_node *mddDptrs = unpacked_node::New(argF);
+  unpacked_node *mddDptrs = unpacked_node::New(argF, FULL_ONLY);
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, FULL_ONLY);
   } else {
@@ -1049,7 +1049,7 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   const int constraint_level = argF->getNodeLevel(constraint);
 
   // Initialize mdd reader
-  unpacked_node *mddDptrs = unpacked_node::New(argF);
+  unpacked_node *mddDptrs = unpacked_node::New(argF, FULL_ONLY);
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, FULL_ONLY);
   } else {
@@ -1058,7 +1058,7 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   MEDDLY_DCASSERT(!mddDptrs->isExtensible());
 
   // Initialize constraint reader
-  unpacked_node* consDptrs = unpacked_node::New(argF);
+  unpacked_node* consDptrs = unpacked_node::New(argF, FULL_ONLY);
   if (constraint_level < k) {
     consDptrs->initRedundant(argF, k, constraint, FULL_ONLY);
   } else {
@@ -1155,7 +1155,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
   const int level = nb.getLevel();
 
   // Initialize constraint reader
-  unpacked_node* consDptrs = unpacked_node::New(argF);
+  unpacked_node* consDptrs = unpacked_node::New(argF, FULL_ONLY);
   if (constraint_level < level) {
     consDptrs->initRedundant(argF, level, constraint, FULL_ONLY);
   } else {
@@ -1325,7 +1325,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   dd_edge nbdj(resF), newst(resF);
 
   // Initialize mdd reader
-  unpacked_node *A = unpacked_node::New(argF);
+  unpacked_node *A = unpacked_node::New(argF, FULL_ONLY);
   if (mddLevel < rLevel) {
     A->initRedundant(argF, rLevel, mdd, FULL_ONLY);
   } else {
@@ -1333,7 +1333,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   }
 
   // Initialize constraint reader
-  unpacked_node* consDptrs = unpacked_node::New(argF);
+  unpacked_node* consDptrs = unpacked_node::New(argF, FULL_ONLY);
   if (constraint_level < rLevel) {
     consDptrs->initRedundant(argF, rLevel, constraint, FULL_ONLY);
   } else {
