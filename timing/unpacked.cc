@@ -25,6 +25,8 @@
 #include <iomanip>
 #include <vector>
 
+#define USE_UNPACKED
+
 // #define REPORTING
 
 using namespace MEDDLY;
@@ -41,16 +43,19 @@ const unsigned USIZE = 128;
 const unsigned LEVELS = 10;
 const unsigned VARSIZE = 25;
 
-void make_blank(const std::vector <forest*> &FA, bool sparse)
+void make_blank(const std::vector <forest*> &FA, node_storage_flags fs)
 {
-    if (sparse) {
-        std::cout << "    Creating blank,     sparse nodes ";
-    } else {
-        std::cout << "    Creating blank,     full   nodes ";
-    }
+    const char* nodetype = (FULL_ONLY == fs) ? "full" : "sparse";
+    std::cout   << "    Creating"
+                << std::setw(11) << "blank,"
+                << std::setw(7) << nodetype << " nodes ";
 
+#ifdef USE_UNPACKED
     unpacked_node* UA[USIZE];
     for (unsigned i=0; i<USIZE; i++) UA[i] = nullptr;
+#else
+    unreduced_node UA[USIZE];
+#endif
     unsigned u = 0;
 
     const unsigned FAszm1 = FA.size() - 1;
@@ -75,12 +80,16 @@ void make_blank(const std::vector <forest*> &FA, bool sparse)
             // recycle old in slot u,
             // and build a new blank node there
             //
+#ifdef USE_UNPACKED
             unpacked_node::Recycle(UA[u]);
-            if (sparse) {
-                UA[u] = unpacked_node::newSparse(f, k, 2);
-            } else {
+            if (FULL_ONLY == fs) {
                 UA[u] = unpacked_node::newFull(f, k, VARSIZE);
+            } else {
+                UA[u] = unpacked_node::newSparse(f, k, 2);
             }
+#else
+            UA[u].initEmpty(f, k, (FULL_ONLY == fs) ? VARSIZE : 2, fs);
+#endif
 
             //
             // Next slot
@@ -90,36 +99,36 @@ void make_blank(const std::vector <forest*> &FA, bool sparse)
     }
     std::cout << 'd';
     std::cout.flush();
+#ifdef USE_UNPACKED
     for (unsigned i=0; i<USIZE; i++) {
         unpacked_node::Recycle(UA[i]);
     }
+#endif
     T.note_time();
 
     show_sec(std::cout, T, 3, 3);
 
-    if (startReport(T, __FILE__, "blank ", sparse ? "sparse" : "full")) {
-        if (sparse) {
-            report  << "Created " << DOTS * CHANGES
-                    << " blank sparse nodes" << std::endl;
-        } else {
-            report  << "Created " << DOTS * CHANGES
-                    << " blank full nodes" << std::endl;
-        }
+    if (startReport(T, __FILE__, "blank ", nodetype)) {
+        report  << "Created " << DOTS * CHANGES
+                << " blank " << nodetype << " nodes" << std::endl;
     }
 
 }
 
 
-void make_redundant(const std::vector <forest*> &FA, bool sparse)
+void make_redundant(const std::vector <forest*> &FA, node_storage_flags fs)
 {
-    if (sparse) {
-        std::cout << "    Creating redundant, sparse nodes ";
-    } else {
-        std::cout << "    Creating redundant, full   nodes ";
-    }
+    const char* nodetype = (FULL_ONLY == fs) ? "full" : "sparse";
+    std::cout   << "    Creating"
+                << std::setw(11) << "redundant,"
+                << std::setw(7) << nodetype << " nodes ";
 
+#ifdef USE_UNPACKED
     unpacked_node* UA[USIZE];
     for (unsigned i=0; i<USIZE; i++) UA[i] = nullptr;
+#else
+    unreduced_node UA[USIZE];
+#endif
     unsigned u = 0;
 
     const unsigned FAszm1 = FA.size() - 1;
@@ -144,18 +153,24 @@ void make_redundant(const std::vector <forest*> &FA, bool sparse)
             // recycle old in slot u,
             // and build a new redundant node there
             //
+#ifdef USE_UNPACKED
             unpacked_node::Recycle(UA[u]);
-
             if (f->isMultiTerminal()) {
-                UA[u] = unpacked_node::newRedundant(f, k, -1,
-                            sparse ? SPARSE_ONLY : FULL_ONLY);
+                UA[u] = unpacked_node::newRedundant(f, k, -1, fs);
             } else if (f->isEVPlus()) {
-                UA[u] = unpacked_node::newRedundant(f, k, edge_value(0L), -1,
-                            sparse ? SPARSE_ONLY : FULL_ONLY);
+                UA[u] = unpacked_node::newRedundant(f, k, 0L, -1, fs);
             } else {
-                UA[u] = unpacked_node::newRedundant(f, k, edge_value(1.0f), -1,
-                            sparse ? SPARSE_ONLY : FULL_ONLY);
+                UA[u] = unpacked_node::newRedundant(f, k, 1.0f, -1, fs);
             }
+#else
+            if (f->isMultiTerminal()) {
+                UA[u].initRedundant(f, k, -1, fs);
+            } else if (f->isEVPlus()) {
+                UA[u].initRedundant(f, k, 0L, -1, fs);
+            } else {
+                UA[u].initRedundant(f, k, 1.0f, -1, fs);
+            }
+#endif
 
             //
             // Next slot
@@ -165,36 +180,36 @@ void make_redundant(const std::vector <forest*> &FA, bool sparse)
     }
     std::cout << 'd';
     std::cout.flush();
+#ifdef USE_UNPACKED
     for (unsigned i=0; i<USIZE; i++) {
         unpacked_node::Recycle(UA[i]);
     }
+#endif
     T.note_time();
 
     show_sec(std::cout, T, 3, 3);
 
-    if (startReport(T, __FILE__, "rednt ", sparse ? "sparse" : "full")) {
-        if (sparse) {
-            report  << "Created " << DOTS * CHANGES
-                    << " redundant sparse nodes" << std::endl;
-        } else {
-            report  << "Created " << DOTS * CHANGES
-                    << " redundant full nodes" << std::endl;
-        }
+    if (startReport(T, __FILE__, "rednt ", nodetype)) {
+        report  << "Created " << DOTS * CHANGES
+                << " redundant " << nodetype << " nodes" << std::endl;
     }
 
 }
 
 
-void make_identity(const std::vector <forest*> &FA, bool sparse)
+void make_identity(const std::vector <forest*> &FA, node_storage_flags fs)
 {
-    if (sparse) {
-        std::cout << "    Creating identity,  sparse nodes ";
-    } else {
-        std::cout << "    Creating identity,  full   nodes ";
-    }
+    const char* nodetype = (FULL_ONLY == fs) ? "full" : "sparse";
+    std::cout   << "    Creating"
+                << std::setw(11) << "identity,"
+                << std::setw(7) << nodetype << " nodes ";
 
+#ifdef USE_UNPACKED
     unpacked_node* UA[USIZE];
     for (unsigned i=0; i<USIZE; i++) UA[i] = nullptr;
+#else
+    unreduced_node UA[USIZE];
+#endif
     unsigned u = 0;
 
     const unsigned FAszm1 = FA.size() - 1;
@@ -224,15 +239,24 @@ void make_identity(const std::vector <forest*> &FA, bool sparse)
             // recycle old in slot u,
             // and build a new redundant node there
             //
+#ifdef USE_UNPACKED
             unpacked_node::Recycle(UA[u]);
-
             if (f->isMultiTerminal()) {
-                UA[u] = unpacked_node::newIdentity(f, k, i, -1, !sparse);
+                UA[u] = unpacked_node::newIdentity(f, k, i, -1, fs);
             } else if (f->isEVPlus()) {
-                UA[u] = unpacked_node::newIdentity(f, k, i, 0L, -1, !sparse);
+                UA[u] = unpacked_node::newIdentity(f, k, i, 0L, -1, fs);
             } else {
-                UA[u] = unpacked_node::newIdentity(f, k, i, 1.0f, -1, !sparse);
+                UA[u] = unpacked_node::newIdentity(f, k, i, 1.0f, -1, fs);
             }
+#else
+            if (f->isMultiTerminal()) {
+                UA[u].initIdentity(f, k, i, -1, fs);
+            } else if (f->isEVPlus()) {
+                UA[u].initIdentity(f, k, i, 0L, -1, fs);
+            } else {
+                UA[u].initIdentity(f, k, i, 1.0f, -1, fs);
+            }
+#endif
 
             //
             // Next slot
@@ -242,21 +266,18 @@ void make_identity(const std::vector <forest*> &FA, bool sparse)
     }
     std::cout << 'd';
     std::cout.flush();
+#ifdef USE_UNPACKED
     for (unsigned i=0; i<USIZE; i++) {
         unpacked_node::Recycle(UA[i]);
     }
+#endif
     T.note_time();
 
     show_sec(std::cout, T, 3, 3);
 
-    if (startReport(T, __FILE__, "idnty ", sparse ? "sparse" : "full")) {
-        if (sparse) {
-            report  << "Created " << DOTS * CHANGES
-                    << " identity sparse nodes" << std::endl;
-        } else {
-            report  << "Created " << DOTS * CHANGES
-                    << " identity full nodes" << std::endl;
-        }
+    if (startReport(T, __FILE__, "idnty ", nodetype)) {
+        report  << "Created " << DOTS * CHANGES
+                << " identity " << nodetype << " nodes" << std::endl;
     }
 
 }
@@ -351,14 +372,14 @@ int main(int argc, const char** argv)
         std::cout << "Timing tests to build/recycle " << DOTS * CHANGES
                   << " nodes\n";
 
-        make_blank(allF, true);
-        make_blank(allF, false);
+        make_blank(allF, SPARSE_ONLY);
+        make_blank(allF, FULL_ONLY);
 
-        make_redundant(allF, true);
-        make_redundant(allF, false);
+        make_redundant(allF, SPARSE_ONLY);
+        make_redundant(allF, FULL_ONLY);
 
-        make_identity(relF, true);
-        make_identity(relF, false);
+        make_identity(relF, SPARSE_ONLY);
+        make_identity(relF, FULL_ONLY);
 
         std::cout << "Done; cleaning up\n";
 

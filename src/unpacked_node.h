@@ -1462,10 +1462,30 @@ class MEDDLY::unreduced_node {
                 node_handle node, node_storage_flags fs);
 
         /**
+            Initialize, as a redundant node (no edge values)
+        */
+        inline void initRedundant(const forest *f, int k,
+                node_handle node, node_storage_flags fs)
+        {
+            edge_value v;
+            initRedundant(f, k, v, node, fs);
+        }
+
+        /**
             Initialize, as an identity node
         */
         void initIdentity(const forest *f, int k, unsigned i,
                 const edge_value &ev, node_handle node, node_storage_flags fs);
+
+        /**
+            Initialize, as an identity node (no edge values)
+        */
+        inline void initIdentity(const forest *f, int k, unsigned i,
+                node_handle node, node_storage_flags fs)
+        {
+            edge_value v;
+            initIdentity(f, k, i, v, node, fs);
+        }
 
         /**
             Initialize a blank, writable node
@@ -1515,10 +1535,10 @@ class MEDDLY::unreduced_node {
         */
         void read(input &s, const std::vector <node_handle> &map);
 
-    protected:
         /// By hand destructor
         void freeNode();
 
+    protected:
         /// Attach to forest f and allocate
         ///     @param  f       Forest to attach to
         ///     @param  size    Initial size, can be 0
