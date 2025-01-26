@@ -1386,6 +1386,55 @@ void MEDDLY::unreduced_node::RemoveFromBuildList(unreduced_node* n)
     n->build_list_FID = 0;
 }
 
+void MEDDLY::unreduced_node::initForest(const forest* f)
+{
+    if (!f) return;
+    const unsigned FID = f->FID();
+    if (FID >= ForListsAlloc) {
+        unsigned newalloc = (FID/16 + 1) * 16;
+
+        ForLists = (unreduced_lists*)
+                   realloc(ForLists, newalloc * sizeof (unreduced_lists));
+
+        if (!ForLists) {
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
+        ForListsAlloc = newalloc;
+    }
+
+    ForLists[FID].recycled = nullptr;
+    ForLists[FID].building = nullptr;
+
+#ifdef DEBUG_FORLISTS
+    std::cerr << "initForest #" << FID << " lists are " <<
+        ForLists[FID].building << " and " << ForLists[FID].recycled << "\n";
+#endif
+}
+
+void MEDDLY::unreduced_node::doneForest(const forest* f)
+{
+    if (!f) return;
+    const unsigned FID = f->FID();
+    CHECK_RANGE(__FILE__, __LINE__, 1u, FID, ForListsAlloc);
+
+    // Delete the building list
+    while (ForLists[FID].building) {
+        unreduced_node* p = ForLists[FID].building;
+        ForLists[FID].building = p->next;
+        delete p;
+    }
+    // Delete the recycled list
+    while (ForLists[FID].recycled) {
+        unreduced_node* p = ForLists[FID].recycled;
+        ForLists[FID].recycled = p->next;
+        delete p;
+    }
+#ifdef DEBUG_FORLISTS
+    std::cerr << "doneForest #" << FID << " lists are " <<
+        ForLists[FID].building << " and " << ForLists[FID].recycled << "\n";
+#endif
+}
+
 void MEDDLY::unreduced_node::initStatics()
 {
     ForLists = nullptr;

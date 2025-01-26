@@ -1359,6 +1359,7 @@ void MEDDLY::forest::registerForest(forest* f)
 
     // Initialize unpacked node entries for f
     unpacked_node::initForest(f);
+    unreduced_node::initForest(f);
 }
 
 void MEDDLY::forest::unregisterForest(forest* f)
@@ -1380,6 +1381,7 @@ void MEDDLY::forest::unregisterForest(forest* f)
 
     // Clear out unpacked node entries for f
     unpacked_node::doneForest(f);
+    unreduced_node::doneForest(f);
 }
 
 

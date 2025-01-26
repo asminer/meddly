@@ -1596,6 +1596,15 @@ class MEDDLY::unreduced_node {
         /// Remove a node from its build list.
         static void RemoveFromBuildList(unreduced_node* n);
 
+        /// forest should call this in its constructor, after it has its FID.
+        /// Initializes empty lists for forest f.
+        static void initForest(const forest* f);
+
+        /// forest should call this in its destructor.
+        /// deletes all recycled nodes for forest f.
+        static void doneForest(const forest* f);
+
+
         /// Mark children in writable nodes.
         ///     @param  M   node marker we should use to mark nodes;
         ///                 this also gives us the forest to check.
