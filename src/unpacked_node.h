@@ -38,6 +38,7 @@ namespace MEDDLY {
 #endif
 
     class unreduced_node;
+    struct unreduced_lists;
 }
 
 #define ALLOW_SET_FROM_DDEDGE
@@ -1316,6 +1317,70 @@ class MEDDLY::unreduced_node {
         }
 
         /**
+            Set a full edge.
+                @param  n       Which pointer
+                @param  h       Node handle
+        */
+        inline void setFull(unsigned n, node_handle h)
+        {
+            MEDDLY_DCASSERT(!hasEdges());
+            MEDDLY_DCASSERT(isFull());
+            down(n) = h;
+        }
+
+        /**
+            Set a full edge.
+                @param  n       Which pointer
+                @param  v       Edge value
+                @param  h       Node handle
+        */
+        inline void setFull(unsigned n, const edge_value &v, node_handle h)
+        {
+            MEDDLY_DCASSERT(isFull());
+            down(n) = h;
+            if (hasEdges()) {
+                edgeval(n) = v;
+            } else {
+                MEDDLY_DCASSERT(v.isVoid());
+            }
+        }
+
+        /**
+            Set a sparse edge.
+                @param  n       Which nonzero edge
+                @param  i       Index of the edge
+                @param  h       Node handle
+        */
+        inline void setSparse(unsigned n, unsigned i, node_handle h)
+        {
+            MEDDLY_DCASSERT(!hasEdges());
+            MEDDLY_DCASSERT(isSparse());
+            down(n) = h;
+            index(n) = i;
+        }
+
+        /**
+            Set a sparse edge.
+                @param  n       Which nonzero edge
+                @param  i       Index of the edge
+                @param  v       Edge value
+                @param  h       Node handle
+        */
+        inline void setSparse(unsigned n, unsigned i, const edge_value &v,
+                node_handle h)
+        {
+            MEDDLY_DCASSERT(isSparse());
+            down(n) = h;
+            index(n) = i;
+            if (hasEdges()) {
+                edgeval(n) = v;
+            } else {
+                MEDDLY_DCASSERT(v.isVoid());
+            }
+        }
+
+
+        /**
             Hack for mark and sweep.
             Add an extra, temporary node to the list of roots
             for mark and sweep.
@@ -1367,10 +1432,12 @@ class MEDDLY::unreduced_node {
         }
 
         /// Edge type
+        /*
         inline edge_type getEdgeType() const
         {
             return the_edge_type;
         }
+        */
 
         /// Get the node's hash
         inline unsigned hash() const
@@ -1407,8 +1474,8 @@ class MEDDLY::unreduced_node {
 
         /// Change the size of a node
         inline void resize(unsigned ns) {
-            if (ns > slot2size(_down_slot)) {
-                expand(ns);
+            if (ns > alloc) {
+                expand(ns, isSparse(), hasEdges());
             }
             size = ns;
         }
@@ -1450,7 +1517,7 @@ class MEDDLY::unreduced_node {
 
     protected:
         /// By hand destructor
-        void clear();
+        void freeNode();
 
         /// Attach to forest f and allocate
         ///     @param  f       Forest to attach to
@@ -1458,14 +1525,15 @@ class MEDDLY::unreduced_node {
         ///     @param  fs      Sparse or full storage
         void allocNode(const forest* f, unsigned size, node_storage_flags fs);
 
-        /// Expand down, index, edge arrays to new size
-        void expand(unsigned ns);
+        /// Expand arrays to new size
+        void expand(unsigned ns, bool expand_index, bool expand_edge);
 
     private:
         /// Forest where the node belongs
         const forest* parent;
-        /// Modifiable parent forest; required for writable nodes
-        forest* modparent;
+        /// Build list we're contained in; 0 for none, otherwise
+        /// should be the parent's FID.
+        unsigned build_list_FID;
 
         /// Next in build list
         unreduced_node* next;
@@ -1490,6 +1558,9 @@ class MEDDLY::unreduced_node {
         /// Node size; usable portion of down, index, and edge
         unsigned size;
 
+        /// Node space allocated
+        unsigned alloc;
+
         /// Level of the node
         int level;
 
@@ -1499,17 +1570,11 @@ class MEDDLY::unreduced_node {
         /// size slot for header
         unsigned char _header_slot;
 
-        /// size slot for down, index, and edge
-        unsigned char _down_slot;
-
         /// bytes in the unhashed header
         unsigned char unhashed_header_bytes;
 
         /// bytes in the hashed header
         unsigned char hashed_header_bytes;
-
-        /// Types of edges
-        edge_type the_edge_type;
 
         /// True iff this was expanded from an identity-reduced edge
         bool orig_was_identity;
@@ -1525,6 +1590,12 @@ class MEDDLY::unreduced_node {
     // **********************************************************************
 
     public:
+        /// Add a node to the build list for forest F.
+        static void AddToBuildList(forest* F, unreduced_node* n);
+
+        /// Remove a node from its build list.
+        static void RemoveFromBuildList(unreduced_node* n);
+
         /// Mark children in writable nodes.
         ///     @param  M   node marker we should use to mark nodes;
         ///                 this also gives us the forest to check.
@@ -1542,7 +1613,7 @@ class MEDDLY::unreduced_node {
     private:
         /// Per-forest free and build lists.
         /// Stored as an array, indexed by the forest's FID.
-        static unpacked_lists* ForLists;
+        static unreduced_lists* ForLists;
 
         /// Allocated size of ForLists
         static unsigned ForListsAlloc;
@@ -1649,9 +1720,13 @@ class MEDDLY::unreduced_node {
         inline static void pushFreeHeader(char* ptr, unsigned slot)
         {
             MEDDLY_DCASSERT(ptr);
-            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
-            setNextFree(ptr, free_headers[slot]);
-            free_headers[slot] = ptr;
+            if (slot >= 16) {
+                delete[] ptr;   // headers are never resized,
+                                // so we allocate them with new
+            } else {
+                setNextFree(ptr, free_headers[slot]);
+                free_headers[slot] = ptr;
+            }
         }
 
         inline static node_handle* popFreeDown(unsigned slot)
@@ -1669,9 +1744,12 @@ class MEDDLY::unreduced_node {
         inline static void pushFreeDown(node_handle* ptr, unsigned slot)
         {
             MEDDLY_DCASSERT(ptr);
-            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
-            setNextFree(ptr, free_down[slot]);
-            free_down[slot] = ptr;
+            if (slot >= 16) {
+                free(ptr);
+            } else {
+                setNextFree(ptr, free_down[slot]);
+                free_down[slot] = ptr;
+            }
         }
 
         inline static unsigned* popFreeIndex(unsigned slot)
@@ -1689,9 +1767,12 @@ class MEDDLY::unreduced_node {
         inline static void pushFreeIndex(unsigned* ptr, unsigned slot)
         {
             MEDDLY_DCASSERT(ptr);
-            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
-            setNextFree(ptr, free_index[slot]);
-            free_index[slot] = ptr;
+            if (slot >= 16) {
+                free(ptr);
+            } else {
+                setNextFree(ptr, free_index[slot]);
+                free_index[slot] = ptr;
+            }
         }
 
         inline static edge_value* popFreeEdge(unsigned slot)
@@ -1709,9 +1790,12 @@ class MEDDLY::unreduced_node {
         inline static void pushFreeEdge(edge_value* ptr, unsigned slot)
         {
             MEDDLY_DCASSERT(ptr);
-            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
-            setNextFree(ptr, free_edge[slot]);
-            free_edge[slot] = ptr;
+            if (slot >= 16) {
+                free(ptr);
+            } else {
+                setNextFree(ptr, free_edge[slot]);
+                free_edge[slot] = ptr;
+            }
         }
 
     private:
