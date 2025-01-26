@@ -39,8 +39,63 @@
 // ******************************************************************
 
 struct MEDDLY::unpacked_lists {
-    unpacked_node* recycled;
+    unpacked_node* free_full_only;
+    unpacked_node* free_full_or_sparse;
+    unpacked_node* free_sparse_only;
     unpacked_node* building;
+
+    inline void init() {
+        free_full_only = nullptr;
+        free_full_or_sparse = nullptr;
+        free_sparse_only = nullptr;
+        building = nullptr;
+    }
+
+    inline unpacked_node* popFree(node_storage_flags ns) {
+        unpacked_node* x;
+        switch (ns) {
+            case FULL_ONLY:
+                x = free_full_only;
+                if (x) free_full_only = x->next;
+                return x;
+
+            case SPARSE_ONLY:
+                x = free_sparse_only;
+                if (x) free_sparse_only = x->next;
+                return x;
+
+            case FULL_OR_SPARSE:
+                x = free_full_or_sparse;
+                if (x) free_full_or_sparse = x->next;
+                return x;
+
+            default:
+                MEDDLY_DCASSERT(false);
+        }
+        return nullptr;
+    }
+    inline void pushFree(unpacked_node* x, node_storage_flags ns) {
+        MEDDLY_DCASSERT(x);
+        switch (ns) {
+            case FULL_ONLY:
+                x->next = free_full_only;
+                free_full_only = x;
+                return;
+
+            case SPARSE_ONLY:
+                x->next = free_sparse_only;
+                free_sparse_only = x;
+                return;
+
+            case FULL_OR_SPARSE:
+                x->next = free_full_or_sparse;
+                free_full_or_sparse = x;
+                return;
+
+            default:
+                MEDDLY_DCASSERT(false);
+        }
+    }
 };
 
 
@@ -59,7 +114,61 @@ unsigned MEDDLY::unpacked_node::ForListsAlloc;
 // *                                                                *
 // ******************************************************************
 
+MEDDLY::unpacked_node::unpacked_node(const forest* f, node_storage_flags fs)
+    : parent(f),
+        pFID(f->FID()),
+        extra_unhashed_size(f->unhashedHeaderBytes()),
+        extra_hashed_size(f->hashedHeaderBytes()),
+        nodestor(fs),
+        the_edge_type(f->getEdgeType())
+{
+    MEDDLY_DCASSERT(f);
+
+    next = nullptr;
+    prev = nullptr;
+
+    modparent = nullptr;
+
+    _down = nullptr;
+    _index = nullptr;
+    _edge = nullptr;
+
+    mark_extra = 0;
+
+    alloc = 0;
+    size = 0;
+
+    level = 0;
+
+#ifdef DEVELOPMENT_CODE
+    can_be_recycled = false;
+    has_hash = false;
+#endif
+
+    //
+    // Allocate extra headers if needed
+    //
+
+    if (extra_unhashed_size) {
+        extra_unhashed = malloc(extra_unhashed_size);
+        if (!extra_unhashed) {
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
+    }
+    if (extra_hashed_size) {
+        extra_hashed = malloc(extra_hashed_size);
+        if (!extra_hashed) {
+            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        }
+    }
+
+    orig_was_identity = false;
+}
+
+#ifdef ALLOW_DEPRECATED_0_17_8
+
 MEDDLY::unpacked_node::unpacked_node(const forest* f)
+    : nodestor(FULL_OR_SPARSE)
 {
     next = nullptr;
     prev = nullptr;
@@ -68,13 +177,9 @@ MEDDLY::unpacked_node::unpacked_node(const forest* f)
     modparent = nullptr;
     pFID = 0;
 
-#ifdef USE_STRUCT
-    _idev = nullptr;
-#else
     _down = nullptr;
     _index = nullptr;
     _edge = nullptr;
-#endif
 
     mark_extra = 0;
 
@@ -102,19 +207,19 @@ MEDDLY::unpacked_node::unpacked_node(const forest* f)
     if (f) attach(f);
 }
 
+#endif
+
 MEDDLY::unpacked_node::~unpacked_node()
 {
-#ifdef USE_STRUCT
-    free(_idev);
-#else
     free(_down);
     free(_index);
     free(_edge);
-#endif
 
     free(extra_unhashed);
     free(extra_hashed);
 }
+
+#ifdef ALLOW_DEPRECATED_0_17_8
 
 void MEDDLY::unpacked_node::attach(const forest* f)
 {
@@ -146,9 +251,10 @@ void MEDDLY::unpacked_node::attach(const forest* f)
         }
     }
 
-    setRegular();
+    orig_was_identity = false;
 }
 
+#endif
 
 void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
     node_handle node, node_storage_flags fs)
@@ -157,6 +263,7 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
     MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+    MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
 #ifdef ALLOW_EXTENSIBLE
     is_extensible = f->isExtensibleLevel(k);
     resize( is_extensible ? 1 : unsigned(f->getLevelSize(k)) );
@@ -178,7 +285,7 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
         }
     }
 
-    setRedundant();
+    orig_was_identity = false;
 }
 
 void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
@@ -188,6 +295,7 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
     MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+    MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
 #ifdef ALLOW_EXTENSIBLE
     is_extensible = f->isExtensibleLevel(k);
     resize( is_extensible ? 1 : unsigned(f->getLevelSize(k)) );
@@ -208,7 +316,7 @@ void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
         }
     }
 
-    setRedundant();
+    orig_was_identity = false;
 }
 
 
@@ -220,6 +328,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
     MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+    MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
     level = k;
 
     if (FULL_ONLY == fs) {
@@ -235,7 +344,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k,
         setSparse(0, i, node);
     }
 
-    setIdentity();
+    orig_was_identity = true;
 }
 
 void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
@@ -245,6 +354,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
     MEDDLY_DCASSERT(isAttachedTo(f));
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
+    MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
     level = k;
 
     if (FULL_ONLY == fs) {
@@ -260,7 +370,7 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
         setSparse(0, i, ev, node);
     }
 
-    setIdentity();
+    orig_was_identity = true;
 }
 
 
@@ -385,11 +495,7 @@ void MEDDLY::unpacked_node::read(input &s, const std::vector<node_handle> &map)
             if (ndx < 0) {
                 throw error(error::INVALID_FILE, __FILE__, __LINE__);
             }
-#ifdef USE_STRUCT
-            _idev[z].index = unsigned(ndx);
-#else
             _index[z] = unsigned(ndx);
-#endif
         }
     }
 
@@ -411,21 +517,13 @@ void MEDDLY::unpacked_node::read(input &s, const std::vector<node_handle> &map)
             if (d < 0) {
                 throw error(error::INVALID_FILE, __FILE__, __LINE__);
             }
-#ifdef USE_STRUCT
-            _idev[z].down = modparent->linkNode(map[(unsigned long) d]);
-#else
             _down[z] = modparent->linkNode(map[(unsigned long) d]);
-#endif
         } else {
             // terminal
             s.unget(c);
             terminal t;
             t.read(s);
-#ifdef USE_STRUCT
-            _idev[z].down = t.getHandle();
-#else
             _down[z] = t.getHandle();
-#endif
         }
     }
 
@@ -438,11 +536,7 @@ void MEDDLY::unpacked_node::read(input &s, const std::vector<node_handle> &map)
 #endif
         for (unsigned z=0; z<getSize(); z++) {
             s.stripWS();
-#ifdef USE_STRUCT
-            _idev[z].edgeval.read(s);
-#else
             _edge[z].read(s);
-#endif
         }
     }
 
@@ -614,9 +708,7 @@ void MEDDLY::unpacked_node::trim()
 void MEDDLY::unpacked_node::sort()
 {
     if (!isSparse()) return;
-#ifndef USE_STRUCT
     MEDDLY_DCASSERT(_index);
-#endif
 
     //
     // First, scan indexes to see if we're already sorted,
@@ -662,13 +754,9 @@ void MEDDLY::unpacked_node::sort()
             const unsigned zn = position[i]-1;
             if (zn != zd) {
                 SWAP(position[index(zd)], position[index(zn)]);
-#ifdef USE_STRUCT
-                SWAP(_idev[zd], _idev[zn]);
-#else
                 SWAP(_edge[zd], _edge[zn]);
                 SWAP(_down[zd], _down[zn]);
                 SWAP(_index[zd], _index[zn]);
-#endif
             }
             ++zd;
         }
@@ -695,19 +783,6 @@ void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
 {
     CHECK_RANGE(__FILE__, __LINE__, 0u, low, alloc);
     CHECK_RANGE(__FILE__, __LINE__, 0u, high, alloc+1);
-#ifdef USE_STRUCT
-    MEDDLY_DCASSERT(_idev);
-
-    if (hasEdges()) {
-        for (unsigned i=low; i<high; i++) {
-            parent->getTransparentEdge(_idev[i].edgeval, _idev[i].down);
-        }
-    } else {
-        for (unsigned i=low; i<high; i++) {
-            _idev[i].down = parent->getTransparentNode();
-        }
-    }
-#else
     MEDDLY_DCASSERT(_down);
 
     if (hasEdges()) {
@@ -720,7 +795,6 @@ void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
             _down[i] = parent->getTransparentNode();
         }
     }
-#endif
 #ifdef DEVELOPMENT_CODE
     has_hash = false;
 #endif
@@ -738,35 +812,24 @@ MEDDLY::unpacked_node* MEDDLY::unpacked_node::New(const forest* f,
     CHECK_RANGE(__FILE__, __LINE__, 1u, FID, ForListsAlloc);
     MEDDLY_DCASSERT(ForLists);
 
-    if (ForLists[FID].recycled) {
-        // pull from free list
-        unpacked_node* n = ForLists[FID].recycled;
-        ForLists[FID].recycled = n->next;
+    unpacked_node* n = ForLists[FID].popFree(ns);
+    if (n) {
+        //
+        // We have a recycled node.
+        //
+        MEDDLY_DCASSERT(n->isAttachedTo(f));
         n->prev = nullptr;
         n->next = nullptr;
-#ifdef DEVELOPMENT_CODE
-        n->has_hash = false;
-#endif
-        MEDDLY_DCASSERT(n->isAttachedTo(f));
-
-#ifdef DEBUG_FORLISTS
-        std::cerr << "New removed " << n << " from recycled list #" << FID
-                  << "\nList is now: -> ";
-        showSingly(ForLists[FID].recycled);
-#endif
-
-        n->setRegular();
-        return n;
     } else {
-        // Our free list is empty
-        unpacked_node* n = new unpacked_node(f);
-#ifdef DEVELOPMENT_CODE
-        n->can_be_recycled = true;
-#endif
-        MEDDLY_DCASSERT(n->isAttachedTo(f));
-        n->setRegular();
-        return n;
+        n = new unpacked_node(f, ns);
     }
+    MEDDLY_DCASSERT(n->isAttachedTo(f));
+    n->orig_was_identity = false;
+#ifdef DEVELOPMENT_CODE
+    n->has_hash = false;
+    n->can_be_recycled = true;
+#endif
+    return n;
 }
 
 void MEDDLY::unpacked_node::AddToBuildList(unpacked_node* n)
@@ -880,16 +943,9 @@ void MEDDLY::unpacked_node::Recycle(unpacked_node* r)
     }
 
     //
-    // Push onto recycled list (it's singly linked)
+    // Push onto recycled list
     //
-    r->next = ForLists[r->pFID].recycled;
-    ForLists[r->pFID].recycled = r;
-
-#ifdef DEBUG_FORLISTS
-    std::cerr << "Recycle added " << r << " to freelist #" << r->pFID
-              << "\nList is now: -> ";
-    showSingly(ForLists[r->pFID].recycled);
-#endif
+    ForLists[r->pFID].pushFree(r, r->nodestor);
 }
 
 void MEDDLY::unpacked_node::initForest(const forest* f)
@@ -908,13 +964,7 @@ void MEDDLY::unpacked_node::initForest(const forest* f)
         ForListsAlloc = newalloc;
     }
 
-    ForLists[FID].recycled = nullptr;
-    ForLists[FID].building = nullptr;
-
-#ifdef DEBUG_FORLISTS
-    std::cerr << "initForest #" << FID << " lists are " <<
-        ForLists[FID].building << " and " << ForLists[FID].recycled << "\n";
-#endif
+    ForLists[FID].init();
 }
 
 void MEDDLY::unpacked_node::doneForest(const forest* f)
@@ -924,11 +974,9 @@ void MEDDLY::unpacked_node::doneForest(const forest* f)
     CHECK_RANGE(__FILE__, __LINE__, 1u, FID, ForListsAlloc);
 
     deleteList(ForLists[FID].building);
-    deleteList(ForLists[FID].recycled);
-#ifdef DEBUG_FORLISTS
-    std::cerr << "doneForest #" << FID << " lists are " <<
-        ForLists[FID].building << " and " << ForLists[FID].recycled << "\n";
-#endif
+    deleteList(ForLists[FID].free_full_only);
+    deleteList(ForLists[FID].free_full_or_sparse);
+    deleteList(ForLists[FID].free_sparse_only);
 }
 
 void MEDDLY::unpacked_node::initStatics()
@@ -955,25 +1003,26 @@ void MEDDLY::unpacked_node::expand(unsigned ns)
         MEDDLY_DCASSERT(nalloc > ns);
         MEDDLY_DCASSERT(nalloc>0);
         MEDDLY_DCASSERT(nalloc>alloc);
-#ifdef USE_STRUCT
-        _idev = (edgeinfo*) realloc(_idev, nalloc*sizeof(edgeinfo));
-        if (!_idev) {
-            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-        }
-#else
         _down = (node_handle*) realloc(_down, nalloc*sizeof(node_handle));
         if (!_down) {
             throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
         }
-        _index = (unsigned*) realloc(_index, nalloc*sizeof(unsigned));
-        if (!_index) {
-            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        if (FULL_ONLY == nodestor) {
+            MEDDLY_DCASSERT(nullptr == _index);
+        } else {
+            _index = (unsigned*) realloc(_index, nalloc*sizeof(unsigned));
+            if (!_index) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+            }
         }
-        _edge = (edge_value*) realloc(_edge, nalloc*sizeof(edge_value));
-        if (!_edge) {
-            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+        if (edge_type::VOID == the_edge_type) {
+            MEDDLY_DCASSERT(nullptr == _edge);
+        } else {
+            _edge = (edge_value*) realloc(_edge, nalloc*sizeof(edge_value));
+            if (!_edge) {
+                throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
+            }
         }
-#endif
         alloc = nalloc;
     }
     size = ns;
@@ -999,6 +1048,8 @@ void MEDDLY::unpacked_node::showDoubly(const unpacked_node* list)
     }
     std::cerr << " -|\n";
 }
+
+#if 0
 
 // ******************************************************************
 // *                                                                *
@@ -1489,3 +1540,4 @@ void MEDDLY::unreduced_node::doneStatics()
     }
 }
 
+#endif // turn off unreduced_node

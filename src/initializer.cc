@@ -62,7 +62,7 @@ void MEDDLY::initializer_list::initializeLibrary(initializer_list* L)
     memstats::initGlobalStats();
     operation::initializeStatics();
     unpacked_node::initStatics();
-    unreduced_node::initStatics();
+    // unreduced_node::initStatics();
     domain::initDomList();
     forest::initStatics();
     ct_vector::initStatics();
@@ -130,7 +130,7 @@ void MEDDLY::initializer_list::cleanupLibrary()
     // ^ should we traverse this list before clobbering forests, etc?
 
     unpacked_node::doneStatics();
-    unreduced_node::doneStatics();
+    // unreduced_node::doneStatics();
     ct_vector::doneStatics();
     ct_entry_type::doneStatics();
 
