@@ -1085,7 +1085,7 @@ void MEDDLY::unreduced_node::initRedundant(const forest *f, int k,
     MEDDLY_DCASSERT(f);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
-    MEDDLY_DCASSERT(ev.hasType(parent->getEdgeType()));
+    MEDDLY_DCASSERT(ev.hasType(f->getEdgeType()));
 
     allocNode(f,  f->getLevelSize(k), fs);
     level = k;
@@ -1121,7 +1121,7 @@ void MEDDLY::unreduced_node::initIdentity(const forest *f, int k, unsigned i,
     MEDDLY_DCASSERT(f);
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
-    MEDDLY_DCASSERT(ev.hasType(parent->getEdgeType()));
+    MEDDLY_DCASSERT(ev.hasType(f->getEdgeType()));
 
     level = k;
     if (FULL_ONLY == fs) {
@@ -1251,6 +1251,10 @@ void MEDDLY::unreduced_node::allocNode(const forest* f, unsigned _size,
                 const unsigned halloc = slot2size(_header_slot);
                 _header = new char[halloc];
             }
+        }
+    } else {
+        if (build_list_FID) {
+            RemoveFromBuildList(this);
         }
     }
 
@@ -1434,6 +1438,16 @@ void MEDDLY::unreduced_node::doneForest(const forest* f)
         ForLists[FID].building << " and " << ForLists[FID].recycled << "\n";
 #endif
 }
+
+void MEDDLY::unreduced_node::showDoubly(const unreduced_node* list)
+{
+    while (list) {
+        std::cerr << " -> (prev " << list->prev << ") " << list;
+        list = list->next;
+    }
+    std::cerr << " -|\n";
+}
+
 
 void MEDDLY::unreduced_node::initStatics()
 {

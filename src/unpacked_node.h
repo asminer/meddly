@@ -1835,6 +1835,7 @@ class MEDDLY::unreduced_node {
         static edge_value*     free_edge[16];
 
     private:
+        static void showDoubly(const unreduced_node* list);
         static void initStatics();
         static void doneStatics();
 
