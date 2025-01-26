@@ -37,7 +37,6 @@ namespace MEDDLY {
     struct unpacked_lists;
 #endif
 
-
     class unreduced_node;
 }
 
@@ -937,9 +936,9 @@ class MEDDLY::unpacked_node {
 
     public:
         /// Was this node initialized from a redundant node
-        inline bool wasRedundant() const {
-            return orig_was_fully;
-        }
+        // inline bool wasRedundant() const {
+            // return orig_was_fully;
+        // }
         /// Was this node initialized from an identity node
         inline bool wasIdentity() const {
             return orig_was_identity;
@@ -1012,14 +1011,15 @@ class MEDDLY::unpacked_node {
 
     private:
         inline void setRegular() {
-            orig_was_fully = orig_was_identity = false;
+            // orig_was_fully = false;
+            orig_was_identity = false;
         }
         inline void setRedundant() {
-            orig_was_fully = true;
+            // orig_was_fully = true;
             orig_was_identity = false;
         }
         inline void setIdentity() {
-            orig_was_fully = false;
+            // orig_was_fully = false;
             orig_was_identity = true;
         }
 
@@ -1108,7 +1108,7 @@ class MEDDLY::unpacked_node {
         edge_type the_edge_type;
 
         /// True iff this was expanded from a fully-reduced edge
-        bool orig_was_fully;
+        // bool orig_was_fully;
 
         /// True iff this was expanded from an identity-reduced edge
         bool orig_was_identity;
@@ -1155,20 +1155,369 @@ class MEDDLY::unreduced_node {
         unreduced_node();
         ~unreduced_node();
 
+        //
+        // Node Access methods (inlined)
+        //
+
         /// Are we attached to f
         inline bool isAttachedTo(const forest* f) {
             return f == parent;
         }
 
+        /// Get a pointer to the unhashed header data.
+        inline void* UHptr()
+        {
+            return _header;
+        }
+
+        /// Get a pointer to the unhashed header data.
+        inline const void* UHptr() const
+        {
+            return _header;
+        }
+
+        /// Get the number of bytes of unhashed header data.
+        inline unsigned UHbytes() const
+        {
+            return unhashed_header_bytes;
+        }
+
+        /// Set the unhashed header data
+        inline void copyToUnhashed(const void* p)
+        {
+            MEDDLY_DCASSERT(p);
+            MEDDLY_DCASSERT(UHbytes() > 0);
+            MEDDLY_DCASSERT(_header);
+            memcpy(UHptr(), p, UHbytes());
+        }
+
+        /// Get the unhashed header data
+        inline void copyFromUnhashed(void* p) const
+        {
+            MEDDLY_DCASSERT(p);
+            MEDDLY_DCASSERT(UHbytes() > 0);
+            MEDDLY_DCASSERT(_header);
+            memcpy(p, UHptr(), UHbytes());
+        }
+
+
+        /// Get a pointer to the hashed header data.
+        inline void* HHptr()
+        {
+            return _header + UHbytes();
+        }
+
+        /// Get a pointer to the hashed header data.
+        inline const void* HHptr() const
+        {
+            return _header + UHbytes();
+        }
+
+        /// Get the number of bytes of hashed header data.
+        inline unsigned HHbytes() const
+        {
+            return hashed_header_bytes;
+        }
+
+        /// Set the hashed header data
+        inline void copyToHashed(const void* p)
+        {
+            MEDDLY_DCASSERT(p);
+            MEDDLY_DCASSERT(HHbytes() > 0);
+            MEDDLY_DCASSERT(_header);
+            memcpy(HHptr(), p, HHbytes());
+        }
+
+        /// Get the hashed header data
+        inline void copyFromHashed(void* p) const
+        {
+            MEDDLY_DCASSERT(p);
+            MEDDLY_DCASSERT(HHbytes() > 0);
+            MEDDLY_DCASSERT(_header);
+            memcpy(p, HHptr(), HHbytes());
+        }
+
+        /** Get a downward pointer.
+            @param  n   Which pointer.
+            @return     If this is a full node,
+                        return pointer with index n.
+                        If this is a sparse node,
+                        return the nth non-zero pointer.
+        */
+        template <typename INT>
+        inline node_handle down(INT n) const
+        {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, INT(0), n, INT(size));
+            MEDDLY_DCASSERT(_down);
+            return _down[n];
+        }
+
+        /** Get a downward pointer.
+            @param  n   Which pointer.
+            @return     If this is a full node,
+                        return pointer with index n.
+                        If this is a sparse node,
+                        return the nth non-zero pointer.
+        */
+        template <typename INT>
+        inline node_handle& down(INT n)
+        {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, INT(0), n, INT(size));
+            MEDDLY_DCASSERT(_down);
+            return _down[n];
+        }
+
+        /** Get the index of the nth non-zero pointer.
+            Use only for sparse nodes.
+            @param  n   Which pointer
+            @return     The index of the pointer
+        */
+        template <typename INT>
+        inline unsigned index(INT n) const
+        {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, INT(0), n, INT(size));
+            MEDDLY_DCASSERT(_index);
+            return _index[n];
+        }
+
+        /** Get the index of the nth non-zero pointer.
+            Use only for sparse nodes.
+            @param  n   Which pointer
+            @return     The index of the pointer
+        */
+        template <typename INT>
+        inline unsigned& index(INT n)
+        {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, INT(0), n, INT(size));
+            MEDDLY_DCASSERT(_index);
+            return _index[n];
+        }
+
+        /** Get the nth edge value.
+            @param  n   Which pointer
+            @return     The edge value
+        */
+        template <typename INT>
+        inline const edge_value& edgeval(INT n) const {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, INT(0), n, INT(size));
+            MEDDLY_DCASSERT(_edge);
+            return _edge[n];
+        }
+
+        /** Get the nth edge value.
+            @param  n   Which pointer
+            @return     The edge value
+        */
+        template <typename INT>
+        inline edge_value& edgeval(INT n) {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, INT(0), n, INT(size));
+            MEDDLY_DCASSERT(_edge);
+            return _edge[n];
+        }
+
+        /**
+            Hack for mark and sweep.
+            Add an extra, temporary node to the list of roots
+            for mark and sweep.
+            Do this for example in an "APPLY" operation that
+            needs to create a temporary result.
+            We can hold one such result and make sure it's marked,
+            by calling this method.
+                @param  t   Node handle for temporary result.
+         */
+        inline void setTempRoot(node_handle t)
+        {
+            mark_extra = t;
+        }
+
+        /// Get the level number of this node.
+        inline int getLevel() const
+        {
+            return level;
+        }
+
+        /// Set the level number of this node.
+        inline void setLevel(int k)
+        {
+            level = k;
+        }
+
+        /// Get the size of this node.
+        inline unsigned getSize() const
+        {
+            return size;
+        }
+
+        /// Is this a sparse node?
+        inline bool isSparse() const
+        {
+            return _index;
+        }
+
+        /// Is this a full node?
+        inline bool isFull() const
+        {
+            return !isSparse();
+        }
+
+        /// Does this node have edge values?
+        inline bool hasEdges() const
+        {
+            return _edge;
+        }
+
+        /// Edge type
+        inline edge_type getEdgeType() const
+        {
+            return the_edge_type;
+        }
+
+        /// Get the node's hash
+        inline unsigned hash() const
+        {
+#ifdef DEVELOPMENT_CODE
+            MEDDLY_DCASSERT(has_hash);
+#endif
+            return the_hash;
+        }
+
+    public:
+        /**
+            Initialize, from a particular node
+        */
+        void initFromNode(const forest* f, node_handle node,
+                node_storage_flags fs);
+
+        /**
+           Initialize, as a redundant node
+        */
+        void initRedundant(const forest *f, int k, const edge_value &ev,
+                node_handle node, node_storage_flags fs);
+
+        /**
+            Initialize, as an identity node
+        */
+        void initIdentity(const forest *f, int k, unsigned i,
+                const edge_value &ev, node_handle node, node_storage_flags fs);
+
+        /**
+            Initialize a blank, writable node
+        */
+        void initEmpty(forest* f, int k, unsigned size, node_storage_flags fs);
+
+        /// Change the size of a node
+        inline void resize(unsigned ns) {
+            if (ns > slot2size(_down_slot)) {
+                expand(ns);
+            }
+            size = ns;
+        }
+
+        /// Set elements i in [low, high) to transparent
+        ///     @param  low     Low index
+        ///     @param  high    One past high index
+        ///
+        void clear(unsigned low, unsigned high);
+
+    public:
+        /// Compute the node's hash
+        void computeHash();
+
+        /** Write a node in human-readable format.
+
+            @param  s       Output stream.
+            @param  details Should we show "details" or not.
+        */
+        void show(output &s, bool details) const;
+
+
+        /** Write a node in machine-readable format.
+
+            @param  s       Output stream.
+            @param  map     Translation to use from node handle to file node#.
+                            Allows us to renumber nodes as we write them.
+        */
+        void write(output &s, const std::vector <unsigned> &map) const;
+
+
+        /** Read a node in machine-readable format.
+
+            @param  s       Input stream.
+            @param  map     Translation from file node# to node handles.
+                            Allows us to renumber nodes as we read them.
+        */
+        void read(input &s, const std::vector <node_handle> &map);
+
     protected:
+        /// By hand destructor
         void clear();
+
+        /// Attach to forest f and allocate
+        ///     @param  f       Forest to attach to
+        ///     @param  size    Initial size, can be 0
+        ///     @param  fs      Sparse or full storage
         void allocNode(const forest* f, unsigned size, node_storage_flags fs);
+
+        /// Expand down, index, edge arrays to new size
+        void expand(unsigned ns);
 
     private:
         /// Forest where the node belongs
         const forest* parent;
         /// Modifiable parent forest; required for writable nodes
         forest* modparent;
+
+        /// Next in build list
+        unreduced_node* next;
+        /// Previous in build list
+        unreduced_node* prev;
+
+        /// Extra header info, or null
+        char* _header;
+
+        /// Down pointers
+        node_handle* _down;
+
+        /// Indexes, for sparse; otherwise unused
+        unsigned* _index;
+
+        /// Edge values; or null if void edges
+        edge_value* _edge;
+
+        /// Extra, temporary, node handle for marking.
+        node_handle mark_extra;
+
+        /// Node size; usable portion of down, index, and edge
+        unsigned size;
+
+        /// Level of the node
+        int level;
+
+        /// Hash of the node
+        unsigned the_hash;
+
+        /// size slot for header
+        unsigned char _header_slot;
+
+        /// size slot for down, index, and edge
+        unsigned char _down_slot;
+
+        /// bytes in the unhashed header
+        unsigned char unhashed_header_bytes;
+
+        /// bytes in the hashed header
+        unsigned char hashed_header_bytes;
+
+        /// Types of edges
+        edge_type the_edge_type;
+
+        /// True iff this was expanded from an identity-reduced edge
+        bool orig_was_identity;
+
+#ifdef DEVELOPMENT_CODE
+        /// Has the hash been computed
+        bool has_hash;
+#endif
 
 
     // **********************************************************************

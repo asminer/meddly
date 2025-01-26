@@ -1015,6 +1015,26 @@ MEDDLY::unreduced_node::unreduced_node()
 {
     parent = nullptr;
     modparent = nullptr;
+
+    next = nullptr;
+    prev = nullptr;
+
+    _header = nullptr;
+    _down = nullptr;
+    _index = nullptr;
+    _edge = nullptr;
+
+    mark_extra = 0;
+    size = 0;
+
+    _header_slot = 0;
+    _down_slot = 0;
+    unhashed_header_bytes = 0;
+    hashed_header_bytes = 0;
+
+#ifdef DEVELOPMENT_CODE
+    has_hash = false;
+#endif
 }
 
 MEDDLY::unreduced_node::~unreduced_node()
