@@ -256,7 +256,7 @@ void MEDDLY::unpacked_node::attach(const forest* f)
 
 #endif
 
-void MEDDLY::unpacked_node::initFromForest(const forest* f,
+void MEDDLY::unpacked_node::initFromNode(const forest* f,
         node_handle node, node_storage_flags fs)
 {
     MEDDLY_DCASSERT(f);
@@ -389,6 +389,45 @@ void MEDDLY::unpacked_node::initIdentity(const forest *f, int k, unsigned i,
     orig_was_identity = true;
 }
 
+/*
+    Build blank writable nodes
+*/
+
+MEDDLY::unpacked_node* MEDDLY::unpacked_node::newWritable(forest* f, int lvl,
+        node_storage_flags fs)
+{
+    MEDDLY_DCASSERT(f);
+    unsigned tsz = f->getLevelSize(lvl);
+
+    //
+    // Same as the other newWritable() below here
+    //
+    unpacked_node* U = New(f, fs);
+    MEDDLY_DCASSERT(U);
+    U->level = lvl;
+    U->resize(tsz);
+    U->is_full = (fs != SPARSE_ONLY);
+    if (U->is_full) {
+        U->clear(0, tsz);
+    }
+    U->allowWrites(f);
+    return U;
+}
+
+MEDDLY::unpacked_node* MEDDLY::unpacked_node::newWritable(forest* f, int lvl,
+        unsigned tsz, node_storage_flags fs)
+{
+    unpacked_node* U = New(f, fs);
+    MEDDLY_DCASSERT(U);
+    U->level = lvl;
+    U->resize(tsz);
+    U->is_full = (fs != SPARSE_ONLY);
+    if (U->is_full) {
+        U->clear(0, tsz);
+    }
+    U->allowWrites(f);
+    return U;
+}
 
 /*
     Display methods

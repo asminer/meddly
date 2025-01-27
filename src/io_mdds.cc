@@ -272,9 +272,8 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
             s.stripWS();
             int rawsize = s.get_integer();
             // int n;
-            unpacked_node* nb = (rawsize < 0)
-                ? unpacked_node::newSparse(F, k, unsigned(-rawsize))
-                : unpacked_node::newFull(F, k, unsigned(rawsize));
+            unpacked_node* nb = unpacked_node::newWritable(F, k, ABS(rawsize),
+                    (rawsize < 0) ? SPARSE_ONLY : FULL_ONLY);
 
 #ifdef DEBUG_READ
             std::cerr << " rawsize " << rawsize << '\n';

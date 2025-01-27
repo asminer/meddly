@@ -116,13 +116,14 @@ class MEDDLY::mt_forest : public forest
       } else {
         km1 = k-1;
       }
-      unsigned sz = unsigned(getLevelSize(level));
+      // unsigned sz = unsigned(getLevelSize(level));
 
       /*
           Make this node
       */
-      unpacked_node* nb = unpacked_node::newFull(this, k, sz);
-      for (unsigned i=0; i<sz; i++) {
+      unpacked_node* nb = unpacked_node::newWritable(this, k, FULL_ONLY);
+      // unpacked_node* nb = unpacked_node::newFull(this, k, sz);
+      for (unsigned i=0; i<nb->getSize(); i++) {
         terminal t(vals ? vals[i] : T(i));
         nb->setFull(i, makeNodeAtLevel(km1, t.getHandle()));
       }

@@ -109,13 +109,12 @@ class MEDDLY::ev_forest : public forest
       } else {
         km1 = k-1;
       }
-      unsigned sz = unsigned(getLevelSize(level));
 
       /*
           Make this node
       */
-      unpacked_node *nb = unpacked_node::newFull(this, k, sz);
-      for (unsigned i=0; i<sz; i++) {
+      unpacked_node *nb = unpacked_node::newWritable(this, k, FULL_ONLY);
+      for (unsigned i=0; i<nb->getSize(); i++) {
         T ev = vals ? vals[i] : i;
         terminal t;
         t.setOmega();
@@ -182,8 +181,12 @@ namespace MEDDLY {
     while (dk != k) {
       // make node at one level up
       int up = (dk < 0) ? -dk : isForRelations() ? -(dk + 1) : (dk + 1);
-      unsigned sz = unsigned(getLevelSize(up));
-      unpacked_node* nb = unpacked_node::newFull(this, up, sz);
+
+
+      // unsigned sz = unsigned(getLevelSize(up));
+      // unpacked_node* nb = unpacked_node::newFull(this, up, sz);
+      unpacked_node* nb = unpacked_node::newWritable(this, up, FULL_ONLY);
+      unsigned sz = nb->getSize();
 
       if (isIdentityReduced() && (dk < 0) && (1 == prevSize)) {
         // Build unprimed node with check for identity reduction.

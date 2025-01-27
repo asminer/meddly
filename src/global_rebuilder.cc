@@ -193,7 +193,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::transform(node_handle p,
 
   int size = _target->getVariableSize(top_var);
   MEDDLY_DCASSERT(size == 2);
-  unpacked_node* nb = unpacked_node::newFull(_target, target_level, size);
+  unpacked_node* nb = unpacked_node::newWritable(_target, target_level, size, FULL_ONLY);
   for (int i = 0; i < size; i++) {
     pa.push_back(i == 0 ? -top_var : top_var);
     node_handle pr = restrict(p, pa);
@@ -248,7 +248,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::restrict(node_handle p,
       unpacked_node* nr = _source->newUnpacked(p, FULL_ONLY);
 
       int size = _source->getVariableSize(_source->getVarByLevel(level1));
-      unpacked_node* nb = unpacked_node::newFull(_source, level1, size);
+      unpacked_node* nb = unpacked_node::newWritable(_source, level1, size, FULL_ONLY);
       for (int i = 0; i < size; i++) {
         MEDDLY_DCASSERT(size==2);
         nb->setFull(i, restrict(nr->down(i), pa));
@@ -363,7 +363,7 @@ bool MEDDLY::global_rebuilder::restrict_exist(node_handle p,
       unpacked_node* nr = _source->newUnpacked(p, FULL_ONLY);
 
       int size = _source->getVariableSize(_source->getVarByLevel(level1));
-      unpacked_node* nb = unpacked_node::newFull(_source, level1, size);
+      unpacked_node* nb = unpacked_node::newWritable(_source, level1, size, FULL_ONLY);
       for (int i = 0; i < size; i++) {
         if (restrict_exist(nr->down(i), pa, start, result)) {
           nb->setFull(i, result);

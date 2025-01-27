@@ -837,9 +837,11 @@ MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
             unsigned sind;
             node_handle sdwn;
             if (isSingletonNode(p, sind, sdwn)) {
-                unsigned size = getLevelSize(K);
-                U = unpacked_node::newFull(this, K, size);
-                for (unsigned i=0; i<size; i++) {
+                U = unpacked_node::newWritable(this, K, FULL_ONLY);
+
+                // unsigned size = getLevelSize(K);
+                // U = unpacked_node::newFull(this, K, size);
+                for (unsigned i=0; i<U->getSize(); i++) {
                     U->setFull(i, noop_edge, linkNode( (i==sind) ? sdwn : p ));
                 }
                 unlinkNode(p);
@@ -906,11 +908,13 @@ MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
     // Proceed in unprimed, primed pairs
     //
     for (K++; K<=Lstop; K++) {
-        Uun = unpacked_node::newFull(this, K, getLevelSize(K));
+        Uun = unpacked_node::newWritable(this, K, FULL_ONLY);
+        // Uun = unpacked_node::newFull(this, K, getLevelSize(K));
 
         // build primed level nodes
         for (unsigned i=0; i<Uun->getSize(); i++) {
-            Upr = unpacked_node::newSparse(this, -K, 1);
+            Upr = unpacked_node::newWritable(this, -K, 1, SPARSE_ONLY);
+            // Upr = unpacked_node::newSparse(this, -K, 1);
             Upr->setSparse(0, i, noop_edge, linkNode(p));
             node_handle h;
             createReducedNode(Upr, ev, h);
@@ -928,7 +932,7 @@ MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
     //
     if (L<0) {
         MEDDLY_DCASSERT(-K == L);
-        Upr = unpacked_node::newSparse(this, L, 1);
+        Upr = unpacked_node::newWritable(this, L, 1, SPARSE_ONLY);
         MEDDLY_DCASSERT(in>=0);
         Upr->setSparse(0, unsigned(in), noop_edge, p);
         createReducedNode(Upr, ev, p);

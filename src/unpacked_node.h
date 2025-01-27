@@ -119,7 +119,7 @@ class MEDDLY::unpacked_node {
         //
         // Build a node from a forest
         //
-        void initFromForest(const forest *f, node_handle node, node_storage_flags fs);
+        void initFromNode(const forest *f, node_handle node, node_storage_flags fs);
 
         //
         // Build redundant nodes
@@ -147,12 +147,12 @@ class MEDDLY::unpacked_node {
         // For convenience: get recycled instance and initialize
         //
 
-        static inline unpacked_node* newFromForest(const forest *f,
+        static inline unpacked_node* newFromNode(const forest *f,
                 node_handle node, node_storage_flags fs)
         {
             unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
-            U->initFromForest(f, node, fs);
+            U->initFromNode(f, node, fs);
             return U;
         }
 
@@ -201,23 +201,37 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
-        static inline unpacked_node* newWritable(forest* f, int lvl,
-                unsigned tsz, node_storage_flags fs)
-        {
-            unpacked_node* U = New(f, fs);
-            MEDDLY_DCASSERT(U);
-            U->level = lvl;
-            U->resize(tsz);
-            U->clear(0, tsz);
-            U->is_full = (fs != SPARSE_ONLY);
-            U->allowWrites(f);
-            return U;
-        }
+        /**
+            Build a new, zeroed-out node for writing.
+                @param  f       Forest the node will (maybe) get reduced in
+                @param  lvl     Level of the node
+                @param  tsz     (Initial) size of the node.
+                @param  fs      Storage type (just here; the forest
+                                may have other plans.)
 
+                @return A pointer to a fresh node
+         */
+        static unpacked_node* newWritable(forest* f, int lvl,
+                unsigned tsz, node_storage_flags fs);
+
+        /**
+            Build a new, zeroed-out node for writing.
+                @param  f       Forest the node will (maybe) get reduced in
+                @param  lvl     Level of the node. The node's size will
+                                be the current size of the level.
+                @param  fs      Storage type (just here; the forest
+                                may have other plans.)
+
+                @return A pointer to a fresh node
+         */
+        static unpacked_node* newWritable(forest* f, int lvl,
+                node_storage_flags fs);
+
+#ifdef ALLOW_DEPRECATED_0_17_8
         /** Create a zeroed-out full node of a given size */
-        // template <class T>
+        template <class T>
         static inline unpacked_node* newFull(forest *f,
-                int levl, unsigned tsz)
+                int levl, T tsz)
         {
             unpacked_node* U = New(f, FULL_ONLY);
             MEDDLY_DCASSERT(U);
@@ -231,9 +245,9 @@ class MEDDLY::unpacked_node {
         }
 
         /** Create a sparse node */
-        // template <class T>
+        template <class T>
         static inline unpacked_node* newSparse(forest *f,
-                int levl, unsigned nnzs)
+                int levl, T nnzs)
         {
             unpacked_node* U = New(f, SPARSE_ONLY);
             MEDDLY_DCASSERT(U);
@@ -243,6 +257,7 @@ class MEDDLY::unpacked_node {
             U->allowWrites(f);
             return U;
         }
+#endif
 
     public:
         //
@@ -376,6 +391,20 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(_down);
             return _down[n];
         }
+
+        /** Get a downward pointer reference.
+            @param  n   Which pointer.
+            @return     If this is a full node,
+                        return pointer with index n.
+                        If this is a sparse node,
+                        return the nth non-zero pointer.
+        */
+        inline node_handle& down(int n)
+        {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
+            MEDDLY_DCASSERT(_down);
+            return _down[n];
+        }
 #endif
 
         /** Get the index of the nth non-zero pointer.
@@ -417,6 +446,19 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(_index);
             return _index[n];
         }
+
+        /** Get a reference to the index of the nth non-zero pointer.
+            Use only for sparse nodes.
+            @param  n   Which pointer
+            @return     The index of the pointer
+        */
+        inline unsigned& index(int n)
+        {
+            MEDDLY_DCASSERT(!is_full);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
+            MEDDLY_DCASSERT(_index);
+            return _index[n];
+        }
 #endif
 
         /** Get the nth edge value.
@@ -445,6 +487,16 @@ class MEDDLY::unpacked_node {
             @return     The edge value
         */
         inline const edge_value& edgeval(int n) const {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
+            MEDDLY_DCASSERT(_edge);
+            return _edge[n];
+        }
+
+        /** Get a modifiable reference to the nth edge value.
+            @param  n   Which pointer
+            @return     The edge value
+        */
+        inline edge_value& edgeval(int n) {
             MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
             MEDDLY_DCASSERT(_edge);
             return _edge[n];

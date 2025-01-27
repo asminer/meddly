@@ -85,11 +85,12 @@ namespace MEDDLY {
                 const
                 {
                     if (default_is_zero) {
-                        return unpacked_node::newSparse(F, k, spsz);
+                        return unpacked_node::newWritable(F, k, spsz,
+                                    SPARSE_ONLY);
                     }
                     MEDDLY_DCASSERT(dp_unp);
-                    unpacked_node* n = unpacked_node::newFull(F, k,
-                            F->getLevelSize(k));
+                    unpacked_node* n =
+                        unpacked_node::newWritable(F, k, FULL_ONLY);
                     for (unsigned i=0; i<n->getSize(); i++) {
                         n->setFull(i, dv, F->linkNode(dp_unp[k-1]));
                     }
@@ -107,11 +108,12 @@ namespace MEDDLY {
                 const
                 {
                     if (default_is_zero) {
-                        return unpacked_node::newSparse(F, k, spsz);
+                        return unpacked_node::newWritable(F, k, spsz,
+                                    SPARSE_ONLY);
                     }
                     MEDDLY_DCASSERT(dp_pri);
-                    unpacked_node* n = unpacked_node::newFull(F, k,
-                            F->getLevelSize(k));
+                    unpacked_node* n =
+                        unpacked_node::newWritable(F, k, FULL_ONLY);
                     for (unsigned i=0; i<n->getSize(); i++) {
                         n->setFull(i, dv, F->linkNode(dp_pri[k]));
                     }
@@ -129,11 +131,12 @@ namespace MEDDLY {
                 const
                 {
                     if (default_is_zero) {
-                        return unpacked_node::newSparse(F, -k, spsz);
+                        return unpacked_node::newWritable(F, -k, spsz,
+                                    SPARSE_ONLY);
                     }
                     MEDDLY_DCASSERT(dp_unp);
-                    unpacked_node* n = unpacked_node::newFull(F, -k,
-                            F->getLevelSize(k));
+                    unpacked_node* n =
+                        unpacked_node::newWritable(F, -k, FULL_ONLY);
                     for (unsigned i=0; i<n->getSize(); i++) {
                         n->setFull(i, dv, F->linkNode(dp_unp[k-1]));
                     }
@@ -179,7 +182,7 @@ namespace MEDDLY {
                     //
                     MEDDLY_DCASSERT(dp_unp);
                     unpacked_node* nu =
-                        unpacked_node::newFull(F, k, F->getLevelSize(k));
+                        unpacked_node::newWritable(F, k, FULL_ONLY);
                     for (unsigned i=0; i<nu->getSize(); i++) {
                         unpacked_node* np = newPrimedNode(k, 1);
                         unsigned z = 0;
