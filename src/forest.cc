@@ -1534,18 +1534,19 @@ void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN,
     node_handle sz = getLastNode() + 1;
     std::vector <unsigned> in_validate(sz);
 
-    unpacked_node P(this);
+    unpacked_node* P = unpacked_node::New(this, SPARSE_ONLY);
     for (node_handle i = 1; i < sz; ++i) {
         if (!isActiveNode(i)) continue;
-        unpackNode(&P, i, SPARSE_ONLY);
+        unpackNode(P, i, SPARSE_ONLY);
 
         // add to reference counts
-        for (unsigned z=0; z<P.getSize(); z++) {
-            if (isTerminalNode(P.down(z))) continue;
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, P.down(z), sz);
-            in_validate[P.down(z)]++;
+        for (unsigned z=0; z<P->getSize(); z++) {
+            if (isTerminalNode(P->down(z))) continue;
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, P->down(z), sz);
+            in_validate[P->down(z)]++;
         }
     } // for i
+    unpacked_node::Recycle(P);
 
     // Add counts for registered dd_edges
     for (const dd_edge* r = roots; r; r=r->next) {

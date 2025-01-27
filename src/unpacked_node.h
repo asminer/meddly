@@ -337,7 +337,6 @@ class MEDDLY::unpacked_node {
             return extra_hashed_size;
         }
 
-
         /** Get a downward pointer.
             @param  n   Which pointer.
             @return     If this is a full node,
@@ -352,6 +351,22 @@ class MEDDLY::unpacked_node {
             return _down[n];
         }
 
+        /** Get a downward pointer reference.
+            @param  n   Which pointer.
+            @return     If this is a full node,
+                        return pointer with index n.
+                        If this is a sparse node,
+                        return the nth non-zero pointer.
+        */
+        inline node_handle& down(unsigned n)
+        {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            MEDDLY_DCASSERT(_down);
+            return _down[n];
+        }
+
+
+#ifdef ALLOW_DEPRECATED_0_17_8
         /** Get a downward pointer.
             @param  n   Which pointer.
             @return     If this is a full node,
@@ -365,6 +380,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(_down);
             return _down[n];
         }
+#endif
 
         /** Get the index of the nth non-zero pointer.
             Use only for sparse nodes.
@@ -379,6 +395,20 @@ class MEDDLY::unpacked_node {
             return _index[n];
         }
 
+        /** Get a reference to the index of the nth non-zero pointer.
+            Use only for sparse nodes.
+            @param  n   Which pointer
+            @return     The index of the pointer
+        */
+        inline unsigned& index(unsigned n)
+        {
+            MEDDLY_DCASSERT(!is_full);
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            MEDDLY_DCASSERT(_index);
+            return _index[n];
+        }
+
+#ifdef ALLOW_DEPRECATED_0_17_8
         /** Get the index of the nth non-zero pointer.
             Use only for sparse nodes.
             @param  n   Which pointer
@@ -391,6 +421,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(_index);
             return _index[n];
         }
+#endif
 
         /** Get the nth edge value.
             @param  n   Which pointer
@@ -402,6 +433,17 @@ class MEDDLY::unpacked_node {
             return _edge[n];
         }
 
+        /** Get a modifiable reference to the nth edge value.
+            @param  n   Which pointer
+            @return     The edge value
+        */
+        inline edge_value& edgeval(unsigned n) {
+            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            MEDDLY_DCASSERT(_edge);
+            return _edge[n];
+        }
+
+#ifdef ALLOW_DEPRECATED_0_17_8
         /** Get the nth edge value.
             @param  n   Which pointer
             @return     The edge value
@@ -411,7 +453,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(_edge);
             return _edge[n];
         }
-
+#endif
 
         /** Subtract from an edge value.
             @param  n       Which pointer
