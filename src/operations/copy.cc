@@ -512,7 +512,7 @@ void MEDDLY::copy_EV_fast::_compute(int L, unsigned in,
         // Initialize unpacked nodes
         //
         unpacked_node* Au = unpacked_node::newFromNode(argF, A, SPARSE_ONLY);
-        unpacked_node* Cu = unpacked_node::newSparse(resF, Alevel, Au->getSize());
+        unpacked_node* Cu = unpacked_node::newWritable(resF, Alevel, Au->getSize(), SPARSE_ONLY);
 #ifdef TRACE
         out << "A: ";
         Au->show(out, true);

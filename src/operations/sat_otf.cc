@@ -295,13 +295,13 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
       mdd, k, sz, mdd_level);
 #endif
 
-  unpacked_node* nb = unpacked_node::newFull(resF, k, sz);
+  unpacked_node* nb = unpacked_node::newWritable(resF, k, sz, FULL_ONLY);
   // Initialize mdd reader
   unpacked_node *mddDptrs = unpacked_node::New(argF, FULL_ONLY);
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, FULL_ONLY);
   } else {
-    argF->unpackNode(mddDptrs, mdd, FULL_ONLY);
+    mddDptrs->initFromNode(mdd);
   }
 
   // Do computation
@@ -690,14 +690,14 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   const int mxdLevel = relF->getNodeLevel(mxd);
   const int rLevel = MAX(ABS(mxdLevel), mddLevel);
   const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
-  unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
+  unpacked_node* nb = unpacked_node::newWritable(resF, rLevel, rSize, FULL_ONLY);
 
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::New(argF, FULL_ONLY);
   if (mddLevel < rLevel) {
     A->initRedundant(argF, rLevel, mdd, FULL_ONLY);
   } else {
-    argF->unpackNode(A, mdd, FULL_ONLY);
+    A->initFromNode(mdd);
   }
 
   if (mddLevel > ABS(mxdLevel)) {
@@ -721,7 +721,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     if (mxdLevel < 0) {
       Ru->initRedundant(relF, rLevel, mxd, SPARSE_ONLY);
     } else {
-      relF->unpackNode(Ru, mxd, SPARSE_ONLY);
+      Ru->initFromNode(mxd);
     }
 
 #if 0
@@ -733,7 +733,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
       if (isLevelAbove(-rLevel, relF->getNodeLevel(pnode))) {
         Rp->initIdentity(relF, rLevel, i, pnode, SPARSE_ONLY);
       } else {
-        relF->unpackNode(Rp, pnode, SPARSE_ONLY);
+        Rp->initFromNode(pnode);
       }
 
       // loop over mxd "columns"

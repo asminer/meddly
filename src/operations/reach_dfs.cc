@@ -394,13 +394,13 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
       mdd, k, sz, mdd_level);
 #endif
 
-  unpacked_node* C = unpacked_node::newFull(resF, k, sz);
+  unpacked_node* C = unpacked_node::newWritable(resF, k, sz, FULL_ONLY);
   // Initialize mdd reader
   unpacked_node *mddDptrs = unpacked_node::New(argF, FULL_ONLY);
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, FULL_ONLY);
   } else {
-    argF->unpackNode(mddDptrs, mdd, FULL_ONLY);
+    mddDptrs->initFromNode(mdd);
   }
 
   // Do computation
@@ -498,13 +498,13 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
       evmdd, k, sz, evmdd_level);
 #endif
 
-  unpacked_node* C = unpacked_node::newFull(resF, k, sz);
+  unpacked_node* C = unpacked_node::newWritable(resF, k, sz, FULL_ONLY);
   // Initialize evmdd reader
   unpacked_node *evmddDptrs = unpacked_node::New(argF, FULL_ONLY);
   if (evmdd_level < k) {
     evmddDptrs->initRedundant(argF, k, evmdd, FULL_ONLY);
   } else {
-    argF->unpackNode(evmddDptrs, evmdd, FULL_ONLY);
+    evmddDptrs->initFromNode(evmdd);
   }
 
   // Do computation
@@ -600,7 +600,7 @@ void MEDDLY::common_dfs::splitMxd(node_handle mxd_nh)
       if (isLevelAbove(-level, mxdPLevel)) {
         Mp->initIdentity(arg2F, -level, i, Mu->down(i), FULL_ONLY);
       } else {
-        arg2F->unpackNode(Mp, Mu->down(i), FULL_ONLY);
+        Mp->initFromNode(Mu->down(i));
       }
 
       // Intersect along the diagonal
@@ -791,7 +791,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
   if (mxdLevel < 0) {
     Ru->initRedundant(arg2F, nb.getLevel(), mxd, FULL_ONLY);
   } else {
-    arg2F->unpackNode(Ru, mxd, FULL_ONLY);
+    Ru->initFromNode(mxd);
   }
 
   // indexes to explore
@@ -813,7 +813,7 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
     const int dlevel = arg2F->getNodeLevel(Ru->down(i));
 
     if (dlevel == -nb.getLevel()) {
-      arg2F->unpackNode(Rp, Ru->down(i), SPARSE_ONLY);
+      Rp->initFromNode(Ru->down(i));
     } else {
       Rp->initIdentity(arg2F, -nb.getLevel(), i, Ru->down(i), SPARSE_ONLY);
     }
@@ -901,14 +901,14 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
   const int mxdLevel = arg2F->getNodeLevel(mxd);
   const int rLevel = MAX(ABS(mxdLevel), mddLevel);
   const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
-  unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
+  unpacked_node* nb = unpacked_node::newWritable(resF, rLevel, rSize, FULL_ONLY);
 
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::New(arg1F, FULL_ONLY);
   if (mddLevel < rLevel) {
     A->initRedundant(arg1F, rLevel, mdd, FULL_ONLY);
   } else {
-    arg1F->unpackNode(A, mdd, FULL_ONLY);
+    A->initFromNode(mdd);
   }
 
   if (mddLevel > ABS(mxdLevel)) {
@@ -932,7 +932,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
     if (mxdLevel < 0) {
       Ru->initRedundant(arg2F, rLevel, mxd, SPARSE_ONLY);
     } else {
-      arg2F->unpackNode(Ru, mxd, SPARSE_ONLY);
+      Ru->initFromNode(mxd);
     }
 
     dd_edge nbdj(resF), newst(resF);
@@ -944,7 +944,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
       if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->down(iz)))) {
         Rp->initIdentity(arg2F, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        arg2F->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
+        Rp->initFromNode(Ru->down(iz));
       }
 
       // loop over mxd "columns"
@@ -1029,7 +1029,7 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(unpacked_node& nb)
   if (mxdLevel < 0) {
     Ru->initRedundant(arg2F, nb.getLevel(), mxd, SPARSE_ONLY);
   } else {
-    arg2F->unpackNode(Ru, mxd, SPARSE_ONLY);
+    Ru->initFromNode(mxd);
   }
 
   // indexes to explore
@@ -1052,7 +1052,7 @@ void MEDDLY::bckwd_dfs_mt::saturateHelper(unpacked_node& nb)
       const int dlevel = arg2F->getNodeLevel(Ru->down(iz));
 
       if (dlevel == -nb.getLevel()) {
-        arg2F->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
+        Rp->initFromNode(Ru->down(iz));
       } else {
         Rp->initIdentity(arg2F, -nb.getLevel(), i, Ru->down(iz), SPARSE_ONLY);
       }
@@ -1124,7 +1124,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
   const int mxdLevel = arg2F->getNodeLevel(mxd);
   const int rLevel = MAX(ABS(mxdLevel), mddLevel);
   const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
-  unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
+  unpacked_node* nb = unpacked_node::newWritable(resF, rLevel, rSize, FULL_ONLY);
 
   dd_edge nbdi(resF), temp(resF);
 
@@ -1133,7 +1133,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
   if (mddLevel < rLevel) {
     A->initRedundant(arg1F, rLevel, mdd, FULL_ONLY);
   } else {
-    arg1F->unpackNode(A, mdd, FULL_ONLY);
+    A->initFromNode(mdd);
   }
 
   if (mddLevel > ABS(mxdLevel)) {
@@ -1155,7 +1155,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
     if (mxdLevel < 0) {
       Ru->initRedundant(arg2F, rLevel, mxd, SPARSE_ONLY);
     } else {
-      arg2F->unpackNode(Ru, mxd, SPARSE_ONLY);
+      Ru->initFromNode(mxd);
     }
 
     // loop over mxd "rows"
@@ -1164,7 +1164,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_mt::recFire(node_handle mdd, node_handle m
       if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->down(iz)))) {
         Rp->initIdentity(arg2F, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        arg2F->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
+        Rp->initFromNode(Ru->down(iz));
       }
 
       // loop over mxd "columns"
@@ -1296,7 +1296,7 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
   if (mxdLevel < 0) {
     Ru->initRedundant(arg2F, nb.getLevel(), mxd, FULL_ONLY);
   } else {
-    arg2F->unpackNode(Ru, mxd, FULL_ONLY);
+    Ru->initFromNode(mxd);
   }
 
   // indexes to explore
@@ -1320,7 +1320,7 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
     const int dlevel = arg2F->getNodeLevel(Ru->down(i));
 
     if (dlevel == -nb.getLevel()) {
-      arg2F->unpackNode(Rp, Ru->down(i), SPARSE_ONLY);
+      Rp->initFromNode(Ru->down(i));
     } else {
       Rp->initIdentity(arg2F, -nb.getLevel(), i, Ru->down(i), SPARSE_ONLY);
     }
@@ -1424,14 +1424,14 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
   const int mxdLevel = arg2F->getNodeLevel(mxd);
   const int rLevel = MAX(ABS(mxdLevel), evmddLevel);
   const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
-  unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
+  unpacked_node* nb = unpacked_node::newWritable(resF, rLevel, rSize, FULL_ONLY);
 
   // Initialize evmdd reader
   unpacked_node *A = unpacked_node::New(arg1F, FULL_ONLY);
   if (evmddLevel < rLevel) {
     A->initRedundant(arg1F, rLevel, evmdd, FULL_ONLY);
   } else {
-    arg1F->unpackNode(A, evmdd, FULL_ONLY);
+    A->initFromNode(evmdd);
   }
 
   if (evmddLevel > ABS(mxdLevel)) {
@@ -1459,7 +1459,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
     if (mxdLevel < 0) {
       Ru->initRedundant(arg2F, rLevel, mxd, SPARSE_ONLY);
     } else {
-      arg2F->unpackNode(Ru, mxd, SPARSE_ONLY);
+      Ru->initFromNode(mxd);
     }
 
     dd_edge nbdj(resF), newst(resF);
@@ -1471,7 +1471,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
       if (isLevelAbove(-rLevel, arg2F->getNodeLevel(Ru->down(iz)))) {
         Rp->initIdentity(arg2F, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        arg2F->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
+        Rp->initFromNode(Ru->down(iz));
       }
 
       // loop over mxd "columns"

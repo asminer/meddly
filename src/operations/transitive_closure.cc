@@ -649,7 +649,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
     : unpacked_node::newFromNode(arg2F, b, FULL_ONLY);
   unpacked_node* D = unpacked_node::New(arg2F, FULL_ONLY);
 
-  unpacked_node* T = unpacked_node::newFull(resF, level, size);
+  unpacked_node* T = unpacked_node::newWritable(resF, level, size, FULL_ONLY);
 
   for (int i = 0; i < size; i++) {
     if (B->down(i) == 0) {
@@ -666,7 +666,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
       arg2F->unpackNode(D, B->down(i), FULL_ONLY);
     }
 
-    unpacked_node* Tp = unpacked_node::newFull(resF, -level, size);
+    unpacked_node* Tp = unpacked_node::newWritable(resF, -level, size, FULL_ONLY);
 
     if (ABS(rLevel) < level) {
       // Assume identity reduction
@@ -938,7 +938,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
     : unpacked_node::newFromNode(tcF, b, FULL_ONLY);
 
   // Do computation
-  unpacked_node* T = unpacked_node::newFull(resF, level, sz);
+  unpacked_node* T = unpacked_node::newWritable(resF, level, sz, FULL_ONLY);
   for (int i = 0; i < sz; i++) {
       /* T is already zeroed
     if (B->down(i) == 0) {
@@ -951,7 +951,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
       unpacked_node* D = isLevelAbove(-level, tcF->getNodeLevel(B->down(i)))
         ? unpacked_node::newIdentity(tcF, -level, i, 0L, B->down(i), FULL_ONLY)
         : unpacked_node::newFromNode(tcF, B->down(i), FULL_ONLY);
-      unpacked_node* Tp = unpacked_node::newFull(resF, -level, sz);
+      unpacked_node* Tp = unpacked_node::newWritable(resF, -level, sz, FULL_ONLY);
       for (int j = 0; j < sz; j++) {
           /*
         if (A->down(j) == 0 || D->down(j) == 0) {

@@ -205,14 +205,14 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
   const int mxdLevel = argM->getNodeLevel(mxd);
   const int rLevel = MAX(ABS(mxdLevel), mddLevel);
   const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
-  unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
+  unpacked_node* C = unpacked_node::newWritable(resF, rLevel, rSize, FULL_ONLY);
 
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::New(argV, FULL_ONLY);
   if (mddLevel < rLevel) {
     A->initRedundant(argV, rLevel, mdd, FULL_ONLY);
   } else {
-    argV->unpackNode(A, mdd, FULL_ONLY);
+    A->initFromNode(mdd);
   }
 
   if (mddLevel > ABS(mxdLevel)) {
@@ -237,7 +237,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
     if (mxdLevel < 0) {
       Ru->initRedundant(argM, rLevel, mxd, SPARSE_ONLY);
     } else {
-      argM->unpackNode(Ru, mxd, SPARSE_ONLY);
+      Ru->initFromNode(mxd);
     }
 
     dd_edge newstatesE(resF), cdi(resF);
@@ -248,7 +248,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
       if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->down(iz)))) {
         Rp->initIdentity(argM, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        argM->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
+        Rp->initFromNode(Ru->down(iz));
       }
 
       // loop over mxd "columns"
@@ -352,14 +352,14 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
   const int mxdLevel = argM->getNodeLevel(mxd);
   const int rLevel = MAX(ABS(mxdLevel), mddLevel);
   const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
-  unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
+  unpacked_node* C = unpacked_node::newWritable(resF, rLevel, rSize, FULL_ONLY);
 
   // Initialize mdd reader
   unpacked_node *A = unpacked_node::New(argV, FULL_ONLY);
   if (mddLevel < rLevel) {
     A->initRedundant(argV, rLevel, mdd, FULL_ONLY);
   } else {
-    argV->unpackNode(A, mdd, FULL_ONLY);
+    A->initFromNode(mdd);
   }
 
   if (mddLevel > ABS(mxdLevel)) {
@@ -384,7 +384,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
     if (mxdLevel < 0) {
       Ru->initRedundant(argM, rLevel, mxd, SPARSE_ONLY);
     } else {
-      argM->unpackNode(Ru, mxd, SPARSE_ONLY);
+      Ru->initFromNode(mxd);
     }
 
     dd_edge newstatesE(resF), cdj(resF);
@@ -396,7 +396,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
       if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->down(iz)))) {
         Rp->initIdentity(argM, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        argM->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
+        Rp->initFromNode(Ru->down(iz));
       }
 
       // loop over mxd "columns"
@@ -704,7 +704,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   const int mxdLevel = argM->getNodeLevel(mxd);
   const int rLevel = MAX(ABS(mxdLevel), evmddLevel);
   const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
-  unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
+  unpacked_node* C = unpacked_node::newWritable(resF, rLevel, rSize, FULL_ONLY);
 
   // Initialize evmdd reader
   unpacked_node *A = (evmddLevel < rLevel)
@@ -738,7 +738,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     if (mxdLevel < 0) {
       Ru->initRedundant(argM, rLevel, mxd, SPARSE_ONLY);
     } else {
-      argM->unpackNode(Ru, mxd, SPARSE_ONLY);
+      Ru->initFromNode(mxd);
     }
 
     dd_edge newstatesE(resF), cdi(resF);
@@ -749,7 +749,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
       if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->down(iz)))) {
         Rp->initIdentity(argM, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        argM->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
+        Rp->initFromNode(Ru->down(iz));
       }
 
       // loop over mxd "columns"
@@ -854,7 +854,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   const int mxdLevel = argM->getNodeLevel(mxd);
   const int rLevel = MAX(ABS(mxdLevel), evmddLevel);
   const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
-  unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
+  unpacked_node* C = unpacked_node::newWritable(resF, rLevel, rSize, FULL_ONLY);
 
   // Initialize evmdd reader
   unpacked_node *A = (evmddLevel < rLevel)
@@ -888,7 +888,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
     if (mxdLevel < 0) {
       Ru->initRedundant(argM, rLevel, mxd, SPARSE_ONLY);
     } else {
-      argM->unpackNode(Ru, mxd, SPARSE_ONLY);
+      Ru->initFromNode(mxd);
     }
 
     dd_edge newstatesE(resF), cdj(resF);
@@ -900,7 +900,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
       if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->down(iz)))) {
         Rp->initIdentity(argM, rLevel, i, Ru->down(iz), SPARSE_ONLY);
       } else {
-        argM->unpackNode(Rp, Ru->down(iz), SPARSE_ONLY);
+        Rp->initFromNode(Ru->down(iz));
       }
 
       // loop over mxd "columns"
@@ -1076,7 +1076,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
   const int mxdLevel = argM->getNodeLevel(mxd);
   const int rLevel = MAX(ABS(mxdLevel), ABS(evmxdLevel));
   const unsigned rSize = unsigned(resF->getLevelSize(rLevel));
-  unpacked_node* C = unpacked_node::newFull(resF, rLevel, rSize);
+  unpacked_node* C = unpacked_node::newWritable(resF, rLevel, rSize, FULL_ONLY);
 
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(rLevel, evmxdLevel)
@@ -1089,7 +1089,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
       ? unpacked_node::newIdentity(argV, -rLevel, i, 0L, A->down(i), FULL_ONLY)
       : unpacked_node::newFromNode(argV, A->down(i), FULL_ONLY);
 
-    unpacked_node* D = unpacked_node::newFull(resF, -rLevel, rSize);
+    unpacked_node* D = unpacked_node::newWritable(resF, -rLevel, rSize, FULL_ONLY);
     if (rLevel > ABS(mxdLevel)) {
       //
       // Skipped levels in the MXD,
@@ -1118,7 +1118,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
       if (mxdLevel < 0) {
         Ru->initRedundant(argM, rLevel, mxd, SPARSE_ONLY);
       } else {
-        argM->unpackNode(Ru, mxd, SPARSE_ONLY);
+        Ru->initFromNode(mxd);
       }
 
       dd_edge newstatesE(resF), djp(resF);
@@ -1133,7 +1133,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
         if (isLevelAbove(-rLevel, argM->getNodeLevel(Ru->down(jz)))) {
           Rp->initIdentity(argM, rLevel, j, Ru->down(jz), SPARSE_ONLY);
         } else {
-          argM->unpackNode(Rp, Ru->down(jz), SPARSE_ONLY);
+          Rp->initFromNode(Ru->down(jz));
         }
 
         // loop over mxd "columns"

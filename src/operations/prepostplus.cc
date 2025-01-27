@@ -146,7 +146,7 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
   const unsigned resultSize = unsigned(resF->getLevelSize(resultLevel));
 
   // Initialize result
-  unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
+  unpacked_node* nb = unpacked_node::newWritable(resF, resultLevel, resultSize, FULL_ONLY);
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
@@ -173,7 +173,7 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
       ? unpacked_node::newIdentity(arg1F, -resultLevel, i, 0L, A->down(i), FULL_ONLY)
       : unpacked_node::newFromNode(arg1F, A->down(i), FULL_ONLY);
 
-    unpacked_node* nb2 = unpacked_node::newFull(resF, -resultLevel, resultSize);
+    unpacked_node* nb2 = unpacked_node::newWritable(resF, -resultLevel, resultSize, FULL_ONLY);
 
     for (unsigned j = 0; j < resultSize; j++) {
       if (D->down(j) == 0) {
@@ -256,7 +256,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
   const unsigned resultSize = unsigned(resF->getLevelSize(resultLevel));
 
   // Initialize result
-  unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
+  unpacked_node* nb = unpacked_node::newWritable(resF, resultLevel, resultSize, FULL_ONLY);
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
@@ -283,7 +283,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
       ? unpacked_node::newIdentity(arg1F, -resultLevel, i, 0L, A->down(i), FULL_ONLY)
       : unpacked_node::newFromNode(arg1F, A->down(i), FULL_ONLY);
 
-    unpacked_node* nb2 = unpacked_node::newFull(resF, -resultLevel, resultSize);
+    unpacked_node* nb2 = unpacked_node::newWritable(resF, -resultLevel, resultSize, FULL_ONLY);
 
     for (unsigned j = 0; j < resultSize; j++) {
       if (D->down(j) == 0 || B->down(j) == 0) {

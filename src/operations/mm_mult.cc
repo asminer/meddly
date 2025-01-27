@@ -191,7 +191,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
   // Create a node builder for the result.
   int rLevel = MAX(aLevel, bLevel);
   unsigned rSize = unsigned(resF->getLevelSize(rLevel));
-  unpacked_node* nbr = unpacked_node::newFull(resF, rLevel, rSize);
+  unpacked_node* nbr = unpacked_node::newWritable(resF, rLevel, rSize, FULL_ONLY);
 
   dd_edge resultik(resF), temp(resF);
 
@@ -211,9 +211,9 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     unpacked_node* nrb = unpacked_node::newFromNode(arg2F, b, SPARSE_ONLY);
     unpacked_node* nrbp = unpacked_node::New(arg2F, SPARSE_ONLY);
     for (unsigned iz = 0; iz < nrb->getSize(); ++iz) {
-      unpacked_node* nbri = unpacked_node::newFull(resF, -rLevel, rSize);
+      unpacked_node* nbri = unpacked_node::newWritable(resF, -rLevel, rSize, FULL_ONLY);
       // for (unsigned i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
-      arg2F->unpackNode(nrbp, nrb->down(iz), SPARSE_ONLY);
+      nrbp->initFromNode(nrb->down(iz));
       unsigned i = nrb->index(iz);
       for (unsigned jz = 0; jz < nrbp->getSize(); ++jz) {
         unsigned j = nrbp->index(jz);
@@ -233,9 +233,9 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     unpacked_node* nra = unpacked_node::newFromNode(arg1F, a, SPARSE_ONLY);
     unpacked_node* nrap = unpacked_node::New(arg1F, SPARSE_ONLY);
     for (unsigned iz = 0; iz < nra->getSize(); ++iz) {
-      unpacked_node* nbri = unpacked_node::newFull(resF, -rLevel, rSize);
+      unpacked_node* nbri = unpacked_node::newWritable(resF, -rLevel, rSize, FULL_ONLY);
       // for (unsigned i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
-      arg1F->unpackNode(nrap, nra->down(iz), SPARSE_ONLY);
+      nrap->initFromNode(nra->down(iz));
       unsigned i = nra->index(iz);
       for (unsigned jz = 0; jz < nrap->getSize(); ++jz) {
         unsigned j = nrap->index(jz);
@@ -273,9 +273,9 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
     // For all i, j, and k:
     //    result[i][k] += compute_rec(a[i][j], b[j][k])
     for (unsigned iz = 0; iz < nra->getSize(); ++iz) {
-      unpacked_node* nbri = unpacked_node::newFull(resF, -rLevel, rSize);
+      unpacked_node* nbri = unpacked_node::newWritable(resF, -rLevel, rSize, FULL_ONLY);
       // for (unsigned i = 0; i < rSize; ++i) nbri->d_ref(i) = 0;
-      arg1F->unpackNode(nrap, nra->down(iz), SPARSE_ONLY);
+      nrap->initFromNode(nra->down(iz));
       unsigned i = nra->index(iz);
       for (unsigned jz = 0; jz < nrap->getSize(); ++jz) {
         unsigned j = nrap->index(jz);

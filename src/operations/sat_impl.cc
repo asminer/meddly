@@ -495,7 +495,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   const int mxdLevel = relNode->getLevel();
   const int rLevel = MAX(mxdLevel, mddLevel);
    int rSize = resF->getLevelSize(rLevel);
-  unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
+  unpacked_node* nb = unpacked_node::newWritable(resF, rLevel, rSize, FULL_ONLY);
   domain* dm = resF->getDomain();
 
   dd_edge nbdj(resF), newst(resF);
@@ -505,7 +505,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   if (mddLevel < rLevel) {
     A->initRedundant(argF, rLevel, mdd, FULL_ONLY);
   } else {
-    argF->unpackNode(A, mdd, FULL_ONLY);
+    A->initFromNode(mdd);
   }
 
   //Re-Think
@@ -838,13 +838,13 @@ MEDDLY::saturation_impl_by_events_op::saturate(node_handle mdd, int k)
          mdd, k, sz, mdd_level);
    #endif
 
-  unpacked_node* nb = unpacked_node::newFull(resF, k, sz);
+  unpacked_node* nb = unpacked_node::newWritable(resF, k, sz, FULL_ONLY);
   // Initialize mdd reader
   unpacked_node *mddDptrs = unpacked_node::New(argF, FULL_ONLY);
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, FULL_ONLY);
   } else {
-    argF->unpackNode(mddDptrs, mdd, FULL_ONLY);
+    mddDptrs->initFromNode(mdd);
   }
 
   // Do computation
@@ -1053,7 +1053,7 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   if (mdd_level < k) {
     mddDptrs->initRedundant(argF, k, mdd, FULL_ONLY);
   } else {
-    argF->unpackNode(mddDptrs, mdd, FULL_ONLY);
+    mddDptrs->initFromNode(mdd);
   }
   MEDDLY_DCASSERT(!mddDptrs->isExtensible());
 
@@ -1062,12 +1062,12 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   if (constraint_level < k) {
     consDptrs->initRedundant(argF, k, constraint, FULL_ONLY);
   } else {
-    argF->unpackNode(consDptrs, constraint, FULL_ONLY);
+    consDptrs->initFromNode(constraint);
   }
 
   // Initialize writer for result node, nb.
   const int sz = mddDptrs->getSize();
-  unpacked_node* nb = unpacked_node::newFull(resF, k, sz);
+  unpacked_node* nb = unpacked_node::newWritable(resF, k, sz, FULL_ONLY);
 
 #ifdef DEBUG_DFS
   printf("mdd: %d, level: %d, size: %d, mdd_level: %d\n",
@@ -1159,7 +1159,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
   if (constraint_level < level) {
     consDptrs->initRedundant(argF, level, constraint, FULL_ONLY);
   } else {
-    argF->unpackNode(consDptrs, constraint, FULL_ONLY);
+    consDptrs->initFromNode(constraint);
   }
 #ifdef ALLOW_EXTENSIBLE
   const node_handle cons_ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
@@ -1319,7 +1319,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   const int rLevel = MAX(mxdLevel, mddLevel);
   const int constraint_level = argF->getNodeLevel(constraint);
   int rSize = resF->getLevelSize(rLevel);
-  unpacked_node* nb = unpacked_node::newFull(resF, rLevel, rSize);
+  unpacked_node* nb = unpacked_node::newWritable(resF, rLevel, rSize, FULL_ONLY);
   domain* dm = resF->getDomain();
 
   dd_edge nbdj(resF), newst(resF);
@@ -1329,7 +1329,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   if (mddLevel < rLevel) {
     A->initRedundant(argF, rLevel, mdd, FULL_ONLY);
   } else {
-    argF->unpackNode(A, mdd, FULL_ONLY);
+    A->initFromNode(mdd);
   }
 
   // Initialize constraint reader
@@ -1337,7 +1337,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   if (constraint_level < rLevel) {
     consDptrs->initRedundant(argF, rLevel, constraint, FULL_ONLY);
   } else {
-    argF->unpackNode(consDptrs, constraint, FULL_ONLY);
+    consDptrs->initFromNode(constraint);
   }
 #ifdef ALLOW_EXTENSIBLE
   const node_handle cons_ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;

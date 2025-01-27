@@ -102,13 +102,13 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a, node_ha
   // Initialize unpacked node
   unpacked_node *A = unpacked_node::New(arg1F, FULL_ONLY);
   if (arg1F->getNodeLevel(a) < k) {
-    A->initRedundant(arg1F, k, a, FULL_ONLY);
+    A->initRedundant(k, a);
   } else {
-    arg1F->unpackNode(A, a, FULL_ONLY);
+    A->initFromNode(a);
   }
 
   const unsigned resultSize = unsigned(resF->getLevelSize(k));
-  unpacked_node *C = unpacked_node::newFull(resF, k, resultSize);
+  unpacked_node *C = unpacked_node::newWritable(resF, k, resultSize, FULL_ONLY);
 
   // recurse
   for (unsigned i=0; i<resultSize; i++) {
@@ -146,13 +146,13 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
   // Initialize unpacked node
   unpacked_node *B = unpacked_node::New(arg2F, FULL_ONLY);
   if (arg2F->getNodeLevel(b) < -k) {
-    B->initRedundant(arg2F, -k, b, FULL_ONLY);
+    B->initRedundant(-k, b);
   } else {
-    arg2F->unpackNode(B, b, FULL_ONLY);
+    B->initFromNode(b);
   }
 
   const unsigned resultSize = unsigned(resF->getLevelSize(k));
-  unpacked_node *C = unpacked_node::newFull(resF, k, resultSize);
+  unpacked_node *C = unpacked_node::newWritable(resF, k, resultSize, FULL_ONLY);
 
   // recurse
   for (unsigned i=0; i<resultSize; i++) {

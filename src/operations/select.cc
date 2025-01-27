@@ -90,7 +90,7 @@ MEDDLY::node_handle MEDDLY::select_MT::_compute(node_handle a, int level)
   MEDDLY_DCASSERT(A->getSize() > 0);
 
   // Initialize node builder
-  unpacked_node* nb = unpacked_node::newSparse(resF, level, 1);
+  unpacked_node* nb = unpacked_node::newWritable(resF, level, 1, SPARSE_ONLY);
 
   // recurse
   unsigned nz = rand() % A->getSize();
@@ -154,7 +154,7 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
   MEDDLY_DCASSERT(A->getSize() > 0);
 
   // Initialize node builder
-  unpacked_node* nb = unpacked_node::newSparse(resF, level, 1);
+  unpacked_node* nb = unpacked_node::newWritable(resF, level, 1, SPARSE_ONLY);
 
   // recurse
   // Zero-edge-valued indices

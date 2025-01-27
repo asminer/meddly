@@ -116,7 +116,7 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, n
 
   if (resF->isQuasiReduced() && ABS(argF->getNodeLevel(a)) < k) {
     int size = resF->getLevelSize(k);
-    unpacked_node* T = unpacked_node::newFull(resF, k, size);
+    unpacked_node* T = unpacked_node::newWritable(resF, k, size, FULL_ONLY);
     long tev = Inf<long>();
     node_handle t = 0;
     compute_r(aev, a, k - 1, tev, t);
@@ -145,7 +145,7 @@ void MEDDLY::cycle_EV2EV::compute_r(long aev, node_handle a, int k, long& bev, n
   unpacked_node* A = aLevel < 0
     ? unpacked_node::newRedundant(argF, level, 0L, a, FULL_ONLY)
     : unpacked_node::newFromNode(argF, a, FULL_ONLY);
-  unpacked_node* T = unpacked_node::newFull(resF, level, size);
+  unpacked_node* T = unpacked_node::newWritable(resF, level, size, FULL_ONLY);
   for (int i = 0; i < size; i++) {
     unpacked_node* B = isLevelAbove(-level, argF->getNodeLevel(A->down(i)))
       ? (argF->isIdentityReduced()

@@ -128,14 +128,14 @@ MEDDLY::mdd2index_operation
 
   // Initialize node builder
   const unsigned size = unsigned(resF->getLevelSize(k));
-  unpacked_node* nb = unpacked_node::newFull(resF, k, size);
+  unpacked_node* nb = unpacked_node::newWritable(resF, k, size, FULL_ONLY);
 
   // Initialize node reader
   unpacked_node *A = unpacked_node::New(argF, FULL_ONLY);
   if (aLevel < k) {
-    A->initRedundant(argF, k, a, FULL_ONLY);
+    A->initRedundant(k, a);
   } else {
-    argF->unpackNode(A, a, FULL_ONLY);
+    A->initFromNode(a);
   }
 
   // recurse

@@ -648,7 +648,7 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
     ? unpacked_node::newRedundant(arg2F, level, b, FULL_ONLY)
     : unpacked_node::newFromNode(arg2F, b, FULL_ONLY);
 
-  unpacked_node* T = unpacked_node::newFull(resF, level, size);
+  unpacked_node* T = unpacked_node::newWritable(resF, level, size, FULL_ONLY);
   if (ABS(rLevel) < level) {
     // Assume identity reduction
     // Skipped levels in the MXD,
@@ -889,7 +889,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
 
   dd_edge Tdi(resF), newst(resF);
 
-  unpacked_node* T = unpacked_node::newFull(resF, level, size);
+  unpacked_node* T = unpacked_node::newWritable(resF, level, size, FULL_ONLY);
   if (ABS(rLevel) < level) {
     // Assume identity reduction
     // Skipped levels in the MXD,
@@ -1092,7 +1092,7 @@ void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, i
     : unpacked_node::newFromNode(argF, b, FULL_ONLY);
 
   // Do computation
-  unpacked_node* T = unpacked_node::newFull(resF, level, sz);
+  unpacked_node* T = unpacked_node::newWritable(resF, level, sz, FULL_ONLY);
   for (int i = 0; i < sz; i++) {
     if (A->down(i) == 0) {
       MEDDLY_DCASSERT(resF == argF);
@@ -1472,7 +1472,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
     ? unpacked_node::newRedundant(arg2F, level, 0L, b, FULL_ONLY)
     : unpacked_node::newFromNode(arg2F, b, FULL_ONLY);
 
-  unpacked_node* T = unpacked_node::newFull(resF, level, size);
+  unpacked_node* T = unpacked_node::newWritable(resF, level, size, FULL_ONLY);
   if (ABS(rLevel) < level) {
     // Assume identity reduction
     // Skipped levels in the MXD,
@@ -1720,7 +1720,7 @@ void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int
     : unpacked_node::newFromNode(argF, b, FULL_ONLY);
 
   // Do computation
-  unpacked_node* T = unpacked_node::newFull(resF, level, sz);
+  unpacked_node* T = unpacked_node::newWritable(resF, level, sz, FULL_ONLY);
   for (int i = 0; i < sz; i++) {
     if (A->down(i) == 0) {
       MEDDLY_DCASSERT(resF == argF);
