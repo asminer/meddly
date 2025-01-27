@@ -119,28 +119,59 @@ class MEDDLY::unpacked_node {
         //
         // Build a node from a forest
         //
-        void initFromNode(const forest *f, node_handle node, node_storage_flags fs);
+        void initFromNode(node_handle node, node_storage_flags fs);
 
         //
         // Build redundant nodes
         //
 
-        void initRedundant(const forest *f, int k,
+        void initRedundant(int k,
                 node_handle node, node_storage_flags fs);
 
-        void initRedundant(const forest *f, int k, const edge_value &ev,
+        void initRedundant(int k, const edge_value &ev,
                 node_handle node, node_storage_flags fs);
+
+#ifdef ALLOW_DEPRECATED_0_17_8
+        inline void initRedundant(const forest *f, int k,
+                node_handle node, node_storage_flags fs)
+        {
+            MEDDLY_DCASSERT(isAttachedTo(f));
+            initRedundant(k, node, fs);
+        }
+
+        inline void initRedundant(const forest *f, int k,
+                const edge_value &ev, node_handle node, node_storage_flags fs)
+        {
+            MEDDLY_DCASSERT(isAttachedTo(f));
+            initRedundant(k, ev, node, fs);
+        }
+#endif
 
         //
         // Build identity nodes
         //
 
-        void initIdentity(const forest *f, int k, unsigned i,
+        void initIdentity(int k, unsigned i,
                 node_handle node, node_storage_flags fs);
 
-        void initIdentity(const forest *f, int k, unsigned i,
-                const edge_value &ev, node_handle node, node_storage_flags fs);
+        void initIdentity(int k, unsigned i, const edge_value &ev,
+                node_handle node, node_storage_flags fs);
 
+#ifdef ALLOW_DEPRECATED_0_17_8
+        inline void initIdentity(const forest *f, int k, unsigned i,
+                node_handle node, node_storage_flags fs)
+        {
+            MEDDLY_DCASSERT(isAttachedTo(f));
+            initIdentity(k, i, node, fs);
+        }
+
+        inline void initIdentity(const forest *f, int k, unsigned i,
+                const edge_value &ev, node_handle node, node_storage_flags fs)
+        {
+            MEDDLY_DCASSERT(isAttachedTo(f));
+            initIdentity(k, i, ev, node, fs);
+        }
+#endif
 
     public:
         //
@@ -152,7 +183,7 @@ class MEDDLY::unpacked_node {
         {
             unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
-            U->initFromNode(f, node, fs);
+            U->initFromNode(node, fs);
             return U;
         }
 
@@ -161,7 +192,7 @@ class MEDDLY::unpacked_node {
         {
             unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
-            U->initRedundant(f, k, node, fs);
+            U->initRedundant(k, node, fs);
             return U;
         }
 
@@ -171,9 +202,9 @@ class MEDDLY::unpacked_node {
             unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
             if (ev.isVoid()) {
-                U->initRedundant(f, k, node, fs);
+                U->initRedundant(k, node, fs);
             } else {
-                U->initRedundant(f, k, ev, node, fs);
+                U->initRedundant(k, ev, node, fs);
             }
             return U;
         }
@@ -183,7 +214,7 @@ class MEDDLY::unpacked_node {
         {
             unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
-            U->initIdentity(f, k, i, node, fs);
+            U->initIdentity(k, i, node, fs);
             return U;
         }
 
@@ -194,9 +225,9 @@ class MEDDLY::unpacked_node {
             unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
             if (ev.isVoid()) {
-                U->initIdentity(f, k, i, node, fs);
+                U->initIdentity(k, i, node, fs);
             } else {
-                U->initIdentity(f, k, i, ev, node, fs);
+                U->initIdentity(k, i, ev, node, fs);
             }
             return U;
         }
