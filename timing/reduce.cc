@@ -70,7 +70,7 @@ void test_MT_full_Reductions(forest* f, const char* what)
             std::cout.flush();
         }
         for (unsigned b=0; b<BATCHSIZE; b++) {
-            unpacked_node* un = unpacked_node::newFull(f, 3, VARSIZE);
+            unpacked_node* un = unpacked_node::newWritable(f, 3, VARSIZE, FULL_ONLY);
             for (unsigned i=0; i<VARSIZE; i++) {
                 unsigned d = Equilikely(0, 4);
                 un->setFull(i, f->linkNode(fixed[d]));
@@ -126,7 +126,7 @@ void test_EV_full_Reductions(forest* f, const char* what)
             std::cout.flush();
         }
         for (unsigned b=0; b<BATCHSIZE; b++) {
-            unpacked_node* un = unpacked_node::newFull(f, 3, VARSIZE);
+            unpacked_node* un = unpacked_node::newWritable(f, 3, VARSIZE, FULL_ONLY);
             for (unsigned i=0; i<VARSIZE; i++) {
                 const unsigned d = Equilikely(0, 2);
                 const long ev = long(Equilikely(0, 10));

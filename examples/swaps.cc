@@ -60,19 +60,19 @@ void Exchange(int va, int vb, int N, dd_edge &answer)
 
     /* We're doing this BY HAND which means a 4 levels of nodes */
 
-    unpacked_node* na = unpacked_node::newFull(EF, va, N);
+    unpacked_node* na = unpacked_node::newWritable(EF, va, N, FULL_ONLY);
     for (int ia=0; ia<N; ia++) {
-        unpacked_node* nap = unpacked_node::newFull(EF, -va, N);
+        unpacked_node* nap = unpacked_node::newWritable(EF, -va, N, FULL_ONLY);
         for (int ja=0; ja<N; ja++) {
 
             // WANT vb == va' and vb' == va, so...
 
             // Make a singleton for vb' == va (index ia)
-            unpacked_node* nbp = unpacked_node::newSparse(EF, -vb, 1);
+            unpacked_node* nbp = unpacked_node::newWritable(EF, -vb, 1, SPARSE_ONLY);
             nbp->setSparse(0, ia, EF->handleForValue(1));
 
             // Make a singleton for vb == va' (index ja)
-            unpacked_node* nb = unpacked_node::newSparse(EF, vb, 1);
+            unpacked_node* nb = unpacked_node::newWritable(EF, vb, 1, SPARSE_ONLY);
             nb->setSparse(0, ja, EF->createReducedNode(ja, nbp));
 
             nap->setFull(ja, EF->createReducedNode(-1, nb));
@@ -135,17 +135,17 @@ void AltExchange(int pa, int pb, int N, int K, dd_edge &answer)
     node_handle bottom = EF->handleForValue(1);
 
     for (int k=1; k<=K; k++) {
-        unpacked_node* nk = unpacked_node::newFull(EF, k, N);
+        unpacked_node* nk = unpacked_node::newWritable(EF, k, N, FULL_ONLY);
 
         for (int i=0; i<N; i++) {
             if (pa == i) {
-                unpacked_node* nkp = unpacked_node::newSparse(EF, -k, 1);
+                unpacked_node* nkp = unpacked_node::newWritable(EF, -k, 1, SPARSE_ONLY);
                 nkp->setSparse(0, pb, bottom);
                 nk->setFull(i, EF->createReducedNode(i, nkp));
                 continue;
             }
             if (pb == i) {
-                unpacked_node* nkp = unpacked_node::newSparse(EF, -k, 1);
+                unpacked_node* nkp = unpacked_node::newWritable(EF, -k, 1, SPARSE_ONLY);
                 nkp->setSparse(0, pa, bottom);
                 nk->setFull(i, EF->createReducedNode(i, nkp));
                 continue;

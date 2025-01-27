@@ -218,7 +218,7 @@ void queeniRowr(const varorder &V, int i, int r, dd_edge &e)
 {
   forest* F = e.getForest();
 
-  unpacked_node* nb = unpacked_node::newSparse(F, V.queenRow(i), 1);
+  unpacked_node* nb = unpacked_node::newWritable(F, V.queenRow(i), 1, SPARSE_ONLY);
   nb->setSparse(0, r, F->handleForValue(1));
 
   e.set( F->createReducedNode(-1, nb) );
@@ -237,7 +237,7 @@ void queeniColc(const varorder &V, int i, int c, dd_edge &e)
 {
   forest* F = e.getForest();
 
-  unpacked_node* nb = unpacked_node::newSparse(F, V.queenCol(i), 1);
+  unpacked_node* nb = unpacked_node::newWritable(F, V.queenCol(i), 1, SPARSE_ONLY);
   nb->setSparse(0, c, F->handleForValue(1));
 
   e.set( F->createReducedNode(-1, nb) );

@@ -518,10 +518,10 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
 
     const int dlevel = arg3F->getNodeLevel(Ru->down(ip));
     if (dlevel == -Ru->getLevel()) {
-      arg3F->unpackNode(Rp, Ru->down(ip), SPARSE_ONLY);
+      Rp->initFromNode(Ru->down(ip));
     }
     else {
-      Rp->initIdentity(arg3F, -Ru->getLevel(), ip, Ru->down(ip), SPARSE_ONLY);
+      Rp->initIdentity(-Ru->getLevel(), ip, Ru->down(ip));
     }
 
     for (int jpz = 0; jpz < Rp->getSize(); jpz++) {
@@ -660,10 +660,10 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
     }
 
     if (isLevelAbove(-level, arg2F->getNodeLevel(B->down(i)))) {
-      D->initIdentity(arg2F, -level, i, 0L, B->down(i), FULL_ONLY);
+      D->initIdentity(-level, i, 0L, B->down(i));
     }
     else {
-      arg2F->unpackNode(D, B->down(i), FULL_ONLY);
+      D->initFromNode(B->down(i));
     }
 
     unpacked_node* Tp = unpacked_node::newWritable(resF, -level, size, FULL_ONLY);
@@ -709,10 +709,10 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
         }
 
         if (isLevelAbove(-level, arg3F->getNodeLevel(Ru->down(ipz)))) {
-          Rp->initIdentity(arg3F, -level, ip, Ru->down(ipz), SPARSE_ONLY);
+          Rp->initIdentity(-level, ip, Ru->down(ipz));
         }
         else {
-          arg3F->unpackNode(Rp, Ru->down(ipz), SPARSE_ONLY);
+          Rp->initFromNode(Ru->down(ipz));
         }
 
         // loop over mxd "columns"

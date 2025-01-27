@@ -224,9 +224,9 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   // Init sparse readers
   unpacked_node* aR = unpacked_node::New(fA, SPARSE_ONLY);
   if (aLevel == k) {
-    fA->unpackNode(aR, a, SPARSE_ONLY);
+    aR->initFromNode(a);
   } else {
-    aR->initRedundant(fA, k, a, SPARSE_ONLY);
+    aR->initRedundant(k, a);
   }
 
   unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, SPARSE_ONLY);
@@ -269,9 +269,9 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
   // Init sparse readers
   unpacked_node* aR = unpacked_node::New(fA, SPARSE_ONLY);
   if (fA->getNodeLevel(a) == -k) {
-    fA->unpackNode(aR, a, SPARSE_ONLY);
+    aR->initFromNode(a);
   } else {
-    aR->initIdentity(fA, k, ain, a, SPARSE_ONLY);
+    aR->initIdentity(k, ain, a);
   }
 
   unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, SPARSE_ONLY);
@@ -401,9 +401,9 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   // Init sparse readers
   unpacked_node* aR = unpacked_node::New(fA, SPARSE_ONLY);
   if (aLevel == k) {
-    fA->unpackNode(aR, a, SPARSE_ONLY);
+    aR->initFromNode(a);
   } else {
-    aR->initRedundant(fA, k, a, SPARSE_ONLY);
+    aR->initRedundant(k, a);
   }
 
   unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, SPARSE_ONLY);
@@ -447,9 +447,9 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
   // Init sparse readers
   unpacked_node* aR = unpacked_node::New(fA, SPARSE_ONLY);
   if (fA->getNodeLevel(a) == -k) {
-    fA->unpackNode(aR, a, SPARSE_ONLY);
+    aR->initFromNode(a);
   } else {
-    aR->initIdentity(fA, k, ain, a, SPARSE_ONLY);
+    aR->initIdentity(k, ain, a);
   }
 
   unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, SPARSE_ONLY);

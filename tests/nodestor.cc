@@ -262,7 +262,7 @@ unpacked_node* build_node(forest* f, unsigned who, bool full)
     unpacked_node* un = nullptr;
 
     if (full) {
-        un = unpacked_node::newFull(f, who%4+1, 9);
+        un = unpacked_node::newWritable(f, who%4+1, 9, FULL_ONLY);
         for (unsigned i=0; init[i]; i+=2) {
             unsigned pos = unsigned(init[i]-'0');
             unsigned dwn = unsigned(init[i+1]-'0');
@@ -271,7 +271,7 @@ unpacked_node* build_node(forest* f, unsigned who, bool full)
 
         }
     } else {
-        un = unpacked_node::newSparse(f, who%4+1, 9);
+        un = unpacked_node::newWritable(f, who%4+1, 9, SPARSE_ONLY);
         unsigned nnzs = 0;
         for (unsigned i=0; init[i]; i+=2) {
             unsigned pos = unsigned(init[i]-'0');
@@ -306,7 +306,7 @@ void test_nodes(domain* d, range_type r, edge_labeling e, policies &p)
 
             nh = f->createReducedNode(-1, un);
 
-            unpacked_node* fn = f->newUnpacked(nh, FULL_OR_SPARSE);
+            unpacked_node* fn = unpacked_node::newFromNode(f, nh, FULL_OR_SPARSE);
 
             show_my_node("Pulled", w, fn);
             unpacked_node* bn = build_node(f, w, fn->isFull());
@@ -326,7 +326,7 @@ void test_nodes(domain* d, range_type r, edge_labeling e, policies &p)
 
             f->createReducedNode(-1, un, int_ev, nh);
 
-            unpacked_node* fn = f->newUnpacked(nh, FULL_OR_SPARSE);
+            unpacked_node* fn = unpacked_node::newFromNode(f, nh, FULL_OR_SPARSE);
 
             show_my_node("Pulled", w, fn);
             unpacked_node* bn = build_node(f, w, fn->isFull());
@@ -346,7 +346,7 @@ void test_nodes(domain* d, range_type r, edge_labeling e, policies &p)
 
             f->createReducedNode(-1, un, real_ev, nh);
 
-            unpacked_node* fn = f->newUnpacked(nh, FULL_OR_SPARSE);
+            unpacked_node* fn = unpacked_node::newFromNode(f, nh, FULL_OR_SPARSE);
 
             show_my_node("Pulled", w, fn);
             unpacked_node* bn = build_node(f, w, fn->isFull());
