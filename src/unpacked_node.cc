@@ -397,7 +397,12 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
         } else {
             if (z) s.put('|');
         }
-        parent->showEdge(s, edgeval(z), down(z));
+        if (hasEdges()) {
+            parent->showEdge(s, edgeval(z), down(z));
+        } else {
+            edge_value none;
+            parent->showEdge(s, none, down(z));
+        }
     }
 
 #ifdef ALLOW_EXTENSIBLE
