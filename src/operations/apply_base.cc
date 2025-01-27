@@ -132,7 +132,8 @@ MEDDLY::generic_binary_mdd::compute_normal(node_handle a, node_handle b)
 
   MEDDLY_DCASSERT(!resF->isExtensibleLevel(resultLevel));
 
-  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
+  unpacked_node* C =
+      unpacked_node::newWritable(resF, resultLevel, resultSize, FULL_ONLY);
   MEDDLY_DCASSERT(!C->isExtensible());
 
   // Initialize readers
@@ -441,7 +442,8 @@ MEDDLY::generic_binary_mxd::compute_normal(node_handle a, node_handle b)
 
   MEDDLY_DCASSERT(!resF->isExtensibleLevel(resultLevel));
 
-  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
+  unpacked_node* C =
+      unpacked_node::newWritable(resF, resultLevel, resultSize, FULL_ONLY);
   MEDDLY_DCASSERT(!C->isExtensible());
 
   // Initialize readers
@@ -615,27 +617,27 @@ MEDDLY::generic_binary_mxd::compute_r_normal(int in, int k, node_handle a, node_
 
   const unsigned resultSize = unsigned(resF->getLevelSize(k));
 
-  unpacked_node* C = unpacked_node::newFull(resF, k, resultSize);
+  unpacked_node* C = unpacked_node::newWritable(resF, k, resultSize, FULL_ONLY);
 
   // Initialize readers
   unpacked_node *A = unpacked_node::New(arg1F, FULL_ONLY);
   unpacked_node *B = unpacked_node::New(arg2F, FULL_ONLY);
 
   if (aLevel == k) {
-    arg1F->unpackNode(A, a, FULL_ONLY);
+    A->initFromNode(a);
   } else if (arg1F->isFullyReduced()) {
-    A->initRedundant(arg1F, k, a, FULL_ONLY);
+    A->initRedundant(k, a);
   } else {
-    A->initIdentity(arg1F, k, in, a, FULL_ONLY);
+    A->initIdentity(k, in, a);
   }
   MEDDLY_DCASSERT(A->getSize() == C->getSize());
 
   if (bLevel == k) {
-    arg2F->unpackNode(B, b, FULL_ONLY);
+    B->initFromNode(b);
   } else if (arg2F->isFullyReduced()) {
-    B->initRedundant(arg2F, k, b, FULL_ONLY);
+    B->initRedundant(k, b);
   } else {
-    B->initIdentity(arg2F, k, in, b, FULL_ONLY);
+    B->initIdentity(k, in, b);
   }
   MEDDLY_DCASSERT(B->getSize() == C->getSize());
 
@@ -672,7 +674,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
   // Initialize readers
   unpacked_node *A =
   (aLevel == k)
-    ? arg1F->newUnpacked(a, SPARSE_ONLY)
+    ? unpacked_node::newFromNode(arg1F, a, SPARSE_ONLY)
     : arg1F->isFullyReduced()
     ? unpacked_node::newRedundant(arg1F, k, a, SPARSE_ONLY)
     : unpacked_node::newIdentity(arg1F, k, in, a, SPARSE_ONLY)
@@ -684,7 +686,7 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
 
   unpacked_node *B =
   (bLevel == k)
-    ? arg2F->newUnpacked(b, SPARSE_ONLY)
+    ? unpacked_node::newFromNode(arg2F, b, SPARSE_ONLY)
     : arg2F->isFullyReduced()
     ? unpacked_node::newRedundant(arg2F, k, b, SPARSE_ONLY)
     : unpacked_node::newIdentity(arg2F, k, in, b, SPARSE_ONLY)
@@ -841,7 +843,8 @@ MEDDLY::generic_binbylevel_mxd
 
   unsigned resultSize = unsigned(resF->getLevelSize(resultLevel));
 
-  unpacked_node* C = unpacked_node::newFull(resF, resultLevel, resultSize);
+  unpacked_node* C =
+    unpacked_node::newWritable(resF, resultLevel, resultSize, FULL_ONLY);
 
   bool canSaveResult = true;
 
@@ -850,22 +853,22 @@ MEDDLY::generic_binbylevel_mxd
   unpacked_node* B = unpacked_node::New(arg2F, FULL_ONLY);
 
   if (aLevel == resultLevel) {
-    arg1F->unpackNode(A, a, FULL_ONLY);
+    A->initFromNode(a);
   } else if (resultLevel>0 || arg1F->isFullyReduced()) {
-    A->initRedundant(arg1F, resultLevel, a, FULL_ONLY);
+    A->initRedundant(resultLevel, a);
   } else {
-    A->initIdentity(arg1F, resultLevel, in, a, FULL_ONLY);
+    A->initIdentity(resultLevel, in, a);
     canSaveResult = false;
   }
 
   MEDDLY_DCASSERT(!A->isExtensible());
 
   if (bLevel == resultLevel) {
-    arg2F->unpackNode(B, b, FULL_ONLY);
+    B->initFromNode(b);
   } else if (resultLevel>0 || arg2F->isFullyReduced()) {
-    B->initRedundant(arg2F, resultLevel, b, FULL_ONLY);
+    B->initRedundant(resultLevel, b);
   } else {
-    B->initIdentity(arg2F, resultLevel, in, b, FULL_ONLY);
+    B->initIdentity(resultLevel, in, b);
     canSaveResult = false;
   }
 
@@ -975,7 +978,8 @@ void MEDDLY::generic_binary_evplus
   const unsigned resultSize = unsigned(resF->getLevelSize(resultLevel));
 
   // Initialize result
-  unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
+  unpacked_node* nb =
+    unpacked_node::newWritable(resF, resultLevel, resultSize, FULL_ONLY);
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
@@ -1077,7 +1081,8 @@ void MEDDLY::generic_binary_evplus_mxd
   const unsigned resultSize = unsigned(resF->getLevelSize(resultLevel));
 
   // Initialize result
-  unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
+  unpacked_node* nb =
+    unpacked_node::newWritable(resF, resultLevel, resultSize, FULL_ONLY);
 
   // Initialize readers
   unpacked_node *A = isLevelAbove(resultLevel, aLevel)
@@ -1129,26 +1134,27 @@ void MEDDLY::generic_binary_evplus_mxd
 
   const unsigned resultSize = unsigned(resF->getLevelSize(level));
 
-  unpacked_node* C = unpacked_node::newFull(resF, level, resultSize);
+  unpacked_node* C =
+    unpacked_node::newWritable(resF, level, resultSize, FULL_ONLY);
 
   // Initialize readers
   unpacked_node *A = unpacked_node::New(arg1F, FULL_ONLY);
   unpacked_node *B = unpacked_node::New(arg2F, FULL_ONLY);
 
   if (aLevel == level) {
-    arg1F->unpackNode(A, a, FULL_ONLY);
+    A->initFromNode(a);
   } else if (arg1F->isFullyReduced()) {
-    A->initRedundant(arg1F, level, 0L, a, FULL_ONLY);
+    A->initRedundant(level, 0L, a);
   } else {
-    A->initIdentity(arg1F, level, in, 0L, a, FULL_ONLY);
+    A->initIdentity(level, in, 0L, a);
   }
 
   if (bLevel == level) {
-    arg2F->unpackNode(B, b, FULL_ONLY);
+    B->initFromNode(b);
   } else if (arg2F->isFullyReduced()) {
-    B->initRedundant(arg2F, level, 0L, b, FULL_ONLY);
+    B->initRedundant(level, 0L, b);
   } else {
-    B->initIdentity(arg2F, level, in, 0L, b, FULL_ONLY);
+    B->initIdentity(level, in, 0L, b);
   }
 
   // Do computation
@@ -1241,7 +1247,7 @@ void MEDDLY::generic_binary_evtimes
   const int resultLevel = ABS(topLevel(aLevel, bLevel));
   MEDDLY_DCASSERT(resultLevel>0);
   const unsigned resultSize = unsigned(resF->getLevelSize(resultLevel));
-  unpacked_node* nb = unpacked_node::newFull(resF, resultLevel, resultSize);
+  unpacked_node* nb = unpacked_node::newWritable(resF, resultLevel, resultSize, FULL_ONLY);
 
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)

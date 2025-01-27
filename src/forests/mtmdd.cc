@@ -96,7 +96,8 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 
     unpacked_node* high_nr = newUnpacked(hnodes[i], FULL_ONLY);
 
-    unpacked_node* high_nb = unpacked_node::newFull(this, level + 1, lsize);
+    unpacked_node* high_nb =
+        unpacked_node::newWritable(this, level + 1, lsize, FULL_ONLY);
     for (int j = 0; j < hsize; j++) {
       if (isLevelAbove(level, getNodeLevel(high_nr->down(j)))) {
         for (int k = 0; k < lsize; k++) {
@@ -115,7 +116,8 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
     }
 
     for (int j = 0; j < lsize; j++) {
-      unpacked_node* low_nb = unpacked_node::newFull(this, level, hsize);
+      unpacked_node* low_nb =
+          unpacked_node::newWritable(this, level, hsize, FULL_ONLY);
       for (int k = 0; k < hsize; k++) {
         low_nb->setFull(k, linkNode(children[k][j]));
       }

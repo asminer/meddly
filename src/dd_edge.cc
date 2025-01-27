@@ -301,12 +301,12 @@ bool MEDDLY::iterator_templ<EOP>::first_unpr(unsigned k, node_handle p)
         if (EOP::hasEdgeValues()) {
             edge_value zero;
             EOP::clear(zero);
-            U->initRedundant(F(), k, zero, p, SPARSE_ONLY);
+            U->initRedundant(k, zero, p);
         } else {
-            U->initRedundant(F(), k, p, SPARSE_ONLY);
+            U->initRedundant(k, p);
         }
     } else {
-        F()->unpackNode(U, p, SPARSE_ONLY);
+        U->initFromNode(p);
     }
 
     //
@@ -424,19 +424,19 @@ bool MEDDLY::iterator_templ<EOP>::first_pri(unsigned k, node_handle p)
             edge_value zero;
             EOP::clear(zero);
             if (F()->isFullyReduced()) {
-                U->initRedundant(F(), -int(k), zero, p, SPARSE_ONLY);
+                U->initRedundant(-int(k), zero, p);
             } else {
-                U->initIdentity(F(), -int(k), M_from(k), zero, p, SPARSE_ONLY);
+                U->initIdentity(-int(k), M_from(k), zero, p);
             }
         } else {
             if (F()->isFullyReduced()) {
-                U->initRedundant(F(), -int(k), p, SPARSE_ONLY);
+                U->initRedundant(-int(k), p);
             } else {
-                U->initIdentity(F(), -int(k), M_from(k), p, SPARSE_ONLY);
+                U->initIdentity(-int(k), M_from(k), p);
             }
         }
     } else {
-        F()->unpackNode(U, p, SPARSE_ONLY);
+        U->initFromNode(p);
     }
 
     //
@@ -1317,7 +1317,7 @@ bool MEDDLY::dd_edge::getElemInt(long index, minterm &m) const
         // I don't think index sets can skip levels at all
         //
         MEDDLY_DCASSERT(k == fp->getNodeLevel(p));
-        fp->unpackNode(U, p, SPARSE_ONLY);
+        U->initFromNode(p);
 
         //
         // Backward Linear search: largest i such that
@@ -1374,7 +1374,7 @@ bool MEDDLY::dd_edge::getElemLong(long index, minterm &m) const
         // I don't think index sets can skip levels at all
         //
         MEDDLY_DCASSERT(k == fp->getNodeLevel(p));
-        fp->unpackNode(U, p, SPARSE_ONLY);
+        U->initFromNode(p);
 
         //
         // Backward Linear search: largest i such that

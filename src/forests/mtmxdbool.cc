@@ -163,8 +163,10 @@ MEDDLY::mt_mxd_bool::checkTerminalMinterm(node_handle a,  int* from,  int* to, i
                 continue;
 
              // else build the prime & unprime nodes
-             unpacked_node *UP_node = unpacked_node::newFull(this, level_from, level_from_size);
-             unpacked_node *P_node = unpacked_node::newFull(this, level_to, level_to_size);
+             unpacked_node *UP_node = unpacked_node::newWritable(this,
+                     level_from, level_from_size, FULL_ONLY);
+             unpacked_node *P_node = unpacked_node::newWritable(this,
+                     level_to, level_to_size, FULL_ONLY);
 
               if(b_to >= 0){
               for(int j = 0; j < level_to_size; j++ )
@@ -215,8 +217,8 @@ MEDDLY::mt_mxd_bool::unionOneMinterm(node_handle a,  int* from,  int* to, int le
     return unionOneMinterm(a, from, to, bLevel-1);
   }
   else {
-    unpacked_node *A = newUnpacked(a, FULL_ONLY);
-    unpacked_node *C = unpacked_node::newFull(this, resultLevel, getLevelSize(resultLevel));
+    unpacked_node *A = unpacked_node::newFromNode(this, a, FULL_ONLY);
+    unpacked_node *C = unpacked_node::newWritable(this, resultLevel, FULL_ONLY);
     for( int i = 0; i < getLevelSize(resultLevel); i++) {
 
       if(i == from[bLevel])
@@ -244,7 +246,7 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a,  int* from,
   const int bLevel = -k;
   unsigned resultSize = unsigned(getLevelSize(k));
 
-  unpacked_node* C = unpacked_node::newFull(this, k, resultSize);
+  unpacked_node* C = unpacked_node::newWritable(this, k, resultSize, FULL_ONLY);
 
   terminal one_terminal(true);
 

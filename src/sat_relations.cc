@@ -226,9 +226,9 @@ void MEDDLY::pregen_relation::splitMxd(splittingOption split)
     for (unsigned i = 0; i < Mu->getSize(); i++) {
       // Initialize column reader
       if (isLevelAbove(-k, mxdF->getNodeLevel(Mu->down(i)))) {
-        Mp->initIdentity(mxdF, -k, i, Mu->down(i), FULL_ONLY);
+        Mp->initIdentity(-k, i, Mu->down(i), FULL_ONLY);
       } else {
-        mxdF->unpackNode(Mp, Mu->down(i), FULL_ONLY);
+        Mp->initFromNode(Mu->down(i));
       }
 
       // Intersect along the diagonal
@@ -1245,9 +1245,8 @@ double MEDDLY::otf_relation::getArcCount(
     int current_level = resF->getNodeLevel(current_node);
     int next_level = MXD_levels::upLevel(MXD_levels::upLevel(current_level));
     MEDDLY_DCASSERT(next_level >= 0);
-    unpacked_node* node = unpacked_node::newFull(resF, next_level,
-            unsigned(resF->getLevelSize(next_level))
-    );
+    unpacked_node* node = unpacked_node::newWritable(resF, next_level,
+            FULL_ONLY);
     for (unsigned i = 0; i < node->getSize(); i++) {
       if (confirmed[next_level][i]) {
           node->setFull(i, resF->linkNode(current_node));
@@ -1793,7 +1792,8 @@ MEDDLY::implicit_relation::buildEventMxd(rel_node_handle eventTop, forest *mxd)
             Rnode = nodeExists(rnh_array[i]);
             //Create a new unprimed node for variable i
             MEDDLY_DCASSERT(outsetF->getVariableSize(i)>=Rnode->getPieceSize());
-            unpacked_node* UP_var = unpacked_node::newFull(ef, i, Rnode->getPieceSize());
+            unpacked_node* UP_var = unpacked_node::newWritable(ef, i,
+                    Rnode->getPieceSize(), FULL_ONLY);
 
             for (int j=0; j<Rnode->getPieceSize(); j++) {
 
@@ -1803,7 +1803,8 @@ MEDDLY::implicit_relation::buildEventMxd(rel_node_handle eventTop, forest *mxd)
               if(new_j>=0 && new_j<maxVar) // do not exceed variable bounds
                 {
                    //Create primed node for each valid index of the unprimed node
-                  unpacked_node* P_var = unpacked_node::newSparse(ef, -i, 1);
+                  unpacked_node* P_var =
+                      unpacked_node::newWritable(ef, -i, 1, SPARSE_ONLY);
                   P_var->setSparse(0, new_j, ef->linkNode(below));
 
                   // P_var->i_ref(0) = new_j;

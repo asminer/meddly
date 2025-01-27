@@ -68,7 +68,7 @@ MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
       int sz = getLevelSize(up);
       MEDDLY_DCASSERT(si < sz);
       const bool add_edge = (si+1 == sz && isExtensibleLevel(up));
-      nb = unpacked_node::newFull(this, up, (add_edge? (1+sz): sz));
+      nb = unpacked_node::newWritable(this, up, (add_edge? (1+sz): sz), FULL_ONLY);
 
       for (int i=0; i<sz; i++) {
         nb->setFull(i, linkNode( (i==si) ? sd : d ));
@@ -92,9 +92,8 @@ MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
         nb->markAsExtensible();
       } else {
 #endif
-        int sz = getLevelSize(up);
-        nb = unpacked_node::newFull(this, up, sz);
-        for (int i=0; i<sz; i++) {
+        nb = unpacked_node::newWritable(this, up, FULL_ONLY);
+        for (int i=0; i<nb->getSize(); i++) {
           nb->setFull(i, linkNode(d));
         }
 #ifdef ALLOW_EXTENSIBLE

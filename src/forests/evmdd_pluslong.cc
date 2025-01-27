@@ -187,7 +187,8 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
   for (int i = 0; i < hnum; i++) {
     unpacked_node* high_nr = newUnpacked(hnodes[i], FULL_ONLY);
 
-    unpacked_node* high_nb = unpacked_node::newFull(this, level + 1, lsize);
+    unpacked_node* high_nb =
+        unpacked_node::newWritable(this, level + 1, lsize, FULL_ONLY);
     for (int j = 0; j < hsize; j++) {
       long ev1 = high_nr->edgeval(j).getLong();
       MEDDLY_DCASSERT(ev1 >= 0);
@@ -215,7 +216,8 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
     }
 
     for (int j = 0; j < lsize; j++) {
-      unpacked_node* low_nb = unpacked_node::newFull(this, level, hsize);
+      unpacked_node* low_nb =
+          unpacked_node::newWritable(this, level, hsize, FULL_ONLY);
       for (int k = 0; k < hsize; k++) {
         low_nb->setFull(k, sum_evs[k][j], linkNode(children[k][j]));
         // low_nb->d_ref(k) = linkNode(children[k][j]);

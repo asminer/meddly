@@ -150,7 +150,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
       }
 
       if (update) {
-        unpacked_node* nb = unpacked_node::newFull(this, level + 1, hsize);
+        unpacked_node* nb =
+            unpacked_node::newWritable(this, level + 1, hsize, FULL_ONLY);
         for (int i = 0; i < hsize; i++) {
           auto search = dup.find(nr->down(i));
           nb->setFull(i, linkNode(search == dup.end() ? nr->down(i) : search->second));
@@ -241,7 +242,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
       }
 
       if (update) {
-        unpacked_node* nb = unpacked_node::newFull(this, level + 1, hsize);
+        unpacked_node* nb =
+            unpacked_node::newWritable(this, level + 1, hsize, FULL_ONLY);
         for (int i = 0; i < hsize; i++) {
           auto search = dup.find(nr->down(i));
           nb->setFull(i, linkNode(search == dup.end() ? nr->down(i) : search->second));
@@ -284,17 +286,21 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
   int lsize = getVariableSize(lvar);
 
   // Unprimed high node builder
-  unpacked_node* hnb = unpacked_node::newFull(this, level + 1, lsize);
+  unpacked_node* hnb =
+      unpacked_node::newWritable(this, level + 1, lsize, FULL_ONLY);
   if (isFullyReduced() || isQuasiReduced()) {
     for (int m = 0; m < lsize; m++) {
       // Primed high node builder
-      unpacked_node* phnb = unpacked_node::newFull(this, -(level + 1), lsize);
+      unpacked_node* phnb =
+          unpacked_node::newWritable(this, -(level + 1), lsize, FULL_ONLY);
       for (int n = 0; n < lsize; n++) {
         // Unprimed low node builder
-        unpacked_node* lnb = unpacked_node::newFull(this, level, hsize);
+        unpacked_node* lnb =
+            unpacked_node::newWritable(this, level, hsize, FULL_ONLY);
         for (int p = 0; p < hsize; p++) {
           // Primed low node builder
-          unpacked_node* plnb = unpacked_node::newFull(this, -level, hsize);
+          unpacked_node* plnb =
+              unpacked_node::newWritable(this, -level, hsize, FULL_ONLY);
           for (int q = 0; q < hsize; q++){
             node_handle node_p = (getNodeLevel(node) == level ? getDownPtr(node, p) : node);
             node_handle node_pq = (getNodeLevel(node_p) == -(level) ? getDownPtr(node_p, q) : node_p);
@@ -311,13 +317,16 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
   else if (isIdentityReduced()) {
     for (int m = 0; m < lsize; m++) {
       // Primed high node builder
-      unpacked_node* phnb = unpacked_node::newFull(this, -(level + 1), lsize);
+      unpacked_node* phnb =
+          unpacked_node::newWritable(this, -(level + 1), lsize, FULL_ONLY);
       for (int n = 0; n < lsize; n++) {
         // Unprimed low node builder
-        unpacked_node* lnb = unpacked_node::newFull(this, level, hsize);
+        unpacked_node* lnb =
+            unpacked_node::newWritable(this, level, hsize, FULL_ONLY);
         for (int p = 0; p < hsize; p++) {
           // Primed low node builder
-          unpacked_node* plnb = unpacked_node::newFull(this, -level, hsize);
+          unpacked_node* plnb =
+              unpacked_node::newWritable(this, -level, hsize, FULL_ONLY);
           for (int q = 0; q < hsize; q++) {
             node_handle node_p = (getNodeLevel(node) == level ? getDownPtr(node, p) : node);
             if (getNodeLevel(node_p) != -(level) && q != p) {

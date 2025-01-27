@@ -25,8 +25,6 @@
 #include <iomanip>
 #include <vector>
 
-#define USE_UNPACKED
-
 // #define REPORTING
 
 using namespace MEDDLY;
@@ -50,12 +48,8 @@ void make_blank(const std::vector <forest*> &FA, node_storage_flags fs)
                 << std::setw(11) << "blank,"
                 << std::setw(7) << nodetype << " nodes ";
 
-#ifdef USE_UNPACKED
     unpacked_node* UA[USIZE];
     for (unsigned i=0; i<USIZE; i++) UA[i] = nullptr;
-#else
-    unreduced_node UA[USIZE];
-#endif
     unsigned u = 0;
 
     const unsigned FAszm1 = FA.size() - 1;
@@ -80,16 +74,9 @@ void make_blank(const std::vector <forest*> &FA, node_storage_flags fs)
             // recycle old in slot u,
             // and build a new blank node there
             //
-#ifdef USE_UNPACKED
             unpacked_node::Recycle(UA[u]);
-            if (FULL_ONLY == fs) {
-                UA[u] = unpacked_node::newFull(f, k, VARSIZE);
-            } else {
-                UA[u] = unpacked_node::newSparse(f, k, 2);
-            }
-#else
-            UA[u].initEmpty(f, k, (FULL_ONLY == fs) ? VARSIZE : 2, fs);
-#endif
+            const unsigned sz = (FULL_ONLY == fs) ? VARSIZE : 2;
+            UA[u] = unpacked_node::newWritable(f, k, sz, fs);
 
             //
             // Next slot
@@ -99,11 +86,9 @@ void make_blank(const std::vector <forest*> &FA, node_storage_flags fs)
     }
     std::cout << 'd';
     std::cout.flush();
-#ifdef USE_UNPACKED
     for (unsigned i=0; i<USIZE; i++) {
         unpacked_node::Recycle(UA[i]);
     }
-#endif
     T.note_time();
 
     show_sec(std::cout, T, 3, 3);
@@ -123,12 +108,8 @@ void make_redundant(const std::vector <forest*> &FA, node_storage_flags fs)
                 << std::setw(11) << "redundant,"
                 << std::setw(7) << nodetype << " nodes ";
 
-#ifdef USE_UNPACKED
     unpacked_node* UA[USIZE];
     for (unsigned i=0; i<USIZE; i++) UA[i] = nullptr;
-#else
-    unreduced_node UA[USIZE];
-#endif
     unsigned u = 0;
 
     const unsigned FAszm1 = FA.size() - 1;
@@ -153,7 +134,6 @@ void make_redundant(const std::vector <forest*> &FA, node_storage_flags fs)
             // recycle old in slot u,
             // and build a new redundant node there
             //
-#ifdef USE_UNPACKED
             unpacked_node::Recycle(UA[u]);
             if (f->isMultiTerminal()) {
                 UA[u] = unpacked_node::newRedundant(f, k, -1, fs);
@@ -162,15 +142,6 @@ void make_redundant(const std::vector <forest*> &FA, node_storage_flags fs)
             } else {
                 UA[u] = unpacked_node::newRedundant(f, k, 1.0f, -1, fs);
             }
-#else
-            if (f->isMultiTerminal()) {
-                UA[u].initRedundant(f, k, -1, fs);
-            } else if (f->isEVPlus()) {
-                UA[u].initRedundant(f, k, 0L, -1, fs);
-            } else {
-                UA[u].initRedundant(f, k, 1.0f, -1, fs);
-            }
-#endif
 
             //
             // Next slot
@@ -180,11 +151,9 @@ void make_redundant(const std::vector <forest*> &FA, node_storage_flags fs)
     }
     std::cout << 'd';
     std::cout.flush();
-#ifdef USE_UNPACKED
     for (unsigned i=0; i<USIZE; i++) {
         unpacked_node::Recycle(UA[i]);
     }
-#endif
     T.note_time();
 
     show_sec(std::cout, T, 3, 3);
@@ -204,12 +173,8 @@ void make_identity(const std::vector <forest*> &FA, node_storage_flags fs)
                 << std::setw(11) << "identity,"
                 << std::setw(7) << nodetype << " nodes ";
 
-#ifdef USE_UNPACKED
     unpacked_node* UA[USIZE];
     for (unsigned i=0; i<USIZE; i++) UA[i] = nullptr;
-#else
-    unreduced_node UA[USIZE];
-#endif
     unsigned u = 0;
 
     const unsigned FAszm1 = FA.size() - 1;
@@ -239,7 +204,6 @@ void make_identity(const std::vector <forest*> &FA, node_storage_flags fs)
             // recycle old in slot u,
             // and build a new redundant node there
             //
-#ifdef USE_UNPACKED
             unpacked_node::Recycle(UA[u]);
             if (f->isMultiTerminal()) {
                 UA[u] = unpacked_node::newIdentity(f, k, i, -1, fs);
@@ -248,15 +212,6 @@ void make_identity(const std::vector <forest*> &FA, node_storage_flags fs)
             } else {
                 UA[u] = unpacked_node::newIdentity(f, k, i, 1.0f, -1, fs);
             }
-#else
-            if (f->isMultiTerminal()) {
-                UA[u].initIdentity(f, k, i, -1, fs);
-            } else if (f->isEVPlus()) {
-                UA[u].initIdentity(f, k, i, 0L, -1, fs);
-            } else {
-                UA[u].initIdentity(f, k, i, 1.0f, -1, fs);
-            }
-#endif
 
             //
             // Next slot
@@ -266,11 +221,9 @@ void make_identity(const std::vector <forest*> &FA, node_storage_flags fs)
     }
     std::cout << 'd';
     std::cout.flush();
-#ifdef USE_UNPACKED
     for (unsigned i=0; i<USIZE; i++) {
         unpacked_node::Recycle(UA[i]);
     }
-#endif
     T.note_time();
 
     show_sec(std::cout, T, 3, 3);

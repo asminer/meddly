@@ -116,34 +116,48 @@ class MEDDLY::unpacked_node {
     public:
         /* Initialization methods, primarily for reading */
 
-        //
-        // Build a node from a forest
-        //
-        void initFromNode(node_handle node, node_storage_flags fs);
+        /**
+            Initialize from a reduced node in our forest.
+                @param  node    Node to unpack from
+         */
+        void initFromNode(node_handle node);
 
-        //
-        // Build redundant nodes
-        //
+        /**
+            Initialize as a redundant node.
+                @param  k       Level of this node
+                @param  node    All the down pointers
+        */
+        void initRedundant(int k, node_handle node);
 
-        void initRedundant(int k,
-                node_handle node, node_storage_flags fs);
-
-        void initRedundant(int k, const edge_value &ev,
-                node_handle node, node_storage_flags fs);
+        /**
+            Initialize as a redundant node.
+                @param  k       Level of this node
+                @param  ev      All edge values
+                @param  node    All the down pointers
+        */
+        void initRedundant(int k, const edge_value &ev, node_handle node);
 
 #ifdef ALLOW_DEPRECATED_0_17_8
         inline void initRedundant(const forest *f, int k,
                 node_handle node, node_storage_flags fs)
         {
             MEDDLY_DCASSERT(isAttachedTo(f));
-            initRedundant(k, node, fs);
+            MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
+            if (FULL_OR_SPARSE == nodestor) {
+                is_full = (FULL_ONLY == fs);
+            }
+            initRedundant(k, node);
         }
 
         inline void initRedundant(const forest *f, int k,
                 const edge_value &ev, node_handle node, node_storage_flags fs)
         {
             MEDDLY_DCASSERT(isAttachedTo(f));
-            initRedundant(k, ev, node, fs);
+            MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
+            if (FULL_OR_SPARSE == nodestor) {
+                is_full = (FULL_ONLY == fs);
+            }
+            initRedundant(k, ev, node);
         }
 #endif
 
@@ -151,25 +165,45 @@ class MEDDLY::unpacked_node {
         // Build identity nodes
         //
 
-        void initIdentity(int k, unsigned i,
-                node_handle node, node_storage_flags fs);
+        /**
+            Initialize as an identity (singleton) node.
+                @param  k       Level of this node; should be negative.
+                @param  i       Index of non-zero edge
+                @param  node    Down pointer for index i
+        */
+        void initIdentity(int k, unsigned i, node_handle node);
 
+        /**
+            Initialize as an identity (singleton) node.
+                @param  k       Level of this node; should be negative.
+                @param  i       Index of non-zero edge
+                @param  ev      Edge value for index i
+                @param  node    Down pointer for index i
+        */
         void initIdentity(int k, unsigned i, const edge_value &ev,
-                node_handle node, node_storage_flags fs);
+                node_handle node);
 
 #ifdef ALLOW_DEPRECATED_0_17_8
         inline void initIdentity(const forest *f, int k, unsigned i,
                 node_handle node, node_storage_flags fs)
         {
             MEDDLY_DCASSERT(isAttachedTo(f));
-            initIdentity(k, i, node, fs);
+            MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
+            if (FULL_OR_SPARSE == nodestor) {
+                is_full = (FULL_ONLY == fs);
+            }
+            initIdentity(k, i, node);
         }
 
         inline void initIdentity(const forest *f, int k, unsigned i,
                 const edge_value &ev, node_handle node, node_storage_flags fs)
         {
             MEDDLY_DCASSERT(isAttachedTo(f));
-            initIdentity(k, i, ev, node, fs);
+            MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
+            if (FULL_OR_SPARSE == nodestor) {
+                is_full = (FULL_ONLY == fs);
+            }
+            initIdentity(k, i, ev, node);
         }
 #endif
 
@@ -183,7 +217,7 @@ class MEDDLY::unpacked_node {
         {
             unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
-            U->initFromNode(node, fs);
+            U->initFromNode(node);
             return U;
         }
 
@@ -192,7 +226,7 @@ class MEDDLY::unpacked_node {
         {
             unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
-            U->initRedundant(k, node, fs);
+            U->initRedundant(k, node);
             return U;
         }
 
@@ -202,9 +236,9 @@ class MEDDLY::unpacked_node {
             unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
             if (ev.isVoid()) {
-                U->initRedundant(k, node, fs);
+                U->initRedundant(k, node);
             } else {
-                U->initRedundant(k, ev, node, fs);
+                U->initRedundant(k, ev, node);
             }
             return U;
         }
@@ -214,7 +248,7 @@ class MEDDLY::unpacked_node {
         {
             unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
-            U->initIdentity(k, i, node, fs);
+            U->initIdentity(k, i, node);
             return U;
         }
 
@@ -225,9 +259,9 @@ class MEDDLY::unpacked_node {
             unpacked_node* U = New(f, fs);
             MEDDLY_DCASSERT(U);
             if (ev.isVoid()) {
-                U->initIdentity(k, i, node, fs);
+                U->initIdentity(k, i, node);
             } else {
-                U->initIdentity(k, i, ev, node, fs);
+                U->initIdentity(k, i, ev, node);
             }
             return U;
         }
