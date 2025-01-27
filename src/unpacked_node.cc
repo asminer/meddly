@@ -256,6 +256,22 @@ void MEDDLY::unpacked_node::attach(const forest* f)
 
 #endif
 
+void MEDDLY::unpacked_node::initFromForest(const forest* f,
+        node_handle node, node_storage_flags fs)
+{
+    MEDDLY_DCASSERT(f);
+    MEDDLY_DCASSERT(isAttachedTo(f));
+    MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
+
+    level = f->getNodeLevel(node);
+    MEDDLY_DCASSERT(level != 0);
+    resize( f->getLevelSize(level) );
+    MEDDLY_DCASSERT(f->getNodeAddress(node));
+    MEDDLY_DCASSERT(f->getNodeManager());
+    f->getNodeManager()->fillUnpacked(*this, f->getNodeAddress(node), fs);
+}
+
+
 void MEDDLY::unpacked_node::initRedundant(const forest *f, int k,
     node_handle node, node_storage_flags fs)
 {

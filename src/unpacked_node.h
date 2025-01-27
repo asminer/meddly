@@ -117,6 +117,11 @@ class MEDDLY::unpacked_node {
         /* Initialization methods, primarily for reading */
 
         //
+        // Build a node from a forest
+        //
+        void initFromForest(const forest *f, node_handle node, node_storage_flags fs);
+
+        //
         // Build redundant nodes
         //
 
@@ -125,14 +130,6 @@ class MEDDLY::unpacked_node {
 
         void initRedundant(const forest *f, int k, const edge_value &ev,
                 node_handle node, node_storage_flags fs);
-
-        template <class T>
-        inline void initRedundant(const forest *f, int k, T _ev, node_handle node,
-                node_storage_flags fs)
-        {
-            initRedundant(f, k, edge_value(_ev), node, fs);
-        }
-
 
         //
         // Build identity nodes
@@ -144,18 +141,20 @@ class MEDDLY::unpacked_node {
         void initIdentity(const forest *f, int k, unsigned i,
                 const edge_value &ev, node_handle node, node_storage_flags fs);
 
-        template <class T>
-        inline void initIdentity(const forest *f, int k, unsigned i, T _ev,
-                node_handle node, node_storage_flags fs)
-        {
-            initIdentity(f, k, i, edge_value(_ev), node, fs);
-        }
-
 
     public:
         //
         // For convenience: get recycled instance and initialize
         //
+
+        static inline unpacked_node* newFromForest(const forest *f,
+                node_handle node, node_storage_flags fs)
+        {
+            unpacked_node* U = New(f, fs);
+            MEDDLY_DCASSERT(U);
+            U->initFromForest(f, node, fs);
+            return U;
+        }
 
         static inline unpacked_node* newRedundant(const forest *f, int k,
                 node_handle node, node_storage_flags fs)
@@ -178,15 +177,6 @@ class MEDDLY::unpacked_node {
             }
             return U;
         }
-
-        template <class T>
-        static inline unpacked_node* newRedundant(const forest *f, int k,
-                T _ev, node_handle node, node_storage_flags fs)
-        {
-            return newRedundant(f, k, edge_value(_ev), node, fs);
-        }
-
-
 
         static inline unpacked_node* newIdentity(const forest *f, int k,
                 unsigned i, node_handle node, node_storage_flags fs)
@@ -211,17 +201,23 @@ class MEDDLY::unpacked_node {
             return U;
         }
 
-        template <class T>
-        static inline unpacked_node* newIdentity(const forest *f, int k,
-                unsigned i, T _ev, node_handle node, node_storage_flags fs)
+        static inline unpacked_node* newWritable(forest* f, int lvl,
+                unsigned tsz, node_storage_flags fs)
         {
-            return newIdentity(f, k, i, edge_value(_ev), node, fs);
+            unpacked_node* U = New(f, fs);
+            MEDDLY_DCASSERT(U);
+            U->level = lvl;
+            U->resize(tsz);
+            U->clear(0, tsz);
+            U->is_full = (fs != SPARSE_ONLY);
+            U->allowWrites(f);
+            return U;
         }
 
         /** Create a zeroed-out full node of a given size */
-        template <class T>
+        // template <class T>
         static inline unpacked_node* newFull(forest *f,
-                int levl, T tsz)
+                int levl, unsigned tsz)
         {
             unpacked_node* U = New(f, FULL_ONLY);
             MEDDLY_DCASSERT(U);
@@ -235,9 +231,9 @@ class MEDDLY::unpacked_node {
         }
 
         /** Create a sparse node */
-        template <class T>
+        // template <class T>
         static inline unpacked_node* newSparse(forest *f,
-                int levl, T nnzs)
+                int levl, unsigned nnzs)
         {
             unpacked_node* U = New(f, SPARSE_ONLY);
             MEDDLY_DCASSERT(U);
@@ -453,7 +449,6 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(_edge);
             return _edge[n];
         }
-#endif
 
         /** Subtract from an edge value.
             @param  n       Which pointer
@@ -501,6 +496,7 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(_edge);
             _edge[n] = ev;
         }
+#endif
 
         /**
             Set a full edge.
@@ -531,6 +527,8 @@ class MEDDLY::unpacked_node {
             _down[n] = h;
             if (_edge) {
                 _edge[n] = v;
+            } else {
+                MEDDLY_DCASSERT(v.isVoid());
             }
         }
 
@@ -548,6 +546,8 @@ class MEDDLY::unpacked_node {
             E.xferNode(_down[n]);
             if (_edge) {
                 _edge[n] = E.getEdgeValue();
+            } else {
+                MEDDLY_DCASSERT(E.getEdgeValue().isVoid());
             }
         }
 #endif
@@ -609,6 +609,8 @@ class MEDDLY::unpacked_node {
             _down[n] = h;
             if (_edge) {
                 _edge[n] = v;
+            } else {
+                MEDDLY_DCASSERT(v.isVoid());
             }
         }
 
@@ -631,6 +633,8 @@ class MEDDLY::unpacked_node {
             _index[n] = i;
             if (_edge) {
                 _edge[n] = E.getEdgeValue();
+            } else {
+                MEDDLY_DCASSERT(E.getEdgeValue().isVoid());
             }
         }
 #endif
@@ -973,10 +977,12 @@ class MEDDLY::unpacked_node {
         const forest* parent;
         /// Modifiable parent forest; required for writable nodes
         forest* modparent;
-        /// FID of the parent
+
 #ifdef ALLOW_DEPRECATED_0_17_8
+        /// FID of the parent
         unsigned pFID;
 #else
+        /// FID of the parent
         const unsigned pFID;
 #endif
 
@@ -1001,19 +1007,23 @@ class MEDDLY::unpacked_node {
 
         /// Extra header information that is not hashed
         void* extra_unhashed;
-        /// Number of bytes in extra unhashed header
+
 #ifdef ALLOW_DEPRECATED_0_17_8
+        /// Number of bytes in extra unhashed header
         unsigned extra_unhashed_size;
 #else
+        /// Number of bytes in extra unhashed header
         const unsigned extra_unhashed_size;
 #endif
 
         /// Extra header information that is hashed
         void* extra_hashed;
-        /// Number of bytes in extra hashed header
+
 #ifdef ALLOW_DEPRECATED_0_17_8
+        /// Number of bytes in extra hashed header
         unsigned extra_hashed_size;
 #else
+        /// Number of bytes in extra hashed header
         const unsigned extra_hashed_size;
 #endif
 
@@ -1053,9 +1063,6 @@ class MEDDLY::unpacked_node {
 #else
         const edge_type the_edge_type;
 #endif
-
-        /// True iff this was expanded from a fully-reduced edge
-        // bool orig_was_fully;
 
         /// True iff this was expanded from an identity-reduced edge
         bool orig_was_identity;

@@ -161,7 +161,7 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
   int* izz = new int[A->getSize()];
   unsigned sz = 0;
   for (unsigned iz = 0; iz < A->getSize(); iz++) {
-    if (0 == A->edge_long(iz)) {
+    if (0 == A->edgeval(iz).getLong()) {
       izz[sz] = iz;
       sz++;
     }
@@ -171,9 +171,9 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
 
   long tev = 0;
   node_handle t = 0;
-  _compute(aev + A->edge_long(nz), A->down(nz), level - 1, tev, t);
+  _compute(aev + A->edgeval(nz).getLong(), A->down(nz), level - 1, tev, t);
 
-  nb->setSparse(0, A->index(nz), edge_value(tev), t);
+  nb->setSparse(0, A->index(nz), tev, t);
 
   // nb->i_ref(0) = A->index(nz);
   // nb->d_ref(0) = t;

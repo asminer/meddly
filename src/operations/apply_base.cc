@@ -995,8 +995,8 @@ void MEDDLY::generic_binary_evplus
   for (unsigned i=0; i<resultSize; i++) {
     long ev = 0;
     node_handle ed = 0;
-    compute(aev + A->edge_long(i), A->down(i),
-            bev + B->edge_long(i), B->down(i),
+    compute(aev + A->edgeval(i).getLong(), A->down(i),
+            bev + B->edgeval(i).getLong(), B->down(i),
             ev, ed);
     MEDDLY_DCASSERT(ed != 0 || ev == 0);
     nb->setFull(i, edge_value(ev), ed);
@@ -1094,8 +1094,8 @@ void MEDDLY::generic_binary_evplus_mxd
     long ev = 0;
     node_handle ed = 0;
     compute_r(i, MXD_levels::downLevel(resultLevel),
-      aev + A->edge_long(i), A->down(i),
-      bev + B->edge_long(i), B->down(i),
+      aev + A->edgeval(i).getLong(), A->down(i),
+      bev + B->edgeval(i).getLong(), B->down(i),
       ev, ed);
     MEDDLY_DCASSERT(ed != 0 || ev == 0);
     nb->setFull(i, edge_value(ev), ed);
@@ -1155,7 +1155,7 @@ void MEDDLY::generic_binary_evplus_mxd
   for (unsigned i = 0; i < resultSize; i++) {
     long ev = 0;
     node_handle e = 0;
-    compute(aev + A->edge_long(i), A->down(i), bev + B->edge_long(i), B->down(i), ev, e);
+    compute(aev + A->edgeval(i).getLong(), A->down(i), bev + B->edgeval(i).getLong(), B->down(i), ev, e);
     MEDDLY_DCASSERT(e != 0 || ev == 0);
     C->setFull(i, edge_value(ev), e);
     // C->setEdge(i, ev);
@@ -1262,8 +1262,8 @@ void MEDDLY::generic_binary_evtimes
     node_handle ed;
     compute_k(
         i, -resultLevel,
-        aev * A->edge_float(i), A->down(i),
-        bev * B->edge_float(i), B->down(i),
+        aev * A->edgeval(i).getFloat(), A->down(i),
+        bev * B->edgeval(i).getFloat(), B->down(i),
         ev, ed);
     nb->setFull(i, edge_value(ev), ed);
     // nb->d_ref(i) = ed;
@@ -1334,8 +1334,8 @@ void MEDDLY::generic_binary_evtimes
     float ev;
     node_handle ed;
     compute(
-        aev * A->edge_float(i), A->down(i),
-        bev * B->edge_float(i), B->down(i),
+        aev * A->edgeval(i).getFloat(), A->down(i),
+        bev * B->edgeval(i).getFloat(), B->down(i),
         ev, ed);
     nb->setFull(i, edge_value(ev), ed);
     // nb->d_ref(i) = ed;

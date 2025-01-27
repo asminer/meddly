@@ -185,8 +185,8 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
 
       long ev = Inf<long>();
       node_handle ed = 0;
-      compute(aev + A->edge_long(i) + D->edge_long(j), D->down(j),
-        bev + B->edge_long(i), B->down(i),
+      compute(aev + A->edgeval(i).getLong() + D->edgeval(j).getLong(), D->down(j),
+        bev + B->edgeval(i).getLong(), B->down(i),
         ev, ed);
       nb2->setFull(j, edge_value(ev), ed);
       // nb2->d_ref(j) = ed;
@@ -295,8 +295,8 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
 
       long ev = Inf<long>();
       node_handle ed = 0;
-      compute(aev + A->edge_long(i) + D->edge_long(j), D->down(j),
-        bev + B->edge_long(j), B->down(j),
+      compute(aev + A->edgeval(i).getLong() + D->edgeval(j).getLong(), D->down(j),
+        bev + B->edgeval(j).getLong(), B->down(j),
         ev, ed);
       nb2->setFull(j, edge_value(ev), ed);
       // nb2->d_ref(j) = ed;

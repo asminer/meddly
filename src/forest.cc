@@ -229,7 +229,7 @@ namespace MEDDLY {
             //
             for (unsigned i=0; i<un.getSize(); i++) {
                 if (0 == un.down(i)) {
-                    un.setEdgeval(i, ev);
+                    un.edgeval(i) = ev;
                     continue;
                 }
                 EDGETYPE uni;
@@ -250,7 +250,7 @@ namespace MEDDLY {
             if (minval) {
                 for (unsigned i=0; i<un.getSize(); i++) {
                     if (un.down(i)) {
-                        un.subtractFromEdge(i, minval);
+                        un.edgeval(i).subtract(minval);
                     }
                 }
             }
@@ -272,7 +272,7 @@ namespace MEDDLY {
             //
             for (unsigned i=0; i<un.getSize(); i++) {
                 if (0 == un.down(i)) {
-                    un.setEdgeval(i, ev);
+                    un.edgeval(i) = ev;
                     continue;
                 }
                 EDGETYPE uni;
@@ -291,7 +291,7 @@ namespace MEDDLY {
             //
             if (firstval && (firstval != 1)) {
                 for (unsigned i=0; i<un.getSize(); i++) {
-                    un.divideEdge(i, firstval);
+                    un.edgeval(i).divide(firstval);
                 }
             }
             ev.set(firstval);
