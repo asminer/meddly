@@ -1,25 +1,4 @@
 
-    New unpacked_node storage scheme
-
-        extra hashed and unhashed headers combined
-            into a single chunk as a char array
-
-        index arrays; null for full-only storage
-
-        edge arrays; null for multi terminal forests
-
-        down arrays.
-
-        Array sizes are multiples of 16.
-
-        Maintain static free lists by size, like we do for ct_vector
-            header: 16 chars up to 15*16=240
-            index, edge, down: 1*16 .. 1023*16 = 16368
-
-        fail safe: for larger sizes, just malloc/free
-
-        Goal: don't need pointers to unpacked nodes any more?
-
 Implement next:
 
     * Migrate plus, minus, multiply, divide, and modulo

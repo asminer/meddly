@@ -197,7 +197,7 @@ void MEDDLY::card_templ<RTYPE>::_compute(int L, node_handle A,
     //
     // Do computation
     //
-    unpacked_node* Au = argF->newUnpacked(A, SPARSE_ONLY);
+    unpacked_node* Au = unpacked_node::newFromNode(argF, A, SPARSE_ONLY);
 
 #ifdef TRACE
     out << "    node " << A << ": ";

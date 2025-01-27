@@ -153,7 +153,7 @@ void MEDDLY::range_templ<RTYPE>::_compute(node_handle A, oper_item &r)
     //
     // Do computation
     //
-    unpacked_node* Au = argF->newUnpacked(A, SPARSE_ONLY);
+    unpacked_node* Au = unpacked_node::newFromNode(argF, A, SPARSE_ONLY);
     _compute(Au->down(0), r);
     oper_item tmp(RTYPE::getOpndType());
     for (unsigned i=1; i<Au->getSize(); i++) {

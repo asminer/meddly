@@ -273,8 +273,9 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
         //
         // Initialize unpacked nodes
         //
-        unpacked_node* Au = argF->newUnpacked(A, FULL_ONLY);
-        unpacked_node* Cu = unpacked_node::newFull(resF, Alevel, Au->getSize());
+        unpacked_node* Au = unpacked_node::newFromNode(argF, A, FULL_ONLY);
+        unpacked_node* Cu = unpacked_node::newWritable(resF, Alevel, FULL_ONLY);
+        MEDDLY_DCASSERT(Au->getSize() == Cu->getSize());
 #ifdef TRACE
         out << "A: ";
         Au->show(out, true);
@@ -510,7 +511,7 @@ void MEDDLY::copy_EV_fast::_compute(int L, unsigned in,
         //
         // Initialize unpacked nodes
         //
-        unpacked_node* Au = argF->newUnpacked(A, SPARSE_ONLY);
+        unpacked_node* Au = unpacked_node::newFromNode(argF, A, SPARSE_ONLY);
         unpacked_node* Cu = unpacked_node::newSparse(resF, Alevel, Au->getSize());
 #ifdef TRACE
         out << "A: ";
@@ -826,8 +827,9 @@ void MEDDLY::copy_EV<EdgeOp>::_compute(int L, unsigned in,
         //
         // Initialize unpacked nodes
         //
-        unpacked_node* Au = argF->newUnpacked(ap, FULL_ONLY);
-        unpacked_node* Cu = unpacked_node::newFull(resF, Alevel, Au->getSize());
+        unpacked_node* Au = unpacked_node::newFromNode(argF, ap, FULL_ONLY);
+        unpacked_node* Cu = unpacked_node::newWritable(resF, Alevel, FULL_ONLY);
+        MEDDLY_DCASSERT(Au->getSize() == Cu->getSize());
 #ifdef TRACE
         out << "A: ";
         Au->show(out, true);

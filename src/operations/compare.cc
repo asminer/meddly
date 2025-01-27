@@ -307,38 +307,41 @@ void MEDDLY::compare_mt<CTYPE>::_compute(int L, unsigned in,
     // Set up unpacked nodes
     //
 
-    unpacked_node* Au;
+    unpacked_node* Au = unpacked_node::New(arg1F, FULL_ONLY);
     if (Alevel != Clevel) {
         if (arg1F->isIdentityReduced() && Clevel<0) {
             MEDDLY_DCASSERT(Clevel == L);
-            Au = unpacked_node::newIdentity(arg1F, Clevel, in, A, FULL_ONLY);
+            Au->initIdentity(Clevel, in, A);
             MEDDLY_DCASSERT(Au->wasIdentity());
         } else {
-            Au = unpacked_node::newRedundant(arg1F, Clevel, A, FULL_ONLY);
+            Au->initRedundant(Clevel, A);
             MEDDLY_DCASSERT(!Au->wasIdentity());
         }
     } else {
-        Au = arg1F->newUnpacked(A, FULL_ONLY);
+        Au->initFromNode(A);
         MEDDLY_DCASSERT(!Au->wasIdentity());
     }
 
-    unpacked_node* Bu;
+    unpacked_node* Bu = unpacked_node::New(arg2F, FULL_ONLY);
     if (Blevel != Clevel) {
         if (arg2F->isIdentityReduced() && Clevel<0) {
             MEDDLY_DCASSERT(Clevel == L);
-            Bu = unpacked_node::newIdentity(arg2F, Clevel, in, B, FULL_ONLY);
+            Bu->initIdentity(Clevel, in, B);
             MEDDLY_DCASSERT(Bu->wasIdentity());
         } else {
-            Bu = unpacked_node::newRedundant(arg2F, Clevel, B, FULL_ONLY);
+            Bu->initRedundant(Clevel, B);
             MEDDLY_DCASSERT(!Bu->wasIdentity());
         }
     } else {
-        Bu = arg2F->newUnpacked(B, FULL_ONLY);
+        Bu->initFromNode(B);
         MEDDLY_DCASSERT(!Bu->wasIdentity());
     }
 
-    MEDDLY_DCASSERT(Au->getSize() == Bu->getSize());
-    unpacked_node* Cu = unpacked_node::newFull(resF, Clevel, Au->getSize());
+    unpacked_node* Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
+
+    MEDDLY_DCASSERT(Cu->getSize() == Au->getSize());
+    MEDDLY_DCASSERT(Cu->getSize() == Bu->getSize());
+
 
 #ifdef TRACE
     out << "A: ";
@@ -738,42 +741,40 @@ void MEDDLY::compare_ev<EOP, FACTOR, CTYPE>::_compute(int L, unsigned in,
 
     edge_value zero;
     EOP::clear(zero);
-    unpacked_node* Au;
+    unpacked_node* Au = unpacked_node::New(arg1F, FULL_ONLY);
     if (Alevel != Clevel) {
         if (arg1F->isIdentityReduced() && Clevel<0) {
             MEDDLY_DCASSERT(Clevel == L);
-            Au = unpacked_node::newIdentity(arg1F, Clevel, in, zero, A,
-                    FULL_ONLY);
+            Au->initIdentity(Clevel, in, zero, A);
             MEDDLY_DCASSERT(Au->wasIdentity());
         } else {
-            Au = unpacked_node::newRedundant(arg1F, Clevel, zero, A,
-                    FULL_ONLY);
+            Au->initRedundant(Clevel, zero, A);
             MEDDLY_DCASSERT(!Au->wasIdentity());
         }
     } else {
-        Au = arg1F->newUnpacked(A, FULL_ONLY);
+        Au->initFromNode(A);
         MEDDLY_DCASSERT(!Au->wasIdentity());
     }
 
-    unpacked_node* Bu;
+    unpacked_node* Bu = unpacked_node::New(arg2F, FULL_ONLY);
     if (Blevel != Clevel) {
         if (arg2F->isIdentityReduced() && Clevel<0) {
             MEDDLY_DCASSERT(Clevel == L);
-            Bu = unpacked_node::newIdentity(arg2F, Clevel, in, zero, B,
-                    FULL_ONLY);
+            Bu->initIdentity(Clevel, in, zero, B);
             MEDDLY_DCASSERT(Bu->wasIdentity());
         } else {
-            Bu = unpacked_node::newRedundant(arg2F, Clevel, zero, B,
-                    FULL_ONLY);
+            Bu->initRedundant(Clevel, zero, B);
             MEDDLY_DCASSERT(!Bu->wasIdentity());
         }
     } else {
-        Bu = arg2F->newUnpacked(B, FULL_ONLY);
+        Bu->initFromNode(B);
         MEDDLY_DCASSERT(!Bu->wasIdentity());
     }
 
-    MEDDLY_DCASSERT(Au->getSize() == Bu->getSize());
-    unpacked_node* Cu = unpacked_node::newFull(resF, Clevel, Au->getSize());
+    unpacked_node* Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
+
+    MEDDLY_DCASSERT(Cu->getSize() == Au->getSize());
+    MEDDLY_DCASSERT(Cu->getSize() == Bu->getSize());
 
 #ifdef TRACE
     out << "A: ";

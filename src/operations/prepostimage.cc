@@ -709,7 +709,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   // Initialize evmdd reader
   unpacked_node *A = (evmddLevel < rLevel)
     ? unpacked_node::newRedundant(argV, rLevel, 0L, evmdd, FULL_ONLY)
-    : argV->newUnpacked(evmdd, FULL_ONLY);
+    : unpacked_node::newFromNode(argV, evmdd, FULL_ONLY);
 
   if (evmddLevel > ABS(mxdLevel)) {
     //
@@ -859,7 +859,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   // Initialize evmdd reader
   unpacked_node *A = (evmddLevel < rLevel)
     ? unpacked_node::newRedundant(argV, rLevel, 0L, evmdd, FULL_ONLY)
-    : argV->newUnpacked(evmdd, FULL_ONLY);
+    : unpacked_node::newFromNode(argV, evmdd, FULL_ONLY);
 
   if (evmddLevel > ABS(mxdLevel)) {
     //
@@ -1081,13 +1081,13 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(rLevel, evmxdLevel)
     ? unpacked_node::newRedundant(argV, rLevel, 0L, evmxd, FULL_ONLY)
-    : argV->newUnpacked(evmxd, FULL_ONLY);
+    : unpacked_node::newFromNode(argV, evmxd, FULL_ONLY);
 
   for (unsigned i = 0; i < rSize; i++) {
     int pLevel = argV->getNodeLevel(A->down(i));
     unpacked_node* B = isLevelAbove(-rLevel, pLevel)
       ? unpacked_node::newIdentity(argV, -rLevel, i, 0L, A->down(i), FULL_ONLY)
-      : argV->newUnpacked(A->down(i), FULL_ONLY);
+      : unpacked_node::newFromNode(argV, A->down(i), FULL_ONLY);
 
     unpacked_node* D = unpacked_node::newFull(resF, -rLevel, rSize);
     if (rLevel > ABS(mxdLevel)) {

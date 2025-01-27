@@ -185,8 +185,8 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   //
   if (ABS(aLevel) < k) {
     // Init sparse readers
-    unpacked_node* xR = fx->newUnpacked(x_ind, SPARSE_ONLY);
-    unpacked_node* yR = fy->newUnpacked(y_ind, SPARSE_ONLY);
+    unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, SPARSE_ONLY);
+    unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, SPARSE_ONLY);
 
     unsigned xp = 0;
     unsigned yp = 0;
@@ -229,7 +229,7 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
     aR->initRedundant(fA, k, a, SPARSE_ONLY);
   }
 
-  unpacked_node* xR = fx->newUnpacked(x_ind, SPARSE_ONLY);
+  unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, SPARSE_ONLY);
 
   unsigned xp = 0;
   unsigned ap = 0;
@@ -274,7 +274,7 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
     aR->initIdentity(fA, k, ain, a, SPARSE_ONLY);
   }
 
-  unpacked_node* yR = fy->newUnpacked(y_ind, SPARSE_ONLY);
+  unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, SPARSE_ONLY);
 
 
   unsigned yp = 0;
@@ -362,8 +362,8 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
   //
   if (ABS(aLevel) < k) {
     // Init sparse readers
-    unpacked_node* xR = fx->newUnpacked(x_ind, SPARSE_ONLY);
-    unpacked_node* yR = fy->newUnpacked(y_ind, SPARSE_ONLY);
+    unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, SPARSE_ONLY);
+    unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, SPARSE_ONLY);
 
     unsigned xp = 0;
     unsigned yp = 0;
@@ -406,7 +406,7 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
     aR->initRedundant(fA, k, a, SPARSE_ONLY);
   }
 
-  unpacked_node* yR = fy->newUnpacked(y_ind, SPARSE_ONLY);
+  unpacked_node* yR = unpacked_node::newFromNode(fy, y_ind, SPARSE_ONLY);
 
 
   unsigned yp = 0;
@@ -452,7 +452,7 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
     aR->initIdentity(fA, k, ain, a, SPARSE_ONLY);
   }
 
-  unpacked_node* xR = fx->newUnpacked(x_ind, SPARSE_ONLY);
+  unpacked_node* xR = unpacked_node::newFromNode(fx, x_ind, SPARSE_ONLY);
 
 
   unsigned xp = 0;

@@ -227,8 +227,9 @@ void MEDDLY::compl_mt::_compute(int L, unsigned in,
         //
         // Initialize unpacked nodes
         //
-        unpacked_node* Au = argF->newUnpacked(A, FULL_ONLY);
-        unpacked_node* Cu = unpacked_node::newFull(resF, Alevel, Au->getSize());
+        unpacked_node* Au = unpacked_node::newFromNode(argF, A, FULL_ONLY);
+        unpacked_node* Cu = unpacked_node::newWritable(resF, Alevel, FULL_ONLY);
+        MEDDLY_DCASSERT(Au->getSize() == Cu->getSize());
 #ifdef TRACE
         out << "A: ";
         Au->show(out, true);
@@ -379,10 +380,10 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
     // Proceed in unprimed, primed pairs
     //
     for (K++; K<=Lstop; K++) {
-        Uun = unpacked_node::newFull(resF, K, resF->getLevelSize(K));
+        Uun = unpacked_node::newWritable(resF, K, FULL_ONLY);
 
         for (unsigned i=0; i<Uun->getSize(); i++) {
-            Upr = unpacked_node::newFull(resF, -K, Uun->getSize());
+            Upr = unpacked_node::newWritable(resF, -K, FULL_ONLY);
             for (unsigned j=0; j<Uun->getSize(); j++) {
                 if (j==i) {
                     Upr->setFull(j, resF->linkNode(p));
@@ -431,7 +432,7 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
     //
     if (L<0) {
         MEDDLY_DCASSERT(-K == L);
-        Upr = unpacked_node::newFull(resF, -K, resF->getLevelSize(-K));
+        Upr = unpacked_node::newWritable(resF, -K, FULL_ONLY);
         for (unsigned j=0; j<Upr->getSize(); j++) {
             if (j == in) {
                 Upr->setFull(j, p);

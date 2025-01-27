@@ -151,12 +151,12 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
     ? unpacked_node::newRedundant(arg1F, resultLevel, 0L, a, FULL_ONLY)
-    : arg1F->newUnpacked(a, FULL_ONLY)
+    : unpacked_node::newFromNode(arg1F, a, FULL_ONLY)
   ;
 
   unpacked_node *B = (bLevel < resultLevel)
     ? unpacked_node::newRedundant(arg2F, resultLevel, 0L, b, FULL_ONLY)
-    : arg2F->newUnpacked(b, FULL_ONLY)
+    : unpacked_node::newFromNode(arg2F, b, FULL_ONLY)
   ;
 
   // do computation
@@ -171,7 +171,7 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
     int dLevel = arg1F->getNodeLevel(A->down(i));
     unpacked_node *D = (dLevel != -resultLevel)
       ? unpacked_node::newIdentity(arg1F, -resultLevel, i, 0L, A->down(i), FULL_ONLY)
-      : arg1F->newUnpacked(A->down(i), FULL_ONLY);
+      : unpacked_node::newFromNode(arg1F, A->down(i), FULL_ONLY);
 
     unpacked_node* nb2 = unpacked_node::newFull(resF, -resultLevel, resultSize);
 
@@ -261,12 +261,12 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
   // Initialize readers
   unpacked_node *A = (aLevel < resultLevel)
     ? unpacked_node::newRedundant(arg1F, resultLevel, 0L, a, FULL_ONLY)
-    : arg1F->newUnpacked(a, FULL_ONLY)
+    : unpacked_node::newFromNode(arg1F, a, FULL_ONLY)
   ;
 
   unpacked_node *B = (bLevel < resultLevel)
     ? unpacked_node::newRedundant(arg2F, resultLevel, 0L, b, FULL_ONLY)
-    : arg2F->newUnpacked(b, FULL_ONLY)
+    : unpacked_node::newFromNode(arg2F, b, FULL_ONLY)
   ;
 
   // do computation
@@ -281,7 +281,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
     int dLevel = arg1F->getNodeLevel(A->down(i));
     unpacked_node *D = (dLevel != -resultLevel)
       ? unpacked_node::newIdentity(arg1F, -resultLevel, i, 0L, A->down(i), FULL_ONLY)
-      : arg1F->newUnpacked(A->down(i), FULL_ONLY);
+      : unpacked_node::newFromNode(arg1F, A->down(i), FULL_ONLY);
 
     unpacked_node* nb2 = unpacked_node::newFull(resF, -resultLevel, resultSize);
 

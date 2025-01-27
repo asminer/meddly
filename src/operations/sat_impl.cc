@@ -921,11 +921,11 @@ bool isIntersectionEmpty(
   // unpack nodes
   unpacked_node* unp_A =
     mddF->getNodeLevel(node_A) >= mddF->getNodeLevel(node_B)
-    ? mddF->newUnpacked(node_A, FULL_ONLY)
+    ? unpacked_node::newFromNode(mddF, node_A, FULL_ONLY)
     : unpacked_node::newRedundant(mddF, mddF->getNodeLevel(node_B), node_A, FULL_ONLY);
   unpacked_node* unp_B =
     mddF->getNodeLevel(node_B) >= mddF->getNodeLevel(node_A)
-    ? mddF->newUnpacked(node_B, FULL_ONLY)
+    ? unpacked_node::newFromNode(mddF, node_B, FULL_ONLY)
     : unpacked_node::newRedundant(mddF, mddF->getNodeLevel(node_A), node_B, FULL_ONLY);
 
   // compute result

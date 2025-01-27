@@ -372,7 +372,7 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
     // Initialize readers
     unpacked_node* Ru = isLevelAbove(level, mxdLevel)
       ? unpacked_node::newRedundant(arg3F, level, root.getNode(), FULL_ONLY)
-      : arg3F->newUnpacked(root.getNode(), FULL_ONLY);
+      : unpacked_node::newFromNode(arg3F, root.getNode(), FULL_ONLY);
 
     bool first = true;
 
@@ -382,7 +382,7 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
       int mxdPLevel = arg3F->getNodeLevel(Ru->down(i));
       unpacked_node* Rp = isLevelAbove(-level, mxdPLevel)
         ? unpacked_node::newIdentity(arg3F, -level, i, Ru->down(i), FULL_ONLY)
-        : arg3F->newUnpacked(Ru->down(i), FULL_ONLY);
+        : unpacked_node::newFromNode(arg3F, Ru->down(i), FULL_ONLY);
 
       // Intersect along the diagonal
       if (first) {
@@ -487,12 +487,12 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
   // Initialize mxd readers, note we might skip the unprimed level
   unpacked_node* Ru = (mxdLevel < 0)
     ? unpacked_node::newRedundant(arg3F, -nb.getLevel(), mxd.getNode(), FULL_ONLY)
-    : arg3F->newUnpacked(mxd.getNode(), FULL_ONLY);
+    : unpacked_node::newFromNode(arg3F, mxd.getNode(), FULL_ONLY);
   unpacked_node* Rp = unpacked_node::New(arg3F, SPARSE_ONLY);
 
   unpacked_node* A = isLevelAbove(-nb.getLevel(), arg1F->getNodeLevel(a))
     ? unpacked_node::newRedundant(arg1F, -nb.getLevel(), 0L, a, FULL_ONLY)
-    : arg1F->newUnpacked(a, FULL_ONLY);
+    : unpacked_node::newFromNode(arg1F, a, FULL_ONLY);
 
   dd_edge nbdj(resF), newst(resF);
 
@@ -642,11 +642,11 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
   // Initialize evmdd reader
   unpacked_node* A = isLevelAbove(level, aLevel)
     ? unpacked_node::newRedundant(arg1F, level, 0L, a, FULL_ONLY)
-    : arg1F->newUnpacked(a, FULL_ONLY);
+    : unpacked_node::newFromNode(arg1F, a, FULL_ONLY);
   // Initialize evmxd reader
   unpacked_node* B = isLevelAbove(level, bLevel)
     ? unpacked_node::newRedundant(arg2F, level, 0L, b, FULL_ONLY)
-    : arg2F->newUnpacked(b, FULL_ONLY);
+    : unpacked_node::newFromNode(arg2F, b, FULL_ONLY);
   unpacked_node* D = unpacked_node::New(arg2F, FULL_ONLY);
 
   unpacked_node* T = unpacked_node::newFull(resF, level, size);
@@ -698,7 +698,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
       // Initialize mxd readers, note we might skip the unprimed level
       unpacked_node* Ru = (rLevel < 0)
         ? unpacked_node::newRedundant(arg3F, level, r, SPARSE_ONLY)
-        : arg3F->newUnpacked(r, SPARSE_ONLY);
+        : unpacked_node::newFromNode(arg3F, r, SPARSE_ONLY);
       unpacked_node* Rp = unpacked_node::New(arg3F, SPARSE_ONLY);
 
       // loop over mxd "rows"
@@ -932,10 +932,10 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
 
   unpacked_node* A = isLevelAbove(level, aLevel)
     ? unpacked_node::newRedundant(consF, level, 0L, a, FULL_ONLY)
-    : consF->newUnpacked(a, FULL_ONLY);
+    : unpacked_node::newFromNode(consF, a, FULL_ONLY);
   unpacked_node* B = isLevelAbove(level, bLevel)
     ? unpacked_node::newRedundant(tcF, level, 0L, b, FULL_ONLY)
-    : tcF->newUnpacked(b, FULL_ONLY);
+    : unpacked_node::newFromNode(tcF, b, FULL_ONLY);
 
   // Do computation
   unpacked_node* T = unpacked_node::newFull(resF, level, sz);
@@ -950,7 +950,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
     if (B->down(i)) {
       unpacked_node* D = isLevelAbove(-level, tcF->getNodeLevel(B->down(i)))
         ? unpacked_node::newIdentity(tcF, -level, i, 0L, B->down(i), FULL_ONLY)
-        : tcF->newUnpacked(B->down(i), FULL_ONLY);
+        : unpacked_node::newFromNode(tcF, B->down(i), FULL_ONLY);
       unpacked_node* Tp = unpacked_node::newFull(resF, -level, sz);
       for (int j = 0; j < sz; j++) {
           /*
