@@ -58,7 +58,8 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
   int num = 0;
   // Renumber the level of nodes for the variable to be moved down
   for (int i = 0; i < hnum; i++) {
-    unpacked_node* nr = newUnpacked(hnodes[i], FULL_ONLY);
+    // unpacked_node* nr = newUnpacked(hnodes[i], FULL_ONLY);
+    unpacked_node* nr = unpacked_node::newFromNode(this, hnodes[i], FULL_ONLY);
 
     MEDDLY_DCASSERT(nr->getLevel() == level + 1);
     MEDDLY_DCASSERT(nr->getSize() == hsize);
@@ -94,7 +95,9 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
   for (int i = 0; i < hnum; i++) {
     MEDDLY_DCASSERT(isActiveNode(hnodes[i]));
 
-    unpacked_node* high_nr = newUnpacked(hnodes[i], FULL_ONLY);
+    // unpacked_node* high_nr = newUnpacked(hnodes[i], FULL_ONLY);
+    unpacked_node* high_nr =
+        unpacked_node::newFromNode(this, hnodes[i], FULL_ONLY);
 
     unpacked_node* high_nb =
         unpacked_node::newWritable(this, level + 1, lsize, FULL_ONLY);
@@ -105,7 +108,9 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
         }
       }
       else {
-        unpacked_node* nr = newUnpacked(high_nr->down(j), FULL_ONLY);
+        // unpacked_node* nr = newUnpacked(high_nr->down(j), FULL_ONLY);
+        unpacked_node* nr =
+            unpacked_node::newFromNode(this, high_nr->down(j), FULL_ONLY);
 
         MEDDLY_DCASSERT(nr->getSize() == lsize);
         for (int k = 0; k < lsize; k++) {

@@ -62,7 +62,8 @@ size_t MEDDLY::node_marker::countEdges() const
     size_t i=0;
     while( (i=marked.firstOne(i+1)) < marked.getSize() )
     {
-        For->unpackNode(M, i, FULL_ONLY);
+        M->initFromNode(i);
+        // For->unpackNode(M, i, FULL_ONLY);
         ec += M->getSize();
     }
     unpacked_node::Recycle(M);
@@ -78,7 +79,8 @@ size_t MEDDLY::node_marker::countNonzeroEdges() const
     size_t i=0;
     while( (i=marked.firstOne(i+1)) < marked.getSize() )
     {
-        For->unpackNode(M, i, SPARSE_ONLY);
+        M->initFromNode(i);
+        // For->unpackNode(M, i, SPARSE_ONLY);
         ec += M->getSize();
     }
     unpacked_node::Recycle(M);
@@ -133,7 +135,8 @@ void MEDDLY::node_marker::showByLevels(output &s) const
             s << " incount: ";
             s.put(For->getNodeInCount(i));
             s.put(' ');
-            For->unpackNode(M, i, FULL_OR_SPARSE);
+            M->initFromNode(i);
+            // For->unpackNode(M, i, FULL_OR_SPARSE);
             M->show(s, true);
             s.put('\n');
 
@@ -165,7 +168,8 @@ void MEDDLY::node_marker::getTerminals(std::set <node_handle> &v) const
     size_t i=0;
     while( (i=marked.firstOne(i+1)) < marked.getSize() )
     {
-        For->unpackNode(M, i, SPARSE_ONLY);
+        M->initFromNode(i);
+        // For->unpackNode(M, i, SPARSE_ONLY);
         for (unsigned j=0; j<M->getSize(); j++) {
             if (M->down(j)>0) continue;
             // M->down(j) is a terminal node handle

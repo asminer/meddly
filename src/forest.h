@@ -439,6 +439,11 @@ class MEDDLY::forest {
     public: // Retrieve a node from the forest
     // ------------------------------------------------------------
 
+#ifdef ALLOW_DEPRECATED_0_17_8
+        /*
+         * Deprecated; use unpacked_node::initFromNode() instead
+         */
+
         /// Copy into an unpacked node.
         ///     @param  un      Unpacked node to copy into
         ///     @param  p       Handle of node to retrieve
@@ -455,6 +460,7 @@ class MEDDLY::forest {
             unpackNode(un, p, f);
             return un;
         }
+#endif
 
     // ------------------------------------------------------------
     public: // Add /remove a node to the forest

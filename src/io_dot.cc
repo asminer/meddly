@@ -190,7 +190,8 @@ void MEDDLY::dot_maker::doneGraph()
             // Display the nodes
             //
             for (size_t i=0; i<nodeList.size(); i++) {
-                For->unpackNode(M, nodeList[i], SPARSE_ONLY);
+                M->initFromNode(nodeList[i]);
+                // For->unpackNode(M, nodeList[i], SPARSE_ONLY);
 
                 const double nodewidth = 0.25 * M->getSize();
                 outfile << "        N" << nodeList[i] << " [";
@@ -208,7 +209,8 @@ void MEDDLY::dot_maker::doneGraph()
             //
             outfile << "    edge [color=" << edgecolor << "];\n";
             for (size_t i=0; i<nodeList.size(); i++) {
-                For->unpackNode(M, nodeList[i], SPARSE_ONLY);
+                M->initFromNode(nodeList[i]);
+                // For->unpackNode(M, nodeList[i], SPARSE_ONLY);
 
                 for (unsigned j=0; j<M->getSize(); j++) {
                     outfile << "        N" << nodeList[i] << ":" << j << " -> ";

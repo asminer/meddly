@@ -190,6 +190,8 @@ void MEDDLY::forest::destroy(forest* &f)
 // Node unpacking methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+#ifdef ALLOW_DEPRECATED_0_17_8
+
 void MEDDLY::forest::unpackNode(MEDDLY::unpacked_node* un,
     node_handle node, node_storage_flags st2) const
 {
@@ -201,6 +203,8 @@ void MEDDLY::forest::unpackNode(MEDDLY::unpacked_node* un,
     MEDDLY_DCASSERT(getNodeAddress(node));
     nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
 }
+
+#endif
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Methods to add/remove nodes
@@ -544,7 +548,7 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     // Sanity check: can we find the node we just created
     //
 #ifdef DEVELOPMENT_CODE
-    unpacked_node* key = newUnpacked(node, SPARSE_ONLY);
+    unpacked_node* key = unpacked_node::newFromNode(this, node, SPARSE_ONLY);
     key->computeHash();
     if (key->hash() != un->hash())
     {
@@ -600,7 +604,7 @@ void MEDDLY::forest::deleteNode(node_handle p)
     unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
     if (!isExtensible(p) || isExtensibleLevel(getNodeLevel(p))) {
-        unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
+        unpacked_node* key = unpacked_node::newFromNode(this, p, SPARSE_ONLY);
         key->computeHash();
         if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
             fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
@@ -973,7 +977,7 @@ MEDDLY::node_handle MEDDLY::forest
     unique->add(un->hash(), p);
 
 #ifdef DEVELOPMENT_CODE
-    unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
+    unpacked_node* key = unpacked_node::newFromNode(this, p, SPARSE_ONLY);
     key->computeHash();
     MEDDLY_DCASSERT(key->hash() == un->hash());
     node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
@@ -1452,7 +1456,7 @@ bool MEDDLY::forest
   }
 
   s.put(' ');
-  unpacked_node* un = newUnpacked(p, FULL_OR_SPARSE);
+  unpacked_node* un = unpacked_node::newFromNode(this, p, FULL_OR_SPARSE);
   un->show(s, flags & SHOW_DETAILS);
   unpacked_node::Recycle(un);
 
@@ -1541,7 +1545,7 @@ void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN,
     unpacked_node* P = unpacked_node::New(this, SPARSE_ONLY);
     for (node_handle i = 1; i < sz; ++i) {
         if (!isActiveNode(i)) continue;
-        unpackNode(P, i, SPARSE_ONLY);
+        P->initFromNode(i);
 
         // add to reference counts
         for (unsigned z=0; z<P->getSize(); z++) {

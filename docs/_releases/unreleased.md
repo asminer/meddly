@@ -20,7 +20,8 @@ Several changes to the ```unpacked_node``` class:
 
 * For consistency, creating an unpacked node from a reduced
     node in a forest should be done via method ```initFromNode()```
-    or ```newFromNode()```, instead of methods in class ```forest```.
+    or ```newFromNode()```, instead of methods in class ```forest```
+    which are now deprecated.
 
 ### Implementation
 

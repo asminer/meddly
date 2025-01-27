@@ -297,7 +297,7 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a,  int* from,
   // if a is at this level
   unpacked_node *A =
   (aLevel == k)
-  ? newUnpacked(a, FULL_ONLY)
+  ? unpacked_node::newFromNode(this, a, FULL_ONLY)
   : this->isFullyReduced()
   ? unpacked_node::newRedundant(this, k, a, FULL_ONLY)
   : unpacked_node::newIdentity(this, k, in, a, FULL_ONLY)

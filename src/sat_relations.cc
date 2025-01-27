@@ -66,8 +66,9 @@ void findConfirmedStates(REL* rel,
         }
         // mdd_level == level
         visited.insert(mdd);
-        MEDDLY::unpacked_node *nr = outsetF->newUnpacked(mdd,
-                MEDDLY::SPARSE_ONLY);
+        MEDDLY::unpacked_node *nr =
+            MEDDLY::unpacked_node::newFromNode(outsetF, mdd, MEDDLY::SPARSE_ONLY);
+            // outsetF->newUnpacked(mdd, MEDDLY::SPARSE_ONLY);
         for (int i = 0; i < nr->getSize(); i++) {
             if (!confirmed[level][nr->index(i)]) {
                 rel->confirm(level, nr->index(i));
@@ -217,7 +218,8 @@ void MEDDLY::pregen_relation::splitMxd(splittingOption split)
     // Initialize unpacked nodes
     unpacked_node* Mu = (isLevelAbove(k, events[k].getLevel()))
       ?   unpacked_node::newRedundant(mxdF, k, events[k].getNode(), FULL_ONLY)
-      :   mxdF->newUnpacked(events[k].getNode(), FULL_ONLY)
+      :   unpacked_node::newFromNode(mxdF, events[k].getNode(), FULL_ONLY)
+      // :   mxdF->newUnpacked(events[k].getNode(), FULL_ONLY)
     ;
 
     unpacked_node* Mp = unpacked_node::New(mxdF, FULL_ONLY);

@@ -140,7 +140,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
     for (const auto& n : t) {
       MEDDLY_DCASSERT(getNodeLevel(n) == (level+1));
 
-      unpacked_node* nr = newUnpacked(n, FULL_ONLY);
+      // unpacked_node* nr = newUnpacked(n, FULL_ONLY);
+      unpacked_node* nr = unpacked_node::newFromNode(this, n, FULL_ONLY);
       bool update = false;
       for (int i = 0; i < hsize; i++) {
         if (dup.find(nr->down(i)) != dup.end()) {
@@ -190,7 +191,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
   for (int i = 0; i < phnum; i++) {
     MEDDLY_DCASSERT(isActiveNode(phnodes[i]));
 
-    unpacked_node* nr = newUnpacked(phnodes[i], FULL_ONLY);
+    // unpacked_node* nr = newUnpacked(phnodes[i], FULL_ONLY);
+    unpacked_node* nr = unpacked_node::newFromNode(this, phnodes[i], FULL_ONLY);
     bool skip = true;
     for (int j = 0; j < hsize; j++){
       if (!isLevelAbove(-level, getNodeLevel(nr->down(j)))) {
@@ -231,7 +233,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
     for (const auto& n : t) {
       MEDDLY_DCASSERT(getNodeLevel(n)==(level+1));
 
-      unpacked_node* nr = newUnpacked(n, FULL_ONLY);
+      // unpacked_node* nr = newUnpacked(n, FULL_ONLY);
+      unpacked_node* nr = unpacked_node::newFromNode(this, n, FULL_ONLY);
 
       bool update = false;
       for (int i = 0; i < hsize; i++) {
