@@ -271,6 +271,7 @@ void MEDDLY::unpacked_node::initRedundant(int k, node_handle node)
 {
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(parent->isTerminalNode(node) || !parent->isDeletedNode(node));
+    MEDDLY_DCASSERT(!hasEdges());
 #ifdef ALLOW_EXTENSIBLE
     is_extensible = parent->isExtensibleLevel(k);
     resize( is_extensible ? 1 : unsigned(parent->getLevelSize(k)) );
@@ -280,23 +281,27 @@ void MEDDLY::unpacked_node::initRedundant(int k, node_handle node)
     level = k;
 
     if (is_full) {
-        for (unsigned i=0; i<getSize(); i++) {
-            setFull(i, node);
+        for (unsigned i=getSize(); i; ) {
+            --i;
+            down(i) = node;
         }
     } else {
-        for (unsigned i=0; i<getSize(); i++) {
-            setSparse(i, i, node);
+        for (unsigned i=getSize(); i; ) {
+            --i;
+            index(i) = i;
+            down(i) = node;
         }
     }
 
     orig_was_identity = false;
 }
 
-void MEDDLY::unpacked_node::initRedundant(int k, const edge_value &ev,
+void MEDDLY::unpacked_node::_initRedundant(int k, const edge_value &ev,
         node_handle node)
 {
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(parent->isTerminalNode(node) || !parent->isDeletedNode(node));
+    MEDDLY_DCASSERT(hasEdges());
 #ifdef ALLOW_EXTENSIBLE
     is_extensible = parent->isExtensibleLevel(k);
     resize( is_extensible ? 1 : unsigned(parent->getLevelSize(k)) );
@@ -306,12 +311,17 @@ void MEDDLY::unpacked_node::initRedundant(int k, const edge_value &ev,
     level = k;
 
     if (is_full) {
-        for (unsigned i=0; i<getSize(); i++) {
-            setFull(i, ev, node);
+        for (unsigned i=getSize(); i; ) {
+            --i;
+            down(i) = node;
+            edgeval(i) = ev;
         }
     } else {
-        for (unsigned i=0; i<getSize(); i++) {
-            setSparse(i, i, ev, node);
+        for (unsigned i=getSize(); i; ) {
+            --i;
+            index(i) = i;
+            down(i) = node;
+            edgeval(i) = ev;
         }
     }
 
@@ -324,21 +334,23 @@ void MEDDLY::unpacked_node::initIdentity(int k, unsigned i, node_handle node)
 {
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(parent->isTerminalNode(node) || !parent->isDeletedNode(node));
+    MEDDLY_DCASSERT(!hasEdges());
     level = k;
 
     if (is_full) {
         resize(parent->getLevelSize(k));
-        clear(0, getSize());
-        setFull(i, node);
+        _clear(*parent);
+        down(i) = node;
     } else {
         resize(1);
-        setSparse(0, i, node);
+        index(0) = i;
+        down(0) = node;
     }
 
     orig_was_identity = true;
 }
 
-void MEDDLY::unpacked_node::initIdentity(int k, unsigned i,
+void MEDDLY::unpacked_node::_initIdentity(int k, unsigned i,
         const edge_value &ev, node_handle node)
 {
     MEDDLY_DCASSERT(k);
@@ -347,11 +359,14 @@ void MEDDLY::unpacked_node::initIdentity(int k, unsigned i,
 
     if (is_full) {
         resize(parent->getLevelSize(k));
-        clear(0, getSize());
-        setFull(i, ev, node);
+        _clear(*parent);
+        down(i) = node;
+        edgeval(i) = ev;
     } else {
         resize(1);
-        setSparse(0, i, ev, node);
+        index(0) = i;
+        down(0) = node;
+        edgeval(0) = ev;
     }
 
     orig_was_identity = true;
@@ -376,7 +391,7 @@ MEDDLY::unpacked_node* MEDDLY::unpacked_node::newWritable(forest* f, int lvl,
     U->resize(tsz);
     U->is_full = (fs != SPARSE_ONLY);
     if (U->is_full) {
-        U->clear(0, tsz);
+        U->_clear(*f);
     }
     U->allowWrites(f);
     return U;
@@ -391,7 +406,7 @@ MEDDLY::unpacked_node* MEDDLY::unpacked_node::newWritable(forest* f, int lvl,
     U->resize(tsz);
     U->is_full = (fs != SPARSE_ONLY);
     if (U->is_full) {
-        U->clear(0, tsz);
+        U->_clear(*f);
     }
     U->allowWrites(f);
     return U;
@@ -809,23 +824,7 @@ bool MEDDLY::unpacked_node::isSorted() const
 
 void MEDDLY::unpacked_node::clear(unsigned low, unsigned high)
 {
-    CHECK_RANGE(__FILE__, __LINE__, 0u, low, alloc);
-    CHECK_RANGE(__FILE__, __LINE__, 0u, high, alloc+1);
-    MEDDLY_DCASSERT(_down);
-
-    if (hasEdges()) {
-        MEDDLY_DCASSERT(_edge);
-        for (unsigned i=low; i<high; i++) {
-            parent->getTransparentEdge(_edge[i], _down[i]);
-        }
-    } else {
-        for (unsigned i=low; i<high; i++) {
-            _down[i] = parent->getTransparentNode();
-        }
-    }
-#ifdef DEVELOPMENT_CODE
-    has_hash = false;
-#endif
+    _clear(*parent, low, high);
 }
 
 //
@@ -1078,495 +1077,3 @@ void MEDDLY::unpacked_node::showDoubly(const unpacked_node* list)
     std::cerr << " -|\n";
 }
 
-#if 0
-
-// ******************************************************************
-// *                                                                *
-// *                     unreduced_lists struct                     *
-// *                                                                *
-// ******************************************************************
-
-struct MEDDLY::unreduced_lists {
-    unreduced_node* recycled;
-    unreduced_node* building;
-};
-
-// ******************************************************************
-// *                                                                *
-// *                 unreduced_node  static members                 *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::unreduced_lists*    MEDDLY::unreduced_node::ForLists;
-unsigned                    MEDDLY::unreduced_node::ForListsAlloc;
-
-char*                       MEDDLY::unreduced_node::free_headers[16];
-MEDDLY::node_handle*        MEDDLY::unreduced_node::free_down[16];
-unsigned*                   MEDDLY::unreduced_node::free_index[16];
-MEDDLY::edge_value*         MEDDLY::unreduced_node::free_edge[16];
-
-
-// ******************************************************************
-// *                                                                *
-// *                                                                *
-// *                     unreduced_node methods                     *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::unreduced_node::unreduced_node()
-{
-    parent = nullptr;
-    build_list_FID = 0;
-
-    next = nullptr;
-    prev = nullptr;
-
-    _header = nullptr;
-    _down = nullptr;
-    _index = nullptr;
-    _edge = nullptr;
-
-    mark_extra = 0;
-    size = 0;
-    alloc = 0;
-
-    _header_slot = 0;
-    unhashed_header_bytes = 0;
-    hashed_header_bytes = 0;
-
-#ifdef DEVELOPMENT_CODE
-    has_hash = false;
-#endif
-}
-
-MEDDLY::unreduced_node::~unreduced_node()
-{
-    freeNode();
-}
-
-void MEDDLY::unreduced_node::initFromNode(const forest* f, node_handle node,
-                node_storage_flags fs)
-{
-    MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
-
-
-    // TBD
-    orig_was_identity = false;
-}
-
-void MEDDLY::unreduced_node::initRedundant(const forest *f, int k,
-        const edge_value &ev, node_handle node, node_storage_flags fs)
-{
-    MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(k);
-    MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
-    MEDDLY_DCASSERT(ev.hasType(f->getEdgeType()));
-
-    allocNode(f,  f->getLevelSize(k), fs);
-    level = k;
-
-    if (ev.isVoid()) {
-        if (isFull()) {
-            for (unsigned i=0; i<getSize(); i++) {
-                setFull(i, node);
-            }
-        } else {
-            for (unsigned i=0; i<getSize(); i++) {
-                setSparse(i, i, node);
-            }
-        }
-    } else {
-        if (isFull()) {
-            for (unsigned i=0; i<getSize(); i++) {
-                setFull(i, ev, node);
-            }
-        } else {
-            for (unsigned i=0; i<getSize(); i++) {
-                setSparse(i, i, ev, node);
-            }
-        }
-    }
-
-    orig_was_identity = false;
-}
-
-void MEDDLY::unreduced_node::initIdentity(const forest *f, int k, unsigned i,
-        const edge_value &ev, node_handle node, node_storage_flags fs)
-{
-    MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(k);
-    MEDDLY_DCASSERT(f->isTerminalNode(node) || !f->isDeletedNode(node));
-    MEDDLY_DCASSERT(ev.hasType(f->getEdgeType()));
-
-    level = k;
-    if (FULL_ONLY == fs) {
-        allocNode(f, f->getLevelSize(k), fs);
-        clear(0, getSize());
-        setFull(i, ev, node);
-    } else {
-        allocNode(f, 1, fs);
-        setSparse(0, i, ev, node);
-    }
-
-    orig_was_identity = true;
-}
-
-void MEDDLY::unreduced_node::initEmpty(forest* f, int k, unsigned size,
-        node_storage_flags fs)
-{
-    MEDDLY_DCASSERT(f);
-    MEDDLY_DCASSERT(k);
-
-    level = k;
-    allocNode(f, size, fs);
-    if (FULL_ONLY == fs) {
-        clear(0, getSize());
-    }
-    mark_extra = 0;
-    AddToBuildList(f, this);
-
-    orig_was_identity = false;
-}
-
-void MEDDLY::unreduced_node::clear(unsigned low, unsigned high)
-{
-    CHECK_RANGE(__FILE__, __LINE__, 0u, low, alloc);
-    CHECK_RANGE(__FILE__, __LINE__, 0u, high, 1+alloc);
-    if (hasEdges()) {
-        for (unsigned i=low; i<high; i++) {
-            parent->getTransparentEdge(edgeval(i), down(i));
-        }
-    } else {
-        for (unsigned i=low; i<high; i++) {
-            down(i) = parent->getTransparentNode();
-        }
-    }
-#ifdef DEVELOPMENT_CODE
-    has_hash = false;
-#endif
-}
-
-void MEDDLY::unreduced_node::freeNode()
-{
-    if (parent) {
-        //
-        // Recycle or free _header
-        //
-        if (_header) {
-           pushFreeHeader(_header, _header_slot);
-           _header = nullptr;
-        }
-        //
-        // Recycle or free _down
-        //
-        const unsigned _down_slot = size2slot(alloc);
-
-        if (_down) {
-            pushFreeDown(_down, _down_slot);
-            _down = nullptr;
-        }
-        //
-        // Recycle or free _index
-        //
-        if (_index) {
-            pushFreeIndex(_index, _down_slot);
-            _index = nullptr;
-        }
-        //
-        // Recycle or free _edge
-        //
-        if (_edge) {
-            pushFreeEdge(_edge, _down_slot);
-            _edge = nullptr;
-        }
-        parent = nullptr;
-
-        if (build_list_FID) {
-            RemoveFromBuildList(this);
-        }
-
-        alloc = 0;
-    }
-    MEDDLY_DCASSERT(!_header);
-    MEDDLY_DCASSERT(!_down);
-    MEDDLY_DCASSERT(!_index);
-    MEDDLY_DCASSERT(!_edge);
-    MEDDLY_DCASSERT(!build_list_FID);
-    MEDDLY_DCASSERT(!next);
-    MEDDLY_DCASSERT(!prev);
-}
-
-void MEDDLY::unreduced_node::allocNode(const forest* f, unsigned _size,
-        node_storage_flags fs)
-{
-    MEDDLY_DCASSERT(f);
-
-    if (parent != f) {
-        if (parent) {
-            freeNode();
-        }
-        MEDDLY_DCASSERT(!parent);
-        MEDDLY_DCASSERT(!_header);
-
-        parent = f;
-        //
-        // Allocate header data if needed
-        //
-        CHECK_RANGE(__FILE__, __LINE__, 0u, f->unhashedHeaderBytes(), 256u);
-        CHECK_RANGE(__FILE__, __LINE__, 0u, f->hashedHeaderBytes(), 256u);
-
-        unhashed_header_bytes = f->unhashedHeaderBytes();
-        hashed_header_bytes   = f->hashedHeaderBytes();
-
-        const unsigned hbytes = unhashed_header_bytes + hashed_header_bytes;
-        _header_slot = size2slot(hbytes);
-        if (hbytes) {
-            _header = popFreeHeader(_header_slot);
-            if (!_header) {
-                const unsigned halloc = slot2size(_header_slot);
-                _header = new char[halloc];
-            }
-        }
-    } else {
-        if (build_list_FID) {
-            RemoveFromBuildList(this);
-        }
-    }
-
-    expand(_size, (fs != FULL_ONLY), f->getEdgeType() != edge_type::VOID);
-    size = _size;
-}
-
-void MEDDLY::unreduced_node::expand(unsigned ns, bool make_index,
-        bool make_edge)
-{
-    if (ns > 123456789) {
-        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    }
-    const unsigned oldslot = size2slot(alloc);
-    unsigned newalloc;
-    const unsigned newslot = size2slot(ns);
-    if (newslot < 15) {
-        newalloc = slot2size(newslot);
-    } else {
-        newalloc = size2slot(15);
-        while (newalloc < ns) {
-            newalloc += newalloc / 2;
-        }
-    }
-    MEDDLY_DCASSERT(newalloc >= ns);
-
-    _down = (node_handle*) realloc(_down, newalloc*sizeof(node_handle));
-    if (!_down) {
-        throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    }
-
-    if (make_index) {
-        _index = (unsigned*) realloc(_index, newalloc*sizeof(unsigned));
-        if (!_index) {
-            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-        }
-    } else {
-        if (_index) {
-            pushFreeIndex(_index, oldslot);
-            _index = nullptr;
-        }
-    }
-
-    if (make_edge) {
-        _edge = (edge_value*) realloc(_edge, newalloc*sizeof(edge_value));
-        if (!_edge) {
-            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-        }
-    } else {
-        if (_edge) {
-            pushFreeEdge(_edge, oldslot);
-            _edge = nullptr;
-        }
-    }
-    alloc = newalloc;
-#ifdef DEVELOPMENT_CODE
-    has_hash = false;
-#endif
-}
-
-// ******************************************************************
-// *                                                                *
-// *                 static  unreduced_node methods                 *
-// *                                                                *
-// ******************************************************************
-
-void MEDDLY::unreduced_node::AddToBuildList(forest* F, unreduced_node* n)
-{
-    MEDDLY_DCASSERT(F);
-    MEDDLY_DCASSERT(n);
-    MEDDLY_DCASSERT(F->FID());
-    n->build_list_FID = F->FID();
-
-    CHECK_RANGE(__FILE__, __LINE__, 1u, F->FID(), ForListsAlloc);
-    MEDDLY_DCASSERT(ForLists);
-
-    if (ForLists[F->FID()].building) {
-        ForLists[F->FID()].building->prev = n;
-    }
-    n->next = ForLists[F->FID()].building;
-    n->prev = nullptr;
-    ForLists[F->FID()].building = n;
-
-#ifdef DEBUG_FORLISTS
-    std::cerr << "Added " << n << " to build list # " << F->FID()
-              << "\nList is now: -> ";
-    showDoubly(ForLists[F->FID()].building);
-#endif
-}
-
-void MEDDLY::unreduced_node::RemoveFromBuildList(unreduced_node* n)
-{
-    MEDDLY_DCASSERT(n);
-    if (!ForLists) {
-        //
-        // Lists have all been destroyed; this must be a late recycle.
-        //
-
-        n->next = nullptr;
-        n->prev = nullptr;
-        n->build_list_FID = 0;
-        return;
-    }
-
-    //
-    // Remove n from its (doubly-linked) building list
-    //
-
-    CHECK_RANGE(__FILE__, __LINE__, 1u, n->build_list_FID, ForListsAlloc);
-    MEDDLY_DCASSERT(ForLists);
-
-    unreduced_node* next = n->next;
-    unreduced_node* prev = n->prev;
-    if (prev) {
-        prev->next = next;
-    } else {
-        // we're at the front of the list
-        MEDDLY_DCASSERT(ForLists[n->build_list_FID].building == n);
-        ForLists[n->build_list_FID].building = next;
-    }
-    if (next) {
-        next->prev = prev;
-    }
-
-#ifdef DEBUG_FORLISTS
-    std::cerr << "Removed " << n << " from buildlist #" << n->build_list_FID
-              << "\nList is now: -> ";
-    showDoubly(ForLists[n->build_list_FID].building);
-#endif
-
-    n->next = nullptr;
-    n->prev = nullptr;
-    n->build_list_FID = 0;
-}
-
-void MEDDLY::unreduced_node::initForest(const forest* f)
-{
-    if (!f) return;
-    const unsigned FID = f->FID();
-    if (FID >= ForListsAlloc) {
-        unsigned newalloc = (FID/16 + 1) * 16;
-
-        ForLists = (unreduced_lists*)
-                   realloc(ForLists, newalloc * sizeof (unreduced_lists));
-
-        if (!ForLists) {
-            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-        }
-        ForListsAlloc = newalloc;
-    }
-
-    ForLists[FID].recycled = nullptr;
-    ForLists[FID].building = nullptr;
-
-#ifdef DEBUG_FORLISTS
-    std::cerr << "initForest #" << FID << " lists are " <<
-        ForLists[FID].building << " and " << ForLists[FID].recycled << "\n";
-#endif
-}
-
-void MEDDLY::unreduced_node::doneForest(const forest* f)
-{
-    if (!f) return;
-    const unsigned FID = f->FID();
-    CHECK_RANGE(__FILE__, __LINE__, 1u, FID, ForListsAlloc);
-
-    // Delete the building list
-    while (ForLists[FID].building) {
-        unreduced_node* p = ForLists[FID].building;
-        ForLists[FID].building = p->next;
-        delete p;
-    }
-    // Delete the recycled list
-    while (ForLists[FID].recycled) {
-        unreduced_node* p = ForLists[FID].recycled;
-        ForLists[FID].recycled = p->next;
-        delete p;
-    }
-#ifdef DEBUG_FORLISTS
-    std::cerr << "doneForest #" << FID << " lists are " <<
-        ForLists[FID].building << " and " << ForLists[FID].recycled << "\n";
-#endif
-}
-
-void MEDDLY::unreduced_node::showDoubly(const unreduced_node* list)
-{
-    while (list) {
-        std::cerr << " -> (prev " << list->prev << ") " << list;
-        list = list->next;
-    }
-    std::cerr << " -|\n";
-}
-
-
-void MEDDLY::unreduced_node::initStatics()
-{
-    ForLists = nullptr;
-    ForListsAlloc = 0;
-
-    for (unsigned i=0; i<16; i++) {
-        free_headers[i] = nullptr;
-        free_down[i]    = nullptr;
-        free_index[i]   = nullptr;
-        free_edge[i]    = nullptr;
-    }
-}
-
-void MEDDLY::unreduced_node::doneStatics()
-{
-    free(ForLists);
-    ForLists = nullptr;
-    ForListsAlloc = 0;
-
-    for (unsigned i=0; i<16; i++) {
-        for (;;) {
-            char* hdr = popFreeHeader(i);
-            if (!hdr) break;
-            delete[] hdr;   // won't be resized
-        }
-        for (;;) {
-            node_handle* dn = popFreeDown(i);
-            if (!dn) break;
-            free(dn);
-        }
-        for (;;) {
-            unsigned* ix = popFreeIndex(i);
-            if (!ix) break;
-            free(ix);
-        }
-        for (;;) {
-            edge_value* ev = popFreeEdge(i);
-            if (!ev) break;
-            free(ev);
-        }
-    }
-}
-
-#endif // turn off unreduced_node

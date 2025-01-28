@@ -135,7 +135,19 @@ class MEDDLY::unpacked_node {
                 @param  ev      All edge values
                 @param  node    All the down pointers
         */
-        void initRedundant(int k, const edge_value &ev, node_handle node);
+        inline void initRedundant(int k, const edge_value &ev, node_handle node)
+        {
+            if (ev.isVoid()) {
+                initRedundant(k, node);
+            } else {
+                _initRedundant(k, ev, node);
+            }
+        }
+
+    protected:
+        void _initRedundant(int k, const edge_value &ev, node_handle node);
+
+    public:
 
 #ifdef ALLOW_DEPRECATED_0_17_8
         inline void initRedundant(const forest *f, int k,
@@ -180,8 +192,21 @@ class MEDDLY::unpacked_node {
                 @param  ev      Edge value for index i
                 @param  node    Down pointer for index i
         */
-        void initIdentity(int k, unsigned i, const edge_value &ev,
+        inline void initIdentity(int k, unsigned i, const edge_value &ev,
+                node_handle node)
+        {
+            if (ev.isVoid()) {
+                initIdentity(k, i, node);
+            } else {
+                _initIdentity(k, i, ev, node);
+            }
+        }
+
+    protected:
+        void _initIdentity(int k, unsigned i, const edge_value &ev,
                 node_handle node);
+
+    public:
 
 #ifdef ALLOW_DEPRECATED_0_17_8
         inline void initIdentity(const forest *f, int k, unsigned i,
@@ -238,7 +263,7 @@ class MEDDLY::unpacked_node {
             if (ev.isVoid()) {
                 U->initRedundant(k, node);
             } else {
-                U->initRedundant(k, ev, node);
+                U->_initRedundant(k, ev, node);
             }
             return U;
         }
@@ -261,7 +286,7 @@ class MEDDLY::unpacked_node {
             if (ev.isVoid()) {
                 U->initIdentity(k, i, node);
             } else {
-                U->initIdentity(k, i, ev, node);
+                U->_initIdentity(k, i, ev, node);
             }
             return U;
         }
@@ -1010,13 +1035,65 @@ class MEDDLY::unpacked_node {
             mark_extra = 0;
         }
 
+
         // Set edges to transparent
         void clear(unsigned low, unsigned high);
 
-    public:
         /// Was this node initialized from an identity node
         inline bool wasIdentity() const {
             return orig_was_identity;
+        }
+
+    protected:
+        //
+        // This is the ugliest hack that ever hacked
+        // but it allows us to keep forest "hidden"
+        // until later
+        //
+        template <class FORST>
+        inline void _clear(const FORST &F, unsigned low, unsigned high)
+        {
+            CHECK_RANGE(__FILE__, __LINE__, 0u, low, alloc);
+            CHECK_RANGE(__FILE__, __LINE__, 0u, high, alloc+1);
+            MEDDLY_DCASSERT(_down);
+
+            if (hasEdges()) {
+                MEDDLY_DCASSERT(_edge);
+                for (unsigned i=low; i<high; i++) {
+                    F.getTransparentEdge(_edge[i], _down[i]);
+                }
+            } else {
+                for (unsigned i=low; i<high; i++) {
+                    _down[i] = F.getTransparentNode();
+                }
+            }
+#ifdef DEVELOPMENT_CODE
+            has_hash = false;
+#endif
+        }
+        //
+        // Special case of _clear for all edges
+        //
+        template <class FORST>
+        inline void _clear(const FORST &F)
+        {
+            MEDDLY_DCASSERT(_down);
+
+            if (hasEdges()) {
+                MEDDLY_DCASSERT(_edge);
+                for (unsigned i=getSize(); i; ) {
+                    --i;
+                    F.getTransparentEdge(_edge[i], _down[i]);
+                }
+            } else {
+                for (unsigned i=getSize(); i; ) {
+                    --i;
+                    _down[i] = F.getTransparentNode();
+                }
+            }
+#ifdef DEVELOPMENT_CODE
+            has_hash = false;
+#endif
         }
 
     public:
@@ -1185,731 +1262,5 @@ class MEDDLY::unpacked_node {
         bool orig_was_identity;
 
 };
-
-#if 0
-
-// ******************************************************************
-// *                                                                *
-// *                      unreduced_node class                      *
-// *                                                                *
-// ******************************************************************
-
-/**
-    Class for unreduced nodes, i.e., copies of nodes outside a forest.
-    Ideally - used anywhere we want to read node data, or create nodes.
-    Unreduced nodes may be "full" or "sparse", independent of how
-    the actual node is stored in the forest.
-
-    Currently, an unreduced node contains the following arrays.
-        _header:    array of chars. will be partitioned into
-                    hashed and unhashed headers.
-
-        _down:      array of node_handles, for downward pointers.
-        _index:     array of unsigned, for indexes (sparse storage).
-        _edge:      array of edge_values, for EV forests.
-
-    Arrays are null if not needed. Otherwise, arrays _down, _index,
-    and _edge will be the same size.
-
-    Arrays are pulled from static free lists, and recycled to the same,
-    automatically. Free lists are by size, and since nodes may be expanded
-    on demand, we may allocate more than needed. Also by reducing the
-    number of sizes allocated, we reduce the number of free lists.
-
-    The constructor sets up a blank node. It cannot be used effectively
-    until one of the init methods is called.
-*/
-
-class MEDDLY::unreduced_node {
-        friend class initializer_list;
-    public:
-        unreduced_node();
-        ~unreduced_node();
-
-        //
-        // Node Access methods (inlined)
-        //
-
-        /// Are we attached to f
-        inline bool isAttachedTo(const forest* f) {
-            return f == parent;
-        }
-
-        /// Get a pointer to the unhashed header data.
-        inline void* UHptr()
-        {
-            return _header;
-        }
-
-        /// Get a pointer to the unhashed header data.
-        inline const void* UHptr() const
-        {
-            return _header;
-        }
-
-        /// Get the number of bytes of unhashed header data.
-        inline unsigned UHbytes() const
-        {
-            return unhashed_header_bytes;
-        }
-
-        /// Set the unhashed header data
-        inline void copyToUnhashed(const void* p)
-        {
-            MEDDLY_DCASSERT(p);
-            MEDDLY_DCASSERT(UHbytes() > 0);
-            MEDDLY_DCASSERT(_header);
-            memcpy(UHptr(), p, UHbytes());
-        }
-
-        /// Get the unhashed header data
-        inline void copyFromUnhashed(void* p) const
-        {
-            MEDDLY_DCASSERT(p);
-            MEDDLY_DCASSERT(UHbytes() > 0);
-            MEDDLY_DCASSERT(_header);
-            memcpy(p, UHptr(), UHbytes());
-        }
-
-
-        /// Get a pointer to the hashed header data.
-        inline void* HHptr()
-        {
-            return _header + UHbytes();
-        }
-
-        /// Get a pointer to the hashed header data.
-        inline const void* HHptr() const
-        {
-            return _header + UHbytes();
-        }
-
-        /// Get the number of bytes of hashed header data.
-        inline unsigned HHbytes() const
-        {
-            return hashed_header_bytes;
-        }
-
-        /// Set the hashed header data
-        inline void copyToHashed(const void* p)
-        {
-            MEDDLY_DCASSERT(p);
-            MEDDLY_DCASSERT(HHbytes() > 0);
-            MEDDLY_DCASSERT(_header);
-            memcpy(HHptr(), p, HHbytes());
-        }
-
-        /// Get the hashed header data
-        inline void copyFromHashed(void* p) const
-        {
-            MEDDLY_DCASSERT(p);
-            MEDDLY_DCASSERT(HHbytes() > 0);
-            MEDDLY_DCASSERT(_header);
-            memcpy(p, HHptr(), HHbytes());
-        }
-
-        /** Get a downward pointer.
-            @param  n   Which pointer.
-            @return     If this is a full node,
-                        return pointer with index n.
-                        If this is a sparse node,
-                        return the nth non-zero pointer.
-        */
-        template <typename INT>
-        inline node_handle down(INT n) const
-        {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, INT(0), n, INT(size));
-            MEDDLY_DCASSERT(_down);
-            return _down[n];
-        }
-
-        /** Get a downward pointer.
-            @param  n   Which pointer.
-            @return     If this is a full node,
-                        return pointer with index n.
-                        If this is a sparse node,
-                        return the nth non-zero pointer.
-        */
-        template <typename INT>
-        inline node_handle& down(INT n)
-        {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, INT(0), n, INT(size));
-            MEDDLY_DCASSERT(_down);
-            return _down[n];
-        }
-
-        /** Get the index of the nth non-zero pointer.
-            Use only for sparse nodes.
-            @param  n   Which pointer
-            @return     The index of the pointer
-        */
-        template <typename INT>
-        inline unsigned index(INT n) const
-        {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, INT(0), n, INT(size));
-            MEDDLY_DCASSERT(_index);
-            return _index[n];
-        }
-
-        /** Get the index of the nth non-zero pointer.
-            Use only for sparse nodes.
-            @param  n   Which pointer
-            @return     The index of the pointer
-        */
-        template <typename INT>
-        inline unsigned& index(INT n)
-        {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, INT(0), n, INT(size));
-            MEDDLY_DCASSERT(_index);
-            return _index[n];
-        }
-
-        /** Get the nth edge value.
-            @param  n   Which pointer
-            @return     The edge value
-        */
-        template <typename INT>
-        inline const edge_value& edgeval(INT n) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, INT(0), n, INT(size));
-            MEDDLY_DCASSERT(_edge);
-            return _edge[n];
-        }
-
-        /** Get the nth edge value.
-            @param  n   Which pointer
-            @return     The edge value
-        */
-        template <typename INT>
-        inline edge_value& edgeval(INT n) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, INT(0), n, INT(size));
-            MEDDLY_DCASSERT(_edge);
-            return _edge[n];
-        }
-
-        /**
-            Set a full edge.
-                @param  n       Which pointer
-                @param  h       Node handle
-        */
-        inline void setFull(unsigned n, node_handle h)
-        {
-            MEDDLY_DCASSERT(!hasEdges());
-            MEDDLY_DCASSERT(isFull());
-            down(n) = h;
-        }
-
-        /**
-            Set a full edge.
-                @param  n       Which pointer
-                @param  v       Edge value
-                @param  h       Node handle
-        */
-        inline void setFull(unsigned n, const edge_value &v, node_handle h)
-        {
-            MEDDLY_DCASSERT(isFull());
-            down(n) = h;
-            if (hasEdges()) {
-                edgeval(n) = v;
-            } else {
-                MEDDLY_DCASSERT(v.isVoid());
-            }
-        }
-
-        /**
-            Set a sparse edge.
-                @param  n       Which nonzero edge
-                @param  i       Index of the edge
-                @param  h       Node handle
-        */
-        inline void setSparse(unsigned n, unsigned i, node_handle h)
-        {
-            MEDDLY_DCASSERT(!hasEdges());
-            MEDDLY_DCASSERT(isSparse());
-            down(n) = h;
-            index(n) = i;
-        }
-
-        /**
-            Set a sparse edge.
-                @param  n       Which nonzero edge
-                @param  i       Index of the edge
-                @param  v       Edge value
-                @param  h       Node handle
-        */
-        inline void setSparse(unsigned n, unsigned i, const edge_value &v,
-                node_handle h)
-        {
-            MEDDLY_DCASSERT(isSparse());
-            down(n) = h;
-            index(n) = i;
-            if (hasEdges()) {
-                edgeval(n) = v;
-            } else {
-                MEDDLY_DCASSERT(v.isVoid());
-            }
-        }
-
-
-        /**
-            Hack for mark and sweep.
-            Add an extra, temporary node to the list of roots
-            for mark and sweep.
-            Do this for example in an "APPLY" operation that
-            needs to create a temporary result.
-            We can hold one such result and make sure it's marked,
-            by calling this method.
-                @param  t   Node handle for temporary result.
-         */
-        inline void setTempRoot(node_handle t)
-        {
-            mark_extra = t;
-        }
-
-        /// Get the level number of this node.
-        inline int getLevel() const
-        {
-            return level;
-        }
-
-        /// Set the level number of this node.
-        inline void setLevel(int k)
-        {
-            level = k;
-        }
-
-        /// Get the size of this node.
-        inline unsigned getSize() const
-        {
-            return size;
-        }
-
-        /// Is this a sparse node?
-        inline bool isSparse() const
-        {
-            return _index;
-        }
-
-        /// Is this a full node?
-        inline bool isFull() const
-        {
-            return !isSparse();
-        }
-
-        /// Does this node have edge values?
-        inline bool hasEdges() const
-        {
-            return _edge;
-        }
-
-        /// Edge type
-        /*
-        inline edge_type getEdgeType() const
-        {
-            return the_edge_type;
-        }
-        */
-
-        /// Get the node's hash
-        inline unsigned hash() const
-        {
-#ifdef DEVELOPMENT_CODE
-            MEDDLY_DCASSERT(has_hash);
-#endif
-            return the_hash;
-        }
-
-    public:
-        /**
-            Initialize, from a particular node
-        */
-        void initFromNode(const forest* f, node_handle node,
-                node_storage_flags fs);
-
-        /**
-           Initialize, as a redundant node
-        */
-        void initRedundant(const forest *f, int k, const edge_value &ev,
-                node_handle node, node_storage_flags fs);
-
-        /**
-            Initialize, as a redundant node (no edge values)
-        */
-        inline void initRedundant(const forest *f, int k,
-                node_handle node, node_storage_flags fs)
-        {
-            edge_value v;
-            initRedundant(f, k, v, node, fs);
-        }
-
-        /**
-            Initialize, as an identity node
-        */
-        void initIdentity(const forest *f, int k, unsigned i,
-                const edge_value &ev, node_handle node, node_storage_flags fs);
-
-        /**
-            Initialize, as an identity node (no edge values)
-        */
-        inline void initIdentity(const forest *f, int k, unsigned i,
-                node_handle node, node_storage_flags fs)
-        {
-            edge_value v;
-            initIdentity(f, k, i, v, node, fs);
-        }
-
-        /**
-            Initialize a blank, writable node
-        */
-        void initEmpty(forest* f, int k, unsigned size, node_storage_flags fs);
-
-        /// Change the size of a node
-        inline void resize(unsigned ns) {
-            if (ns > alloc) {
-                expand(ns, isSparse(), hasEdges());
-            }
-            size = ns;
-        }
-
-        /// Set elements i in [low, high) to transparent
-        ///     @param  low     Low index
-        ///     @param  high    One past high index
-        ///
-        void clear(unsigned low, unsigned high);
-
-    public:
-        /// Compute the node's hash
-        void computeHash();
-
-        /** Write a node in human-readable format.
-
-            @param  s       Output stream.
-            @param  details Should we show "details" or not.
-        */
-        void show(output &s, bool details) const;
-
-
-        /** Write a node in machine-readable format.
-
-            @param  s       Output stream.
-            @param  map     Translation to use from node handle to file node#.
-                            Allows us to renumber nodes as we write them.
-        */
-        void write(output &s, const std::vector <unsigned> &map) const;
-
-
-        /** Read a node in machine-readable format.
-
-            @param  s       Input stream.
-            @param  map     Translation from file node# to node handles.
-                            Allows us to renumber nodes as we read them.
-        */
-        void read(input &s, const std::vector <node_handle> &map);
-
-        /// By hand destructor
-        void freeNode();
-
-    protected:
-        /// Attach to forest f and allocate
-        ///     @param  f       Forest to attach to
-        ///     @param  size    Initial size, can be 0
-        ///     @param  fs      Sparse or full storage
-        void allocNode(const forest* f, unsigned size, node_storage_flags fs);
-
-        /// Expand arrays to new size
-        void expand(unsigned ns, bool expand_index, bool expand_edge);
-
-    private:
-        /// Forest where the node belongs
-        const forest* parent;
-        /// Build list we're contained in; 0 for none, otherwise
-        /// should be the parent's FID.
-        unsigned build_list_FID;
-
-        /// Next in build list
-        unreduced_node* next;
-        /// Previous in build list
-        unreduced_node* prev;
-
-        /// Extra header info, or null
-        char* _header;
-
-        /// Down pointers
-        node_handle* _down;
-
-        /// Indexes, for sparse; otherwise unused
-        unsigned* _index;
-
-        /// Edge values; or null if void edges
-        edge_value* _edge;
-
-        /// Extra, temporary, node handle for marking.
-        node_handle mark_extra;
-
-        /// Node size; usable portion of down, index, and edge
-        unsigned size;
-
-        /// Node space allocated
-        unsigned alloc;
-
-        /// Level of the node
-        int level;
-
-        /// Hash of the node
-        unsigned the_hash;
-
-        /// size slot for header
-        unsigned char _header_slot;
-
-        /// bytes in the unhashed header
-        unsigned char unhashed_header_bytes;
-
-        /// bytes in the hashed header
-        unsigned char hashed_header_bytes;
-
-        /// True iff this was expanded from an identity-reduced edge
-        bool orig_was_identity;
-
-#ifdef DEVELOPMENT_CODE
-        /// Has the hash been computed
-        bool has_hash;
-#endif
-
-
-    // **********************************************************************
-    // Statics
-    // **********************************************************************
-
-    public:
-        /// Add a node to the build list for forest F.
-        static void AddToBuildList(forest* F, unreduced_node* n);
-
-        /// Remove a node from its build list.
-        static void RemoveFromBuildList(unreduced_node* n);
-
-        /// forest should call this in its constructor, after it has its FID.
-        /// Initializes empty lists for forest f.
-        static void initForest(const forest* f);
-
-        /// forest should call this in its destructor.
-        /// deletes all recycled nodes for forest f.
-        static void doneForest(const forest* f);
-
-
-        /// Mark children in writable nodes.
-        ///     @param  M   node marker we should use to mark nodes;
-        ///                 this also gives us the forest to check.
-        ///
-        static void MarkWritable(node_marker &M);
-
-        /// Update counts of children in writable nodes.
-        ///     @param  F           Forest we care about.
-        ///     @param  incounts    Vector of counts for each
-        ///                         nonterminal node.
-        ///
-        static void AddToIncomingCounts(const forest* F,
-                        std::vector <unsigned> &incounts);
-
-    private:
-        /// Per-forest free and build lists.
-        /// Stored as an array, indexed by the forest's FID.
-        static unreduced_lists* ForLists;
-
-        /// Allocated size of ForLists
-        static unsigned ForListsAlloc;
-
-
-    private:
-        inline static unsigned slot2size(unsigned slot)
-        {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
-            static const unsigned size[16] = {
-                16, 24, 36, 54,
-                81, 120, 180, 270,
-                405, 606, 909, 1362,
-                2043, 3063, 4593, 6888};
-            return size[slot];
-        }
-
-        inline static unsigned size2slot(unsigned size)
-        {
-            /*
-             * By hand, binary search
-             */
-            if (size <= slot2size(0)) {
-                return 0;
-                // By stripping this one off, we
-                // (1) give priority to small sizes (more likely), and
-                // (2) set up a perfect binary search for the remaining
-            }
-
-            if (size <= slot2size(8)) {
-                // 1..8
-                if (size <= slot2size(4)) {
-                    // 1,2,3,4
-                    if (size <= slot2size(2)) {
-                        // 1,2
-                        if (size <= slot2size(1))   return 1;
-                        else                        return 2;
-                    } else {
-                        // 3,4
-                        if (size <= slot2size(3))   return 3;
-                        else                        return 4;
-                    }
-                } else {
-                    // 5,6,7,8
-                    if (size <= slot2size(6)) {
-                        // 5,6
-                        if (size <= slot2size(5))   return 5;
-                        else                        return 6;
-                    } else {
-                        // 7,8
-                        if (size <= slot2size(7))   return 7;
-                        else                        return 8;
-                    }
-                }
-            } else {
-                // 9..16
-                if (size <= slot2size(12)) {
-                    // 9,10,11,12
-                    if (size <= slot2size(10)) {
-                        // 9,10
-                        if (size <= slot2size(9))   return 9;
-                        else                        return 10;
-                    } else {
-                        // 11,12
-                        if (size <= slot2size(11))  return 11;
-                        else                        return 12;
-                    }
-                } else {
-                    // 13,14,15,16
-                    if (size <= slot2size(14)) {
-                        // 13,14
-                        if (size <= slot2size(13))  return 13;
-                        else                        return 14;
-                    } else {
-                        // 15,16
-                        if (size <= slot2size(15))  return 15;
-                        else                        return 16;
-                    }
-                }
-            }
-        }
-
-        template <typename T>
-        inline static T* getNextFree(const T* array) {
-            return (reinterpret_cast<T* const*>(array))[0];
-        }
-        template <typename T>
-        inline static void setNextFree(T* array, const T* next) {
-            (reinterpret_cast<const T**>(array))[0] = next;
-        }
-
-        inline static char* popFreeHeader(unsigned slot)
-        {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
-            if (free_headers[slot]) {
-                char* ptr = free_headers[slot];
-                free_headers[slot] = getNextFree(ptr);
-                return ptr;
-            } else {
-                return nullptr;
-            }
-        }
-
-        inline static void pushFreeHeader(char* ptr, unsigned slot)
-        {
-            MEDDLY_DCASSERT(ptr);
-            if (slot >= 16) {
-                delete[] ptr;   // headers are never resized,
-                                // so we allocate them with new
-            } else {
-                setNextFree(ptr, free_headers[slot]);
-                free_headers[slot] = ptr;
-            }
-        }
-
-        inline static node_handle* popFreeDown(unsigned slot)
-        {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
-            if (free_down[slot]) {
-                node_handle* ptr = free_down[slot];
-                free_down[slot] = getNextFree(ptr);
-                return ptr;
-            } else {
-                return nullptr;
-            }
-        }
-
-        inline static void pushFreeDown(node_handle* ptr, unsigned slot)
-        {
-            MEDDLY_DCASSERT(ptr);
-            if (slot >= 16) {
-                free(ptr);
-            } else {
-                setNextFree(ptr, free_down[slot]);
-                free_down[slot] = ptr;
-            }
-        }
-
-        inline static unsigned* popFreeIndex(unsigned slot)
-        {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
-            if (free_index[slot]) {
-                unsigned* ptr = free_index[slot];
-                free_index[slot] = getNextFree(ptr);
-                return ptr;
-            } else {
-                return nullptr;
-            }
-        }
-
-        inline static void pushFreeIndex(unsigned* ptr, unsigned slot)
-        {
-            MEDDLY_DCASSERT(ptr);
-            if (slot >= 16) {
-                free(ptr);
-            } else {
-                setNextFree(ptr, free_index[slot]);
-                free_index[slot] = ptr;
-            }
-        }
-
-        inline static edge_value* popFreeEdge(unsigned slot)
-        {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, slot, 16u);
-            if (free_edge[slot]) {
-                edge_value* ptr = free_edge[slot];
-                free_edge[slot] = getNextFree(ptr);
-                return ptr;
-            } else {
-                return nullptr;
-            }
-        }
-
-        inline static void pushFreeEdge(edge_value* ptr, unsigned slot)
-        {
-            MEDDLY_DCASSERT(ptr);
-            if (slot >= 16) {
-                free(ptr);
-            } else {
-                setNextFree(ptr, free_edge[slot]);
-                free_edge[slot] = ptr;
-            }
-        }
-
-    private:
-        // Free lists by size and type
-        static char*           free_headers[16];
-        static node_handle*    free_down[16];
-        static unsigned*       free_index[16];
-        static edge_value*     free_edge[16];
-
-    private:
-        static void showDoubly(const unreduced_node* list);
-        static void initStatics();
-        static void doneStatics();
-
-};
-#endif // turn off unreduced_node
 
 #endif
