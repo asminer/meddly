@@ -38,6 +38,11 @@ class vectorgen {
 
         static void setSeed(long s, bool print=true);
 
+        inline static long getSeed()
+        {
+            return seed;
+        }
+
         static double random();
 
         static inline unsigned Equilikely_U(unsigned a, unsigned b)

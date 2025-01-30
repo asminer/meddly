@@ -215,7 +215,7 @@ check_xA_LDADD = ../src/libmeddly.la
 chk_copy_SOURCES = chk_copy.cc
 chk_copy_LDADD = ../src/libmeddly.la
 
-chk_cross_SOURCES = chk_cross.cc
+chk_cross_SOURCES = chk_cross.cc randomize.cc
 chk_cross_LDADD = ../src/libmeddly.la
 
 chk_ct_SOURCES = chk_ct.cc

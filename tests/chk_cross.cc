@@ -27,33 +27,11 @@
 #include <cassert>
 
 #include "../src/meddly.h"
+#include "randomize.h"
 
 // #define DEBUG_RANDSET
 
 int vars[] = {4, 4, 4, 4, 4, 4};
-
-long seed = -1;
-
-double Random()
-{
-    const long MODULUS = 2147483647L;
-    const long MULTIPLIER = 48271L;
-    const long Q = MODULUS / MULTIPLIER;
-    const long R = MODULUS % MULTIPLIER;
-
-    long t = MULTIPLIER * (seed % Q) - R * (seed / Q);
-    if (t > 0) {
-        seed = t;
-    } else {
-        seed = t + MODULUS;
-    }
-    return ((double) seed / MODULUS);
-}
-
-int Equilikely(int a, int b)
-{
-    return (a + (int) ((b - a + 1) * Random()));
-}
 
 using namespace MEDDLY;
 
@@ -61,16 +39,16 @@ void randomizeMinterm(minterm &m, bool rows=true)
 {
     if (m.isForSets()) {
         for (int i=1; i<=m.getNumVars(); i++) {
-            m.setVar(i, Equilikely(-1, 3));
+            m.setVar(i, vectorgen::Equilikely_I(-1, 3));
         }
     } else {
         if (rows) {
             for (int i=1; i<=m.getNumVars(); i++) {
-                m.setVars(i, Equilikely(-1, 3), DONT_CARE);
+                m.setVars(i, vectorgen::Equilikely_I(-1, 3), DONT_CARE);
             }
         } else {
             for (int i=1; i<=m.getNumVars(); i++) {
-                m.setVars(i, DONT_CARE, Equilikely(-1, 3));
+                m.setVars(i, DONT_CARE, vectorgen::Equilikely_I(-1, 3));
             }
         }
     }
@@ -118,44 +96,44 @@ void makeRandomCols(forest* f, int nmt, dd_edge &x)
 
 void test(forest* mdd, forest* mxd, int nmt)
 {
-  dd_edge rs(mdd), cs(mdd);
-  dd_edge one(mdd);
-  mdd->createConstant(true, one);
+    dd_edge rs(mdd), cs(mdd);
+    dd_edge one(mdd);
+    mdd->createConstant(true, one);
 
-  dd_edge rr(mxd), cr(mxd), rcr(mxd), tmp(mxd);
+    dd_edge rr(mxd), cr(mxd), rcr(mxd), tmp(mxd);
 
-  long saveseed = seed;
-  makeRandomSet(mdd, nmt, rs);
-  seed = saveseed;
-  makeRandomRows(mxd, nmt, rr);
+    long saveseed = vectorgen::getSeed();
+    makeRandomSet(mdd, nmt, rs);
+    vectorgen::setSeed(saveseed, false);
+    makeRandomRows(mxd, nmt, rr);
 
 #ifdef DEBUG_RANDSET
-  FILE_output out(stdout);
-  printf("Generated random set:\n");
-  rs.showGraph(out);
-  printf("Generated random rows:\n");
-  rr.showGraph(out);
+    FILE_output out(stdout);
+    printf("Generated random set:\n");
+    rs.showGraph(out);
+    printf("Generated random rows:\n");
+    rr.showGraph(out);
 #endif
 
-  // check: generate rr from rs, make sure they match
-  apply(CROSS, rs, one, tmp);
+    // check: generate rr from rs, make sure they match
+    apply(CROSS, rs, one, tmp);
 #ifdef DEBUG_RANDSET
-  printf("rs x 1:\n");
-  tmp.showGraph(out);
+    printf("rs x 1:\n");
+    tmp.showGraph(out);
 #endif
-  assert(tmp == rr);
+    assert(tmp == rr);
 
 
-  saveseed = seed;
-  makeRandomSet(mdd, nmt, cs);
-  seed = saveseed;
-  makeRandomCols(mxd, nmt, cr);
+    saveseed = vectorgen::getSeed();
+    makeRandomSet(mdd, nmt, cs);
+    vectorgen::setSeed(saveseed, false);
+    makeRandomCols(mxd, nmt, cr);
 
 #ifdef DEBUG_RANDSET
-  printf("Generated random set:\n");
-  cs.showGraph(out);
-  printf("Generated random cols:\n");
-  cr.showGraph(out);
+    printf("Generated random set:\n");
+    cs.showGraph(out);
+    printf("Generated random cols:\n");
+    cr.showGraph(out);
 #endif
 
     // check: generate cr from cs, make sure they match
@@ -197,6 +175,7 @@ void test(forest* mdd, forest* mxd, int nmt)
 
 int processArgs(int argc, const char** argv)
 {
+    long seed = 0;
     if (argc>2) {
         /* Strip leading directory, if any: */
         const char* name = argv[0];
@@ -209,11 +188,8 @@ int processArgs(int argc, const char** argv)
     if (argc>1) {
         seed = atol(argv[1]);
     }
-    if (seed < 1) {
-        seed = time(0);
-    }
 
-    printf("Using rng seed %ld\n", seed);
+    vectorgen::setSeed(seed, true);
     return 1;
 }
 
