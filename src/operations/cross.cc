@@ -16,7 +16,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// #define NEW_CT
+#define NEW_CT
 
 #include "../defines.h"
 #include "cross.h"
@@ -99,8 +99,8 @@ MEDDLY::cross_bool::cross_bool(forest* arg1, forest* arg2, forest* res)
 
 #ifdef NEW_CT
     ct = new ct_entry_type(CROSS_cache.getName());
-    ct.setFixed('I', arg1, arg2);
-    st->setResult(res);
+    ct->setFixed('I', arg1, arg2);
+    ct->setResult(res);
     ct->doneBuilding();
 #else
     ct_entry_type* et = new ct_entry_type(CROSS_cache.getName(), "INN:N");
@@ -134,7 +134,7 @@ void MEDDLY::cross_bool::compute(int L, unsigned in,
     if (L<0) {
         cp = compute_pr(in, L, ap, bp);
     } else {
-        cp = compute_un(L, ap, bp, cp);
+        cp = compute_un(L, ap, bp);
     }
 #ifdef TRACE
     out << "Cross #" << top_count << " end\n";
@@ -193,7 +193,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a,
     key[0].setI(k);
     key[1].setN(a);
     key[2].setN(b);
-    if (ct->find(key, res)) {
+    if (ct->findCT(key, res)) {
         //
         // Hit
         //
@@ -326,7 +326,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
     key[0].setI(k);
     key[1].setN(a);
     key[2].setN(b);
-    if (ct->find(key, res)) {
+    if (ct->findCT(key, res)) {
         //
         // Hit
         //

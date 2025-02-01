@@ -219,7 +219,7 @@ int main(int argc, const char** argv)
                         edge_labeling::MULTI_TERMINAL);
         assert(mxd);
 
-        for (int m=1; m<=20; m++) {
+        for (int m=1; m<=30; m++) {
             printf("\tChecking cross-product for %2d random minterms\n", m);
             test(mdd, mxd, m);
         }
