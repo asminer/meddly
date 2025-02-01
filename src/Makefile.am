@@ -98,6 +98,8 @@ libmeddly_la_SOURCES = \
     operations/apply_base.h             operations/apply_base.cc   \
     operations/arith_max.h              operations/arith_max.cc    \
     operations/arith_min.h              operations/arith_min.cc    \
+    operations/arith_plus.h             operations/arith_plus.cc   \
+    operations/arith_minus.h            operations/arith_minus.cc  \
     operations/cardinality.h            operations/cardinality.cc  \
     operations/compare.h                operations/compare.cc      \
     operations/complement.h             operations/complement.cc   \
@@ -110,11 +112,9 @@ libmeddly_la_SOURCES = \
     operations/intersection.h           operations/intersection.cc \
     operations/maxmin_range.h           operations/maxmin_range.cc \
     operations/mdd2index.h              operations/mdd2index.cc    \
-    operations/minus.h                  operations/minus.cc        \
     operations/mm_mult.h                operations/mm_mult.cc      \
     operations/modulo.h                 operations/modulo.cc       \
     operations/multiply.h               operations/multiply.cc     \
-    operations/plus.h                   operations/plus.cc         \
     operations/prepostimage.h           operations/prepostimage.cc \
     operations/prepostplus.h            operations/prepostplus.cc  \
     operations/reach_bfs.h              operations/reach_bfs.cc    \
