@@ -41,7 +41,8 @@ namespace MEDDLY {
 #include "operations/intersection.h"
 #include "operations/difference.h"
 #include "operations/compare.h"
-#include "operations/arith.h"
+#include "operations/arith_max.h"
+#include "operations/arith_min.h"
 
 #include "operations/cross.h"
 // #include "operations/maxmin.h"

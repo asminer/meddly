@@ -1,6 +1,12 @@
 
 Implement next:
 
+    * split up arith.h, arith.cc
+
+        templates to arith_base.h
+
+        each operator in arith_max.h, arith_max.cc etc.
+
     * Migrate plus, minus, multiply, divide, and modulo
         to arith.cc
 
@@ -34,8 +40,9 @@ Operation updates, to do:
 Completely reimplemented operations
 ======================================================================
 
-arith.cc            max, min            working
-                    +, -, *, /, %       not done yet
+arith_max.cc
+arith_min.cc
+
 
 cardinality.cc
 cross.cc
