@@ -296,51 +296,143 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a,
     return c;
 }
 
-//
-// TBD HERE
-//
 
 MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_handle a, node_handle b)
 {
-#ifdef DEBUG_CROSS
-  printf("calling compute_pr(%d, %d, %d, %d)\n", in, k, a, b);
-#endif
-  MEDDLY_DCASSERT(k<0);
-  if (0==a || 0==b) return 0;
+    MEDDLY_DCASSERT(k<=0);
 
-  // DON'T check compute table
+    // **************************************************************
+    //
+    // Check terminal cases
+    //
+    // **************************************************************
+    if (0==a || 0==b) {
+        return 0;
+    }
 
-  // Initialize unpacked node
-  unpacked_node *B = unpacked_node::New(arg2F, SPARSE_ONLY);
-  if (arg2F->getNodeLevel(b) < -k) {
-    B->initRedundant(-k, b);
-  } else {
-    B->initFromNode(b);
-  }
-
-  unpacked_node *C =
-      unpacked_node::newWritable(resF, k, B->getSize(), SPARSE_ONLY);
-
-  // recurse
-  for (unsigned z=0; z<B->getSize(); z++) {
-      const unsigned i = B->index(z);
-      C->setSparse(z, i, compute_un(-(k+1), a, B->down(z)));
-  }
-
-  // reduce
-  unpacked_node::Recycle(B);
-  edge_value ev;
-  node_handle c;
-  resF->createReducedNode(C, ev, c, (int) in);
-  MEDDLY_DCASSERT(ev.isVoid());
-
-  // DON'T save in compute table
-
-#ifdef TRACE_ALL_OPS
-  printf("computed %s((%d), %d, %d, %d) = %d\n", getName(), in, k, a, b, c);
+#ifdef TRACE
+    out << "cross::compute_pr(" << in << ", " << k << ", " << a << ", " << b << ")\n";
 #endif
 
-  return c;
+    // **************************************************************
+    //
+    // Check the compute table
+    //
+    // **************************************************************
+
+#ifdef NEW_CT
+    ct_vector key(ct->getKeySize());
+    ct_vector res(ct->getResultSize());
+    key[0].setI(k);
+    key[1].setN(a);
+    key[2].setN(b);
+    if (ct->find(key, res)) {
+        //
+        // Hit
+        //
+#ifdef TRACE
+        out << "CT hit ";
+        key.show(out);
+        out << " -> ";
+        res.show(out);
+        out << "\n";
+#endif
+        node_handle c = resF->linkNode(res[0].getN());
+
+        if (k == resF->getNodeLevel(c)) {
+            // Make sure we don't point to a singleton
+            // from the same index.
+            c = resF->redirectSingleton(in, c);
+        }
+
+        return c;
+    }
+#else
+
+    // DON'T check compute table
+
+#endif
+
+    // **************************************************************
+    //
+    // Compute table 'miss'; do computation
+    //
+    // **************************************************************
+
+    // Initialize unpacked node
+    unpacked_node *B = unpacked_node::New(arg2F, SPARSE_ONLY);
+    if (arg2F->getNodeLevel(b) < -k) {
+        B->initRedundant(-k, b);
+    } else {
+        B->initFromNode(b);
+    }
+
+    unpacked_node *C =
+        unpacked_node::newWritable(resF, k, B->getSize(), SPARSE_ONLY);
+
+#ifdef TRACE
+    out << "B: ";
+    Bu->show(out, true);
+    out.indent_more();
+    out.put('\n');
+#endif
+
+    //
+    // Recurse
+    //
+    for (unsigned z=0; z<B->getSize(); z++) {
+        C->setSparse(z, B->index(z), compute_un(-(k+1), a, B->down(z)));
+    }
+
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << "cross::compute_pr(" << k << ", " << a << ", " << b << ")\n";
+    out << "  B: ";
+    B->show(out, true);
+    out << "\n  C: ";
+    C->show(out, true);
+    out << "\n";
+#endif
+
+    //
+    // Reduce
+    //
+    edge_value ev;
+    node_handle c;
+    resF->createReducedNode(C, ev, c);
+    MEDDLY_DCASSERT(ev.isVoid());
+#ifdef TRACE
+    out << "reduced to " << c << ": ";
+    resF->showNode(out, c, SHOW_DETAILS);
+    out << "\n";
+#endif
+
+    //
+    // Save result in CT
+    //
+
+#ifdef NEW_CT
+    res[0].setN(c);
+    ct->addCT(key, res);
+#else
+
+    // DON'T save in compute table
+
+#endif
+
+    //
+    // Make sure we don't point to a singleton from the same index
+    //
+    if (k == resF->getNodeLevel(c)) {
+        c = resF->redirectSingleton(in, c);
+    }
+
+    //
+    // Cleanup
+    //
+    unpacked_node::Recycle(B);
+    return c;
 }
 
 // ******************************************************************

@@ -121,8 +121,17 @@ void test(forest* mdd, forest* mxd, int nmt)
     printf("rs x 1:\n");
     tmp.showGraph(out);
 #endif
-    assert(tmp == rr);
-
+    if (tmp != rr) {
+        FILE_output out(stdout);
+        printf("mismatch on rs x 1\n");
+        printf("rs:\n");
+        rs.showGraph(out);
+        printf("rr:\n");
+        rr.showGraph(out);
+        printf("rs x 1, should equal rr:\n");
+        tmp.showGraph(out);
+        throw "mismatch";
+    }
 
     saveseed = vectorgen::getSeed();
     makeRandomSet(mdd, nmt, cs);
