@@ -29,6 +29,8 @@ nodestor
 nqueens
 ops_arith
 ops_comp
+ops_maxmin
+ops_plusminus
 ops_set
 randtest
 refcount

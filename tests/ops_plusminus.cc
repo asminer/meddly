@@ -41,41 +41,11 @@ const unsigned MIN_REL_CARD = 1;
 const unsigned MAX_REL_CARD = 256;
 const unsigned MULT_REL_CARD = 16;
 
-const char* OPS = "max, min";
+const char* OPS = "plus, minus";
 
 using namespace MEDDLY;
 
 // #define DEBUG_MXDOPS
-
-template <typename T>
-void Max(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<T> &C)
-{
-    if (A.size() != B.size()) {
-        throw "EQ size mismatch A,B";
-    }
-    if (A.size() != C.size()) {
-        throw "EQ size mismatch A,C";
-    }
-    for (unsigned i=0; i<C.size(); i++) {
-        C[i] = MAX(A[i], B[i]);
-    }
-}
-
-template <typename T>
-void Min(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<T> &C)
-{
-    if (A.size() != B.size()) {
-        throw "NE size mismatch A,B";
-    }
-    if (A.size() != C.size()) {
-        throw "NE size mismatch A,C";
-    }
-    for (unsigned i=0; i<C.size(); i++) {
-        C[i] = MIN(A[i], B[i]);
-    }
-}
 
 template <typename T>
 void Plus(const std::vector <T> &A, const std::vector <T> &B,
@@ -107,24 +77,6 @@ void Minus(const std::vector <T> &A, const std::vector <T> &B,
     }
 }
 
-template <typename T>
-void Times(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<T> &C)
-{
-    if (A.size() != B.size()) {
-        throw "GE size mismatch A,B";
-    }
-    if (A.size() != C.size()) {
-        throw "GE size mismatch A,C";
-    }
-    for (unsigned i=0; i<C.size(); i++) {
-        C[i] = A[i] * B[i];
-    }
-}
-
-
-
-// TBD others
 
 inline const char* getReductionString(const dd_edge &e)
 {
@@ -161,51 +113,27 @@ void compare(vectorgen &Gen,
 {
     const unsigned POTENTIAL = Gen.potential();
 
-    std::vector <T> AmaxBset(POTENTIAL);
-    std::vector <T> AminBset(POTENTIAL);
     std::vector <T> AplusBset(POTENTIAL);
     std::vector <T> AminusBset(POTENTIAL);
-    std::vector <T> AtimesBset(POTENTIAL);
 
     dd_edge Add(f1), Bdd(f2),
-            AmaxBdd(fres), AminBdd(fres),
-            AplusBdd(fres), AminusBdd(fres),
-            AtimesBdd(fres);
+            AplusBdd(fres), AminusBdd(fres);
 
-    Max(Aset, Bset, AmaxBset);
-    Min(Aset, Bset, AminBset);
     Plus(Aset, Bset, AplusBset);
     Minus(Aset, Bset, AminusBset);
-    Times(Aset, Bset, AtimesBset);
-
-    // TBD: for division, we need to add 1 to Bset or something
 
     Gen.explicit2edge(Aset, Add);
     Gen.explicit2edge(Bset, Bdd);
-    Gen.explicit2edge(AmaxBset, AmaxBdd);
-    Gen.explicit2edge(AminBset, AminBdd);
     Gen.explicit2edge(AplusBset, AplusBdd);
     Gen.explicit2edge(AminusBset, AminusBdd);
-    Gen.explicit2edge(AtimesBset, AtimesBdd);
 
-    dd_edge AmaxBsym(fres), AminBsym(fres),
-            AplusBsym(fres), AminusBsym(fres),
-            AtimesBsym(fres);
+    dd_edge AplusBsym(fres), AminusBsym(fres);
 
-    apply(MAXIMUM, Add, Bdd, AmaxBsym);
-    checkEqual("max", Add, Bdd, AmaxBsym, AmaxBdd, AmaxBset);
+    apply(PLUS, Add, Bdd, AplusBsym);
+    checkEqual("plus", Add, Bdd, AplusBsym, AplusBdd, AplusBset);
 
-    apply(MINIMUM, Add, Bdd, AminBsym);
-    checkEqual("min", Add, Bdd, AminBsym, AminBdd, AminBset);
-
-    //apply(PLUS, Add, Bdd, AplusBsym);
-    //checkEqual("plus", Add, Bdd, AplusBsym, AplusBdd, AplusBset);
-
-    //apply(MINUS, Add, Bdd, AminusBsym);
-    //checkEqual("minus", Add, Bdd, AminusBsym, AminusBdd, AminusBset);
-
-    //apply(MULTIPLY, Add, Bdd, AtimesBsym);
-    //checkEqual("times", Add, Bdd, AtimesBsym, AtimesBdd, AtimesBset);
+    apply(MINUS, Add, Bdd, AminusBsym);
+    checkEqual("minus", Add, Bdd, AminusBsym, AminusBdd, AminusBset);
 }
 
 template <typename TYPE>

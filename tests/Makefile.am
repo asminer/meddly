@@ -27,8 +27,9 @@ noinst_PROGRAMS = \
     kanban \
     nodestor \
     nqueens \
-    ops_arith \
     ops_comp \
+    ops_maxmin \
+    ops_plusminus \
     ops_set \
     refcount \
     sat_test \
@@ -68,14 +69,6 @@ TESTS = \
     nodestor \
     nqueens \
     \
-    ops_arith.--set.--MT.--int._sh \
-    ops_arith.--set.--MT.--float._sh \
-    ops_arith.--set.--EVp.--long._sh \
-    ops_arith.--rel.--MT.--int._sh \
-    ops_arith.--rel.--MT.--float._sh \
-    ops_arith.--rel.--EVp.--long._sh \
-    ops_arith.--rel.--EVs.--float._sh \
-    \
     ops_comp.--set.--MT.--int._sh \
     ops_comp.--set.--MT.--float._sh \
     ops_comp.--set.--EVp.--long._sh \
@@ -83,6 +76,22 @@ TESTS = \
     ops_comp.--rel.--MT.--float._sh \
     ops_comp.--rel.--EVp.--long._sh \
     ops_comp.--rel.--EVs.--float._sh \
+    \
+    ops_maxmin.--set.--MT.--int._sh \
+    ops_maxmin.--set.--MT.--float._sh \
+    ops_maxmin.--set.--EVp.--long._sh \
+    ops_maxmin.--rel.--MT.--int._sh \
+    ops_maxmin.--rel.--MT.--float._sh \
+    ops_maxmin.--rel.--EVp.--long._sh \
+    ops_maxmin.--rel.--EVs.--float._sh \
+    \
+    ops_plusminus.--set.--MT.--int._sh \
+    ops_plusminus.--set.--MT.--float._sh \
+    ops_plusminus.--set.--EVp.--long._sh \
+    ops_plusminus.--rel.--MT.--int._sh \
+    ops_plusminus.--rel.--MT.--float._sh \
+    ops_plusminus.--rel.--EVp.--long._sh \
+    ops_plusminus.--rel.--EVs.--float._sh \
     \
     ops_set.--set._sh \
     ops_set.--rel._sh \
@@ -132,29 +141,6 @@ chk_mtcoll.--rel.--ident._sh: buildWrapper.sh
 
 ###########################################
 
-ops_arith.--set.--MT.--int._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_arith.--set.--MT.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_arith.--set.--EVp.--long._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_arith.--rel.--MT.--int._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_arith.--rel.--MT.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_arith.--rel.--EVp.--long._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_arith.--rel.--EVs.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-###########################################
-
 ops_comp.--set.--MT.--int._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
@@ -174,6 +160,52 @@ ops_comp.--rel.--EVp.--long._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
 ops_comp.--rel.--EVs.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+###########################################
+
+ops_maxmin.--set.--MT.--int._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_maxmin.--set.--MT.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_maxmin.--set.--EVp.--long._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_maxmin.--rel.--MT.--int._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_maxmin.--rel.--MT.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_maxmin.--rel.--EVp.--long._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_maxmin.--rel.--EVs.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+###########################################
+
+ops_plusminus.--set.--MT.--int._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_plusminus.--set.--MT.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_plusminus.--set.--EVp.--long._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_plusminus.--rel.--MT.--int._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_plusminus.--rel.--MT.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_plusminus.--rel.--EVp.--long._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_plusminus.--rel.--EVs.--float._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
 ###########################################
@@ -265,11 +297,14 @@ nodestor_LDADD = ../src/libmeddly.la
 nqueens_SOURCES = nqueens.cc
 nqueens_LDADD = ../src/libmeddly.la
 
-ops_arith_SOURCES = ops_arith.cc randomize.cc
-ops_arith_LDADD = ../src/libmeddly.la
-
 ops_comp_SOURCES = ops_comp.cc randomize.cc
 ops_comp_LDADD = ../src/libmeddly.la
+
+ops_maxmin_SOURCES = ops_maxmin.cc randomize.cc
+ops_maxmin_LDADD = ../src/libmeddly.la
+
+ops_plusminus_SOURCES = ops_plusminus.cc randomize.cc
+ops_plusminus_LDADD = ../src/libmeddly.la
 
 ops_set_SOURCES = ops_set.cc randomize.cc
 ops_set_LDADD = ../src/libmeddly.la
