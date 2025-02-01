@@ -16,19 +16,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define NEW_CT
-
 #include "../defines.h"
-#include "cross.h"
-
-#ifdef NEW_CT
 #include "../ct_vector.h"
-#else
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#endif
 #include "../compute_table.h"
 #include "../oper_binary.h"
+#include "cross.h"
 
 // #define TRACE
 
@@ -51,18 +43,12 @@ namespace MEDDLY {
 class MEDDLY::cross_bool : public binary_operation {
     public:
         cross_bool(forest* a1, forest* a2, forest* res);
-
-#ifdef NEW_CT
         virtual ~cross_bool();
 
         virtual void compute(int L, unsigned in,
                 const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
                 edge_value &cv, node_handle &cp);
-#else
-        virtual void computeDDEdge(const dd_edge& a, const dd_edge& b,
-                dd_edge &c, bool userFlag);
-#endif
 
         node_handle compute_pr(unsigned in, int L, node_handle a,
                 node_handle b);
@@ -70,10 +56,7 @@ class MEDDLY::cross_bool : public binary_operation {
         node_handle compute_un(int L, node_handle a, node_handle b);
 
     private:
-
-#ifdef NEW_CT
         ct_entry_type* ct;
-#endif
 
 #ifdef TRACE
         ostream_output out;
@@ -83,11 +66,7 @@ class MEDDLY::cross_bool : public binary_operation {
 };
 
 MEDDLY::cross_bool::cross_bool(forest* arg1, forest* arg2, forest* res)
-#ifdef NEW_CT
 : binary_operation(arg1, arg2, res)
-#else
-: binary_operation(CROSS_cache, 1, arg1, arg2, res)
-#endif
 #ifdef TRACE
     , out(std::cout), top_count(0)
 #endif
@@ -97,27 +76,18 @@ MEDDLY::cross_bool::cross_bool(forest* arg1, forest* arg2, forest* res)
     checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
     checkRelations(__FILE__, __LINE__, SET, SET, RELATION);
 
-#ifdef NEW_CT
     ct = new ct_entry_type(CROSS_cache.getName());
     ct->setFixed('I', arg1, arg2);
     ct->setResult(res);
     ct->doneBuilding();
-#else
-    ct_entry_type* et = new ct_entry_type(CROSS_cache.getName(), "INN:N");
-    et->setForestForSlot(1, arg1);
-    et->setForestForSlot(2, arg2);
-    et->setForestForSlot(4, res);
-    registerEntryType(0, et);
-    buildCTs();
-#endif
 }
 
-#ifdef NEW_CT
 
 MEDDLY::cross_bool::~cross_bool()
 {
     ct->markForDestroy();
 }
+
 
 void MEDDLY::cross_bool::compute(int L, unsigned in,
                 const edge_value &av, node_handle ap,
@@ -142,17 +112,6 @@ void MEDDLY::cross_bool::compute(int L, unsigned in,
     cv.set();
 }
 
-#else
-
-void
-MEDDLY::cross_bool::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
-{
-    int L = arg1F->getMaxLevelIndex();
-    node_handle cnode = compute_un(L, a.getNode(), b.getNode());
-    c.set(cnode);
-}
-
-#endif
 
 MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a,
         node_handle b)
@@ -187,7 +146,6 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a,
     //
     // **************************************************************
 
-#ifdef NEW_CT
     ct_vector key(ct->getKeySize());
     ct_vector res(ct->getResultSize());
     key[0].setI(k);
@@ -206,19 +164,6 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a,
 #endif
         return resF->linkNode(res[0].getN());
     }
-#else
-    // check compute table
-    ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-    MEDDLY_DCASSERT(CTsrch);
-    CTsrch->writeI(k);
-    CTsrch->writeN(a);
-    CTsrch->writeN(b);
-    CT0->find(CTsrch, CTresult[0]);
-    if (CTresult[0]) {
-        CT0->recycle(CTsrch);
-        return resF->linkNode(CTresult[0].readN());
-    }
-#endif
 
     // **************************************************************
     //
@@ -279,15 +224,8 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a,
     //
     // Save result in CT
     //
-
-#ifdef NEW_CT
     res[0].setN(c);
     ct->addCT(key, res);
-#else
-    CTresult[0].reset();
-    CTresult[0].writeN(c);
-    CT0->addEntry(CTsrch, CTresult[0]);
-#endif
 
     //
     // Cleanup
@@ -320,7 +258,6 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
     //
     // **************************************************************
 
-#ifdef NEW_CT
     ct_vector key(ct->getKeySize());
     ct_vector res(ct->getResultSize());
     key[0].setI(k);
@@ -347,11 +284,6 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
 
         return c;
     }
-#else
-
-    // DON'T check compute table
-
-#endif
 
     // **************************************************************
     //
@@ -412,14 +344,8 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
     // Save result in CT
     //
 
-#ifdef NEW_CT
     res[0].setN(c);
     ct->addCT(key, res);
-#else
-
-    // DON'T save in compute table
-
-#endif
 
     //
     // Make sure we don't point to a singleton from the same index

@@ -4,8 +4,6 @@ Implement next:
     * Migrate plus, minus, multiply, divide, and modulo
         to arith.cc
 
-    * cross product operation, and test case for it
-
     * mdd2index operation, and test case(s) for it
 
     * select operation, and test case for it
@@ -39,15 +37,16 @@ Completely reimplemented operations
 arith.cc            max, min            working
                     +, -, *, /, %       not done yet
 
-cardinality.cc      yes
-compare.cc          yes
-complement.cc       yes
-copy.cc             yes
+cardinality.cc
+cross.cc
+compare.cc
+complement.cc
+copy.cc
 
-difference.cc       yes
-intersection.cc     yes
-maxmin_range.cc     yes
-union.cc            yes
+difference.cc
+intersection.cc
+maxmin_range.cc
+union.cc
 
 ======================================================================
 Operations that need updating
@@ -57,9 +56,6 @@ constrained.cc
         NO      constrained_forwd_dfs_mt
         NO      constrained_bckwd_dfs_mt
         NO      constrained_bckwd_dfs_evplus
-
-cross.cc
-        NO      cross_bool
 
 cycle.cc
         NO      cycle_EV2EV
