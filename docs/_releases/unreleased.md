@@ -23,6 +23,18 @@ Several changes to the ```unpacked_node``` class:
     or ```newFromNode()```, instead of methods in class ```forest```
     which are now deprecated.
 
+
+New methods for ```forest``` class, for dealing with real-valued
+terminal nodes.
+If terminal precision is set to a value other than zero,
+terminal nodes are rounded by: dividing by terminal precision,
+round, multiply by terminal precision.
+Thus, if the terminal precision is 0.01, then terminal values
+will be rounded to the nearest 0.01.
+
+* ```setTerminalPrecision()``` : set the terminal precision for a forest.
+* ```getTerminalPrecision()``` : get the terminal precision for a forest.
+
 ### Implementation
 
 * New implementations for PLUS, MINUS operators

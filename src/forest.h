@@ -1387,6 +1387,25 @@ class MEDDLY::forest {
         void getValueForEdge(const edge_value &v, node_handle p, rangeval &T)
             const;
 
+        /**
+            Get precision for rounding real valued terminals,
+            during normalization / reduction.
+        */
+        inline double getTerminalPrecision() const {
+            return termprec;
+        }
+
+        /**
+            Set precision for rounding real valued terminals,
+            during normalization / reduction.
+
+            If the terminal precision is 0.001, then
+            we round to the nearest      0.001.
+        */
+        inline void setTerminalPrecision(double tp) {
+            termprec = tp;
+        }
+
     // ------------------------------------------------------------
     protected: // methods to set edge info, for derived classes
     // ------------------------------------------------------------
@@ -1403,6 +1422,7 @@ class MEDDLY::forest {
                         break;
                 case range_type::REAL:
                         the_terminal_type = terminal_type::REAL;
+                        setTerminalPrecision(1e-5);
                         break;
                 default:
                         MEDDLY_DCASSERT(false);
@@ -1504,6 +1524,9 @@ class MEDDLY::forest {
         /// Are edge values hashed?
         bool hash_edge_values;
 
+        /// Specify precision for rounding terminals
+        /// (multi-terminal, real-valued forests only)
+        double termprec;
 
 // ===================================================================
 //

@@ -129,7 +129,7 @@ void MEDDLY::mt_mxd_real::showEdge(output &s, const edge_value &ev,
     } else {
         terminal t(terminal_type::REAL, d);
         s.put('t');
-        s.put( t.getReal() );
+        s.put( t.getReal(), 0, 10, 'e' );
     }
 }
 

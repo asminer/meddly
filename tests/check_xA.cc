@@ -307,6 +307,7 @@ int main(int argc, const char** argv)
         assert(mtmxds);
         forest* mtmdds = forest::create(ozd, SET, range_type::REAL,
                 edge_labeling::MULTI_TERMINAL);
+        mtmdds->setTerminalPrecision(1e-8);
         assert(mtmdds);
 
         dd_edge ss(evpmdds);

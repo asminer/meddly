@@ -187,6 +187,49 @@ class MEDDLY::terminal {
         }
 
         //
+        // Get the node handle for an integer terminal
+        //
+        inline node_handle getIntegerHandle() const {
+            MEDDLY_DCASSERT(isInteger());
+            if (t_integer) {
+                if (t_integer < -1073741824 ||
+                        t_integer > 1073741823)
+                {
+                    // Can't fit in 31 bits (signed)
+                    throw error(error::VALUE_OVERFLOW,
+                            __FILE__, __LINE__);
+                }
+                return t_integer | -2147483648; // set sign bit
+            } else {
+                return 0;
+            }
+        }
+
+        //
+        // Get the node handle for a real terminal
+        //
+        inline node_handle getRealHandle() const {
+            MEDDLY_DCASSERT(isReal());
+            if (t_real) {
+                union {
+                    node_handle h;
+                    float f;
+                } x;
+                x.f = t_real;
+                // const unsigned x = * (unsigned*) (&t_real);
+                // strip the lsb in fraction, and add sign bit
+                return (x.h>>1) | -2147483648;
+                /*
+                   unsigned x;
+                   memcpy(&x, &t_real, sizeof(unsigned));
+                   return node_handle(x>>1) | -2147483648;
+                   */
+            } else {
+                return 0;
+            }
+        }
+
+        //
         // Get the node handle for this terminal
         //
         inline node_handle getHandle() const {
@@ -198,37 +241,10 @@ class MEDDLY::terminal {
                         return t_boolean ? -1 : 0;
 
                 case terminal_type::INTEGER:
-                        if (t_integer) {
-                            if (t_integer < -1073741824 ||
-                                t_integer > 1073741823)
-                            {
-                                // Can't fit in 31 bits (signed)
-                                throw error(error::VALUE_OVERFLOW,
-                                        __FILE__, __LINE__);
-                            }
-                            return t_integer | -2147483648; // set sign bit
-                        } else {
-                            return 0;
-                        }
+                        return getIntegerHandle();
 
                 case terminal_type::REAL:
-                        if (t_real) {
-                            union {
-                                node_handle h;
-                                float f;
-                            } x;
-                            x.f = t_real;
-                            // const unsigned x = * (unsigned*) (&t_real);
-                            // strip the lsb in fraction, and add sign bit
-                            return (x.h>>1) | -2147483648;
-                            /*
-                            unsigned x;
-                            memcpy(&x, &t_real, sizeof(unsigned));
-                            return node_handle(x>>1) | -2147483648;
-                            */
-                        } else {
-                            return 0;
-                        }
+                        return getRealHandle();
 
                 default:
                         MEDDLY_DCASSERT(false);
@@ -263,6 +279,10 @@ class MEDDLY::terminal {
         }
         inline void setReal(double v) {
             mytype = terminal_type::REAL;
+            t_real = v;
+        }
+        inline void adjustReal(double v) {
+            MEDDLY_DCASSERT(isReal());
             t_real = v;
         }
 

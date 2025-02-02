@@ -234,7 +234,7 @@ unpacked_node* build_node(forest* f, unsigned who, bool full)
         case range_type::REAL:
                 f->createConstant(1.0f, e[0]);
                 f->createConstant(2.2f, e[1]);
-                f->createConstant(0.33333333f, e[2]);
+                f->createConstant(0.375f, e[2]);
                 f->createConstant(4.4f, e[3]);
                 f->createConstant(5.05f, e[4]);
                 f->createConstant(6.0606f, e[5]);

@@ -322,8 +322,33 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     switch (edgeLabel) {
         case edge_labeling::MULTI_TERMINAL:
                 ev.set();
-                for (unsigned i=0; i<un->getSize(); i++) {
-                    if (un->down(i)) ++nnz;
+                if (termprec) {
+                    // Round any terminal values based on termprec
+                    // AND count number of nonzeroes.
+                    for (unsigned i=0; i<un->getSize(); i++) {
+                        if (un->down(i) == 0) {
+                            // Terminal 0
+                            continue;
+                        }
+                        ++nnz;
+                        if (un->down(i) > 0) {
+                            // Nonterminal
+                            continue;
+                        }
+                        // Terminal that needs rounding
+                        terminal T(terminal_type::REAL, un->down(i));
+
+                        T.adjustReal(
+                                round(T.getReal() / termprec) * termprec
+                        );
+
+                        un->down(i) = T.getHandle();
+                    }
+                } else {
+                    // Just count nonzeroes
+                    for (unsigned i=0; i<un->getSize(); i++) {
+                        if (un->down(i)) ++nnz;
+                    }
                 }
                 break;
 
@@ -1933,6 +1958,11 @@ MEDDLY::forest
     // For debugging:
     //
     delete_depth = 0;
+
+    //
+    // Other defaults
+    //
+    setTerminalPrecision(0);
 }
 
 MEDDLY::forest::~forest()
