@@ -25,3 +25,4 @@ Several changes to the ```unpacked_node``` class:
 
 ### Implementation
 
+* New implementations for PLUS, MINUS operators

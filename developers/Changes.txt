@@ -1,14 +1,9 @@
 
 Implement next:
 
-    * split up arith.h, arith.cc
+    * Track down error in chk_copy
 
-        templates to arith_base.h
-
-        each operator in arith_max.h, arith_max.cc etc.
-
-    * Migrate plus, minus, multiply, divide, and modulo
-        to arith.cc
+    * Implement arithmetic operators multiply, divide, and modulo
 
     * mdd2index operation, and test case(s) for it
 
@@ -42,7 +37,8 @@ Completely reimplemented operations
 
 arith_max.cc
 arith_min.cc
-
+arith_plus.cc
+arith_minus.cc      need to fix EV+
 
 cardinality.cc
 cross.cc
@@ -75,12 +71,6 @@ divide.cc
 mdd2index.cc
         NO      mdd2index_operation
 
-minus.cc
-        NO      minus_mdd
-        NO      minus_mxd
-        NO      minus_evplus
-        NO      minus_evtimes
-
 mm_mult.cc
         NO      mm_mult_mt
 
@@ -93,12 +83,6 @@ multiply.cc
         NO      multiply_mxd
         NO      multiply_evplus
         NO      multiply_evtimes
-
-plus.cc
-        NO      plus_mdd
-        NO      plus_mxd
-        NO      plus_evplus
-        NO      plus_evtimes
 
 prepostimage.cc
         NO      mtmatr_mtvect
