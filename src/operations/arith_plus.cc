@@ -145,8 +145,6 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-#if 0
-
 namespace MEDDLY {
     template <class EDGETYPE>
     struct evstar_plus {
@@ -160,23 +158,23 @@ namespace MEDDLY {
         }
         inline static bool stopOnEqualArgs()
         {
-            return true;
+            return false;
         }
         inline static void makeEqualResult(edge_value &av, node_handle &a)
         {
-            // plus(a, a) = a; do nothing to a
+            MEDDLY_DCASSERT(false);
         }
         inline static bool simplifiesToFirstArg(
                 const edge_value &av, node_handle &a,
                 const edge_value &bv, node_handle b)
         {
-            return false;
+            return (OMEGA_ZERO == b);
         }
         inline static bool simplifiesToSecondArg(
                 const edge_value &av, node_handle a,
                 const edge_value &bv, node_handle &b)
         {
-            return false;
+            return (OMEGA_ZERO == a);
         }
 
         inline static void factor(
@@ -192,15 +190,8 @@ namespace MEDDLY {
                 if (OMEGA_ZERO == f) {
                     a = edge_value(EDGETYPE(1));
                 } else {
-                    EDGETYPE av;
-                    e.get(av);
-                    if (av < 0) {
-                        av = -av;
-                        e = EDGETYPE(-1);
-                    } else {
-                        e = EDGETYPE(1);
-                    }
-                    a = av;
+                    a = e;
+                    e = EDGETYPE(1);
                 }
             } else {
                 //
@@ -208,22 +199,15 @@ namespace MEDDLY {
                 //
                 EDGETYPE av;
                 c.get(av);
-                // normalize left operand
-                if (av < 0) {
-                    av = -av;
-                    c = EDGETYPE(-1);
-                } else {
-                    c = EDGETYPE(1);
-                }
+                c = EDGETYPE(1);
                 a = av;
-                // normalize right operand
                 e.divide(av);
             }
         }
 
         inline static bool alwaysFactorsToIdentity()
         {
-            return false;
+            return true;
         }
 
         inline static void apply(const edge_value &c, node_handle d,
@@ -233,15 +217,13 @@ namespace MEDDLY {
             EDGETYPE av, cv, ev;
             c.get(cv);
             e.get(ev);
-            av = MAX(cv, ev);
+            av = cv + ev;
             a = av;
             b = av ? OMEGA_NORMAL : OMEGA_ZERO;
         }
 
     };
 };
-
-#endif
 
 // ******************************************************************
 // *                                                                *
@@ -287,7 +269,6 @@ MEDDLY::binary_operation* MEDDLY::PLUS(forest* a, forest* b, forest* c)
         return PLUS_cache.add( bop );
     }
 
-    /*
     if (c->isEVTimes()) {
         switch (c->getEdgeType()) {
             case edge_type::FLOAT:
@@ -305,8 +286,6 @@ MEDDLY::binary_operation* MEDDLY::PLUS(forest* a, forest* b, forest* c)
         }
         return PLUS_cache.add( bop );
     }
-
-    */
 
     return nullptr;
 }

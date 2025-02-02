@@ -366,18 +366,10 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
     if (Alevel != Clevel) {
         if (arg1F->isIdentityReduced() && Clevel<0) {
             MEDDLY_DCASSERT(Clevel == L);
-            if (EOP::hasEdgeValues()) {
-                Au->initIdentity(Clevel, in, zero, A);
-            } else {
-                Au->initIdentity(Clevel, in, A);
-            }
+            Au->initIdentity(Clevel, in, zero, A);
             MEDDLY_DCASSERT(Au->wasIdentity());
         } else {
-            if (EOP::hasEdgeValues()) {
-                Au->initRedundant(Clevel, zero, A);
-            } else {
-                Au->initRedundant(Clevel, A);
-            }
+            Au->initRedundant(Clevel, zero, A);
             MEDDLY_DCASSERT(!Au->wasIdentity());
         }
     } else {
@@ -389,18 +381,10 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
     if (Blevel != Clevel) {
         if (arg2F->isIdentityReduced() && Clevel<0) {
             MEDDLY_DCASSERT(Clevel == L);
-            if (EOP::hasEdgeValues()) {
-                Bu->initIdentity(Clevel, in, zero, B);
-            } else {
-                Bu->initIdentity(Clevel, in, B);
-            }
+            Bu->initIdentity(Clevel, in, zero, B);
             MEDDLY_DCASSERT(Bu->wasIdentity());
         } else {
-            if (EOP::hasEdgeValues()) {
-                Bu->initRedundant(Clevel, zero, B);
-            } else {
-                Bu->initRedundant(Clevel, B);
-            }
+            Bu->initRedundant(Clevel, zero, B);
             MEDDLY_DCASSERT(!Bu->wasIdentity());
         }
     } else {
