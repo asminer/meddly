@@ -321,7 +321,7 @@ MEDDLY::binary_operation* MEDDLY::MAXIMUM(forest* a, forest* b, forest* c)
                 break;
 
             default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                return nullptr;
         }
         return MAXIMUM_cache.add( bop );
     }
@@ -339,12 +339,11 @@ MEDDLY::binary_operation* MEDDLY::MAXIMUM(forest* a, forest* b, forest* c)
                 break;
 
             default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                return nullptr;
         }
         return MAXIMUM_cache.add( bop );
     }
 
-    // throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
     return nullptr;
 }
 

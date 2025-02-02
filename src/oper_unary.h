@@ -359,6 +359,7 @@ namespace MEDDLY {
     inline void apply(unary_builtin1 bu, const dd_edge &a, dd_edge &c)
     {
         unary_operation* uop = bu(a.getForest(), c.getForest());
+        if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         uop->compute(a, c);
     }
 
@@ -372,6 +373,7 @@ namespace MEDDLY {
     inline void apply(unary_builtin2 bu, const dd_edge &a, long &c)
     {
         unary_operation* uop = bu(a.getForest(), opnd_type::INTEGER);
+        if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         uop->compute(a, c);
     }
 
@@ -385,6 +387,7 @@ namespace MEDDLY {
     inline void apply(unary_builtin2 bu, const dd_edge &a, double &c)
     {
         unary_operation* uop = bu(a.getForest(), opnd_type::REAL);
+        if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         uop->compute(a, c);
     }
 
@@ -398,6 +401,7 @@ namespace MEDDLY {
     inline void apply(unary_builtin2 bu, const dd_edge &a, oper_item &c)
     {
         unary_operation* uop = bu(a.getForest(), c.getType());
+        if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         uop->compute(a, c);
     }
 
@@ -413,6 +417,7 @@ namespace MEDDLY {
     inline void apply(unary_builtin2 bu, const dd_edge &a, mpz_ptr c)
     {
         unary_operation* uop = bu(a.getForest(), opnd_type::HUGEINT);
+        if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         uop->compute(a, c);
     }
 #endif

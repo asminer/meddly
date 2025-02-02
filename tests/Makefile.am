@@ -87,10 +87,10 @@ TESTS = \
     \
     ops_plusminus.--set.--MT.--int._sh \
     ops_plusminus.--set.--MT.--float._sh \
-    ops_plusminus.--set.--EVp.--long._sh \
+    ops_plusminus.--set.--EVp.--long.--plusonly._sh \
     ops_plusminus.--rel.--MT.--int._sh \
     ops_plusminus.--rel.--MT.--float._sh \
-    ops_plusminus.--rel.--EVp.--long._sh \
+    ops_plusminus.--rel.--EVp.--long.--plusonly._sh \
     ops_plusminus.--rel.--EVs.--float._sh \
     \
     ops_set.--set._sh \
@@ -193,7 +193,7 @@ ops_plusminus.--set.--MT.--int._sh: buildWrapper.sh
 ops_plusminus.--set.--MT.--float._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-ops_plusminus.--set.--EVp.--long._sh: buildWrapper.sh
+ops_plusminus.--set.--EVp.--long.--plusonly._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
 ops_plusminus.--rel.--MT.--int._sh: buildWrapper.sh
@@ -202,7 +202,7 @@ ops_plusminus.--rel.--MT.--int._sh: buildWrapper.sh
 ops_plusminus.--rel.--MT.--float._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
-ops_plusminus.--rel.--EVp.--long._sh: buildWrapper.sh
+ops_plusminus.--rel.--EVp.--long.--plusonly._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
 ops_plusminus.--rel.--EVs.--float._sh: buildWrapper.sh

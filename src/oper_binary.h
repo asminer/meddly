@@ -355,6 +355,7 @@ namespace MEDDLY {
         dd_edge &c)
     {
         binary_operation* bop = bb(a.getForest(), b.getForest(), c.getForest());
+        if (!bop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         bop->compute(a, b, c);
     }
 

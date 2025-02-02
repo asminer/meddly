@@ -41,9 +41,9 @@ const unsigned MIN_REL_CARD = 1;
 const unsigned MAX_REL_CARD = 256;
 const unsigned MULT_REL_CARD = 16;
 
-const char* OPS = "plus, minus";
-
 using namespace MEDDLY;
+
+bool check_minus;
 
 // #define DEBUG_MXDOPS
 
@@ -119,21 +119,22 @@ void compare(vectorgen &Gen,
     dd_edge Add(f1), Bdd(f2),
             AplusBdd(fres), AminusBdd(fres);
 
-    Plus(Aset, Bset, AplusBset);
-    Minus(Aset, Bset, AminusBset);
-
     Gen.explicit2edge(Aset, Add);
     Gen.explicit2edge(Bset, Bdd);
-    Gen.explicit2edge(AplusBset, AplusBdd);
-    Gen.explicit2edge(AminusBset, AminusBdd);
 
     dd_edge AplusBsym(fres), AminusBsym(fres);
 
+    Plus(Aset, Bset, AplusBset);
+    Gen.explicit2edge(AplusBset, AplusBdd);
     apply(PLUS, Add, Bdd, AplusBsym);
     checkEqual("plus", Add, Bdd, AplusBsym, AplusBdd, AplusBset);
 
-    apply(MINUS, Add, Bdd, AminusBsym);
-    checkEqual("minus", Add, Bdd, AminusBsym, AminusBdd, AminusBset);
+    if (check_minus) {
+        Minus(Aset, Bset, AminusBset);
+        Gen.explicit2edge(AminusBset, AminusBdd);
+        apply(MINUS, Add, Bdd, AminusBsym);
+        checkEqual("minus", Add, Bdd, AminusBsym, AminusBdd, AminusBset);
+    }
 }
 
 template <typename TYPE>
@@ -198,6 +199,7 @@ void test_sets(domain* D, edge_labeling el, range_type rt)
 
     forest* quasi = forest::create(D, SET, rt, el, p);
 
+    const char* OPS = check_minus ? "plus, minus" : "plus";
 
     for (unsigned i=MIN_SET_CARD; i<=MAX_SET_CARD; i*=MULT_SET_CARD) {
         std::cout << "Testing " << OPS << " on "
@@ -233,6 +235,7 @@ void test_rels(domain* D, edge_labeling el, range_type rt)
 
     forest* ident = forest::create(D, RELATION, rt, el, p);
 
+    const char* OPS = check_minus ? "plus, minus" : "plus";
 
     for (unsigned i=MIN_REL_CARD; i<=MAX_REL_CARD; i*=MULT_REL_CARD) {
         std::cout << "Testing " << OPS << " on "
@@ -303,6 +306,8 @@ void usage(const char* arg0)
     std::cerr << "    --EVp:    EV+\n";
     std::cerr << "    --EVs:    EV*\n";
     std::cerr << "\n";
+    std::cerr << "    --plusonly:   Don't check minus operation\n";
+    std::cerr << "\n";
 
     exit(1);
 }
@@ -317,6 +322,7 @@ int main(int argc, const char** argv)
     range_type    RT = range_type::INTEGER;
     char type = 'I';
     long seed = 0;
+    check_minus = true;
 
     for (int i=1; i<argc; i++) {
 
@@ -360,6 +366,10 @@ int main(int argc, const char** argv)
         if (0==strcmp("--double", argv[i])) {
             RT = range_type::REAL;
             type = 'D';
+            continue;
+        }
+        if (0==strcmp("--plusonly", argv[i])) {
+            check_minus = false;
             continue;
         }
 

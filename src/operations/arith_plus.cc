@@ -93,97 +93,51 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-#if 0
-
 namespace MEDDLY {
     template <class EDGETYPE>
     struct evplus_plus {
-        inline static const char* name()
-        {
+        inline static const char* name() {
             return "plus";
         }
-        inline static bool commutes()
-        {
+        inline static bool commutes() {
             return true;
         }
-        inline static bool stopOnEqualArgs()
-        {
-            return true;
+        inline static bool stopOnEqualArgs() {
+            return false;
         }
-        inline static void makeEqualResult(edge_value &av, node_handle &a)
-        {
-            // plus(a, a) = a; do nothing to a
+        inline static void makeEqualResult(const forest*, node_handle &a) {
+            MEDDLY_DCASSERT(false);
         }
         inline static bool simplifiesToFirstArg(
-                const edge_value &av, node_handle &a,
-                const edge_value &bv, node_handle b)
+                const forest* fa, node_handle &a,
+                const forest* fb, node_handle b)
         {
-            return (OMEGA_INFINITY == a);
+            return (OMEGA_INFINITY == a) || (OMEGA_NORMAL == b);
         }
         inline static bool simplifiesToSecondArg(
-                const edge_value &av, node_handle a,
-                const edge_value &bv, node_handle &b)
+                const forest* fa, node_handle a,
+                const forest* fb, node_handle &b)
         {
-            return (OMEGA_INFINITY == b);
+            return (OMEGA_INFINITY == b) || (OMEGA_NORMAL == a);
         }
 
-        inline static void factor(
-                edge_value &c, node_handle d,
-                edge_value &e, node_handle f,
-                edge_value &a)
+        inline static void apply(const forest* fa, node_handle a,
+                const forest* fb, node_handle b,
+                const forest* fc, node_handle &c)
         {
-            if (OMEGA_INFINITY == d) {
-                //
-                // left operand is infinity;
-                // factor using the right operand.
-                //
-                if (OMEGA_INFINITY == f) {
-                    a = edge_value(EDGETYPE(0));
-                } else {
-                    a = e;
-                    e = edge_value(EDGETYPE(0));
-                }
-            } else {
-                //
-                // Factor on left operand
-                //
-                a = c;
-                c = edge_value(EDGETYPE(0));
-                EDGETYPE av;
-                a.get(av);
-                e.subtract(av);
-            }
-        }
-
-        inline static bool alwaysFactorsToIdentity()
-        {
-            return true;
-        }
-
-        inline static void apply(const edge_value &c, node_handle d,
-                          const edge_value &e, node_handle f,
-                          edge_value &a, node_handle &b)
-        {
-            if ((OMEGA_INFINITY == d) || (OMEGA_INFINITY == f))
+            if ((OMEGA_INFINITY == a) || (OMEGA_INFINITY == b))
             {
-                a = edge_value(EDGETYPE(0));
-                b = OMEGA_INFINITY;
-            } else {
-                //
-                // both finite
-                //
-                b = OMEGA_NORMAL;
-                EDGETYPE cv, ev;
-                c.get(cv);
-                e.get(ev);
-                a = edge_value(MAX(cv, ev));
+                c = OMEGA_INFINITY;
+            }
+            else
+            {
+                MEDDLY_DCASSERT(OMEGA_NORMAL == a);
+                MEDDLY_DCASSERT(OMEGA_NORMAL == b);
+                c = OMEGA_NORMAL;
             }
         }
-
     };
 };
-
-#endif
 
 // ******************************************************************
 // *                                                                *
@@ -315,26 +269,25 @@ MEDDLY::binary_operation* MEDDLY::PLUS(forest* a, forest* b, forest* c)
         return PLUS_cache.add( bop );
     }
 
-    /*
-
     if (c->isEVPlus()) {
         switch (c->getEdgeType()) {
             case edge_type::INT:
-                bop = new arith_factor<EdgeOp_plus<int>, evplus_plus<int> >
+                bop = new arith_compat<EdgeOp_plus<int>, evplus_plus<int> >
                         (a,b,c);
                 break;
 
             case edge_type::LONG:
-                bop = new arith_factor<EdgeOp_plus<long>, evplus_plus<long> >
+                bop = new arith_compat<EdgeOp_plus<long>, evplus_plus<long> >
                         (a,b,c);
                 break;
 
             default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                return nullptr;
         }
         return PLUS_cache.add( bop );
     }
 
+    /*
     if (c->isEVTimes()) {
         switch (c->getEdgeType()) {
             case edge_type::FLOAT:

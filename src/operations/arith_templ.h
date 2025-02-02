@@ -360,14 +360,24 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
     // Set up unpacked nodes
     //
 
+    edge_value zero;
+    EOP::clear(zero);
     unpacked_node* Au = unpacked_node::New(arg1F, FULL_ONLY);
     if (Alevel != Clevel) {
         if (arg1F->isIdentityReduced() && Clevel<0) {
             MEDDLY_DCASSERT(Clevel == L);
-            Au->initIdentity(Clevel, in, A);
+            if (EOP::hasEdgeValues()) {
+                Au->initIdentity(Clevel, in, zero, A);
+            } else {
+                Au->initIdentity(Clevel, in, A);
+            }
             MEDDLY_DCASSERT(Au->wasIdentity());
         } else {
-            Au->initRedundant(Clevel, A);
+            if (EOP::hasEdgeValues()) {
+                Au->initRedundant(Clevel, zero, A);
+            } else {
+                Au->initRedundant(Clevel, A);
+            }
             MEDDLY_DCASSERT(!Au->wasIdentity());
         }
     } else {
@@ -379,10 +389,18 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
     if (Blevel != Clevel) {
         if (arg2F->isIdentityReduced() && Clevel<0) {
             MEDDLY_DCASSERT(Clevel == L);
-            Bu->initIdentity(Clevel, in, B);
+            if (EOP::hasEdgeValues()) {
+                Bu->initIdentity(Clevel, in, zero, B);
+            } else {
+                Bu->initIdentity(Clevel, in, B);
+            }
             MEDDLY_DCASSERT(Bu->wasIdentity());
         } else {
-            Bu->initRedundant(Clevel, B);
+            if (EOP::hasEdgeValues()) {
+                Bu->initRedundant(Clevel, zero, B);
+            } else {
+                Bu->initRedundant(Clevel, B);
+            }
             MEDDLY_DCASSERT(!Bu->wasIdentity());
         }
     } else {
