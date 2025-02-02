@@ -2,6 +2,10 @@
 Implement next:
 
     * Track down error in chk_copy
+        seems to be precision issue, i.e.,
+        we have distinct nodes that should be equal,
+        probably because the terminal node is not equal
+        but is "within epsilon"...
 
     * Implement arithmetic operators multiply, divide, and modulo
 
