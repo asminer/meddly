@@ -84,6 +84,14 @@ namespace MEDDLY {
             fb->getValueFromHandle(b, bv);
             c = fc->handleForValue( av + bv );
         }
+
+        inline static void apply(const edge_value &a, const edge_value &b,
+                                    edge_value &c)
+        {
+            MEDDLY_DCASSERT(a.isVoid());
+            MEDDLY_DCASSERT(b.isVoid());
+            c.set();
+        }
     };
 };
 
@@ -135,6 +143,15 @@ namespace MEDDLY {
                 MEDDLY_DCASSERT(OMEGA_NORMAL == b);
                 c = OMEGA_NORMAL;
             }
+        }
+
+        inline static void apply(const edge_value &a, const edge_value &b,
+                                    edge_value &c)
+        {
+            EDGETYPE av, bv;
+            a.get(av);
+            b.get(bv);
+            c.set(av+bv);
         }
     };
 };

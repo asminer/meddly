@@ -84,6 +84,14 @@ namespace MEDDLY {
             fb->getValueFromHandle(b, bv);
             c = fc->handleForValue( MAX(av, bv) );
         }
+
+        inline static void apply(const edge_value &a, const edge_value &b,
+                                    edge_value &c)
+        {
+            MEDDLY_DCASSERT(a.isVoid());
+            MEDDLY_DCASSERT(b.isVoid());
+            c.set();
+        }
     };
 };
 

@@ -41,11 +41,11 @@
     element-wise arithmetic operations.
     For an edge operator +, "compatible" means that the
     arithmetic operator OP satisfies
-        (a + f()) OP (b + g()) = (a+b) + (f() OP g())
+        (a + f()) OP (b + g()) = (a OP b) + (f() OP g())
 
     Examples include edge operator + with OP + or -,
     edge operator * with OP * or /,
-    and any multi-termianl operator.
+    and any multi-terminal operator.
 
     Required methods for ATYPE classes (should be inlined):
 
@@ -92,6 +92,10 @@
                           const forest* fb, node_handle b,
                           const forest* fc, node_handle &c);
 
+        /// Apply the operation on edge values a and b,
+        /// to obtain the edge value c.
+        static void apply(const edge_value &a, const edge_value &b,
+                          edge_value &c);
  */
 
 namespace MEDDLY {
@@ -202,8 +206,11 @@ void MEDDLY::arith_compat<EOP, ATYPE>::compute(int L, unsigned in,
 #endif
 
     _compute(L, in, ap, bp, cv, cp);
-    EOP::accumulateOp(cv, av);
-    EOP::accumulateOp(cv, bv);
+    if (EOP::hasEdgeValues()) {
+        edge_value ab;
+        ATYPE::apply(av, bv, ab);
+        EOP::accumulateOp(cv, ab);
+    }
 
 #ifdef TRACE
     out << ATYPE::name() << " #" << top_count << " end\n";
@@ -241,9 +248,11 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         //
         // Result is A
         //
+        edge_value zero;
+        EOP::clear(zero);
         ATYPE::makeEqualResult(arg1F, A);
         MEDDLY_DCASSERT(copy_arg1res);
-        copy_arg1res->compute(L, in, cv, A, cv, C);
+        copy_arg1res->compute(L, in, zero, A, cv, C);
         return;
     }
 
@@ -252,9 +261,10 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         //
         // Result is A
         //
-        EOP::clear(cv);
+        edge_value zero;
+        EOP::clear(zero);
         MEDDLY_DCASSERT(copy_arg1res);
-        copy_arg1res->compute(L, in, cv, A, cv, C);
+        copy_arg1res->compute(L, in, zero, A, cv, C);
         return;
     }
 
@@ -263,9 +273,10 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         //
         // Result is B
         //
-        EOP::clear(cv);
+        edge_value zero;
+        EOP::clear(zero);
         MEDDLY_DCASSERT(copy_arg2res);
-        copy_arg2res->compute(L, in, cv, B, cv, C);
+        copy_arg2res->compute(L, in, zero, B, cv, C);
         return;
     }
 
@@ -415,8 +426,9 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         _compute(Cnextlevel, i, Au->down(i), Bu->down(i), x, cd);
         if (EOP::hasEdgeValues())
         {
-            EOP::accumulateOp(x, Au->edgeval(i));
-            EOP::accumulateOp(x, Bu->edgeval(i));
+            edge_value ab;
+            ATYPE::apply(Au->edgeval(i), Bu->edgeval(i), ab);
+            EOP::accumulateOp(x, ab);
             Cu->setFull(i, x, cd);
         }
         else
@@ -444,7 +456,9 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
     //
     resF->createReducedNode(Cu, cv, C);
 #ifdef TRACE
-    out << "reduced to " << C << ": ";
+    out << "reduced to ";
+    resF->showEdge(out, cv, C);
+    out << ": ";
     resF->showNode(out, C, SHOW_DETAILS);
     out << "\n";
 #endif
@@ -924,7 +938,9 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
     //
     resF->createReducedNode(Cu, cv, C);
 #ifdef TRACE
-    out << "reduced to " << C << ": ";
+    out << "reduced to ";
+    resF->showEdge(out, cv, C);
+    out << ": ";
     resF->showNode(out, C, SHOW_DETAILS);
     out << "\n";
 #endif
@@ -1373,9 +1389,9 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
     //
     resF->createReducedNode(Cu, cv, C);
 #ifdef TRACE
-    out << "reduced to edge <";
-    cv.show(out);
-    out << ", " << C << ">, node is ";
+    out << "reduced to ";
+    resF->showEdge(out, cv, C);
+    out << ": ";
     resF->showNode(out, C, SHOW_DETAILS);
     out << "\n";
 #endif

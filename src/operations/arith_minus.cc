@@ -84,6 +84,14 @@ namespace MEDDLY {
             fb->getValueFromHandle(b, bv);
             c = fc->handleForValue( av - bv );
         }
+
+        inline static void apply(const edge_value &a, const edge_value &b,
+                                    edge_value &c)
+        {
+            MEDDLY_DCASSERT(a.isVoid());
+            MEDDLY_DCASSERT(b.isVoid());
+            c.set();
+        }
     };
 };
 
@@ -93,97 +101,68 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-#if 0
-
 namespace MEDDLY {
     template <class EDGETYPE>
     struct evplus_minus {
-        inline static const char* name()
-        {
+        inline static const char* name() {
             return "minus";
         }
-        inline static bool commutes()
-        {
+        inline static bool commutes() {
             return false;
         }
-        inline static bool stopOnEqualArgs()
-        {
+        inline static bool stopOnEqualArgs() {
             return true;
         }
-        inline static void makeEqualResult(edge_value &av, node_handle &a)
-        {
-            // minus(a, a) = a; do nothing to a
+        inline static void makeEqualResult(forest* F, node_handle &a) {
+            const int L = F->getNodeLevel(a);
+            a = F->makeRedundantsTo(OMEGA_NORMAL, 0, L);
         }
+
         inline static bool simplifiesToFirstArg(
-                const edge_value &av, node_handle &a,
-                const edge_value &bv, node_handle b)
+                const forest* fa, node_handle &a,
+                const forest* fb, node_handle b)
         {
-            return (OMEGA_INFINITY == a);
+            MEDDLY_DCASSERT(OMEGA_INFINITY != b);
+            return (OMEGA_INFINITY == a) || (OMEGA_NORMAL == b);
         }
         inline static bool simplifiesToSecondArg(
-                const edge_value &av, node_handle a,
-                const edge_value &bv, node_handle &b)
+                const forest* fa, node_handle a,
+                const forest* fb, node_handle &b)
         {
-            return (OMEGA_INFINITY == b);
+            MEDDLY_DCASSERT(b != OMEGA_INFINITY);
+            return false;
         }
 
-        inline static void factor(
-                edge_value &c, node_handle d,
-                edge_value &e, node_handle f,
-                edge_value &a)
+        inline static void apply(const forest* fa, node_handle a,
+                const forest* fb, node_handle b,
+                const forest* fc, node_handle &c)
         {
-            if (OMEGA_INFINITY == d) {
-                //
-                // left operand is infinity;
-                // factor using the right operand.
-                //
-                if (OMEGA_INFINITY == f) {
-                    a = edge_value(EDGETYPE(0));
-                } else {
-                    a = e;
-                    e = edge_value(EDGETYPE(0));
-                }
-            } else {
-                //
-                // Factor on left operand
-                //
-                a = c;
-                c = edge_value(EDGETYPE(0));
-                EDGETYPE av;
-                a.get(av);
-                e.subtract(av);
+            if (OMEGA_INFINITY == b) {
+                throw error(error::SUBTRACT_INFINITY, __FILE__, __LINE__);
             }
-        }
-
-        inline static bool alwaysFactorsToIdentity()
-        {
-            return true;
-        }
-
-        inline static void apply(const edge_value &c, node_handle d,
-                          const edge_value &e, node_handle f,
-                          edge_value &a, node_handle &b)
-        {
-            if ((OMEGA_INFINITY == d) || (OMEGA_INFINITY == f))
+            if (OMEGA_INFINITY == a)
             {
-                a = edge_value(EDGETYPE(0));
-                b = OMEGA_INFINITY;
-            } else {
-                //
-                // both finite
-                //
-                b = OMEGA_NORMAL;
-                EDGETYPE cv, ev;
-                c.get(cv);
-                e.get(ev);
-                a = edge_value(MAX(cv, ev));
+                c = OMEGA_INFINITY;
+            }
+            else
+            {
+                MEDDLY_DCASSERT(OMEGA_NORMAL == a);
+                MEDDLY_DCASSERT(OMEGA_NORMAL == b);
+                c = OMEGA_NORMAL;
             }
         }
 
+        inline static void apply(const edge_value &a, const edge_value &b,
+                                    edge_value &c)
+        {
+            EDGETYPE av, bv;
+            a.get(av);
+            b.get(bv);
+            c.set(av-bv);
+        }
     };
 };
 
-#endif
 
 // ******************************************************************
 // *                                                                *
@@ -299,17 +278,15 @@ MEDDLY::binary_operation* MEDDLY::MINUS(forest* a, forest* b, forest* c)
         return MINUS_cache.add( bop );
     }
 
-    /*
-
     if (c->isEVPlus()) {
         switch (c->getEdgeType()) {
             case edge_type::INT:
-                bop = new arith_factor<EdgeOp_plus<int>, evplus_minus<int> >
+                bop = new arith_compat<EdgeOp_plus<int>, evplus_minus<int> >
                         (a,b,c);
                 break;
 
             case edge_type::LONG:
-                bop = new arith_factor<EdgeOp_plus<long>, evplus_minus<long> >
+                bop = new arith_compat<EdgeOp_plus<long>, evplus_minus<long> >
                         (a,b,c);
                 break;
 
@@ -318,8 +295,6 @@ MEDDLY::binary_operation* MEDDLY::MINUS(forest* a, forest* b, forest* c)
         }
         return MINUS_cache.add( bop );
     }
-
-    */
 
     if (c->isEVTimes()) {
         switch (c->getEdgeType()) {

@@ -65,6 +65,8 @@ class MEDDLY::error {
             VALUE_OVERFLOW,
             /// Integer division by 0 is invalid.
             DIVIDE_BY_ZERO,
+            /// Subtracting infinity is invalid.
+            SUBTRACT_INFINITY,
             /// Invalid policy setting.
             INVALID_POLICY,
             /// Bad value for something.
