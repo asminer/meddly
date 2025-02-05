@@ -37,4 +37,4 @@ will be rounded to the nearest 0.01.
 
 ### Implementation
 
-* New implementations for PLUS, MINUS operators
+* New implementations for PLUS, MINUS, MULTIPLY operators

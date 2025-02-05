@@ -36,6 +36,7 @@ arith_max.cc
 arith_min.cc
 arith_plus.cc
 arith_minus.cc
+arith_mult.cc       MT is working; EV+, EV* are not
 
 cardinality.cc
 cross.cc
@@ -74,12 +75,6 @@ mm_mult.cc
 modulo.cc
         NO      modulo_mdd
         NO      modulo_mxd
-
-multiply.cc
-        NO      multiply_mdd
-        NO      multiply_mxd
-        NO      multiply_evplus
-        NO      multiply_evtimes
 
 prepostimage.cc
         NO      mtmatr_mtvect
