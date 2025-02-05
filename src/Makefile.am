@@ -100,6 +100,7 @@ libmeddly_la_SOURCES = \
     operations/arith_min.h              operations/arith_min.cc    \
     operations/arith_plus.h             operations/arith_plus.cc   \
     operations/arith_minus.h            operations/arith_minus.cc  \
+    operations/arith_mult.h             operations/arith_mult.cc   \
     operations/cardinality.h            operations/cardinality.cc  \
     operations/compare.h                operations/compare.cc      \
     operations/complement.h             operations/complement.cc   \
@@ -114,7 +115,6 @@ libmeddly_la_SOURCES = \
     operations/mdd2index.h              operations/mdd2index.cc    \
     operations/mm_mult.h                operations/mm_mult.cc      \
     operations/modulo.h                 operations/modulo.cc       \
-    operations/multiply.h               operations/multiply.cc     \
     operations/prepostimage.h           operations/prepostimage.cc \
     operations/prepostplus.h            operations/prepostplus.cc  \
     operations/reach_bfs.h              operations/reach_bfs.cc    \

@@ -35,7 +35,7 @@ Completely reimplemented operations
 arith_max.cc
 arith_min.cc
 arith_plus.cc
-arith_minus.cc      need to fix EV+
+arith_minus.cc
 
 cardinality.cc
 cross.cc
