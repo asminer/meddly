@@ -31,6 +31,7 @@ ops_arith
 ops_comp
 ops_maxmin
 ops_plusminus
+ops_multdiv
 ops_set
 randtest
 refcount

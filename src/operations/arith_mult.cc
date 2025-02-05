@@ -66,13 +66,15 @@ namespace MEDDLY {
                 const forest* fa, node_handle &a,
                 const forest* fb, node_handle b)
         {
-            return (1 == b) || (0 == a);
+            terminal one( RANGE(1) );
+            return (0 == a) || (one.getHandle() == b);
         }
         inline static bool simplifiesToSecondArg(
                 const forest* fa, node_handle a,
                 const forest* fb, node_handle &b)
         {
-            return (1 == a) || (0 == b);
+            terminal one( RANGE(1) );
+            return (0 == b) || (one.getHandle() == a);
         }
 
         inline static void apply(const forest* fa, node_handle a,
