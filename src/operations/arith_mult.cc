@@ -169,7 +169,7 @@ namespace MEDDLY {
             EDGETYPE aev, bev;
             av.get(aev);
             bv.get(bev);
-            cv.set(aev + bev);
+            cv.set(aev * bev);
         }
 
     };
