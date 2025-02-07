@@ -72,7 +72,8 @@
         /// (For example, if OP is - and the second argument is 0;
         /// or OP is + and the first argument is infinity.)
         ///
-        static bool simplifiesToFirstArg(forest* fa, node_handle &a,
+        static bool simplifiesToFirstArg(int L,
+            forest* fa, node_handle &a,
             forest* fb, node_handle b);
 
 
@@ -81,7 +82,8 @@
         /// (For example, if OP is + and the first argument is 0;
         /// or OP is max and the second argument is infinity.)
         ///
-        static bool simplifiesToSecondArg(forest* fa, node_handle a,
+        static bool simplifiesToSecondArg(int L,
+            forest* fa, node_handle a,
             forest* fb, node_handle &b);
 
 
@@ -256,7 +258,7 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         return;
     }
 
-    if ( ATYPE::simplifiesToFirstArg(arg1F, A, arg2F, B) )
+    if ( ATYPE::simplifiesToFirstArg(L, arg1F, A, arg2F, B) )
     {
         //
         // Result is A
@@ -268,7 +270,7 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         return;
     }
 
-    if ( ATYPE::simplifiesToSecondArg(arg1F, A, arg2F, B) )
+    if ( ATYPE::simplifiesToSecondArg(L, arg1F, A, arg2F, B) )
     {
         //
         // Result is B
@@ -547,9 +549,9 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         /// (For example, if OP is - and the second argument is 0;
         /// or OP is + and the first argument is infinity.)
         ///
-        static bool simplifiesToFirstArg(
-            edge_value &a, node_handle &b,
-            const edge_value &c, node_handle d);
+        static bool simplifiesToFirstArg(int L,
+            forest* f1, edge_value &a, node_handle &b,
+            forest* f2, const edge_value &c, node_handle d);
 
 
         /// Does the computation simplify to the second argument?
@@ -557,9 +559,9 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         /// (For example, if OP is + and the first argument is 0;
         /// or OP is max and the second argument is infinity.)
         ///
-        static bool simplifiesToSecondArg(
-            const edge_value &a, node_handle b,
-            edge_value &c, node_handle &d);
+        static bool simplifiesToSecondArg(int L,
+            forest* f1, const edge_value &a, node_handle b,
+            forest* f2, edge_value &c, node_handle &d);
 
 
         ///
@@ -740,7 +742,7 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
         return;
     }
 
-    if ( ATYPE::simplifiesToFirstArg(av, A, bv, B) )
+    if ( ATYPE::simplifiesToFirstArg(L, arg1F, av, A, arg2F, bv, B) )
     {
         //
         // Result is <av, A>
@@ -750,7 +752,7 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
         return;
     }
 
-    if ( ATYPE::simplifiesToSecondArg(av, A, bv, B) )
+    if ( ATYPE::simplifiesToSecondArg(L, arg1F, av, A, arg2F, bv, B) )
     {
         //
         // Result is <bv, B>
@@ -1020,9 +1022,9 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
         /// (For example, if OP is - and the second argument is 0;
         /// or OP is + and the first argument is infinity.)
         ///
-        static bool simplifiesToFirstArg(
-            edge_value &a, node_handle &b,
-            const edge_value &c, node_handle d);
+        static bool simplifiesToFirstArg(int L,
+            forest* f1, edge_value &a, node_handle &b,
+            forest* f2, const edge_value &c, node_handle d);
 
 
         /// Does the computation simplify to the second argument?
@@ -1030,9 +1032,9 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
         /// (For example, if OP is + and the first argument is 0;
         /// or OP is max and the second argument is infinity.)
         ///
-        static bool simplifiesToSecondArg(
-            const edge_value &a, node_handle b,
-            edge_value &c, node_handle &d);
+        static bool simplifiesToSecondArg(int L,
+            forest* f1, const edge_value &a, node_handle b,
+            forest* f2, edge_value &c, node_handle &d);
 
 
         ///
@@ -1200,7 +1202,7 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
         return;
     }
 
-    if ( ATYPE::simplifiesToFirstArg(av, A, bv, B) )
+    if ( ATYPE::simplifiesToFirstArg(L, arg1F, av, A, arg2F, bv, B) )
     {
         //
         // Result is <av, A>
@@ -1210,7 +1212,7 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
         return;
     }
 
-    if ( ATYPE::simplifiesToSecondArg(av, A, bv, B) )
+    if ( ATYPE::simplifiesToSecondArg(L, arg1F, av, A, arg2F, bv, B) )
     {
         //
         // Result is <bv, B>

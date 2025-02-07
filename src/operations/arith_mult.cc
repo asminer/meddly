@@ -62,19 +62,23 @@ namespace MEDDLY {
         inline static void makeEqualResult(const forest*, node_handle &a) {
             MEDDLY_DCASSERT(false);
         }
-        inline static bool simplifiesToFirstArg(
+        inline static bool simplifiesToFirstArg(int L,
                 const forest* fa, node_handle &a,
                 const forest* fb, node_handle b)
         {
+            if (0 == a) return true;
+            if (fb->isIdentityReduced()) return false;
             terminal one( RANGE(1) );
-            return (0 == a) || (one.getHandle() == b);
+            return (one.getHandle() == b);
         }
-        inline static bool simplifiesToSecondArg(
+        inline static bool simplifiesToSecondArg(int L,
                 const forest* fa, node_handle a,
                 const forest* fb, node_handle &b)
         {
+            if (0 == b) return true;
+            if (fa->isIdentityReduced()) return false;
             terminal one( RANGE(1) );
-            return (0 == b) || (one.getHandle() == a);
+            return (one.getHandle() == a);
         }
 
         inline static void apply(const forest* fa, node_handle a,
@@ -118,11 +122,11 @@ namespace MEDDLY {
         inline static void makeEqualResult(edge_value &av, node_handle &a) {
             MEDDLY_DCASSERT(false);
         }
-        inline static bool simplifiesToFirstArg(
-                edge_value &av, node_handle &an,
-                const edge_value &bv, node_handle bn)
+        inline static bool simplifiesToFirstArg(int L,
+                const forest* f1, edge_value &av, node_handle &an,
+                const forest* f2, const edge_value &bv, node_handle bn)
         {
-            if (OMEGA_INFINITY == an) return true;
+            if (OMEGA_INFINITY == an) return (!f1->isIdentityReduced());
             if (OMEGA_NORMAL == an) {
                 EDGETYPE aev;
                 av.get(aev);
@@ -131,15 +135,15 @@ namespace MEDDLY {
             if (OMEGA_NORMAL == bn) {
                 EDGETYPE bev;
                 bv.get(bev);
-                if (1 == bev) return true;
+                if (1 == bev) return (!f2->isIdentityReduced());
             }
             return false;
         }
-        inline static bool simplifiesToSecondArg(
-                edge_value &av, node_handle &an,
-                const edge_value &bv, node_handle bn)
+        inline static bool simplifiesToSecondArg(int L,
+                const forest* f1, edge_value &av, node_handle &an,
+                const forest* f2, const edge_value &bv, node_handle bn)
         {
-            if (OMEGA_INFINITY == bn) return true;
+            if (OMEGA_INFINITY == bn) return (!f2->isIdentityReduced());
             if (OMEGA_NORMAL == bn) {
                 EDGETYPE bev;
                 bv.get(bev);
@@ -148,7 +152,7 @@ namespace MEDDLY {
             if (OMEGA_NORMAL == an) {
                 EDGETYPE aev;
                 av.get(aev);
-                if (1 == aev) return true;
+                if (1 == aev) return (!f1->isIdentityReduced());
             }
             return false;
         }
@@ -196,17 +200,21 @@ namespace MEDDLY {
         inline static void makeEqualResult(const forest*, node_handle &a) {
             MEDDLY_DCASSERT(false);
         }
-        inline static bool simplifiesToFirstArg(
+        inline static bool simplifiesToFirstArg(int L,
                 const forest* fa, node_handle &a,
                 const forest* fb, node_handle b)
         {
-            return (OMEGA_ZERO == a) || (OMEGA_NORMAL == b);
+            if (OMEGA_ZERO == a) return true;
+            if (fb->isIdentityReduced()) return false;
+            return (OMEGA_NORMAL == b);
         }
-        inline static bool simplifiesToSecondArg(
+        inline static bool simplifiesToSecondArg(int L,
                 const forest* fa, node_handle a,
                 const forest* fb, node_handle &b)
         {
-            return (OMEGA_ZERO == b) || (OMEGA_NORMAL == a);
+            if (OMEGA_ZERO == b) return true;
+            if (fa->isIdentityReduced()) return false;
+            return (OMEGA_NORMAL == a);
         }
 
         inline static void apply(const forest* fa, node_handle a,

@@ -62,13 +62,13 @@ namespace MEDDLY {
         inline static void makeEqualResult(const forest* F, node_handle &a) {
             a = F->handleForValue(RANGE(0));
         }
-        inline static bool simplifiesToFirstArg(
+        inline static bool simplifiesToFirstArg(int L,
                 const forest* fa, node_handle &a,
                 const forest* fb, node_handle b)
         {
             return (0 == b);
         }
-        inline static bool simplifiesToSecondArg(
+        inline static bool simplifiesToSecondArg(int L,
                 const forest* fa, node_handle a,
                 const forest* fb, node_handle &b)
         {
@@ -118,14 +118,15 @@ namespace MEDDLY {
             a = F->makeRedundantsTo(OMEGA_NORMAL, 0, L);
         }
 
-        inline static bool simplifiesToFirstArg(
+        inline static bool simplifiesToFirstArg(int L,
                 const forest* fa, node_handle &a,
                 const forest* fb, node_handle b)
         {
             MEDDLY_DCASSERT(OMEGA_INFINITY != b);
+            if (fa->isIdentityReduced()) return false;
             return (OMEGA_INFINITY == a) || (OMEGA_NORMAL == b);
         }
-        inline static bool simplifiesToSecondArg(
+        inline static bool simplifiesToSecondArg(int L,
                 const forest* fa, node_handle a,
                 const forest* fb, node_handle &b)
         {
@@ -190,15 +191,15 @@ namespace MEDDLY {
             av = EDGETYPE(0);
             a = OMEGA_ZERO;
         }
-        inline static bool simplifiesToFirstArg(
-                const edge_value &av, node_handle &a,
-                const edge_value &bv, node_handle b)
+        inline static bool simplifiesToFirstArg(int L,
+                const forest*, const edge_value &av, node_handle &a,
+                const forest*, const edge_value &bv, node_handle b)
         {
             return (OMEGA_ZERO == b);
         }
-        inline static bool simplifiesToSecondArg(
-                const edge_value &av, node_handle a,
-                const edge_value &bv, node_handle &b)
+        inline static bool simplifiesToSecondArg(int L,
+                const forest*, const edge_value &av, node_handle a,
+                const forest*, const edge_value &bv, node_handle &b)
         {
             return false;
         }
