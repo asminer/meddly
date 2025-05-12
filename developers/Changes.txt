@@ -1,6 +1,8 @@
 Implement next:
 
-    * Implement arithmetic operators multiply, divide, and modulo
+    * Tests for divide, modulo
+
+    * Implement arithmetic operators divide, and modulo
 
     * mdd2index operation, and test case(s) for it
 

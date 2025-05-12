@@ -51,10 +51,10 @@ void Multiply(const std::vector <T> &A, const std::vector <T> &B,
         std::vector<T> &C)
 {
     if (A.size() != B.size()) {
-        throw "GE size mismatch A,B";
+        throw "mult size mismatch A,B";
     }
     if (A.size() != C.size()) {
-        throw "GE size mismatch A,C";
+        throw "mult size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
         C[i] = A[i] * B[i];

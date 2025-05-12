@@ -52,10 +52,10 @@ void Max(const std::vector <T> &A, const std::vector <T> &B,
         std::vector<T> &C)
 {
     if (A.size() != B.size()) {
-        throw "EQ size mismatch A,B";
+        throw "Max size mismatch A,B";
     }
     if (A.size() != C.size()) {
-        throw "EQ size mismatch A,C";
+        throw "Max size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
         C[i] = MAX(A[i], B[i]);
@@ -67,10 +67,10 @@ void Min(const std::vector <T> &A, const std::vector <T> &B,
         std::vector<T> &C)
 {
     if (A.size() != B.size()) {
-        throw "NE size mismatch A,B";
+        throw "Min size mismatch A,B";
     }
     if (A.size() != C.size()) {
-        throw "NE size mismatch A,C";
+        throw "Min size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
         C[i] = MIN(A[i], B[i]);

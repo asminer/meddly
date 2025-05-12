@@ -52,10 +52,10 @@ void Plus(const std::vector <T> &A, const std::vector <T> &B,
         std::vector<T> &C)
 {
     if (A.size() != B.size()) {
-        throw "GE size mismatch A,B";
+        throw "plus size mismatch A,B";
     }
     if (A.size() != C.size()) {
-        throw "GE size mismatch A,C";
+        throw "plus size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
         C[i] = A[i] + B[i];
@@ -67,10 +67,10 @@ void Minus(const std::vector <T> &A, const std::vector <T> &B,
         std::vector<T> &C)
 {
     if (A.size() != B.size()) {
-        throw "GT size mismatch A,B";
+        throw "minus size mismatch A,B";
     }
     if (A.size() != C.size()) {
-        throw "GT size mismatch A,C";
+        throw "minus size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
         C[i] = A[i] - B[i];
