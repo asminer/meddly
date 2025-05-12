@@ -91,12 +91,13 @@ double vectorgen::random()
 
 MEDDLY::domain* vectorgen::makeDomain()
 {
-    int bs[vars()];
+    int* bs = new int[vars()];
     for (unsigned i=0; i<vars(); i++) {
         bs[i] = dom();
     }
     MEDDLY::domain* d = MEDDLY::domain::createBottomUp(bs, vars());
     _D = d;
+    delete[] bs;
     return d;
 }
 
