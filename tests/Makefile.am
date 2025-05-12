@@ -31,6 +31,7 @@ noinst_PROGRAMS = \
     ops_maxmin \
     ops_plusminus \
     ops_mult \
+    ops_divmod \
     ops_set \
     refcount \
     sat_test \
@@ -101,6 +102,14 @@ TESTS = \
     ops_mult.--rel.--MT.--float._sh \
     ops_mult.--rel.--EVp.--long._sh \
     ops_mult.--rel.--EVs.--float._sh \
+    \
+    ops_divmod.--set.--MT.--int._sh \
+    ops_divmod.--set.--MT.--float._sh \
+    ops_divmod.--set.--EVp.--long._sh \
+    ops_divmod.--rel.--MT.--int._sh \
+    ops_divmod.--rel.--MT.--float._sh \
+    ops_divmod.--rel.--EVp.--long._sh \
+    ops_divmod.--rel.--EVs.--float._sh \
     \
     ops_set.--set._sh \
     ops_set.--rel._sh \
@@ -242,6 +251,29 @@ ops_mult.--rel.--EVs.--float._sh: buildWrapper.sh
 
 ###########################################
 
+ops_divmod.--set.--MT.--int._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_divmod.--set.--MT.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_divmod.--set.--EVp.--long._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_divmod.--rel.--MT.--int._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_divmod.--rel.--MT.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_divmod.--rel.--EVp.--long._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+ops_divmod.--rel.--EVs.--float._sh: buildWrapper.sh
+	./buildWrapper.sh $@
+
+###########################################
+
 ops_set.--set._sh: buildWrapper.sh
 	./buildWrapper.sh $@
 
@@ -340,6 +372,9 @@ ops_plusminus_LDADD = ../src/libmeddly.la
 
 ops_mult_SOURCES = ops_mult.cc randomize.cc
 ops_mult_LDADD = ../src/libmeddly.la
+
+ops_divmod_SOURCES = ops_divmod.cc randomize.cc
+ops_divmod_LDADD = ../src/libmeddly.la
 
 ops_set_SOURCES = ops_set.cc randomize.cc
 ops_set_LDADD = ../src/libmeddly.la
