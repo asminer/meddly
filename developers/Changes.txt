@@ -1,6 +1,7 @@
 Implement next:
 
-    * Tests for divide, modulo
+    * division and template in general:
+        how to handle 'makeEqualResult' when it returns a terminal node?
 
     * Implement arithmetic operators divide, and modulo
 

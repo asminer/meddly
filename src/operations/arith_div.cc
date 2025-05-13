@@ -1,0 +1,320 @@
+/*
+    Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
+    Copyright (C) 2009, Iowa State University Research Foundation, Inc.
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "../defines.h"
+#include "arith_div.h"
+
+#include "../ops_builtin.h" // for COPY
+#include "../oper_item.h"
+#include "../oper_binary.h"
+#include "../oper_unary.h"
+#include "../ct_vector.h"
+
+// #define TRACE
+
+#ifdef TRACE
+#include "../operators.h"
+#endif
+
+#include "arith_templ.h"
+
+//
+// Operation instance cache
+//
+namespace MEDDLY {
+    binary_list DIV_cache;
+};
+
+
+// ******************************************************************
+// *                                                                *
+// *                          mt_div class                          *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class RANGE>
+    struct mt_div {
+        inline static const char* name() {
+            return "div";
+        }
+        inline static bool commutes() {
+            return false;
+        }
+        inline static bool stopOnEqualArgs() {
+            return true;
+        }
+        inline static void makeEqualResult(const forest* F, node_handle &a) {
+            a = F->handleForValue(RANGE(1));
+        }
+        inline static bool simplifiesToFirstArg(int L,
+                const forest* fa, node_handle &a,
+                const forest* fb, node_handle b)
+        {
+            if (0 == a) return true;
+            if (fb->isIdentityReduced()) return false;
+            terminal one( RANGE(1) );
+            return (one.getHandle() == b);
+        }
+        inline static bool simplifiesToSecondArg(int L,
+                const forest* fa, node_handle a,
+                const forest* fb, node_handle &b)
+        {
+            return false;
+        }
+
+        inline static void apply(const forest* fa, node_handle a,
+                const forest* fb, node_handle b,
+                const forest* fc, node_handle &c)
+        {
+            RANGE av, bv;
+            fa->getValueFromHandle(a, av);
+            fb->getValueFromHandle(b, bv);
+            if (0 == bv) throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
+            c = fc->handleForValue( av / bv );
+        }
+
+        inline static void apply(const edge_value &a, const edge_value &b,
+                                    edge_value &c)
+        {
+            MEDDLY_DCASSERT(a.isVoid());
+            MEDDLY_DCASSERT(b.isVoid());
+            c.set();
+        }
+    };
+};
+
+// TBD HERE
+
+// ******************************************************************
+// *                                                                *
+// *                        evplus_div class                        *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class EDGETYPE>
+    struct evplus_div {
+        inline static const char* name() {
+            return "div";
+        }
+        inline static bool commutes() {
+            return false;
+        }
+        inline static bool stopOnEqualArgs() {
+            return false;
+        }
+        inline static void makeEqualResult(edge_value &av, node_handle &a) {
+            MEDDLY_DCASSERT(false);
+        }
+        inline static bool simplifiesToFirstArg(int L,
+                const forest* f1, edge_value &av, node_handle &an,
+                const forest* f2, const edge_value &bv, node_handle bn)
+        {
+            if (OMEGA_INFINITY == an) return (!f1->isIdentityReduced());
+            if (OMEGA_NORMAL == an) {
+                EDGETYPE aev;
+                av.get(aev);
+                if (0 == aev) return true;
+            }
+            if (OMEGA_NORMAL == bn) {
+                EDGETYPE bev;
+                bv.get(bev);
+                if (1 == bev) return (!f2->isIdentityReduced());
+            }
+            return false;
+        }
+        inline static bool simplifiesToSecondArg(int L,
+                const forest* f1, edge_value &av, node_handle &an,
+                const forest* f2, const edge_value &bv, node_handle bn)
+        {
+            if (OMEGA_INFINITY == bn) return (!f2->isIdentityReduced());
+            if (OMEGA_NORMAL == bn) {
+                EDGETYPE bev;
+                bv.get(bev);
+                if (0 == bev) return true;
+            }
+            if (OMEGA_NORMAL == an) {
+                EDGETYPE aev;
+                av.get(aev);
+                if (1 == aev) return (!f1->isIdentityReduced());
+            }
+            return false;
+        }
+
+        inline static void apply(const edge_value &av, node_handle an,
+                const edge_value &bv, node_handle bn,
+                edge_value &cv, node_handle &cn)
+        {
+            if ((OMEGA_INFINITY == an) || (OMEGA_INFINITY == bn))
+            {
+                cn = OMEGA_INFINITY;
+                cv = EDGETYPE(0);
+                return;
+            }
+            MEDDLY_DCASSERT(OMEGA_NORMAL == an);
+            MEDDLY_DCASSERT(OMEGA_NORMAL == bn);
+            cn = OMEGA_NORMAL;
+            EDGETYPE aev, bev;
+            av.get(aev);
+            bv.get(bev);
+            cv.set(aev * bev);
+        }
+
+    };
+};
+
+// ******************************************************************
+// *                                                                *
+// *                        evstar_div class                        *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class EDGETYPE>
+    struct evstar_div {
+        inline static const char* name() {
+            return "div";
+        }
+        inline static bool commutes() {
+            return false;
+        }
+        inline static bool stopOnEqualArgs() {
+            return false;
+        }
+        inline static void makeEqualResult(const forest*, node_handle &a) {
+            MEDDLY_DCASSERT(false);
+        }
+        inline static bool simplifiesToFirstArg(int L,
+                const forest* fa, node_handle &a,
+                const forest* fb, node_handle b)
+        {
+            if (OMEGA_ZERO == a) return true;
+            if (fb->isIdentityReduced()) return false;
+            return (OMEGA_NORMAL == b);
+        }
+        inline static bool simplifiesToSecondArg(int L,
+                const forest* fa, node_handle a,
+                const forest* fb, node_handle &b)
+        {
+            if (OMEGA_ZERO == b) return true;
+            if (fa->isIdentityReduced()) return false;
+            return (OMEGA_NORMAL == a);
+        }
+
+        inline static void apply(const forest* fa, node_handle a,
+                const forest* fb, node_handle b,
+                const forest* fc, node_handle &c)
+        {
+            if ((OMEGA_ZERO == a) || (OMEGA_ZERO == b))
+            {
+                c = OMEGA_ZERO;
+            }
+            else
+            {
+                c = OMEGA_NORMAL;
+            }
+        }
+
+        inline static void apply(const edge_value &a, const edge_value &b,
+                                    edge_value &c)
+        {
+            EDGETYPE av, bv;
+            a.get(av);
+            b.get(bv);
+            c.set(av * bv);
+        }
+
+    };
+};
+
+// ******************************************************************
+// *                                                                *
+// *                        DIVIDE front end                        *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_operation* MEDDLY::DIVIDE(forest* a, forest* b, forest* c)
+{
+    if (!a || !b || !c) return nullptr;
+    binary_operation* bop =  DIV_cache.find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+    if (c->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            bop = new arith_compat<EdgeOp_none, mt_div<float> > (a,b,c);
+        } else {
+            bop = new arith_compat<EdgeOp_none, mt_div<long> > (a,b,c);
+        }
+        return DIV_cache.add( bop );
+    }
+
+    if (c->isEVPlus()) {
+        switch (c->getEdgeType()) {
+            case edge_type::INT:
+                bop = new arith_pushdn<EdgeOp_plus<int>, evplus_div<int> >
+                        (a,b,c);
+                break;
+
+            case edge_type::LONG:
+                bop = new arith_pushdn<EdgeOp_plus<long>, evplus_div<long> >
+                        (a,b,c);
+                break;
+
+            default:
+                return nullptr;
+        }
+        return DIV_cache.add( bop );
+    }
+
+    if (c->isEVTimes()) {
+        switch (c->getEdgeType()) {
+            case edge_type::FLOAT:
+                bop = new arith_compat<EdgeOp_times<float>, evstar_div<float> >
+                        (a,b,c);
+                break;
+
+            case edge_type::DOUBLE:
+                bop = new arith_compat<EdgeOp_times<double>, evstar_div<double> >
+                        (a,b,c);
+                break;
+
+            default:
+                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+        }
+        return DIV_cache.add( bop );
+    }
+
+    return nullptr;
+}
+
+void MEDDLY::DIVIDE_init()
+{
+    DIV_cache.reset("Divide");
+}
+
+void MEDDLY::DIVIDE_done()
+{
+    MEDDLY_DCASSERT(DIV_cache.isEmpty());
+}
+

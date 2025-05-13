@@ -101,6 +101,7 @@ libmeddly_la_SOURCES = \
     operations/arith_plus.h             operations/arith_plus.cc   \
     operations/arith_minus.h            operations/arith_minus.cc  \
     operations/arith_mult.h             operations/arith_mult.cc   \
+    operations/arith_div.h              operations/arith_div.cc    \
     operations/cardinality.h            operations/cardinality.cc  \
     operations/compare.h                operations/compare.cc      \
     operations/complement.h             operations/complement.cc   \
@@ -109,7 +110,6 @@ libmeddly_la_SOURCES = \
     operations/cross.h                  operations/cross.cc        \
     operations/cycle.h                  operations/cycle.cc        \
     operations/difference.h             operations/difference.cc   \
-    operations/divide.h                 operations/divide.cc       \
     operations/intersection.h           operations/intersection.cc \
     operations/maxmin_range.h           operations/maxmin_range.cc \
     operations/mdd2index.h              operations/mdd2index.cc    \

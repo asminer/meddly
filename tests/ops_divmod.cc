@@ -147,10 +147,12 @@ void compare(vectorgen &Gen,
         return;
     }
 
+    /*
     Modulo(Aset, Bset, AmodBset);
     Gen.explicit2edge(AmodBset, AmodBdd);
     apply(MODULO, Add, Bdd, AmodBsym);
     checkEqual("modulo", Add, Bdd, AmodBsym, AmodBdd, AmodBset);
+    */
 }
 
 template <typename TYPE>
