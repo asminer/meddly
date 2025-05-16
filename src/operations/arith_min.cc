@@ -59,8 +59,16 @@ namespace MEDDLY {
         inline static bool stopOnEqualArgs() {
             return true;
         }
-        inline static void makeEqualResult(const forest*, node_handle &a) {
-            // min(a, a) = a; do nothing to a
+        inline static void makeEqualResult(int L, unsigned in,
+                const forest* fa, node_handle a,
+                forest* fc, edge_value &cv, node_handle &c,
+                unary_operation* copier)
+        {
+            // min(a, a) = a; just copy it
+            //
+            MEDDLY_DCASSERT(copier);
+            edge_value zero;
+            copier->compute(L, in, zero, a, cv, c);
         }
         inline static bool simplifiesToFirstArg(int L,
                 const forest* fa, node_handle &a,

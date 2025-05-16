@@ -64,7 +64,10 @@
         /// if the operands are equal
         /// (only called if stopOnEqualArgs() is true.)
         ///
-        static void makeEqualResult(const forest*, node_handle &a);
+        static void makeEqualResult(int L,
+            forest* fa, node_handle a,
+            forest* fc, edge_value &cv, node_handle &c,
+            unary_operation* copier);
 
 
         /// Does the computation simplify to the first argument?
@@ -248,13 +251,9 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
     if ( ATYPE::stopOnEqualArgs() && (arg1F == arg2F) && (A == B))
     {
         //
-        // Result is A
+        // Determine result on equal, from A
         //
-        edge_value zero;
-        EOP::clear(zero);
-        ATYPE::makeEqualResult(arg1F, A);
-        MEDDLY_DCASSERT(copy_arg1res);
-        copy_arg1res->compute(L, in, zero, A, cv, C);
+        ATYPE::makeEqualResult(L, in, arg1F, A, resF, cv, C, copy_arg1res);
         return;
     }
 

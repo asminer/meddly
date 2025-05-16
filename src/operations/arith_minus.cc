@@ -59,8 +59,13 @@ namespace MEDDLY {
         inline static bool stopOnEqualArgs() {
             return true;
         }
-        inline static void makeEqualResult(const forest* F, node_handle &a) {
-            a = F->handleForValue(RANGE(0));
+        inline static void makeEqualResult(int L, unsigned in,
+                const forest* fa, node_handle a,
+                forest* fc, edge_value &cv, node_handle &c,
+                unary_operation* copier)
+        {
+            cv.set();
+            c = fc->handleForValue(RANGE(0));
         }
         inline static bool simplifiesToFirstArg(int L,
                 const forest* fa, node_handle &a,
@@ -113,9 +118,13 @@ namespace MEDDLY {
         inline static bool stopOnEqualArgs() {
             return true;
         }
-        inline static void makeEqualResult(forest* F, node_handle &a) {
-            const int L = F->getNodeLevel(a);
-            a = F->makeRedundantsTo(OMEGA_NORMAL, 0, L);
+        inline static void makeEqualResult(int L, unsigned in,
+                const forest* fa, node_handle a,
+                forest* fc, edge_value &cv, node_handle &c,
+                unary_operation* copier)
+        {
+            cv.set(EDGETYPE(0));
+            c = fc->makeRedundantsTo(OMEGA_NORMAL, 0, L);
         }
 
         inline static bool simplifiesToFirstArg(int L,
