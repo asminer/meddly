@@ -220,8 +220,6 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-// TBD HERE
-
 namespace MEDDLY {
     template <class EDGETYPE>
     struct evstar_div {
@@ -232,37 +230,44 @@ namespace MEDDLY {
             return false;
         }
         inline static bool stopOnEqualArgs() {
-            return false;
+            return true;
         }
         inline static void makeEqualResult(int L, unsigned in,
                 const forest* fa, node_handle a,
                 forest* fc, edge_value &cv, node_handle &c,
                 unary_operation* copier)
         {
-            MEDDLY_DCASSERT(false);
+            //
+            // NOTE:
+            //   this (perhaps wrongly) assumes that the function
+            //   encoded by a has no zero values;
+            //   otherwise we're returning 1 for 0/0
+            //
+            cv = EDGETYPE(1);
+            c = fc->makeRedundantsTo( OMEGA_NORMAL, 0, L );
         }
         inline static bool simplifiesToFirstArg(int L,
                 const forest* fa, node_handle &a,
                 const forest* fb, node_handle b)
         {
-            if (OMEGA_ZERO == a) return true;
-            if (fb->isIdentityReduced()) return false;
-            return (OMEGA_NORMAL == b);
+            return (OMEGA_ZERO == a);
         }
+
         inline static bool simplifiesToSecondArg(int L,
                 const forest* fa, node_handle a,
                 const forest* fb, node_handle &b)
         {
-            if (OMEGA_ZERO == b) return true;
-            if (fa->isIdentityReduced()) return false;
-            return (OMEGA_NORMAL == a);
+            return false;
         }
 
         inline static void apply(const forest* fa, node_handle a,
                 const forest* fb, node_handle b,
                 const forest* fc, node_handle &c)
         {
-            if ((OMEGA_ZERO == a) || (OMEGA_ZERO == b))
+            if (OMEGA_ZERO == b) {
+                throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
+            }
+            if (OMEGA_ZERO == a)
             {
                 c = OMEGA_ZERO;
             }
@@ -278,6 +283,9 @@ namespace MEDDLY {
             EDGETYPE av, bv;
             a.get(av);
             b.get(bv);
+            if (0 == bv) {
+                throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
+            }
             c.set(av / bv);
         }
 
