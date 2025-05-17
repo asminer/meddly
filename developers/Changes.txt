@@ -1,8 +1,5 @@
 Implement next:
 
-    * division and template in general:
-        how to handle 'makeEqualResult' when it returns a terminal node?
-
     * Implement arithmetic operators divide, and modulo
 
     * mdd2index operation, and test case(s) for it
@@ -40,6 +37,8 @@ arith_min.cc
 arith_plus.cc
 arith_minus.cc
 arith_mult.cc
+arith_div.cc
+arith_mod.cc
 
 cardinality.cc
 cross.cc
@@ -65,19 +64,11 @@ cycle.cc
         NO      cycle_EV2EV
 
 
-divide.cc
-        NO      divide_mdd
-        NO      divide_mxd
-
 mdd2index.cc
         NO      mdd2index_operation
 
 mm_mult.cc
         NO      mm_mult_mt
-
-modulo.cc
-        NO      modulo_mdd
-        NO      modulo_mxd
 
 prepostimage.cc
         NO      mtmatr_mtvect

@@ -79,10 +79,10 @@ void Modulo(const std::vector <T> &A, const std::vector <T> &B,
         std::vector<T> &C)
 {
     if (A.size() != B.size()) {
-        throw "div size mismatch A,B";
+        throw "mod size mismatch A,B";
     }
     if (A.size() != C.size()) {
-        throw "div size mismatch A,C";
+        throw "mod size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
         if (0 == B[i]) {
@@ -147,12 +147,10 @@ void compare(vectorgen &Gen,
         return;
     }
 
-    /*
     Modulo(Aset, Bset, AmodBset);
     Gen.explicit2edge(AmodBset, AmodBdd);
     apply(MODULO, Add, Bdd, AmodBsym);
     checkEqual("modulo", Add, Bdd, AmodBsym, AmodBdd, AmodBset);
-    */
 }
 
 template <typename TYPE>
