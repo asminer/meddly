@@ -1,7 +1,5 @@
 Implement next:
 
-    * Implement arithmetic operators divide, and modulo
-
     * mdd2index operation, and test case(s) for it
 
     * select operation, and test case for it
@@ -20,8 +18,6 @@ Implement next:
 
 Operation updates, to do:
     * re-implement operations using new CT interface
-        start with intersection and check timing
-
     * eventually: remove CTs from operation base class
     * eventually: remove entry registration from operation base class
 
