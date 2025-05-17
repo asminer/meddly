@@ -128,7 +128,9 @@ namespace MEDDLY {
             return false;
         }
         inline static bool stopOnEqualArgs() {
-            return true;
+            // return true;
+            return false;
+            // TBD! FIX THIS!
         }
         inline static void makeEqualResult(edge_value &av, node_handle &a)
         {
@@ -168,21 +170,45 @@ namespace MEDDLY {
                 const edge_value &bv, node_handle bn,
                 edge_value &cv, node_handle &cn)
         {
-            if ((OMEGA_INFINITY == an) || (OMEGA_INFINITY == bn))
+            //
+            // Special case: dividing by infinity
+            //
+            if (OMEGA_INFINITY == bn)
+            {
+                if (OMEGA_INFINITY == an) {
+                    throw error(error::INFINITY_DIV_INFINITY, __FILE__, __LINE__);
+                }
+                cn = OMEGA_NORMAL;
+                cv = EDGETYPE(0);
+                return;
+            }
+
+            //
+            // Special case: dividing by zero
+            //
+            MEDDLY_DCASSERT(OMEGA_NORMAL == bn);
+            EDGETYPE bev;
+            bv.get(bev);
+            if (0 == bev) {
+                throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
+            }
+
+            //
+            // Still going? We're dividing by something finite.
+            //
+
+            if (OMEGA_INFINITY == an)
             {
                 cn = OMEGA_INFINITY;
                 cv = EDGETYPE(0);
                 return;
             }
+
             MEDDLY_DCASSERT(OMEGA_NORMAL == an);
-            MEDDLY_DCASSERT(OMEGA_NORMAL == bn);
-            cn = OMEGA_NORMAL;
-            EDGETYPE aev, bev;
+            EDGETYPE aev;
             av.get(aev);
-            bv.get(bev);
-            if (0 == bev) {
-                throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
-            }
+
+            cn = OMEGA_NORMAL;
             cv.set(aev / bev);
         }
 

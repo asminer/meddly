@@ -67,6 +67,8 @@ class MEDDLY::error {
             DIVIDE_BY_ZERO,
             /// Subtracting infinity is invalid.
             SUBTRACT_INFINITY,
+            /// Infinity / infinity and infinity % infinity are invalid.
+            INFINITY_DIV_INFINITY,
             /// Invalid policy setting.
             INVALID_POLICY,
             /// Bad value for something.

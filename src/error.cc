@@ -47,6 +47,7 @@ const char* MEDDLY::error::getName() const
         case  error::VALUE_OVERFLOW:        return "Overflow";
         case  error::DIVIDE_BY_ZERO:        return "Divide by zero";
         case  error::SUBTRACT_INFINITY:     return "Subtract infinity";
+        case  error::INFINITY_DIV_INFINITY: return "Divide infinities";
         case  error::INVALID_POLICY:        return "Invalid policy";
         case  error::INVALID_ASSIGNMENT:    return "Invalid assignment";
         case  error::INVALID_ARGUMENT:      return "Invalid argument";
