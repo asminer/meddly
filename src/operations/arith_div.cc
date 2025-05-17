@@ -128,16 +128,23 @@ namespace MEDDLY {
             return false;
         }
         inline static bool stopOnEqualArgs() {
-            return false;
+            return true;
         }
-        inline static void makeEqualResult(edge_value &av, node_handle &a) {
-            MEDDLY_DCASSERT(false);
+        inline static void makeEqualResult(edge_value &av, node_handle &a)
+        {
+            //
+            // NOTE:
+            //   this (perhaps wrongly) assumes that the function
+            //   encoded by a has no zero values;
+            //   otherwise we're returning 1 for 0/0
+            //
+            av = EDGETYPE(1);
+            a = OMEGA_ZERO;
         }
         inline static bool simplifiesToFirstArg(int L,
                 const forest* f1, edge_value &av, node_handle &an,
                 const forest* f2, const edge_value &bv, node_handle bn)
         {
-            if (OMEGA_INFINITY == an) return (!f1->isIdentityReduced());
             if (OMEGA_NORMAL == an) {
                 EDGETYPE aev;
                 av.get(aev);
@@ -154,17 +161,6 @@ namespace MEDDLY {
                 const forest* f1, edge_value &av, node_handle &an,
                 const forest* f2, const edge_value &bv, node_handle bn)
         {
-            if (OMEGA_INFINITY == bn) return (!f2->isIdentityReduced());
-            if (OMEGA_NORMAL == bn) {
-                EDGETYPE bev;
-                bv.get(bev);
-                if (0 == bev) return true;
-            }
-            if (OMEGA_NORMAL == an) {
-                EDGETYPE aev;
-                av.get(aev);
-                if (1 == aev) return (!f1->isIdentityReduced());
-            }
             return false;
         }
 
@@ -184,7 +180,10 @@ namespace MEDDLY {
             EDGETYPE aev, bev;
             av.get(aev);
             bv.get(bev);
-            cv.set(aev * bev);
+            if (0 == bev) {
+                throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
+            }
+            cv.set(aev / bev);
         }
 
     };
