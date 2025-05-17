@@ -191,7 +191,10 @@ namespace MEDDLY {
         {
             return false;
         }
-        inline static void makeEqualResult(edge_value &av, node_handle &a)
+        inline static void makeEqualResult(int L, unsigned in,
+                const edge_value &av, const node_handle &a,
+                forest* fc, edge_value &cv, node_handle &c,
+                unary_operation* copyop)
         {
             MEDDLY_DCASSERT(false);
         }

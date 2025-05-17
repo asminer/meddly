@@ -110,8 +110,6 @@ namespace MEDDLY {
     };
 };
 
-// TBD HERE
-
 // ******************************************************************
 // *                                                                *
 // *                        evplus_div class                        *
@@ -128,11 +126,12 @@ namespace MEDDLY {
             return false;
         }
         inline static bool stopOnEqualArgs() {
-            // return true;
-            return false;
-            // TBD! FIX THIS!
+            return true;
         }
-        inline static void makeEqualResult(edge_value &av, node_handle &a)
+        inline static void makeEqualResult(int L, unsigned in,
+                const edge_value &av, const node_handle &a,
+                forest* fc, edge_value &cv, node_handle &c,
+                unary_operation* copyop)
         {
             //
             // NOTE:
@@ -140,8 +139,8 @@ namespace MEDDLY {
             //   encoded by a has no zero values;
             //   otherwise we're returning 1 for 0/0
             //
-            av = EDGETYPE(1);
-            a = OMEGA_ZERO;
+            cv = EDGETYPE(1);
+            c = fc->makeRedundantsTo( OMEGA_NORMAL, 0, L );
         }
         inline static bool simplifiesToFirstArg(int L,
                 const forest* f1, edge_value &av, node_handle &an,
@@ -221,6 +220,8 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
+// TBD HERE
+
 namespace MEDDLY {
     template <class EDGETYPE>
     struct evstar_div {
@@ -277,7 +278,7 @@ namespace MEDDLY {
             EDGETYPE av, bv;
             a.get(av);
             b.get(bv);
-            c.set(av * bv);
+            c.set(av / bv);
         }
 
     };

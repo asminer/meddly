@@ -540,7 +540,10 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         /// if the operands are equal
         /// (only called if stopOnEqualArgs() is true.)
         ///
-        static void makeEqualResult(edge_value &av, node_handle &a);
+        static void makeEqualResult(int L, unsigned in,
+            const edge_value &av, node_handle a,
+            forest* Fc, edge_value &cv, node_handle &c,
+            unary_operation* copyop);
 
 
         /// Does the computation simplify to the first argument?
@@ -733,12 +736,16 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
     if ( ATYPE::stopOnEqualArgs() && (arg1F == arg2F) && (A == B) && (av == bv))
     {
         //
-        // Result is <av, A>
+        // Make result for A == B, using <av, A>
         //
+        ATYPE::makeEqualResult(L, in, av, A, resF, cv, C, copy_arg1res);
+        return;
+        /*
         ATYPE::makeEqualResult(av, A);
         MEDDLY_DCASSERT(copy_arg1res);
         copy_arg1res->compute(L, in, av, A, cv, C);
         return;
+        */
     }
 
     if ( ATYPE::simplifiesToFirstArg(L, arg1F, av, A, arg2F, bv, B) )
@@ -1013,7 +1020,10 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
         /// if the operands are equal
         /// (only called if stopOnEqualArgs() is true.)
         ///
-        static void makeEqualResult(edge_value &av, node_handle &a);
+        static void makeEqualResult(int L, unsigned in,
+            const edge_value &av, node_handle a,
+            forest* Fc, edge_value &cv, node_handle &c,
+            unary_operation* copyop);
 
 
         /// Does the computation simplify to the first argument?
@@ -1193,12 +1203,15 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
     if ( ATYPE::stopOnEqualArgs() && (arg1F == arg2F) && (A == B) && (av == bv))
     {
         //
-        // Result is <av, A>
+        // Make result for A == B, using <av, A>
         //
-        ATYPE::makeEqualResult(av, A);
+        ATYPE::makeEqualResult(L, in, av, A, resF, cv, C, copy_arg1res);
+        return;
+        /*
         MEDDLY_DCASSERT(copy_arg1res);
         copy_arg1res->compute(L, in, av, A, cv, C);
         return;
+        */
     }
 
     if ( ATYPE::simplifiesToFirstArg(L, arg1F, av, A, arg2F, bv, B) )

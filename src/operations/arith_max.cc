@@ -124,10 +124,17 @@ namespace MEDDLY {
         {
             return true;
         }
-        inline static void makeEqualResult(edge_value &av, node_handle &a)
+        inline static void makeEqualResult(int L, unsigned in,
+                const edge_value &av, const node_handle &a,
+                forest* fc, edge_value &cv, node_handle &c,
+                unary_operation* copyop)
         {
-            // max(a, a) = a; do nothing to a
+            //
+            // max(a,a) = a
+            //
+            copyop->compute(L, in, av, a, cv, c);
         }
+
         inline static bool simplifiesToFirstArg(int L,
                 const forest* f1, const edge_value &av, node_handle &a,
                 const forest* f2, const edge_value &bv, node_handle b)
@@ -218,10 +225,14 @@ namespace MEDDLY {
         {
             return true;
         }
-        inline static void makeEqualResult(edge_value &av, node_handle &a)
+        inline static void makeEqualResult(int L, unsigned in,
+                const edge_value &av, const node_handle &a,
+                forest* fc, edge_value &cv, node_handle &c,
+                unary_operation* copyop)
         {
-            // max(a, a) = a; do nothing to a
+            copyop->compute(L, in, av, a, cv, c);
         }
+
         inline static bool simplifiesToFirstArg(int L,
                 const forest*, const edge_value &av, node_handle &a,
                 const forest*, const edge_value &bv, node_handle b)
