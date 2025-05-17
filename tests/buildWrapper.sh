@@ -8,9 +8,9 @@ for args; do
     then
         cmdline=`sed 's/\./ /g' <<< "$noext"`
         echo '#!/bin/bash' > $script
-        echo 'echo "Running $cmdline $@"' >> $script
         echo 'DIR=`dirname $0`' >> $script
-        echo '$DIR/$cmdline $@' >> $script
+        printf 'echo "Running $DIR/%s $@"\n' "$cmdline" >> $script
+        printf '$DIR/%s $@\n' "$cmdline" >> $script
         chmod +x $script
     fi
 done
