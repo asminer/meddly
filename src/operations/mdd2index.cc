@@ -22,17 +22,6 @@
 #include "../oper_unary.h"
 #include "../ct_vector.h"
 
-// OLD:
-
-/*
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
-
-// #define TRACE_ALL_OPS
-
-*/
-
 namespace MEDDLY {
     class mdd2index_operation;
 
@@ -53,14 +42,6 @@ namespace MEDDLY {
 
 class MEDDLY::mdd2index_operation : public unary_operation {
     public:
-        /*
-        mdd2index_operation(forest* arg, forest* res);
-
-        virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
-
-        void compute_r(int k, node_handle a, node_handle &bdn, long &bcard);
-        */
-
         mdd2index_operation(forest* arg, forest* res);
         virtual ~mdd2index_operation();
 
@@ -183,7 +164,7 @@ void MEDDLY::mdd2index_operation::_compute(int L,
         ? unpacked_node::newRedundant(argF, L, A, FULL_ONLY)
         : unpacked_node::newFromNode(argF, A, FULL_ONLY);
 
-    unpacked_node* Cu = unpacked_node::newWritable(resF, Alevel, FULL_ONLY);
+    unpacked_node* Cu = unpacked_node::newWritable(resF, L, FULL_ONLY);
     MEDDLY_DCASSERT(Au->getSize() == Cu->getSize());
 #ifdef TRACE
     out << "A: ";
