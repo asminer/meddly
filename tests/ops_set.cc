@@ -146,9 +146,38 @@ void checkCardinality(const dd_edge &e, const std::vector<bool> &set)
     throw "mismatch";
 }
 
+void checkIndexing(const dd_edge &the_set, const dd_edge &the_indexes)
+{
+    //
+    // Iterate through the set, and make sure indexes match.
+    //
+    long count = 0;
+    for (dd_edge::iterator s = the_set.begin(); s; ++s)
+    {
+        long index;
+        the_indexes.evaluate(*s, index);
+        if (count != index) {
+            throw "check indexing mismatch: set element missing index";
+        }
+        ++count;
+    }
+    //
+    // Iterate through the index, and make sure everything
+    // in the index is also in the set.
+    //
+    for (dd_edge::iterator s = the_indexes.begin(); s; ++s)
+    {
+        bool ok;
+        the_set.evaluate(*s, ok);
+        if (!ok) {
+            throw "check indexing mismatch: index element not in set";
+        }
+    }
+}
+
 void compare(vectorgen &Gen,
         const std::vector <bool> &Aset, const std::vector <bool> &Bset,
-        forest* f1, forest* f2, forest* fres)
+        forest* f1, forest* f2, forest* fres, forest* findex)
 {
     const unsigned POTENTIAL = Gen.potential();
 
@@ -175,6 +204,16 @@ void compare(vectorgen &Gen,
 
     checkCardinality(Add, Aset);
     checkCardinality(Bdd, Bset);
+
+    if (findex) {
+        dd_edge Aindex(findex);
+        apply(CONVERT_TO_INDEX_SET, Add, Aindex);
+        checkIndexing(Add, Aindex);
+
+        dd_edge Bindex(findex);
+        apply(CONVERT_TO_INDEX_SET, Bdd, Bindex);
+        checkIndexing(Bdd, Bindex);
+    }
 
     dd_edge AiBsym(fres), AuBsym(fres), AmBsym(fres),
             cAsym(fres), ccAsym(fres);
@@ -212,7 +251,8 @@ void compare(vectorgen &Gen,
 }
 
 
-void test_on_forests(unsigned scard, forest* f1, forest* f2, forest* fres)
+void test_on_forests(unsigned scard, forest* f1, forest* f2, forest* fres,
+        forest* findex)
 {
     if (!f1) throw "null f1";
     if (!f2) throw "null f2";
@@ -235,14 +275,14 @@ void test_on_forests(unsigned scard, forest* f1, forest* f2, forest* fres)
         Gen.randomizeVector(Aset, scard, values);
         Gen.randomizeVector(Bset, scard, values);
 
-        compare(Gen, Aset, Bset, f1, f2, fres);
+        compare(Gen, Aset, Bset, f1, f2, fres, findex);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
         Gen.randomizeFully(Aset, scard, values);
         Gen.randomizeFully(Bset, scard, values);
 
-        compare(Gen, Aset, Bset, f1, f2, fres);
+        compare(Gen, Aset, Bset, f1, f2, fres, findex);
     }
     if (fres->isForRelations()) {
         for (unsigned i=0; i<10; i++) {
@@ -250,7 +290,7 @@ void test_on_forests(unsigned scard, forest* f1, forest* f2, forest* fres)
             Gen.randomizeIdentity(Aset, scard, values);
             Gen.randomizeIdentity(Bset, scard, values);
 
-            compare(Gen, Aset, Bset, f1, f2, fres);
+            compare(Gen, Aset, Bset, f1, f2, fres, findex);
         }
     }
     std::cerr << std::endl;
@@ -260,6 +300,9 @@ void test_sets(domain* D)
 {
     policies p;
     p.useDefaults(SET);
+
+    forest* Findex = forest::create(D, SET, range_type::INTEGER,
+                        edge_labeling::INDEX_SET, p);
 
     forest* F1 = forest::create(D, SET, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL, p);
@@ -274,15 +317,22 @@ void test_sets(domain* D)
         std::cout << "Testing set operations on sets of size " << i
                   << " out of " << SG.potential() << "\n";
 
-        test_on_forests(i, F1, F1, F1);
-        test_on_forests(i, F1, F1, F2);
-        test_on_forests(i, F1, F2, F1);
-        test_on_forests(i, F1, F2, F2);
-        test_on_forests(i, F2, F1, F1);
-        test_on_forests(i, F2, F1, F2);
-        test_on_forests(i, F2, F2, F1);
-        test_on_forests(i, F2, F2, F2);
+        test_on_forests(i, F1, F1, F1, Findex);
+        test_on_forests(i, F1, F1, F2, Findex);
+        test_on_forests(i, F1, F2, F1, Findex);
+        test_on_forests(i, F1, F2, F2, Findex);
+        test_on_forests(i, F2, F1, F1, Findex);
+        test_on_forests(i, F2, F1, F2, Findex);
+        test_on_forests(i, F2, F2, F1, Findex);
+        test_on_forests(i, F2, F2, F2, Findex);
     }
+    std::cout << "\nDone testing set operations:\n";
+    std::cout << "    cardinality\n";
+    std::cout << "    set indexing\n";
+    std::cout << "    complement\n";
+    std::cout << "    difference\n";
+    std::cout << "    intersection\n";
+    std::cout << "    union\n";
 }
 
 void test_rels(domain* D)
@@ -311,42 +361,48 @@ void test_rels(domain* D)
         std::cout << "Testing set operations on relations of size " << i
                   << " out of " << RG.potential() << "\n";
 
-        test_on_forests(i, R1, R1, R1);
-        test_on_forests(i, R1, R1, R2);
-        test_on_forests(i, R1, R1, R3);
+        test_on_forests(i, R1, R1, R1, nullptr);
+        test_on_forests(i, R1, R1, R2, nullptr);
+        test_on_forests(i, R1, R1, R3, nullptr);
 
-        test_on_forests(i, R1, R2, R1);
-        test_on_forests(i, R1, R2, R2);
-        test_on_forests(i, R1, R2, R3);
+        test_on_forests(i, R1, R2, R1, nullptr);
+        test_on_forests(i, R1, R2, R2, nullptr);
+        test_on_forests(i, R1, R2, R3, nullptr);
 
-        test_on_forests(i, R1, R3, R1);
-        test_on_forests(i, R1, R3, R2);
-        test_on_forests(i, R1, R3, R3);
+        test_on_forests(i, R1, R3, R1, nullptr);
+        test_on_forests(i, R1, R3, R2, nullptr);
+        test_on_forests(i, R1, R3, R3, nullptr);
     // ---
-        test_on_forests(i, R2, R1, R1);
-        test_on_forests(i, R2, R1, R2);
-        test_on_forests(i, R2, R1, R3);
+        test_on_forests(i, R2, R1, R1, nullptr);
+        test_on_forests(i, R2, R1, R2, nullptr);
+        test_on_forests(i, R2, R1, R3, nullptr);
 
-        test_on_forests(i, R2, R2, R1);
-        test_on_forests(i, R2, R2, R2);
-        test_on_forests(i, R2, R2, R3);
+        test_on_forests(i, R2, R2, R1, nullptr);
+        test_on_forests(i, R2, R2, R2, nullptr);
+        test_on_forests(i, R2, R2, R3, nullptr);
 
-        test_on_forests(i, R2, R3, R1);
-        test_on_forests(i, R2, R3, R2);
-        test_on_forests(i, R2, R3, R3);
+        test_on_forests(i, R2, R3, R1, nullptr);
+        test_on_forests(i, R2, R3, R2, nullptr);
+        test_on_forests(i, R2, R3, R3, nullptr);
     // ---
-        test_on_forests(i, R3, R1, R1);
-        test_on_forests(i, R3, R1, R2);
-        test_on_forests(i, R3, R1, R3);
+        test_on_forests(i, R3, R1, R1, nullptr);
+        test_on_forests(i, R3, R1, R2, nullptr);
+        test_on_forests(i, R3, R1, R3, nullptr);
 
-        test_on_forests(i, R3, R2, R1);
-        test_on_forests(i, R3, R2, R2);
-        test_on_forests(i, R3, R2, R3);
+        test_on_forests(i, R3, R2, R1, nullptr);
+        test_on_forests(i, R3, R2, R2, nullptr);
+        test_on_forests(i, R3, R2, R3, nullptr);
 
-        test_on_forests(i, R3, R3, R1);
-        test_on_forests(i, R3, R3, R2);
-        test_on_forests(i, R3, R3, R3);
+        test_on_forests(i, R3, R3, R1, nullptr);
+        test_on_forests(i, R3, R3, R2, nullptr);
+        test_on_forests(i, R3, R3, R3, nullptr);
     }
+    std::cout << "\nDone testing relation operations:\n";
+    std::cout << "    cardinality\n";
+    std::cout << "    complement\n";
+    std::cout << "    difference\n";
+    std::cout << "    intersection\n";
+    std::cout << "    union\n";
 }
 
 void usage(const char* arg0)
@@ -409,13 +465,6 @@ int main(int argc, const char** argv)
             domain::destroy(RD);
         }
         MEDDLY::cleanup();
-
-        std::cout << "\nDone testing set operations:\n";
-        std::cout << "    cardinality\n";
-        std::cout << "    complement\n";
-        std::cout << "    difference\n";
-        std::cout << "    intersection\n";
-        std::cout << "    union\n";
         return 0;
     }
 
