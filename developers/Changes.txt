@@ -1,7 +1,5 @@
 Implement next:
 
-    * mdd2index operation, and test case(s) for it
-
     * select operation, and test case for it
 
     RELEASE HERE PROBABLY
@@ -47,6 +45,8 @@ intersection.cc
 maxmin_range.cc
 union.cc
 
+mdd2index.cc
+
 ======================================================================
 Operations that need updating
 ======================================================================
@@ -59,9 +59,6 @@ constrained.cc
 cycle.cc
         NO      cycle_EV2EV
 
-
-mdd2index.cc
-        NO      mdd2index_operation
 
 mm_mult.cc
         NO      mm_mult_mt
