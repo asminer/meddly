@@ -65,6 +65,7 @@ bool equal(const minterm &a, const minterm &b)
     return true;
 }
 
+
 bool checkReachset(int N)
 {
     printf("Running test for N=%d...\n", N);
@@ -149,7 +150,11 @@ bool checkReachset(int N)
         long index;
         reach_index.evaluate(*s, index);
         if (c != index) {
-            printf("\nState number %ld has index %ld\n", c, index);
+            FILE_output out(stdout);
+            out << "\nState number " << c << " has index " << index << "\n";
+            out << "  state: ";
+            (*s).show(out);
+            out << "\n";
             return false;
         }
         c++;
