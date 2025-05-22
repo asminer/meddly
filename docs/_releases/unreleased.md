@@ -38,3 +38,5 @@ will be rounded to the nearest 0.01.
 ### Implementation
 
 * New implementations for PLUS, MINUS, MULTIPLY, DIVIDE, MODULO operators
+
+* New implementations for CONVERT_TO_INDEX_SET

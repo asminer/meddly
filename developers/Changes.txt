@@ -48,6 +48,12 @@ union.cc
 mdd2index.cc
 
 ======================================================================
+Operations with no need for updating
+======================================================================
+
+vect_matr.cc
+
+======================================================================
 Operations that need updating
 ======================================================================
 
@@ -103,10 +109,6 @@ select.cc
 transitive_closure.cc
         NO      transitive_closure_forwd_dfs
 
-vect_matr.cc
-        N/A     VM_evplus_mt
-        N/A     MV_evplus_mt
-
 ======================================================================
 
 
@@ -117,7 +119,6 @@ see if some stuff can become test cases
 Files that need updating / cleanup
 ------------------------------------------------------------
 defines.h
-enumerator.h            enumerator.cc
 hash_stream.h
 heap.h
 impl_unique_table.h     impl_unique_table.cc
