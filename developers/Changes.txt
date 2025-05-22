@@ -1,6 +1,8 @@
 Implement next:
 
     * select operation, and test case for it
+        -> as an iterator instead of an operation
+        -> begin_random()  instead of begin() to initialize?
 
     RELEASE HERE PROBABLY
 
