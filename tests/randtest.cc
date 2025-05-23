@@ -24,12 +24,12 @@
 
 const unsigned VARS = 5;
 const unsigned RELDOM = 2;
+const unsigned SETDOM = RELDOM * RELDOM;
 
 //
 // OLD IMPLEMENTATION HERE, for comparison
 //
 
-const unsigned SETDOM = RELDOM * RELDOM;
 const unsigned SETBITS = 2;
 
 inline void fillMinterm(unsigned x, int* mt)
@@ -222,7 +222,54 @@ int main(int argc, const char** argv)
     }
 
     try {
+        MEDDLY::initialize();
         vectorgen::setSeed(seed);
+
+        //
+        // Test minterm indexing for sets
+        //
+        vectorgen Gs(MEDDLY::SET, VARS, SETDOM);
+        MEDDLY::domain* Ds = Gs.makeDomain();
+        MEDDLY::minterm mts(Ds, MEDDLY::SET);
+        cout << "Testing set indexing\n    ";
+        for (unsigned i=0; i<Gs.potential(); i++) {
+            Gs.index2minterm(i, mts);
+            unsigned _i = Gs.minterm2index(mts);
+            if (i != _i) {
+                cout << "\n";
+                cout << "Index " << i << "\nproduced minterm ";
+                MEDDLY::ostream_output out(cout);
+                mts.show(out);
+                cout << "\nand got index " << _i << "\n";
+                throw "index mismatch";
+            }
+            cout << ".";
+        }
+        cout << "\n";
+
+
+        //
+        // Test minterm indexing for relations
+        //
+        vectorgen Gr(MEDDLY::RELATION, VARS, RELDOM);
+        MEDDLY::domain* Dr = Gr.makeDomain();
+        MEDDLY::minterm mtr(Dr, MEDDLY::RELATION);
+        cout << "Testing relation indexing\n    ";
+        for (unsigned i=0; i<Gr.potential(); i++) {
+            Gr.index2minterm(i, mtr);
+            unsigned _i = Gr.minterm2index(mtr);
+            if (i != _i) {
+                cout << "\n";
+                cout << "Index " << i << "\nproduced minterm ";
+                MEDDLY::ostream_output out(cout);
+                mts.show(out);
+                cout << "\nand got index " << _i << "\n";
+                throw "index mismatch";
+            }
+            cout << ".";
+        }
+        cout << "\n";
+
 
         //
         // Test buildFullyFromIndex
@@ -230,23 +277,22 @@ int main(int argc, const char** argv)
 
         vector <unsigned> L;
 
-        vectorgen G(MEDDLY::RELATION, VARS, RELDOM);
-        cout << "Generator has potential " << G.potential() << "\n";
+        cout << "Testing buildFullyFromIndex\n    ";
 
         vector <bool> gset;
         vector <bool> oldset;
 
-        gset.resize(G.potential());
-        oldset.resize(G.potential());
+        gset.resize(Gr.potential());
+        oldset.resize(Gr.potential());
 
         // unsigned x = 37;
 
-        for (unsigned x=0; x<G.potential(); x++) {
-            cout << x << "\n";
+        for (unsigned x=0; x<Gr.potential(); x++) {
+            cout << ".";
 
             for (unsigned k1=1; k1 <= VARS; k1++) {
                 for (unsigned k2=k1; k2 <= VARS; k2++) {
-                    G.buildIdentityFromIndex(x, k1, k2, L);
+                    Gr.buildIdentityFromIndex(x, k1, k2, L);
                     list2set(L, gset);
 
                     clrset(oldset);
@@ -273,12 +319,20 @@ int main(int argc, const char** argv)
             }
 
         } // for x
+        cout << "\n";
 
+        MEDDLY::cleanup();
         return 0;
+    }
+    catch (MEDDLY::error e) {
+        std::cerr   << "\nCaught meddly error " << e.getName()
+                    << "\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
     }
     catch (const char* e) {
         cerr << "\nCaught our own error: " << e << "\n";
-        return 1;
+        return 2;
     }
 }
 

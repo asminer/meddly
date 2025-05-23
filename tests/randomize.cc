@@ -151,30 +151,6 @@ void vectorgen::randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt)
             m.setVar(i, val);
         }
     }
-
-    //
-    // Randomize the terminal
-    //
-    /*
-    current_terminal = 1 + (current_terminal % RANGE);
-
-    int iterm;
-    float fterm;
-    switch (rt) {
-        case MEDDLY::range_type::INTEGER:
-            vno2val(current_terminal, iterm);
-            m.setValue(iterm);
-            break;
-
-        case MEDDLY::range_type::REAL:
-            vno2val(current_terminal, fterm);
-            m.setValue(fterm);
-            break;
-
-        default:
-            m.setValue(true);
-    }
-    */
 }
 
 void vectorgen::index2minterm(unsigned x, MEDDLY::minterm &m) const
@@ -196,6 +172,31 @@ void vectorgen::index2minterm(unsigned x, MEDDLY::minterm &m) const
             m.setVars(j, from, to);
         }
     }
+}
+
+unsigned vectorgen::minterm2index(const MEDDLY::minterm &m) const
+{
+    if (m.getNumVars() != vars()) {
+        throw "minterm mismatch in call to index2minterm";
+    }
+    unsigned x = 0;
+    unsigned base = 1;
+    if (m.isForSets()) {
+        for (unsigned j=1; j<=m.getNumVars(); j++) {
+            x += base * m.getVar(j);
+            base *= dom();
+        }
+    } else {
+        for (unsigned j=1; j<=m.getNumVars(); j++) {
+            int from, to;
+            m.getVars(j, from, to);
+            x += base * from;
+            base *= dom();
+            x += base * to;
+            base *= dom();
+        }
+    }
+    return x;
 }
 
 void vectorgen::buildIdentityFromIndex(unsigned ndx,

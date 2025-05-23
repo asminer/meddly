@@ -126,6 +126,15 @@ class vectorgen {
         void index2minterm(unsigned x, MEDDLY::minterm &m) const;
 
         ///
+        /// Calculates the index of a minterm.
+        /// Essentially, the reverse of index2minterm().
+        ///
+        ///     @param  m   Minterm in question.
+        ///                 Should have VARS variables.
+        ///
+        unsigned minterm2index(const MEDDLY::minterm &m) const;
+
+        ///
         /// Converts ndx into an array of digits, and then loops
         /// digits corresponding to k1 and k1', and k2 and k2',
         /// such that digit k1 = digit k1', and digit k2 = digit k2'.
