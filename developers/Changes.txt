@@ -1,9 +1,5 @@
 Implement next:
 
-    * select operation, and test case for it
-        -> as an iterator instead of an operation
-        -> begin_random()  instead of begin() to initialize?
-
     RELEASE HERE PROBABLY
 
     * Design general purpose 'model' or 'transition relation' interface
@@ -52,6 +48,8 @@ mdd2index.cc
 ======================================================================
 Operations with no need for updating
 ======================================================================
+
+select.cc       -> DEPRECATED
 
 vect_matr.cc
 
@@ -103,10 +101,6 @@ sat_otf.cc
 sat_pregen.cc
         NO      forwd_dfs_by_events_mt
         NO      bckwd_dfs_by_events_mt
-
-select.cc
-        NO      select_MT
-        NO      select_EVPlus
 
 transitive_closure.cc
         NO      transitive_closure_forwd_dfs

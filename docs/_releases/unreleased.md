@@ -5,6 +5,12 @@ number: changes
 layout: single
 ---
 
+### Getting a random minterm
+
+We can now build a ``dd_edge`` iterator that starts at a random
+position, using method ```random()```.
+As such, unary operator SELECT is now deprecated.
+
 ### Interface Changes
 
 Several changes to the ```unpacked_node``` class:

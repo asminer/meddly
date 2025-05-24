@@ -54,8 +54,10 @@ namespace MEDDLY {
     /// Find the smallest value returned by the function.
     unary_operation* MIN_RANGE(forest* arg, opnd_type res);
 
+#ifdef ALLOW_DEPRECATED_0_17_8
     /// Randomly select one state from a set of states
     unary_operation* SELECT(forest* arg, forest* res);
+#endif
 
     // ******************************************************************
     // *                                                                *

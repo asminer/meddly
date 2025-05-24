@@ -19,6 +19,8 @@
 #include "../defines.h"
 #include "select.h"
 
+#ifdef ALLOW_DEPRECATED_0_17_8
+
 #include "../forest.h"
 #include "../oper_unary.h"
 
@@ -277,4 +279,7 @@ void MEDDLY::SELECT_done()
 {
     MEDDLY_DCASSERT(SELECT_cache.isEmpty());
 }
+
+
+#endif
 

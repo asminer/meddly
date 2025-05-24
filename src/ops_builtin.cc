@@ -33,7 +33,11 @@ namespace MEDDLY {
 #include "operations/maxmin_range.h"
 #include "operations/mdd2index.h"
 #include "operations/cycle.h"
+
+#ifdef ALLOW_DEPRECATED_0_17_8
 #include "operations/select.h"
+#endif
+
 //
 // For initializing binary operations
 //
@@ -112,7 +116,9 @@ void MEDDLY::builtin_init::setup()
     CYCLE_init();
     MAX_RANGE_init();
     MIN_RANGE_init();
+#ifdef ALLOW_DEPRECATED_0_17_8
     SELECT_init();
+#endif
 
     //
     // Binary ops
@@ -168,7 +174,9 @@ void MEDDLY::builtin_init::cleanup()
     CYCLE_done();
     MAX_RANGE_done();
     MIN_RANGE_done();
+#ifdef ALLOW_DEPRECATED_0_17_8
     SELECT_done();
+#endif
 
     //
     // Binary ops

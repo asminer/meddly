@@ -60,9 +60,18 @@ class MEDDLY::dd_edge {
     public:
 
         class iterator {
+            private:
+                void init_with_forest(const forest* _F);
+
             public:
                 iterator();
+
                 iterator(const dd_edge &E, const minterm* mask=nullptr);
+
+                // iterate from a random location.
+                // rngfunc(a) returns a random integer in the range
+                // [0, ..., a-1]
+                iterator(const dd_edge &E, unsigned (*rngfunc)(unsigned));
 
                 // Move constructor
                 iterator(iterator &&I);
@@ -103,6 +112,7 @@ class MEDDLY::dd_edge {
                     }
                     return *M;
                 }
+
 
             private:
                 iterator(const iterator &i) = delete;
@@ -339,6 +349,23 @@ class MEDDLY::dd_edge {
         inline iterator begin(const minterm *mask = nullptr) const
         {
             return iterator(*this, mask);
+        }
+
+        ///
+        /// Default random number generator.
+        ///
+        /// Returns a "random" integer in the range [0, ..., a-1].
+        ///
+        static unsigned deflt_RNG(unsigned a);
+
+
+        ///
+        /// Build an iterator that starts at a random path
+        /// but only among random paths that do not reach terminal 0.
+        ///
+        inline iterator random(unsigned (*RNG)(unsigned) = deflt_RNG) const
+        {
+            return iterator(*this, RNG);
         }
 
         /**

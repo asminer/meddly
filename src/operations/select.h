@@ -19,6 +19,8 @@
 #ifndef MEDDLY_SELECT_H
 #define MEDDLY_SELECT_H
 
+#ifdef ALLOW_DEPRECATED_0_17_8
+
 namespace MEDDLY {
     class forest;
     class unary_operation;
@@ -28,6 +30,8 @@ namespace MEDDLY {
     void SELECT_init();
     void SELECT_done();
 };
+
+#endif
 
 #endif
 

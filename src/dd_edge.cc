@@ -30,6 +30,8 @@
 #include "ops_builtin.h"
 #include "operators.h"
 
+#include <cstdlib>  // for random()
+
 // #define DEBUG_CLEANUP
 // #define DEBUG_FIRST
 // #define DEBUG_BINSRCH
@@ -146,13 +148,28 @@ namespace MEDDLY {
     template <class EOP>
     class iterator_templ : public iterator_helper {
         public:
-            iterator_templ(dd_edge::iterator &it)
-                : iterator_helper(it) { }
+            iterator_templ(dd_edge::iterator &it,
+                    unsigned (*rng)(unsigned) = nullptr) : iterator_helper(it)
+            {
+                RNG = rng;
+            }
 
             void next();
 
             bool first_unpr(unsigned k, node_handle p);
             bool first_pri(unsigned k, node_handle p);
+
+            bool random_unpr(unsigned k, node_handle p);
+            bool random_pri(unsigned k, node_handle p);
+
+            inline unsigned down_random(const unpacked_node* U)
+            {
+                MEDDLY_DCASSERT(RNG);
+                return RNG(U->getSize());
+            }
+
+        private:
+            unsigned (*RNG)(unsigned);
     };
 };
 
@@ -237,6 +254,8 @@ void MEDDLY::iterator_templ<EOP>::next()
     }
     setAtEnd(true);
 }
+
+// ******************************************************************
 
 template <class EOP>
 bool MEDDLY::iterator_templ<EOP>::first_unpr(unsigned k, node_handle p)
@@ -346,6 +365,8 @@ bool MEDDLY::iterator_templ<EOP>::first_unpr(unsigned k, node_handle p)
     // Still here? couldn't find one
     return false;
 }
+
+// ******************************************************************
 
 template <class EOP>
 bool MEDDLY::iterator_templ<EOP>::first_pri(unsigned k, node_handle p)
@@ -458,6 +479,124 @@ bool MEDDLY::iterator_templ<EOP>::first_pri(unsigned k, node_handle p)
     return false;
 }
 
+// ******************************************************************
+
+template <class EOP>
+bool MEDDLY::iterator_templ<EOP>::random_unpr(unsigned k, node_handle p)
+{
+    if (0==p) return false;
+    if (0==k) {
+        // set the terminal value
+        if (isMultiTerminal()) {
+            M_setTerm(p);
+            return true;
+        }
+        if (isForSets()) {
+            M_setTerm( ev_from(1), p );
+        } else {
+            M_setTerm( ev_to(1), p );
+        }
+        return true;
+    }
+
+    //
+    // Make sure this is not a bound variable
+    //
+    const int plvl = getNodeLevel(p);
+    unpacked_node *U = U_from(k);
+    MEDDLY_DCASSERT(U);
+
+    //
+    // Free variable.
+    // Set up the unpacked node.
+    //
+    if (k != plvl) {
+        if (EOP::hasEdgeValues()) {
+            edge_value zero;
+            EOP::clear(zero);
+            U->initRedundant(k, zero, p);
+        } else {
+            U->initRedundant(k, p);
+        }
+    } else {
+        U->initFromNode(p);
+    }
+
+    //
+    // Select a random down pointer
+    //
+    unsigned z = down_random(U);
+    Z_from(k) = z;
+    M_from(k) = U->index(z);
+    if (isForSets()) {
+        if (EOP::hasEdgeValues()) {
+            // accumulate edge value to here
+            ev_from(k) = EOP::applyOp(U->edgeval(z), ev_from(k+1));
+        }
+        return random_unpr(k-1, U->down(z));
+    } else {
+        if (EOP::hasEdgeValues()) {
+            // accumulate edge value to here
+            ev_from(k) = EOP::applyOp(U->edgeval(z), ev_to(k+1));
+        }
+        return random_pri(k, U->down(z));
+    }
+}
+
+// ******************************************************************
+
+template <class EOP>
+bool MEDDLY::iterator_templ<EOP>::random_pri(unsigned k, node_handle p)
+{
+    MEDDLY_DCASSERT(!isForSets());
+    MEDDLY_DCASSERT(k);
+
+    if (0==p) return false;
+
+    //
+    // Make sure this is not a bound variable
+    //
+    const int plvl = getNodeLevel(p);
+    unpacked_node *U = U_to(k);
+    MEDDLY_DCASSERT(U);
+
+    //
+    // Free variable.
+    // Set up the unpacked node.
+    //
+    if (k != -plvl) {
+        if (EOP::hasEdgeValues()) {
+            edge_value zero;
+            EOP::clear(zero);
+            if (F()->isFullyReduced()) {
+                U->initRedundant(-int(k), zero, p);
+            } else {
+                U->initIdentity(-int(k), M_from(k), zero, p);
+            }
+        } else {
+            if (F()->isFullyReduced()) {
+                U->initRedundant(-int(k), p);
+            } else {
+                U->initIdentity(-int(k), M_from(k), p);
+            }
+        }
+    } else {
+        U->initFromNode(p);
+    }
+
+    //
+    // Select a random down pointer
+    //
+    unsigned z = down_random(U);
+    Z_to(k) = z;
+    M_to(k) = U->index(z);
+    if (EOP::hasEdgeValues()) {
+        // accumulate edge value to here
+        ev_to(k) = EOP::applyOp(ev_from(k), U->edgeval(z));
+    }
+    return random_unpr(k-1, U->down(z));
+}
+
 
 // ******************************************************************
 // *                                                                *
@@ -467,25 +606,29 @@ bool MEDDLY::iterator_templ<EOP>::first_pri(unsigned k, node_handle p)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::dd_edge::iterator::iterator()
+void MEDDLY::dd_edge::iterator::init_with_forest(const forest* _F)
 {
-    // Build an empty, 'end' iterator
-    atEnd = true;
-    F = nullptr;
+    F = _F;
+    if (!F) {
+        //
+        // No forest; build an end iterator
+        //
+        U_from = nullptr;
+        U_to = nullptr;
+        Z_from = nullptr;
+        Z_to = nullptr;
+        ev_from = nullptr;
+        ev_to = nullptr;
+        M = nullptr;
+        mask = nullptr;
+        atEnd = true;
+        return;
+    }
 
-    U_from = nullptr;
-    U_to = nullptr;
-    Z_from = nullptr;
-    Z_to = nullptr;
-    ev_from = nullptr;
-    ev_to = nullptr;
-    M = nullptr;
-    mask = nullptr;
-}
+    //
+    // Proper forest
+    //
 
-MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, const minterm* _mask)
-{
-    F = E.getForest();
     M = new minterm(F);
 
     //
@@ -533,11 +676,114 @@ MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, const minterm* _mask)
         }
     }
 
+}
+
+MEDDLY::dd_edge::iterator::iterator()
+{
+    init_with_forest(nullptr);
+}
+
+MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, const minterm* _mask)
+{
+    init_with_forest( E.getForest() );
+
     //
     // Everything is set up except for mask specific stuff.
     //
 
     restart(E, _mask);
+}
+
+MEDDLY::dd_edge::iterator::iterator(const dd_edge &E, unsigned (*RNG)(unsigned))
+{
+    init_with_forest( E.getForest() );
+
+    mask = nullptr;
+    root_ev = E.getEdgeValue();
+    root_node = E.getNode();
+
+    //
+    // Seed the edge value array if needed
+    //
+    const unsigned K = M->getNumVars();
+    if (!F->isMultiTerminal()) {
+        if (M->isForSets()) {
+            ev_from[1+K] = root_ev;
+        } else {
+            ev_to[1+K] = root_ev;
+        }
+    }
+
+    //
+    // Allocate unpacked nodes, but only for free variables.
+    // Re-use old unpacked nodes when we can.
+    //
+
+    for (unsigned i=K; i; --i) {
+        if (!U_from[i]) {
+            U_from[i] = unpacked_node::New(F, SPARSE_ONLY);
+        }
+    }
+    if (M->isForRelations()) {
+        for (unsigned i=K; i; --i) {
+            if (!U_to[i]) {
+                U_to[i] = unpacked_node::New(F, SPARSE_ONLY);
+            }
+        }
+    }
+
+    //
+    // Invoke appropriate 'random'
+    //
+    switch (F->getEdgeLabeling()) {
+        case edge_labeling::MULTI_TERMINAL:
+            {
+                iterator_templ< EdgeOp_none > IT(*this, RNG);
+                atEnd = ! IT.random_unpr(K, root_node);
+                return;
+            }
+
+        case edge_labeling::EVTIMES:
+            switch (F->getEdgeType()) {
+                case edge_type::FLOAT:
+                    {
+                        iterator_templ< EdgeOp_times<float> > IT(*this, RNG);
+                        atEnd = ! IT.random_unpr(K, root_node);
+                        return;
+                    }
+                case edge_type::DOUBLE:
+                    {
+                        iterator_templ< EdgeOp_times<double> > IT(*this, RNG);
+                        atEnd = ! IT.random_unpr(K, root_node);
+                        return;
+                    }
+                default:
+                    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            }
+
+        case edge_labeling::EVPLUS:
+        case edge_labeling::INDEX_SET:
+            switch (F->getEdgeType()) {
+                case edge_type::INT:
+                    {
+                        iterator_templ< EdgeOp_plus<int> > IT(*this, RNG);
+                        atEnd = ! IT.random_unpr(K, root_node);
+                        return;
+                    }
+                case edge_type::LONG:
+                    {
+                        iterator_templ< EdgeOp_plus<long> > IT(*this, RNG);
+                        atEnd = ! IT.random_unpr(K, root_node);
+                        return;
+                    }
+                default:
+                    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            }
+
+        default:
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+
+    }
 }
 
 MEDDLY::dd_edge::iterator::iterator(iterator &&I)
@@ -1029,6 +1275,21 @@ void MEDDLY::dd_edge::read(input &s, const std::vector <node_handle> &map)
 #endif
 }
 
+// **********************************************************************
+
+unsigned MEDDLY::dd_edge::deflt_RNG(unsigned a)
+{
+    // We want to return a random value from 0 to a-1
+    //
+    unsigned long X = ::random();
+    // X is in the range 0 .. (2**31)-1
+    //
+    X *= a;
+    X /= 2147483648u;   // divide by 2**31, X will be less than a
+
+    CHECK_RANGE(__FILE__, __LINE__, 0ul, X, (unsigned long)a);
+    return X;
+}
 
 // **********************************************************************
 //

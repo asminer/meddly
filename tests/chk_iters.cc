@@ -141,6 +141,41 @@ void test_sets(domain* D, char reduction, range_type rt, edge_labeling el,
     }
     out << "    matches\n";
 #endif
+
+    //
+    // Check random selection
+    //
+
+    std::vector<bool> theset(SG.potential());
+    for (unsigned i=0; i<SG.potential(); i++) {
+        theset[i] = false;
+    }
+    for (dd_edge::iterator i = E.begin(); i; ++i)
+    {
+        theset[ SG.minterm2index(*i) ] = true;
+    }
+
+
+    std::vector<unsigned> counts(SG.potential());
+    for (unsigned i=0; i<SG.potential(); i++) {
+        counts[i] = 0;
+    }
+    for (unsigned i=1024; i; --i) {
+        dd_edge::iterator j = E.random();
+        ++counts[ SG.minterm2index(*j) ];
+    }
+
+    for (unsigned i=0; i<SG.potential(); i++) {
+        if (! theset[i] ) {
+            if (counts[i]>0) {
+                throw "Invalid random selection";
+            }
+        } else {
+            if (counts[i] >= 1024) {
+                throw "Random selection not really random";
+            }
+        }
+    }
 }
 
 
