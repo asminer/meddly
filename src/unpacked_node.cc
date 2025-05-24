@@ -138,6 +138,9 @@ MEDDLY::unpacked_node::unpacked_node(const forest* f, node_storage_flags fs)
     alloc = 0;
     size = 0;
 
+    extra_unhashed = nullptr;
+    extra_hashed = nullptr;
+
     level = 0;
 
 #ifdef DEVELOPMENT_CODE

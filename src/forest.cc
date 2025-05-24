@@ -22,6 +22,8 @@
 
 #include <fstream>
 #include <sstream>
+#include <cmath>  // for round()
+
 #include "defines.h"
 #include "initializer.h"
 #include "unique_table.h"

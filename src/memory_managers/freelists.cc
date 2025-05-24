@@ -111,7 +111,7 @@ MEDDLY::freelist_manager<INT>::freelist_manager(const char* n, memstats &stats)
 template <class INT>
 MEDDLY::freelist_manager<INT>::~freelist_manager()
 {
-  delete[] entries;
+  free(entries);
   delete[] freeList;
 
   // Clever way to update stats!
