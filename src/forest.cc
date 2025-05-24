@@ -1986,6 +1986,8 @@ MEDDLY::forest::~forest()
     // node storage
     delete nodeMan;
 
+    free(level_reduction_rule);
+
     unregisterForest(this);
     ct_entry_type::invalidateAllWithForest(this);
     operation::destroyAllWithForest(this);
