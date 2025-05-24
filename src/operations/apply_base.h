@@ -29,17 +29,18 @@
 */
 
 namespace MEDDLY {
-    class generic_binary_mdd;
-    class generic_binary_mxd;
-    class generic_binbylevel_mxd;
+    // class generic_binary_mdd;
+    // class generic_binary_mxd;
+    // class generic_binbylevel_mxd;
     class generic_binary_ev;
     class generic_binary_evplus;
-    class generic_binary_evplus_mxd;
-    class generic_binary_evtimes;
+    // class generic_binary_evplus_mxd;
+    // class generic_binary_evtimes;
 }
 
 // ******************************************************************
 
+/*
 class MEDDLY::generic_binary_mdd : public binary_operation {
     public:
         generic_binary_mdd(binary_list& code, forest* arg1,
@@ -108,7 +109,12 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
 
 };
 
+*/
+
 // ******************************************************************
+
+
+/*
 
 class MEDDLY::generic_binary_mxd : public binary_operation {
   public:
@@ -168,7 +174,11 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c) = 0;
 };
 
+*/
+
 // ******************************************************************
+
+/*
 
 class MEDDLY::generic_binbylevel_mxd : public binary_operation {
   public:
@@ -221,6 +231,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     virtual bool checkTerminals(node_handle a, node_handle b, node_handle& c) = 0;
 };
 
+*/
 
 // ******************************************************************
 
@@ -292,6 +303,8 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
 
 // ******************************************************************
 
+/*
+
 class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
   public:
     generic_binary_evplus_mxd(binary_list& code, forest* arg1,
@@ -349,7 +362,11 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
       long &cev, node_handle &c) = 0;
 };
 
+*/
+
 // ******************************************************************
+
+/*
 
 class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
   public:
@@ -409,6 +426,7 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       float bev, node_handle b, float &cev, node_handle &c) = 0;
 };
 
+*/
 
 #endif
 

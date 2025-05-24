@@ -30,6 +30,8 @@
 // *                                                                *
 // ******************************************************************
 
+/*
+
 MEDDLY::generic_binary_mdd::generic_binary_mdd(binary_list& code,
   forest* arg1, forest* arg2, forest* res)
   : binary_operation(code, 1, arg1, arg2, res)
@@ -321,12 +323,15 @@ MEDDLY::generic_binary_mdd::compute_ext(node_handle a, node_handle b)
 
 #endif // ALLOW_EXTENSIBLE
 
+*/
 
 // ******************************************************************
 // *                                                                *
 // *                   generic_binary_mxd methods                   *
 // *                                                                *
 // ******************************************************************
+
+#if 0
 
 MEDDLY::generic_binary_mxd::generic_binary_mxd(binary_list& code,
   forest* arg1, forest* arg2, forest* res)
@@ -780,11 +785,16 @@ MEDDLY::generic_binary_mxd::compute_r_ext(int in, int k, node_handle a, node_han
 }
 #endif // ALLOW_EXTENSIBLE
 
+#endif // if 0
+
 // ******************************************************************
 // *                                                                *
 // *                 generic_binbylevel_mxd methods                 *
 // *                                                                *
 // ******************************************************************
+
+
+#if 0
 
 MEDDLY::generic_binbylevel_mxd
 ::generic_binbylevel_mxd(binary_list& code, forest* arg1,
@@ -906,6 +916,7 @@ MEDDLY::generic_binbylevel_mxd
   return result;
 }
 
+#endif // if 0
 
 // ******************************************************************
 // *                                                                *
@@ -1026,6 +1037,8 @@ void MEDDLY::generic_binary_evplus
 // *               generic_binary_evplus_mxd methods                *
 // *                                                                *
 // ******************************************************************
+
+#if 0
 
 MEDDLY::generic_binary_evplus_mxd::generic_binary_evplus_mxd(binary_list& code,
   forest* arg1, forest* arg2, forest* res)
@@ -1182,11 +1195,15 @@ void MEDDLY::generic_binary_evplus_mxd
 #endif
 }
 
+#endif // if 0
+
 // ******************************************************************
 // *                                                                *
 // *                 generic_binary_evtimes methods                 *
 // *                                                                *
 // ******************************************************************
+
+#if 0
 
 MEDDLY::generic_binary_evtimes
 ::generic_binary_evtimes(binary_list& code, forest* arg1,
@@ -1357,3 +1374,5 @@ void MEDDLY::generic_binary_evtimes
   resF->createReducedNode(nb, ev, c, in);
   cev = ev.getFloat();
 }
+
+#endif // if 0
