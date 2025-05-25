@@ -34,7 +34,7 @@ const long solutions[] = {
     0, 1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680, 14200, 73712, 365596
 };
 
-long* scratch;
+rangeval* scratch;
 
 #define LINEAR_INTERSECTIONS
 #ifdef  LINEAR_INTERSECTIONS
@@ -107,11 +107,11 @@ void createQueenNodes(forest* f, int q, int N, dd_edge &col, dd_edge &cp, dd_edg
     assert(q<=N);
     f->createEdgeForVar(long(q), false, col);
     for (int i=0; i<N; i++) {
-        scratch[i] = i+q;
+        scratch[i].setInteger(i+q);
     }
     f->createEdgeForVar(q, false, scratch, cp);
     for (int i=0; i<N; i++) {
-        scratch[i] = i-q;
+        scratch[i].setInteger(i-q);
     }
     f->createEdgeForVar(q, false, scratch, cm);
 }
@@ -202,7 +202,7 @@ int main()
 {
     try {
         MEDDLY::initialize();
-        scratch = new long[N_HIGH+1];
+        scratch = new rangeval[N_HIGH+1];
 
         for (int i=N_LOW; i<=N_HIGH; i++) {
             long sols = buildQueenSolutions(i);

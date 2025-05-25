@@ -40,7 +40,7 @@
 using namespace MEDDLY;
 
 int N;
-long* scratch;
+rangeval* scratch;
 const char* lfile;
 bool build_pdf;
 bool pessimistic;
@@ -122,11 +122,11 @@ void createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
     assert(q<=N);
     f->createEdgeForVar(q, false, col);
     for (int i=0; i<N; i++) {
-        scratch[i] = i+q;
+        scratch[i].setInteger(i+q);
     }
     f->createEdgeForVar(q, false, scratch, cp);
     for (int i=0; i<N; i++) {
-        scratch[i] = i-q;
+        scratch[i].setInteger(i-q);
     }
     f->createEdgeForVar(q, false, scratch, cm);
 }
@@ -237,7 +237,7 @@ int main(int argc, const char** argv)
 
         timer watch;
         printf("%d-Queens solutions.\n", N);
-        scratch = new long[N+1];
+        scratch = new rangeval[N+1];
 
         watch.note_time();
         printf("Initializing domain and forest\n");

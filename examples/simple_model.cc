@@ -95,7 +95,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
         maxBound = MAX(maxBound, d->getVariableBound(i, false));
     }
     maxBound++;
-    long* temp = new long[maxBound];
+    rangeval* temp = new rangeval[maxBound];
     minterm mt(mtmxd);
     dd_edge** varP  = new dd_edge*[nVars+1];
     varP[0] = 0;
@@ -111,14 +111,18 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
     }
 
     // Create edge for each function xi+1
-    for (unsigned i=0; i<maxBound; i++) temp[i] = int(i)+1;
+    for (unsigned i=0; i<maxBound; i++) {
+        temp[i].setInteger(i+1);
+    }
     for (unsigned i=1; i<=nVars; i++) {
         inc[i] = new dd_edge(mtmxd);
         mtmxd->createEdgeForVar(int(i), false, temp, inc[i][0]);
     }
 
     // Create edge for each function xi-1
-    for (unsigned i=0; i<maxBound; i++) temp[i] = int(i)-1;
+    for (unsigned i=0; i<maxBound; i++) {
+        temp[i].setInteger(int(i) - 1);
+    }
     for (unsigned i=1; i<=nVars; i++) {
         dec[i] = new dd_edge(mtmxd);
         mtmxd->createEdgeForVar(int(i), false, temp, dec[i][0]);

@@ -83,6 +83,8 @@ class MEDDLY::ev_forest : public forest
       }
     }
 
+#ifdef ALLOW_DEPRECATED_0_17_9
+
     template <class OPERATION, typename T>
     inline
     void createEdgeForVarTempl(int vh, bool pr, const T* vals, dd_edge& result)
@@ -145,7 +147,7 @@ class MEDDLY::ev_forest : public forest
         makeNodeAtTop<OPERATION, T>(term, ed);
         e.set(term, ed);
     }
-
+#endif
 
 
   // statics

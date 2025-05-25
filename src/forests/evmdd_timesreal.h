@@ -44,7 +44,9 @@ class MEDDLY::evmdd_timesreal : public evmdd_forest {
     evmdd_timesreal(domain *d, const policies &p);
     ~evmdd_timesreal();
 
+#ifdef ALLOW_DEPRECATED_0_17_9
     virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
+#endif
 
 #ifdef ALLOW_DEPRECATED_0_17_7
     virtual void createEdge(float val, dd_edge &e);

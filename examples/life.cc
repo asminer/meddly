@@ -348,7 +348,9 @@ void buildConstraints(const lifegrid &G, int row, int col, dd_edge &e)
     //  (we're dead AND we have 2 alive neighbors)
     //
 
-    bool inv_terms[2] = {true, false};
+    rangeval inv_terms[2];
+    inv_terms[0].setBoolean(true);
+    inv_terms[1].setBoolean(false);
     dd_edge dead(f);
     f->createEdgeForVar(G.getLevelOf(row, col), false, inv_terms, dead);
     dd_edge lt_2(f);

@@ -44,16 +44,16 @@ void clauses2MDD(forest* f, const int** C, dd_edge &M, int verb)
         }
         dd_edge cl(f);
         f->createConstant(false, cl);
-        bool vals[2];
+        rangeval vals[2];
         for (const int* term = C[0]; term[0]; term++) {
             int vh;
             if (term[0]>0) {
-                vals[0] = 0;
-                vals[1] = 1;
+                vals[0].setBoolean(false);
+                vals[1].setBoolean(true);
                 vh = term[0];
             } else {
-                vals[0] = 1;
-                vals[1] = 0;
+                vals[0].setBoolean(true);
+                vals[1].setBoolean(false);
                 vh = -term[0];
             }
             dd_edge var(f);

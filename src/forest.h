@@ -2263,6 +2263,35 @@ class MEDDLY::forest {
         X   2   X  terms[2]
         where X represents "all possible".
 
+        @param  vh      Variable handle.
+        @param  vp      true: creates node for the primed vh variable.
+                        false: creates node for the unprimed vh variable.
+
+        @param  terms   Array of values.
+                        If null, will use terms[i] = i.
+
+        @param  a       return a handle to a node in the forest such that
+                        f(v_1, ..., vh=i, ..., v_n) = terms[i]
+                        for 0 <= i < size(vh).
+
+        @throws         TYPE_MISMATCH, if the array values do not
+                        match the forest type.
+    */
+    void createEdgeForVar(int vh, bool vp, const rangeval* terms, dd_edge& a);
+
+#ifdef ALLOW_DEPRECATED_0_17_9
+
+    /** Create an edge such that
+        f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
+
+        For example, in a forest with range_type BOOLEAN, with 3 variables,
+        all of size 3, if vh == 2. An edge is created such that
+        v_1 v_2 v_3 TERM
+        X   0   X  terms[0]
+        X   1   X  terms[1]
+        X   2   X  terms[2]
+        where X represents "all possible".
+
         \a primedLevel is useful only with forests that store relations. Here,
         \a primedLevel is used to indicate whether the edge is to be created
         for the primed or the unprimed level.
@@ -2336,6 +2365,8 @@ class MEDDLY::forest {
     */
     virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
 
+#endif
+
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
 
@@ -2359,22 +2390,7 @@ class MEDDLY::forest {
                       f(v_1, ..., vh=i, ..., v_n) = i for 0 <= i < size(vh).
     */
     inline void createEdgeForVar(int vh, bool pr, dd_edge& a) {
-        switch (rangeType) {
-            case range_type::BOOLEAN:
-                createEdgeForVar(vh, pr, (bool*)  0, a);
-                break;
-
-            case range_type::INTEGER:
-                createEdgeForVar(vh, pr, (long*)  0, a);
-                break;
-
-            case range_type::REAL:
-                createEdgeForVar(vh, pr, (float*) 0, a);
-                break;
-
-            default:
-                throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-        }
+        createEdgeForVar(vh, pr, (rangeval*) nullptr, a);
     };
 
 

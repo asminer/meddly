@@ -1936,6 +1936,8 @@ void MEDDLY::forest::markForDeletion()
     unregisterDDEdges();
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_9
+
 void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1951,11 +1953,78 @@ void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const float* terms, dd_ed
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+#endif
+
 MEDDLY::node_handle MEDDLY::forest::unionOneMinterm(node_handle a,  int* from,  int* to, int level)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
+void MEDDLY::forest::createEdgeForVar(int vh, bool pr,
+            const rangeval* terms, dd_edge& result)
+{
+    //
+    // Sanity checks
+    //
+    if (vh < 0 || vh > getNumVariables())
+        throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
+    if (!result.isAttachedTo(this))
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    if (!isForRelations() && pr)
+        throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
+
+    const int level = getLevelByVar(vh);
+
+
+    //
+    // Get info for node we're building
+    //
+    const int k = pr ? -level : level;
+    const int km1 = isForRelations()
+        ? MXD_levels::downLevel(k)
+        : MDD_levels::downLevel(k)
+    ;
+
+    //
+    // Make the node
+    //
+    edge_value ev;
+    node_handle node;
+    unpacked_node* nb = unpacked_node::newWritable(this, k, FULL_ONLY);
+
+    if (terms) {
+        for (unsigned i=0; i<nb->getSize(); i++) {
+            if ( ! terms[i].hasType(rangeType) )
+            {
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            }
+            getEdgeForValue(terms[i], ev, node);
+            nb->setFull(i, ev, makeRedundantsTo(node, 0, km1) );
+        }
+    } else {
+        for (unsigned i=0; i<nb->getSize(); i++) {
+            switch (rangeType) {
+                case range_type::INTEGER:
+                    getEdgeForValue(long(i), ev, node);
+                    break;
+                case range_type::REAL:
+                    getEdgeForValue(double(i), ev, node);
+                    break;
+                default:
+                    getEdgeForValue(bool(i), ev, node);
+                    break;
+            }
+            nb->setFull(i, ev, makeRedundantsTo(node, 0, km1) );
+        }
+    }
+
+    //
+    // Reduce, add redundants if necessary
+    //
+    createReducedNode(nb, ev, node);
+    node = makeRedundantsTo(node, k, getNumVariables());
+    result.set(ev, node);
+}
 
 
 // ===================================================================

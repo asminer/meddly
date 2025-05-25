@@ -36,7 +36,9 @@ class MEDDLY::mt_mdd_int : public mtmdd_forest {
     mt_mdd_int(domain *d, const policies &p, int tv);
     ~mt_mdd_int();
 
+#ifdef ALLOW_DEPRECATED_0_17_9
     virtual void createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a);
+#endif
 #ifdef ALLOW_DEPRECATED_0_17_7
     virtual void createEdge(long val, dd_edge &e);
     virtual void createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e);

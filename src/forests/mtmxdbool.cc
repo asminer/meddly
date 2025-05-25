@@ -99,6 +99,8 @@ void MEDDLY::mt_mxd_bool::evaluate(const dd_edge &f, const int* vlist,
 
 #endif
 
+#ifdef ALLOW_DEPRECATED_0_17_9
+
 void MEDDLY::mt_mxd_bool::
 createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
@@ -108,6 +110,8 @@ createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
   validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
+
+#endif
 
 void MEDDLY::mt_mxd_bool::showEdge(output &s, const edge_value &ev,
         node_handle d) const

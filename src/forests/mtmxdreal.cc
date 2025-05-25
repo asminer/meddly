@@ -110,6 +110,8 @@ void MEDDLY::mt_mxd_real::evaluate(const dd_edge &f, const int* vlist,
 #endif
 
 
+#ifdef ALLOW_DEPRECATED_0_17_9
+
 void MEDDLY::mt_mxd_real::
 createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 {
@@ -119,6 +121,8 @@ createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
     validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
+
+#endif
 
 void MEDDLY::mt_mxd_real::showEdge(output &s, const edge_value &ev,
         node_handle d) const

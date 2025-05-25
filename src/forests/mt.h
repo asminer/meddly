@@ -89,6 +89,8 @@ class MEDDLY::mt_forest : public forest
       }
     }
 
+#ifdef ALLOW_DEPRECATED_0_17_9
+
     // template <class ENCODER, typename T>
     template <typename T>
     inline
@@ -146,6 +148,7 @@ class MEDDLY::mt_forest : public forest
         terminal t(term);
         e.set(makeNodeAtTop(t.getHandle()));
     }
+#endif
 
 #ifdef ALLOW_DEPRECATED_0_17_7
   protected:

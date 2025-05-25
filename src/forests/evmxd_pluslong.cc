@@ -81,6 +81,8 @@ void MEDDLY::evmxd_pluslong
 
 #endif
 
+#ifdef ALLOW_DEPRECATED_0_17_9
+
 void MEDDLY::evmxd_pluslong
 ::createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 {
@@ -89,6 +91,8 @@ void MEDDLY::evmxd_pluslong
   validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
+
+#endif
 
 void MEDDLY::evmxd_pluslong::showEdge(output &s, const edge_value &ev,
         node_handle d) const

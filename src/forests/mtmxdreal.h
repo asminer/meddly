@@ -36,7 +36,9 @@ class MEDDLY::mt_mxd_real : public mtmxd_forest {
     mt_mxd_real(domain *d, const policies &p, float tv=0);
     ~mt_mxd_real();
 
+#ifdef ALLOW_DEPRECATED_0_17_9
     virtual void createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a);
+#endif
 
 #ifdef ALLOW_DEPRECATED_0_17_7
     virtual void createEdge(float val, dd_edge &e);

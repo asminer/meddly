@@ -80,40 +80,60 @@ class MEDDLY::rangeval {
         /// Initialize as a boolean
         rangeval(bool v=true)
         {
-            the_type = range_type::BOOLEAN;
-            s_value = range_special::NORMAL;
-            l_value = v;
+            setBoolean(v);
         }
         /// Initialize as an integer
         rangeval(int v)
         {
-            the_type = range_type::INTEGER;
-            s_value = range_special::NORMAL;
-            l_value = v;
+            setInteger(v);
         }
         /// Initialize as an integer
         rangeval(long v)
         {
-            the_type = range_type::INTEGER;
-            s_value = range_special::NORMAL;
-            l_value = v;
+            setInteger(v);
         }
         /// Initialize as a real
         rangeval(float v)
         {
-            the_type = range_type::REAL;
-            s_value = range_special::NORMAL;
-            d_value = v;
+            setReal(v);
         }
         /// Initialize as a real
         rangeval(double v)
+        {
+            setReal(v);
+        }
+        /// Initialize as special
+        rangeval(range_special v, range_type rt)
+        {
+            setSpecial(v, rt);
+        }
+
+        //
+        // Setters
+        //
+
+        inline void setBoolean(bool v)
+        {
+            the_type = range_type::BOOLEAN;
+            s_value = range_special::NORMAL;
+            l_value = v;
+        }
+
+        inline void setInteger(long v)
+        {
+            the_type = range_type::INTEGER;
+            s_value = range_special::NORMAL;
+            l_value = v;
+        }
+
+        inline void setReal(double v)
         {
             the_type = range_type::REAL;
             s_value = range_special::NORMAL;
             d_value = v;
         }
-        /// Initialize as special
-        rangeval(range_special v, range_type rt)
+
+        inline void setSpecial(range_special v, range_type rt)
         {
             the_type = rt;
             s_value = v;

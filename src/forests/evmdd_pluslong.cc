@@ -102,6 +102,7 @@ void MEDDLY::evmdd_pluslong
 
 #endif
 
+#ifdef ALLOW_DEPRECATED_0_17_9
 void MEDDLY::evmdd_pluslong
 ::createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 {
@@ -122,6 +123,7 @@ void MEDDLY::evmdd_pluslong
 
   delete[] terms_long;
 }
+#endif
 
 
 void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)

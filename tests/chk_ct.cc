@@ -91,12 +91,12 @@ void initEdges(forest* f, std::vector <dd_edge> &E)
 {
     ostream_output out(std::cout);
 
-    long terms[VARSIZE];
-    terms[0] = 0;
+    rangeval terms[VARSIZE];
+    terms[0].setInteger(0);
     for (unsigned i=0; i<E.size(); i++) {
         E[i].attach(f);
         if (i) {
-            terms[1] = i+1;
+            terms[1].setInteger(i+1);
             f->createEdgeForVar(1, false, terms, E[i]);
         } else {
             f->createConstant(42L, E[i]);

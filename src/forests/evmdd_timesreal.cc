@@ -84,6 +84,8 @@ void MEDDLY::evmdd_timesreal
 
 #endif
 
+#ifdef ALLOW_DEPRECATED_0_17_9
+
 void MEDDLY::evmdd_timesreal
 ::createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 {
@@ -92,6 +94,8 @@ void MEDDLY::evmdd_timesreal
   validateIncounts(true, __FILE__, __LINE__);
 #endif
 }
+
+#endif
 
 void MEDDLY::evmdd_timesreal::showEdge(output &s, const edge_value &ev,
         node_handle d) const
