@@ -119,6 +119,8 @@ TESTS = \
 
 AM_CXXFLAGS = -Wall
 
+EXTRA_DIST = buildWrapper.sh
+
 #
 # Automatically build a wrapper script,
 # for tests with command line arguments.
