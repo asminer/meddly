@@ -96,6 +96,7 @@ libmeddly_la_SOURCES = \
     memory_managers/orig_grid.h         memory_managers/orig_grid.cc  \
     \
     operations/apply_base.h             operations/apply_base.cc   \
+    operations/arith_templ.h                                       \
     operations/arith_max.h              operations/arith_max.cc    \
     operations/arith_min.h              operations/arith_min.cc    \
     operations/arith_plus.h             operations/arith_plus.cc   \

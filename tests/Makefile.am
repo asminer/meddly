@@ -119,6 +119,8 @@ TESTS = \
 
 AM_CXXFLAGS = -Wall
 
+EXTRA_DIST = buildWrapper.sh
+
 #
 # Automatically build a wrapper script,
 # for tests with command line arguments.
@@ -323,10 +325,10 @@ chk_ct_old_LDADD = ../src/libmeddly.la
 chk_iters_SOURCES = chk_iters.cc randomize.cc
 chk_iters_LDADD = ../src/libmeddly.la
 
-chk_minterms_SOURCES = chk_minterms.cc randomize.cc
+chk_minterms_SOURCES = chk_minterms.cc randomize.h randomize.cc
 chk_minterms_LDADD = ../src/libmeddly.la
 
-chk_mtcoll_SOURCES = chk_mtcoll.cc randomize.cc
+chk_mtcoll_SOURCES = chk_mtcoll.cc randomize.h randomize.cc
 chk_mtcoll_LDADD = ../src/libmeddly.la
 
 chk_reorder_SOURCES = chk_reorder.cc
@@ -361,22 +363,22 @@ nodestor_LDADD = ../src/libmeddly.la
 nqueens_SOURCES = nqueens.cc
 nqueens_LDADD = ../src/libmeddly.la
 
-ops_comp_SOURCES = ops_comp.cc randomize.cc
+ops_comp_SOURCES = ops_comp.cc randomize.h randomize.cc
 ops_comp_LDADD = ../src/libmeddly.la
 
-ops_maxmin_SOURCES = ops_maxmin.cc randomize.cc
+ops_maxmin_SOURCES = ops_maxmin.cc randomize.h randomize.cc
 ops_maxmin_LDADD = ../src/libmeddly.la
 
-ops_plusminus_SOURCES = ops_plusminus.cc randomize.cc
+ops_plusminus_SOURCES = ops_plusminus.cc randomize.h randomize.cc
 ops_plusminus_LDADD = ../src/libmeddly.la
 
-ops_mult_SOURCES = ops_mult.cc randomize.cc
+ops_mult_SOURCES = ops_mult.cc randomize.h randomize.cc
 ops_mult_LDADD = ../src/libmeddly.la
 
-ops_divmod_SOURCES = ops_divmod.cc randomize.cc
+ops_divmod_SOURCES = ops_divmod.cc randomize.h randomize.cc
 ops_divmod_LDADD = ../src/libmeddly.la
 
-ops_set_SOURCES = ops_set.cc randomize.cc
+ops_set_SOURCES = ops_set.cc randomize.h randomize.cc
 ops_set_LDADD = ../src/libmeddly.la
 
 refcount_SOURCES = refcount.cc
@@ -385,5 +387,5 @@ refcount_LDADD = ../src/libmeddly.la
 sat_test_SOURCES = sat_test.cc
 sat_test_LDADD = ../src/libmeddly.la
 
-randtest_SOURCES = randomize.cc randtest.cc
+randtest_SOURCES = randomize.h randomize.cc randtest.cc
 randtest_LDADD = ../src/libmeddly.la
