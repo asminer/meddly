@@ -41,7 +41,7 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
     };
 
   public:
-    evmxd_pluslong(domain *d, const policies &p, int* level_reduction_rule);
+    evmxd_pluslong(domain *d, const policies &p);
     ~evmxd_pluslong();
 
     // using evmxd_forest::createEdgeForVar;

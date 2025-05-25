@@ -41,7 +41,7 @@ class MEDDLY::ev_forest : public forest
 {
   protected:
     ev_forest(domain *d, bool rel, range_type t, edge_labeling ev,
-      const policies &p, int* level_reduction_rule=NULL);
+      const policies &p);
 
   public:
 

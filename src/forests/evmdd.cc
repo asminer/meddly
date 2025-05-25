@@ -20,7 +20,7 @@
 
 MEDDLY::evmdd_forest
 ::evmdd_forest(domain* d, range_type t, edge_labeling ev,
-  const policies &p, int* level_reduction_rule) : ev_forest(d, false, t, ev, p, level_reduction_rule)
+  const policies &p) : ev_forest(d, false, t, ev, p)
 {
   // anything to construct?
 }

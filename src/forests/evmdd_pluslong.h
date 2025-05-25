@@ -42,7 +42,7 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
     };
 
   public:
-    evmdd_pluslong(domain *d, const policies &p, int* level_reduction_rule=NULL, bool index_set=false);
+    evmdd_pluslong(domain *d, const policies &p, bool index_set=false);
     ~evmdd_pluslong();
 
 #ifdef ALLOW_DEPRECATED_0_17_7
@@ -86,7 +86,7 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
 
 class MEDDLY::evmdd_index_set_long : public evmdd_pluslong {
   public:
-    evmdd_index_set_long(domain *d, const policies &p, int* level_reduction_rule);
+    evmdd_index_set_long(domain *d, const policies &p);
     virtual ~evmdd_index_set_long();
 
 #ifdef ALLOW_DEPRECATED_0_17_7

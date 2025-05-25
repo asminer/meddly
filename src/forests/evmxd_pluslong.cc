@@ -26,9 +26,9 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmxd_pluslong::evmxd_pluslong(domain *d, const policies &p, int* level_reduction_rule)
+MEDDLY::evmxd_pluslong::evmxd_pluslong(domain *d, const policies &p)
  : evmxd_forest(d, range_type::INTEGER, edge_labeling::EVPLUS,
-         p, level_reduction_rule)
+         p)
 {
     setLongEdges();
     setTransparentEdge(0, long(0));

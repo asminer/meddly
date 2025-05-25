@@ -110,9 +110,7 @@ namespace MEDDLY {
         /// Nodes are quasi-reduced.
         QUASI_REDUCED,
         /// Nodes are identity-reduced.
-        IDENTITY_REDUCED,
-        /// Nodes are user-defined reduced
-        USER_DEFINED
+        IDENTITY_REDUCED
     };
 
     inline const char* nameOf(reduction_rule rr)
@@ -121,7 +119,6 @@ namespace MEDDLY {
             case reduction_rule::FULLY_REDUCED:     return "fully-reduced";
             case reduction_rule::QUASI_REDUCED:     return "quasi-reduced";
             case reduction_rule::IDENTITY_REDUCED:  return "identity-reduced";
-            case reduction_rule::USER_DEFINED:      return "userdef-reduced";
             default:                                return "unknown reduction";
         }
     }
@@ -132,7 +129,6 @@ namespace MEDDLY {
             case reduction_rule::FULLY_REDUCED:     return "FR";
             case reduction_rule::QUASI_REDUCED:     return "QR";
             case reduction_rule::IDENTITY_REDUCED:  return "IR";
-            case reduction_rule::USER_DEFINED:      return "uR";
             default:                                return "?R";
         }
     }
@@ -373,13 +369,6 @@ struct MEDDLY::policies {
     }
     inline bool isIdentityReduced() const {
         return reduction_rule::IDENTITY_REDUCED == reduction;
-    }
-
-    inline void setUserDefinedReduced() {
-        reduction = reduction_rule::USER_DEFINED;
-    }
-    inline bool isUserDefinedReduced() const {
-        return reduction_rule::USER_DEFINED == reduction;
     }
 
     //

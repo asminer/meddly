@@ -27,7 +27,7 @@ namespace MEDDLY {
 
 class MEDDLY::mtmdd_forest : public mt_forest {
   public:
-    mtmdd_forest(domain* d, range_type t, const policies &p, int* level_reduction_rule=NULL);
+    mtmdd_forest(domain* d, range_type t, const policies &p);
 
     virtual void swapAdjacentVariables(int level);
     virtual void moveDownVariable(int high, int low);

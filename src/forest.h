@@ -403,16 +403,12 @@ class MEDDLY::forest {
 
             @param  p       Policies to use within the forest.
 
-            @param  level_reduction_rule
-                            Rules for reduction on different levels.
-
             @param  tv      Transparent value.
 
             @return nullptr if an error occurs, a new forest otherwise.
         */
         static forest* create(domain* d, set_or_rel sr, range_type t,
-            edge_labeling ev, const policies &p,
-            int* level_reduction_rule=nullptr, int tv=0);
+            edge_labeling ev, const policies &p, int tv=0);
 
         /// Create a forest using the library default policies.
         inline static forest* create(domain* d, set_or_rel sr, range_type t,
@@ -420,7 +416,7 @@ class MEDDLY::forest {
         {
             return create(d, sr, t, ev,
                 sr ? getDefaultPoliciesMXDs() : getDefaultPoliciesMDDs(),
-                nullptr, 0
+                0
             );
         }
 
@@ -1845,40 +1841,12 @@ class MEDDLY::forest {
             return deflt.isIdentityReduced();
         }
 
-        /// Returns true if the forest is user_defined reduced.
-        inline bool isUserDefinedReduced() const {
-            return deflt.isUserDefinedReduced();
-        }
-
-        /// Returns true if the level is fully reduced.
-        inline bool isFullyReduced(int k) const {
-            if(k<0) return level_reduction_rule[2*(-k)   ] == -1;
-            else    return level_reduction_rule[2*(k) - 1] == -1;
-        }
-
-        /// Returns true if the level is quasi reduced.
-        inline bool isQuasiReduced(int k) const {
-            if(k<0) return level_reduction_rule[2*(-k)   ] == -2;
-            else    return level_reduction_rule[2*(k) - 1] == -2;
-        }
-
-        /// Returns true if the level is identity reduced.
-        inline bool isIdentityReduced(int k) const {
-            if(k<0) return level_reduction_rule[2*(-k)   ] == -3;
-            else    return level_reduction_rule[2*(k) - 1] == -3;
-        }
-
-        inline const int* getLevelReductionRule() const {
-            return level_reduction_rule;
-        }
-
 
     // ------------------------------------------------------------
     private: // private members for mdd type / reductions
     // ------------------------------------------------------------
 
         policies deflt;
-        int *level_reduction_rule;
 
     // ------------------------------------------------------------
     public: // Getting/setting the global default policies
@@ -2244,10 +2212,9 @@ class MEDDLY::forest {
       @param  t       the range of the functions represented in this forest.
       @param  ev      edge annotation.
       @param  p       Polcies for reduction, storage, deletion.
-      @param  level_reduction_rule       Rules for reduction on different levels.
     */
     forest(domain* d, bool rel, range_type t, edge_labeling ev,
-      const policies &p, int* level_reduction_rule);
+            const policies &p);
 
     /// Destructor.
     virtual ~forest();

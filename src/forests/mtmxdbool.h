@@ -33,7 +33,7 @@ namespace MEDDLY {
 class MEDDLY::mt_mxd_bool : public mtmxd_forest {
   public:
 
-    mt_mxd_bool(domain *d, const policies &p, int* level_reduction_rule=NULL, bool tv=false);
+    mt_mxd_bool(domain *d, const policies &p, bool tv=false);
     ~mt_mxd_bool();
 
     virtual void createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a);

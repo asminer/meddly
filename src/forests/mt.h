@@ -44,7 +44,7 @@ namespace MEDDLY {
 class MEDDLY::mt_forest : public forest
 {
   protected:
-    mt_forest(domain *d, bool rel, range_type t, const policies &p, int* level_reduction_rule=NULL);
+    mt_forest(domain *d, bool rel, range_type t, const policies &p);
 
   public:
   // ------------------------------------------------------------

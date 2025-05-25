@@ -26,9 +26,9 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::evmxd_timesreal::evmxd_timesreal(domain *d, const policies &p, int* level_reduction_rule)
+MEDDLY::evmxd_timesreal::evmxd_timesreal(domain *d, const policies &p)
  : evmxd_forest(d, range_type::REAL, edge_labeling::EVTIMES,
-         p, level_reduction_rule)
+         p)
 {
     setFloatEdges();
     setTransparentEdge(0, float(0));

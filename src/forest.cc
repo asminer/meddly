@@ -111,28 +111,29 @@ std::vector <MEDDLY::forest*> MEDDLY::forest::all_forests;
 MEDDLY::forest*
 MEDDLY::forest::create(domain* d, set_or_rel sr, range_type t,
             edge_labeling el, const policies &p,
-            int* level_reduction_rule, int tv)
+            // int* level_reduction_rule,
+            int tv)
 {
     switch (el) {
         case edge_labeling::MULTI_TERMINAL:
             switch (t) {
                 case range_type::BOOLEAN:
                     if (sr)
-                        return new mt_mxd_bool(d, p, level_reduction_rule, tv);
+                        return new mt_mxd_bool(d, p, tv);
                     else
-                        return new mt_mdd_bool(d, p, level_reduction_rule, tv);
+                        return new mt_mdd_bool(d, p, tv);
 
                 case range_type::INTEGER:
                     if (sr)
-                        return new mt_mxd_int(d, p, level_reduction_rule, tv);
+                        return new mt_mxd_int(d, p, tv);
                     else
-                        return new mt_mdd_int(d, p, level_reduction_rule, tv);
+                        return new mt_mdd_int(d, p, tv);
 
                 case range_type::REAL:
                     if (sr)
-                        return new mt_mxd_real(d, p, level_reduction_rule, (float)tv);
+                        return new mt_mxd_real(d, p, (float)tv);
                     else
-                        return new mt_mdd_real(d, p, level_reduction_rule, (float)tv);
+                        return new mt_mdd_real(d, p, (float)tv);
 
                 default:
                     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -146,16 +147,16 @@ MEDDLY::forest::create(domain* d, set_or_rel sr, range_type t,
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             }
             if (sr)
-                return new evmxd_pluslong(d, p, level_reduction_rule);
+                return new evmxd_pluslong(d, p);
             else
-                return new evmdd_pluslong(d, p, level_reduction_rule);
+                return new evmdd_pluslong(d, p);
 
 
         case edge_labeling::INDEX_SET:
             if (range_type::INTEGER != t || sr) {
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             }
-            return new evmdd_index_set_long(d, p, level_reduction_rule);
+            return new evmdd_index_set_long(d, p);
 
 
         case edge_labeling::EVTIMES:
@@ -1835,9 +1836,8 @@ MEDDLY::policies MEDDLY::forest::mddDefaults;
 MEDDLY::policies MEDDLY::forest::mxdDefaults;
 
 
-MEDDLY::forest
-::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
-  const policies &p, int* lrr) : nodeHeaders(*this, mstats, stats), deflt(p)
+MEDDLY::forest::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
+  const policies &p) : nodeHeaders(*this, mstats, stats), deflt(p)
 {
     // Set up domain
     d = _d;
@@ -1852,70 +1852,6 @@ MEDDLY::forest
     registerForest(this);
 
     is_marked_for_deletion = false;
-
-    if(lrr==NULL){
-
-        if(isUserDefinedReduced()){
-		    throw error(error::INVALID_POLICY, __FILE__, __LINE__);
-        }
-
-	else{
-
-        if(isRelation)
-        {
-            int span = 2*(d->getNumVariables()) + 1;
-            lrr=(int*)malloc(sizeof(int)*span);
-
-            if(isQuasiReduced())
-                for(int i=0;i<span;i++)
-                {lrr[i]=i==0?-4:(i%2==0?-2:-1);}
-
-            else if (isFullyReduced())
-                for(int i=0;i<span;i++)
-                {lrr[i]=i==0?-4:(i%2==0?-1:-1);}
-
-            else if (isIdentityReduced())
-                for(int i=0;i<span;i++)
-                {lrr[i]=i==0?-4:(i%2==0?-3:-1);}
-        }
-        else
-        {
-            lrr=(int*)malloc(sizeof(int)*(d->getNumVariables()+1));
-            lrr[0]=-4;
-            if(isQuasiReduced())
-                for(unsigned i=1;i<=d->getNumVariables();i++)
-                    lrr[i]=-2;
-
-            else
-                if (isFullyReduced())
-                for(unsigned i=1;i<=d->getNumVariables();i++)
-                    lrr[i]=-1;
-
-        }
-
-	}
-
-	level_reduction_rule=lrr;
-    }
-	else if(isUserDefinedReduced()){
-
-    	level_reduction_rule=lrr;
-    }
-	else
-		throw error(error::INVALID_POLICY, __FILE__, __LINE__);
-
-
-
-
-  // check policies
-  if (!isRelation) {
-    if (reduction_rule::IDENTITY_REDUCED == deflt.reduction)
-      throw error(error::INVALID_POLICY, __FILE__, __LINE__);
-
-    for(unsigned i=1;i<=d->getNumVariables();i++)
-        if(level_reduction_rule[i]==-3)              //isIdentityReduced()
-         throw error(error::INVALID_POLICY, __FILE__, __LINE__);
-  }
 
     //
     // Initialize the root edges
@@ -1986,7 +1922,7 @@ MEDDLY::forest::~forest()
     // node storage
     delete nodeMan;
 
-    free(level_reduction_rule);
+    // free(level_reduction_rule);
 
     unregisterForest(this);
     ct_entry_type::invalidateAllWithForest(this);

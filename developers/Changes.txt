@@ -1,6 +1,10 @@
 Implement next:
 
-    RELEASE HERE PROBABLY
+    * Update forest::createEdgeForVar
+        - centralized
+        - remove implementation in derived classes
+        - while we're at it, move some stuff from derived class constructors
+          into base class constructor (goal is to eliminate derived classes)
 
     * Design general purpose 'model' or 'transition relation' interface
 
