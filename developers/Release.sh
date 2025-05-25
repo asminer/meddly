@@ -200,6 +200,7 @@ git push sourceforge v$version
 # Build distribution
 #
 
+printf "Building tarball for upload to sourceforge\n"
 make -C .. dist
 
 #
