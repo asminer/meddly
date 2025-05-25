@@ -23,7 +23,6 @@
 #include "config.h"
 #endif
 
-// #define ALLOW_DEPRECATED_0_17_5  "04/05/2024"
 #define ALLOW_DEPRECATED_0_17_6  "11/11/2024"
 // #define ALLOW_DEPRECATED_0_17_7  "01/23/2025"
 // #define ALLOW_DEPRECATED_0_17_8

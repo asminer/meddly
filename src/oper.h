@@ -186,13 +186,4 @@ class MEDDLY::operation {
 
 };
 
-#ifdef ALLOW_DEPRECATED_0_17_5
-namespace MEDDLY {
-    inline void destroyOperation(operation* op)
-    {
-        operation::destroy(op);
-    }
-};
-#endif
-
 #endif // #include guard

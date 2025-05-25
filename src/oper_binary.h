@@ -359,14 +359,6 @@ namespace MEDDLY {
         bop->compute(a, b, c);
     }
 
-#ifdef ALLOW_DEPRECATED_0_17_5
-    inline binary_operation* getOperation(binary_builtin bb,
-            const dd_edge &a, const dd_edge &b, const dd_edge &c)
-    {
-        return bb(a.getForest(), b.getForest(), c.getForest());
-    }
-#endif
-
 };
 
 #endif // #include guard

@@ -422,20 +422,6 @@ namespace MEDDLY {
     }
 #endif
 
-#ifdef ALLOW_DEPRECATED_0_17_5
-    inline unary_operation* getOperation(unary_builtin1 bu,
-            const dd_edge &a, const dd_edge &c)
-    {
-        return bu(a.getForest(), c.getForest());
-    }
-
-    inline unary_operation* getOperation(unary_builtin2 bu,
-            const dd_edge &arg, opnd_type res)
-    {
-        return bu(arg.getForest(), res);
-    }
-#endif
-
 };
 
 
