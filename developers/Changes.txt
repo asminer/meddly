@@ -1,9 +1,48 @@
 Implement next:
 
-    * Random forest updates
-        - can we move some of the virtual methods into the forest class?
-
     * Design general purpose 'model' or 'transition relation' interface
+
+    generic relation:
+        * top-most non-identity level
+        * which levels are non-identity
+        * maybe also which levels are non-'fully-fully'
+
+        * unique ID for each "node"
+        * zero ID always means empty relation
+        * negative ID always means 'terminal node'
+        * AND: intersection of several relations
+            possibly also with constrained row/column sets
+
+        * special AND for disjoint levels (e.g., a chain?)
+
+        * OR: union of several relations
+
+        * MxD: a relation represented using a root node
+                in an MxD forest
+
+        * implicit: add one, subtract one, arbitrary function
+
+        Interface?:
+            * build row i
+                ->  get diagonal (to i) down UID, and sparse down list
+                        as (index, down UID) pairs?
+                        or as two std::vectors
+
+                    downside: we need to copy this from an unpacked node?
+                        or obtain index, down vectors from an unpacked node?
+
+                -> will ONLY be called for "confirmed" rows,
+                   so OTF stuff can use this to confirm local states.
+
+
+        * allow binary operations between forest and relation
+
+        * Do we need a global relation registry, like forests?
+
+        * Or do we make relations a subclass of forest?  (Ugh!)
+
+
+
 
     * Relational product operations, using new interface
 
