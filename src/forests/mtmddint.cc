@@ -104,6 +104,8 @@ createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 
 #endif
 
+#ifdef VIRTUAL_IO_METHODS
+
 void MEDDLY::mt_mdd_int::showEdge(output &s, const edge_value &ev,
         node_handle d) const
 {
@@ -117,3 +119,4 @@ void MEDDLY::mt_mdd_int::showEdge(output &s, const edge_value &ev,
     }
 }
 
+#endif

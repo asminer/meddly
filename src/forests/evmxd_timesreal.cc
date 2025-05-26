@@ -109,6 +109,8 @@ void MEDDLY::evmxd_timesreal
 
 #endif
 
+#ifdef VIRTUAL_IO_METHODS
+
 void MEDDLY::evmxd_timesreal::showEdge(output &s, const edge_value &ev,
         node_handle d) const
 {
@@ -127,6 +129,8 @@ void MEDDLY::evmxd_timesreal::showEdge(output &s, const edge_value &ev,
         s.put('>');
     }
 }
+
+#endif
 
 // ******************************************************************
 // *                                                                *

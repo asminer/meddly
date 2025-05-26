@@ -94,6 +94,7 @@ void MEDDLY::evmxd_pluslong
 
 #endif
 
+#ifdef VIRTUAL_IO_METHODS
 void MEDDLY::evmxd_pluslong::showEdge(output &s, const edge_value &ev,
         node_handle d) const
 {
@@ -112,6 +113,7 @@ void MEDDLY::evmxd_pluslong::showEdge(output &s, const edge_value &ev,
         s.put('>');
     }
 }
+#endif
 
 // ******************************************************************
 // *                                                                *

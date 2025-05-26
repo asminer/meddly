@@ -1254,6 +1254,8 @@ void MEDDLY::forest::initializeStorage()
 // I/O methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+#ifdef VIRTUAL_IO_METHODS
+
 void MEDDLY::forest::showHeaderInfo(output &s, const unpacked_node &) const
 {
 }
@@ -1265,6 +1267,77 @@ void MEDDLY::forest::writeHeaderInfo(output &s, const unpacked_node &) const
 void MEDDLY::forest::readHeaderInfo(input &s, unpacked_node &) const
 {
 }
+
+#else
+
+void MEDDLY::forest::showEdge(output &s, const edge_value &ev, node_handle d)
+    const
+{
+    if (isMultiTerminal()) {
+            if (d>0) {
+                s.put('#');
+                s.put(d);
+            } else {
+                terminal t(the_terminal_type, d);
+                t.show(s);
+            }
+            return;
+    }
+
+    //
+    // Edge valued
+    //
+
+    if (d == 0) {
+        if (isEVTimes()) {
+            s.put("<0, zero>");
+        } else {
+            s.put("<oo, w>");
+        }
+    } else {
+        s.put('<');
+        ev.show(s);
+        s.put(", ");
+        if (d < 0) {
+            s.put('w');
+        } else {
+            s.put('#');
+            s.put(d);
+        }
+        s.put('>');
+    }
+}
+
+
+void MEDDLY::forest::showHeaderInfo(output &s, const unpacked_node &u) const
+{
+    if (isIndexSet()) {
+        s.put(" card: ");
+        s.put(static_cast<const long*>(u.UHptr())[0]);
+    }
+}
+
+void MEDDLY::forest::writeHeaderInfo(output &s, const unpacked_node &u) const
+{
+    if (isIndexSet()) {
+        s.put('\t');
+        s.put(static_cast<const long*>(u.UHptr())[0]);
+        s.put('\n');
+    }
+}
+
+void MEDDLY::forest::readHeaderInfo(input &s, unpacked_node &u) const
+{
+    if (isIndexSet()) {
+        long card = s.get_integer();
+        u.setUHdata(&card);
+#ifdef DEBUG_READ_DD
+        std::cerr << "    got cardinality " << card << "\n";
+#endif
+    }
+}
+
+#endif
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Root edge registry methods

@@ -73,7 +73,9 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
     }
 #endif
 
+#ifdef VIRTUAL_IO_METHODS
     virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
+#endif
 
 #ifdef ALLOW_DEPRECATED_0_17_7
   protected:

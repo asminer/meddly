@@ -133,3 +133,30 @@ void MEDDLY::terminal::write(output &s) const
     s.put(' ');
 }
 
+void MEDDLY::terminal::show(output &s) const
+{
+    switch (mytype) {
+        case terminal_type::OMEGA:
+            s.put("w ");
+            s.put(t_omega);
+            break;
+
+        case terminal_type::BOOLEAN:
+            s.put( t_boolean ? 'T' : 'F' );
+            break;
+
+        case terminal_type::INTEGER:
+            s.put('t');
+            s.put(t_integer);
+            break;
+
+        case terminal_type::REAL:
+            s.put('t');
+            s.put(t_real, 0, 10, 'e');
+            break;
+
+        default:
+            MEDDLY_DCASSERT(false);
+    }
+}
+

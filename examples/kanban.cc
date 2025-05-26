@@ -303,7 +303,7 @@ int main(int argc, const char** argv)
                 start.note_time();
 #ifdef DUMP_NSF
                 cout << "Next-state function:\n";
-                nsf.show(meddlyout, 2);
+                nsf.showGraph(meddlyout);
 #endif
             }
             cout << "Next-state function construction took "
@@ -355,7 +355,7 @@ int main(int argc, const char** argv)
              << start.get_last_seconds() << " seconds" << endl;
 #ifdef DUMP_REACHABLE
         cout << "Reachable states:\n";
-        reachable.show(meddlyout, 2);
+        reachable.showGraph(meddlyout);
 #endif
 
         printStats("MDD", mdd);

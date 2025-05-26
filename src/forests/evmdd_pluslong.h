@@ -63,7 +63,9 @@ class MEDDLY::evmdd_pluslong : public evmdd_forest {
 
     virtual void swapAdjacentVariables(int level);
 
+#ifdef VIRTUAL_IO_METHODS
     virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
+#endif
 
 
 #ifdef ALLOW_DEPRECATED_0_17_7
@@ -95,10 +97,12 @@ class MEDDLY::evmdd_index_set_long : public evmdd_pluslong {
     virtual void getElement(const dd_edge& a, int index, int* e);
     virtual void getElement(const dd_edge& a, long index, int* e);
 #endif
+#ifdef VIRTUAL_IO_METHODS
   protected:
     virtual void showHeaderInfo(output &s, const unpacked_node &uh) const;
     virtual void writeHeaderInfo(output &s, const unpacked_node &uh) const;
     virtual void readHeaderInfo(input &s, unpacked_node &nb) const;
+#endif
 };
 
 #endif

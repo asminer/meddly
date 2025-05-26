@@ -113,6 +113,8 @@ createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 
 #endif
 
+#ifdef VIRTUAL_IO_METHODS
+
 void MEDDLY::mt_mxd_bool::showEdge(output &s, const edge_value &ev,
         node_handle d) const
 {
@@ -124,7 +126,7 @@ void MEDDLY::mt_mxd_bool::showEdge(output &s, const edge_value &ev,
         s.put( t.getBoolean() ? 'T' : 'F' );
     }
 }
-
+#endif
 
 bool
 MEDDLY::mt_mxd_bool::checkTerminalMinterm(node_handle a,  int* from,  int* to, int levelRead, node_handle &result)

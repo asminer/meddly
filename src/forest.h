@@ -53,6 +53,8 @@ namespace MEDDLY {
     class logger;
 };
 
+// #define VIRTUAL_IO_METHODS
+
 // ******************************************************************
 // *                                                                *
 // *                        MDD_levels class                        *
@@ -1892,6 +1894,7 @@ class MEDDLY::forest {
     public: // Public I/O methods
     // ------------------------------------------------------------
 
+#ifdef VIRTUAL_IO_METHODS
         /**
             Show an edge, compactly.
             Called for example for each child when displaying an entire node.
@@ -1925,6 +1928,34 @@ class MEDDLY::forest {
                 @param  nb      Node we're building.
         */
         virtual void readHeaderInfo(input &s, unpacked_node &nb) const;
+#else
+        /**
+            Show an edge, compactly.
+            Called for example for each child when displaying an entire node.
+                @param  s       Stream to write to.
+                @param  ev      Edge value
+                @param  d       Down pointer
+        */
+        void showEdge(output &s, const edge_value &ev, node_handle d) const;
+
+        /** Show the header information in human-readable format.
+                @param  s       Stream to write to.
+                @param  nr      Unpacked node containing header data.
+        */
+        void showHeaderInfo(output &s, const unpacked_node &nr) const;
+
+        /** Write the header information in machine-readable format.
+                @param  s       Stream to write to.
+                @param  nr      Unpacked node containing header data.
+        */
+        void writeHeaderInfo(output &s, const unpacked_node &nr) const;
+
+        /** Read the header information in machine-readable format.
+                @param  s       Stream to read from.
+                @param  nb      Node we're building.
+        */
+        void readHeaderInfo(input &s, unpacked_node &nb) const;
+#endif
 
 
 // ===================================================================

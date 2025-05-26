@@ -46,7 +46,9 @@ class MEDDLY::mt_mdd_int : public mtmdd_forest {
       const;
 #endif
 
+#ifdef VIRTUAL_IO_METHODS
     virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
+#endif
 
 };
 

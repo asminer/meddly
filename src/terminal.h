@@ -395,6 +395,11 @@ class MEDDLY::terminal {
         */
         void write(output &s) const;
 
+        /**
+            Show (for human consumption) a terminal node to an output stream.
+        */
+        void show(output &s) const;
+
     private:
         union {
             node_handle     t_omega;        // for special values

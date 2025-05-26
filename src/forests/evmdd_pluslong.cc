@@ -264,6 +264,8 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
   //    printf("#Node: %d\n", getCurrentNumNodes());
 }
 
+#ifdef VIRTUAL_IO_METHODS
+
 void MEDDLY::evmdd_pluslong::showEdge(output &s, const edge_value &ev,
         node_handle d) const
 {
@@ -282,6 +284,7 @@ void MEDDLY::evmdd_pluslong::showEdge(output &s, const edge_value &ev,
         s.put('>');
     }
 }
+#endif
 
 
 // ******************************************************************
@@ -461,6 +464,7 @@ void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, long index, int*
 
 #endif
 
+#ifdef VIRTUAL_IO_METHODS
 void MEDDLY::evmdd_index_set_long::showHeaderInfo(output &s,
         const unpacked_node &nb) const
 {
@@ -488,5 +492,7 @@ void MEDDLY::evmdd_index_set_long::readHeaderInfo(input &s,
     std::cerr << "    got cardinality " << card << "\n";
 #endif
 }
+
+#endif
 
 
