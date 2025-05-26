@@ -264,28 +264,6 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
   //    printf("#Node: %d\n", getCurrentNumNodes());
 }
 
-#ifdef VIRTUAL_IO_METHODS
-
-void MEDDLY::evmdd_pluslong::showEdge(output &s, const edge_value &ev,
-        node_handle d) const
-{
-    if (d == 0) {
-        s.put("<oo, w>");
-    } else {
-        s.put('<');
-        s.put(ev.getLong());
-        s.put(", ");
-        if (d < 0) {
-            s.put('w');
-        } else {
-            s.put('#');
-            s.put(d);
-        }
-        s.put('>');
-    }
-}
-#endif
-
 
 // ******************************************************************
 // *                                                                *
@@ -460,37 +438,6 @@ void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, long index, int*
   } // for k
   e[0] = (index > 0 ? 0 : -p);
   unpacked_node::Recycle(R);
-}
-
-#endif
-
-#ifdef VIRTUAL_IO_METHODS
-void MEDDLY::evmdd_index_set_long::showHeaderInfo(output &s,
-        const unpacked_node &nb) const
-{
-
-  s.put(" card: ");
-  s.put(static_cast<const long*>(nb.UHptr())[0]);
-  // fprintf(s, " card: %d", ((const node_handle*)uh)[0]);
-}
-
-void MEDDLY::evmdd_index_set_long::writeHeaderInfo(output &s,
-        const unpacked_node &nb) const
-{
-  s.put('\t');
-  s.put(static_cast<const long*>(nb.UHptr())[0]);
-  s.put('\n');
-  // th_fprintf(s, "\t %d\n", ((const node_handle*)uh)[0]);
-}
-
-void MEDDLY::evmdd_index_set_long::readHeaderInfo(input &s,
-        unpacked_node &nb) const
-{
-    long card = s.get_integer();
-    nb.setUHdata(&card);
-#ifdef DEBUG_READ_DD
-    std::cerr << "    got cardinality " << card << "\n";
-#endif
 }
 
 #endif

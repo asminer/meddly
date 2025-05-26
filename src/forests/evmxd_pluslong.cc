@@ -94,26 +94,6 @@ void MEDDLY::evmxd_pluslong
 
 #endif
 
-#ifdef VIRTUAL_IO_METHODS
-void MEDDLY::evmxd_pluslong::showEdge(output &s, const edge_value &ev,
-        node_handle d) const
-{
-    if (d == 0) {
-        s.put("<oo, w>");
-    } else {
-        s.put('<');
-        s.put(ev.getLong());
-        s.put(", ");
-        if (d < 0) {
-            s.put('w');
-        } else {
-            s.put('#');
-            s.put(d);
-        }
-        s.put('>');
-    }
-}
-#endif
 
 // ******************************************************************
 // *                                                                *

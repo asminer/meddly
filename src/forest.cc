@@ -1254,22 +1254,6 @@ void MEDDLY::forest::initializeStorage()
 // I/O methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-#ifdef VIRTUAL_IO_METHODS
-
-void MEDDLY::forest::showHeaderInfo(output &s, const unpacked_node &) const
-{
-}
-
-void MEDDLY::forest::writeHeaderInfo(output &s, const unpacked_node &) const
-{
-}
-
-void MEDDLY::forest::readHeaderInfo(input &s, unpacked_node &) const
-{
-}
-
-#else
-
 void MEDDLY::forest::showEdge(output &s, const edge_value &ev, node_handle d)
     const
 {
@@ -1336,8 +1320,6 @@ void MEDDLY::forest::readHeaderInfo(input &s, unpacked_node &u) const
 #endif
     }
 }
-
-#endif
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Root edge registry methods

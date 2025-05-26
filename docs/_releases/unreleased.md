@@ -16,3 +16,6 @@ layout: single
 
 ### Implementation
 
+* Forest I/O methods are now centralized and non-virtual;
+    all implementation removed from derived classes.
+

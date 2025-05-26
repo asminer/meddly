@@ -115,17 +115,3 @@ createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
 
 #endif
 
-#ifdef VIRTUAL_IO_METHODS
-void MEDDLY::mt_mdd_real::showEdge(output &s, const edge_value &ev,
-        node_handle d) const
-{
-    if (d>0) {
-        s.put('#');
-        s.put(d);
-    } else {
-        terminal t(terminal_type::REAL, d);
-        s.put('t');
-        s.put( t.getReal(), 0, 10, 'e' );
-    }
-}
-#endif

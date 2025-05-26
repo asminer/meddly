@@ -51,10 +51,6 @@ class MEDDLY::mt_mxd_real : public mtmxd_forest {
         float &term) const;
 #endif
 
-#ifdef VIRTUAL_IO_METHODS
-    virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
-#endif
-
 };
 
 #endif

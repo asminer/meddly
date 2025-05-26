@@ -49,10 +49,6 @@ class MEDDLY::mt_mxd_bool : public mtmxd_forest {
 
     virtual node_handle unionOneMinterm(node_handle a,  int* from,  int* to, int level);
 
-#ifdef VIRTUAL_IO_METHODS
-    virtual void showEdge(output &s, const edge_value &ev, node_handle d) const;
-#endif
-
   protected:
     node_handle unionOneMinterm_r(int index, int vh, node_handle nh,  int* from,  int* to);
     bool checkTerminalMinterm(node_handle a,  int* from,  int* to,int levelRead, node_handle& c);
