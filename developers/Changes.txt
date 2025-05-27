@@ -2,45 +2,42 @@ Implement next:
 
     * Design general purpose 'model' or 'transition relation' interface
 
-    generic relation:
-        * top-most non-identity level
-        * which levels are non-identity
-        * maybe also which levels are non-'fully-fully'
-
+    pool of relation nodes (like forest):
+        * Do we need a global relation registry, like forests?
         * unique ID for each "node"
         * zero ID always means empty relation
         * negative ID always means 'terminal node'
-        * AND: intersection of several relations
+        * get level of node at ID
+        * read row i from ID
+            -> returns a const struct reference
+                    diagonal down ID
+                    sparse down list
+                (one row at a time per ID)
+
+            -> will ONLY be called for "confirmed" rows,
+               so OTF stuff can use this to confirm local states.
+
+
+    types of pools:
+        * forest, for 'ordinary' MxDs
+        * implicit nodes: add/subtract a constant
+        * implicit nodes: generic
+        * parameterized implicit nodes ?
+        * AND: intersection of several IDs
             possibly also with constrained row/column sets
-
         * special AND for disjoint levels (e.g., a chain?)
-
         * OR: union of several relations
 
-        * MxD: a relation represented using a root node
-                in an MxD forest
 
-        * implicit: add one, subtract one, arbitrary function
-
-        Interface?:
-            * build row i
-                ->  get diagonal (to i) down UID, and sparse down list
-                        as (index, down UID) pairs?
-                        or as two std::vectors
-
-                    downside: we need to copy this from an unpacked node?
-                        or obtain index, down vectors from an unpacked node?
-
-                -> will ONLY be called for "confirmed" rows,
-                   so OTF stuff can use this to confirm local states.
+    relation (like dd_edge):
+        * parent pool
+        * ID of root
+        * top-most non-identity level
+        * which levels are non-identity
 
 
+    operations:
         * allow binary operations between forest and relation
-
-        * Do we need a global relation registry, like forests?
-
-        * Or do we make relations a subclass of forest?  (Ugh!)
-
 
 
 
