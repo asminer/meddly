@@ -61,6 +61,7 @@ libmeddly_la_SOURCES = \
     policies.h              policies.cc \
     rangeval.h              rangeval.cc \
     relation_node.h         relation_node.cc \
+    relforest.h             relforest.cc \
     sat_relations.h         sat_relations.cc \
     statset.h               statset.cc \
     terminal.h              terminal.cc \

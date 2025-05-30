@@ -18,6 +18,33 @@ Implement next:
                so OTF stuff can use this to confirm local states.
 
 
+            struct relstruct {
+                node_handle diagonal;
+                edge_value  diag_ev;
+
+                unsigned* index;
+                node_handle* down;
+                edge_value* values;
+                //
+                // ^ or use std::vector?
+            }
+
+            virtual bool outgoing(node_handle ID, unsigned i, relstruct &rs);
+            virtual bool incoming(node_handle ID, unsigned i, relstruct &rs);
+
+            // ^
+            // return false if there are no outgoing/incoming edges;
+            // otherwise return true.
+            //
+            // fill rs with the outgoing/incoming edges for value i
+            // according to relation with given ID.
+            // The contents of rs are undefined (likely, unchanged)
+            // if the function returns false.
+            //
+
+            virtual unsigned levelOf(node_handle ID) const;
+
+
     types of pools:
         * forest, for 'ordinary' MxDs
         * implicit nodes: add/subtract a constant
