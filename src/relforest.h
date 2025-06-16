@@ -43,8 +43,6 @@ namespace MEDDLY {
         * zero ID always means the empty relation.
         * negative ID always means 'terminal node'
 
-    TBD: do we need a registry of relforests for each domain?
-
  */
 class MEDDLY::relforest {
     public:
@@ -101,8 +99,43 @@ class MEDDLY::relforest {
          */
         virtual bool incoming(node_handle ID, unsigned i, unpacked &u);
 
+        /// Unique relforest identifier; use 0 for 'no forest'
+        inline unsigned FID() const { return fid; }
+
+        /// Get the relforest with specified ID, or nullptr.
+        static inline relforest* getForestWithID(unsigned id) {
+            if (id >= all_forests.size()) return nullptr;
+            return all_forests[id];
+        }
+
     private:
+        static inline void initStatics() {
+            all_forests.clear();
+            all_forests.push_back(nullptr);
+        }
+        static inline void freeStatics() {
+            all_forests.clear();
+        }
+        static inline void registerForest(relforest* f) {
+            MEDDLY_DCASSERT(f);
+            f->fid = all_forests.size();
+            all_forests.push_back(f);
+            f->D->registerRelforest(f);
+        }
+        static inline void unregisterForest(relforest* f) {
+            MEDDLY_DCASSERT(f);
+            if (f->fid < all_forests.size()) {
+                all_forests[f->fid] = nullptr;
+            }
+            f->D->unregisterRelforest(f);
+        }
+
+    private:
+        unsigned fid;
         domain* D;
+
+        static std::vector <relforest*> all_forests;
+        friend class initializer_list;
 };
 
 #endif

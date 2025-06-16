@@ -1438,6 +1438,7 @@ void MEDDLY::forest::freeStatics()
 
 void MEDDLY::forest::registerForest(forest* f)
 {
+    MEDDLY_DCASSERT(f);
 #ifdef DEBUG_CLEANUP
     std::cout << "Registering forest " << f << ", #" << all_forests.size() << "\n";
 #endif
@@ -1450,21 +1451,17 @@ void MEDDLY::forest::registerForest(forest* f)
 
     // Initialize unpacked node entries for f
     unpacked_node::initForest(f);
-    // unreduced_node::initForest(f);
 }
 
 void MEDDLY::forest::unregisterForest(forest* f)
 {
+    MEDDLY_DCASSERT(f);
 #ifdef DEBUG_CLEANUP
     std::cout << "Unregistering forest " << f << ", #" << f->fid << "\n";
 #endif
     // Remove from forest slot
     if (f->fid < all_forests.size()) {
-#ifdef DEVELOPMENT_CODE
-        all_forests.at(f->fid) = nullptr;
-#else
         all_forests[f->fid] = nullptr;
-#endif
     }
 
     // Unregister in the domain
@@ -1472,7 +1469,6 @@ void MEDDLY::forest::unregisterForest(forest* f)
 
     // Clear out unpacked node entries for f
     unpacked_node::doneForest(f);
-    // unreduced_node::doneForest(f);
 }
 
 

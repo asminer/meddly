@@ -20,6 +20,14 @@
 
 // ******************************************************************
 // *                                                                *
+// *                       relforest  members                       *
+// *                                                                *
+// ******************************************************************
+
+std::vector <MEDDLY::relforest*> MEDDLY::relforest::all_forests;
+
+// ******************************************************************
+// *                                                                *
 // *                       relforest  methods                       *
 // *                                                                *
 // ******************************************************************
@@ -27,10 +35,13 @@
 MEDDLY::relforest::relforest(domain *_D)
 {
     D = _D;
+
+    registerForest(this);
 }
 
 MEDDLY::relforest::~relforest()
 {
+    unregisterForest(this);
 }
 
 unsigned MEDDLY::relforest::levelOf(node_handle ID) const

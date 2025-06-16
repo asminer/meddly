@@ -21,6 +21,7 @@
 #include "error.h"
 #include "domain.h"
 #include "forest.h"
+#include "relforest.h"
 #include "oper.h"
 #include "unpacked_node.h"
 #include "ct_initializer.h"
@@ -62,9 +63,9 @@ void MEDDLY::initializer_list::initializeLibrary(initializer_list* L)
     memstats::initGlobalStats();
     operation::initializeStatics();
     unpacked_node::initStatics();
-    // unreduced_node::initStatics();
     domain::initDomList();
     forest::initStatics();
+    relforest::initStatics();
     ct_vector::initStatics();
     ct_entry_type::initStatics();
 
@@ -114,6 +115,7 @@ void MEDDLY::initializer_list::cleanupLibrary()
 
     domain::deleteDomList();
     forest::freeStatics();
+    relforest::freeStatics();
 
     //
     // Run through initializers
@@ -130,7 +132,6 @@ void MEDDLY::initializer_list::cleanupLibrary()
     // ^ should we traverse this list before clobbering forests, etc?
 
     unpacked_node::doneStatics();
-    // unreduced_node::doneStatics();
     ct_vector::doneStatics();
     ct_entry_type::doneStatics();
 

@@ -35,7 +35,7 @@ namespace MEDDLY {
     class output;
 
     class forest;
-
+    class relforest;
 };
 
 // ******************************************************************
@@ -289,9 +289,13 @@ class MEDDLY::domain {
         // Forest registry members
         //
 
-        /// Registry of all functions with this domain.
+        /// Registry of all forests with this domain.
         /// Stored as a set of FIDs.
         std::set<unsigned> forestReg;
+
+        /// Registry of all relation forests with this domain.
+        /// Stored as a set of FIDs.
+        std::set<unsigned> relforestReg;
 
         /// Are we about to delete the domain.
         bool is_marked_for_deletion;
@@ -314,6 +318,14 @@ class MEDDLY::domain {
         void unregisterForest(forest* f);
 
         friend class forest; // calls the above two methods
+
+        /// Add f to the relation forest registry.
+        void registerRelforest(relforest* f);
+
+        /// Remove f from the relation forest registry.
+        void unregisterRelforest(relforest* f);
+
+        friend class relforest; // calls the above two methods
 
         /// Mark this domain, and all forests in our registry, for deletion
         void markForDeletion();
