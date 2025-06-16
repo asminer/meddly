@@ -68,7 +68,7 @@ MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
       }
 
       int sz = getLevelSize(up);
-      MEDDLY_DCASSERT(si < sz);
+      ASSERT(__FILE__, __LINE__, si < sz);
       const bool add_edge = (si+1 == sz && isExtensibleLevel(up));
       nb = unpacked_node::newWritable(this, up, (add_edge? (1+sz): sz), FULL_ONLY);
 
@@ -120,7 +120,7 @@ void MEDDLY::mt_forest::initStatics()
 
 void MEDDLY::mt_forest::enlargeStatics(int n)
 {
-  MEDDLY_DCASSERT(n>=0);
+  ASSERT(__FILE__, __LINE__, n>=0);
   if (n>order_size) {
     order = (int*) realloc(order, n*sizeof(int));
     //terminals = (node_handle*) realloc(terminals, n*sizeof(node_handle));
@@ -159,7 +159,7 @@ MEDDLY::mt_forest::mt_iterator::~mt_iterator()
 
 void MEDDLY::mt_forest::mt_iterator::getValue(int &termVal) const
 {
-  MEDDLY_DCASSERT(index);
+  ASSERT(__FILE__, __LINE__, index);
   terminal t(terminal_type::INTEGER, index[0]);
   termVal = t.getInteger();
   // termVal = int_Tencoder::handle2value(index[0]);
@@ -167,7 +167,7 @@ void MEDDLY::mt_forest::mt_iterator::getValue(int &termVal) const
 
 void MEDDLY::mt_forest::mt_iterator::getValue(float &termVal) const
 {
-  MEDDLY_DCASSERT(index);
+  ASSERT(__FILE__, __LINE__, index);
   terminal t(terminal_type::REAL, index[0]);
   termVal = t.getReal();
 }

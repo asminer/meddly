@@ -141,7 +141,7 @@ MEDDLY::mt_mxd_bool::checkTerminalMinterm(node_handle a,  int* from,  int* to, i
               int b_from = from[i];
               int b_to = to[i];
 
-              //MEDDLY_DCASSERT(!isExtensibleLevel(level));
+              //ASSERT(__FILE__, __LINE__, !isExtensibleLevel(level));
 
               // the level not in this subevent
               // so skip

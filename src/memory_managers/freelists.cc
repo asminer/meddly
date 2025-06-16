@@ -157,7 +157,7 @@ MEDDLY::node_address MEDDLY::freelist_manager<INT>::requestChunk(size_t &numSlot
 
     setChunkBase(entries);
   }
-  MEDDLY_DCASSERT(entriesSize + numSlots <= entriesAlloc);
+  ASSERT(__FILE__, __LINE__, entriesSize + numSlots <= entriesAlloc);
   node_address h = entriesSize;
   entriesSize += numSlots;
 #ifdef DEBUG_FREELISTS

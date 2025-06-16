@@ -143,30 +143,30 @@ namespace MEDDLY {
       }
 
       inline INT Up(node_address h) const {
-        MEDDLY_DCASSERT(isIndexHole(h));
+        ASSERT(__FILE__, __LINE__, isIndexHole(h));
         return hole_manager<INT>::readSlot(h, 1);
       }
       inline INT& Up(node_address h) {
-        MEDDLY_DCASSERT(isIndexHole(h));
+        ASSERT(__FILE__, __LINE__, isIndexHole(h));
         return hole_manager<INT>::refSlot(h, 1);
       }
 
       inline INT Down(node_address h) const {
-        MEDDLY_DCASSERT(isIndexHole(h));
+        ASSERT(__FILE__, __LINE__, isIndexHole(h));
         return hole_manager<INT>::readSlot(h, 2);
       }
       inline INT& Down(node_address h) {
-        MEDDLY_DCASSERT(isIndexHole(h));
+        ASSERT(__FILE__, __LINE__, isIndexHole(h));
         return hole_manager<INT>::refSlot(h, 2);
       }
 
 
       inline INT Prev(node_address h) const {
-        MEDDLY_DCASSERT(!isIndexHole(h));
+        ASSERT(__FILE__, __LINE__, !isIndexHole(h));
         return hole_manager<INT>::readSlot(h, 2);
       }
       inline INT& Prev(node_address h) {
-        MEDDLY_DCASSERT(!isIndexHole(h));
+        ASSERT(__FILE__, __LINE__, !isIndexHole(h));
         return hole_manager<INT>::refSlot(h, 2);
       }
 
@@ -334,7 +334,7 @@ namespace MEDDLY {
       // Couldn't recycle from grid.  Try large hole list.
       //
 
-      MEDDLY_DCASSERT(size_t(getHoleSize(large_holes)) >= numSlots);
+      ASSERT(__FILE__, __LINE__, size_t(getHoleSize(large_holes)) >= numSlots);
 
 #ifdef MEMORY_TRACE_DETAILS
       printf("\tUsing large hole of size %ld\n", long(getHoleSize(large_holes)));
@@ -355,7 +355,7 @@ namespace MEDDLY {
       //
       // Deal with leftover slots, if any
       //
-      MEDDLY_DCASSERT(size_t(getHoleSize(h)) >= numSlots);
+      ASSERT(__FILE__, __LINE__, size_t(getHoleSize(h)) >= numSlots);
       size_t leftover_slots = getHoleSize(h) - numSlots;
       if (leftover_slots > 0) {
         //
@@ -410,7 +410,7 @@ namespace MEDDLY {
     // Check to the left for another hole
     //
     if (isHole(h-1)) {
-      MEDDLY_DCASSERT(node_address(getHoleSize(h-1)) < h);
+      ASSERT(__FILE__, __LINE__, node_address(getHoleSize(h-1)) < h);
       node_address hleft = h - getHoleSize(h-1);
 #ifdef MEMORY_TRACE_DETAILS
       printf("\tMerging to the left, holes %lu and %lu\n", hleft, h);
@@ -597,8 +597,8 @@ namespace MEDDLY {
     printf("removeFromGrid(%lu)\n", h);
 #endif
 
-    MEDDLY_DCASSERT(getHoleSize(h)>0);
-    MEDDLY_DCASSERT(matchingHoleSizes(h));
+    ASSERT(__FILE__, __LINE__, getHoleSize(h)>0);
+    ASSERT(__FILE__, __LINE__, matchingHoleSizes(h));
 
     //
     // Is this a small hole?  If so, it's not in the grid
@@ -626,7 +626,7 @@ namespace MEDDLY {
       if (left) {
         Next(left) = right;
       } else {
-        MEDDLY_DCASSERT(node_address(large_holes) == h);
+        ASSERT(__FILE__, __LINE__, node_address(large_holes) == h);
         large_holes = right;
       }
 
@@ -654,7 +654,7 @@ namespace MEDDLY {
       INT left = Prev(h);
       INT right = Next(h);
 
-      MEDDLY_DCASSERT(left);
+      ASSERT(__FILE__, __LINE__, left);
 
       Next(left) = right;
       if (right) {
@@ -716,7 +716,7 @@ namespace MEDDLY {
     INT above = Up(h);
     INT below = Down(h);
     INT next = Next(h);
-    MEDDLY_DCASSERT(next);
+    ASSERT(__FILE__, __LINE__, next);
 
     if (above) {
       Down(above) = next;
@@ -748,8 +748,8 @@ namespace MEDDLY {
     printf("addToGrid(%lu) size %ld\n", h, long(getHoleSize(h)));
 #endif
 
-    MEDDLY_DCASSERT(getHoleSize(h)>0);
-    MEDDLY_DCASSERT(matchingHoleSizes(h));
+    ASSERT(__FILE__, __LINE__, getHoleSize(h)>0);
+    ASSERT(__FILE__, __LINE__, matchingHoleSizes(h));
 
     //
     // Check if the hole is too small to track.
@@ -828,8 +828,8 @@ namespace MEDDLY {
     while (getHoleSize(h) > getHoleSize(above)) {
       below = above;
       above = Up(below);
-      MEDDLY_DCASSERT(Down(above) == below);
-      MEDDLY_DCASSERT(above);
+      ASSERT(__FILE__, __LINE__, Down(above) == below);
+      ASSERT(__FILE__, __LINE__, above);
     }
     //
     // Found where we belong, check if it's the exact size

@@ -128,8 +128,8 @@ void MEDDLY::evmdd_pluslong
 
 void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
 {
-  MEDDLY_DCASSERT(level >= 1);
-  MEDDLY_DCASSERT(level < getNumVariables());
+  ASSERT(__FILE__, __LINE__, level >= 1);
+  ASSERT(__FILE__, __LINE__, level < getNumVariables());
 
   int hvar = getVarByLevel(level + 1);  // The variable at the higher level
   int lvar = getVarByLevel(level);    // The variable at the lower level
@@ -154,8 +154,8 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
     // unpacked_node* nr = newUnpacked(hnodes[i], FULL_ONLY);
     unpacked_node* nr = unpacked_node::newFromNode(this, hnodes[i], FULL_ONLY);
 
-    MEDDLY_DCASSERT(nr->getLevel() == level + 1);
-    MEDDLY_DCASSERT(nr->getSize() == hsize);
+    ASSERT(__FILE__, __LINE__, nr->getLevel() == level + 1);
+    ASSERT(__FILE__, __LINE__, nr->getSize() == hsize);
 
     for (int j = 0; j < hsize; j++) {
       if (isLevelAbove(getNodeLevel(nr->down(j)), level - 1)) {
@@ -196,7 +196,7 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
         unpacked_node::newWritable(this, level + 1, lsize, FULL_ONLY);
     for (int j = 0; j < hsize; j++) {
       long ev1 = high_nr->edgeval(j).getLong();
-      MEDDLY_DCASSERT(ev1 >= 0);
+      ASSERT(__FILE__, __LINE__, ev1 >= 0);
 
       if (isLevelAbove(level, getNodeLevel(high_nr->down(j)))) {
         for (int k = 0; k < lsize; k++) {
@@ -209,12 +209,12 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
             unpacked_node::newFromNode(this, high_nr->down(j), FULL_ONLY);
         // unpacked_node* nr = newUnpacked(high_nr->down(j), FULL_ONLY);
 
-        MEDDLY_DCASSERT(nr->getSize() == lsize);
+        ASSERT(__FILE__, __LINE__, nr->getSize() == lsize);
         for (int k = 0; k < lsize; k++) {
           children[j][k] = nr->down(k);
 
           long ev2 = nr->edgeval(k).getLong();
-          MEDDLY_DCASSERT(ev2 >= 0);
+          ASSERT(__FILE__, __LINE__, ev2 >= 0);
 
           sum_evs[j][k] = ev1 + ev2;
         }
@@ -289,7 +289,7 @@ MEDDLY::evmdd_pluslong::evpimdd_iterator::~evpimdd_iterator()
 
 void MEDDLY::evmdd_pluslong::evpimdd_iterator::getValue(long &tv) const
 {
-  MEDDLY_DCASSERT(acc_evs);
+  ASSERT(__FILE__, __LINE__, acc_evs);
   tv = acc_evs[0];
 }
 
@@ -308,12 +308,12 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::start(const dd_edge &e)
 
 bool MEDDLY::evmdd_pluslong::evpimdd_iterator::next()
 {
-  MEDDLY_DCASSERT(F);
-  MEDDLY_DCASSERT(!F->isForRelations());
-  MEDDLY_DCASSERT(index);
-  MEDDLY_DCASSERT(nzp);
-  MEDDLY_DCASSERT(path);
-  MEDDLY_DCASSERT(acc_evs);
+  ASSERT(__FILE__, __LINE__, F);
+  ASSERT(__FILE__, __LINE__, !F->isForRelations());
+  ASSERT(__FILE__, __LINE__, index);
+  ASSERT(__FILE__, __LINE__, nzp);
+  ASSERT(__FILE__, __LINE__, path);
+  ASSERT(__FILE__, __LINE__, acc_evs);
 
   int k;
   node_handle down = 0;
@@ -322,7 +322,7 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::next()
     if (nzp[k] < path[k].getSize()) {
       index[k] = path[k].index(nzp[k]);
       down = path[k].down(nzp[k]);
-      MEDDLY_DCASSERT(down);
+      ASSERT(__FILE__, __LINE__, down);
       const long ev = path[k].edgeval(nzp[k]).getLong();
       // long ev = Inf<long>();
       // path[k].getEdge(nzp[k], ev);
@@ -340,19 +340,19 @@ bool MEDDLY::evmdd_pluslong::evpimdd_iterator::next()
 
 bool MEDDLY::evmdd_pluslong::evpimdd_iterator::first(int k, node_handle down)
 {
-  MEDDLY_DCASSERT(F);
-  MEDDLY_DCASSERT(!F->isForRelations());
-  MEDDLY_DCASSERT(index);
-  MEDDLY_DCASSERT(nzp);
-  MEDDLY_DCASSERT(path);
-  MEDDLY_DCASSERT(acc_evs);
+  ASSERT(__FILE__, __LINE__, F);
+  ASSERT(__FILE__, __LINE__, !F->isForRelations());
+  ASSERT(__FILE__, __LINE__, index);
+  ASSERT(__FILE__, __LINE__, nzp);
+  ASSERT(__FILE__, __LINE__, path);
+  ASSERT(__FILE__, __LINE__, acc_evs);
 
   if (0==down) return false;
 
   for ( ; k; k--) {
-    MEDDLY_DCASSERT(down);
+    ASSERT(__FILE__, __LINE__, down);
     int kdn = F->getNodeLevel(down);
-    MEDDLY_DCASSERT(kdn <= k);
+    ASSERT(__FILE__, __LINE__, kdn <= k);
     if (kdn < k)  {
         edge_value ev(0L);
         path[k].initRedundant(F, k, ev, down, SPARSE_ONLY);
@@ -412,13 +412,13 @@ void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, long index, int*
   for (int k = getNumVariables(); k > 0; k--) {
 	int var = getVarByLevel(k);
 
-    MEDDLY_DCASSERT(index >= 0);
+    ASSERT(__FILE__, __LINE__, index >= 0);
     if (p <= 0) {
       e[var] = 0;
       continue;
     }
     unpackNode(R, p, SPARSE_ONLY);
-    MEDDLY_DCASSERT(R->getLevel() <= k);
+    ASSERT(__FILE__, __LINE__, R->getLevel() <= k);
     if (R->getLevel() < k) {
       e[var] = 0;
       continue;

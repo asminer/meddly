@@ -189,7 +189,7 @@ namespace MEDDLY {
             std::cerr << " failed:\n    min: " << min;
             std::cerr << "\n    val: " << value;
             std::cerr << "\n    max: " << max << '\n';
-            FAIL(fn, ln);
+            exit(1);
         }
 #endif
     }
@@ -199,7 +199,7 @@ namespace MEDDLY {
 #ifdef DEVELOPMENT_CODE
         if (!X) {
             std::cerr << "Assertion at " << fn << " line " << ln << " failed\n";
-            FAIL(fn, ln);
+            exit(1);
         }
 #endif
     }

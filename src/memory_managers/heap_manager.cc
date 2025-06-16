@@ -180,19 +180,19 @@ namespace MEDDLY {
         num_heap_nodes--;
       }
       inline void incHeapSlots(long a) {
-        MEDDLY_DCASSERT(a>0);
+        ASSERT(__FILE__, __LINE__, a>0);
         num_heap_slots += a;
         if (num_heap_slots > max_heap_slots) {
           max_heap_slots = num_heap_slots;
         }
       }
       inline void decHeapSlots(long a) {
-        MEDDLY_DCASSERT(a>0);
+        ASSERT(__FILE__, __LINE__, a>0);
         num_heap_slots -= a;
       }
       inline void incSmallSlots(long a) {
         if (0==a) return;
-        MEDDLY_DCASSERT(a>0);
+        ASSERT(__FILE__, __LINE__, a>0);
         num_small_slots += a;
         if (num_small_slots > max_small_slots) {
           max_small_slots = num_small_slots;
@@ -203,7 +203,7 @@ namespace MEDDLY {
         }
       }
       inline void decSmallSlots(long a) {
-        MEDDLY_DCASSERT(a>0);
+        ASSERT(__FILE__, __LINE__, a>0);
         num_small_slots -= a;
         num_small_holes--;
       }
@@ -299,7 +299,7 @@ namespace MEDDLY {
             //
             // Make a heap out of current hole
             //
-            MEDDLY_DCASSERT(getHoleSize(current_hole) >= smallestChunk());
+            ASSERT(__FILE__, __LINE__, getHoleSize(current_hole) >= smallestChunk());
             zeroPointers(current_hole);
             incHeapNodes();
             incHeapSlots(getHoleSize(current_hole));
@@ -426,7 +426,7 @@ namespace MEDDLY {
     // Check to the left for another hole
     //
     if (isHole(h-1)) {
-      MEDDLY_DCASSERT(node_address(getHoleSize(h-1)) < h);
+      ASSERT(__FILE__, __LINE__, node_address(getHoleSize(h-1)) < h);
       node_address hleft = h - getHoleSize(h-1);
 #ifdef MEMORY_TRACE_DETAILS
       printf("\tMerging to the left, holes %lu and %lu\n", hleft, h);
@@ -505,7 +505,7 @@ namespace MEDDLY {
 #ifdef MEMORY_TRACE_DETAILS
       printf("\tCreating heap from hole\n");
 #endif
-      MEDDLY_DCASSERT(1==num_heap_nodes);
+      ASSERT(__FILE__, __LINE__, 1==num_heap_nodes);
       makeRoot(h);
     } else {
       // find parent of where we will go
@@ -513,8 +513,8 @@ namespace MEDDLY {
       printf("\tAdding hole to heap\n");
 #endif
       node_address p = findNodeAtPosition(num_heap_nodes/2);
-      MEDDLY_DCASSERT(p);
-      MEDDLY_DCASSERT(0==Right(p));
+      ASSERT(__FILE__, __LINE__, p);
+      ASSERT(__FILE__, __LINE__, 0==Right(p));
       if (0==Left(p)) {
         setLeft(p, h);
       } else {
@@ -638,7 +638,7 @@ namespace MEDDLY {
       if (0==--bit) return n;
       two2b >>= 1;
       node_address child = (id & two2b) ? Right(n) : Left(n);
-      MEDDLY_DCASSERT(child);
+      ASSERT(__FILE__, __LINE__, child);
       n = child;
     } // for
     return 0;   // We never get here; keep compilers happy
@@ -649,29 +649,29 @@ namespace MEDDLY {
   template <class INT>
   MEDDLY::node_address heap_manager<INT>::removeLastHeapNode()
   {
-    MEDDLY_DCASSERT(heap_root);
-    MEDDLY_DCASSERT(num_heap_nodes);
+    ASSERT(__FILE__, __LINE__, heap_root);
+    ASSERT(__FILE__, __LINE__, num_heap_nodes);
     node_address n = findNodeAtPosition(num_heap_nodes);
     decHeapNodes();
     decHeapSlots(getHoleSize(n));
-    MEDDLY_DCASSERT(n);
-    MEDDLY_DCASSERT(Left(n)==0);
-    MEDDLY_DCASSERT(Right(n)==0);
+    ASSERT(__FILE__, __LINE__, n);
+    ASSERT(__FILE__, __LINE__, Left(n)==0);
+    ASSERT(__FILE__, __LINE__, Right(n)==0);
     node_address p = Parent(n);
     if (0==p) {
       // this is the root
-      MEDDLY_DCASSERT(n==heap_root);
+      ASSERT(__FILE__, __LINE__, n==heap_root);
       heap_root = 0;
       return n;
     }
     // Not the root, update parent's pointers
     if (Right(p)==0) {
       // we must be the left child
-      MEDDLY_DCASSERT(node_address(Left(p))==n);
+      ASSERT(__FILE__, __LINE__, node_address(Left(p))==n);
       setLeft(p, 0);
     } else {
       // we must be the right child
-      MEDDLY_DCASSERT(node_address(Right(p))==n);
+      ASSERT(__FILE__, __LINE__, node_address(Right(p))==n);
       setRight(p, 0);
     }
     return n;
@@ -682,11 +682,11 @@ namespace MEDDLY {
   template <class INT>
   void heap_manager<INT>::removeHeapNode(node_address target)
   {
-    MEDDLY_DCASSERT(target);
-    MEDDLY_DCASSERT(heap_root);
+    ASSERT(__FILE__, __LINE__, target);
+    ASSERT(__FILE__, __LINE__, heap_root);
 
     node_address replace = removeLastHeapNode();
-    MEDDLY_DCASSERT(replace);
+    ASSERT(__FILE__, __LINE__, replace);
 
     if (replace == target) return;
 
@@ -701,13 +701,13 @@ namespace MEDDLY {
     //
     node_address p = Parent(target);
     if (0==p) {
-      MEDDLY_DCASSERT(heap_root == target);
+      ASSERT(__FILE__, __LINE__, heap_root == target);
       makeRoot(replace);
     } else {
       if (node_address(Left(p)) == target) {
         setLeft(p, replace);
       } else {
-        MEDDLY_DCASSERT(node_address(Right(p)) == target);
+        ASSERT(__FILE__, __LINE__, node_address(Right(p)) == target);
         setRight(p, replace);
       }
     }
@@ -730,11 +730,11 @@ namespace MEDDLY {
   template <class INT>
   void heap_manager<INT>::upHeap(node_address n)
   {
-    MEDDLY_DCASSERT(n);
+    ASSERT(__FILE__, __LINE__, n);
     for (;;) {
       node_address p = Parent(n);
       if (0==p) {
-        MEDDLY_DCASSERT(heap_root == n);
+        ASSERT(__FILE__, __LINE__, heap_root == n);
         return;
       }
       if (getHoleSize(n) <= getHoleSize(p)) return; // done swapping
@@ -749,13 +749,13 @@ namespace MEDDLY {
       //
       node_address gp = Parent(p);
       if (0==gp) {
-        MEDDLY_DCASSERT(heap_root == p);
+        ASSERT(__FILE__, __LINE__, heap_root == p);
         makeRoot(n);
       } else {
         if (node_address(Left(gp)) == p) {
           setLeft(gp, n);
         } else {
-          MEDDLY_DCASSERT(node_address(Right(gp)) == p);
+          ASSERT(__FILE__, __LINE__, node_address(Right(gp)) == p);
           setRight(gp, n);
         }
       }
@@ -774,7 +774,7 @@ namespace MEDDLY {
         setRight(p, Right(n));
         setRight(n, tmp);
       } else {
-        MEDDLY_DCASSERT(node_address(Right(p)) == n);
+        ASSERT(__FILE__, __LINE__, node_address(Right(p)) == n);
         //
         // n was the right child of p.
         // make p the right child of n.
@@ -792,7 +792,7 @@ namespace MEDDLY {
   template <class INT>
   void heap_manager<INT>::downHeap(node_address n)
   {
-    MEDDLY_DCASSERT(n);
+    ASSERT(__FILE__, __LINE__, n);
 
     for (;;) {
 
@@ -813,12 +813,12 @@ namespace MEDDLY {
         //
         promote_left = false;
       } else {
-        MEDDLY_DCASSERT(getHoleSize(l) > getHoleSize(n));
+        ASSERT(__FILE__, __LINE__, getHoleSize(l) > getHoleSize(n));
         if (0==r || (getHoleSize(r) <= getHoleSize(n))) {
           promote_left = true;
         } else {
-          MEDDLY_DCASSERT(r);
-          MEDDLY_DCASSERT(getHoleSize(r) > getHoleSize(n));
+          ASSERT(__FILE__, __LINE__, r);
+          ASSERT(__FILE__, __LINE__, getHoleSize(r) > getHoleSize(n));
           promote_left = getHoleSize(l) > getHoleSize(r);
         }
       }
@@ -853,7 +853,7 @@ namespace MEDDLY {
         if (node_address(Left(p)) == n) {
           setLeft(p, newn);
         } else {
-          MEDDLY_DCASSERT(node_address(Right(p)) == n);
+          ASSERT(__FILE__, __LINE__, node_address(Right(p)) == n);
           setRight(p, newn);
         }
       } else {
