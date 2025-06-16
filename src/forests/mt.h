@@ -50,6 +50,7 @@ class MEDDLY::mt_forest : public forest
   // ------------------------------------------------------------
   // Helpers for this and derived classes
 
+#ifdef ALLOW_DEPRECATED_0_17_9
     /// Add redundant nodes from level k to the given node.
     template <class T>
     inline node_handle makeNodeAtLevel(T k, node_handle d)
@@ -59,15 +60,19 @@ class MEDDLY::mt_forest : public forest
         if (isQuasiReduced() && d==getTransparentNode()) return d;
         return _makeNodeAtLevel(int(k), d);
     }
+#endif
 
   protected:
+#ifdef ALLOW_DEPRECATED_0_17_9
     node_handle _makeNodeAtLevel(int k, node_handle d);
 
     /// make a node at the top level
     inline node_handle makeNodeAtTop(node_handle p) {
       return makeNodeAtLevel(getDomain()->getNumVariables(), p);
     }
+#endif
 
+#ifdef ALLOW_DEPRECATED_0_17_7
     /**
         Enlarge variables to include all given minterms.
     */
@@ -88,6 +93,7 @@ class MEDDLY::mt_forest : public forest
         }
       }
     }
+#endif
 
 #ifdef ALLOW_DEPRECATED_0_17_9
 

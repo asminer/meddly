@@ -40,6 +40,8 @@ MEDDLY::mt_forest::mt_forest(domain *d, bool rel,
     setVoidEdges();
 }
 
+#ifdef ALLOW_DEPRECATED_0_17_9
+
 MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
 {
   int dk = getNodeLevel(d);
@@ -107,6 +109,8 @@ MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
   } // while
   return d;
 }
+
+#endif
 
 void MEDDLY::mt_forest::initStatics()
 {

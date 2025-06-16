@@ -48,6 +48,7 @@ class MEDDLY::ev_forest : public forest
   // ------------------------------------------------------------
   // Helpers for this and derived classes
 
+#ifdef ALLOW_DEPRECATED_0_17_9
     /** Add redundant nodes from level k to the given node.
           @param  k   Top level we want
           @param  ev  In/Out: Edge value
@@ -55,14 +56,18 @@ class MEDDLY::ev_forest : public forest
     */
     template <class OPERATION, typename TYPE>
     void makeNodeAtLevel(int k, TYPE &ev, node_handle &ed);
+#endif
 
   protected:
+#ifdef ALLOW_DEPRECATED_0_17_9
     /// make a node at the top level
     template <class OPERATION, typename TYPE>
     inline void makeNodeAtTop(TYPE &ev, node_handle &ed) {
       makeNodeAtLevel<OPERATION>((int) getDomain()->getNumVariables(), ev, ed);
     }
+#endif
 
+#ifdef ALLOW_DEPRECATED_0_17_7
     /**
         Enlarge variables to include all given minterms.
     */
@@ -82,6 +87,7 @@ class MEDDLY::ev_forest : public forest
         }
       }
     }
+#endif
 
 #ifdef ALLOW_DEPRECATED_0_17_9
 
@@ -167,6 +173,7 @@ class MEDDLY::ev_forest : public forest
 
 
 
+#ifdef ALLOW_DEPRECATED_0_17_9
 
 namespace MEDDLY {
 
@@ -219,6 +226,8 @@ namespace MEDDLY {
   }
 
 };  // namespace MEDDLY
+
+#endif
 
 #endif
 
