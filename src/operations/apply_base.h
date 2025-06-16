@@ -78,7 +78,7 @@ class MEDDLY::generic_binary_mdd : public binary_operation {
         findResult(node_handle a, node_handle b, node_handle &c)
         {
             ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-            MEDDLY_DCASSERT(CTsrch);
+            ASSERT(__FILE__, __LINE__, CTsrch);
             if (canCommute() && a > b) {
                 CTsrch->writeN(b);
                 CTsrch->writeN(a);
@@ -145,7 +145,7 @@ class MEDDLY::generic_binary_mxd : public binary_operation {
     findResult(node_handle a, node_handle b, node_handle &c)
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
+      ASSERT(__FILE__, __LINE__, CTsrch);
       if (canCommute() && a > b) {
         CTsrch->writeN(b);
         CTsrch->writeN(a);
@@ -199,7 +199,7 @@ class MEDDLY::generic_binbylevel_mxd : public binary_operation {
     findResult(int k, node_handle a, node_handle b, node_handle &c)
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
+      ASSERT(__FILE__, __LINE__, CTsrch);
       CTsrch->writeI(k);
       if (canCommute() && a > b) {
         CTsrch->writeN(b);
@@ -265,7 +265,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
       long bev, node_handle b, long& cev, node_handle &c)
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
+      ASSERT(__FILE__, __LINE__, CTsrch);
       if (canCommute() && a > b) {
         CTsrch->writeL(bev);
         CTsrch->writeN(b);
@@ -326,7 +326,7 @@ class MEDDLY::generic_binary_evplus_mxd : public generic_binary_ev {
       long bev, node_handle b, long& cev, node_handle &c)
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
+      ASSERT(__FILE__, __LINE__, CTsrch);
       if (canCommute() && a > b) {
         CTsrch->writeL(bev);
         CTsrch->writeN(b);
@@ -390,7 +390,7 @@ class MEDDLY::generic_binary_evtimes : public generic_binary_ev {
       float bev, node_handle b, float& cev, node_handle &c)
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
+      ASSERT(__FILE__, __LINE__, CTsrch);
       if (canCommute() && a > b) {
         CTsrch->writeF(bev);
         CTsrch->writeN(b);

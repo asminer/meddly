@@ -76,7 +76,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
           //
           // Identity node
           //
-          MEDDLY_DCASSERT(DONT_CARE == vlist[i]);
+          ASSERT(__FILE__, __LINE__, DONT_CARE == vlist[i]);
           if (isIdentityReduced()) continue;
           // Build an identity node by hand
           unsigned sz = unsigned(getLevelSize(i));
@@ -194,30 +194,30 @@ namespace MEDDLY {
       }
 
       inline const int* unprimed(int i) const {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
+        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
         return vulist[order[i]];
       }
       inline int unprimed(int i, int k) const {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, k, K+1);
+        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
+        CHECK_RANGE(__FILE__, __LINE__, 1, k, K+1);
         return vulist[order[i]][k];
       }
       inline const int* primed(int i) const {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
+        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
         return vplist[order[i]];
       }
       inline int primed(int i, int k) const {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, k, K+1);
+        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
+        CHECK_RANGE(__FILE__, __LINE__, 1, k, K+1);
         return vplist[order[i]][k];
       }
       inline T term(int i) const {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
+        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
         return values ? values[order[i]]: 1;
       }
       inline void swap(int i, int j) {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, j, N);
+        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
+        CHECK_RANGE(__FILE__, __LINE__, 0, j, N);
         MEDDLY::SWAP(order[i], order[j]);
       }
 
@@ -232,8 +232,8 @@ namespace MEDDLY {
           unprimed levels, for use by evmxd_forest descendants.
       */
       void createEdgeUn(int k, int start, int stop, T &ev, node_handle &ed) {
-        MEDDLY_DCASSERT(k>=0);
-        MEDDLY_DCASSERT(stop > start);
+        ASSERT(__FILE__, __LINE__, k>=0);
+        ASSERT(__FILE__, __LINE__, stop > start);
         //
         // Fast special case
         //
@@ -276,7 +276,7 @@ namespace MEDDLY {
             }
             batchP++;
           } else {
-            MEDDLY_DCASSERT(unprimed(i, k) >= 0);
+            ASSERT(__FILE__, __LINE__, unprimed(i, k) >= 0);
             nextV = MIN(nextV, unsigned(unprimed(i, k)));
           }
         }
@@ -322,7 +322,7 @@ namespace MEDDLY {
           dd_edge dcnormal(F);
           dcnormal.set(dcnormal_ev, dcnormal_nh);
 
-          MEDDLY_DCASSERT(unionOp);
+          ASSERT(__FILE__, __LINE__, unionOp);
           unionOp->computeTemp(dontcare, dcnormal, dontcare);
         }
 
@@ -374,7 +374,7 @@ namespace MEDDLY {
         //
         // Union with don't cares
         //
-        MEDDLY_DCASSERT(unionOp);
+        ASSERT(__FILE__, __LINE__, unionOp);
         node_handle built_nh;
         T built_ev;
         nb->shrink(z);
@@ -395,8 +395,8 @@ namespace MEDDLY {
       */
       void createEdgePr(int in, int k, int start, int stop,
         T &ev, node_handle &ed) {
-        MEDDLY_DCASSERT(k<0);
-        MEDDLY_DCASSERT(stop > start);
+        ASSERT(__FILE__, __LINE__, k<0);
+        ASSERT(__FILE__, __LINE__, stop > start);
 
         //
         // Don't need to check for terminals
@@ -489,7 +489,7 @@ namespace MEDDLY {
           //
           // (3) union with don't cares
           //
-          MEDDLY_DCASSERT(unionOp);
+          ASSERT(__FILE__, __LINE__, unionOp);
           unionOp->computeTemp(dontcare, these, these);
 
           //

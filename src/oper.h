@@ -93,7 +93,7 @@ class MEDDLY::operation {
         /// Set the name after constructing.
         inline void setName(const char* n) {
             if (!n) return;
-            MEDDLY_DCASSERT(!name);
+            ASSERT(__FILE__, __LINE__, !name);
             name = n;
         }
 

@@ -59,8 +59,6 @@
 #define smart_cast	dynamic_cast
 
 #include <cassert>
-#define MEDDLY_DCASSERT(X) assert(X)
-
 #include <iostream>
 
 // ***********************************************************************
@@ -72,8 +70,6 @@
 // ***********************************************************************
 
 #define smart_cast	static_cast
-
-#define MEDDLY_DCASSERT(X)
 
 // ***********************************************************************
 #endif
@@ -115,31 +111,32 @@ namespace MEDDLY {
     // *                             Handy macros                            *
     // ***********************************************************************
 
-    // const int INF = std::numeric_limits<int>::max();
-    // const float NAN = std::numeric_limits<float>::quiet_NaN();
-    template<typename T> inline T Inf()    { return std::numeric_limits<T>::max(); }
-    // inline float Nan()  { return std::numeric_limits<float>::quiet_NaN(); }
-    // inline bool isNan(float t) { return t == Nan(); }
-    // inline bool isNan(int t) { return false; }
+    template<typename T> inline T Inf() {
+        return std::numeric_limits<T>::max();
+    }
 
     /// Standard MAX "macro".
     template <class T> inline T MAX(T X,T Y) {
         return ((X>Y)?X:Y);
     }
+
     /// Standard MIN "macro".
     template <class T> inline T MIN(T X,T Y) {
         return ((X<Y)?X:Y);
     }
+
     /// Standard ABS "macro".
     template <class T> inline T ABS(T X) {
         return ((X<0)?(-X):(X));
     }
+
     /// SWAP "macro".
     template <class T> inline void SWAP(T &x, T &y) {
         T tmp=x;
         x=y;
         y=tmp;
     }
+
     /// POSITIVE "macro".
     template <class T> inline bool POSITIVE(T X) {
         return (X>0);
@@ -168,6 +165,20 @@ namespace MEDDLY {
     // ***********************************************************************
     // *                         Sanity check  macros                        *
     // ***********************************************************************
+    inline void FAIL(const char* fn, unsigned ln, const char* why = nullptr)
+    {
+#ifdef DEVELOPMENT_CODE
+        if (why) {
+            std::cerr   << "\nFATAL: " << why << " at " << fn << " line "
+                        << ln << "\n";
+        } else {
+            std::cerr   << "\nFATAL error at " << fn << " line "
+                        << ln << "\n";
+        }
+        exit(1);
+#endif
+    }
+
     template <class INT>
     inline void CHECK_RANGE(const char* fn, unsigned ln,
             INT min, INT value, INT max)
@@ -178,7 +189,7 @@ namespace MEDDLY {
             std::cerr << " failed:\n    min: " << min;
             std::cerr << "\n    val: " << value;
             std::cerr << "\n    max: " << max << '\n';
-            assert(false);
+            FAIL(fn, ln);
         }
 #endif
     }
@@ -188,12 +199,16 @@ namespace MEDDLY {
 #ifdef DEVELOPMENT_CODE
         if (!X) {
             std::cerr << "Assertion at " << fn << " line " << ln << " failed\n";
-            assert(false);
+            FAIL(fn, ln);
         }
 #endif
     }
 
 } // namespace MEDDLY
+
+
+#define MEDDLY_DCASSERT(X) MEDDLY::ASSERT(__FILE__, __LINE__, X)
+
 
 #endif // #include guard
 

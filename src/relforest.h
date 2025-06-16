@@ -156,13 +156,13 @@ class MEDDLY::relforest {
             all_forests.clear();
         }
         static inline void registerForest(relforest* f) {
-            MEDDLY_DCASSERT(f);
+            ASSERT(__FILE__, __LINE__, f);
             f->fid = all_forests.size();
             all_forests.push_back(f);
             f->D->registerRelforest(f);
         }
         static inline void unregisterForest(relforest* f) {
-            MEDDLY_DCASSERT(f);
+            ASSERT(__FILE__, __LINE__, f);
             if (f->fid < all_forests.size()) {
                 all_forests[f->fid] = nullptr;
             }

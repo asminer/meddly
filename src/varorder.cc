@@ -27,7 +27,7 @@
 
 MEDDLY::variable_order::variable_order(const int* order, int size)
 {
-    MEDDLY_DCASSERT(order[0] == 0);
+    ASSERT(__FILE__, __LINE__, order[0] == 0);
 
     level2var.assign(size + 1, 0);
     var2level.assign(size + 1, 0);
@@ -39,7 +39,7 @@ MEDDLY::variable_order::variable_order(const int* order, int size)
 
 MEDDLY::variable_order::variable_order(const variable_order& order)
 {
-    MEDDLY_DCASSERT(order.getVarByLevel(0) == 0);
+    ASSERT(__FILE__, __LINE__, order.getVarByLevel(0) == 0);
 
     level2var.assign(order.level2var.begin(), order.level2var.end());
     var2level.assign(order.var2level.begin(), order.var2level.end());
@@ -49,7 +49,7 @@ MEDDLY::variable_order::variable_order(const variable_order& order)
 // The two variables don't have to be adjacent
 void MEDDLY::variable_order::exchange(int var1, int var2)
 {
-    MEDDLY_DCASSERT(var1 > 0 && var2 > 0);
+    ASSERT(__FILE__, __LINE__, var1 > 0 && var2 > 0);
 
     level2var[var2level[var1]] = var2;
     level2var[var2level[var2]] = var1;
@@ -59,7 +59,7 @@ void MEDDLY::variable_order::exchange(int var1, int var2)
 
 bool MEDDLY::variable_order::is_compatible_with(const int* order) const
 {
-    MEDDLY_DCASSERT(order[0] == 0);
+    ASSERT(__FILE__, __LINE__, order[0] == 0);
     for (unsigned int i = 1; i < level2var.size(); i++) {
         if (level2var[i] != order[i]) {
             return false;

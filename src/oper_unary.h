@@ -79,8 +79,8 @@ class MEDDLY::unary_operation : public operation {
         /// Make sure all three domains are the same.
         inline void checkDomains(const char* file, unsigned line) const
         {
-            MEDDLY_DCASSERT(argF);
-            MEDDLY_DCASSERT(resF);
+            ASSERT(__FILE__, __LINE__, argF);
+            ASSERT(__FILE__, __LINE__, resF);
             if  ( (argF->getDomain() != resF->getDomain()) )
             {
                 throw error(error::DOMAIN_MISMATCH, file, line);
@@ -89,7 +89,7 @@ class MEDDLY::unary_operation : public operation {
         /// Make sure the arguments set/relation status match each other
         inline void checkAllRelations(const char* file, unsigned line) const
         {
-            MEDDLY_DCASSERT(argF);
+            ASSERT(__FILE__, __LINE__, argF);
             if  (argF->isForRelations() != resF->isForRelations())
             {
                 throw error(error::TYPE_MISMATCH, file, line);
@@ -99,7 +99,7 @@ class MEDDLY::unary_operation : public operation {
         inline void checkAllRelations(const char* file, unsigned line,
                 set_or_rel a) const
         {
-            MEDDLY_DCASSERT(argF);
+            ASSERT(__FILE__, __LINE__, argF);
             if  (
                     (argF->isForRelations() != a)  ||
                     (resF && resF->isForRelations() != a)
@@ -112,7 +112,7 @@ class MEDDLY::unary_operation : public operation {
         inline void checkAllLabelings(const char* file, unsigned line,
                 edge_labeling a) const
         {
-            MEDDLY_DCASSERT(argF);
+            ASSERT(__FILE__, __LINE__, argF);
             if  (
                     (argF->getEdgeLabeling() != a)  ||
                     (resF && resF->getEdgeLabeling() != a)
@@ -125,8 +125,8 @@ class MEDDLY::unary_operation : public operation {
         inline void checkLabelings(const char* file, unsigned line,
                 edge_labeling a, edge_labeling r) const
         {
-            MEDDLY_DCASSERT(argF);
-            MEDDLY_DCASSERT(resF);
+            ASSERT(__FILE__, __LINE__, argF);
+            ASSERT(__FILE__, __LINE__, resF);
             if  (
                     (argF->getEdgeLabeling() != a)  ||
                     (resF->getEdgeLabeling() != r)
@@ -139,7 +139,7 @@ class MEDDLY::unary_operation : public operation {
         inline void checkAllRanges(const char* file, unsigned line,
                 range_type rt) const
         {
-            MEDDLY_DCASSERT(argF);
+            ASSERT(__FILE__, __LINE__, argF);
             if  (
                     (argF->getRangeType() != rt)  ||
                     (resF && resF->getRangeType() != rt)
@@ -152,8 +152,8 @@ class MEDDLY::unary_operation : public operation {
         inline void checkRanges(const char* file, unsigned line,
                 range_type a, range_type r) const
         {
-            MEDDLY_DCASSERT(argF);
-            MEDDLY_DCASSERT(resF);
+            ASSERT(__FILE__, __LINE__, argF);
+            ASSERT(__FILE__, __LINE__, resF);
             if  (
                     (argF->getRangeType() != a)  ||
                     (resF->getRangeType() != r)
@@ -292,7 +292,7 @@ class MEDDLY::unary_list {
             if (uop) {
                 if (uop->parent) {
                     // REMOVE EVENTUALLY
-                    MEDDLY_DCASSERT(uop->parent == this);
+                    ASSERT(__FILE__, __LINE__, uop->parent == this);
                 } else {
                     uop->parent = this;
                     uop->setName(name);

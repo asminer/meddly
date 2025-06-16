@@ -115,8 +115,8 @@ class MEDDLY::pregen_relation {
         // the following methods assume the relation has been finalized.
         inline dd_edge* arrayForLevel(int k) const
         {
-            MEDDLY_DCASSERT(isFinalized());
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1u, (unsigned)k, K + 1);
+            ASSERT(__FILE__, __LINE__, isFinalized());
+            CHECK_RANGE(__FILE__, __LINE__, 1u, (unsigned)k, K + 1);
             if (level_index) {
                 // "by events"
                 if (level_index[k - 1] > level_index[k]) {
@@ -133,8 +133,8 @@ class MEDDLY::pregen_relation {
 
         inline unsigned lengthForLevel(int k) const
         {
-            MEDDLY_DCASSERT(isFinalized());
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1u, (unsigned)k, K + 1);
+            ASSERT(__FILE__, __LINE__, isFinalized());
+            CHECK_RANGE(__FILE__, __LINE__, 1u, (unsigned)k, K + 1);
             if (level_index) {
                 // "by events"
                 return level_index[k - 1] - level_index[k];
@@ -387,13 +387,13 @@ class MEDDLY::otf_relation {
         /// Returns an array of local states for this level, such that
         /// result[i] == isConfirmed(level, i).
         inline const bool* getLocalStates(int level) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, level, num_levels);
+            CHECK_RANGE(__FILE__, __LINE__, 0, level, num_levels);
             return confirmed[level];
         }
 
         /// Returns the number of confirmed states at this level
         inline int getNumConfirmed(int level) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, level, num_levels);
+            CHECK_RANGE(__FILE__, __LINE__, 0, level, num_levels);
             return num_confirmed[level];
         }
 
@@ -417,7 +417,7 @@ class MEDDLY::otf_relation {
             @return             number of events whose "top" is this level.
          */
         inline int getNumOfEvents(int level) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, level, num_levels);
+            CHECK_RANGE(__FILE__, __LINE__, 1, level, num_levels);
             return num_events_by_top_level[level];
         }
 
@@ -430,7 +430,7 @@ class MEDDLY::otf_relation {
                                 otherwise, 0.
          */
         inline const dd_edge& getEvent(int level, int i) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, getNumOfEvents(level));
+            CHECK_RANGE(__FILE__, __LINE__, 0, i, getNumOfEvents(level));
             return events_by_top_level[level][i]->getRoot();
         }
 
@@ -440,7 +440,7 @@ class MEDDLY::otf_relation {
             @return             true, if event was updated.
           */
         inline bool rebuildEvent(int level, int i) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, getNumOfEvents(level));
+            CHECK_RANGE(__FILE__, __LINE__, 0, i, getNumOfEvents(level));
             return events_by_top_level[level][i]->rebuild();
         }
 
@@ -687,7 +687,7 @@ class MEDDLY::implicit_relation {
         inline void confirm(int level, int i)
         {
             resizeConfirmedArray(level,i);
-            MEDDLY_DCASSERT(confirmed_array_size[level]>i);
+            ASSERT(__FILE__, __LINE__, confirmed_array_size[level]>i);
             if (!isConfirmedState(level,i))
             {
                 confirmed[level][i]=true;

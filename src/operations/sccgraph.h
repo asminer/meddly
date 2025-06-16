@@ -232,13 +232,13 @@ class MEDDLY::sccgraph {
 
 unsigned MEDDLY::sccgraph::edge_iterator::to() const
 {
-  MEDDLY_DCASSERT(edgeptr);
+  ASSERT(__FILE__, __LINE__, edgeptr);
   return parent.graph_edges[edgeptr].to;
 }
 
 const MEDDLY::sccgraph::edge_label* MEDDLY::sccgraph::edge_iterator::edge() const
 {
-  MEDDLY_DCASSERT(edgeptr);
+  ASSERT(__FILE__, __LINE__, edgeptr);
   return parent.graph_edges[edgeptr].edge;
 }
 
@@ -253,14 +253,14 @@ MEDDLY::sccgraph::edge_iterator& MEDDLY::sccgraph::edge_iterator::operator++()
 
 bool MEDDLY::sccgraph::edge_iterator::operator==(const edge_iterator& ei) const
 {
-  // MEDDLY_DCASSERT(parent == ei.parent);
+  // ASSERT(__FILE__, __LINE__, parent == ei.parent);
   return edgeptr == ei.edgeptr;
 }
 
 MEDDLY::sccgraph::edge_iterator MEDDLY::sccgraph::begin_from(unsigned I) const
 {
-    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, I, graph_vertices_used);
-  MEDDLY_DCASSERT(graph_from);
+    CHECK_RANGE(__FILE__, __LINE__, 0u, I, graph_vertices_used);
+  ASSERT(__FILE__, __LINE__, graph_from);
   return edge_iterator(*this, graph_from[I]);
 }
 
@@ -283,23 +283,23 @@ inline unsigned MEDDLY::sccgraph::get_num_SCCs() const
 
 inline unsigned MEDDLY::sccgraph::get_SCC_containing(unsigned I) const
 {
-  MEDDLY_DCASSERT(vertex_to_scc);
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, I, graph_vertices_used);
+  ASSERT(__FILE__, __LINE__, vertex_to_scc);
+  CHECK_RANGE(__FILE__, __LINE__, 0u, I, graph_vertices_used);
   return vertex_to_scc[I];
 }
 
 inline unsigned MEDDLY::sccgraph::get_SCC_size(unsigned s) const
 {
-  MEDDLY_DCASSERT(scc_vertex_offset);
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, s, scc_vertices_used);
+  ASSERT(__FILE__, __LINE__, scc_vertex_offset);
+  CHECK_RANGE(__FILE__, __LINE__, 0u, s, scc_vertices_used);
   return scc_vertex_offset[s+1] - scc_vertex_offset[s];
 }
 
 inline const unsigned* MEDDLY::sccgraph::get_SCC_vertices(unsigned s) const
 {
-  MEDDLY_DCASSERT(vertices_by_scc);
-  MEDDLY_DCASSERT(scc_vertex_offset);
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, s, scc_vertices_used);
+  ASSERT(__FILE__, __LINE__, vertices_by_scc);
+  ASSERT(__FILE__, __LINE__, scc_vertex_offset);
+  CHECK_RANGE(__FILE__, __LINE__, 0u, s, scc_vertices_used);
   return vertices_by_scc + scc_vertex_offset[s];
 }
 
@@ -336,8 +336,8 @@ void MEDDLY::sccgraph::show_scc_list(MEDDLY::output &out, unsigned list) const
 inline
 void MEDDLY::sccgraph::visit_push(unsigned v)
 {
-  MEDDLY_DCASSERT(visit_stack);
-  MEDDLY_DCASSERT(stack_top < scc_vertices_alloc);
+  ASSERT(__FILE__, __LINE__, visit_stack);
+  ASSERT(__FILE__, __LINE__, stack_top < scc_vertices_alloc);
 
   visit_stack[stack_top++] = v;
 }
@@ -345,8 +345,8 @@ void MEDDLY::sccgraph::visit_push(unsigned v)
 inline
 unsigned MEDDLY::sccgraph::visit_pop()
 {
-  MEDDLY_DCASSERT(visit_stack);
-  MEDDLY_DCASSERT(stack_top > 0);
+  ASSERT(__FILE__, __LINE__, visit_stack);
+  ASSERT(__FILE__, __LINE__, stack_top > 0);
 
   return visit_stack[--stack_top];
 }
@@ -358,11 +358,11 @@ unsigned MEDDLY::sccgraph::min_visit_stack_until(unsigned v) const
   (guaranteed to be on the stack).
 */
 {
-  MEDDLY_DCASSERT(visit_stack);
-  MEDDLY_DCASSERT(stack_top > 0);
+  ASSERT(__FILE__, __LINE__, visit_stack);
+  ASSERT(__FILE__, __LINE__, stack_top > 0);
   unsigned min = v;
   for (unsigned i=stack_top-1; visit_stack[i] != v; i--) {
-    MEDDLY_DCASSERT(i > 0);
+    ASSERT(__FILE__, __LINE__, i > 0);
     if (visit_stack[i] > min) continue;
     min = visit_stack[i];
   }

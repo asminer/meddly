@@ -211,7 +211,7 @@ void MEDDLY::unique_table::subtable::init(forest *ef)
 
 void MEDDLY::unique_table::subtable::add(unsigned hash, node_handle item)
 {
-    MEDDLY_DCASSERT(item>0);
+    ASSERT(__FILE__, __LINE__, item>0);
 
     if (num_entries >= next_expand){
         expand();
@@ -230,7 +230,7 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::remove(unsigned hash,
 {
     unsigned h = hash%size;
 
-    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, h, size);
+    CHECK_RANGE(__FILE__, __LINE__, 0u, h, size);
 
     node_handle prev = 0;
     for (node_handle ptr = table[h]; ptr!=0; ptr = parent->getNext(ptr)) {
@@ -250,7 +250,7 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::remove(unsigned hash,
         }
         prev = ptr;
     }
-    MEDDLY_DCASSERT(false);
+    FAIL(__FILE__, __LINE__, "not found");
     return 0;
 }
 
@@ -277,7 +277,7 @@ unsigned MEDDLY::unique_table::subtable::getItems(node_handle* items,
         }
     }
 
-    MEDDLY_DCASSERT(k == num_entries);
+    ASSERT(__FILE__, __LINE__, k == num_entries);
     return k;
 }
 
@@ -308,7 +308,7 @@ void MEDDLY::unique_table::subtable::buildFromList(node_handle front)
     for (node_handle next = 0; front != 0; front = next) {
         next = parent->getNext(front);
         unsigned h = parent->hashNode(front) % size;
-        MEDDLY_DCASSERT(h < size);
+        ASSERT(__FILE__, __LINE__, h < size);
         parent->setNext(front, table[h]);
         table[h] = front;
         num_entries++;
@@ -317,7 +317,7 @@ void MEDDLY::unique_table::subtable::buildFromList(node_handle front)
 
 void MEDDLY::unique_table::subtable::expand()
 {
-    MEDDLY_DCASSERT(size < MAX_SIZE);
+    ASSERT(__FILE__, __LINE__, size < MAX_SIZE);
 #ifdef DEBUG_SLOW
     fprintf(stderr, "Enlarging unique table (current size: %d)\n", size);
 #endif
@@ -344,7 +344,7 @@ void MEDDLY::unique_table::subtable::expand()
 
 void MEDDLY::unique_table::subtable::shrink()
 {
-    MEDDLY_DCASSERT(size > MIN_SIZE);
+    ASSERT(__FILE__, __LINE__, size > MIN_SIZE);
 #ifdef DEBUG_SLOW
     fprintf(stderr, "Shrinking unique table (current size: %d)\n", size);
 #endif

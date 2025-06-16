@@ -88,7 +88,7 @@ namespace MEDDLY {
                         return unpacked_node::newWritable(F, k, spsz,
                                     SPARSE_ONLY);
                     }
-                    MEDDLY_DCASSERT(dp_unp);
+                    ASSERT(__FILE__, __LINE__, dp_unp);
                     unpacked_node* n =
                         unpacked_node::newWritable(F, k, FULL_ONLY);
                     for (unsigned i=0; i<n->getSize(); i++) {
@@ -111,7 +111,7 @@ namespace MEDDLY {
                         return unpacked_node::newWritable(F, k, spsz,
                                     SPARSE_ONLY);
                     }
-                    MEDDLY_DCASSERT(dp_pri);
+                    ASSERT(__FILE__, __LINE__, dp_pri);
                     unpacked_node* n =
                         unpacked_node::newWritable(F, k, FULL_ONLY);
                     for (unsigned i=0; i<n->getSize(); i++) {
@@ -134,7 +134,7 @@ namespace MEDDLY {
                         return unpacked_node::newWritable(F, -k, spsz,
                                     SPARSE_ONLY);
                     }
-                    MEDDLY_DCASSERT(dp_unp);
+                    ASSERT(__FILE__, __LINE__, dp_unp);
                     unpacked_node* n =
                         unpacked_node::newWritable(F, -k, FULL_ONLY);
                     for (unsigned i=0; i<n->getSize(); i++) {
@@ -180,7 +180,7 @@ namespace MEDDLY {
                     // Build an identity pattern except use
                     // the default value off the diagonal.
                     //
-                    MEDDLY_DCASSERT(dp_unp);
+                    ASSERT(__FILE__, __LINE__, dp_unp);
                     unpacked_node* nu =
                         unpacked_node::newWritable(F, k, FULL_ONLY);
                     for (unsigned i=0; i<nu->getSize(); i++) {
@@ -235,8 +235,8 @@ namespace MEDDLY {
             inline void getMinMax(int L, unsigned low, unsigned hi,
                 int &minV, int &maxV) const
             {
-                MEDDLY_DCASSERT(!mtc.isForRelations());
-                MEDDLY_DCASSERT(L>0);
+                ASSERT(__FILE__, __LINE__, !mtc.isForRelations());
+                ASSERT(__FILE__, __LINE__, L>0);
                 minV = std::numeric_limits<int>::max();
                 maxV = DONT_CHANGE;
                 for (unsigned i=low; i<hi; i++) {
@@ -290,8 +290,8 @@ namespace MEDDLY {
             inline void getMinMax(int L, unsigned low, unsigned hi,
                     int &minU, int &minP, int &maxU, int &maxP) const
             {
-                MEDDLY_DCASSERT(mtc.isForRelations());
-                MEDDLY_DCASSERT(L>0);
+                ASSERT(__FILE__, __LINE__, mtc.isForRelations());
+                ASSERT(__FILE__, __LINE__, L>0);
                 minU = std::numeric_limits<int>::max();
                 minP = std::numeric_limits<int>::max();
                 maxU = -10;
@@ -885,8 +885,8 @@ MEDDLY::fbuilder_forest::~fbuilder_forest()
 void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
         edge_value &cv, node_handle &cp)
 {
-    MEDDLY_DCASSERT(L>0);
-    MEDDLY_DCASSERT(!m.isForRelations());
+    ASSERT(__FILE__, __LINE__, L>0);
+    ASSERT(__FILE__, __LINE__, !m.isForRelations());
 
     for (int k=1; k<=L; k++) {
         if (DONT_CARE == m.from(k)) {
@@ -894,7 +894,7 @@ void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
         } else {
             // make a node with one edge <cv, cp>,
             // all the rest <dv, dp>
-            MEDDLY_DCASSERT(m.from(k) >= 0);
+            ASSERT(__FILE__, __LINE__, m.from(k) >= 0);
 
             unpacked_node* n = newSetNode(k, 1);
             unsigned z=0;
@@ -908,8 +908,8 @@ void MEDDLY::fbuilder_forest::setPathToBottom(int L, const minterm &m,
 void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
         edge_value &cv, node_handle &cp)
 {
-    MEDDLY_DCASSERT(L>0);
-    MEDDLY_DCASSERT(m.isForRelations());
+    ASSERT(__FILE__, __LINE__, L>0);
+    ASSERT(__FILE__, __LINE__, m.isForRelations());
 
     if (F->isIdentityReduced() && default_is_zero) {
         //
@@ -922,7 +922,7 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
             // Check for identity pattern at levels (k, k')
             //
             if (DONT_CHANGE == m.to(k)) {
-                MEDDLY_DCASSERT(DONT_CARE == m.from(k));
+                ASSERT(__FILE__, __LINE__, DONT_CARE == m.from(k));
                 continue;
             }
 
@@ -963,7 +963,7 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
             // Check for identity pattern at levels (k, k')
             //
             if (DONT_CHANGE == m.to(k)) {
-                MEDDLY_DCASSERT(DONT_CARE == m.from(k));
+                ASSERT(__FILE__, __LINE__, DONT_CARE == m.from(k));
 
                 identityPattern(k, cv, cp);
 
@@ -978,7 +978,7 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
             } else {
                 // make a node with one edge <cv, cp>,
                 // all the rest <dv, dp>
-                MEDDLY_DCASSERT(m.to(k) >= 0);
+                ASSERT(__FILE__, __LINE__, m.to(k) >= 0);
 
                 unpacked_node* np = newPrimedNode(k, 1);
                 unsigned z=0;
@@ -995,7 +995,7 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
             } else {
                 // make a node with one edge <cv, cp>,
                 // all the rest <dv, dp>
-                MEDDLY_DCASSERT(m.from(k) >= 0);
+                ASSERT(__FILE__, __LINE__, m.from(k) >= 0);
 
                 unpacked_node* nu = newUnprimedNode(k, 1);
                 unsigned z=0;
@@ -1018,8 +1018,8 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
 void MEDDLY::fbuilder_common::moveValuesToFront(int L, int &minV,
         unsigned low, unsigned high, unsigned& mid)
 {
-    MEDDLY_DCASSERT(!mtc.isForRelations());
-    MEDDLY_DCASSERT(L>0);
+    ASSERT(__FILE__, __LINE__, !mtc.isForRelations());
+    ASSERT(__FILE__, __LINE__, L>0);
 
 #ifdef DEBUG_MOVE_VALUES
     FILE_output out(stdout);
@@ -1061,8 +1061,8 @@ void MEDDLY::fbuilder_common::moveValuesToFront(int L, int &minV,
 void MEDDLY::fbuilder_common::movePairsToFront(int L, int &mU, int &mP,
                     unsigned low, unsigned high, unsigned& mid)
 {
-    MEDDLY_DCASSERT(mtc.isForRelations());
-    MEDDLY_DCASSERT(L>0);
+    ASSERT(__FILE__, __LINE__, mtc.isForRelations());
+    ASSERT(__FILE__, __LINE__, L>0);
 
 #ifdef DEBUG_MOVE_PAIRS
     FILE_output out(stdout);
@@ -1115,8 +1115,8 @@ template <class OP>
 void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
         edge_value &cv, node_handle &cp)
 {
-    MEDDLY_DCASSERT(L>=0);
-    MEDDLY_DCASSERT(high > low);
+    ASSERT(__FILE__, __LINE__, L>=0);
+    ASSERT(__FILE__, __LINE__, high > low);
 
     //
     // Terminal case
@@ -1146,7 +1146,7 @@ void MEDDLY::fbuilder<OP>::createEdgeSet(int L, unsigned low, unsigned high,
     // Special case: all values are DONT_CARE
     //
     if (DONT_CARE == maxV) {
-        MEDDLY_DCASSERT(DONT_CARE == minV);
+        ASSERT(__FILE__, __LINE__, DONT_CARE == minV);
         createEdgeSet(L-1, low, high, cv, cp);
         cp = F->makeRedundantsTo(cp, L-1, L);
         return;
@@ -1227,8 +1227,8 @@ template <class OP>
 void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
         edge_value &cv, node_handle &cp)
 {
-    MEDDLY_DCASSERT(L>=0);
-    MEDDLY_DCASSERT(high > low);
+    ASSERT(__FILE__, __LINE__, L>=0);
+    ASSERT(__FILE__, __LINE__, high > low);
 
     //
     // Terminal case
@@ -1259,7 +1259,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     //
     if ( (DONT_CARE == maxU) && (DONT_CARE == maxP) && (DONT_CARE == minP) )
     {
-        MEDDLY_DCASSERT(DONT_CARE == minU);
+        ASSERT(__FILE__, __LINE__, DONT_CARE == minU);
         createEdgeRel(L-1, low, high, cv, cp);
         cp = F->makeRedundantsTo(cp, L-1, L);
         return;
@@ -1270,7 +1270,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     //
     if ( (DONT_CARE == maxU) && (DONT_CHANGE == maxP) )
     {
-        MEDDLY_DCASSERT(DONT_CARE == minU);
+        ASSERT(__FILE__, __LINE__, DONT_CARE == minU);
         createEdgeRel(L-1, low, high, cv, cp);
         identityPattern(L, cv, cp);
         return;
@@ -1342,7 +1342,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
             F->createReducedNode(Cp, tv, tp, cpin);
 
             if (has_primed_extra) {
-                MEDDLY_DCASSERT(cpin >= 0);
+                ASSERT(__FILE__, __LINE__, cpin >= 0);
                 accumulate(-L, cpin, pe_v, pe_p, tv, tp);
             }
             if (DONT_CARE == cpin) {
@@ -1423,7 +1423,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
             // Unprimed has an actual value.
             // But we still could have DONT_CARE for the primed value.
             //
-            MEDDLY_DCASSERT(currP != DONT_CHANGE);
+            ASSERT(__FILE__, __LINE__, currP != DONT_CHANGE);
             if (DONT_CARE == currP)
             {
                 //
@@ -1467,7 +1467,7 @@ void MEDDLY::fbuilder<OP>::createEdgeRel(int L, unsigned low, unsigned high,
     }
     F->createReducedNode(Cp, tv, tp, cpin);
     if (has_primed_extra) {
-        MEDDLY_DCASSERT(cpin >= 0);
+        ASSERT(__FILE__, __LINE__, cpin >= 0);
         accumulate(-L, cpin, pe_v, pe_p, tv, tp);
     }
     if (DONT_CARE == cpin) {

@@ -198,12 +198,12 @@ void MEDDLY::forest::destroy(forest* &f)
 void MEDDLY::forest::unpackNode(MEDDLY::unpacked_node* un,
     node_handle node, node_storage_flags st2) const
 {
-    MEDDLY_DCASSERT(un);
-    MEDDLY_DCASSERT(un->isAttachedTo(this));
+    ASSERT(__FILE__, __LINE__, un);
+    ASSERT(__FILE__, __LINE__, un->isAttachedTo(this));
     un->setLevel( getNodeLevel(node) );
-    MEDDLY_DCASSERT(un->getLevel() != 0);
+    ASSERT(__FILE__, __LINE__, un->getLevel() != 0);
     un->resize( getLevelSize( un->getLevel() ) );
-    MEDDLY_DCASSERT(getNodeAddress(node));
+    ASSERT(__FILE__, __LINE__, getNodeAddress(node));
     nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
 }
 
@@ -284,7 +284,7 @@ namespace MEDDLY {
                 }
                 EDGETYPE uni;
                 un.edgeval(i).get(uni);
-                MEDDLY_DCASSERT(uni);
+                ASSERT(__FILE__, __LINE__, uni);
                 //
                 // Actual nonzero edge
                 //
@@ -309,7 +309,7 @@ namespace MEDDLY {
 void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
         node_handle &node, int in)
 {
-    MEDDLY_DCASSERT(un);
+    ASSERT(__FILE__, __LINE__, un);
 #ifdef DEBUG_CREATE_REDUCED
     ostream_output out(std::cout);
     out << "Reducing unpacked node ";
@@ -357,13 +357,13 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
 
         case edge_labeling::EVPLUS:
         case edge_labeling::INDEX_SET:
-                MEDDLY_DCASSERT(isRangeType(range_type::INTEGER));
+                ASSERT(__FILE__, __LINE__, isRangeType(range_type::INTEGER));
 
                 normalize_evplus<long>(*un, ev, nnz);
 
                 /*
                 // TBD: allow other edge types other than long?
-                MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
+                ASSERT(__FILE__, __LINE__, edge_type::LONG == the_edge_type);
                 ev.set(0L);
                 for (unsigned i=0; i<un->getSize(); i++) {
                     if (0 == un->down(i)) {
@@ -394,13 +394,13 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
                 break;
 
         case edge_labeling::EVTIMES:
-                MEDDLY_DCASSERT(isRangeType(range_type::REAL));
+                ASSERT(__FILE__, __LINE__, isRangeType(range_type::REAL));
 
                 normalize_evstar<float>(*un, ev, nnz);
 
                 /*
                 // TBD: allow other edge types other than float?
-                MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
+                ASSERT(__FILE__, __LINE__, edge_type::FLOAT == the_edge_type);
                 ev.set(0.0f);
                 minplusone = 0;
                 for (unsigned i=0; i<un->getSize(); i++) {
@@ -422,7 +422,7 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
                 break;
 
         default:
-                MEDDLY_DCASSERT(false);
+                FAIL(__FILE__, __LINE__, "Unknown edge labeling");
     }
 
     //
@@ -544,8 +544,8 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
         reachable->setMarked(node);
         nodeHeaders.setInCacheBit(node);
     } else {
-        MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(node));
-        MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(node));
+        ASSERT(__FILE__, __LINE__, 0 == nodeHeaders.getIncomingCount(node));
+        ASSERT(__FILE__, __LINE__, 0 == nodeHeaders.getNodeCacheCount(node));
         linkNode(node);
     }
 
@@ -595,9 +595,9 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
         key->debugHash(s);
 #endif
     }
-    MEDDLY_DCASSERT(key->hash() == un->hash());
+    ASSERT(__FILE__, __LINE__, key->hash() == un->hash());
     node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
-    MEDDLY_DCASSERT(f == node);
+    ASSERT(__FILE__, __LINE__, f == node);
     unpacked_node::Recycle(key);
 #endif
 
@@ -622,11 +622,11 @@ void MEDDLY::forest::deleteNode(node_handle p)
 #endif
 
     CHECK_RANGE(__FILE__, __LINE__, 1, p, 1+nodeHeaders.lastUsedHandle());
-    MEDDLY_DCASSERT(isActiveNode(p));
+    ASSERT(__FILE__, __LINE__, isActiveNode(p));
     if (reachable) {
-        MEDDLY_DCASSERT(!reachable->isMarked(p));
+        ASSERT(__FILE__, __LINE__, !reachable->isMarked(p));
     } else {
-        MEDDLY_DCASSERT(getNodeInCount(p) == 0);
+        ASSERT(__FILE__, __LINE__, getNodeInCount(p) == 0);
     }
 
     unsigned h = hashNode(p);
@@ -640,10 +640,10 @@ void MEDDLY::forest::deleteNode(node_handle p)
                     getVarByLevel(key->getLevel()))), static_cast<long>(p));
             FILE_output myout(stdout);
             dumpInternal(myout);
-            MEDDLY_DCASSERT(false);
+            FAIL(__FILE__, __LINE__);
         }
         node_handle x = unique->remove(h, p);
-        MEDDLY_DCASSERT(p == x);
+        ASSERT(__FILE__, __LINE__, p == x);
         unpacked_node::Recycle(key);
     }
 #else
@@ -688,8 +688,8 @@ MEDDLY::node_handle MEDDLY::forest
 #ifdef DEVELOPMENT_CODE
   validateDownPointers(nb);
 #endif
-  MEDDLY_DCASSERT(nb.isExtensible());
-  MEDDLY_DCASSERT(nb.isTrim());
+  ASSERT(__FILE__, __LINE__, nb.isExtensible());
+  ASSERT(__FILE__, __LINE__, nb.isTrim());
 
   // NOTE: Identity reduction not possible for nodes marked as extensible.
   //       Fully-Identity reduction is still possible when
@@ -710,7 +710,7 @@ MEDDLY::node_handle MEDDLY::forest
 
   // Check for redundant nodes
   if (isRedundant(nb)) {
-    MEDDLY_DCASSERT(nnz == 1 && nb.ext_i() == 0);
+    ASSERT(__FILE__, __LINE__, nnz == 1 && nb.ext_i() == 0);
 #ifdef DEBUG_CREATE_REDUCED
     printf("Redundant node ");
     FILE_output s(stdout);
@@ -748,8 +748,8 @@ MEDDLY::node_handle MEDDLY::forest
   // Grab a new node
   node_handle p = nodeHeaders.getFreeNodeHandle();
   nodeHeaders.setNodeLevel(p, nb.getLevel());
-  MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
-  MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
+  ASSERT(__FILE__, __LINE__, 0 == nodeHeaders.getNodeCacheCount(p));
+  ASSERT(__FILE__, __LINE__, 0 == nodeHeaders.getIncomingCount(p));
 
   stats.incActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {
@@ -767,9 +767,9 @@ MEDDLY::node_handle MEDDLY::forest
 #ifdef DEVELOPMENT_CODE
   unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
   key->computeHash();
-  MEDDLY_DCASSERT(key->hash() == nb.hash());
+  ASSERT(__FILE__, __LINE__, key->hash() == nb.hash());
   node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
-  MEDDLY_DCASSERT(f == p);
+  ASSERT(__FILE__, __LINE__, f == p);
   unpacked_node::Recycle(key);
 #endif
 #ifdef DEBUG_CREATE_REDUCED
@@ -805,8 +805,8 @@ MEDDLY::node_handle MEDDLY::forest
   node_handle p = nodeHeaders.getFreeNodeHandle();
   nodeHeaders.setNodeImplicitFlag(p, true);
   nodeHeaders.setNodeLevel(p, nb.getLevel());
-  MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
-  MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
+  ASSERT(__FILE__, __LINE__, 0 == nodeHeaders.getNodeCacheCount(p));
+  ASSERT(__FILE__, __LINE__, 0 == nodeHeaders.getIncomingCount(p));
 
   stats.incActive(1);
   if (theLogger && theLogger->recordingNodeCounts()) {
@@ -844,7 +844,7 @@ MEDDLY::node_handle MEDDLY::forest
 MEDDLY::node_handle
 MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
 {
-    MEDDLY_DCASSERT(L);
+    ASSERT(__FILE__, __LINE__, L);
     unpacked_node* U = nullptr;
 
     //
@@ -880,7 +880,7 @@ MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
 
                 edge_value ev;
                 createReducedNode(U, ev, p);
-                MEDDLY_DCASSERT(ev == noop_edge);
+                ASSERT(__FILE__, __LINE__, ev == noop_edge);
                 check_singleton = false;
                 continue;
             }
@@ -898,7 +898,7 @@ MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
             linkAllDown(*U, 1);
             edge_value ev;
             createReducedNode(U, ev, p);
-            MEDDLY_DCASSERT(ev == noop_edge);
+            ASSERT(__FILE__, __LINE__, ev == noop_edge);
         }
     }
 
@@ -909,10 +909,10 @@ MEDDLY::forest::_makeRedundantsTo(node_handle p, int K, int L)
 MEDDLY::node_handle
 MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
 {
-    MEDDLY_DCASSERT(!isIdentityReduced());
-    MEDDLY_DCASSERT(isForRelations());
+    ASSERT(__FILE__, __LINE__, !isIdentityReduced());
+    ASSERT(__FILE__, __LINE__, isForRelations());
 
-    MEDDLY_DCASSERT(L!=0);
+    ASSERT(__FILE__, __LINE__, L!=0);
     unpacked_node* Uun;
     unpacked_node* Upr;
     edge_value ev;
@@ -928,12 +928,12 @@ MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
             Uun = unpacked_node::newRedundant(this, -K, noop_edge, p, FULL_ONLY);
             linkAllDown(*Uun, 1);
             createReducedNode(Uun, ev, p);
-            MEDDLY_DCASSERT(ev == noop_edge);
+            ASSERT(__FILE__, __LINE__, ev == noop_edge);
         }
         K = MXD_levels::upLevel(K);
     }
 
-    MEDDLY_DCASSERT(K>=0);
+    ASSERT(__FILE__, __LINE__, K>=0);
     const int Lstop = (L<0) ? MXD_levels::downLevel(L) : L;
 
     //
@@ -950,25 +950,25 @@ MEDDLY::forest::_makeIdentitiesTo(node_handle p, int K, int L, int in)
             Upr->setSparse(0, i, noop_edge, linkNode(p));
             node_handle h;
             createReducedNode(Upr, ev, h);
-            MEDDLY_DCASSERT(ev == noop_edge);
+            ASSERT(__FILE__, __LINE__, ev == noop_edge);
             Uun->setFull(i, noop_edge, h);
         }
 
         unlinkNode(p);
         createReducedNode(Uun, ev, p);
-        MEDDLY_DCASSERT(ev == noop_edge);
+        ASSERT(__FILE__, __LINE__, ev == noop_edge);
     } // for k
 
     //
     // Add top identity node, if L is negative
     //
     if (L<0) {
-        MEDDLY_DCASSERT(-K == L);
+        ASSERT(__FILE__, __LINE__, -K == L);
         Upr = unpacked_node::newWritable(this, L, 1, SPARSE_ONLY);
-        MEDDLY_DCASSERT(in>=0);
+        ASSERT(__FILE__, __LINE__, in>=0);
         Upr->setSparse(0, unsigned(in), noop_edge, p);
         createReducedNode(Upr, ev, p);
-        MEDDLY_DCASSERT(ev == noop_edge);
+        ASSERT(__FILE__, __LINE__, ev == noop_edge);
     }
 
     return p;
@@ -1007,9 +1007,9 @@ MEDDLY::node_handle MEDDLY::forest
 #ifdef DEVELOPMENT_CODE
     unpacked_node* key = unpacked_node::newFromNode(this, p, SPARSE_ONLY);
     key->computeHash();
-    MEDDLY_DCASSERT(key->hash() == un->hash());
+    ASSERT(__FILE__, __LINE__, key->hash() == un->hash());
     node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
-    MEDDLY_DCASSERT(f == p);
+    ASSERT(__FILE__, __LINE__, f == p);
     unpacked_node::Recycle(key);
 #endif
 #ifdef DEBUG_CREATE_REDUCED
@@ -1070,7 +1070,7 @@ void MEDDLY::forest::getEdgeForValue(rangeval T, edge_value &v, node_handle &p)
 
                 } // switch
                 // shouldn't get here
-                MEDDLY_DCASSERT(false);
+                FAIL(__FILE__, __LINE__);
                 return;
 
         case edge_labeling::INDEX_SET:
@@ -1099,7 +1099,7 @@ void MEDDLY::forest::getEdgeForValue(rangeval T, edge_value &v, node_handle &p)
 
                 } // switch
                 // shouldn't get here
-                MEDDLY_DCASSERT(false);
+                FAIL(__FILE__, __LINE__);
                 return;
 
 
@@ -1124,7 +1124,7 @@ void MEDDLY::forest::getEdgeForValue(rangeval T, edge_value &v, node_handle &p)
 
                 } // switch
                 // shouldn't get here
-                MEDDLY_DCASSERT(false);
+                FAIL(__FILE__, __LINE__);
                 return;
 
         default:
@@ -1148,7 +1148,7 @@ void MEDDLY::forest::getValueForEdge(const edge_value &v, node_handle p,
 
         case edge_labeling::MULTI_TERMINAL:
             {
-                MEDDLY_DCASSERT(v.isVoid());
+                ASSERT(__FILE__, __LINE__, v.isVoid());
                 terminal t(the_terminal_type, p);
                 switch (the_terminal_type) {
                     case terminal_type::BOOLEAN:
@@ -1174,7 +1174,7 @@ void MEDDLY::forest::getValueForEdge(const edge_value &v, node_handle p,
 
                 } // switch
                   // shouldn't get here
-                MEDDLY_DCASSERT(false);
+                FAIL(__FILE__, __LINE__);
                 return;
             }
 
@@ -1185,7 +1185,7 @@ void MEDDLY::forest::getValueForEdge(const edge_value &v, node_handle p,
                                     range_type::INTEGER);
                     return;
                 }
-                MEDDLY_DCASSERT(OMEGA_NORMAL == p);
+                ASSERT(__FILE__, __LINE__, OMEGA_NORMAL == p);
                 switch (the_edge_type) {
                     case edge_type::INT:
                         T = rangeval(v.getInt());
@@ -1200,7 +1200,7 @@ void MEDDLY::forest::getValueForEdge(const edge_value &v, node_handle p,
 
                 } // switch
                 // shouldn't get here
-                MEDDLY_DCASSERT(false);
+                FAIL(__FILE__, __LINE__);
                 return;
 
 
@@ -1209,7 +1209,7 @@ void MEDDLY::forest::getValueForEdge(const edge_value &v, node_handle p,
                     T = rangeval(0.0);
                     return;
                 }
-                MEDDLY_DCASSERT(OMEGA_NORMAL == p);
+                ASSERT(__FILE__, __LINE__, OMEGA_NORMAL == p);
 
                 switch (the_edge_type) {
                     case edge_type::FLOAT:
@@ -1225,7 +1225,7 @@ void MEDDLY::forest::getValueForEdge(const edge_value &v, node_handle p,
 
                 } // switch
                 // shouldn't get here
-                MEDDLY_DCASSERT(false);
+                FAIL(__FILE__, __LINE__);
                 return;
 
         default:
@@ -1340,12 +1340,12 @@ void MEDDLY::forest::registerEdge(dd_edge& e)
 void MEDDLY::forest::unregisterEdge(dd_edge& e)
 {
     // remove a root edge.
-    MEDDLY_DCASSERT(e.parentFID == fid);
+    ASSERT(__FILE__, __LINE__, e.parentFID == fid);
 
     if (e.prev) {
         e.prev->next = e.next;
     } else {
-        MEDDLY_DCASSERT(&e == roots);
+        ASSERT(__FILE__, __LINE__, &e == roots);
         roots = e.next;
     }
     if (e.next) {
@@ -1438,7 +1438,7 @@ void MEDDLY::forest::freeStatics()
 
 void MEDDLY::forest::registerForest(forest* f)
 {
-    MEDDLY_DCASSERT(f);
+    ASSERT(__FILE__, __LINE__, f);
 #ifdef DEBUG_CLEANUP
     std::cout << "Registering forest " << f << ", #" << all_forests.size() << "\n";
 #endif
@@ -1455,7 +1455,7 @@ void MEDDLY::forest::registerForest(forest* f)
 
 void MEDDLY::forest::unregisterForest(forest* f)
 {
-    MEDDLY_DCASSERT(f);
+    ASSERT(__FILE__, __LINE__, f);
 #ifdef DEBUG_CLEANUP
     std::cout << "Unregistering forest " << f << ", #" << f->fid << "\n";
 #endif
@@ -1629,7 +1629,7 @@ void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN,
         // add to reference counts
         for (unsigned z=0; z<P->getSize(); z++) {
             if (isTerminalNode(P->down(z))) continue;
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, P->down(z), sz);
+            CHECK_RANGE(__FILE__, __LINE__, 0, P->down(z), sz);
             in_validate[P->down(z)]++;
         }
     } // for i
@@ -1638,7 +1638,7 @@ void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN,
     // Add counts for registered dd_edges
     for (const dd_edge* r = roots; r; r=r->next) {
         if (isTerminalNode(r->getNode())) continue;
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, r->getNode(), sz);
+        CHECK_RANGE(__FILE__, __LINE__, 0, r->getNode(), sz);
         in_validate[r->getNode()]++;
     }
 
@@ -1651,7 +1651,7 @@ void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN,
     // Validate the incoming count stored with each active node using the
     // in_count array computed above
     for (node_handle i = 1; i < sz; ++i) {
-        MEDDLY_DCASSERT(!isTerminalNode(i));
+        ASSERT(__FILE__, __LINE__, !isTerminalNode(i));
         if (!isActiveNode(i)) continue;
         bool fail = exact
             ?  in_validate[i] != getNodeInCount(i)
@@ -1668,7 +1668,6 @@ void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN,
             if (opname) fout << " operation " << opname;
             fout << '\n';
             fout.flush();
-            MEDDLY_DCASSERT(0);
             throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
         }
         // Note - might not be exactly equal
@@ -1774,7 +1773,7 @@ void MEDDLY::forest::validateDownPointers(const unpacked_node &nb) const
                         s << "Illegal edge into singleton\n";
                     }
                     s.flush();
-                    MEDDLY_DCASSERT(0);
+                    FAIL(__FILE__, __LINE__);
                 }
             }
             // NO break here; we need to fall through to below
@@ -1782,7 +1781,7 @@ void MEDDLY::forest::validateDownPointers(const unpacked_node &nb) const
         case reduction_rule::FULLY_REDUCED:
             for (unsigned i=0; i<nb.getSize(); i++) {
                 if (isTerminalNode(nb.down(i))) continue;
-                MEDDLY_DCASSERT(!isDeletedNode(nb.down(i)));
+                ASSERT(__FILE__, __LINE__, !isDeletedNode(nb.down(i)));
                 if (isLevelAbove(nb.getLevel(), getNodeLevel(nb.down(i))))
                     continue;
 
@@ -1793,7 +1792,7 @@ void MEDDLY::forest::validateDownPointers(const unpacked_node &nb) const
                 s << "\nPointer " << nb.down(i) << " at level "
                   << getNodeLevel(nb.down(i)) << ":\n";
                 showNode(s, nb.down(i), SHOW_DETAILS);
-                MEDDLY_DCASSERT(0);
+                FAIL(__FILE__, __LINE__);
             }
             break;
 
@@ -1808,7 +1807,7 @@ void MEDDLY::forest::validateDownPointers(const unpacked_node &nb) const
 #endif
             for (unsigned i=0; i<nb.getSize(); i++) {
                 if (nb.down(i)==getTransparentNode()) continue;
-                MEDDLY_DCASSERT(getNodeLevel(nb.down(i)) == nextLevel);
+                ASSERT(__FILE__, __LINE__, getNodeLevel(nb.down(i)) == nextLevel);
             }
             break;
 

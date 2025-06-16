@@ -128,7 +128,7 @@ void MEDDLY::terminal::write(output &s) const
             break;
 
         default:
-            MEDDLY_DCASSERT(false);
+            FAIL(__FILE__, __LINE__, "Unknown terminal type");
     }
     s.put(' ');
 }
@@ -156,7 +156,7 @@ void MEDDLY::terminal::show(output &s) const
             break;
 
         default:
-            MEDDLY_DCASSERT(false);
+            FAIL(__FILE__, __LINE__, "Unknown terminal type");
     }
 }
 

@@ -39,19 +39,19 @@ class MEDDLY::unique_table {
 
         /// Get the hash table size for a given variable
         inline unsigned getSize(int var) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
+            CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
             return tables[var].getSize();
         }
 
         /// Get the number of unique nodes for a given variable
         inline unsigned getNumEntries(int var) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
+            CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
             return tables[var].getNumEntries();
         }
 
         /// Get the memory used for a given variable's table
         inline unsigned getMemUsed(int var) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
+            CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
             return tables[var].getMemUsed();
         }
 
@@ -65,7 +65,7 @@ class MEDDLY::unique_table {
         */
         template <typename T>
         inline node_handle find(const T &key, int var) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
+            CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
             return tables[var].find(key);
         }
 
@@ -77,7 +77,7 @@ class MEDDLY::unique_table {
         inline void add(unsigned hash, node_handle item) {
             int level = parent->getNodeLevel(item);
             int var = parent->getVarByLevel(level);
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
+            CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
             tables[var].add(hash, item);
         }
 
@@ -88,7 +88,7 @@ class MEDDLY::unique_table {
         */
         inline node_handle remove(unsigned hash, node_handle item) {
             int var = parent->getVarByLevel(parent->getNodeLevel(item));
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
+            CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
             return tables[var].remove(hash, item);
         }
 
@@ -97,7 +97,7 @@ class MEDDLY::unique_table {
             reset the state.
         */
         inline void clear(int var) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
+            CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
             return tables[var].clear();
         }
 
@@ -113,7 +113,7 @@ class MEDDLY::unique_table {
                                 at most sz.
         */
         inline unsigned getItems(int var, node_handle* NH, unsigned sz) const {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
+            CHECK_RANGE(__FILE__, __LINE__, min_var, var, max_var+1);
             return tables[var].getItems(NH, sz);
         }
 
@@ -173,7 +173,7 @@ class MEDDLY::unique_table {
                 template <typename T> int find(const T &key) const
                 {
                     unsigned h = key.hash() % size;
-                    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, h, size);
+                    CHECK_RANGE(__FILE__, __LINE__, 0u, h, size);
                     node_handle prev = 0;
                     for (node_handle ptr = table[h];
                             ptr != 0;
@@ -183,12 +183,12 @@ class MEDDLY::unique_table {
                             // MATCH
                             if (ptr != table[h]) {
                                 // Move to front
-                                MEDDLY_DCASSERT(prev);
+                                ASSERT(__FILE__, __LINE__, prev);
                                 parent->setNext(prev, parent->getNext(ptr));
                                 parent->setNext(ptr, table[h]);
                                 table[h] = ptr;
                             }
-                            MEDDLY_DCASSERT(table[h] == ptr);
+                            ASSERT(__FILE__, __LINE__, table[h] == ptr);
                             return ptr;
                         }
                         prev = ptr;

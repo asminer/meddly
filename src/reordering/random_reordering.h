@@ -54,7 +54,7 @@ public:
     while (!levels.empty()) {
       int index = rand() % levels.size();
       int level = levels[index];
-      MEDDLY_DCASSERT(inversions[level]);
+      ASSERT(__FILE__, __LINE__, inversions[level]);
       forest->swapAdjacentVariables(level);
 
       inversions[level] = false;

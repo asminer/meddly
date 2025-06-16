@@ -104,21 +104,21 @@ namespace MEDDLY {
       }
 
       inline const int* unprimed(int i) const {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
+        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
         return vlist[order[i]];
       }
       inline int unprimed(int i, int k) const {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, k, K+1);
+        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
+        CHECK_RANGE(__FILE__, __LINE__, 1, k, K+1);
         return vlist[order[i]][k];
       }
       inline T term(int i) const {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
+        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
         return values ? values[order[i]]: 1;
       }
       inline void swap(int i, int j) {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, j, N);
+        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
+        CHECK_RANGE(__FILE__, __LINE__, 0, j, N);
         MEDDLY::SWAP(order[i], order[j]);
       }
 
@@ -131,8 +131,8 @@ namespace MEDDLY {
           for use by mtmdd_forest descendants.
       */
       node_handle createEdge(int k, int start, int stop) {
-        MEDDLY_DCASSERT(k>=0);
-        MEDDLY_DCASSERT(stop > start);
+        ASSERT(__FILE__, __LINE__, k>=0);
+        ASSERT(__FILE__, __LINE__, stop > start);
         //
         // Fast special case
         //
@@ -170,7 +170,7 @@ namespace MEDDLY {
             }
             batchP++;
           } else {
-            MEDDLY_DCASSERT(unprimed(i, k) >= 0);
+            ASSERT(__FILE__, __LINE__, unprimed(i, k) >= 0);
             nextV = MIN(nextV, unsigned(unprimed(i, k)));
           }
         }
@@ -236,7 +236,7 @@ namespace MEDDLY {
 			      //
 			      // (2) recurse if necessary
 			      //
-			      MEDDLY_DCASSERT(batchP > start);
+			      ASSERT(__FILE__, __LINE__, batchP > start);
 			      node_handle total = createEdge(k-1, start, batchP);
 
 			      //
@@ -293,7 +293,7 @@ namespace MEDDLY {
 			    //
 			    // (2) recurse if necessary
 			    //
-			    MEDDLY_DCASSERT(batchP > start);
+			    ASSERT(__FILE__, __LINE__, batchP > start);
 			    node_handle total = createEdge(k-1, start, batchP);
 
 			    //
@@ -310,7 +310,7 @@ namespace MEDDLY {
         //
         nb->shrink(z);
 
-        MEDDLY_DCASSERT(unionOp);
+        ASSERT(__FILE__, __LINE__, unionOp);
         dd_edge dontcaresE(F), built(F);
         dontcaresE.set(dontcares);
         built.set( F->createReducedNode(-1, nb) );
@@ -360,7 +360,7 @@ namespace MEDDLY {
               else{
                 // make a singleton node
                 unpacked_node* nb = unpacked_node::newSparse(F, i, 1);
-                MEDDLY_DCASSERT(_vlist[i] >= 0);
+                ASSERT(__FILE__, __LINE__, _vlist[i] >= 0);
                 nb->setSparse(0, unsigned(_vlist[i]), bottom);
                 bottom = F->createReducedNode(-1, nb);
               }
@@ -374,8 +374,8 @@ namespace MEDDLY {
       // 2. the transparent value is not zero
       node_handle makeOpaqueZeroNodeAtLevel(int k)
       {
-  	    MEDDLY_DCASSERT(F->isQuasiReduced());
-  	    MEDDLY_DCASSERT(F->getTransparentNode()!=zero_terminal);
+  	    ASSERT(__FILE__, __LINE__, F->isQuasiReduced());
+  	    ASSERT(__FILE__, __LINE__, F->getTransparentNode()!=zero_terminal);
 
   	    return F->makeNodeAtLevel(k, zero_terminal);
       }

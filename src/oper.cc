@@ -150,7 +150,7 @@ void MEDDLY::operation::destroyAllWithForest(const forest* f)
         if (!uses_f) continue;
 
         delete op;
-        MEDDLY_DCASSERT(nullptr == op_list[i]);
+        ASSERT(__FILE__, __LINE__, nullptr == op_list[i]);
     }
 }
 
@@ -191,9 +191,9 @@ void MEDDLY::operation::unregisterInForest(MEDDLY::forest* f)
 #ifdef ALLOW_DEPRECATED_0_17_6
 void MEDDLY::operation::registerEntryType(unsigned slot, ct_entry_type* et)
 {
-    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, slot, num_etids);
-    MEDDLY_DCASSERT(etype);
-    MEDDLY_DCASSERT(0==etype[slot]);
+    CHECK_RANGE(__FILE__, __LINE__, 0u, slot, num_etids);
+    ASSERT(__FILE__, __LINE__, etype);
+    ASSERT(__FILE__, __LINE__, 0==etype[slot]);
     etype[slot] = et;
 }
 
@@ -247,7 +247,7 @@ void MEDDLY::operation::destroyAllOps()
 #else
         delete op_list[i];
 #endif
-        MEDDLY_DCASSERT(nullptr == op_list[i]);
+        ASSERT(__FILE__, __LINE__, nullptr == op_list[i]);
     }
     op_list.clear();
     free_list.clear();
@@ -258,7 +258,7 @@ void MEDDLY::operation::registerOperation(operation &o)
     if (free_list.size()) {
         unsigned u = free_list.back();
         free_list.pop_back();
-        MEDDLY_DCASSERT(nullptr == op_list.at(u));
+        ASSERT(__FILE__, __LINE__, nullptr == op_list.at(u));
         o.oplist_index = u;
         op_list[u] = &o;
     } else {
@@ -270,7 +270,7 @@ void MEDDLY::operation::registerOperation(operation &o)
 void MEDDLY::operation::unregisterOperation(operation &o)
 {
     if (!o.oplist_index) return;
-    MEDDLY_DCASSERT(op_list[o.oplist_index] == &o);
+    ASSERT(__FILE__, __LINE__, op_list[o.oplist_index] == &o);
     op_list[o.oplist_index] = nullptr;
     if (o.oplist_index == op_list.size()-1) {
         // last operator, shrink

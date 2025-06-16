@@ -47,7 +47,7 @@ class MEDDLY::mdd_writer {
         mdd_writer(output &s, const forest* F);
         ~mdd_writer();
         inline void writeRootEdge(const dd_edge &E) {
-            MEDDLY_DCASSERT(!finished);
+            ASSERT(__FILE__, __LINE__, !finished);
             roots.push_back(E);
         }
         void finish();

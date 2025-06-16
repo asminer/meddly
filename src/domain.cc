@@ -81,15 +81,15 @@ void MEDDLY::domain::destroy(MEDDLY::domain* &d)
     domain* dp = d->prev;
     domain* dn = d->next;
     if (dp) {
-        MEDDLY_DCASSERT(dp->next == d);
-        MEDDLY_DCASSERT(domain_list != d);
+        ASSERT(__FILE__, __LINE__, dp->next == d);
+        ASSERT(__FILE__, __LINE__, domain_list != d);
         dp->next = dn;
     } else {
-        MEDDLY_DCASSERT(domain_list == d);
+        ASSERT(__FILE__, __LINE__, domain_list == d);
         domain_list = dn;
     }
     if (dn) {
-        MEDDLY_DCASSERT(dn->prev == d);
+        ASSERT(__FILE__, __LINE__, dn->prev == d);
         dn->prev = dp;
     }
     delete d;
@@ -103,7 +103,7 @@ void MEDDLY::domain::testMarkAllDomains(bool mark)
     domain* p = nullptr;
 #endif
     for (domain* d = domain_list; d; d=d->next) {
-        MEDDLY_DCASSERT(d->prev == p);
+        ASSERT(__FILE__, __LINE__, d->prev == p);
         d->is_marked_for_deletion = mark;
 #ifdef DEVELOPMENT_CODE
         p = d;
@@ -122,7 +122,7 @@ void MEDDLY::domain::write(output &s) const
     for (unsigned i=nVars; i; i--) {
         s.put(long(vars[i]->getBound(false)));
         s.put(' ');
-        MEDDLY_DCASSERT(vars[i]->getBound(false) == vars[i]->getBound(true));
+        ASSERT(__FILE__, __LINE__, vars[i]->getBound(false) == vars[i]->getBound(true));
     }
     s << "\nmod\n";
 }
@@ -306,7 +306,7 @@ void MEDDLY::domain::cleanVariableOrders()
 
 void MEDDLY::domain::registerForest(forest* f)
 {
-    MEDDLY_DCASSERT(f);
+    ASSERT(__FILE__, __LINE__, f);
 #ifdef DEBUG_CLEANUP
     std::cerr << "In domain " << this << ": registering forest " << f->FID() << "\n";
 #endif
@@ -320,7 +320,7 @@ void MEDDLY::domain::unregisterForest(forest* f)
     // while we're iterating through it in our destructor.
     if (is_marked_for_deletion) return;
 
-    MEDDLY_DCASSERT(f);
+    ASSERT(__FILE__, __LINE__, f);
 #ifdef DEBUG_CLEANUP
     std::cerr << "In domain " << this << ": unregistering forest " << f->FID() << "\n";
 #endif
@@ -330,7 +330,7 @@ void MEDDLY::domain::unregisterForest(forest* f)
 
 void MEDDLY::domain::registerRelforest(relforest* f)
 {
-    MEDDLY_DCASSERT(f);
+    ASSERT(__FILE__, __LINE__, f);
 #ifdef DEBUG_CLEANUP
     std::cerr << "In domain " << this << ": registering relforest " << f->FID() << "\n";
 #endif
@@ -344,7 +344,7 @@ void MEDDLY::domain::unregisterRelforest(relforest* f)
     // while we're iterating through it in our destructor.
     if (is_marked_for_deletion) return;
 
-    MEDDLY_DCASSERT(f);
+    ASSERT(__FILE__, __LINE__, f);
 #ifdef DEBUG_CLEANUP
     std::cerr << "In domain " << this << ": unregistering relforest " << f->FID() << "\n";
 #endif
@@ -412,12 +412,12 @@ MEDDLY::domain::~domain()
     //
     // Delete all forests using this domain
     //
-    MEDDLY_DCASSERT(is_marked_for_deletion);
+    ASSERT(__FILE__, __LINE__, is_marked_for_deletion);
     for (auto it=forestReg.begin(); it!=forestReg.end(); ++it) {
         forest* f = forest::getForestWithID(*it);
         if (!f) continue;
 #ifdef DUMP_ON_FOREST_DESTROY
-        MEDDLY_DCASSERT(ef);
+        ASSERT(__FILE__, __LINE__, ef);
         std::cerr << "Destroying forest #" << *it << "\n";
         ostream_output s(std::cerr);
         f->dump(s, SHOW_DETAILS);
@@ -432,7 +432,7 @@ MEDDLY::domain::~domain()
         relforest* f = relforest::getForestWithID(*it);
         if (!f) continue;
 #ifdef DUMP_ON_FOREST_DESTROY
-        MEDDLY_DCASSERT(ef);
+        ASSERT(__FILE__, __LINE__, ef);
         std::cerr << "Destroying relforest #" << *it << "\n";
 #endif
         delete f;
@@ -477,7 +477,7 @@ void MEDDLY::domain::deleteDomList()
         delete domain_list;
         domain_list = dn;
     }
-    MEDDLY_DCASSERT(!domain_list);
+    ASSERT(__FILE__, __LINE__, !domain_list);
 }
 
 

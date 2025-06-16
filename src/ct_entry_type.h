@@ -99,7 +99,7 @@ class MEDDLY::ct_itemtype {
         }
         /// Set the type from the actual type enum.
         ct_itemtype(ct_typeID t) {
-            MEDDLY_DCASSERT(t != ct_typeID::NODE);
+            ASSERT(__FILE__, __LINE__, t != ct_typeID::NODE);
             type = t;
             typeUpdate(nullptr);
         }
@@ -155,7 +155,7 @@ class MEDDLY::ct_itemtype {
         }
         /// Check if this item is associated with forest f.
         inline bool hasForest(const forest* f) const {
-            MEDDLY_DCASSERT(f);
+            ASSERT(__FILE__, __LINE__, f);
 #ifdef USE_FID
             return f->FID() == nodeFID;
 #else
@@ -181,10 +181,10 @@ class MEDDLY::ct_itemtype {
                 throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
             }
 #ifdef USE_FID
-            MEDDLY_DCASSERT(!nodeFID);
+            ASSERT(__FILE__, __LINE__, !nodeFID);
             nodeFID = f ? f->FID() : 0;
 #else
-            MEDDLY_DCASSERT(!nodeF);
+            ASSERT(__FILE__, __LINE__, !nodeF);
             nodeF = f;
 #endif
         }
@@ -202,11 +202,11 @@ class MEDDLY::ct_itemtype {
         /// added to a CT entry
         inline void cacheNode(node_handle n) const
         {
-            MEDDLY_DCASSERT(ct_typeID::NODE == type);
+            ASSERT(__FILE__, __LINE__, ct_typeID::NODE == type);
 #ifdef USE_FID
             forest* nodeF = forest::getForestWithID(nodeFID);
 #endif
-            MEDDLY_DCASSERT(nodeF);
+            ASSERT(__FILE__, __LINE__, nodeF);
             nodeF->cacheNode(n);
         }
 
@@ -214,7 +214,7 @@ class MEDDLY::ct_itemtype {
         /// removed as a CT entry
         inline void uncacheNode(node_handle n) const
         {
-            MEDDLY_DCASSERT(ct_typeID::NODE == type);
+            ASSERT(__FILE__, __LINE__, ct_typeID::NODE == type);
 #ifdef USE_FID
             forest* nodeF = forest::getForestWithID(nodeFID);
 #endif
@@ -226,7 +226,7 @@ class MEDDLY::ct_itemtype {
         /// Check if a CT entry is dead
         inline bool isDeadEntry(node_handle n) const
         {
-            MEDDLY_DCASSERT(ct_typeID::NODE == type);
+            ASSERT(__FILE__, __LINE__, ct_typeID::NODE == type);
 #ifdef USE_FID
             forest* nodeF = forest::getForestWithID(nodeFID);
 #endif
@@ -237,7 +237,7 @@ class MEDDLY::ct_itemtype {
         /// If not, and if mark is true, we'll mark it.
         inline bool isStaleEntry(node_handle n, bool mark) const
         {
-            MEDDLY_DCASSERT(ct_typeID::NODE == type);
+            ASSERT(__FILE__, __LINE__, ct_typeID::NODE == type);
 #ifdef USE_FID
             forest* nodeF = forest::getForestWithID(nodeFID);
 #endif
@@ -346,18 +346,18 @@ class MEDDLY::ct_entry_type {
         ct_entry_type(const char* name=nullptr);
 
         inline void setFixed(ct_itemtype a) {
-            MEDDLY_DCASSERT(!CT);
+            ASSERT(__FILE__, __LINE__, !CT);
             key_fixed.resize(1);
             key_fixed[0] = a;
         }
         inline void setFixed(ct_itemtype a, ct_itemtype b) {
-            MEDDLY_DCASSERT(!CT);
+            ASSERT(__FILE__, __LINE__, !CT);
             key_fixed.resize(2);
             key_fixed[0] = a;
             key_fixed[1] = b;
         }
         inline void setFixed(ct_itemtype a, ct_itemtype b, ct_itemtype c) {
-            MEDDLY_DCASSERT(!CT);
+            ASSERT(__FILE__, __LINE__, !CT);
             key_fixed.resize(3);
             key_fixed[0] = a;
             key_fixed[1] = b;
@@ -366,7 +366,7 @@ class MEDDLY::ct_entry_type {
         inline void setFixed(ct_itemtype a, ct_itemtype b,
                 ct_itemtype c, ct_itemtype d)
         {
-            MEDDLY_DCASSERT(!CT);
+            ASSERT(__FILE__, __LINE__, !CT);
             key_fixed.resize(4);
             key_fixed[0] = a;
             key_fixed[1] = b;
@@ -374,39 +374,39 @@ class MEDDLY::ct_entry_type {
             key_fixed[3] = d;
         }
         inline void appendFixed(ct_itemtype a) {
-            MEDDLY_DCASSERT(!CT);
+            ASSERT(__FILE__, __LINE__, !CT);
             key_fixed.push_back(a);
         }
 
         inline void setRepeat(ct_itemtype a) {
-            MEDDLY_DCASSERT(!CT);
+            ASSERT(__FILE__, __LINE__, !CT);
             key_repeating.resize(1);
             key_repeating[0] = a;
         }
         inline void setRepeat(ct_itemtype a, ct_itemtype b) {
-            MEDDLY_DCASSERT(!CT);
+            ASSERT(__FILE__, __LINE__, !CT);
             key_repeating.resize(2);
             key_repeating[0] = a;
             key_repeating[1] = b;
         }
         inline void appendRepeat(ct_itemtype a) {
-            MEDDLY_DCASSERT(!CT);
+            ASSERT(__FILE__, __LINE__, !CT);
             key_repeating.push_back(a);
         }
 
         inline void setResult(ct_itemtype a) {
-            MEDDLY_DCASSERT(!CT);
+            ASSERT(__FILE__, __LINE__, !CT);
             result.resize(1);
             result[0] = a;
         }
         inline void setResult(ct_itemtype a, ct_itemtype b) {
-            MEDDLY_DCASSERT(!CT);
+            ASSERT(__FILE__, __LINE__, !CT);
             result.resize(2);
             result[0] = a;
             result[1] = b;
         }
         inline void appendResult(ct_itemtype a) {
-            MEDDLY_DCASSERT(!CT);
+            ASSERT(__FILE__, __LINE__, !CT);
             result.push_back(a);
         }
 
@@ -430,8 +430,8 @@ class MEDDLY::ct_entry_type {
                 @param  res     Where to store the result, if any.
          */
         inline void findCT(ct_entry_key* key, ct_entry_result &res) {
-            MEDDLY_DCASSERT(CT);
-            MEDDLY_DCASSERT(keyIsOurs(key));
+            ASSERT(__FILE__, __LINE__, CT);
+            ASSERT(__FILE__, __LINE__, keyIsOurs(key));
 
             CT->find(key, res);
         }
@@ -442,8 +442,8 @@ class MEDDLY::ct_entry_type {
                 @param  res   Result portion of the entry.
          */
         inline void addCT(ct_entry_key* key, const ct_entry_result &res) {
-            MEDDLY_DCASSERT(CT);
-            MEDDLY_DCASSERT(keyIsOurs(key));
+            ASSERT(__FILE__, __LINE__, CT);
+            ASSERT(__FILE__, __LINE__, keyIsOurs(key));
 
             CT->addEntry(key, res);
         }
@@ -454,8 +454,8 @@ class MEDDLY::ct_entry_type {
             if we're not going to follow it with an addCT().
         */
         inline void noaddCT(ct_entry_key* key) {
-            MEDDLY_DCASSERT(CT);
-            MEDDLY_DCASSERT(keyIsOurs(key));
+            ASSERT(__FILE__, __LINE__, CT);
+            ASSERT(__FILE__, __LINE__, keyIsOurs(key));
 
             CT->doneKey(key);
             CT->recycle(key);
@@ -477,7 +477,7 @@ class MEDDLY::ct_entry_type {
         */
         inline bool findCT(ct_vector &key, ct_vector &res)
         {
-            MEDDLY_DCASSERT(CT);
+            ASSERT(__FILE__, __LINE__, CT);
 
             return CT->find(*this, key, res);
         }
@@ -489,7 +489,7 @@ class MEDDLY::ct_entry_type {
         */
         inline void addCT(ct_vector &key, const ct_vector &res)
         {
-            MEDDLY_DCASSERT(CT);
+            ASSERT(__FILE__, __LINE__, CT);
 
             CT->addEntry(*this, key, res);
         }
@@ -500,7 +500,7 @@ class MEDDLY::ct_entry_type {
             if we're not going to follow it with an addCT().
         */
         inline void noaddCT(ct_vector &key) {
-            MEDDLY_DCASSERT(CT);
+            ASSERT(__FILE__, __LINE__, CT);
             CT->doneKey(key);
         }
 
@@ -663,7 +663,7 @@ class MEDDLY::ct_entry_type {
             if (i<key_fixed.size()) {
                 return key_fixed[i];
             } else {
-                MEDDLY_DCASSERT(key_repeating.size());
+                ASSERT(__FILE__, __LINE__, key_repeating.size());
                 i -= key_fixed.size();
                 i %= key_repeating.size();
                 return key_repeating[i];
@@ -686,7 +686,7 @@ class MEDDLY::ct_entry_type {
         */
         inline const ct_itemtype& getResultType(unsigned i) const
         {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__,
+            CHECK_RANGE(__FILE__, __LINE__,
                     0u, i, unsigned(result.size()));
             return result[i];
         }
@@ -762,20 +762,20 @@ class MEDDLY::ct_entry_type {
 
         /// CT is adding another entry of type etid
         static inline void incEntries(unsigned etid) {
-            MEDDLY_DCASSERT(all_entries.at(etid));
+            ASSERT(__FILE__, __LINE__, all_entries.at(etid));
             all_entries[etid]->numEntries++;
         }
 
         /// CT is removing an entry of this type
         static inline void decEntries(unsigned etid) {
-            MEDDLY_DCASSERT(all_entries.at(etid));
-            MEDDLY_DCASSERT(all_entries[etid]->numEntries);
+            ASSERT(__FILE__, __LINE__, all_entries.at(etid));
+            ASSERT(__FILE__, __LINE__, all_entries[etid]->numEntries);
             all_entries[etid]->numEntries--;
 #ifdef DELETE_ON_ZERO
             if (all_entries[etid]->destroyWhenEmpty) {
                 if (0==all_entries[etid]->numEntries) {
                     delete all_entries[etid];
-                    MEDDLY_DCASSERT(nullptr == all_entries[etid]);
+                    ASSERT(__FILE__, __LINE__, nullptr == all_entries[etid]);
                 }
             }
 #endif

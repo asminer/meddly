@@ -38,11 +38,11 @@ class MEDDLY::trackpeak {
             UPDATEMAX(peak, current);
         }
         inline void operator -= (size_t s) {
-            MEDDLY_DCASSERT(current >= s);
+            ASSERT(__FILE__, __LINE__, current >= s);
             current -= s;
         }
         inline void operator -= (const trackpeak &s) {
-            MEDDLY_DCASSERT(current >= s.current);
+            ASSERT(__FILE__, __LINE__, current >= s.current);
             current -= s.current;
         }
         inline void zero() {

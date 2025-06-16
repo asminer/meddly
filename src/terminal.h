@@ -141,19 +141,19 @@ class MEDDLY::terminal {
         //
 
         inline node_handle getOmega() const {
-            MEDDLY_DCASSERT(isOmega());
+            ASSERT(__FILE__, __LINE__, isOmega());
             return t_omega;
         }
         inline bool getBoolean() const {
-            MEDDLY_DCASSERT(isBoolean());
+            ASSERT(__FILE__, __LINE__, isBoolean());
             return t_boolean;
         }
         inline long getInteger() const {
-            MEDDLY_DCASSERT(isInteger());
+            ASSERT(__FILE__, __LINE__, isInteger());
             return t_integer;
         }
         inline double getReal() const {
-            MEDDLY_DCASSERT(isReal());
+            ASSERT(__FILE__, __LINE__, isReal());
             return t_real;
         }
 
@@ -190,7 +190,7 @@ class MEDDLY::terminal {
         // Get the node handle for an integer terminal
         //
         inline node_handle getIntegerHandle() const {
-            MEDDLY_DCASSERT(isInteger());
+            ASSERT(__FILE__, __LINE__, isInteger());
             if (t_integer) {
                 if (t_integer < -1073741824 ||
                         t_integer > 1073741823)
@@ -209,7 +209,7 @@ class MEDDLY::terminal {
         // Get the node handle for a real terminal
         //
         inline node_handle getRealHandle() const {
-            MEDDLY_DCASSERT(isReal());
+            ASSERT(__FILE__, __LINE__, isReal());
             if (t_real) {
                 union {
                     node_handle h;
@@ -247,7 +247,7 @@ class MEDDLY::terminal {
                         return getRealHandle();
 
                 default:
-                        MEDDLY_DCASSERT(false);
+                        FAIL(__FILE__, __LINE__, "Unknown terminal type");
                         return 0;
             }
         }
@@ -282,7 +282,7 @@ class MEDDLY::terminal {
             t_real = v;
         }
         inline void adjustReal(double v) {
-            MEDDLY_DCASSERT(isReal());
+            ASSERT(__FILE__, __LINE__, isReal());
             t_real = v;
         }
 
@@ -310,7 +310,7 @@ class MEDDLY::terminal {
                         return;
 
                 default:
-                        MEDDLY_DCASSERT(false);
+                        FAIL(__FILE__, __LINE__, "Unknown terminal type");
             }
 
         }
@@ -325,8 +325,8 @@ class MEDDLY::terminal {
                         return;
 
                 case terminal_type::BOOLEAN:
-                        MEDDLY_DCASSERT(h <= 0);
-                        MEDDLY_DCASSERT(h >= -1);
+                        ASSERT(__FILE__, __LINE__, h <= 0);
+                        ASSERT(__FILE__, __LINE__, h >= -1);
                         if (h<-1 || h>0) {
                             throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
                         }
@@ -351,7 +351,7 @@ class MEDDLY::terminal {
                         return;
 
                 default:
-                        MEDDLY_DCASSERT(false);
+                        FAIL(__FILE__, __LINE__, "Unknown terminal type");
             }
         }
 
@@ -373,7 +373,7 @@ class MEDDLY::terminal {
                         return t_real < t.getReal();
 
                 default:
-                        MEDDLY_DCASSERT(false);
+                        FAIL(__FILE__, __LINE__, "Unknown terminal type");
             }
             return false;
         }

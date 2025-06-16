@@ -315,11 +315,11 @@ class MEDDLY::node_storage {
         //
 
         inline const forest* getParent() const {
-            MEDDLY_DCASSERT(parent);
+            ASSERT(__FILE__, __LINE__, parent);
             return parent;
         }
         inline forest* getParent() {
-            MEDDLY_DCASSERT(parent);
+            ASSERT(__FILE__, __LINE__, parent);
             return parent;
         }
 

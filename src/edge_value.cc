@@ -180,7 +180,7 @@ void MEDDLY::edge_value::write(output &s) const
             return;
 
         default:
-            MEDDLY_DCASSERT(false);
+            FAIL(__FILE__, __LINE__, "Unknown edge type");
     }
 }
 
@@ -211,7 +211,7 @@ void MEDDLY::edge_value::show(output &s) const
             return;
 
         default:
-            MEDDLY_DCASSERT(false);
+            FAIL(__FILE__, __LINE__, "Unknown edge type");
     }
 }
 

@@ -180,7 +180,7 @@ namespace MEDDLY {
   template <class OPERATION, typename TYPE>
   void ev_forest::makeNodeAtLevel(int k, TYPE &ev, node_handle &ed)
   {
-    MEDDLY_DCASSERT(abs(k) >= abs(getNodeLevel(ed)));
+    ASSERT(__FILE__, __LINE__, abs(k) >= abs(getNodeLevel(ed)));
     if (0==ed) return;
     if (isFullyReduced()) return;
 
@@ -202,7 +202,7 @@ namespace MEDDLY {
         // Note 0: ed cannot be a terminal node (dk < 0).
         // Note 1: if prevSize > 1, and ed is not the original argument,
         //         and if it is a primed node, it cannot be identity reduced.
-        MEDDLY_DCASSERT(!isTerminalNode(ed));
+        ASSERT(__FILE__, __LINE__, !isTerminalNode(ed));
         node_handle sd;
         unsigned si;
         if (!isSingletonNode(ed, si, sd))  {

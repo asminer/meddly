@@ -137,7 +137,7 @@ void MEDDLY::binary_operation::computeDDEdge(const dd_edge &ar1,
 {
 #ifdef DEBUG_THROWS
     std::cerr << "default computeDDEdge for binary operation " << getName() << "\n";
-    MEDDLY_DCASSERT(false);
+    FAIL(__FILE__, __LINE__);
 #endif
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
@@ -149,7 +149,7 @@ void MEDDLY::binary_operation::compute(int L, unsigned in,
 {
 #ifdef DEBUG_THROWS
     std::cerr << "default compute for binary operation " << getName() << "\n";
-    MEDDLY_DCASSERT(false);
+    FAIL(__FILE__, __LINE__);
 #endif
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }

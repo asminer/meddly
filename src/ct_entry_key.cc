@@ -48,10 +48,10 @@ MEDDLY::ct_entry_key::~ct_entry_key()
 
 void MEDDLY::ct_entry_key::setup(const ct_entry_type* et, unsigned repeats)
 {
-    MEDDLY_DCASSERT(et);
+    ASSERT(__FILE__, __LINE__, et);
     etype = et;
     num_repeats = repeats;
-    MEDDLY_DCASSERT( 0==repeats || et->isRepeating() );
+    ASSERT(__FILE__, __LINE__,  0==repeats || et->isRepeating() );
     total_slots = et->getKeySize(repeats);
     if (total_slots > data_alloc) {
         // Allocate in chunks of size 8

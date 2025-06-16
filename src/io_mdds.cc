@@ -59,7 +59,7 @@ namespace MEDDLY {
                 break;
 
             default:
-                MEDDLY_DCASSERT(false);
+                FAIL(__FILE__, __LINE__, "Unknown edge labeling");
         }
 
         if (F->isForRelations()) {
@@ -82,7 +82,7 @@ namespace MEDDLY {
                 break;
 
             default:
-                MEDDLY_DCASSERT(false);
+                FAIL(__FILE__, __LINE__, "Unknown range type");
         }
         buf[7] = 0;
 
@@ -106,7 +106,7 @@ namespace MEDDLY {
 MEDDLY::mdd_writer::mdd_writer(output &s, const forest* F)
     : out(s)
 {
-    MEDDLY_DCASSERT(F);
+    ASSERT(__FILE__, __LINE__, F);
     For = F;
     finished = false;
 }
@@ -156,7 +156,7 @@ void MEDDLY::mdd_writer::finish()
     }
     std::vector <unsigned> handle2output (unsigned(1+maxnode));
     for (unsigned i=0; i<output2handle.size(); i++) {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1, output2handle[i], maxnode+1);
+        CHECK_RANGE(__FILE__, __LINE__, 1, output2handle[i], maxnode+1);
         handle2output[unsigned(output2handle[i])] = i+1;
     }
 
@@ -216,7 +216,7 @@ void MEDDLY::mdd_writer::finish()
 
 MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
 {
-    MEDDLY_DCASSERT(F);
+    ASSERT(__FILE__, __LINE__, F);
 
     rptr = 0;
 
@@ -291,10 +291,10 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
             edge_value ev;
             F->createReducedNode(nb, ev, map[node_index]);
 
-            MEDDLY_DCASSERT( !ev.isInt()    || (0==ev.getInt()) );
-            MEDDLY_DCASSERT( !ev.isLong()   || (0==ev.getLong()) );
-            MEDDLY_DCASSERT( !ev.isFloat()  || (0==ev.getFloat()) );
-            MEDDLY_DCASSERT( !ev.isDouble() || (0==ev.getDouble()) );
+            ASSERT(__FILE__, __LINE__,  !ev.isInt()    || (0==ev.getInt()) );
+            ASSERT(__FILE__, __LINE__,  !ev.isLong()   || (0==ev.getLong()) );
+            ASSERT(__FILE__, __LINE__,  !ev.isFloat()  || (0==ev.getFloat()) );
+            ASSERT(__FILE__, __LINE__,  !ev.isDouble() || (0==ev.getDouble()) );
 
 #ifdef DEBUG_READ
             std::cerr << "File node " << node_index << " reduced to ";

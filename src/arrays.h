@@ -100,15 +100,15 @@ class MEDDLY::level_array {
         inline int get(size_t i) const {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             if (data8) {
-                MEDDLY_DCASSERT(!data16);
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data16);
+                ASSERT(__FILE__, __LINE__, !data32);
                 return data8[i];
             }
             if (data16) {
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data32);
                 return data16[i];
             }
-            MEDDLY_DCASSERT(data32);
+            ASSERT(__FILE__, __LINE__, data32);
             return data32[i];
         }
 
@@ -116,18 +116,18 @@ class MEDDLY::level_array {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             if (data8) {
                 CHECK_RANGE(__FILE__, __LINE__, -128, v, 128);
-                MEDDLY_DCASSERT(!data16);
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data16);
+                ASSERT(__FILE__, __LINE__, !data32);
                 data8[i] = v;
                 return;
             }
             if (data16) {
                 CHECK_RANGE(__FILE__, __LINE__, -32768, v, 32768);
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data32);
                 data16[i] = v;
                 return;
             }
-            MEDDLY_DCASSERT(data32);
+            ASSERT(__FILE__, __LINE__, data32);
             data32[i] = v;
         }
 
@@ -135,17 +135,17 @@ class MEDDLY::level_array {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), j, size);
             if (data8) {
-                MEDDLY_DCASSERT(!data16);
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data16);
+                ASSERT(__FILE__, __LINE__, !data32);
                 SWAP(data8[i], data8[j]);
                 return;
             }
             if (data16) {
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data32);
                 SWAP(data16[i], data16[j]);
                 return;
             }
-            MEDDLY_DCASSERT(data32);
+            ASSERT(__FILE__, __LINE__, data32);
             SWAP(data32[i], data32[j]);
         }
 
@@ -185,15 +185,15 @@ class MEDDLY::counter_array {
         inline unsigned int get(size_t i) const {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             if (data8) {
-                MEDDLY_DCASSERT(!data16);
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data16);
+                ASSERT(__FILE__, __LINE__, !data32);
                 return data8[i];
             }
             if (data16) {
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data32);
                 return data16[i];
             }
-            MEDDLY_DCASSERT(data32);
+            ASSERT(__FILE__, __LINE__, data32);
             return data32[i];
         }
 
@@ -201,36 +201,36 @@ class MEDDLY::counter_array {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), j, size);
             if (data8) {
-                MEDDLY_DCASSERT(!data16);
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data16);
+                ASSERT(__FILE__, __LINE__, !data32);
                 SWAP(data8[i], data8[j]);
                 return;
             }
             if (data16) {
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data32);
                 SWAP(data16[i], data16[j]);
                 return;
             }
-            MEDDLY_DCASSERT(data32);
+            ASSERT(__FILE__, __LINE__, data32);
             SWAP(data32[i], data32[j]);
         }
 
         inline void increment(size_t i) {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             if (data8) {
-                MEDDLY_DCASSERT(!data16);
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data16);
+                ASSERT(__FILE__, __LINE__, !data32);
                 if (0 == ++data8[i]) expand8to16(i);
                 return;
             }
             if (data16) {
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data32);
                 ++data16[i];
                 if (256 == data16[i]) ++counts_09bit;
                 if (0 == data16[i]) expand16to32(i);
                 return;
             }
-            MEDDLY_DCASSERT(data32);
+            ASSERT(__FILE__, __LINE__, data32);
             data32[i]++;
             if (256 == data32[i]) ++counts_09bit;
             if (65536 == data32[i]) ++counts_17bit;
@@ -239,30 +239,30 @@ class MEDDLY::counter_array {
         inline void decrement(size_t i) {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             if (data8) {
-                MEDDLY_DCASSERT(!data16);
-                MEDDLY_DCASSERT(!data32);
-                MEDDLY_DCASSERT(data8[i]);
+                ASSERT(__FILE__, __LINE__, !data16);
+                ASSERT(__FILE__, __LINE__, !data32);
+                ASSERT(__FILE__, __LINE__, data8[i]);
                 --data8[i];
                 return;
             }
             if (data16) {
-                MEDDLY_DCASSERT(!data32);
-                MEDDLY_DCASSERT(data16[i]);
+                ASSERT(__FILE__, __LINE__, !data32);
+                ASSERT(__FILE__, __LINE__, data16[i]);
                 if (256 == data16[i]) {
-                    MEDDLY_DCASSERT(counts_09bit);
+                    ASSERT(__FILE__, __LINE__, counts_09bit);
                     --counts_09bit;
                 }
                 --data16[i];
                 return;
             }
-            MEDDLY_DCASSERT(data32);
-            MEDDLY_DCASSERT(data32[i]);
+            ASSERT(__FILE__, __LINE__, data32);
+            ASSERT(__FILE__, __LINE__, data32[i]);
             if (256 == data32[i]) {
-                MEDDLY_DCASSERT(counts_09bit);
+                ASSERT(__FILE__, __LINE__, counts_09bit);
                 --counts_09bit;
             }
             if (65536 == data32[i]) {
-                MEDDLY_DCASSERT(counts_17bit);
+                ASSERT(__FILE__, __LINE__, counts_17bit);
                 --counts_17bit;
             }
             --data32[i];
@@ -271,8 +271,8 @@ class MEDDLY::counter_array {
         inline bool isZeroBeforeIncrement(size_t i) {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             if (data8) {
-                MEDDLY_DCASSERT(!data16);
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data16);
+                ASSERT(__FILE__, __LINE__, !data32);
                 if (0==data8[i]) {
                     data8[i] = 1;
                     return true;
@@ -281,7 +281,7 @@ class MEDDLY::counter_array {
                 return false;
             }
             if (data16) {
-                MEDDLY_DCASSERT(!data32);
+                ASSERT(__FILE__, __LINE__, !data32);
                 if (0==data16[i]) {
                     data16[i] = 1;
                     return true;
@@ -291,7 +291,7 @@ class MEDDLY::counter_array {
                 if (0 == data16[i]) expand16to32(i);
                 return false;
             }
-            MEDDLY_DCASSERT(data32);
+            ASSERT(__FILE__, __LINE__, data32);
             if (0==data32[i]) {
                 data32[i] = 1;
                 return true;
@@ -305,28 +305,28 @@ class MEDDLY::counter_array {
         inline bool isPositiveAfterDecrement(size_t i) {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             if (data8) {
-                MEDDLY_DCASSERT(!data16);
-                MEDDLY_DCASSERT(!data32);
-                MEDDLY_DCASSERT(data8[i]);
+                ASSERT(__FILE__, __LINE__, !data16);
+                ASSERT(__FILE__, __LINE__, !data32);
+                ASSERT(__FILE__, __LINE__, data8[i]);
                 return --data8[i] > 0;
             }
             if (data16) {
-                MEDDLY_DCASSERT(!data32);
-                MEDDLY_DCASSERT(data16[i]);
+                ASSERT(__FILE__, __LINE__, !data32);
+                ASSERT(__FILE__, __LINE__, data16[i]);
                 if (256 == data16[i]) {
-                    MEDDLY_DCASSERT(counts_09bit);
+                    ASSERT(__FILE__, __LINE__, counts_09bit);
                     --counts_09bit;
                 }
                 return --data16[i] > 0;
             }
-            MEDDLY_DCASSERT(data32);
-            MEDDLY_DCASSERT(data32[i]);
+            ASSERT(__FILE__, __LINE__, data32);
+            ASSERT(__FILE__, __LINE__, data32[i]);
             if (256 == data32[i]) {
-                MEDDLY_DCASSERT(counts_09bit);
+                ASSERT(__FILE__, __LINE__, counts_09bit);
                 --counts_09bit;
             }
             if (65536 == data32[i]) {
-                MEDDLY_DCASSERT(counts_17bit);
+                ASSERT(__FILE__, __LINE__, counts_17bit);
                 --counts_17bit;
             }
             return --data32[i] > 0;
@@ -377,28 +377,28 @@ class MEDDLY::address_array {
         inline unsigned long get(size_t i) const {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             if (4==bytes) {
-                MEDDLY_DCASSERT(data32);
-                MEDDLY_DCASSERT(!data64);
-                MEDDLY_DCASSERT(0==num_large_elements);
+                ASSERT(__FILE__, __LINE__, data32);
+                ASSERT(__FILE__, __LINE__, !data64);
+                ASSERT(__FILE__, __LINE__, 0==num_large_elements);
                 return data32[i];
             }
-            MEDDLY_DCASSERT(8==bytes);
-            MEDDLY_DCASSERT(!data32);
-            MEDDLY_DCASSERT(data64);
+            ASSERT(__FILE__, __LINE__, 8==bytes);
+            ASSERT(__FILE__, __LINE__, !data32);
+            ASSERT(__FILE__, __LINE__, data64);
             return data64[i];
         }
 
         inline void set(size_t i, unsigned long v) {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             if (4==bytes) {
-                MEDDLY_DCASSERT(data32);
-                MEDDLY_DCASSERT(!data64);
-                MEDDLY_DCASSERT(0==num_large_elements);
+                ASSERT(__FILE__, __LINE__, data32);
+                ASSERT(__FILE__, __LINE__, !data64);
+                ASSERT(__FILE__, __LINE__, 0==num_large_elements);
 
                 if (v & 0xffffffff00000000) {
                     // v won't fit in 32 bits
                     expand32to64(); // will set num_large_elements = 1
-                    MEDDLY_DCASSERT(data64);
+                    ASSERT(__FILE__, __LINE__, data64);
                     data64[i] = v;
                 } else {
                     // v will fit in 32 bits
@@ -406,9 +406,9 @@ class MEDDLY::address_array {
                 }
                 return;
             }
-            MEDDLY_DCASSERT(8==bytes);
-            MEDDLY_DCASSERT(!data32);
-            MEDDLY_DCASSERT(data64);
+            ASSERT(__FILE__, __LINE__, 8==bytes);
+            ASSERT(__FILE__, __LINE__, !data32);
+            ASSERT(__FILE__, __LINE__, data64);
             if (v & 0xffffffff00000000) {
                 // v is large
                 if (0 == (data64[i] & 0xffffffff00000000)) {
@@ -419,7 +419,7 @@ class MEDDLY::address_array {
                 // v is small
                 if (data64[i] & 0xffffffff00000000) {
                     // replacing large
-                    MEDDLY_DCASSERT(num_large_elements);
+                    ASSERT(__FILE__, __LINE__, num_large_elements);
                     num_large_elements--;
                 }
             }
@@ -430,14 +430,14 @@ class MEDDLY::address_array {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), j, size);
             if (4==bytes) {
-                MEDDLY_DCASSERT(data32);
-                MEDDLY_DCASSERT(!data64);
+                ASSERT(__FILE__, __LINE__, data32);
+                ASSERT(__FILE__, __LINE__, !data64);
                 SWAP(data32[i], data32[j]);
                 return;
             }
-            MEDDLY_DCASSERT(8==bytes);
-            MEDDLY_DCASSERT(!data32);
-            MEDDLY_DCASSERT(data64);
+            ASSERT(__FILE__, __LINE__, 8==bytes);
+            ASSERT(__FILE__, __LINE__, !data32);
+            ASSERT(__FILE__, __LINE__, data64);
             SWAP(data64[i], data64[j]);
         }
 
@@ -476,19 +476,19 @@ class MEDDLY::bitvector {
 
         inline bool get(size_t i) const {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
-            MEDDLY_DCASSERT(data);
+            ASSERT(__FILE__, __LINE__, data);
             return data[i];
         }
 
         inline void set(size_t i, bool v) {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
-            MEDDLY_DCASSERT(data);
+            ASSERT(__FILE__, __LINE__, data);
             data[i] = v;
         }
 
         inline void clearAll() {
             if (size) {
-                MEDDLY_DCASSERT(data);
+                ASSERT(__FILE__, __LINE__, data);
                 memset(data, 0, size * sizeof(bool));
             }
         }
@@ -496,7 +496,7 @@ class MEDDLY::bitvector {
         inline void swap(size_t i, size_t j) {
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), i, size);
             CHECK_RANGE(__FILE__, __LINE__, size_t(0), j, size);
-            MEDDLY_DCASSERT(data);
+            ASSERT(__FILE__, __LINE__, data);
             SWAP(data[i], data[j]);
         }
 

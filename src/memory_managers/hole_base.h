@@ -117,25 +117,25 @@ namespace MEDDLY {
 
     protected:
       inline bool isHole(node_address h) const {
-        MEDDLY_DCASSERT(data);
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0lu, h, 1+last_used_slot);
+        ASSERT(__FILE__, __LINE__, data);
+        CHECK_RANGE(__FILE__, __LINE__, 0lu, h, 1+last_used_slot);
         return data[h] & MSB;
         // Because we set data[0] to 0, this will work
         // correctly also for h=0 (which is not a hole).
       }
       inline INT getHoleSize(node_address h) const {
-        MEDDLY_DCASSERT(isHole(h));
+        ASSERT(__FILE__, __LINE__, isHole(h));
         return data[h] & (~MSB);
       }
       inline void setHoleSize(node_address h, INT hs) {
-        MEDDLY_DCASSERT(data);
-        MEDDLY_DCASSERT(hs>0);
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1lu, h, 1+last_used_slot);
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1lu, h+hs-1, 1+last_used_slot);
+        ASSERT(__FILE__, __LINE__, data);
+        ASSERT(__FILE__, __LINE__, hs>0);
+        CHECK_RANGE(__FILE__, __LINE__, 1lu, h, 1+last_used_slot);
+        CHECK_RANGE(__FILE__, __LINE__, 1lu, h+hs-1, 1+last_used_slot);
         data[h] = data[h+hs-1] = (hs | MSB);
       }
       inline void clearHole(node_address h, INT hs) const {
-        MEDDLY_DCASSERT(isHole(h));
+        ASSERT(__FILE__, __LINE__, isHole(h));
         data[h] = data[h+hs-1] = 0;
       }
       inline bool matchingHoleSizes(node_address h) const {
@@ -144,15 +144,15 @@ namespace MEDDLY {
       }
 
       inline INT readSlot(node_address h, const unsigned slot) const {
-        MEDDLY_DCASSERT(isHole(h));
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1lu, h+slot, 1+last_used_slot
+        ASSERT(__FILE__, __LINE__, isHole(h));
+        CHECK_RANGE(__FILE__, __LINE__, 1lu, h+slot, 1+last_used_slot
         );
         return data[h+slot];
       }
 
       inline INT& refSlot(node_address h, const unsigned slot) {
-        MEDDLY_DCASSERT(isHole(h));
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 1lu, h+slot, 1+last_used_slot);
+        ASSERT(__FILE__, __LINE__, isHole(h));
+        CHECK_RANGE(__FILE__, __LINE__, 1lu, h+slot, 1+last_used_slot);
         return data[h+slot];
       }
 
@@ -237,7 +237,7 @@ void MEDDLY::hole_manager<INT>::showInternalAddr(output &s,
     s << "1:";
   } else {
     s << "0:";
-    MEDDLY_DCASSERT(0);
+    ASSERT(__FILE__, __LINE__, 0);
   }
   s << getHoleSize(addr);
   for (unsigned i=1; i<=slots; i++) {
@@ -249,7 +249,7 @@ void MEDDLY::hole_manager<INT>::showInternalAddr(output &s,
     s << "1:";
   } else {
     s << "0:";
-    MEDDLY_DCASSERT(0);
+    ASSERT(__FILE__, __LINE__, 0);
   }
   s << getHoleSize(addr);
 }

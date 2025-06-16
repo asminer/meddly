@@ -211,7 +211,7 @@ class MEDDLY::simple_separated : public node_storage {
         int high = N;
         while (low < high) {
           int z = (low+high)/2;
-          MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, z, N);
+          CHECK_RANGE(__FILE__, __LINE__, 0, z, N);
           if (index[z] == i) return z;
           if (index[z] < i) low = z + 1;
           else              high = z;
@@ -1444,7 +1444,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   //
   // Set size
   //
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, (size_t)0, (size_t)size_slot, slots_given);
+  CHECK_RANGE(__FILE__, __LINE__, (size_t)0, (size_t)size_slot, slots_given);
   chunk[size_slot] = getRawSize(size, false, nb.isExtensible());
 
   //
@@ -1481,7 +1481,7 @@ MEDDLY::node_address MEDDLY::simple_separated
         }
         for (int z=0; z<nb.getSize(); z++) {
           int i = nb.index(z);
-          MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, size);
+          CHECK_RANGE(__FILE__, __LINE__, 0, i, size);
           down[i] = nb.down(z);
           nb.edgeval(z).get(parent->getEdgeType(), edge + i * edge_bytes);
         }
@@ -1502,7 +1502,7 @@ MEDDLY::node_address MEDDLY::simple_separated
           down[i] = tv;
         }
         for (int z=0; z<nb.getSize(); z++) {
-          MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, (int)nb.index(z), size);
+          CHECK_RANGE(__FILE__, __LINE__, 0, (int)nb.index(z), size);
           down[nb.index(z)] = nb.down(z);
         }
       } else {
@@ -1569,7 +1569,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   //
   // Set size
   //
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, (size_t)0, (size_t)size_slot, slots_given);
+  CHECK_RANGE(__FILE__, __LINE__, (size_t)0, (size_t)size_slot, slots_given);
   chunk[size_slot] = getRawSize(size, true, nb.isExtensible());
 
   //
@@ -1609,7 +1609,7 @@ MEDDLY::node_address MEDDLY::simple_separated
         int z = 0;
         for (int i=0; i<nb.getSize(); i++) {
           if (getParent()->isTransparentEdge(nb.edgeval(i), nb.down(i))) continue;
-          MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, z, size);
+          CHECK_RANGE(__FILE__, __LINE__, 0, z, size);
           down[z] = nb.down(i);
           index[z] = i;
           nb.edgeval(i).get(parent->getEdgeType(), edge + z * edge_bytes);
@@ -1632,7 +1632,7 @@ MEDDLY::node_address MEDDLY::simple_separated
         const node_handle tv = getParent()->getTransparentNode();
         for (int i=0; i<nb.getSize(); i++) {
           if (nb.down(i)!=tv) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, z, size);
+            CHECK_RANGE(__FILE__, __LINE__, 0, z, size);
             down[z] = nb.down(i);
             index[z] = i;
             z++;

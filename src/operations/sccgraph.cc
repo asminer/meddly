@@ -284,8 +284,8 @@ void MEDDLY::sccgraph::dumpGraph(MEDDLY::output &out) const
 
 void MEDDLY::sccgraph::add_edge(unsigned I, unsigned J, edge_label* L)
 {
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, I, graph_vertices_used);
-  MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, J, graph_vertices_used);
+  CHECK_RANGE(__FILE__, __LINE__, 0u, I, graph_vertices_used);
+  CHECK_RANGE(__FILE__, __LINE__, 0u, J, graph_vertices_used);
   MEDDLY_DCASSERT(L);
   MEDDLY_DCASSERT(vertex_to_scc);
 
@@ -458,7 +458,7 @@ void MEDDLY::sccgraph::update_SCCs()
   // Update vertex_to_scc mapping
   //
   for (unsigned i=0; i<graph_vertices_used; i++) {
-    MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, vertex_to_scc[i], scc_vertices_used);
+    CHECK_RANGE(__FILE__, __LINE__, 0u, vertex_to_scc[i], scc_vertices_used);
     vertex_to_scc[i] = visit_index[ vertex_to_scc[i] ];
   }
 

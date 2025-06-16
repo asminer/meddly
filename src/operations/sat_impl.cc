@@ -165,25 +165,25 @@ protected:
       return NULPTR == head;
     }
     inline void add(int i) {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, i, size);
+        CHECK_RANGE(__FILE__, __LINE__, 0, i, size);
       if (NOTINQ != data[i]) return;
       if (NULPTR == head) {
         // empty list
         head = i;
       } else {
         // not empty list
-          MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, tail, size);
+          CHECK_RANGE(__FILE__, __LINE__, 0, tail, size);
         data[tail] = i;
       }
       tail = i;
       data[i] = NULPTR;
     }
     inline int remove() {
-        MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, head, size);
+        CHECK_RANGE(__FILE__, __LINE__, 0, head, size);
       int ans = head;
       head = data[head];
       data[ans] = NOTINQ;
-      MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0, ans, size);
+      CHECK_RANGE(__FILE__, __LINE__, 0, ans, size);
       return ans;
     }
   };

@@ -135,13 +135,13 @@ MEDDLY::compute_table::~compute_table()
     if (next) {
         next->prev = prev;
     } else {
-        MEDDLY_DCASSERT(back == this);
+        ASSERT(__FILE__, __LINE__, back == this);
         back = prev;
     }
     if (prev) {
         prev->next = next;
     } else {
-        MEDDLY_DCASSERT(front == this);
+        ASSERT(__FILE__, __LINE__, front == this);
         front = next;
     }
 
@@ -159,7 +159,7 @@ MEDDLY::ct_entry_key*
 MEDDLY::compute_table::useEntryKey(const ct_entry_type* et, unsigned repeats)
 {
             if (!et) return nullptr;
-            MEDDLY_DCASSERT( (0==repeats) || et->isRepeating() );
+            ASSERT(__FILE__, __LINE__,  (0==repeats) || et->isRepeating() );
 
             ct_entry_key* k;
             if (free_keys) {

@@ -130,7 +130,7 @@ MEDDLY::ct_entry_type::~ct_entry_type()
 
     if (CT) {
         if (CT_is_ours) {
-            MEDDLY_DCASSERT(CT->isOperationTable());
+            ASSERT(__FILE__, __LINE__, CT->isOperationTable());
             if (hasValidForest() || hasCTObject()) {
                 // We must carefully remove elements
                 CT->removeAll();
@@ -311,7 +311,7 @@ void MEDDLY::ct_entry_type::clearForestCTBits(std::vector <bool> &skipF) const
     for (i=0; i<key_fixed.size(); i++) {
         forest* f = key_fixed[i].rawForest();
         if (!f) continue;
-        MEDDLY_DCASSERT(f->FID() < skipF.size());
+        ASSERT(__FILE__, __LINE__, f->FID() < skipF.size());
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
         skipF[ f->FID() ] = true;
@@ -319,7 +319,7 @@ void MEDDLY::ct_entry_type::clearForestCTBits(std::vector <bool> &skipF) const
     for (i=0; i<key_repeating.size(); i++) {
         forest* f = key_repeating[i].rawForest();
         if (!f) continue;
-        MEDDLY_DCASSERT(f->FID() < skipF.size());
+        ASSERT(__FILE__, __LINE__, f->FID() < skipF.size());
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
         skipF[ f->FID() ] = true;
@@ -327,7 +327,7 @@ void MEDDLY::ct_entry_type::clearForestCTBits(std::vector <bool> &skipF) const
     for (i=0; i<result.size(); i++) {
         forest* f = result[i].rawForest();
         if (!f) continue;
-        MEDDLY_DCASSERT(f->FID() < skipF.size());
+        ASSERT(__FILE__, __LINE__, f->FID() < skipF.size());
         if (skipF[ f->FID() ]) continue;
         f->clearAllCacheBits();
         skipF[ f->FID() ] = true;
@@ -349,7 +349,7 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(std::vector <bool> &whichF) const
     for (i=0; i<key_fixed.size(); i++) {
         forest* f = key_fixed[i].rawForest();
         if (!f) continue;
-        MEDDLY_DCASSERT(f->FID() < whichF.size());
+        ASSERT(__FILE__, __LINE__, f->FID() < whichF.size());
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
             whichF[ f->FID() ] = 0;
@@ -358,7 +358,7 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(std::vector <bool> &whichF) const
     for (i=0; i<key_repeating.size(); i++) {
         forest* f = key_repeating[i].rawForest();
         if (!f) continue;
-        MEDDLY_DCASSERT(f->FID() < whichF.size());
+        ASSERT(__FILE__, __LINE__, f->FID() < whichF.size());
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
             whichF[ f->FID() ] = 0;
@@ -367,7 +367,7 @@ void MEDDLY::ct_entry_type::sweepForestCTBits(std::vector <bool> &whichF) const
     for (i=0; i<result.size(); i++) {
         forest* f = result[i].rawForest();
         if (!f) continue;
-        MEDDLY_DCASSERT(f->FID() < whichF.size());
+        ASSERT(__FILE__, __LINE__, f->FID() < whichF.size());
         if (whichF[ f->FID() ]) {
             f->sweepAllCacheBits();
             whichF[ f->FID() ] = 0;
@@ -439,7 +439,7 @@ void MEDDLY::ct_entry_type::doneStatics()
     for (unsigned i=0; i<all_entries.size(); i++) {
         if (!all_entries[i]) continue;
         delete all_entries[i];
-        MEDDLY_DCASSERT(!all_entries[i]);
+        ASSERT(__FILE__, __LINE__, !all_entries[i]);
     }
     all_entries.clear();
 }
@@ -500,7 +500,7 @@ bool MEDDLY::ct_entry_type::mightHaveCTObjects()
 
 bool MEDDLY::ct_entry_type::keyIsOurs(const ct_entry_key *k) const
 {
-    MEDDLY_DCASSERT(k);
+    ASSERT(__FILE__, __LINE__, k);
     return k->getET() == this;
 }
 
@@ -534,7 +534,7 @@ bool MEDDLY::ct_entry_type::hasCTObject() const
 
 void MEDDLY::ct_entry_type::buildCT()
 {
-    MEDDLY_DCASSERT(!CT);
+    ASSERT(__FILE__, __LINE__, !CT);
 
     //
     // Preprocess fixed portion of key

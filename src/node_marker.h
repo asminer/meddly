@@ -75,7 +75,7 @@ class MEDDLY::node_marker {
         /// Add a node to the queue to be explored.
         inline void addToQueue(node_handle p) {
             if (p>0 && !marked.get(unsigned(p))) {
-                MEDDLY_DCASSERT(S_top);
+                ASSERT(__FILE__, __LINE__, S_top);
                 marked.set(unsigned(p), true);
                 S_top->queue.push_back(p);
             }
@@ -141,7 +141,7 @@ class MEDDLY::node_marker {
             S_top = n;
         }
         inline void pop() {
-            MEDDLY_DCASSERT(S_top);
+            ASSERT(__FILE__, __LINE__, S_top);
             mystack* n = S_top->next;
             S_top->next = S_free;
             S_free = S_top;

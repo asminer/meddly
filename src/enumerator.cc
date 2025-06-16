@@ -100,7 +100,7 @@ const int* MEDDLY::enumerator::iterator::getPrimedAssignments()
     prindex = new int[1+maxLevel];
     prindex[0] = 0;
   }
-  MEDDLY_DCASSERT(index);
+  ASSERT(__FILE__, __LINE__, index);
   for (int k=maxLevel; k; k--) {
     prindex[k] = index[-k];
   }
@@ -194,7 +194,7 @@ void MEDDLY::enumerator::start(const dd_edge &e)
 {
   if (0==I) return;
   if (FULL != T) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-  MEDDLY_DCASSERT(I);
+  ASSERT(__FILE__, __LINE__, I);
   is_valid = I->start(e);
 }
 
@@ -202,7 +202,7 @@ void MEDDLY::enumerator::startFixedRow(const dd_edge &e, const int* minterm)
 {
   if (0==I) return;
   if (ROW_FIXED != T) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-  MEDDLY_DCASSERT(I);
+  ASSERT(__FILE__, __LINE__, I);
   is_valid = I->start(e, minterm);
 }
 
@@ -210,7 +210,7 @@ void MEDDLY::enumerator::startFixedColumn(const dd_edge &e, const int* minterm)
 {
   if (0==I) return;
   if (COL_FIXED != T) throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-  MEDDLY_DCASSERT(I);
+  ASSERT(__FILE__, __LINE__, I);
   is_valid = I->start(e, minterm);
 }
 

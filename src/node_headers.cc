@@ -226,7 +226,7 @@ void MEDDLY::node_headers::initialize()
 
 void MEDDLY::node_headers::expandElementSize(unsigned oldbits, unsigned newbits)
 {
-    MEDDLY_DCASSERT(oldbits <= newbits);
+    ASSERT(__FILE__, __LINE__, oldbits <= newbits);
 
     mstats.incMemUsed((a_last - a_freed)*(newbits-oldbits)/8);
     mstats.incMemAlloc(a_size*(newbits-oldbits)/8);
@@ -239,7 +239,7 @@ void MEDDLY::node_headers::expandElementSize(unsigned oldbits, unsigned newbits)
 
 void MEDDLY::node_headers::shrinkElementSize(unsigned oldbits, unsigned newbits)
 {
-    MEDDLY_DCASSERT(oldbits >= newbits);
+    ASSERT(__FILE__, __LINE__, oldbits >= newbits);
 
     mstats.decMemUsed((a_last - a_freed)*(oldbits-newbits)/8);
     mstats.decMemAlloc(a_size*(oldbits-newbits)/8);
@@ -260,7 +260,7 @@ void MEDDLY::node_headers::sweepAllInCacheBits()
 #ifdef DEBUG_SWEEP_DETAIL
     std::cerr << "Done cache scan; nodes that will be reclaimed:\n\t";
 
-    MEDDLY_DCASSERT(is_in_cache);
+    ASSERT(__FILE__, __LINE__, is_in_cache);
     size_t p = 0;
     for (;;) {
         p = is_in_cache->firstZero(++p);
@@ -322,9 +322,9 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
     // if we're using mark and sweep).
     //
     if (a_sweep < a_last) {
-        MEDDLY_DCASSERT(addresses);
-        MEDDLY_DCASSERT(is_in_cache);
-        MEDDLY_DCASSERT(is_reachable);
+        ASSERT(__FILE__, __LINE__, addresses);
+        ASSERT(__FILE__, __LINE__, is_in_cache);
+        ASSERT(__FILE__, __LINE__, is_reachable);
         for (;;) {
             a_sweep = is_in_cache->firstZero(++a_sweep);
             if (a_sweep > a_last) break;
@@ -333,7 +333,7 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
             break;
         }
         if (found) {
-            MEDDLY_DCASSERT(0==addresses->get((size_t)found));
+            ASSERT(__FILE__, __LINE__, 0==addresses->get((size_t)found));
         } else {
             // we're done sweeping
             a_sweep = SIZE_MAX;
@@ -364,7 +364,7 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
         expandHandleList();
     }
     a_last++;
-    MEDDLY_DCASSERT(a_last < a_size);
+    ASSERT(__FILE__, __LINE__, a_last < a_size);
 
 #ifdef DEBUG_HANDLE_FREELIST
     dump_handle_info(*this, a_last+1);
@@ -380,10 +380,10 @@ MEDDLY::node_handle MEDDLY::node_headers::getFreeNodeHandle()
 
 void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
 {
-    MEDDLY_DCASSERT(p>0);
+    ASSERT(__FILE__, __LINE__, p>0);
     const size_t pp = size_t(p);
 
-    MEDDLY_DCASSERT(0==getNodeCacheCount(p));
+    ASSERT(__FILE__, __LINE__, 0==getNodeCacheCount(p));
 
 #ifdef DEBUG_HANDLE_MGT
     std::cerr << "Forest " << parent.FID()
@@ -439,9 +439,9 @@ void MEDDLY::node_headers::recycleNodeHandle(node_handle p)
 void MEDDLY::node_headers::swapNodes(node_handle p, node_handle q,
         bool swap_incounts)
 {
-    MEDDLY_DCASSERT(p!=q);
-    MEDDLY_DCASSERT(p>0);
-    MEDDLY_DCASSERT(q>0);
+    ASSERT(__FILE__, __LINE__, p!=q);
+    ASSERT(__FILE__, __LINE__, p>0);
+    ASSERT(__FILE__, __LINE__, q>0);
 
     const size_t sp = size_t(p);
     const size_t sq = size_t(q);
@@ -514,7 +514,7 @@ inline void show_element(MEDDLY::output &s, const char* what, const A* array,
 
 void MEDDLY::node_headers::showHeader(output &s, node_handle p) const
 {
-    MEDDLY_DCASSERT(p>0);
+    ASSERT(__FILE__, __LINE__, p>0);
 
     int k = ABS(getNodeLevel(p));
     const variable* v = parent.getDomain()->getVar(
@@ -638,7 +638,7 @@ void MEDDLY::node_headers::expandHandleList()
         std::cerr << "Unreachable nodes:\n\t";
 
         for (node_handle p=1; p<=a_last; p++) {
-            MEDDLY_DCASSERT(is_reachable);
+            ASSERT(__FILE__, __LINE__, is_reachable);
             if (is_reachable->get(p)) continue;
             std::cerr << p << ", ";
         }
@@ -649,7 +649,7 @@ void MEDDLY::node_headers::expandHandleList()
         // Because there's no way for us to recover
         // an unreachable node, go ahead and delete them now.
         //
-        MEDDLY_DCASSERT(is_reachable);
+        ASSERT(__FILE__, __LINE__, is_reachable);
         size_t unrch = 0;
         for (;;) {
             unrch = is_reachable->firstZero(++unrch);

@@ -34,10 +34,10 @@ MEDDLY::ct_entry_result::~ct_entry_result()
 
 void MEDDLY::ct_entry_result::initialize(const ct_entry_type* et)
 {
-    MEDDLY_DCASSERT(et);
+    ASSERT(__FILE__, __LINE__, et);
     etype = et;
     const unsigned slots = etype->getResultSize();
-    MEDDLY_DCASSERT(0==build);
+    ASSERT(__FILE__, __LINE__, 0==build);
     build = new ct_entry_item[slots];
 }
 

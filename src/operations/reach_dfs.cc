@@ -168,25 +168,25 @@ class MEDDLY::common_dfs : public binary_operation {
           return NULPTR == head;
         }
         inline void add(unsigned i) {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, i, size);
+            CHECK_RANGE(__FILE__, __LINE__, 0u, i, size);
           if (NOTINQ != data[i]) return;
           if (NULPTR == head) {
             // empty list
             head = int(i);
           } else {
             // not empty list
-              MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, (unsigned) tail, size);
+              CHECK_RANGE(__FILE__, __LINE__, 0u, (unsigned) tail, size);
             data[tail] = int(i);
           }
           tail = int(i);
           data[i] = NULPTR;
         }
         inline unsigned remove() {
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, unsigned(head), size);
+            CHECK_RANGE(__FILE__, __LINE__, 0u, unsigned(head), size);
             unsigned ans = unsigned(head);
             head = data[head];
             data[ans] = NOTINQ;
-            MEDDLY::CHECK_RANGE(__FILE__, __LINE__, 0u, ans, size);
+            CHECK_RANGE(__FILE__, __LINE__, 0u, ans, size);
             return ans;
         }
     };
