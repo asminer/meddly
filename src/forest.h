@@ -2004,6 +2004,7 @@ class MEDDLY::forest {
         static void unregisterForest(forest* f);
 
         friend class forest_initializer;
+        friend class initializer_list;
 
     // ------------------------------------------------------------
     private: // private members for the forest registry
@@ -2015,7 +2016,6 @@ class MEDDLY::forest {
         unsigned fid;
 
 
-        friend class initializer_list;
 
 // ===================================================================
 //

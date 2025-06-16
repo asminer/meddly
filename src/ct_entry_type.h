@@ -21,20 +21,23 @@
 
 #include "defines.h"
 #include "edge_value.h"
-#include "forest.h"
 #include "compute_table.h"
+#include "forest.h"
 
 #define DELETE_ON_ZERO
 
 namespace MEDDLY {
     class ct_object;
     class ct_entry_type;
+#ifdef ALLOW_DEPRECATED_0_17_6
     class ct_entry_key;
     class ct_entry_result;
+#endif
     class ct_vector;
     // class compute_table;
 
     class output;
+    class relforest;
 
     enum class ct_typeID {
         ERROR   = 0,
