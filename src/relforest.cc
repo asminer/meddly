@@ -28,6 +28,35 @@ std::vector <MEDDLY::relforest*> MEDDLY::relforest::all_forests;
 
 // ******************************************************************
 // *                                                                *
+// *                    relforest::node  methods                    *
+// *                                                                *
+// ******************************************************************
+
+bool MEDDLY::relforest::node::outgoing(unsigned i, slice &u)
+{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+bool MEDDLY::relforest::node::incoming(unsigned i, slice &u)
+{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+MEDDLY::relforest::node::node(const relforest* _parent) : parent(_parent)
+{
+#ifdef DEVELOPMENT_CODE
+    my_ID = ~0;
+    my_level = ~0;
+#endif
+}
+
+MEDDLY::relforest::node::~node()
+{
+}
+
+
+// ******************************************************************
+// *                                                                *
 // *                       relforest  methods                       *
 // *                                                                *
 // ******************************************************************
@@ -42,20 +71,5 @@ MEDDLY::relforest::relforest(domain *_D)
 MEDDLY::relforest::~relforest()
 {
     unregisterForest(this);
-}
-
-unsigned MEDDLY::relforest::levelOf(node_handle ID) const
-{
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-bool MEDDLY::relforest::outgoing(node_handle ID, unsigned i, unpacked &u)
-{
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-bool MEDDLY::relforest::incoming(node_handle ID, unsigned i, unpacked &u)
-{
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 

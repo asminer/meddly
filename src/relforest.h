@@ -46,13 +46,68 @@ namespace MEDDLY {
  */
 class MEDDLY::relforest {
     public:
-        struct unpacked {
+        /// An unpacked row or column of a relation node.
+        struct slice {
             node_handle diag_down;
             edge_value  diag_ev;
 
             std::vector <unsigned>      index;
             std::vector <node_handle>   down;
             std::vector <edge_value>    values;
+        };
+    public:
+        /// A generic relation node.
+        class node {
+            public:
+                inline unsigned ID() const {
+                    return my_ID;
+                }
+                inline unsigned level() const {
+                    return my_level;
+                }
+                inline const relforest* getParent() const {
+                    return parent;
+                }
+
+                /**
+                    For the relation node, get the outgoing edges from i.
+                    When viewed as a matrix, this obtains row i.
+                    Default behavior is to throw a 'not implemented' error.
+                        @param  i   (unprimed) variable value
+                        @param  u   will be filled with outgoing edges
+
+                        @return true, iff there is at least one outgoing edge
+                */
+                virtual bool outgoing(unsigned i, slice &u);
+
+
+                /**
+                    For the relation node, get the incoming edges to i.
+                    When viewed as a matrix, this obtains column i.
+                    Default behavior is to throw a 'not implemented' error.
+                        @param  i   (primed) variable value
+                        @param  u   will be filled with outgoing edges
+
+                        @return true, iff there is at least one incoming edge
+                */
+                virtual bool incoming(unsigned i, slice &u);
+
+            protected:
+                node(const relforest* _parent);
+                virtual ~node();
+
+                inline void set_ID(unsigned id) {
+                    my_ID = id;
+                }
+                inline void set_level(unsigned lvl) {
+                    my_level = lvl;
+                }
+
+            private:
+                const relforest* parent;
+                unsigned my_ID;
+                unsigned my_level;
+
         };
     public:
         relforest(domain *_D);
@@ -69,35 +124,19 @@ class MEDDLY::relforest {
         }
 
         /**
-            Get the level of the relation specified by ID.
-            Default behavior is to throw a 'not implemented' error.
+            Build a relation node for the given handle.
+                @param  ID      Node to return.
+                                Undefined behavior if ID <= 0.
+                @param  byrows  If true, we will never call 'incoming'
+                                on the created node.
         */
-        virtual unsigned levelOf(node_handle ID) const;
+        virtual node& getNode(node_handle ID, bool byrows = true) = 0;
 
         /**
-            For the relation ID, get the outgoing edges from i.
-            When viewed as a matrix, this obtains row i.
-            Default behavior is to throw a 'not implemented' error.
-                @param  ID  relation identifier
-                @param  i   (unprimed) variable value
-                @param  u   will be filled with outgoing edges
+            Recycle a relation node.
+        */
+        virtual void doneNode(node &) = 0;
 
-                @return true, iff there is at least one outgoing edge
-         */
-        virtual bool outgoing(node_handle ID, unsigned i, unpacked &u);
-
-
-        /**
-            For the relation ID, get the incoming edges to i.
-            When viewed as a matrix, this obtains column i.
-            Default behavior is to throw a 'not implemented' error.
-                @param  ID  relation identifier
-                @param  i   (primed) variable value
-                @param  u   will be filled with outgoing edges
-
-                @return true, iff there is at least one incoming edge
-         */
-        virtual bool incoming(node_handle ID, unsigned i, unpacked &u);
 
         /// Unique relforest identifier; use 0 for 'no forest'
         inline unsigned FID() const { return fid; }

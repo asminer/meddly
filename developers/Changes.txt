@@ -7,31 +7,17 @@ Implement next:
         * unique ID for each "node"
         * zero ID always means empty relation
         * negative ID always means 'terminal node'
-        * get level of node at ID
-        * read row i from ID
-            -> returns a const struct reference
-                    diagonal down ID
-                    sparse down list
-                (one row at a time per ID)
 
-            -> will ONLY be called for "confirmed" rows,
-               so OTF stuff can use this to confirm local states.
+        * relation pool methods:
+            virtual relation_node& fetchRelation(unsigned ID, bool outgoing)=0;
+            virtual void doneRelation(relation_node& rn)=0;
 
+        * abstract base class for "relation node"
+            unsigned rnID;
+            unsigned level;
 
-            struct relstruct {
-                node_handle diagonal;
-                edge_value  diag_ev;
-
-                unsigned* index;
-                node_handle* down;
-                edge_value* values;
-                //
-                // ^ or use std::vector?
-            }
-
-            virtual bool outgoing(node_handle ID, unsigned i, relstruct &rs);
-            virtual bool incoming(node_handle ID, unsigned i, relstruct &rs);
-
+            virtual bool outgoing(unsigned i, relslice &rs);
+            virtual bool incoming(unsigned i, relslice &rs);
             // ^
             // return false if there are no outgoing/incoming edges;
             // otherwise return true.
@@ -42,7 +28,18 @@ Implement next:
             // if the function returns false.
             //
 
-            virtual unsigned levelOf(node_handle ID) const;
+        struct relslice {
+            node_handle diagonal;
+            edge_value  diag_ev;
+
+            unsigned* index;
+            node_handle* down;
+            edge_value* values;
+            //
+            // ^ or use std::vector?
+        };
+
+
 
 
     types of pools:
