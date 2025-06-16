@@ -64,7 +64,7 @@ namespace MEDDLY {
                 forest* fc, edge_value &cv, node_handle &c,
                 unary_operation* copier)
         {
-            MEDDLY_DCASSERT(false);
+            FAIL(__FILE__, __LINE__);
         }
         inline static bool simplifiesToFirstArg(int L,
                 const forest* fa, node_handle &a,
@@ -92,8 +92,8 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
-            MEDDLY_DCASSERT(a.isVoid());
-            MEDDLY_DCASSERT(b.isVoid());
+            ASSERT(__FILE__, __LINE__, a.isVoid());
+            ASSERT(__FILE__, __LINE__, b.isVoid());
             c.set();
         }
     };
@@ -122,7 +122,7 @@ namespace MEDDLY {
                 forest* fc, edge_value &cv, node_handle &c,
                 unary_operation* copier)
         {
-            MEDDLY_DCASSERT(false);
+            FAIL(__FILE__, __LINE__);
         }
         inline static bool simplifiesToFirstArg(int L,
                 const forest* fa, node_handle &a,
@@ -153,8 +153,8 @@ namespace MEDDLY {
             }
             else
             {
-                MEDDLY_DCASSERT(OMEGA_NORMAL == a);
-                MEDDLY_DCASSERT(OMEGA_NORMAL == b);
+                ASSERT(__FILE__, __LINE__, OMEGA_NORMAL == a);
+                ASSERT(__FILE__, __LINE__, OMEGA_NORMAL == b);
                 c = OMEGA_NORMAL;
             }
         }
@@ -196,7 +196,7 @@ namespace MEDDLY {
                 forest* fc, edge_value &cv, node_handle &c,
                 unary_operation* copyop)
         {
-            MEDDLY_DCASSERT(false);
+            FAIL(__FILE__, __LINE__);
         }
         inline static bool simplifiesToFirstArg(int L,
                 const forest*, const edge_value &av, node_handle &a,
@@ -331,6 +331,6 @@ void MEDDLY::PLUS_init()
 
 void MEDDLY::PLUS_done()
 {
-    MEDDLY_DCASSERT(PLUS_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, PLUS_cache.isEmpty());
 }
 

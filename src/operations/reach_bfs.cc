@@ -53,15 +53,15 @@ class MEDDLY::common_bfs : public binary_operation {
   protected:
     inline void setUnionOp(binary_operation* uop)
     {
-      MEDDLY_DCASSERT(uop);
-      MEDDLY_DCASSERT(0==unionOp);
+      ASSERT(__FILE__, __LINE__, uop);
+      ASSERT(__FILE__, __LINE__, 0==unionOp);
       unionOp = uop;
     }
 
     inline void setImageOp(binary_operation* iop)
     {
-      MEDDLY_DCASSERT(iop);
-      MEDDLY_DCASSERT(0==imageOp);
+      ASSERT(__FILE__, __LINE__, iop);
+      ASSERT(__FILE__, __LINE__, 0==imageOp);
       imageOp = iop;
     }
 
@@ -87,8 +87,8 @@ MEDDLY::common_bfs::common_bfs(binary_list& oc, forest* a1,
 
 void MEDDLY::common_bfs::computeDDEdge(const dd_edge &init, const dd_edge &R, dd_edge &reachableStates, bool userFlag)
 {
-  MEDDLY_DCASSERT(unionOp);
-  MEDDLY_DCASSERT(imageOp);
+  ASSERT(__FILE__, __LINE__, unionOp);
+  ASSERT(__FILE__, __LINE__, imageOp);
 
   reachableStates = init;
   dd_edge prevReachable(resF);
@@ -274,7 +274,7 @@ void MEDDLY::REACHABLE_STATES_BFS_init()
 
 void MEDDLY::REACHABLE_STATES_BFS_done()
 {
-    MEDDLY_DCASSERT(FWD_BFS_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, FWD_BFS_cache.isEmpty());
 }
 
 // ******************************************************************
@@ -313,6 +313,6 @@ void MEDDLY::REVERSE_REACHABLE_BFS_init()
 
 void MEDDLY::REVERSE_REACHABLE_BFS_done()
 {
-    MEDDLY_DCASSERT(REV_BFS_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, REV_BFS_cache.isEmpty());
 }
 

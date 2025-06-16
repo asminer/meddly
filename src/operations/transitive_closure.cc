@@ -198,10 +198,10 @@ MEDDLY::transitive_closure_forwd_bfs
 
 void MEDDLY::transitive_closure_forwd_bfs::compute(const dd_edge &a, const dd_edge &b, const dd_edge &r, dd_edge &res)
 {
-  MEDDLY_DCASSERT(arg1F == a.getForest());
-  MEDDLY_DCASSERT(arg2F == b.getForest());
-  MEDDLY_DCASSERT(arg3F == r.getForest());
-  MEDDLY_DCASSERT(resF == res.getForest());
+  ASSERT(__FILE__, __LINE__, arg1F == a.getForest());
+  ASSERT(__FILE__, __LINE__, arg2F == b.getForest());
+  ASSERT(__FILE__, __LINE__, arg3F == r.getForest());
+  ASSERT(__FILE__, __LINE__, resF == res.getForest());
 
   /*
   long aev = Inf<long>();
@@ -221,7 +221,7 @@ void MEDDLY::transitive_closure_forwd_bfs::compute(const dd_edge &a, const dd_ed
 void MEDDLY::transitive_closure_forwd_bfs::iterate(long aev, node_handle a, long bev, node_handle b, node_handle r, long& cev, node_handle& c)
 {
   cev = bev;
-  MEDDLY_DCASSERT(arg2F == resF);
+  ASSERT(__FILE__, __LINE__, arg2F == resF);
   c = resF->linkNode(b);
 
   node_handle prev = 0;
@@ -305,7 +305,7 @@ MEDDLY::ct_entry_key* MEDDLY::transitive_closure_dfs::findResult(long aev, node_
     long bev, node_handle b, node_handle c, long& dev, node_handle &d)
 {
   ct_entry_key* key = CT0->useEntryKey(etype[0], 0);
-  MEDDLY_DCASSERT(key);
+  ASSERT(__FILE__, __LINE__, key);
   key->writeL(aev);
   key->writeN(a);
   key->writeN(b);
@@ -323,9 +323,9 @@ MEDDLY::ct_entry_key* MEDDLY::transitive_closure_dfs::findResult(long aev, node_
     dev += bev;
   }
   else {
-    MEDDLY_DCASSERT(dev == 0);
+    ASSERT(__FILE__, __LINE__, dev == 0);
   }
-  MEDDLY_DCASSERT(dev >= 0);
+  ASSERT(__FILE__, __LINE__, dev >= 0);
 
   CT0->recycle(key);
   return 0;
@@ -340,7 +340,7 @@ void MEDDLY::transitive_closure_dfs::saveResult(ct_entry_key* key,
     CTresult[0].writeL(0);
   }
   else {
-    MEDDLY_DCASSERT(dev - bev >= 0);
+    ASSERT(__FILE__, __LINE__, dev - bev >= 0);
     CTresult[0].writeL(dev - bev);
   }
   CTresult[0].writeN(d);
@@ -351,8 +351,8 @@ void MEDDLY::transitive_closure_dfs::saveResult(ct_entry_key* key,
 // Partition the nsf based on "top level"
 void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
 {
-  MEDDLY_DCASSERT(arg3F);
-  MEDDLY_DCASSERT(splits == nullptr);
+  ASSERT(__FILE__, __LINE__, arg3F);
+  ASSERT(__FILE__, __LINE__, splits == nullptr);
 
   splits = new dd_edge[arg3F->getNumVariables() + 1];
 
@@ -367,7 +367,7 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
     }
 
     int mxdLevel = root.getLevel(); // arg3F->getNodeLevel(mxd);
-    MEDDLY_DCASSERT(ABS(mxdLevel) <= level);
+    ASSERT(__FILE__, __LINE__, ABS(mxdLevel) <= level);
 
     // Initialize readers
     unpacked_node* Ru = isLevelAbove(level, mxdLevel)
@@ -418,10 +418,10 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
 
 void MEDDLY::transitive_closure_dfs::computeDDEdge(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res, bool uf)
 {
-  MEDDLY_DCASSERT(arg1F == a.getForest());
-  MEDDLY_DCASSERT(arg2F == b.getForest());
-  MEDDLY_DCASSERT(arg3F == r.getForest());
-  MEDDLY_DCASSERT(resF == res.getForest());
+  ASSERT(__FILE__, __LINE__, arg1F == a.getForest());
+  ASSERT(__FILE__, __LINE__, arg2F == b.getForest());
+  ASSERT(__FILE__, __LINE__, arg3F == r.getForest());
+  ASSERT(__FILE__, __LINE__, resF == res.getForest());
 
   // Partition NSF by levels
   splitMxd(r);
@@ -471,9 +471,9 @@ MEDDLY::transitive_closure_forwd_dfs::transitive_closure_forwd_dfs(
 
 void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle a, int in, unpacked_node& nb)
 {
-  MEDDLY_DCASSERT(a != 0);
+  ASSERT(__FILE__, __LINE__, a != 0);
   // nb is at a primed level
-  MEDDLY_DCASSERT(nb.getLevel() < 0);
+  ASSERT(__FILE__, __LINE__, nb.getLevel() < 0);
 
   const dd_edge& mxd = splits[-nb.getLevel()];
   if (mxd.getNode() == 0) {
@@ -482,7 +482,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
 
   // const int mxdLevel = arg3F->getNodeLevel(mxd);
   const int mxdLevel = mxd.getLevel();
-  MEDDLY_DCASSERT(ABS(mxdLevel) == -nb.getLevel());
+  ASSERT(__FILE__, __LINE__, ABS(mxdLevel) == -nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
   unpacked_node* Ru = (mxdLevel < 0)
@@ -513,8 +513,8 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
     queue.pop_front();
     waiting[ip] = false;
 
-    MEDDLY_DCASSERT(nb.down(ip) != 0);
-    MEDDLY_DCASSERT(Ru->down(ip) != 0);
+    ASSERT(__FILE__, __LINE__, nb.down(ip) != 0);
+    ASSERT(__FILE__, __LINE__, Ru->down(ip) != 0);
 
     const int dlevel = arg3F->getNodeLevel(Ru->down(ip));
     if (dlevel == -Ru->getLevel()) {
@@ -527,17 +527,17 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
     for (int jpz = 0; jpz < Rp->getSize(); jpz++) {
       const int jp = Rp->index(jpz);
       if (A->down(jp) == 0) {
-        MEDDLY_DCASSERT(A->edgeval(jp).getLong() == 0);
+        ASSERT(__FILE__, __LINE__, A->edgeval(jp).getLong() == 0);
         continue;
       }
 
       long recev = 0;
       node_handle rec = 0;
       recFire(aev + A->edgeval(jp).getLong(), A->down(jp), nb.edgeval(ip).getLong(), nb.down(ip), Rp->down(jpz), recev, rec);
-      MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
+      ASSERT(__FILE__, __LINE__, isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
       if (rec == 0) {
-        MEDDLY_DCASSERT(recev == 0);
+        ASSERT(__FILE__, __LINE__, recev == 0);
         continue;
       }
 
@@ -553,7 +553,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
       bool updated = true;
 
       if (nb.down(jp) == 0) {
-        MEDDLY_DCASSERT(nb.edgeval(jp).getLong() == 0);
+        ASSERT(__FILE__, __LINE__, nb.edgeval(jp).getLong() == 0);
         nb.setFull(jp, edge_value(recev), rec);
         // nb.setEdge(jp, recev);
         // nb.d_ref(jp) = rec;
@@ -571,7 +571,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
         node_handle acc = 0;
         minOp->computeTemp(nb.edgeval(jp).getLong(), nb.down(jp), recev, rec, accev, acc);
 
-        MEDDLY_DCASSERT(acc != 0);
+        ASSERT(__FILE__, __LINE__, acc != 0);
         resF->unlinkNode(rec);
         if (acc != nb.down(jp)) {
           resF->unlinkNode(nb.down(jp));
@@ -579,7 +579,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
           nb.d_ref(jp) = acc;
         }
         else {
-          MEDDLY_DCASSERT(accev == nb.edgeval(jp).getLong());
+          ASSERT(__FILE__, __LINE__, accev == nb.edgeval(jp).getLong());
           resF->unlinkNode(acc);
           updated = false;
         }
@@ -594,7 +594,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
         }
         else {
           if (!waiting[jp] && Ru->down(jp) != 0) {
-            MEDDLY_DCASSERT(A->down(jp) != 0);
+            ASSERT(__FILE__, __LINE__, A->down(jp) != 0);
             queue.push_back(jp);
             waiting[jp] = true;
           }
@@ -625,13 +625,13 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
   // check the cache
   ct_entry_key* key = findResult(aev, a, bev, b, r, cev, c);
   if (key == 0) {
-    MEDDLY_DCASSERT(cev >= 0);
+    ASSERT(__FILE__, __LINE__, cev >= 0);
     return;
   }
 
   // check if mxd and evmdd are at the same level
   const int aLevel = arg1F->getNodeLevel(a);
-  MEDDLY_DCASSERT(aLevel >= 0);
+  ASSERT(__FILE__, __LINE__, aLevel >= 0);
   const int bLevel = arg2F->getNodeLevel(b);
   const int rLevel = arg3F->getNodeLevel(r);
   const int level = MAX(MAX(ABS(rLevel), ABS(bLevel)), aLevel);
@@ -670,7 +670,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
 
     if (ABS(rLevel) < level) {
       // Assume identity reduction
-      MEDDLY_DCASSERT(arg3F->isIdentityReduced());
+      ASSERT(__FILE__, __LINE__, arg3F->isIdentityReduced());
       for (int ip = 0; ip < size; ip++) {
         long tev = 0;
         node_handle t = 0;
@@ -681,7 +681,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
       }
     }
     else {
-      MEDDLY_DCASSERT(ABS(rLevel) == level);
+      ASSERT(__FILE__, __LINE__, ABS(rLevel) == level);
 
       //
       // Need to process this level in the MXD.
@@ -719,7 +719,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
         for (int jpz = 0; jpz < Rp->getSize(); jpz++) {
           const int jp = Rp->index(jpz);
           if (A->down(jp) == 0) {
-            MEDDLY_DCASSERT(A->edgeval(jp).getLong() == 0);
+            ASSERT(__FILE__, __LINE__, A->edgeval(jp).getLong() == 0);
             continue;
           }
 
@@ -731,12 +731,12 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
           recFire(aev + A->edgeval(jp).getLong(), A->down(jp), bev + B->edgeval(i).getLong() + D->edgeval(ip).getLong(), D->down(ip), Rp->down(jpz), nev, n);
 
           if (n == 0) {
-            MEDDLY_DCASSERT(nev == 0);
+            ASSERT(__FILE__, __LINE__, nev == 0);
             continue;
           }
 
           if (Tp->down(jp) == 0) {
-            MEDDLY_DCASSERT(Tp->edgeval(jp).getLong() == 0);
+            ASSERT(__FILE__, __LINE__, Tp->edgeval(jp).getLong() == 0);
             Tp->setFull(jp, edge_value(nev), n);
             // Tp->setEdge(jp, nev);
             // Tp->d_ref(jp) = n;
@@ -784,7 +784,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
   edge_value ev;
   resF->createReducedNode(T, ev, c);
   cev = ev.getLong();
-  MEDDLY_DCASSERT(cev >= 0);
+  ASSERT(__FILE__, __LINE__, cev >= 0);
 
   saveResult(key, aev, a, bev, b, r, cev, c);
 }
@@ -799,9 +799,9 @@ MEDDLY::transitive_closure_evplus::transitive_closure_evplus(transitive_closure_
   forest* cons, forest* tc, forest* res)
   : operation("transitive_closure_evplus", 1)
 {
-  MEDDLY_DCASSERT(cons->isEVPlus() && !cons->isForRelations());
-  MEDDLY_DCASSERT(tc->isEVPlus() && tc->isForRelations());
-  MEDDLY_DCASSERT(res->isEVPlus() && res->isForRelations());
+  ASSERT(__FILE__, __LINE__, cons->isEVPlus() && !cons->isForRelations());
+  ASSERT(__FILE__, __LINE__, tc->isEVPlus() && tc->isForRelations());
+  ASSERT(__FILE__, __LINE__, res->isEVPlus() && res->isForRelations());
 
   parent = p;
   consF = cons;
@@ -865,7 +865,7 @@ MEDDLY::ct_entry_key* MEDDLY::transitive_closure_evplus::findResult(long aev, no
     long bev, node_handle b, int level, long& cev, node_handle &c)
 {
   ct_entry_key* key = CT0->useEntryKey(etype[0], 0);
-  MEDDLY_DCASSERT(key);
+  ASSERT(__FILE__, __LINE__, key);
   key->writeL(aev);
   key->writeN(a);
   key->writeN(b);
@@ -884,7 +884,7 @@ MEDDLY::ct_entry_key* MEDDLY::transitive_closure_evplus::findResult(long aev, no
     cev += bev;
   }
   else {
-    MEDDLY_DCASSERT(cev == 0);
+    ASSERT(__FILE__, __LINE__, cev == 0);
   }
   CT0->recycle(key);
   return 0;
@@ -899,7 +899,7 @@ void MEDDLY::transitive_closure_evplus::saveResult(ct_entry_key* key,
     CTresult[0].writeL(0);
   }
   else {
-    MEDDLY_DCASSERT(cev - bev >= 0);
+    ASSERT(__FILE__, __LINE__, cev - bev >= 0);
     CTresult[0].writeL(cev - bev);
   }
   CTresult[0].writeN(c);
@@ -913,7 +913,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
 
 void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev, node_handle b, int level, long& cev, node_handle& c)
 {
-  MEDDLY_DCASSERT(level >= 0);
+  ASSERT(__FILE__, __LINE__, level >= 0);
 
   if (checkTerminals(aev, a, bev, b, cev, c)) {
     return;
@@ -928,7 +928,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
   const int aLevel = consF->getNodeLevel(a);
   const int bLevel = tcF->getNodeLevel(b);
 
-  MEDDLY_DCASSERT(aLevel >= 0);
+  ASSERT(__FILE__, __LINE__, aLevel >= 0);
 
   unpacked_node* A = isLevelAbove(level, aLevel)
     ? unpacked_node::newRedundant(consF, level, 0L, a, FULL_ONLY)
@@ -942,7 +942,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
   for (int i = 0; i < sz; i++) {
       /* T is already zeroed
     if (B->down(i) == 0) {
-      MEDDLY_DCASSERT(resF == tcF);
+      ASSERT(__FILE__, __LINE__, resF == tcF);
       T->setEdge(i, 0L);
       T->d_ref(i) = 0;
     }
@@ -1012,6 +1012,6 @@ void MEDDLY::TRANSITIVE_CLOSURE_DFS_init()
 
 void MEDDLY::TRANSITIVE_CLOSURE_DFS_done()
 {
-    MEDDLY_DCASSERT( TRANSITIVE_CLOSURE_DFS_cache.isEmpty() );
+    ASSERT(__FILE__, __LINE__,  TRANSITIVE_CLOSURE_DFS_cache.isEmpty() );
 }
 

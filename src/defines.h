@@ -207,8 +207,5 @@ namespace MEDDLY {
 } // namespace MEDDLY
 
 
-#define MEDDLY_DCASSERT(X) MEDDLY::ASSERT(__FILE__, __LINE__, X)
-
-
 #endif // #include guard
 

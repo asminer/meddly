@@ -62,7 +62,7 @@ class MEDDLY::otfsat_by_events_op : public saturation_operation {
     inline ct_entry_key*
     findSaturateResult(node_handle a, int level, node_handle& b) {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
+      ASSERT(__FILE__, __LINE__, CTsrch);
       CTsrch->writeN(a);
       if (argF->isFullyReduced()) CTsrch->writeI(level);
       CT0->find(CTsrch, CTresult[0]);
@@ -102,7 +102,7 @@ class MEDDLY::common_otf_dfs_by_events_mt : public saturation_operation {
     findResult(node_handle a, node_handle b, node_handle &c)
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
+      ASSERT(__FILE__, __LINE__, CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
       CT0->find(CTsrch, CTresult[0]);
@@ -195,14 +195,14 @@ class MEDDLY::common_otf_dfs_by_events_mt : public saturation_operation {
       } else {
         ans = new indexq();
       }
-      MEDDLY_DCASSERT(ans);
+      ASSERT(__FILE__, __LINE__, ans);
       ans->resize(sz);
       ans->next = 0;
       return ans;
     }
     inline void recycle(indexq* a) {
-      MEDDLY_DCASSERT(a);
-      MEDDLY_DCASSERT(a->isEmpty());
+      ASSERT(__FILE__, __LINE__, a);
+      ASSERT(__FILE__, __LINE__, a->isEmpty());
       a->next = freeqs;
       freeqs = a;
     }
@@ -215,13 +215,13 @@ class MEDDLY::common_otf_dfs_by_events_mt : public saturation_operation {
       } else {
         ans = new charbuf();
       }
-      MEDDLY_DCASSERT(ans);
+      ASSERT(__FILE__, __LINE__, ans);
       ans->resize(sz);
       ans->next = 0;
       return ans;
     }
     inline void recycle(charbuf* a) {
-      MEDDLY_DCASSERT(a);
+      ASSERT(__FILE__, __LINE__, a);
       a->next = freebufs;
       freebufs = a;
     }
@@ -318,7 +318,7 @@ MEDDLY::otfsat_by_events_op::saturate(node_handle mdd, int k)
   parent->saturateHelper(*nb);
   edge_value ev;
   resF->createReducedNode(nb, ev, n);
-  MEDDLY_DCASSERT(ev.isVoid());
+  ASSERT(__FILE__, __LINE__, ev.isVoid());
 
   // save in compute table
   saveSaturateResult(Key, mdd, n);
@@ -393,13 +393,13 @@ void MEDDLY::common_otf_dfs_by_events_mt
 {
   // Initialize operations
   mddUnion = UNION(resF, resF, resF);
-  MEDDLY_DCASSERT(mddUnion);
+  ASSERT(__FILE__, __LINE__, mddUnion);
 
   mxdIntersection = INTERSECTION(relF, relF, relF);
-  MEDDLY_DCASSERT(mxdIntersection);
+  ASSERT(__FILE__, __LINE__, mxdIntersection);
 
   mxdDifference = DIFFERENCE(relF, relF, relF);
-  MEDDLY_DCASSERT(mxdDifference);
+  ASSERT(__FILE__, __LINE__, mxdDifference);
 
 #ifdef DEBUG_INITIAL
   printf("Calling saturate for states:\n");
@@ -545,7 +545,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   while (!queue->isEmpty()) {
     const unsigned i = unsigned(queue->remove());
 
-    MEDDLY_DCASSERT(nb.down(i));
+    ASSERT(__FILE__, __LINE__, nb.down(i));
 
     for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
       // If event i needs rebuilding,
@@ -575,7 +575,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       }
       // check if row i of the event ei is empty
       if (0 == Ru[ei]) continue;
-      MEDDLY_DCASSERT(!Ru[ei]->isExtensible());
+      ASSERT(__FILE__, __LINE__, !Ru[ei]->isExtensible());
       node_handle ei_i = (i < Ru[ei]->getSize())
                         ? Ru[ei]->down(i)
 #ifdef ALLOW_EXTENSIBLE
@@ -594,7 +594,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         Rp->initIdentity(-level, i, ei_i);
       }
 
-      MEDDLY_DCASSERT(!Rp->isExtensible());
+      ASSERT(__FILE__, __LINE__, !Rp->isExtensible());
 
       for (unsigned jz=0; jz<Rp->getSize(); jz++) {
         const unsigned j = Rp->index(jz);
@@ -713,7 +713,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   } else {
     //
     // Need to process this level in the MXD.
-    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
+    ASSERT(__FILE__, __LINE__, ABS(mxdLevel) >= mddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node *Ru = unpacked_node::New(relF, SPARSE_ONLY);
@@ -776,7 +776,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
     }
     // loop over the extensible portion of mxd (if any)
 #ifdef ALLOW_EXTENSIBLE
-    MEDDLY_DCASSERT(!Ru->isExtensible());
+    ASSERT(__FILE__, __LINE__, !Ru->isExtensible());
     if (Ru->isExtensible()) {
       const node_handle pnode = Ru->ext_d();
       for (unsigned i = Ru->ext_i()+1; i < A->getSize(); i++) {
@@ -797,7 +797,7 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
   saturateHelper(*nb);
   edge_value ev;
   resF->createReducedNode(nb, ev, result);
-  MEDDLY_DCASSERT(ev.isVoid());
+  ASSERT(__FILE__, __LINE__, ev.isVoid());
 #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
 #endif
@@ -825,7 +825,7 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::recFireHelper(
     Rp->initFromNode(Ru_i);
   }
 
-  MEDDLY_DCASSERT(!Rp->isExtensible());
+  ASSERT(__FILE__, __LINE__, !Rp->isExtensible());
 
   dd_edge nbdj(resF), newst(resF);
 

@@ -155,7 +155,7 @@ void MEDDLY::copy_MT::compute(int L, unsigned in,
 #ifdef TRACE
     out.indentation(0);
 #endif
-    MEDDLY_DCASSERT(av.isVoid());
+    ASSERT(__FILE__, __LINE__, av.isVoid());
     cv.set();
     _compute(L, in, ap, cv, cp);
 }
@@ -195,7 +195,7 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
                     break;
 
                 default:
-                    MEDDLY_DCASSERT(false);
+                    FAIL(__FILE__, __LINE__, "Unknown terminal type");
                     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             } // switch
         } else {
@@ -216,7 +216,7 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
                     break;
 
                 default:
-                    MEDDLY_DCASSERT(false);
+                    FAIL(__FILE__, __LINE__, "Unknown edge type");
                     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             } // switch
         } // MT vs EV
@@ -275,7 +275,7 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
         //
         unpacked_node* Au = unpacked_node::newFromNode(argF, A, FULL_ONLY);
         unpacked_node* Cu = unpacked_node::newWritable(resF, Alevel, FULL_ONLY);
-        MEDDLY_DCASSERT(Au->getSize() == Cu->getSize());
+        ASSERT(__FILE__, __LINE__, Au->getSize() == Cu->getSize());
 #ifdef TRACE
         out << "A: ";
         Au->show(out, true);
@@ -294,7 +294,7 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
             node_handle d;
             _compute(Cnextlevel, i, Au->down(i), v, d);
             if (resF->isMultiTerminal()) {
-                MEDDLY_DCASSERT(v.isVoid());
+                ASSERT(__FILE__, __LINE__, v.isVoid());
                 Cu->setFull(i, d);
             } else {
                 Cu->setFull(i, v, d);
@@ -328,7 +328,7 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
         // Add to CT
         //
         if (resF->isMultiTerminal()) {
-            MEDDLY_DCASSERT(cv.isVoid());
+            ASSERT(__FILE__, __LINE__, cv.isVoid());
             res[0].setN(cp);
         } else {
             res[0].set(cv);
@@ -449,7 +449,7 @@ void MEDDLY::copy_EV_fast::compute(int L, unsigned in,
 #ifdef TRACE
     out.indentation(0);
 #endif
-    MEDDLY_DCASSERT(!av.isVoid());
+    ASSERT(__FILE__, __LINE__, !av.isVoid());
     _compute(L, in, ap, cp);
     cv = edge_value(resF->getEdgeType(), av);
 }
@@ -556,7 +556,7 @@ void MEDDLY::copy_EV_fast::_compute(int L, unsigned in,
         resF->showNode(out, cp, SHOW_DETAILS);
         out << "\n";
 #endif
-        MEDDLY_DCASSERT(cv == resF->getNoOpEdge());
+        ASSERT(__FILE__, __LINE__, cv == resF->getNoOpEdge());
 
         //
         // Add to CT
@@ -734,7 +734,7 @@ void MEDDLY::copy_EV<EdgeOp>::_compute(int L, unsigned in,
                     break;
 
                 default:
-                    MEDDLY_DCASSERT(false);
+                    FAIL(__FILE__, __LINE__, "Unknown terminal type");
                     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             } // switch
         } else {
@@ -767,7 +767,7 @@ void MEDDLY::copy_EV<EdgeOp>::_compute(int L, unsigned in,
                     break;
 
                 default:
-                    MEDDLY_DCASSERT(false);
+                    FAIL(__FILE__, __LINE__, "Unknown edge type");
                     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
             } // switch
         }
@@ -829,7 +829,7 @@ void MEDDLY::copy_EV<EdgeOp>::_compute(int L, unsigned in,
         //
         unpacked_node* Au = unpacked_node::newFromNode(argF, ap, FULL_ONLY);
         unpacked_node* Cu = unpacked_node::newWritable(resF, Alevel, FULL_ONLY);
-        MEDDLY_DCASSERT(Au->getSize() == Cu->getSize());
+        ASSERT(__FILE__, __LINE__, Au->getSize() == Cu->getSize());
 #ifdef TRACE
         out << "A: ";
         Au->show(out, true);
@@ -849,7 +849,7 @@ void MEDDLY::copy_EV<EdgeOp>::_compute(int L, unsigned in,
             _compute(Cnextlevel, i, EdgeOp::applyOp(av, Au->edgeval(i)),
                     Au->down(i), v, d);
             if (resF->isMultiTerminal()) {
-                MEDDLY_DCASSERT(v.isVoid());
+                ASSERT(__FILE__, __LINE__, v.isVoid());
                 Cu->setFull(i, d);
             } else {
                 Cu->setFull(i, v, d);
@@ -885,7 +885,7 @@ void MEDDLY::copy_EV<EdgeOp>::_compute(int L, unsigned in,
         // Add to CT
         //
         if (resF->isMultiTerminal()) {
-            MEDDLY_DCASSERT(cv.isVoid());
+            ASSERT(__FILE__, __LINE__, cv.isVoid());
             res[0].setN(cp);
         } else {
             res[0].set(cv);
@@ -1040,6 +1040,6 @@ void MEDDLY::COPY_init()
 
 void MEDDLY::COPY_done()
 {
-    MEDDLY_DCASSERT(COPY_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, COPY_cache.isEmpty());
 }
 

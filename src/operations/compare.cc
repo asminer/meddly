@@ -174,8 +174,8 @@ void MEDDLY::compare_mt<CTYPE>::compute(int L, unsigned in,
     ++top_count;
     out << CTYPE::name() << " #" << top_count << " begin\n";
 #endif
-    MEDDLY_DCASSERT(av.isVoid());
-    MEDDLY_DCASSERT(bv.isVoid());
+    ASSERT(__FILE__, __LINE__, av.isVoid());
+    ASSERT(__FILE__, __LINE__, bv.isVoid());
 
     _compute(L, in, ap, bp, cp);
 
@@ -310,37 +310,37 @@ void MEDDLY::compare_mt<CTYPE>::_compute(int L, unsigned in,
     unpacked_node* Au = unpacked_node::New(arg1F, FULL_ONLY);
     if (Alevel != Clevel) {
         if (arg1F->isIdentityReduced() && Clevel<0) {
-            MEDDLY_DCASSERT(Clevel == L);
+            ASSERT(__FILE__, __LINE__, Clevel == L);
             Au->initIdentity(Clevel, in, A);
-            MEDDLY_DCASSERT(Au->wasIdentity());
+            ASSERT(__FILE__, __LINE__, Au->wasIdentity());
         } else {
             Au->initRedundant(Clevel, A);
-            MEDDLY_DCASSERT(!Au->wasIdentity());
+            ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
         }
     } else {
         Au->initFromNode(A);
-        MEDDLY_DCASSERT(!Au->wasIdentity());
+        ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
     }
 
     unpacked_node* Bu = unpacked_node::New(arg2F, FULL_ONLY);
     if (Blevel != Clevel) {
         if (arg2F->isIdentityReduced() && Clevel<0) {
-            MEDDLY_DCASSERT(Clevel == L);
+            ASSERT(__FILE__, __LINE__, Clevel == L);
             Bu->initIdentity(Clevel, in, B);
-            MEDDLY_DCASSERT(Bu->wasIdentity());
+            ASSERT(__FILE__, __LINE__, Bu->wasIdentity());
         } else {
             Bu->initRedundant(Clevel, B);
-            MEDDLY_DCASSERT(!Bu->wasIdentity());
+            ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
         }
     } else {
         Bu->initFromNode(B);
-        MEDDLY_DCASSERT(!Bu->wasIdentity());
+        ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
     }
 
     unpacked_node* Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
 
-    MEDDLY_DCASSERT(Cu->getSize() == Au->getSize());
-    MEDDLY_DCASSERT(Cu->getSize() == Bu->getSize());
+    ASSERT(__FILE__, __LINE__, Cu->getSize() == Au->getSize());
+    ASSERT(__FILE__, __LINE__, Cu->getSize() == Bu->getSize());
 
 
 #ifdef TRACE
@@ -380,7 +380,7 @@ void MEDDLY::compare_mt<CTYPE>::_compute(int L, unsigned in,
     //
     edge_value dummy;
     resF->createReducedNode(Cu, dummy, C);
-    MEDDLY_DCASSERT(dummy.isVoid());
+    ASSERT(__FILE__, __LINE__, dummy.isVoid());
 #ifdef TRACE
     out << "reduced to " << C << ": ";
     resF->showNode(out, C, SHOW_DETAILS);
@@ -583,8 +583,8 @@ void MEDDLY::compare_ev<EOP, FACTOR, CTYPE>::compute(int L, unsigned in,
     ++top_count;
     out << CTYPE::name() << " #" << top_count << " begin\n";
 #endif
-    MEDDLY_DCASSERT(!av.isVoid());
-    MEDDLY_DCASSERT(!bv.isVoid());
+    ASSERT(__FILE__, __LINE__, !av.isVoid());
+    ASSERT(__FILE__, __LINE__, !bv.isVoid());
 
     _compute(L, in, av, ap, bv, bp, cp);
 
@@ -744,37 +744,37 @@ void MEDDLY::compare_ev<EOP, FACTOR, CTYPE>::_compute(int L, unsigned in,
     unpacked_node* Au = unpacked_node::New(arg1F, FULL_ONLY);
     if (Alevel != Clevel) {
         if (arg1F->isIdentityReduced() && Clevel<0) {
-            MEDDLY_DCASSERT(Clevel == L);
+            ASSERT(__FILE__, __LINE__, Clevel == L);
             Au->initIdentity(Clevel, in, zero, A);
-            MEDDLY_DCASSERT(Au->wasIdentity());
+            ASSERT(__FILE__, __LINE__, Au->wasIdentity());
         } else {
             Au->initRedundant(Clevel, zero, A);
-            MEDDLY_DCASSERT(!Au->wasIdentity());
+            ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
         }
     } else {
         Au->initFromNode(A);
-        MEDDLY_DCASSERT(!Au->wasIdentity());
+        ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
     }
 
     unpacked_node* Bu = unpacked_node::New(arg2F, FULL_ONLY);
     if (Blevel != Clevel) {
         if (arg2F->isIdentityReduced() && Clevel<0) {
-            MEDDLY_DCASSERT(Clevel == L);
+            ASSERT(__FILE__, __LINE__, Clevel == L);
             Bu->initIdentity(Clevel, in, zero, B);
-            MEDDLY_DCASSERT(Bu->wasIdentity());
+            ASSERT(__FILE__, __LINE__, Bu->wasIdentity());
         } else {
             Bu->initRedundant(Clevel, zero, B);
-            MEDDLY_DCASSERT(!Bu->wasIdentity());
+            ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
         }
     } else {
         Bu->initFromNode(B);
-        MEDDLY_DCASSERT(!Bu->wasIdentity());
+        ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
     }
 
     unpacked_node* Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
 
-    MEDDLY_DCASSERT(Cu->getSize() == Au->getSize());
-    MEDDLY_DCASSERT(Cu->getSize() == Bu->getSize());
+    ASSERT(__FILE__, __LINE__, Cu->getSize() == Au->getSize());
+    ASSERT(__FILE__, __LINE__, Cu->getSize() == Bu->getSize());
 
 #ifdef TRACE
     out << "A: ";
@@ -819,7 +819,7 @@ void MEDDLY::compare_ev<EOP, FACTOR, CTYPE>::_compute(int L, unsigned in,
     //
     edge_value dummy;
     resF->createReducedNode(Cu, dummy, C);
-    MEDDLY_DCASSERT(dummy.isVoid());
+    ASSERT(__FILE__, __LINE__, dummy.isVoid());
 #ifdef TRACE
     out << "reduced to " << C << ": ";
     resF->showNode(out, C, SHOW_DETAILS);
@@ -1583,7 +1583,7 @@ void MEDDLY::EQUAL_init()
 
 void MEDDLY::EQUAL_done()
 {
-    MEDDLY_DCASSERT(EQUAL_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, EQUAL_cache.isEmpty());
 }
 
 // ******************************************************************
@@ -1651,7 +1651,7 @@ void MEDDLY::NOT_EQUAL_init()
 
 void MEDDLY::NOT_EQUAL_done()
 {
-    MEDDLY_DCASSERT(NEQ_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, NEQ_cache.isEmpty());
 }
 
 // ******************************************************************
@@ -1719,7 +1719,7 @@ void MEDDLY::GREATER_THAN_init()
 
 void MEDDLY::GREATER_THAN_done()
 {
-    MEDDLY_DCASSERT(GT_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, GT_cache.isEmpty());
 }
 
 // ******************************************************************
@@ -1787,7 +1787,7 @@ void MEDDLY::GREATER_THAN_EQUAL_init()
 
 void MEDDLY::GREATER_THAN_EQUAL_done()
 {
-    MEDDLY_DCASSERT(GE_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, GE_cache.isEmpty());
 }
 
 // ******************************************************************
@@ -1855,7 +1855,7 @@ void MEDDLY::LESS_THAN_init()
 
 void MEDDLY::LESS_THAN_done()
 {
-    MEDDLY_DCASSERT(LT_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, LT_cache.isEmpty());
 }
 
 // ******************************************************************
@@ -1923,6 +1923,6 @@ void MEDDLY::LESS_THAN_EQUAL_init()
 
 void MEDDLY::LESS_THAN_EQUAL_done()
 {
-    MEDDLY_DCASSERT(LE_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, LE_cache.isEmpty());
 }
 

@@ -422,7 +422,7 @@ void enabling_subevent::confirm(otf_relation &rel, int v, int index) {
   // add minterm:
   // if (value(v[index]) > 0)
   //    add minterm with, minterm[v] = index, minterm[v'] = dont-care
-  MEDDLY_DCASSERT(v == subevent_var);
+  ASSERT(__FILE__, __LINE__, v == subevent_var);
   if (minterm_size == 0) initializeMinterm();
   int value = 0;
   if (!model->valueOf(v, index, value)) {
@@ -491,7 +491,7 @@ void firing_subevent::confirm(otf_relation &rel, int v, int index) {
   // if it is a known index
   //    find value, next_value, and next_value_index
   //    add minterm with, minterm[v] = index, minterm[v'] = next_value_index
-  MEDDLY_DCASSERT(v == subevent_var);
+  ASSERT(__FILE__, __LINE__, v == subevent_var);
   if (minterm_size == 0) initializeMinterm();
   int value = 0;
   if (!model->valueOf(v, index, value)) {

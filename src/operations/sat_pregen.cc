@@ -63,7 +63,7 @@ class MEDDLY::saturation_by_events_op : public saturation_operation {
     inline ct_entry_key*
     findSaturateResult(node_handle a, int level, node_handle& b) {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
+      ASSERT(__FILE__, __LINE__, CTsrch);
       CTsrch->writeN(a);
       if (argF->isFullyReduced()) CTsrch->writeI(level);
       CT0->find(CTsrch, CTresult[0]);
@@ -103,7 +103,7 @@ class MEDDLY::common_dfs_by_events_mt : public saturation_operation {
     findResult(node_handle a, node_handle b, node_handle &c)
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
+      ASSERT(__FILE__, __LINE__, CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
       CT0->find(CTsrch, CTresult[0]);
@@ -196,14 +196,14 @@ class MEDDLY::common_dfs_by_events_mt : public saturation_operation {
       } else {
         ans = new indexq();
       }
-      MEDDLY_DCASSERT(ans);
+      ASSERT(__FILE__, __LINE__, ans);
       ans->resize(sz);
       ans->next = 0;
       return ans;
     }
     inline void recycle(indexq* a) {
-      MEDDLY_DCASSERT(a);
-      MEDDLY_DCASSERT(a->isEmpty());
+      ASSERT(__FILE__, __LINE__, a);
+      ASSERT(__FILE__, __LINE__, a->isEmpty());
       a->next = freeqs;
       freeqs = a;
     }
@@ -216,13 +216,13 @@ class MEDDLY::common_dfs_by_events_mt : public saturation_operation {
       } else {
         ans = new charbuf();
       }
-      MEDDLY_DCASSERT(ans);
+      ASSERT(__FILE__, __LINE__, ans);
       ans->resize(sz);
       ans->next = 0;
       return ans;
     }
     inline void recycle(charbuf* a) {
-      MEDDLY_DCASSERT(a);
+      ASSERT(__FILE__, __LINE__, a);
       a->next = freebufs;
       freebufs = a;
     }
@@ -317,7 +317,7 @@ MEDDLY::saturation_by_events_op::saturate(node_handle mdd, int k)
   parent->saturateHelper(*nb);
   edge_value ev;
   resF->createReducedNode(nb, ev, n);
-  MEDDLY_DCASSERT(ev.isVoid());
+  ASSERT(__FILE__, __LINE__, ev.isVoid());
 
   // save in compute table
   saveSaturateResult(Key, mdd, n);
@@ -392,13 +392,13 @@ void MEDDLY::common_dfs_by_events_mt
 {
   // Initialize operations
   mddUnion = UNION(resF, resF, resF);
-  MEDDLY_DCASSERT(mddUnion);
+  ASSERT(__FILE__, __LINE__, mddUnion);
 
   mxdIntersection = INTERSECTION(relF, relF, relF);
-  MEDDLY_DCASSERT(mxdIntersection);
+  ASSERT(__FILE__, __LINE__, mxdIntersection);
 
   mxdDifference = DIFFERENCE(relF, relF, relF);
-  MEDDLY_DCASSERT(mxdDifference);
+  ASSERT(__FILE__, __LINE__, mxdDifference);
 
 #ifdef DEBUG_INITIAL
   printf("Calling saturate for states:\n");
@@ -515,7 +515,7 @@ void MEDDLY::forwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   for (unsigned ei = 0; ei < nEventsAtThisLevel; ei++) {
     Ru[ei] = unpacked_node::New(relF, FULL_ONLY);
     int eventLevel = events[ei].getLevel();
-    MEDDLY_DCASSERT(ABS(eventLevel) == nb.getLevel());
+    ASSERT(__FILE__, __LINE__, ABS(eventLevel) == nb.getLevel());
     if (eventLevel<0) {
       Ru[ei]->initRedundant(nb.getLevel(), events[ei].getNode());
     } else {
@@ -536,7 +536,7 @@ void MEDDLY::forwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   while (!queue->isEmpty()) {
     unsigned i = queue->remove();
 
-    MEDDLY_DCASSERT(nb.down(i));
+    ASSERT(__FILE__, __LINE__, nb.down(i));
 
     for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
       if (0 == Ru[ei]->down(i)) continue;  // row i of the event ei is empty
@@ -653,7 +653,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
   } else {
     //
     // Need to process this level in the MXD.
-    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
+    ASSERT(__FILE__, __LINE__, ABS(mxdLevel) >= mddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node *Ru = unpacked_node::New(relF, SPARSE_ONLY);
@@ -706,7 +706,7 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_by_events_mt::recFire(
   saturateHelper(*nb);
   edge_value ev;
   resF->createReducedNode(nb, ev, result);
-  MEDDLY_DCASSERT(ev.isVoid());
+  ASSERT(__FILE__, __LINE__, ev.isVoid());
 #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
 #endif
@@ -754,7 +754,7 @@ void MEDDLY::bckwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   for (unsigned ei = 0; ei < nEventsAtThisLevel; ei++) {
     Ru[ei] = unpacked_node::New(relF, FULL_ONLY);
     int eventLevel = events[ei].getLevel();
-    MEDDLY_DCASSERT(ABS(eventLevel) == nb.getLevel());
+    ASSERT(__FILE__, __LINE__, ABS(eventLevel) == nb.getLevel());
     if (eventLevel<0) {
       Ru[ei]->initRedundant(nb.getLevel(), events[ei].getNode());
     } else {
@@ -885,7 +885,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
   } else {
     //
     // Need to process this level in the MXD.
-    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
+    ASSERT(__FILE__, __LINE__, ABS(mxdLevel) >= mddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
     unpacked_node *Ru = unpacked_node::New(relF, SPARSE_ONLY);
@@ -938,7 +938,7 @@ MEDDLY::node_handle MEDDLY::bckwd_dfs_by_events_mt::recFire(node_handle mdd,
   saturateHelper(*nb);
   edge_value ev;
   resF->createReducedNode(nb, ev, result);
-  MEDDLY_DCASSERT(ev.isVoid());
+  ASSERT(__FILE__, __LINE__, ev.isVoid());
 #ifdef TRACE_ALL_OPS
   printf("computed recFire(%d, %d) = %d\n", mdd, mxd, result);
 #endif

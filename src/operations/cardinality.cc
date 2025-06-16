@@ -136,7 +136,7 @@ template <class RTYPE>
 void MEDDLY::card_templ<RTYPE>::compute(int L, unsigned in,
         const edge_value &av, node_handle ap, oper_item &result)
 {
-    MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
+    ASSERT(__FILE__, __LINE__, result.hasType(RTYPE::getOpndType()));
 #ifdef TRACE
     out.indentation(0);
 #endif
@@ -357,7 +357,7 @@ class MEDDLY::mpzcard {
 
         static inline void set(oper_item &result, const ct_item &cached) {
             cached_mpz* G = smart_cast <cached_mpz*> (cached.getG());
-            MEDDLY_DCASSERT(G);
+            ASSERT(__FILE__, __LINE__, G);
             mpz_set(result.hugeint(), G->mpz());
         }
 
@@ -435,5 +435,5 @@ void MEDDLY::CARDINALITY_init()
 
 void MEDDLY::CARDINALITY_done()
 {
-    MEDDLY_DCASSERT( CARD_cache.isEmpty() );
+    ASSERT(__FILE__, __LINE__,  CARD_cache.isEmpty() );
 }

@@ -83,7 +83,7 @@ protected:
   inline ct_entry_key*
   findSaturateResult(node_handle a, int level, node_handle& b) {
     ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-    MEDDLY_DCASSERT(CTsrch);
+    ASSERT(__FILE__, __LINE__, CTsrch);
     CTsrch->writeN(a);
     if (argF->isFullyReduced()) CTsrch->writeI(level);
     CT0->find(CTsrch, CTresult[0]);
@@ -127,7 +127,7 @@ protected:
   findResult(node_handle a, node_handle* b, int num_se, node_handle &c)
   {
     ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], num_se);
-    MEDDLY_DCASSERT(CTsrch);
+    ASSERT(__FILE__, __LINE__, CTsrch);
     CTsrch->writeN(a);
     for(int i = 0; i<num_se; i++)
       CTsrch->writeN(b[i]);
@@ -225,14 +225,14 @@ protected:
     } else {
       ans = new indexq();
     }
-    MEDDLY_DCASSERT(ans);
+    ASSERT(__FILE__, __LINE__, ans);
     ans->resize(sz);
     ans->next = 0;
     return ans;
   }
   inline void recycle(indexq* a) {
-    MEDDLY_DCASSERT(a);
-    MEDDLY_DCASSERT(a->isEmpty());
+    ASSERT(__FILE__, __LINE__, a);
+    ASSERT(__FILE__, __LINE__, a->isEmpty());
     a->next = freeqs;
     freeqs = a;
   }
@@ -245,13 +245,13 @@ protected:
     } else {
       ans = new charbuf();
     }
-    MEDDLY_DCASSERT(ans);
+    ASSERT(__FILE__, __LINE__, ans);
     ans->resize(sz);
     ans->next = 0;
     return ans;
   }
   inline void recycle(charbuf* a) {
-    MEDDLY_DCASSERT(a);
+    ASSERT(__FILE__, __LINE__, a);
     a->next = freebufs;
     freebufs = a;
   }
@@ -370,7 +370,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
   while (!queue->isEmpty()) {
     int i = queue->remove();
 
-    MEDDLY_DCASSERT(nb.down(i));
+    ASSERT(__FILE__, __LINE__, nb.down(i));
 
     for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
 
@@ -379,7 +379,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
        is_rebuilt = event_handles[ei]->rebuild();
 
       //std::set<node_handle> seHandles = event_handles[ei]->getComponentAt(level); // Obtain only one handle as per the design chosen
-      // MEDDLY_DCASSERT(seHandles.size() == 1);
+      // ASSERT(__FILE__, __LINE__, seHandles.size() == 1);
       int does_rn_exist = event_handles[ei]->getNumOfRelnodes()>0?1:0;
       int which_se = 0;
       node_handle se_nh = event_handles[ei]->getTopComponent();//*(seHandles.begin());
@@ -588,7 +588,7 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
   } else {
     //
     // Need to process this level in the MXD.
-    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
+    ASSERT(__FILE__, __LINE__, ABS(mxdLevel) >= mddLevel);
 
     // Initialize mxd readers, note we might skip the unprimed level
 
@@ -647,7 +647,7 @@ MEDDLY::node_handle MEDDLY::forwd_hyb_dfs_by_events_mt::recFire(
   saturateHelper(*nb);
   edge_value ev;
   resF->createReducedNode(nb, ev, result);
-  MEDDLY_DCASSERT(ev.isVoid());
+  ASSERT(__FILE__, __LINE__, ev.isVoid());
 
   #ifdef TRACE_ALL_OPS
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
@@ -807,7 +807,7 @@ void MEDDLY::common_hyb_dfs_by_events_mt
 {
   // Initialize operations
   mddUnion = UNION(resF, resF, resF);
-  MEDDLY_DCASSERT(mddUnion);
+  ASSERT(__FILE__, __LINE__, mddUnion);
 
 
 #ifdef DEBUG_INITIAL
@@ -1006,7 +1006,7 @@ MEDDLY::saturation_hyb_by_events_op::saturate(node_handle mdd, int k)
   parent->saturateHelper(*nb);
   edge_value ev;
   resF->createReducedNode(nb, ev, n);
-  MEDDLY_DCASSERT(ev.isVoid());
+  ASSERT(__FILE__, __LINE__, ev.isVoid());
 
   // save in compute table
   saveSaturateResult(Key, mdd, n);

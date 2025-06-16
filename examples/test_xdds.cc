@@ -89,7 +89,7 @@ struct int_pair {
 void buidPotentialDeadlockStates(forest* mdd,
     std::vector<std::vector<int_pair>>& disabling_expressions,
     dd_edge& result) {
-  MEDDLY_DCASSERT(mdd && !mdd->isForRelations());
+  ASSERT(__FILE__, __LINE__, mdd && !mdd->isForRelations());
 
   if (disabling_expressions.size() == 0) return;
 
@@ -106,7 +106,7 @@ void buidPotentialDeadlockStates(forest* mdd,
   }
 
   ostream_output s(std::cout);
-  MEDDLY_DCASSERT(disabling_ddedges.size() > 0);
+  ASSERT(__FILE__, __LINE__, disabling_ddedges.size() > 0);
   result = disabling_ddedges[0];
   for (auto i : disabling_ddedges) {
     std::cout << "\nDisabling dd_edge:\n";

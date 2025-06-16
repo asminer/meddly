@@ -71,7 +71,7 @@ class MEDDLY::image_op : public binary_operation {
     findResult(node_handle a, node_handle b, node_handle &c)
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
+      ASSERT(__FILE__, __LINE__, CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
       CT0->find(CTsrch, CTresult[0]);
@@ -151,7 +151,7 @@ void MEDDLY::image_op
 
 MEDDLY::node_handle MEDDLY::image_op::compute(node_handle a, node_handle b)
 {
-  MEDDLY_DCASSERT(accumulateOp);
+  ASSERT(__FILE__, __LINE__, accumulateOp);
   return compute_rec(a, b);
 }
 
@@ -226,7 +226,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
   } else {
     //
     // Need to process this level in the MXD.
-    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
+    ASSERT(__FILE__, __LINE__, ABS(mxdLevel) >= mddLevel);
 
     // clear out result (important!)
     C->clear(0, rSize);
@@ -254,7 +254,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
       // loop over mxd "columns"
       for (unsigned jz=0; jz<Rp->getSize(); jz++) {
         unsigned j = Rp->index(jz);
-        MEDDLY_DCASSERT(0<=j && j < A->getSize());
+        ASSERT(__FILE__, __LINE__, 0<=j && j < A->getSize());
         if (0==A->down(j))   continue;
         // ok, there is an i->j "edge".
         // determine new states to be added (recursively)
@@ -283,7 +283,7 @@ MEDDLY::node_handle MEDDLY::relXset_mdd::compute_rec(node_handle mdd, node_handl
 
   edge_value ev;
   resF->createReducedNode(C, ev, result);
-  MEDDLY_DCASSERT(ev.isVoid());
+  ASSERT(__FILE__, __LINE__, ev.isVoid());
 #ifdef TRACE_ALL_OPS
   printf("computed relXset(%d, %d) = %d\n", mdd, mxd, result);
 #endif
@@ -373,7 +373,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
   } else {
     //
     // Need to process this level in the MXD.
-    MEDDLY_DCASSERT(ABS(mxdLevel) >= mddLevel);
+    ASSERT(__FILE__, __LINE__, ABS(mxdLevel) >= mddLevel);
 
     // clear out result (important!)
     C->clear(0, rSize);
@@ -429,7 +429,7 @@ MEDDLY::node_handle MEDDLY::setXrel_mdd::compute_rec(node_handle mdd, node_handl
 
   edge_value ev;
   resF->createReducedNode(C, ev, result);
-  MEDDLY_DCASSERT(ev.isVoid());
+  ASSERT(__FILE__, __LINE__, ev.isVoid());
 #ifdef TRACE_ALL_OPS
   printf("computed new setXrel(%d, %d) = %d\n", mdd, mxd, result);
 #endif
@@ -567,7 +567,7 @@ class MEDDLY::image_op_evplus : public binary_operation {
     findResult(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle &resEvmdd)
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      MEDDLY_DCASSERT(CTsrch);
+      ASSERT(__FILE__, __LINE__, CTsrch);
       CTsrch->writeN(evmdd);
       CTsrch->writeN(mxd);
       CT0->find(CTsrch, CTresult[0]);
@@ -641,7 +641,7 @@ void MEDDLY::image_op_evplus::computeDDEdge(const dd_edge &a, const dd_edge &b, 
 
 void MEDDLY::image_op_evplus::compute(long ev, node_handle evmdd, node_handle mxd, long& resEv, node_handle& resEvmdd)
 {
-  MEDDLY_DCASSERT(accumulateOp);
+  ASSERT(__FILE__, __LINE__, accumulateOp);
   compute_rec(ev, evmdd, mxd, resEv, resEvmdd);
 }
 
@@ -727,7 +727,7 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   } else {
     //
     // Need to process this level in the MXD.
-    MEDDLY_DCASSERT(ABS(mxdLevel) >= evmddLevel);
+    ASSERT(__FILE__, __LINE__, ABS(mxdLevel) >= evmddLevel);
 
     // clear out result (important!)
     C->clear(0, rSize);
@@ -877,7 +877,7 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   } else {
     //
     // Need to process this level in the MXD.
-    MEDDLY_DCASSERT(ABS(mxdLevel) >= evmddLevel);
+    ASSERT(__FILE__, __LINE__, ABS(mxdLevel) >= evmddLevel);
 
     // clear out result (important!)
     C->clear(0, rSize);
@@ -1107,7 +1107,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
     else {
       //
       // Need to process this level in the MXD.
-      MEDDLY_DCASSERT(ABS(mxdLevel) >= ABS(pLevel));
+      ASSERT(__FILE__, __LINE__, ABS(mxdLevel) >= ABS(pLevel));
 
       // clear out result (important!)
       D->clear(0, rSize);
@@ -1226,7 +1226,7 @@ MEDDLY::binary_operation* MEDDLY::PRE_IMAGE(forest* a, forest* b, forest* c)
     } else {
         acc = MAXIMUM(c, c, c);
     }
-    MEDDLY_DCASSERT(acc);
+    ASSERT(__FILE__, __LINE__, acc);
 
     if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         return PRE_IMAGE_cache.add(
@@ -1248,7 +1248,7 @@ void MEDDLY::PRE_IMAGE_init()
 
 void MEDDLY::PRE_IMAGE_done()
 {
-    MEDDLY_DCASSERT(PRE_IMAGE_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, PRE_IMAGE_cache.isEmpty());
 }
 
 // ******************************************************************
@@ -1271,7 +1271,7 @@ MEDDLY::binary_operation* MEDDLY::POST_IMAGE(forest* a, forest* b, forest* c)
     } else {
         acc = MAXIMUM(c, c, c);
     }
-    MEDDLY_DCASSERT(acc);
+    ASSERT(__FILE__, __LINE__, acc);
 
     if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         return POST_IMAGE_cache.add(
@@ -1293,7 +1293,7 @@ void MEDDLY::POST_IMAGE_init()
 
 void MEDDLY::POST_IMAGE_done()
 {
-    MEDDLY_DCASSERT(POST_IMAGE_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, POST_IMAGE_cache.isEmpty());
 }
 
 // ******************************************************************
@@ -1317,7 +1317,7 @@ void MEDDLY::TC_POST_IMAGE_init()
 
 void MEDDLY::TC_POST_IMAGE_done()
 {
-    MEDDLY_DCASSERT(TC_POST_IMAGE_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, TC_POST_IMAGE_cache.isEmpty());
 }
 
 // ******************************************************************
@@ -1364,7 +1364,7 @@ void MEDDLY::VM_MULTIPLY_init()
 
 void MEDDLY::VM_MULTIPLY_done()
 {
-    MEDDLY_DCASSERT(VM_MULTIPLY_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, VM_MULTIPLY_cache.isEmpty());
 }
 
 // ******************************************************************
@@ -1415,6 +1415,6 @@ void MEDDLY::MV_MULTIPLY_init()
 
 void MEDDLY::MV_MULTIPLY_done()
 {
-    MEDDLY_DCASSERT(MV_MULTIPLY_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, MV_MULTIPLY_cache.isEmpty());
 }
 

@@ -289,7 +289,7 @@ MEDDLY::constrained_bckwd_bfs_evplus::constrained_bckwd_bfs_evplus(
 void MEDDLY::constrained_bckwd_bfs_evplus::computeDDEdge(const dd_edge& a,
         const dd_edge& b, const dd_edge& r, dd_edge& res, bool f)
 {
-    MEDDLY_DCASSERT(res.getForest() == resF);
+    ASSERT(__FILE__, __LINE__, res.getForest() == resF);
 
     iterate(a, b, r, res);
 }
@@ -299,7 +299,7 @@ void MEDDLY::constrained_bckwd_bfs_evplus::iterate(const dd_edge& a, const dd_ed
 {
   /*
   cev = bev;
-  MEDDLY_DCASSERT(argF == resF);
+  ASSERT(__FILE__, __LINE__, argF == resF);
   c = resF->linkNode(b);
 
   node_handle prev = 0;
@@ -337,10 +337,10 @@ MEDDLY::constrained_dfs_mt::constrained_dfs_mt(ternary_list &c,
   forest* cons, forest* arg, forest* trans, forest* res)
   : ternary_operation(c, 1, cons, arg, trans, res)
 {
-  MEDDLY_DCASSERT(cons->isMultiTerminal() && !cons->isForRelations());
-  MEDDLY_DCASSERT(arg->isMultiTerminal() && !arg->isForRelations());
-  MEDDLY_DCASSERT(trans->isMultiTerminal() && trans->isForRelations());
-  MEDDLY_DCASSERT(res->isMultiTerminal() && !res->isForRelations());
+  ASSERT(__FILE__, __LINE__, cons->isMultiTerminal() && !cons->isForRelations());
+  ASSERT(__FILE__, __LINE__, arg->isMultiTerminal() && !arg->isForRelations());
+  ASSERT(__FILE__, __LINE__, trans->isMultiTerminal() && trans->isForRelations());
+  ASSERT(__FILE__, __LINE__, res->isMultiTerminal() && !res->isForRelations());
 
   mxdIntersectionOp = INTERSECTION(arg3F, arg3F, arg3F);
   mxdDifferenceOp = DIFFERENCE(arg3F, arg3F, arg3F);
@@ -361,7 +361,7 @@ MEDDLY::ct_entry_key* MEDDLY::constrained_dfs_mt::findResult(
     node_handle a, node_handle b, node_handle r, node_handle &c)
 {
   ct_entry_key* key = CT0->useEntryKey(etype[0], 0);
-  MEDDLY_DCASSERT(key);
+  ASSERT(__FILE__, __LINE__, key);
   key->writeN(a);
   key->writeN(b);
   key->writeN(r);
@@ -389,8 +389,8 @@ void MEDDLY::constrained_dfs_mt::saveResult(ct_entry_key* key,
 // Partition the nsf based on "top level"
 void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
 {
-  MEDDLY_DCASSERT(arg3F);
-  MEDDLY_DCASSERT(splits == nullptr);
+  ASSERT(__FILE__, __LINE__, arg3F);
+  ASSERT(__FILE__, __LINE__, splits == nullptr);
 
   splits = new dd_edge[arg3F->getNumVariables() + 1];
 
@@ -406,7 +406,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
     }
 
     int mxdLevel = root.getLevel();
-    MEDDLY_DCASSERT(ABS(mxdLevel) <= level);
+    ASSERT(__FILE__, __LINE__, ABS(mxdLevel) <= level);
 
     // Initialize readers
     unpacked_node* Ru = isLevelAbove(level, mxdLevel)
@@ -457,7 +457,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
 
 void MEDDLY::constrained_dfs_mt::computeDDEdge(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res, bool uf)
 {
-  MEDDLY_DCASSERT(res.getForest() == resF);
+  ASSERT(__FILE__, __LINE__, res.getForest() == resF);
 
   node_handle c = 0;
   if (a.getNode() == 0) {
@@ -501,7 +501,7 @@ MEDDLY::constrained_forwd_dfs_mt::constrained_forwd_dfs_mt(ternary_list &c,
 
 void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_node& nb)
 {
-  MEDDLY_DCASSERT(a != 0);
+  ASSERT(__FILE__, __LINE__, a != 0);
 
   const dd_edge& mxd = splits[nb.getLevel()];
   if (mxd.getNode() == 0) {
@@ -509,7 +509,7 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
   }
 
   const int mxdLevel = mxd.getLevel();
-  MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
+  ASSERT(__FILE__, __LINE__, ABS(mxdLevel) == nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
   unpacked_node* Ru = (mxdLevel < 0)
@@ -550,7 +550,7 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
     queue.pop_front();
     waiting[i] = false;
 
-    MEDDLY_DCASSERT(nb.down(i) != 0 && Rps[i] != nullptr);
+    ASSERT(__FILE__, __LINE__, nb.down(i) != 0 && Rps[i] != nullptr);
 
     for (int jz = 0; jz < Rps[i]->getSize(); jz++) {
       const int j = Rps[i]->index(jz);
@@ -561,13 +561,13 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
       if (Rps[i]->down(jz) != 0) {
         node_handle rec = 0;
         recFire(A->down(j), nb.down(i), Rps[i]->down(jz), rec);
-        MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
+        ASSERT(__FILE__, __LINE__, isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == 0) {
           continue;
         }
 
-        MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
+        ASSERT(__FILE__, __LINE__, isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == nb.down(j)) {
           resF->unlinkNode(rec);
@@ -722,7 +722,7 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
   saturateHelper(a, *T);
   edge_value ev;
   resF->createReducedNode(T, ev, c);
-  MEDDLY_DCASSERT(ev.isVoid());
+  ASSERT(__FILE__, __LINE__, ev.isVoid());
 
   saveResult(key, a, b, r, c);
 }
@@ -741,7 +741,7 @@ MEDDLY::constrained_bckwd_dfs_mt::constrained_bckwd_dfs_mt(ternary_list &c,
 
 void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_node& nb)
 {
-  MEDDLY_DCASSERT(a != 0);
+  ASSERT(__FILE__, __LINE__, a != 0);
 
   const dd_edge& mxd = splits[nb.getLevel()];
   if (mxd.getNode() == 0) {
@@ -749,7 +749,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
   }
 
   const int mxdLevel = mxd.getLevel();
-  MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
+  ASSERT(__FILE__, __LINE__, ABS(mxdLevel) == nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
   unpacked_node* Ru = (mxdLevel < 0)
@@ -791,7 +791,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
     queue.pop_front();
     waiting[j] = false;
 
-    MEDDLY_DCASSERT(nb.down(j) != 0);
+    ASSERT(__FILE__, __LINE__, nb.down(j) != 0);
 
     for (int iz = 0; iz < Ru->getSize(); iz++) {
       const int i = Ru->index(iz);
@@ -799,18 +799,18 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
         continue;
       }
 
-      MEDDLY_DCASSERT(Rps[iz] != nullptr);
+      ASSERT(__FILE__, __LINE__, Rps[iz] != nullptr);
 
       if (Rps[iz]->down(j) != 0) {
         node_handle rec = 0;
         recFire(A->down(i), nb.down(j), Rps[iz]->down(j), rec);
-        MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
+        ASSERT(__FILE__, __LINE__, isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == 0) {
           continue;
         }
 
-        MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
+        ASSERT(__FILE__, __LINE__, isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == nb.down(i)) {
           resF->unlinkNode(rec);
@@ -963,7 +963,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
   saturateHelper(a, *T);
   edge_value ev;
   resF->createReducedNode(T, ev, c);
-  MEDDLY_DCASSERT(ev.isVoid());
+  ASSERT(__FILE__, __LINE__, ev.isVoid());
 
   saveResult(key, a, b, r, c);
 }
@@ -979,9 +979,9 @@ MEDDLY::constrained_saturation_mt::constrained_saturation_mt(
   : operation("constr_sat", 1)
 {
     // TBD: throw here instead
-  MEDDLY_DCASSERT(cons->isMultiTerminal() && !cons->isForRelations());
-  MEDDLY_DCASSERT(arg->isMultiTerminal() && !arg->isForRelations());
-  MEDDLY_DCASSERT(res->isMultiTerminal() && !res->isForRelations());
+  ASSERT(__FILE__, __LINE__, cons->isMultiTerminal() && !cons->isForRelations());
+  ASSERT(__FILE__, __LINE__, arg->isMultiTerminal() && !arg->isForRelations());
+  ASSERT(__FILE__, __LINE__, res->isMultiTerminal() && !res->isForRelations());
 
   parent = p;
 
@@ -1040,7 +1040,7 @@ MEDDLY::ct_entry_key* MEDDLY::constrained_saturation_mt::findResult(
     node_handle a, node_handle b, int level, node_handle &c)
 {
   ct_entry_key* key = CT0->useEntryKey(etype[0], 0);
-  MEDDLY_DCASSERT(key);
+  ASSERT(__FILE__, __LINE__, key);
   key->writeN(a);
   key->writeN(b);
   if(argF->isFullyReduced()) {
@@ -1095,7 +1095,7 @@ void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, i
   unpacked_node* T = unpacked_node::newWritable(resF, level, sz, FULL_ONLY);
   for (int i = 0; i < sz; i++) {
     if (A->down(i) == 0) {
-      MEDDLY_DCASSERT(resF == argF);
+      ASSERT(__FILE__, __LINE__, resF == argF);
       T->setFull(i, resF->linkNode(B->down(i)));
     }
     else {
@@ -1112,7 +1112,7 @@ void MEDDLY::constrained_saturation_mt::saturate(node_handle a, node_handle b, i
   parent->saturateHelper(a, *T);
   edge_value ev;
   resF->createReducedNode(T, ev, c);
-  MEDDLY_DCASSERT(ev.isVoid());
+  ASSERT(__FILE__, __LINE__, ev.isVoid());
 
   // save in compute table
   saveResult(key, a, b, level, c);
@@ -1128,10 +1128,10 @@ MEDDLY::constrained_bckwd_dfs_evplus::constrained_bckwd_dfs_evplus(
     ternary_list &c, forest* cons, forest* arg, forest* trans, forest* res)
   : ternary_operation(c, 1, cons, arg, trans, res)
 {
-  MEDDLY_DCASSERT(cons->isEVPlus() && !cons->isForRelations());
-  MEDDLY_DCASSERT(arg->isEVPlus() && !arg->isForRelations());
-  MEDDLY_DCASSERT(trans->isMultiTerminal() && trans->isForRelations());
-  MEDDLY_DCASSERT(res->isEVPlus() && !res->isForRelations());
+  ASSERT(__FILE__, __LINE__, cons->isEVPlus() && !cons->isForRelations());
+  ASSERT(__FILE__, __LINE__, arg->isEVPlus() && !arg->isForRelations());
+  ASSERT(__FILE__, __LINE__, trans->isMultiTerminal() && trans->isForRelations());
+  ASSERT(__FILE__, __LINE__, res->isEVPlus() && !res->isForRelations());
 
   mxdIntersectionOp = INTERSECTION(arg3F, arg3F, arg3F);
   mxdDifferenceOp = DIFFERENCE(arg3F, arg3F, arg3F);
@@ -1152,7 +1152,7 @@ MEDDLY::ct_entry_key* MEDDLY::constrained_bckwd_dfs_evplus::findResult(long aev,
     long bev, node_handle b, node_handle r, long& cev, node_handle &c)
 {
   ct_entry_key* key = CT0->useEntryKey(etype[0], 0);
-  MEDDLY_DCASSERT(key);
+  ASSERT(__FILE__, __LINE__, key);
   key->writeL(aev);
   key->writeN(a);
   key->writeN(b);
@@ -1170,7 +1170,7 @@ MEDDLY::ct_entry_key* MEDDLY::constrained_bckwd_dfs_evplus::findResult(long aev,
     cev += bev;
   }
   else {
-    MEDDLY_DCASSERT(cev == 0);
+    ASSERT(__FILE__, __LINE__, cev == 0);
   }
 
   CT0->recycle(key);
@@ -1196,8 +1196,8 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saveResult(ct_entry_key* key,
 // Partition the nsf based on "top level"
 void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
 {
-  MEDDLY_DCASSERT(arg3F);
-  MEDDLY_DCASSERT(splits == nullptr);
+  ASSERT(__FILE__, __LINE__, arg3F);
+  ASSERT(__FILE__, __LINE__, splits == nullptr);
 
   splits = new dd_edge[arg3F->getNumVariables() + 1];
 
@@ -1213,7 +1213,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
     }
 
     int mxdLevel = root.getLevel();
-    MEDDLY_DCASSERT(ABS(mxdLevel) <= level);
+    ASSERT(__FILE__, __LINE__, ABS(mxdLevel) <= level);
 
     // Initialize readers
     unpacked_node* Ru = isLevelAbove(level, mxdLevel)
@@ -1264,7 +1264,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
 
 void MEDDLY::constrained_bckwd_dfs_evplus::computeDDEdge(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res, bool uf)
 {
-  MEDDLY_DCASSERT(res.getForest() == resF);
+  ASSERT(__FILE__, __LINE__, res.getForest() == resF);
 
   // Partition NSF by levels
   splitMxd(r);
@@ -1298,7 +1298,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::_compute(int aev, node_handle a, int 
 
 void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle a, unpacked_node& nb)
 {
-  MEDDLY_DCASSERT(a != 0);
+  ASSERT(__FILE__, __LINE__, a != 0);
 
   const dd_edge& mxd = splits[nb.getLevel()];
   if (mxd.getNode() == 0) {
@@ -1306,7 +1306,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
   }
 
   const int mxdLevel = mxd.getLevel();
-  MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
+  ASSERT(__FILE__, __LINE__, ABS(mxdLevel) == nb.getLevel());
 
   // Initialize mxd readers, note we might skip the unprimed level
   unpacked_node* Ru = (mxdLevel < 0)
@@ -1348,29 +1348,29 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
     queue.pop_front();
     waiting[j] = false;
 
-    MEDDLY_DCASSERT(nb.down(j) != 0);
+    ASSERT(__FILE__, __LINE__, nb.down(j) != 0);
 
     for (int iz = 0; iz < Ru->getSize(); iz++) {
       const unsigned i = Ru->index(iz);
       if (A->down(i) == 0) {
-        MEDDLY_DCASSERT(A->edgeval(i).getLong() == 0);
+        ASSERT(__FILE__, __LINE__, A->edgeval(i).getLong() == 0);
         continue;
       }
 
-      MEDDLY_DCASSERT(Rps[iz] != nullptr);
+      ASSERT(__FILE__, __LINE__, Rps[iz] != nullptr);
 
       if (Rps[iz]->down(j) != 0) {
         long recev = 0;
         node_handle rec = 0;
         recFire(aev + A->edgeval(i).getLong(), A->down(i), nb.edgeval(j).getLong(), nb.down(j), Rps[iz]->down(j), recev, rec);
-        MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
+        ASSERT(__FILE__, __LINE__, isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == 0) {
-          MEDDLY_DCASSERT(recev == 0);
+          ASSERT(__FILE__, __LINE__, recev == 0);
           continue;
         }
 
-        MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
+        ASSERT(__FILE__, __LINE__, isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == nb.down(i)) {
           // Compute the minimum
@@ -1384,7 +1384,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
         bool updated = true;
 
         if (nb.down(i) == 0) {
-          MEDDLY_DCASSERT(nb.edgeval(i).getLong() == 0);
+          ASSERT(__FILE__, __LINE__, nb.edgeval(i).getLong() == 0);
           nb.setFull(i, edge_value(recev), rec);
         }
         else {
@@ -1404,7 +1404,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
             nb.d_ref(i) = acc;
           }
           else {
-            MEDDLY_DCASSERT(accev == nb.edgeval(i).getLong());
+            ASSERT(__FILE__, __LINE__, accev == nb.edgeval(i).getLong());
             resF->unlinkNode(acc);
             updated = false;
           }
@@ -1453,7 +1453,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
   // check the cache
   ct_entry_key* key = findResult(aev, a, bev, b, r, cev, c);
   if (key == 0) {
-    MEDDLY_DCASSERT(cev >= 0);
+    ASSERT(__FILE__, __LINE__, cev >= 0);
     return;
   }
 
@@ -1503,7 +1503,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
     for (int iz = 0; iz < Ru->getSize(); iz++) {
       const int i = Ru->index(iz);
       if (A->down(i) == 0) {
-        MEDDLY_DCASSERT(A->edgeval(i).getLong() == 0);
+        ASSERT(__FILE__, __LINE__, A->edgeval(i).getLong() == 0);
         continue;
       }
 
@@ -1523,12 +1523,12 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
         recFire(aev + A->edgeval(i).getLong(), A->down(i), bev + B->edgeval(j).getLong(), B->down(j), Rp->down(jz), nev, n);
 
         if (n == 0) {
-          MEDDLY_DCASSERT(nev == 0);
+          ASSERT(__FILE__, __LINE__, nev == 0);
           continue;
         }
 
         if (T->down(i) == 0) {
-          MEDDLY_DCASSERT(T->edgeval(i).getLong() == 0);
+          ASSERT(__FILE__, __LINE__, T->edgeval(i).getLong() == 0);
           T->setFull(i, edge_value(nev), n);
           continue;
         }
@@ -1567,7 +1567,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
   edge_value ev;
   resF->createReducedNode(T, ev, c);
   cev = ev.getLong();
-  MEDDLY_DCASSERT(cev >= 0);
+  ASSERT(__FILE__, __LINE__, cev >= 0);
 
   saveResult(key, aev, a, bev, b, r, cev, c);
 }
@@ -1583,9 +1583,9 @@ MEDDLY::constrained_saturation_evplus::constrained_saturation_evplus(
     constrained_bckwd_dfs_evplus* p, forest* cons, forest* arg, forest* res)
   : operation("constr_sat_evplus", 1)
 {
-  MEDDLY_DCASSERT(cons->isEVPlus());
-  MEDDLY_DCASSERT(arg->isEVPlus());
-  MEDDLY_DCASSERT(res->isEVPlus());
+  ASSERT(__FILE__, __LINE__, cons->isEVPlus());
+  ASSERT(__FILE__, __LINE__, arg->isEVPlus());
+  ASSERT(__FILE__, __LINE__, res->isEVPlus());
 
   parent = p;
 
@@ -1650,7 +1650,7 @@ MEDDLY::ct_entry_key* MEDDLY::constrained_saturation_evplus::findResult(long aev
     long bev, node_handle b, int level, long& cev, node_handle &c)
 {
   ct_entry_key* key = CT0->useEntryKey(etype[0], 0);
-  MEDDLY_DCASSERT(key);
+  ASSERT(__FILE__, __LINE__, key);
   key->writeL(aev);
   key->writeN(a);
 //  key->write(bev);
@@ -1669,7 +1669,7 @@ MEDDLY::ct_entry_key* MEDDLY::constrained_saturation_evplus::findResult(long aev
     cev += bev;
   }
   else {
-    MEDDLY_DCASSERT(cev == 0);
+    ASSERT(__FILE__, __LINE__, cev == 0);
   }
 
   CT0->recycle(key);
@@ -1685,7 +1685,7 @@ void MEDDLY::constrained_saturation_evplus::saveResult(ct_entry_key* key,
     CTresult[0].writeL(0);
   }
   else {
-    MEDDLY_DCASSERT(cev - bev >= 0);
+    ASSERT(__FILE__, __LINE__, cev - bev >= 0);
     CTresult[0].writeL(cev - bev);
   }
   CTresult[0].writeN(c);
@@ -1723,7 +1723,7 @@ void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int
   unpacked_node* T = unpacked_node::newWritable(resF, level, sz, FULL_ONLY);
   for (int i = 0; i < sz; i++) {
     if (A->down(i) == 0) {
-      MEDDLY_DCASSERT(resF == argF);
+      ASSERT(__FILE__, __LINE__, resF == argF);
       T->setFull(i, B->edgeval(i), resF->linkNode(B->down(i)));
     }
     else {
@@ -1773,7 +1773,7 @@ void MEDDLY::CONSTRAINED_BACKWARD_BFS_init()
 
 void MEDDLY::CONSTRAINED_BACKWARD_BFS_done()
 {
-    MEDDLY_DCASSERT(CONSTRAINED_BACKWARD_BFS_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, CONSTRAINED_BACKWARD_BFS_cache.isEmpty());
 }
 
 // ******************************************************************
@@ -1799,7 +1799,7 @@ void MEDDLY::CONSTRAINED_FORWARD_DFS_init()
 
 void MEDDLY::CONSTRAINED_FORWARD_DFS_done()
 {
-    MEDDLY_DCASSERT(CONSTRAINED_FORWARD_DFS_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, CONSTRAINED_FORWARD_DFS_cache.isEmpty());
 }
 
 // ******************************************************************
@@ -1829,6 +1829,6 @@ void MEDDLY::CONSTRAINED_BACKWARD_DFS_init()
 
 void MEDDLY::CONSTRAINED_BACKWARD_DFS_done()
 {
-    MEDDLY_DCASSERT(CONSTRAINED_BACKWARD_DFS_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, CONSTRAINED_BACKWARD_DFS_cache.isEmpty());
 }
 

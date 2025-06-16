@@ -93,8 +93,8 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
-            MEDDLY_DCASSERT(a.isVoid());
-            MEDDLY_DCASSERT(b.isVoid());
+            ASSERT(__FILE__, __LINE__, a.isVoid());
+            ASSERT(__FILE__, __LINE__, b.isVoid());
             c.set();
         }
     };
@@ -131,7 +131,7 @@ namespace MEDDLY {
                 const forest* fa, node_handle &a,
                 const forest* fb, node_handle b)
         {
-            MEDDLY_DCASSERT(OMEGA_INFINITY != b);
+            ASSERT(__FILE__, __LINE__, OMEGA_INFINITY != b);
             if (fa->isIdentityReduced()) return false;
             return (OMEGA_INFINITY == a) || (OMEGA_NORMAL == b);
         }
@@ -139,7 +139,7 @@ namespace MEDDLY {
                 const forest* fa, node_handle a,
                 const forest* fb, node_handle &b)
         {
-            MEDDLY_DCASSERT(b != OMEGA_INFINITY);
+            ASSERT(__FILE__, __LINE__, b != OMEGA_INFINITY);
             return false;
         }
 
@@ -156,8 +156,8 @@ namespace MEDDLY {
             }
             else
             {
-                MEDDLY_DCASSERT(OMEGA_NORMAL == a);
-                MEDDLY_DCASSERT(OMEGA_NORMAL == b);
+                ASSERT(__FILE__, __LINE__, OMEGA_NORMAL == a);
+                ASSERT(__FILE__, __LINE__, OMEGA_NORMAL == b);
                 c = OMEGA_NORMAL;
             }
         }
@@ -337,6 +337,6 @@ void MEDDLY::MINUS_init()
 
 void MEDDLY::MINUS_done()
 {
-    MEDDLY_DCASSERT(MINUS_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, MINUS_cache.isEmpty());
 }
 

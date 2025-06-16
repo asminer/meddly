@@ -121,7 +121,7 @@ template <class RTYPE>
 void MEDDLY::range_templ<RTYPE>::compute(int L, unsigned in,
         const edge_value &av, node_handle ap, oper_item &result)
 {
-    MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
+    ASSERT(__FILE__, __LINE__, result.hasType(RTYPE::getOpndType()));
 #ifdef TRACE
     out.indentation(0);
 #endif
@@ -309,7 +309,7 @@ void MEDDLY::MAX_RANGE_init()
 
 void MEDDLY::MAX_RANGE_done()
 {
-    MEDDLY_DCASSERT(MAXRANGE_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, MAXRANGE_cache.isEmpty());
 }
 
 // ******************************************************************
@@ -350,6 +350,6 @@ void MEDDLY::MIN_RANGE_init()
 
 void MEDDLY::MIN_RANGE_done()
 {
-    MEDDLY_DCASSERT(MINRANGE_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, MINRANGE_cache.isEmpty());
 }
 

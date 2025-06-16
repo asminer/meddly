@@ -81,7 +81,7 @@ MEDDLY::node_handle MEDDLY::select_MT::_compute(node_handle a, int level)
 {
   // Check terminals
   if (argF->isTerminalNode(a) && level == 0) {
-    MEDDLY_DCASSERT(a != 0);
+    ASSERT(__FILE__, __LINE__, a != 0);
     return a;
   }
 
@@ -89,7 +89,7 @@ MEDDLY::node_handle MEDDLY::select_MT::_compute(node_handle a, int level)
   unpacked_node* A = isLevelAbove(level, argF->getNodeLevel(a))
     ? unpacked_node::newRedundant(argF, level, a, SPARSE_ONLY)
     : unpacked_node::newFromNode(argF, a, SPARSE_ONLY);
-  MEDDLY_DCASSERT(A->getSize() > 0);
+  ASSERT(__FILE__, __LINE__, A->getSize() > 0);
 
   // Initialize node builder
   unpacked_node* nb = unpacked_node::newWritable(resF, level, 1, SPARSE_ONLY);
@@ -143,7 +143,7 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
 {
   // Check terminals
   if (argF->isTerminalNode(a) && level == 0) {
-    MEDDLY_DCASSERT(a != 0);
+    ASSERT(__FILE__, __LINE__, a != 0);
     b = a;
     bev = aev;
     return;
@@ -153,7 +153,7 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
   unpacked_node* A = isLevelAbove(level, argF->getNodeLevel(a))
     ? unpacked_node::newRedundant(argF, level, a, SPARSE_ONLY)
     : unpacked_node::newFromNode(argF, a, SPARSE_ONLY);
-  MEDDLY_DCASSERT(A->getSize() > 0);
+  ASSERT(__FILE__, __LINE__, A->getSize() > 0);
 
   // Initialize node builder
   unpacked_node* nb = unpacked_node::newWritable(resF, level, 1, SPARSE_ONLY);
@@ -277,7 +277,7 @@ void MEDDLY::SELECT_init()
 
 void MEDDLY::SELECT_done()
 {
-    MEDDLY_DCASSERT(SELECT_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, SELECT_cache.isEmpty());
 }
 
 

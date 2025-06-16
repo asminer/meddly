@@ -51,7 +51,7 @@ class MEDDLY::cycle_EV2EV : public unary_operation {
         findResult(long aev, node_handle a, long& bev, node_handle &b)
         {
             ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-            MEDDLY_DCASSERT(CTsrch);
+            ASSERT(__FILE__, __LINE__, CTsrch);
             CTsrch->writeN(a);
             CT0->find(CTsrch, CTresult[0]);
             if (!CTresult[0]) return CTsrch;
@@ -197,6 +197,6 @@ void MEDDLY::CYCLE_init()
 
 void MEDDLY::CYCLE_done()
 {
-    MEDDLY_DCASSERT(CYCLE_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, CYCLE_cache.isEmpty());
 }
 

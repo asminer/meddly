@@ -64,7 +64,7 @@ namespace MEDDLY {
                 forest* fc, edge_value &cv, node_handle &c,
                 unary_operation* copier)
         {
-            MEDDLY_DCASSERT(false);
+            FAIL(__FILE__, __LINE__);
         }
         inline static bool simplifiesToFirstArg(int L,
                 const forest* fa, node_handle &a,
@@ -98,8 +98,8 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
-            MEDDLY_DCASSERT(a.isVoid());
-            MEDDLY_DCASSERT(b.isVoid());
+            ASSERT(__FILE__, __LINE__, a.isVoid());
+            ASSERT(__FILE__, __LINE__, b.isVoid());
             c.set();
         }
     };
@@ -128,7 +128,7 @@ namespace MEDDLY {
                 forest* fc, edge_value &cv, node_handle &c,
                 unary_operation* copyop)
         {
-            MEDDLY_DCASSERT(false);
+            FAIL(__FILE__, __LINE__);
         }
         inline static bool simplifiesToFirstArg(int L,
                 const forest* f1, edge_value &av, node_handle &an,
@@ -175,8 +175,8 @@ namespace MEDDLY {
                 cv = EDGETYPE(0);
                 return;
             }
-            MEDDLY_DCASSERT(OMEGA_NORMAL == an);
-            MEDDLY_DCASSERT(OMEGA_NORMAL == bn);
+            ASSERT(__FILE__, __LINE__, OMEGA_NORMAL == an);
+            ASSERT(__FILE__, __LINE__, OMEGA_NORMAL == bn);
             cn = OMEGA_NORMAL;
             EDGETYPE aev, bev;
             av.get(aev);
@@ -210,7 +210,7 @@ namespace MEDDLY {
                 forest* fc, edge_value &cv, node_handle &c,
                 unary_operation* copier)
         {
-            MEDDLY_DCASSERT(false);
+            FAIL(__FILE__, __LINE__);
         }
         inline static bool simplifiesToFirstArg(int L,
                 const forest* fa, node_handle &a,
@@ -327,6 +327,6 @@ void MEDDLY::MULTIPLY_init()
 
 void MEDDLY::MULTIPLY_done()
 {
-    MEDDLY_DCASSERT(MULT_cache.isEmpty());
+    ASSERT(__FILE__, __LINE__, MULT_cache.isEmpty());
 }
 
