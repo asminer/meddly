@@ -202,7 +202,7 @@ MEDDLY::mt_mxd_bool::unionOneMinterm(node_handle a,  int* from,  int* to, int le
 
   const int aLevel = getNodeLevel(a);
   const int bLevel = level;
-  int resultLevel = ABS(topLevel(aLevel,bLevel));
+  int resultLevel = ABS(MXD_levels::topLevel(aLevel,bLevel));
   int dwnLevel = MXD_levels::downLevel(resultLevel);
 
   if(aLevel < bLevel) {
