@@ -24,6 +24,7 @@
 // *                                                                    *
 // **********************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_6
 
 MEDDLY::ct_entry_key::ct_entry_key()
 {
@@ -82,3 +83,5 @@ void* MEDDLY::ct_entry_key::allocTempData(unsigned bytes)
     return temp_data;
 }
 
+#endif // ALLOW_DEPRECATED_0_17_6
+       //

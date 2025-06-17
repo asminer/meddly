@@ -46,6 +46,13 @@ namespace MEDDLY {
  */
 class MEDDLY::relforest {
     public:
+        /// Like a dd_edge, but for a relation forest
+        struct edge {
+            const relforest* parent;
+            edge_value value;
+            node_handle root;
+        };
+    public:
         /// An unpacked row or column of a relation node.
         struct slice {
             node_handle diag_down;

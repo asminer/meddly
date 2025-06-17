@@ -25,6 +25,7 @@
 #include "forest.h"
 
 #define DELETE_ON_ZERO
+// #define USE_FID
 
 namespace MEDDLY {
     class ct_object;
@@ -34,7 +35,6 @@ namespace MEDDLY {
     class ct_entry_result;
 #endif
     class ct_vector;
-    // class compute_table;
 
     class output;
     class relforest;
@@ -46,7 +46,8 @@ namespace MEDDLY {
         LONG    = 3,
         FLOAT   = 4,
         DOUBLE  = 5,
-        GENERIC = 6 // ct_object
+        GENERIC = 6, // ct_object
+        RELNODE = 7
     };
 
     class ct_itemtype;
@@ -67,8 +68,6 @@ namespace MEDDLY {
 
 };
 
-// #define USE_FID
-
 // ******************************************************************
 // *                                                                *
 // *                        ct_itemtype class                       *
@@ -80,7 +79,7 @@ class MEDDLY::ct_itemtype {
         /// Default constructor
         ct_itemtype() {
             type = ct_typeID::ERROR;
-            typeUpdate(nullptr);
+            typeUpdate(nullptr, nullptr);
         }
         /** Set type based on the following codes:
                 'N': node (in a forest)
@@ -89,19 +88,25 @@ class MEDDLY::ct_itemtype {
                 'F': float
                 'D': double
                 'G': pointer to a ct_object
+                'R': relation node (in a relation forest)
         */
         ct_itemtype(char code);
 
         /// Set the type to 'node' and assign the forest.
         ct_itemtype(forest* f) {
             type = ct_typeID::NODE;
-            typeUpdate(f);
+            typeUpdate(f, nullptr);
+        }
+        /// Set the type to 'relnode' and assign the relation.
+        ct_itemtype(relforest* f) {
+            type = ct_typeID::RELNODE;
+            typeUpdate(nullptr, f);
         }
         /// Set the type from the actual type enum.
         ct_itemtype(ct_typeID t) {
             ASSERT(__FILE__, __LINE__, t != ct_typeID::NODE);
             type = t;
-            typeUpdate(nullptr);
+            typeUpdate(nullptr, nullptr);
         }
         /// Set the type from an edge value type
         ct_itemtype(edge_type et) {
@@ -125,7 +130,7 @@ class MEDDLY::ct_itemtype {
                 default:
                     type = ct_typeID::ERROR;
             }
-            typeUpdate(nullptr);
+            typeUpdate(nullptr, nullptr);
         }
 
         /// Get the type of this item.
@@ -258,7 +263,7 @@ class MEDDLY::ct_itemtype {
         void show(output &s) const;
 
     protected:
-        void typeUpdate(forest* f);
+        void typeUpdate(forest* f, relforest* rf);
 
     private:
         ct_typeID   type;
@@ -267,6 +272,7 @@ class MEDDLY::ct_itemtype {
 #else
         forest*     nodeF;
 #endif
+        relforest*  relnodeF;
 
         bool        twoslots;
         bool        should_hash;

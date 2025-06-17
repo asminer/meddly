@@ -22,6 +22,8 @@
 #include "ct_entry_type.h"
 #include "forest.h"
 
+#ifdef ALLOW_DEPRECATED_0_17_6
+
 namespace MEDDLY {
     class ct_entry_result;
     class compute_table;
@@ -198,5 +200,7 @@ class MEDDLY::ct_entry_result {
         bool is_valid;
         unsigned currslot;
 };
+
+#endif // #ifdef ALLOW_DEPRECATED_0_17_6
 
 #endif // #include guard

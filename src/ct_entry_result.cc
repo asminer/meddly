@@ -20,6 +20,8 @@
 
 // **********************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_6
+
 MEDDLY::ct_entry_result::ct_entry_result()
 {
     build = 0;
@@ -41,4 +43,4 @@ void MEDDLY::ct_entry_result::initialize(const ct_entry_type* et)
     build = new ct_entry_item[slots];
 }
 
-
+#endif

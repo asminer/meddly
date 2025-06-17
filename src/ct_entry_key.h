@@ -24,6 +24,8 @@
 #include "error.h"
 #include "forest.h"
 
+#ifdef ALLOW_DEPRECATED_0_17_6
+
 namespace MEDDLY {
     class ct_entry_key;
     class compute_table;
@@ -178,6 +180,7 @@ class MEDDLY::ct_entry_key {
         unsigned result_shift;
 };
 
+#endif // #ifdef ALLOW_DEPRECATED_0_17_6
 
 #endif // #include guard
 

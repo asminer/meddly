@@ -21,6 +21,7 @@
 #include "ct_initializer.h"
 #include "error.h"
 #include "forest.h"
+#include "relforest.h"
 
 #include "io.h"
 #include "operators.h"
@@ -42,9 +43,10 @@ MEDDLY::ct_itemtype::ct_itemtype(char c)
         case 'F':   type = ct_typeID::FLOAT;        break;
         case 'D':   type = ct_typeID::DOUBLE;       break;
         case 'G':   type = ct_typeID::GENERIC;      break;
+        case 'R':   type = ct_typeID::RELNODE;      break;
         default :   type = ct_typeID::ERROR;
     }
-    typeUpdate(nullptr);
+    typeUpdate(nullptr, nullptr);
 }
 
 char MEDDLY::ct_itemtype::getTypeChar() const
@@ -56,6 +58,7 @@ char MEDDLY::ct_itemtype::getTypeChar() const
         case ct_typeID::FLOAT   : return 'F';
         case ct_typeID::DOUBLE  : return 'D';
         case ct_typeID::GENERIC : return 'G';
+        case ct_typeID::RELNODE : return 'R';
         default                 : return '?';
     }
 }
@@ -63,25 +66,33 @@ char MEDDLY::ct_itemtype::getTypeChar() const
 void MEDDLY::ct_itemtype::show(output &s) const
 {
     s.put(getTypeChar());
-    if (ct_typeID::NODE != type) return;
-    s.put("(f ");
+    if (ct_typeID::NODE == type) {
+        s.put("(f ");
 #ifdef USE_FID
-    s.put(nodeFID);
+        s.put(nodeFID);
 #else
-    s.put(nodeF ? nodeF->FID() : 0);
+        s.put(nodeF ? nodeF->FID() : 0);
 #endif
-    s.put(')');
+        s.put(')');
+    }
+    if (ct_typeID::RELNODE == type) {
+        s.put("(r ");
+        s.put(relnodeF ? relnodeF->FID() : 0);
+        s.put(')');
+    }
 }
 
-void MEDDLY::ct_itemtype::typeUpdate(forest* f)
+void MEDDLY::ct_itemtype::typeUpdate(forest* f, relforest* rf)
 {
 #ifdef USE_FID
     nodeFID = f ? f->FID() : 0;
 #else
     nodeF = f;
 #endif
+    relnodeF = rf;
     switch (type) {
         case ct_typeID::NODE    :
+        case ct_typeID::RELNODE :
                                     twoslots = sizeof(node_handle)>sizeof(int);
                                     should_hash = true;
                                     return;

@@ -43,51 +43,42 @@ class MEDDLY::ct_item {
         inline void setNext(ct_item* n) {
             next = n;
             type = ct_typeID::ERROR;
-            // slots = sizeof(next) / sizeof(unsigned);
-            // ASSERT(__FILE__, __LINE__, slots<3);
         }
 
         /// Set item to a node
         inline void setN(node_handle nh) {
             the_node = nh;
             type = ct_typeID::NODE;
-            // slots = sizeof(the_node) / sizeof(unsigned);
-            // ASSERT(__FILE__, __LINE__, slots<3);
         }
         /// Set item from an integer
         inline void setI(int i) {
             the_int = i;
             type = ct_typeID::INTEGER;
-            // slots = sizeof(the_int) / sizeof(unsigned);
-            // ASSERT(__FILE__, __LINE__, slots<3);
         }
         /// Set item from a long
         inline void setL(long L) {
             the_long = L;
             type = ct_typeID::LONG;
-            // slots = sizeof(the_long) / sizeof(unsigned);
-            // ASSERT(__FILE__, __LINE__, slots<3);
         }
         /// Set item from a float
         inline void setF(float f) {
             the_float = f;
             type = ct_typeID::FLOAT;
-            // slots = sizeof(the_float) / sizeof(unsigned);
-            // ASSERT(__FILE__, __LINE__, slots<3);
         }
         /// Set item from a double
         inline void setD(double d) {
             the_double = d;
             type = ct_typeID::DOUBLE;
-            // slots = sizeof(the_double) / sizeof(unsigned);
-            // ASSERT(__FILE__, __LINE__, slots<3);
         }
         /// Set item from a generic
         inline void setG(ct_object* g) {
             the_generic = g;
             type = ct_typeID::GENERIC;
-            // slots = sizeof(the_generic) / sizeof(unsigned);
-            // ASSERT(__FILE__, __LINE__, slots<3);
+        }
+        /// Set item to a relation node
+        inline void setR(node_handle nh) {
+            the_node = nh;
+            type = ct_typeID::RELNODE;
         }
 
         /// Set item from an edge value
@@ -112,6 +103,8 @@ class MEDDLY::ct_item {
                 case ct_typeID::FLOAT:      setF(ci.F);         return;
                 case ct_typeID::DOUBLE:     setD(ci.D);         return;
                 case ct_typeID::GENERIC:    setG(ci.G);         return;
+                case ct_typeID::RELNODE:    setR(ci.N);         return;
+                default:                    FAIL(__FILE__, __LINE__);
             }
         }
 
@@ -133,6 +126,7 @@ class MEDDLY::ct_item {
                         return ptr;
 
                 case ct_typeID::NODE:
+                case ct_typeID::RELNODE:
                 case ct_typeID::INTEGER:
                 case ct_typeID::FLOAT:
                         raw[0] = ptr[0];
@@ -146,6 +140,9 @@ class MEDDLY::ct_item {
                         raw[1] = ptr[1];
                         // slots = 2;
                         return ptr+2;
+
+                default:
+                        FAIL(__FILE__, __LINE__);
             }
             // fail safe
             return nullptr;
@@ -186,6 +183,11 @@ class MEDDLY::ct_item {
             ASSERT(__FILE__, __LINE__, type == ct_typeID::GENERIC);
             return the_generic;
         }
+        /// Get a relation node
+        inline node_handle getR() const {
+            ASSERT(__FILE__, __LINE__, type == ct_typeID::RELNODE);
+            return the_node;
+        }
 
         /// Get item into an edge value
         inline void get(edge_value &ev) const {
@@ -195,7 +197,7 @@ class MEDDLY::ct_item {
                 case ct_typeID::FLOAT:      ev.set(the_float);      return;
                 case ct_typeID::DOUBLE:     ev.set(the_double);     return;
                 default:
-                    ASSERT(__FILE__, __LINE__, false);
+                    FAIL(__FILE__, __LINE__, "Unknown edge type");
                     ev.set();
             }
         }
@@ -203,124 +205,6 @@ class MEDDLY::ct_item {
         // For templates
         inline void get_ev(long &i)     const   { i = getL(); }
         inline void get_ev(float &f)    const   { f = getF(); }
-
-        /*
-        // Get into a raw ct_entry_item
-        inline void get(ct_entry_item &ci) const
-        {
-            switch (type) {
-                case ct_typeID::NODE:       ci.N = the_node;        return;
-                case ct_typeID::INTEGER:    ci.I = the_int;         return;
-                case ct_typeID::LONG:       ci.L = the_long;        return;
-                case ct_typeID::FLOAT:      ci.F = the_float;       return;
-                case ct_typeID::DOUBLE:     ci.D = the_double;      return;
-                case ct_typeID::GENERIC:    ci.G = the_generic;     return;
-                default:
-                    ASSERT(__FILE__, __LINE__, false);
-            }
-        }
-        */
-
-        /*
-        // Get into a raw ct_entry_item and update hash
-        inline void get(ct_entry_item &ci, hash_stream &H) const
-        {
-            switch (type) {
-                case ct_typeID::NODE:
-                        ci.N = the_node;
-                        H.push(raw[0]);
-                        return;
-
-                case ct_typeID::INTEGER:
-                        ci.I = the_int;
-                        H.push(raw[0]);
-                        return;
-
-                case ct_typeID::LONG:
-                        ci.L = the_long;
-                        H.push(raw[0]);
-                        H.push(raw[1]);
-                        return;
-
-                case ct_typeID::FLOAT:
-                        ci.F = the_float;
-                        // DON'T hash floats
-                        return;
-
-                case ct_typeID::DOUBLE:
-                        ci.D = the_double;
-                        // DON'T hash doubles
-                        return;
-
-                case ct_typeID::GENERIC:
-                        ci.G = the_generic;
-                        H.push(raw[0]);
-                        H.push(raw[1]);
-                        // TBD: probably want a virtual method for hashing
-                        // because pointer equality isn't the right thing.
-                        return;
-
-                default:
-                    ASSERT(__FILE__, __LINE__, false);
-            }
-        }
-        */
-
-        // Get into an array of unsigned.
-        // @return  the number of slots written.
-        /*
-        inline unsigned getRaw(unsigned *e) const {
-            if (1==slots) {
-                e[0] = raw[0];
-                return 1;
-            }
-            ASSERT(__FILE__, __LINE__, 2==slots);
-            e[0] = raw[0];
-            e[1] = raw[1];
-            return 2;
-        }
-        */
-
-        // Get into an array of unsigned and update hash.
-        // @return  the number of slots written into the array.
-        /*
-        inline unsigned getRaw(unsigned *e, hash_stream &H) const
-        {
-            switch (type) {
-                case ct_typeID::NODE:
-                case ct_typeID::INTEGER:
-                        H.push(e[0] = raw[0]);
-                        return 1;
-
-                case ct_typeID::LONG:
-                        H.push(e[0] = raw[0]);
-                        H.push(e[1] = raw[1]);
-                        return 2;
-
-                case ct_typeID::FLOAT:
-                        // DON'T hash floats
-                        e[0] = raw[0];
-                        return 1;
-
-                case ct_typeID::DOUBLE:
-                        // DON'T hash doubles
-                        e[0] = raw[0];
-                        e[1] = raw[1];
-                        return 2;
-
-                case ct_typeID::GENERIC:
-                        // TBD: probably want a virtual method for hashing
-                        // because pointer equality isn't the right thing.
-                        H.push(e[0] = raw[0]);
-                        H.push(e[1] = raw[1]);
-                        return 2;
-
-                default:
-                        ASSERT(__FILE__, __LINE__, false);
-            }
-            return 0;
-        }
-        */
 
         // For recycling and such
         inline ct_item* getNext() const {
@@ -358,61 +242,6 @@ class MEDDLY::ct_item {
         inline bool hasType(ct_typeID t) const { return type == t; }
         inline void setType(ct_typeID t) { type = t; }
 
-    public: // Comparison
-
-        /*
-        inline bool equals(ct_entry_item ci) const
-        {
-            //
-            // TBD: change test for float and double to 'close enough'?
-            // TBD: what about generic comparisons?
-            //      probably comparing pointers isn't enough?
-            //
-            switch (type) {
-                case ct_typeID::NODE:       return ci.N == the_node;
-                case ct_typeID::INTEGER:    return ci.I == the_int;
-                case ct_typeID::LONG:       return ci.L == the_long;
-                case ct_typeID::FLOAT:      return ci.F == the_float;
-                case ct_typeID::DOUBLE:     return ci.D == the_double;
-                case ct_typeID::GENERIC:    return ci.G == the_generic;
-                default:
-                    ASSERT(__FILE__, __LINE__, false);
-                    return false;
-            }
-        }
-        */
-
-    public: // Hashing
-
-        /*
-        inline void hash(hash_stream &H) const
-        {
-            ASSERT(__FILE__, __LINE__, sizeof(the_int) == sizeof(raw[0]));
-            ASSERT(__FILE__, __LINE__, sizeof(the_node) == sizeof(raw[0]));
-            ASSERT(__FILE__, __LINE__, sizeof(the_float) == sizeof(raw[0]));
-
-            ASSERT(__FILE__, __LINE__, sizeof(the_long) == sizeof(raw));
-            ASSERT(__FILE__, __LINE__, sizeof(the_double) == sizeof(raw));
-            ASSERT(__FILE__, __LINE__, sizeof(the_generic) == sizeof(raw));
-
-            switch (type) {
-                case ct_typeID::FLOAT:
-                case ct_typeID::NODE:
-                case ct_typeID::INTEGER:
-                                            H.push(raw[0]);
-                                            return;
-
-                case ct_typeID::LONG:
-                case ct_typeID::DOUBLE:
-                case ct_typeID::GENERIC:
-                                            H.push(raw[0], raw[1]);
-                                            return;
-                default:
-                                            ASSERT(__FILE__, __LINE__, false);
-            }
-        }
-        */
-
     public: // miscellaneous
 
         void show(output &s) const;
@@ -430,10 +259,10 @@ class MEDDLY::ct_item {
             // For packing into compute table entries
             unsigned long   UL;
 
-            unsigned        raw[2]; // for hashing
+            // For hashing
+            unsigned        raw[2];
         };
         ct_typeID   type;
-        // unsigned    slots;
 };
 
 
