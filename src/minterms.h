@@ -125,14 +125,14 @@ class MEDDLY::minterm {
 
         inline int getVar(unsigned i) const {
             MEDDLY_DCASSERT(isForSets());
-            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
+            MEDDLY_CHECK_RANGE(1, i, num_vars+1);
             MEDDLY_DCASSERT(_from);
             return _from[i];
         }
         inline void setVar(unsigned i, int from) {
             MEDDLY_DCASSERT(isForSets());
             MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
-            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
+            MEDDLY_CHECK_RANGE(1, i, num_vars+1);
             MEDDLY_DCASSERT(_from);
             _from[i] = from;
         }
@@ -141,7 +141,7 @@ class MEDDLY::minterm {
 
         inline void getVars(unsigned i, int &from, int &to) const {
             MEDDLY_DCASSERT(isForRelations());
-            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
+            MEDDLY_CHECK_RANGE(1, i, num_vars+1);
             MEDDLY_DCASSERT(_from);
             MEDDLY_DCASSERT(_to);
             from = _from[i];
@@ -151,7 +151,7 @@ class MEDDLY::minterm {
             MEDDLY_DCASSERT(isForRelations());
             MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
             MEDDLY_DCASSERT(to >= 0 || to == DONT_CARE || to == DONT_CHANGE);
-            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
+            MEDDLY_CHECK_RANGE(1, i, num_vars+1);
             MEDDLY_DCASSERT(_from);
             MEDDLY_DCASSERT(_to);
             if (DONT_CHANGE == to) {
@@ -167,22 +167,22 @@ class MEDDLY::minterm {
 
         inline int from(unsigned i) const {
             MEDDLY_DCASSERT(_from);
-            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
+            MEDDLY_CHECK_RANGE(1, i, num_vars+1);
             return _from[i];
         }
         inline int& from(unsigned i) {
             MEDDLY_DCASSERT(_from);
-            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
+            MEDDLY_CHECK_RANGE(1, i, num_vars+1);
             return _from[i];
         }
         inline int to(unsigned i) const {
             MEDDLY_DCASSERT(_to);
-            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
+            MEDDLY_CHECK_RANGE(1, i, num_vars+1);
             return _to[i];
         }
         inline int& to(unsigned i) {
             MEDDLY_DCASSERT(_to);
-            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
+            MEDDLY_CHECK_RANGE(1, i, num_vars+1);
             return _to[i];
         }
 
