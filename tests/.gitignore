@@ -23,6 +23,7 @@ enctest
 kan_batch
 kan_index
 kan_io
+kan_relprod
 kan_show
 kanban
 nodestor

@@ -79,7 +79,25 @@ Operation updates, to do:
     * eventually: remove entry registration from operation base class
 
 
+======================================================================
+Reordering tests and revamp code: to do list
+======================================================================
+    * Write a reordering test
+        + create two forests, same domain but different orders
+        + generate minterms in both orders,
+            add them to the appropriate forests
+        + reorder the first forest
+        + copy from first forest to second,
+          and check for equality
 
+
+======================================================================
+Mark and sweep stuff
+======================================================================
+    * need roots for marking
+    * Mark phase: mark roots and their descendants
+    * Sweep CTs: remove any entry with an unmarked node in key or result
+    * Sweep nodes: remove unmarked nodes; decrement mark for all others
 
 ======================================================================
 Completely reimplemented operations

@@ -23,6 +23,7 @@ noinst_PROGRAMS = \
     kan_batch \
     kan_index \
     kan_io \
+    kan_relprod \
     kan_show \
     kanban \
     nodestor \
@@ -66,6 +67,7 @@ TESTS = \
     kan_batch \
     kan_index \
     kan_io \
+    kan_relprod \
     kan_show \
     kanban \
     nodestor \
@@ -349,6 +351,9 @@ kan_index_LDADD = ../src/libmeddly.la
 
 kan_io_SOURCES = kan_io.cc simple_model.h simple_model.cc
 kan_io_LDADD = ../src/libmeddly.la
+
+kan_relprod_SOURCES = kan_relprod.cc simple_model.h simple_model.cc
+kan_relprod_LDADD = ../src/libmeddly.la
 
 kan_show_SOURCES = kan_show.cc simple_model.h simple_model.cc \
                   kan_rs1.h kan_rs2.h kan_rs3.h
