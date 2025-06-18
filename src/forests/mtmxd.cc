@@ -593,7 +593,9 @@ void MEDDLY::mtmxd_forest::sifting(int var, int top, int bottom)
     }
   }
 
+#ifdef DEVELOPMENT_CODE
   ASSERT(__FILE__, __LINE__, getCurrentNumNodes() <= num);
+#endif
 }
 
 void MEDDLY::mtmxd_forest::moveDownVariable(int high, int low)

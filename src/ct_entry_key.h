@@ -118,7 +118,9 @@ class MEDDLY::ct_entry_key {
         inline unsigned numTempBytes() const { return temp_bytes; }
 
         inline unsigned getHash() const {
+#ifdef DEVELOPMENT_CODE
             ASSERT(__FILE__, __LINE__, has_hash);
+#endif
             return hash_value;
         }
 

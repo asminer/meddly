@@ -602,7 +602,9 @@ void MEDDLY::unpacked_node::read(input &s, const std::vector<node_handle> &map)
 
 void MEDDLY::unpacked_node::computeHash()
 {
+#ifdef DEVELOPMENT_CODE
     ASSERT(__FILE__, __LINE__, !has_hash);
+#endif
     trim();
 
     hash_stream s;

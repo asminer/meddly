@@ -1807,7 +1807,9 @@ void MEDDLY::forest::validateDownPointers(const unpacked_node &nb) const
 #endif
             for (unsigned i=0; i<nb.getSize(); i++) {
                 if (nb.down(i)==getTransparentNode()) continue;
+#ifdef DEVELOPMENT_CODE
                 ASSERT(__FILE__, __LINE__, getNodeLevel(nb.down(i)) == nextLevel);
+#endif
             }
             break;
 

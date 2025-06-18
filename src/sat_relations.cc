@@ -703,7 +703,9 @@ MEDDLY::otf_event::otf_event(otf_subevent** p, int np)
     }
   }
 
+#ifdef DEVELOPMENT_CODE
   ASSERT(__FILE__, __LINE__, all_enabling_subevents || !firingVars.empty());
+#endif
 
 #if 0
   is_disabled = (all_enabling_subevents || all_firing_subevents);
@@ -2350,7 +2352,9 @@ MEDDLY::hybrid_event::hybrid_event(hybrid_subevent** p, int np,
       }
     }
 
+#ifdef DEVELOPMENT_CODE
   ASSERT(__FILE__, __LINE__, all_enabling_subevents || !firingVars.empty());
+#endif
 
 #if 0
   is_disabled = (all_enabling_subevents || all_firing_subevents);

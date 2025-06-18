@@ -107,7 +107,9 @@ int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) 
           return top_var;
         }
         else {
+#ifdef DEVELOPMENT_CODE
           ASSERT(__FILE__, __LINE__, !isLevelAbove(_target->getLevelByVar(var), level));
+#endif
           depended.emplace(var);
           if(!_source->isTerminalNode(nr->down(i)) && visited.find(nr->down(i)) == visited.end()) {
             s.emplace(nr->down(i));

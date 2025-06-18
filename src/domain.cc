@@ -103,9 +103,9 @@ void MEDDLY::domain::testMarkAllDomains(bool mark)
     domain* p = nullptr;
 #endif
     for (domain* d = domain_list; d; d=d->next) {
-        ASSERT(__FILE__, __LINE__, d->prev == p);
         d->is_marked_for_deletion = mark;
 #ifdef DEVELOPMENT_CODE
+        ASSERT(__FILE__, __LINE__, d->prev == p);
         p = d;
 #endif
     }

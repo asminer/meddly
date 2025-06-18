@@ -301,7 +301,9 @@ class MEDDLY::ct_vector {
 #endif
         }
         inline unsigned getHash() const {
+#ifdef DEVELOPMENT_CODE
             ASSERT(__FILE__, __LINE__, hasHashVal);
+#endif
             return hashVal;
         }
 
