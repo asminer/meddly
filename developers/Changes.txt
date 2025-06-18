@@ -175,13 +175,53 @@ see if some stuff can become test cases
 
 Files that need updating / cleanup
 ------------------------------------------------------------
-defines.h
 hash_stream.h
 heap.h
 impl_unique_table.h     impl_unique_table.cc
 loggers.h               loggers.cc
 
 relation_node.h         relation_node.cc
+
+======================================================================
+Long-term forest plan
+======================================================================
+* After forest derived classes are eliminated
+* After reference counts are eliminated in favor of mark & sweep
+* Generic "forest" class, base of current forest and relforest classes
+* What are the essential features of a forest?
+    + Create, destroy forests
+    + Might have CT entries
+    + Node handles <= 0 are for terminals
+    + Node handles > 0 are for "real nodes"
+
+    + Range
+    + Edge labelings
+    + Set/relation
+
+    + Level of a handle?
+
+    + boolean - can it provide an unpacked node?
+    + virtual method to provide an unpacked node
+      (default: throw INVALID_OPERATION)
+
+    + boolean - can it provide a relation node?
+    + virtual method to provide a relation node
+
+    + names - "vector node" vs "matrix node"?
+
+    + common "node header" stuff?
+        mark byte
+        level
+        storage address (unsigned or unsigned long? relative to level?)
+
+    + common functionality?
+        request unused handle
+        mark a handle and its children
+        check if a handle is marked
+        sweep - need a call back to delete an address
+
+        global forest registry
+
 
 
 ======================================================================

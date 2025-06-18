@@ -48,7 +48,7 @@ class MEDDLY::relforest {
     public:
         /// Like a dd_edge, but for a relation forest
         struct edge {
-            const relforest* parent;
+            relforest* parent;
             edge_value value;
             node_handle root;
         };

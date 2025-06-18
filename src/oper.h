@@ -28,6 +28,7 @@ namespace MEDDLY {
     class operation;
     class compute_table;
     class forest;
+    class relforest;
 
     class initializer_list;
     class ct_initializer;
@@ -99,6 +100,9 @@ class MEDDLY::operation {
 
         void registerInForest(forest* f);
         void unregisterInForest(forest* f);
+
+        void registerInForest(relforest* f);
+        void unregisterInForest(relforest* f);
 
 #ifdef ALLOW_DEPRECATED_0_17_6
         void registerEntryType(unsigned slot, ct_entry_type* et);
@@ -183,6 +187,9 @@ class MEDDLY::operation {
         const char* name;
         /// List of forest IDs associated with this operation.
         std::vector <unsigned> FList;
+
+        /// List of relforest IDs associated with this operation.
+        std::vector <unsigned> RFList;
 
 };
 
