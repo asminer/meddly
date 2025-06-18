@@ -55,7 +55,7 @@ MEDDLY::node_marker::~node_marker()
 
 size_t MEDDLY::node_marker::countEdges() const
 {
-    ASSERT(__FILE__, __LINE__, For);
+    MEDDLY_DCASSERT(For);
 
     size_t ec = 0;
     unpacked_node* M = unpacked_node::New(For, FULL_ONLY);
@@ -72,7 +72,7 @@ size_t MEDDLY::node_marker::countEdges() const
 
 size_t MEDDLY::node_marker::countNonzeroEdges() const
 {
-    ASSERT(__FILE__, __LINE__, For);
+    MEDDLY_DCASSERT(For);
 
     size_t ec = 0;
     unpacked_node* M = unpacked_node::New(For, SPARSE_ONLY);
@@ -89,7 +89,7 @@ size_t MEDDLY::node_marker::countNonzeroEdges() const
 
 void MEDDLY::node_marker::showByLevels(output &s) const
 {
-    ASSERT(__FILE__, __LINE__, For);
+    MEDDLY_DCASSERT(For);
 
     unpacked_node* M = unpacked_node::New(For, FULL_OR_SPARSE);
 
@@ -149,7 +149,7 @@ void MEDDLY::node_marker::showByLevels(output &s) const
 void MEDDLY::node_marker::getNodesAtLevel(int k, std::vector <node_handle> &v)
     const
 {
-    ASSERT(__FILE__, __LINE__, For);
+    MEDDLY_DCASSERT(For);
 
     size_t i=0;
     while( (i=marked.firstOne(i+1)) < marked.getSize() )
@@ -161,7 +161,7 @@ void MEDDLY::node_marker::getNodesAtLevel(int k, std::vector <node_handle> &v)
 
 void MEDDLY::node_marker::getTerminals(std::set <node_handle> &v) const
 {
-    ASSERT(__FILE__, __LINE__, For);
+    MEDDLY_DCASSERT(For);
 
     unpacked_node* M = unpacked_node::New(For, SPARSE_ONLY);
 
@@ -186,13 +186,13 @@ void MEDDLY::node_marker::getTerminals(std::set <node_handle> &v) const
 
 void MEDDLY::node_marker::_mark(node_handle p)
 {
-    ASSERT(__FILE__, __LINE__, For);
+    MEDDLY_DCASSERT(For);
 
-    CHECK_RANGE(__FILE__, __LINE__, 1, p, (node_handle) marked.getSize());
+    MEDDLY_CHECK_RANGE(1, p, marked.getSize());
     const node_storage* nodeMan = For->getNodeManager();
-    ASSERT(__FILE__, __LINE__, nodeMan);
+    MEDDLY_DCASSERT(nodeMan);
 
-    ASSERT(__FILE__, __LINE__, !S_top);
+    MEDDLY_DCASSERT(!S_top);
 
     push();
     addToQueue(p);
@@ -214,7 +214,7 @@ void MEDDLY::node_marker::_mark(node_handle p)
 #ifdef DEBUG_MARK
         std::cerr << "\texploring " << p << "\n";
 #endif
-        CHECK_RANGE(__FILE__, __LINE__, 1L, long(p), long(marked.getSize()));
+        MEDDLY_CHECK_RANGE(1, p, marked.getSize());
 
         //
         // If S_top is empty, we can re-use it; otherwise

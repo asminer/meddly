@@ -153,8 +153,8 @@ class MEDDLY::unpacked_node {
         inline void initRedundant(const forest *f, int k,
                 node_handle node, node_storage_flags fs)
         {
-            ASSERT(__FILE__, __LINE__, isAttachedTo(f));
-            ASSERT(__FILE__, __LINE__, (fs == nodestor) || (FULL_OR_SPARSE == nodestor));
+            MEDDLY_DCASSERT(isAttachedTo(f));
+            MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
             if (FULL_OR_SPARSE == nodestor) {
                 is_full = (FULL_ONLY == fs);
             }
@@ -164,8 +164,8 @@ class MEDDLY::unpacked_node {
         inline void initRedundant(const forest *f, int k,
                 const edge_value &ev, node_handle node, node_storage_flags fs)
         {
-            ASSERT(__FILE__, __LINE__, isAttachedTo(f));
-            ASSERT(__FILE__, __LINE__, (fs == nodestor) || (FULL_OR_SPARSE == nodestor));
+            MEDDLY_DCASSERT(isAttachedTo(f));
+            MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
             if (FULL_OR_SPARSE == nodestor) {
                 is_full = (FULL_ONLY == fs);
             }
@@ -212,8 +212,8 @@ class MEDDLY::unpacked_node {
         inline void initIdentity(const forest *f, int k, unsigned i,
                 node_handle node, node_storage_flags fs)
         {
-            ASSERT(__FILE__, __LINE__, isAttachedTo(f));
-            ASSERT(__FILE__, __LINE__, (fs == nodestor) || (FULL_OR_SPARSE == nodestor));
+            MEDDLY_DCASSERT(isAttachedTo(f));
+            MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
             if (FULL_OR_SPARSE == nodestor) {
                 is_full = (FULL_ONLY == fs);
             }
@@ -223,8 +223,8 @@ class MEDDLY::unpacked_node {
         inline void initIdentity(const forest *f, int k, unsigned i,
                 const edge_value &ev, node_handle node, node_storage_flags fs)
         {
-            ASSERT(__FILE__, __LINE__, isAttachedTo(f));
-            ASSERT(__FILE__, __LINE__, (fs == nodestor) || (FULL_OR_SPARSE == nodestor));
+            MEDDLY_DCASSERT(isAttachedTo(f));
+            MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
             if (FULL_OR_SPARSE == nodestor) {
                 is_full = (FULL_ONLY == fs);
             }
@@ -241,7 +241,7 @@ class MEDDLY::unpacked_node {
                 node_handle node, node_storage_flags fs)
         {
             unpacked_node* U = New(f, fs);
-            ASSERT(__FILE__, __LINE__, U);
+            MEDDLY_DCASSERT(U);
             U->initFromNode(node);
             return U;
         }
@@ -250,7 +250,7 @@ class MEDDLY::unpacked_node {
                 node_handle node, node_storage_flags fs)
         {
             unpacked_node* U = New(f, fs);
-            ASSERT(__FILE__, __LINE__, U);
+            MEDDLY_DCASSERT(U);
             U->initRedundant(k, node);
             return U;
         }
@@ -259,7 +259,7 @@ class MEDDLY::unpacked_node {
                 const edge_value &ev, node_handle node, node_storage_flags fs)
         {
             unpacked_node* U = New(f, fs);
-            ASSERT(__FILE__, __LINE__, U);
+            MEDDLY_DCASSERT(U);
             if (ev.isVoid()) {
                 U->initRedundant(k, node);
             } else {
@@ -272,7 +272,7 @@ class MEDDLY::unpacked_node {
                 unsigned i, node_handle node, node_storage_flags fs)
         {
             unpacked_node* U = New(f, fs);
-            ASSERT(__FILE__, __LINE__, U);
+            MEDDLY_DCASSERT(U);
             U->initIdentity(k, i, node);
             return U;
         }
@@ -282,7 +282,7 @@ class MEDDLY::unpacked_node {
                 node_storage_flags fs)
         {
             unpacked_node* U = New(f, fs);
-            ASSERT(__FILE__, __LINE__, U);
+            MEDDLY_DCASSERT(U);
             if (ev.isVoid()) {
                 U->initIdentity(k, i, node);
             } else {
@@ -324,8 +324,8 @@ class MEDDLY::unpacked_node {
                 int levl, T tsz)
         {
             unpacked_node* U = New(f, FULL_ONLY);
-            ASSERT(__FILE__, __LINE__, U);
-            ASSERT(__FILE__, __LINE__, tsz >= 0);
+            MEDDLY_DCASSERT(U);
+            MEDDLY_DCASSERT(tsz >= 0);
             U->level = levl;
             U->resize(unsigned(tsz));
             U->clear(0, unsigned(tsz));
@@ -340,7 +340,7 @@ class MEDDLY::unpacked_node {
                 int levl, T nnzs)
         {
             unpacked_node* U = New(f, SPARSE_ONLY);
-            ASSERT(__FILE__, __LINE__, U);
+            MEDDLY_DCASSERT(U);
             U->level = levl;
             U->resize(unsigned(nnzs));
             U->setSparse();
@@ -387,21 +387,21 @@ class MEDDLY::unpacked_node {
         /// Get a pointer to the unhashed header data.
         inline const void* UHptr() const
         {
-            ASSERT(__FILE__, __LINE__, extra_unhashed);
+            MEDDLY_DCASSERT(extra_unhashed);
             return extra_unhashed;
         }
 
         /// Set the unhashed header data
         inline void setUHdata(const void* p)
         {
-            ASSERT(__FILE__, __LINE__, p);
+            MEDDLY_DCASSERT(p);
             memcpy(extra_unhashed, p, extra_unhashed_size);
         }
 
         /// Get the unhashed header data
         inline void getUHdata(void* p) const
         {
-            ASSERT(__FILE__, __LINE__, p);
+            MEDDLY_DCASSERT(p);
             memcpy(p, extra_unhashed, extra_unhashed_size);
         }
 
@@ -414,21 +414,21 @@ class MEDDLY::unpacked_node {
         /// Get a pointer to the hashed header data.
         inline const void* HHptr() const
         {
-            ASSERT(__FILE__, __LINE__, extra_hashed);
+            MEDDLY_DCASSERT(extra_hashed);
             return extra_hashed;
         }
 
         /// Set the hashed header data
         inline void setHHdata(const void* p)
         {
-            ASSERT(__FILE__, __LINE__, p);
+            MEDDLY_DCASSERT(p);
             memcpy(extra_hashed, p, extra_hashed_size);
         }
 
         /// Get the hashed header data
         inline void getHHdata(void* p) const
         {
-            ASSERT(__FILE__, __LINE__, p);
+            MEDDLY_DCASSERT(p);
             memcpy(p, extra_hashed, extra_hashed_size);
         }
 
@@ -447,8 +447,8 @@ class MEDDLY::unpacked_node {
         */
         inline node_handle down(unsigned n) const
         {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _down);
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_down);
             return _down[n];
         }
 
@@ -461,8 +461,8 @@ class MEDDLY::unpacked_node {
         */
         inline node_handle& down(unsigned n)
         {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _down);
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_down);
             return _down[n];
         }
 
@@ -477,8 +477,8 @@ class MEDDLY::unpacked_node {
         */
         inline node_handle down(int n) const
         {
-            CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
-            ASSERT(__FILE__, __LINE__, _down);
+            MEDDLY_CHECK_RANGE(0, n, int(size));
+            MEDDLY_DCASSERT(_down);
             return _down[n];
         }
 
@@ -491,8 +491,8 @@ class MEDDLY::unpacked_node {
         */
         inline node_handle& down(int n)
         {
-            CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
-            ASSERT(__FILE__, __LINE__, _down);
+            MEDDLY_CHECK_RANGE(0, n, int(size));
+            MEDDLY_DCASSERT(_down);
             return _down[n];
         }
 #endif
@@ -504,9 +504,9 @@ class MEDDLY::unpacked_node {
         */
         inline unsigned index(unsigned n) const
         {
-            ASSERT(__FILE__, __LINE__, !is_full);
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _index);
+            MEDDLY_DCASSERT(!is_full);
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_index);
             return _index[n];
         }
 
@@ -517,9 +517,9 @@ class MEDDLY::unpacked_node {
         */
         inline unsigned& index(unsigned n)
         {
-            ASSERT(__FILE__, __LINE__, !is_full);
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _index);
+            MEDDLY_DCASSERT(!is_full);
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_index);
             return _index[n];
         }
 
@@ -531,9 +531,9 @@ class MEDDLY::unpacked_node {
         */
         inline unsigned index(int n) const
         {
-            ASSERT(__FILE__, __LINE__, !is_full);
-            CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
-            ASSERT(__FILE__, __LINE__, _index);
+            MEDDLY_DCASSERT(!is_full);
+            MEDDLY_CHECK_RANGE(0, n, int(size));
+            MEDDLY_DCASSERT(_index);
             return _index[n];
         }
 
@@ -544,9 +544,9 @@ class MEDDLY::unpacked_node {
         */
         inline unsigned& index(int n)
         {
-            ASSERT(__FILE__, __LINE__, !is_full);
-            CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
-            ASSERT(__FILE__, __LINE__, _index);
+            MEDDLY_DCASSERT(!is_full);
+            MEDDLY_CHECK_RANGE(0, n, int(size));
+            MEDDLY_DCASSERT(_index);
             return _index[n];
         }
 #endif
@@ -556,8 +556,8 @@ class MEDDLY::unpacked_node {
             @return     The edge value
         */
         inline const edge_value& edgeval(unsigned n) const {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _edge);
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_edge);
             return _edge[n];
         }
 
@@ -566,8 +566,8 @@ class MEDDLY::unpacked_node {
             @return     The edge value
         */
         inline edge_value& edgeval(unsigned n) {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _edge);
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_edge);
             return _edge[n];
         }
 
@@ -577,8 +577,8 @@ class MEDDLY::unpacked_node {
             @return     The edge value
         */
         inline const edge_value& edgeval(int n) const {
-            CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
-            ASSERT(__FILE__, __LINE__, _edge);
+            MEDDLY_CHECK_RANGE(0, n, int(size));
+            MEDDLY_DCASSERT(_edge);
             return _edge[n];
         }
 
@@ -587,8 +587,8 @@ class MEDDLY::unpacked_node {
             @return     The edge value
         */
         inline edge_value& edgeval(int n) {
-            CHECK_RANGE(__FILE__, __LINE__, 0, n, int(size));
-            ASSERT(__FILE__, __LINE__, _edge);
+            MEDDLY_CHECK_RANGE(0, n, int(size));
+            MEDDLY_DCASSERT(_edge);
             return _edge[n];
         }
 
@@ -598,8 +598,8 @@ class MEDDLY::unpacked_node {
         */
         template <class T>
         inline void subtractFromEdge(unsigned n, T v) {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _edge);
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_edge);
             _edge[n].subtract(v);
         }
 
@@ -610,8 +610,8 @@ class MEDDLY::unpacked_node {
         */
         template <class T>
         inline void divideEdge(unsigned n, T v) {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _edge);
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_edge);
             _edge[n].divide(v);
         }
 
@@ -633,9 +633,9 @@ class MEDDLY::unpacked_node {
             @param  ev  New edge value
         */
         inline void setEdgeval(unsigned n, const edge_value &ev) {
-            ASSERT(__FILE__, __LINE__, ev.hasType(the_edge_type));
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _edge);
+            MEDDLY_DCASSERT(ev.hasType(the_edge_type));
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_edge);
             _edge[n] = ev;
         }
 #endif
@@ -647,10 +647,10 @@ class MEDDLY::unpacked_node {
         */
         inline void setFull(unsigned n, node_handle h)
         {
-            ASSERT(__FILE__, __LINE__, !hasEdges());
-            ASSERT(__FILE__, __LINE__, isFull());
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _down);
+            MEDDLY_DCASSERT(!hasEdges());
+            MEDDLY_DCASSERT(isFull());
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_down);
             _down[n] = h;
         }
 
@@ -662,15 +662,15 @@ class MEDDLY::unpacked_node {
         */
         inline void setFull(unsigned n, const edge_value &v, node_handle h)
         {
-            ASSERT(__FILE__, __LINE__, v.hasType(the_edge_type));
-            ASSERT(__FILE__, __LINE__, isFull());
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _down);
+            MEDDLY_DCASSERT(v.hasType(the_edge_type));
+            MEDDLY_DCASSERT(isFull());
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_down);
             _down[n] = h;
             if (_edge) {
                 _edge[n] = v;
             } else {
-                ASSERT(__FILE__, __LINE__, v.isVoid());
+                MEDDLY_DCASSERT(v.isVoid());
             }
         }
 
@@ -682,14 +682,14 @@ class MEDDLY::unpacked_node {
         */
         inline void setFull(unsigned n, dd_edge &E)
         {
-            ASSERT(__FILE__, __LINE__, E.isAttachedTo(parent));
-            ASSERT(__FILE__, __LINE__, E.getEdgeValue().hasType(the_edge_type));
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
+            MEDDLY_DCASSERT(E.isAttachedTo(parent));
+            MEDDLY_DCASSERT(E.getEdgeValue().hasType(the_edge_type));
+            MEDDLY_CHECK_RANGE(0u, n, size);
             E.xferNode(_down[n]);
             if (_edge) {
                 _edge[n] = E.getEdgeValue();
             } else {
-                ASSERT(__FILE__, __LINE__, E.getEdgeValue().isVoid());
+                MEDDLY_DCASSERT(E.getEdgeValue().isVoid());
             }
         }
 #endif
@@ -704,10 +704,10 @@ class MEDDLY::unpacked_node {
         */
         inline void setFull(unsigned n, const void* p, node_handle h)
         {
-            ASSERT(__FILE__, __LINE__, isFull());
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _down);
-            ASSERT(__FILE__, __LINE__, _edge);
+            MEDDLY_DCASSERT(isFull());
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_down);
+            MEDDLY_DCASSERT(_edge);
             _down[n] = h;
             _edge[n].set(the_edge_type, p);
         }
@@ -722,11 +722,11 @@ class MEDDLY::unpacked_node {
         */
         inline void setSparse(unsigned n, unsigned i, node_handle h)
         {
-            ASSERT(__FILE__, __LINE__, !hasEdges());
-            ASSERT(__FILE__, __LINE__, isSparse());
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _down);
-            ASSERT(__FILE__, __LINE__, _index);
+            MEDDLY_DCASSERT(!hasEdges());
+            MEDDLY_DCASSERT(isSparse());
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_down);
+            MEDDLY_DCASSERT(_index);
             _index[n] = i;
             _down[n] = h;
         }
@@ -742,17 +742,17 @@ class MEDDLY::unpacked_node {
         inline void setSparse(unsigned n, unsigned i, const edge_value &v,
                 node_handle h)
         {
-            ASSERT(__FILE__, __LINE__, v.hasType(the_edge_type));
-            ASSERT(__FILE__, __LINE__, isSparse());
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _down);
-            ASSERT(__FILE__, __LINE__, _index);
+            MEDDLY_DCASSERT(v.hasType(the_edge_type));
+            MEDDLY_DCASSERT(isSparse());
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_down);
+            MEDDLY_DCASSERT(_index);
             _index[n] = i;
             _down[n] = h;
             if (_edge) {
                 _edge[n] = v;
             } else {
-                ASSERT(__FILE__, __LINE__, v.isVoid());
+                MEDDLY_DCASSERT(v.isVoid());
             }
         }
 
@@ -766,17 +766,17 @@ class MEDDLY::unpacked_node {
         */
         inline void setSparse(unsigned n, unsigned i, dd_edge &E)
         {
-            ASSERT(__FILE__, __LINE__, E.getEdgeValue().hasType(the_edge_type));
-            ASSERT(__FILE__, __LINE__, isSparse());
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _down);
-            ASSERT(__FILE__, __LINE__, _index);
+            MEDDLY_DCASSERT(E.getEdgeValue().hasType(the_edge_type));
+            MEDDLY_DCASSERT(isSparse());
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_down);
+            MEDDLY_DCASSERT(_index);
             E.xferNode(_down[n]);
             _index[n] = i;
             if (_edge) {
                 _edge[n] = E.getEdgeValue();
             } else {
-                ASSERT(__FILE__, __LINE__, E.getEdgeValue().isVoid());
+                MEDDLY_DCASSERT(E.getEdgeValue().isVoid());
             }
         }
 #endif
@@ -793,11 +793,11 @@ class MEDDLY::unpacked_node {
         inline void setSparse(unsigned n, unsigned i, const void* p,
                 node_handle h)
         {
-            ASSERT(__FILE__, __LINE__, isSparse());
-            CHECK_RANGE(__FILE__, __LINE__, 0u, n, size);
-            ASSERT(__FILE__, __LINE__, _down);
-            ASSERT(__FILE__, __LINE__, _index);
-            ASSERT(__FILE__, __LINE__, _edge);
+            MEDDLY_DCASSERT(isSparse());
+            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_DCASSERT(_down);
+            MEDDLY_DCASSERT(_index);
+            MEDDLY_DCASSERT(_edge);
             _index[n] = i;
             _down[n] = h;
             _edge[n].set(the_edge_type, p);
@@ -860,7 +860,7 @@ class MEDDLY::unpacked_node {
         /// Set this node as extensible
         inline void markAsExtensible()
         {
-            ASSERT(__FILE__, __LINE__, can_be_extensible);
+            MEDDLY_DCASSERT(can_be_extensible);
             is_extensible = true;
         }
 
@@ -873,21 +873,21 @@ class MEDDLY::unpacked_node {
         /// Get extensible down pointer
         inline node_handle ext_d() const
         {
-            ASSERT(__FILE__, __LINE__, isExtensible());
+            MEDDLY_DCASSERT(isExtensible());
             return down(size-1);
         }
 
         /// Get the extensible index
         inline unsigned ext_i() const
         {
-            ASSERT(__FILE__, __LINE__, isExtensible());
+            MEDDLY_DCASSERT(isExtensible());
             return index(size - 1);
         }
 
         /// Get the extensible edge value
         inline const edge_value& ext_ev() const
         {
-            ASSERT(__FILE__, __LINE__, isExtensible());
+            MEDDLY_DCASSERT(isExtensible());
             return edgeval(size - 1);
         }
 #endif
@@ -943,7 +943,7 @@ class MEDDLY::unpacked_node {
         inline unsigned hash() const
         {
 #ifdef DEVELOPMENT_CODE
-            ASSERT(__FILE__, __LINE__, has_hash);
+            MEDDLY_DCASSERT(has_hash);
 #endif
             return the_hash;
         }
@@ -1004,14 +1004,14 @@ class MEDDLY::unpacked_node {
         }
 
         inline void resize(int ns) {
-            ASSERT(__FILE__, __LINE__, ns>=0);
+            MEDDLY_DCASSERT(ns>=0);
             resize(unsigned(ns));
         }
 
         /// Shrink the size of a node
         inline void shrink(unsigned ns)
         {
-            ASSERT(__FILE__, __LINE__, ns <= getSize());
+            MEDDLY_DCASSERT(ns <= getSize());
             size = ns;
         }
 
@@ -1028,8 +1028,8 @@ class MEDDLY::unpacked_node {
         /// Allow writing to this node.
         inline void allowWrites(forest* mp) {
             if (modparent == mp) return;
-            ASSERT(__FILE__, __LINE__, nullptr == modparent);
-            ASSERT(__FILE__, __LINE__, parent == mp);
+            MEDDLY_DCASSERT(nullptr == modparent);
+            MEDDLY_DCASSERT(parent == mp);
             modparent = mp;
             AddToBuildList(this);
             mark_extra = 0;
@@ -1053,12 +1053,12 @@ class MEDDLY::unpacked_node {
         template <class FORST>
         inline void _clear(const FORST &F, unsigned low, unsigned high)
         {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, low, alloc);
-            CHECK_RANGE(__FILE__, __LINE__, 0u, high, alloc+1);
-            ASSERT(__FILE__, __LINE__, _down);
+            MEDDLY_CHECK_RANGE(0u, low, alloc);
+            MEDDLY_CHECK_RANGE(0u, high, alloc+1);
+            MEDDLY_DCASSERT(_down);
 
             if (hasEdges()) {
-                ASSERT(__FILE__, __LINE__, _edge);
+                MEDDLY_DCASSERT(_edge);
                 for (unsigned i=low; i<high; i++) {
                     F.getTransparentEdge(_edge[i], _down[i]);
                 }
@@ -1077,10 +1077,10 @@ class MEDDLY::unpacked_node {
         template <class FORST>
         inline void _clear(const FORST &F)
         {
-            ASSERT(__FILE__, __LINE__, _down);
+            MEDDLY_DCASSERT(_down);
 
             if (hasEdges()) {
-                ASSERT(__FILE__, __LINE__, _edge);
+                MEDDLY_DCASSERT(_edge);
                 for (unsigned i=getSize(); i; ) {
                     --i;
                     F.getTransparentEdge(_edge[i], _down[i]);

@@ -57,8 +57,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariables(int level)
 void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
 {
   // Swap VarHigh and VarLow
-  ASSERT(__FILE__, __LINE__, level >= 1);
-  ASSERT(__FILE__, __LINE__, level < getNumVariables());
+  MEDDLY_DCASSERT(level >= 1);
+  MEDDLY_DCASSERT(level < getNumVariables());
 
   int hvar = getVarByLevel(level+1);
   int lvar = getVarByLevel(level);
@@ -119,7 +119,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
       unlinkNode(node);
     }
     else if (getNodeInCount(node) > 1) {
-      ASSERT(__FILE__, __LINE__, getNodeLevel(node) == -(level+1));
+      MEDDLY_DCASSERT(getNodeLevel(node) == -(level+1));
 
       // Duplication conflict
       dup.emplace(node, hnodes[i]);
@@ -138,7 +138,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
 
   if (!dup.empty()) {
     for (const auto& n : t) {
-      ASSERT(__FILE__, __LINE__, getNodeLevel(n) == (level+1));
+      MEDDLY_DCASSERT(getNodeLevel(n) == (level+1));
 
       // unpacked_node* nr = newUnpacked(n, FULL_ONLY);
       unpacked_node* nr = unpacked_node::newFromNode(this, n, FULL_ONLY);
@@ -158,7 +158,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
           nb->setFull(i, linkNode(search == dup.end() ? nr->down(i) : search->second));
         }
         node_handle node = createReducedNode(-1, nb);
-        ASSERT(__FILE__, __LINE__, getNodeInCount(node) == 1 && getNodeLevel(node) == level + 1);
+        MEDDLY_DCASSERT(getNodeInCount(node) == 1 && getNodeLevel(node) == level + 1);
         swapNodes(n, node);
         unlinkNode(node);
       }
@@ -167,7 +167,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
     }
 
     for (const auto& it : dup) {
-      ASSERT(__FILE__, __LINE__, getNodeInCount(it.first) == 1);
+      MEDDLY_DCASSERT(getNodeInCount(it.first) == 1);
       swapNodes(it.first, it.second);
       unlinkNode(it.first);
     }
@@ -189,7 +189,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
 
   // Reconstruct nodes for VarHigh'
   for (int i = 0; i < phnum; i++) {
-    ASSERT(__FILE__, __LINE__, isActiveNode(phnodes[i]));
+    MEDDLY_DCASSERT(isActiveNode(phnodes[i]));
 
     // unpacked_node* nr = newUnpacked(phnodes[i], FULL_ONLY);
     unpacked_node* nr = unpacked_node::newFromNode(this, phnodes[i], FULL_ONLY);
@@ -208,10 +208,10 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
     }
 
     node_handle node = swapAdjacentVariablesOf(phnodes[i]);
-    ASSERT(__FILE__, __LINE__, phnodes[i] != node);
+    MEDDLY_DCASSERT(phnodes[i] != node);
 
     if (getNodeInCount(node) > 1) {
-      ASSERT(__FILE__, __LINE__, getNodeLevel(node) == -(level+1));
+      MEDDLY_DCASSERT(getNodeLevel(node) == -(level+1));
 
       // Duplication conflict
       dup.emplace(node, phnodes[i]);
@@ -231,7 +231,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
   // XXX: Duplicate code
   if (!dup.empty()) {
     for (const auto& n : t) {
-      ASSERT(__FILE__, __LINE__, getNodeLevel(n)==(level+1));
+      MEDDLY_DCASSERT(getNodeLevel(n)==(level+1));
 
       // unpacked_node* nr = newUnpacked(n, FULL_ONLY);
       unpacked_node* nr = unpacked_node::newFromNode(this, n, FULL_ONLY);
@@ -252,7 +252,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
           nb->setFull(i, linkNode(search == dup.end() ? nr->down(i) : search->second));
         }
         node_handle node = createReducedNode(-1, nb);
-        ASSERT(__FILE__, __LINE__, getNodeInCount(node) == 1 && getNodeLevel(node) == level + 1);
+        MEDDLY_DCASSERT(getNodeInCount(node) == 1 && getNodeLevel(node) == level + 1);
         swapNodes(n, node);
         unlinkNode(node);
       }
@@ -261,7 +261,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
     }
 
     for (const auto& it : dup) {
-      ASSERT(__FILE__, __LINE__, getNodeInCount(it.first) == 1);
+      MEDDLY_DCASSERT(getNodeInCount(it.first) == 1);
       swapNodes(it.first, it.second);
       unlinkNode(it.first);
     }
@@ -367,8 +367,8 @@ MEDDLY::node_handle MEDDLY::mtmxd_forest::swapAdjacentVariablesOf(node_handle no
 void MEDDLY::mtmxd_forest::swapAdjacentVariablesByLevelSwap(int level)
 {
   // Swap VarHigh and VarLow
-  ASSERT(__FILE__, __LINE__, level >= 1);
-  ASSERT(__FILE__, __LINE__, level < getNumVariables());
+  MEDDLY_DCASSERT(level >= 1);
+  MEDDLY_DCASSERT(level < getNumVariables());
 
   if(!isFullyReduced() && !isQuasiReduced()){
     throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
@@ -389,8 +389,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
-//  ASSERT(__FILE__, __LINE__, ABS(level) >= 1);
-//  ASSERT(__FILE__, __LINE__, ABS(level) <= getNumVariables());
+//  MEDDLY_DCASSERT(ABS(level) >= 1);
+//  MEDDLY_DCASSERT(ABS(level) <= getNumVariables());
 //
 //  int hlevel = (level<0 ? -level : (-level-1));
 //  int hvar = getVarByLevel(hlevel);
@@ -416,8 +416,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 //    unpacked_node* nr = unpacked_node::useUnpackedNode();
 //    nr->initFromNode(this, hnodes[i], true);
 //
-//    ASSERT(__FILE__, __LINE__, nr->getLevel() == hlevel);
-//    ASSERT(__FILE__, __LINE__, nr->getSize() == hsize);
+//    MEDDLY_DCASSERT(nr->getLevel() == hlevel);
+//    MEDDLY_DCASSERT(nr->getSize() == hsize);
 //
 //    for (int j = 0; j < hsize; j++) {
 //      if (getNodeLevel(nr->down(j)) == level) {
@@ -465,8 +465,8 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 //    unpacked_node::Recycle(high_nr);
 //
 //    node_handle node = createReducedNode(-1, high_nb);
-//    ASSERT(__FILE__, __LINE__, getNodeInCount(node) == 1);
-//    ASSERT(__FILE__, __LINE__, getNodeLevel(node) == hlevel);
+//    MEDDLY_DCASSERT(getNodeInCount(node) == 1);
+//    MEDDLY_DCASSERT(getNodeLevel(node) == hlevel);
 //
 //    swapNodes(hnodes[i], node);
 //    unlinkNode(node);
@@ -482,9 +482,9 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 
 void MEDDLY::mtmxd_forest::dynamicReorderVariables(int top, int bottom)
 {
-  ASSERT(__FILE__, __LINE__, top > bottom);
-  ASSERT(__FILE__, __LINE__, top <= getNumVariables());
-  ASSERT(__FILE__, __LINE__, bottom >= 1);
+  MEDDLY_DCASSERT(top > bottom);
+  MEDDLY_DCASSERT(top <= getNumVariables());
+  MEDDLY_DCASSERT(bottom >= 1);
 
   removeAllComputeTableEntries();
 
@@ -517,7 +517,7 @@ void MEDDLY::mtmxd_forest::sifting(int var, int top, int bottom)
 {
   int level = getLevelByVar(var);
 
-  ASSERT(__FILE__, __LINE__, level <= top && level >= bottom);
+  MEDDLY_DCASSERT(level <= top && level >= bottom);
 
 #ifdef DEVELOPMENT_CODE
   int num = getCurrentNumNodes();
@@ -532,7 +532,7 @@ void MEDDLY::mtmxd_forest::sifting(int var, int top, int bottom)
     int change = 0;
     int min_level = bottom;
 
-    ASSERT(__FILE__, __LINE__, level == bottom);
+    MEDDLY_DCASSERT(level == bottom);
     // Move to the top
     while(level < top) {
       int high_var = getVarByLevel(level + 1);
@@ -550,7 +550,7 @@ void MEDDLY::mtmxd_forest::sifting(int var, int top, int bottom)
       }
     }
 
-    ASSERT(__FILE__, __LINE__, level == top);
+    MEDDLY_DCASSERT(level == top);
     while(level > min_level) {
       swapAdjacentVariables(level - 1);
       level--;
@@ -567,7 +567,7 @@ void MEDDLY::mtmxd_forest::sifting(int var, int top, int bottom)
     int min_level = top;
     int min = change;
 
-    ASSERT(__FILE__, __LINE__, level == top);
+    MEDDLY_DCASSERT(level == top);
     // Move to the bottom
     while(level > bottom) {
       int low_var = getVarByLevel(level - 1);
@@ -585,8 +585,8 @@ void MEDDLY::mtmxd_forest::sifting(int var, int top, int bottom)
       }
     }
 
-    ASSERT(__FILE__, __LINE__, level == bottom);
-    ASSERT(__FILE__, __LINE__, min <= 0);
+    MEDDLY_DCASSERT(level == bottom);
+    MEDDLY_DCASSERT(min <= 0);
     while(level < min_level) {
       swapAdjacentVariables(level);
       level++;
@@ -594,7 +594,7 @@ void MEDDLY::mtmxd_forest::sifting(int var, int top, int bottom)
   }
 
 #ifdef DEVELOPMENT_CODE
-  ASSERT(__FILE__, __LINE__, getCurrentNumNodes() <= num);
+  MEDDLY_DCASSERT(getCurrentNumNodes() <= num);
 #endif
 }
 
@@ -624,11 +624,11 @@ bool MEDDLY::mtmxd_forest::mtmxd_iterator::start(const dd_edge &e)
 
 bool MEDDLY::mtmxd_forest::mtmxd_iterator::next()
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
 
   int k = -1;
   node_handle down = 0;
@@ -637,7 +637,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_iterator::next()
     if (nzp[k] < path[k].getSize()) {
       index[k] = path[k].index(nzp[k]);
       down = path[k].down(nzp[k]);
-      ASSERT(__FILE__, __LINE__, down);
+      MEDDLY_DCASSERT(down);
       break;
     }
     if (k<0) {
@@ -657,20 +657,20 @@ bool MEDDLY::mtmxd_forest::mtmxd_iterator::next()
 
 bool MEDDLY::mtmxd_forest::mtmxd_iterator::first(int k, node_handle down)
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
 
   if (0==down) return false;
 
   bool isFully = F->isFullyReduced();
 
   for ( ; k; k = MXD_levels::downLevel(k) ) {
-    ASSERT(__FILE__, __LINE__, down);
+    MEDDLY_DCASSERT(down);
     int kdn = F->getNodeLevel(down);
-    ASSERT(__FILE__, __LINE__, !isLevelAbove(kdn, k));
+    MEDDLY_DCASSERT(!isLevelAbove(kdn, k));
 
     if (isLevelAbove(k, kdn)) {
       if (k>0 || isFully) {
@@ -720,11 +720,11 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter
 
 bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::next()
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
 
   node_handle down = 0;
   // Only try to advance the column, because the row is fixed.
@@ -732,7 +732,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::next()
     for (nzp[k]++; nzp[k] < path[k].getSize(); nzp[k]++) {
       index[k] = path[k].index(nzp[k]);
       down = path[k].down(nzp[k]);
-      ASSERT(__FILE__, __LINE__, down);
+      MEDDLY_DCASSERT(down);
       level_change = k;
       if (first(MXD_levels::downLevel(k), down)) return true;
     }
@@ -744,11 +744,11 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::next()
 
 bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
 
   if (0==k) {
     index[0] = down;
@@ -757,7 +757,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
 
   // Check that this "row" node has a non-zero pointer
   // for the fixed index.
-  ASSERT(__FILE__, __LINE__, k>0);
+  MEDDLY_DCASSERT(k>0);
   int cdown;
   if (isLevelAbove(k, F->getNodeLevel(down))) {
     // skipped unprimed level, must be "fully" reduced
@@ -770,7 +770,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedrow_iter::first(int k, node_handle down)
   //
   // Ok, set up the "column" node below
   k = MXD_levels::downLevel(k);
-  ASSERT(__FILE__, __LINE__, k<0);
+  MEDDLY_DCASSERT(k<0);
 
   if (isLevelAbove(k, F->getNodeLevel(cdown))) {
     // Skipped level, we can be fast about this.
@@ -837,11 +837,11 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter
 
 bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::next()
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
 
   node_handle down = 0;
   // Only try to advance the row, because the column is fixed.
@@ -849,7 +849,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::next()
     for (nzp[k]++; nzp[k] < path[k].getSize(); nzp[k]++) {
       index[k] = path[k].index(nzp[k]);
       down = path[k].down(nzp[k]);
-      ASSERT(__FILE__, __LINE__, down);
+      MEDDLY_DCASSERT(down);
       level_change = k;
       if (first(MXD_levels::downLevel(k), down)) return true;
     }
@@ -861,11 +861,11 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::next()
 
 bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
 
   if (0==k) {
     index[0] = down;
@@ -889,7 +889,7 @@ bool MEDDLY::mtmxd_forest::mtmxd_fixedcol_iter::first(int k, node_handle down)
 
   // Row node.  Find an index, if any,
   // such that there is a valid path below.
-  ASSERT(__FILE__, __LINE__, k>0);
+  MEDDLY_DCASSERT(k>0);
   int kdn = F->getNodeLevel(down);
   if (isLevelAbove(k, kdn)) {
     // Skipped level, handle quickly

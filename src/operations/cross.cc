@@ -94,8 +94,8 @@ void MEDDLY::cross_bool::compute(int L, unsigned in,
                 const edge_value &bv, node_handle bp,
                 edge_value &cv, node_handle &cp)
 {
-    ASSERT(__FILE__, __LINE__, av.isVoid());
-    ASSERT(__FILE__, __LINE__, bv.isVoid());
+    MEDDLY_DCASSERT(av.isVoid());
+    MEDDLY_DCASSERT(bv.isVoid());
 #ifdef TRACE
     out.indentation(0);
     ++top_count;
@@ -116,7 +116,7 @@ void MEDDLY::cross_bool::compute(int L, unsigned in,
 MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a,
         node_handle b)
 {
-    ASSERT(__FILE__, __LINE__, k>=0);
+    MEDDLY_DCASSERT(k>=0);
 
     // **************************************************************
     //
@@ -214,7 +214,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a,
     edge_value ev;
     node_handle c;
     resF->createReducedNode(C, ev, c);
-    ASSERT(__FILE__, __LINE__, ev.isVoid());
+    MEDDLY_DCASSERT(ev.isVoid());
 #ifdef TRACE
     out << "reduced to " << c << ": ";
     resF->showNode(out, c, SHOW_DETAILS);
@@ -237,7 +237,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_un(int k, node_handle a,
 
 MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_handle a, node_handle b)
 {
-    ASSERT(__FILE__, __LINE__, k<=0);
+    MEDDLY_DCASSERT(k<=0);
 
     // **************************************************************
     //
@@ -333,7 +333,7 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
     edge_value ev;
     node_handle c;
     resF->createReducedNode(C, ev, c);
-    ASSERT(__FILE__, __LINE__, ev.isVoid());
+    MEDDLY_DCASSERT(ev.isVoid());
 #ifdef TRACE
     out << "reduced to " << c << ": ";
     resF->showNode(out, c, SHOW_DETAILS);
@@ -388,6 +388,6 @@ void MEDDLY::CROSS_init()
 
 void MEDDLY::CROSS_done()
 {
-    ASSERT(__FILE__, __LINE__, CROSS_cache.isEmpty());
+    MEDDLY_DCASSERT(CROSS_cache.isEmpty());
 }
 

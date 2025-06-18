@@ -205,7 +205,7 @@ inline unsigned bytesRequiredForSigned(long a)
 template <int bytes, class INT>
 inline void rawToData(INT a, unsigned char* b)
 {
-    MEDDLY::ASSERT(__FILE__, __LINE__, bytes <= sizeof(INT));
+    MEDDLY_DCASSERT(bytes <= sizeof(INT));
   //
   // The compiler is smart enough to optimize out these if's
   //
@@ -222,14 +222,14 @@ inline void rawToData(INT a, unsigned char* b)
 template <int bytes, class INT>
 inline void signedToData(INT L, unsigned char* d)
 {
-    MEDDLY::ASSERT(__FILE__, __LINE__, bytes <= sizeof(INT));
+    MEDDLY_DCASSERT(bytes <= sizeof(INT));
   rawToData<bytes>(L, d);
 }
 
 template <int bytes, class INT>
 inline void downToData(INT  P, unsigned char* d)
 {
-    MEDDLY::ASSERT(__FILE__, __LINE__, bytes <= sizeof(INT));
+    MEDDLY_DCASSERT(bytes <= sizeof(INT));
   // positive P: as usual.
   if (P >= 0) {
     rawToData<bytes>(P, d);
@@ -266,7 +266,7 @@ inline void downToData(INT  P, unsigned char* d)
 template <int bytes, class INT>
 inline void dataToRaw(const unsigned char* b, INT &a)
 {
-    MEDDLY::ASSERT(__FILE__, __LINE__, bytes <= sizeof(INT));
+    MEDDLY_DCASSERT(bytes <= sizeof(INT));
   //
   // The compiler is smart enough to optimize out these if's
   //
@@ -294,14 +294,14 @@ inline void dataToRaw(const unsigned char* d, int bytes, INT& L)
     case 8:   dataToRaw<8>(d, L);     return;
 
     default:
-              MEDDLY::ASSERT(__FILE__, __LINE__, 0);
+              MEDDLY::FAIL(__FILE__, __LINE__, "Unknown data size");
   }
 }
 
 template <int bytes, class INT>
 inline void dataToSigned(const unsigned char* d, INT& L)
 {
-    MEDDLY::ASSERT(__FILE__, __LINE__, bytes <= sizeof(INT));
+    MEDDLY_DCASSERT(bytes <= sizeof(INT));
   // deal with negatives properly
   if (d[bytes-1] & 0x80) {
     L = INT((~0UL) << 8);
@@ -325,7 +325,7 @@ inline void dataToSigned(const unsigned char* d, int bytes, INT& L)
     case 8:   dataToSigned<8>(d, L);    return;
 
     default:
-              MEDDLY::ASSERT(__FILE__, __LINE__, 0);
+              MEDDLY::FAIL(__FILE__, __LINE__, "Unknown data size");
   }
 }
 
@@ -354,30 +354,30 @@ inline void moveMSB(INT& P);
 
 // These can't ever happen
 
-template <> inline void moveMSB<5, 4>(int& P)   { MEDDLY::ASSERT(__FILE__, __LINE__, 0); }
-template <> inline void moveMSB<6, 4>(int& P)   { MEDDLY::ASSERT(__FILE__, __LINE__, 0); }
-template <> inline void moveMSB<7, 4>(int& P)   { MEDDLY::ASSERT(__FILE__, __LINE__, 0); }
-template <> inline void moveMSB<8, 4>(int& P)   { MEDDLY::ASSERT(__FILE__, __LINE__, 0); }
+template <> inline void moveMSB<5, 4>(int& P)   { MEDDLY_DCASSERT(0); }
+template <> inline void moveMSB<6, 4>(int& P)   { MEDDLY_DCASSERT(0); }
+template <> inline void moveMSB<7, 4>(int& P)   { MEDDLY_DCASSERT(0); }
+template <> inline void moveMSB<8, 4>(int& P)   { MEDDLY_DCASSERT(0); }
 
 // These can't ever happen
 
-template <> inline void moveMSB<5, 4>(long& P)  { MEDDLY::ASSERT(__FILE__, __LINE__, 0); }
-template <> inline void moveMSB<6, 4>(long& P)  { MEDDLY::ASSERT(__FILE__, __LINE__, 0); }
-template <> inline void moveMSB<7, 4>(long& P)  { MEDDLY::ASSERT(__FILE__, __LINE__, 0); }
-template <> inline void moveMSB<8, 4>(long& P)  { MEDDLY::ASSERT(__FILE__, __LINE__, 0); }
+template <> inline void moveMSB<5, 4>(long& P)  { MEDDLY_DCASSERT(0); }
+template <> inline void moveMSB<6, 4>(long& P)  { MEDDLY_DCASSERT(0); }
+template <> inline void moveMSB<7, 4>(long& P)  { MEDDLY_DCASSERT(0); }
+template <> inline void moveMSB<8, 4>(long& P)  { MEDDLY_DCASSERT(0); }
 
 // These are no-ops
 
 template <> inline void moveMSB<4, 4>(int& P) {
-    MEDDLY::ASSERT(__FILE__, __LINE__, sizeof(int) == 4); // sanity check
+    MEDDLY_DCASSERT(sizeof(int) == 4); // sanity check
 }
 
 template <> inline void moveMSB<4, 4>(long& P) {
-    MEDDLY::ASSERT(__FILE__, __LINE__, sizeof(long) == 4); // sanity check
+    MEDDLY_DCASSERT(sizeof(long) == 4); // sanity check
 }
 
 template <> inline void moveMSB<8, 8>(long& P) {
-    MEDDLY::ASSERT(__FILE__, __LINE__, sizeof(long) == 8); // sanity check
+    MEDDLY_DCASSERT(sizeof(long) == 8); // sanity check
 }
 
 // Everything else
@@ -385,7 +385,7 @@ template <> inline void moveMSB<8, 8>(long& P) {
 template <int bytes, int sizeofint, class INT>
 inline void moveMSB(INT& P)
 {
-    MEDDLY::ASSERT(__FILE__, __LINE__, sizeof(INT) == sizeofint);
+    MEDDLY_DCASSERT(sizeof(INT) == sizeofint);
   // if (bytes < sizeofint) {
     P = (P & ~(0x80L << ((bytes-1)*8)) )      // old msb off
         | ((0x80L) << ((sizeofint-1)*8));     // new msb on
@@ -395,8 +395,8 @@ inline void moveMSB(INT& P)
 template <int bytes, int sizeofint, class INT>
 inline void dataToDown(const unsigned char* d, INT& P)
 {
-    MEDDLY::ASSERT(__FILE__, __LINE__, sizeofint == sizeof(INT));
-    MEDDLY::ASSERT(__FILE__, __LINE__, bytes <= sizeofint);
+    MEDDLY_DCASSERT(sizeofint == sizeof(INT));
+    MEDDLY_DCASSERT(bytes <= sizeofint);
   // Is this a terminal value?
   if (d[bytes-1] & 0x80) {
     // YES.
@@ -444,7 +444,7 @@ inline void dataToDown(const unsigned char* d, int bytes, INT& L)
     case 8:   dataToDown<8>(d, L);    return;
 
     default:
-              MEDDLY::ASSERT(__FILE__, __LINE__, 0);
+              MEDDLY::FAIL(__FILE__, __LINE__, "Unknown data size");
   }
 }
 

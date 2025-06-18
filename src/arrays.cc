@@ -64,13 +64,13 @@ MEDDLY::level_array::level_array(unsigned max_level, array_watcher* w)
 
     if (max_level < 128) {
         bytes = 1;
-        ASSERT(__FILE__, __LINE__, 1 == sizeof(char));
+        MEDDLY_DCASSERT(1 == sizeof(char));
     } else if (max_level < 32768) {
         bytes = 2;
-        ASSERT(__FILE__, __LINE__, 2 == sizeof(short));
+        MEDDLY_DCASSERT(2 == sizeof(short));
     } else {
         bytes = 4;
-        ASSERT(__FILE__, __LINE__, 4 == sizeof(int));
+        MEDDLY_DCASSERT(4 == sizeof(int));
     }
 
     if (watch) watch->expandElementSize(0, bytes*8);
@@ -225,8 +225,8 @@ void MEDDLY::counter_array::expand(size_t ns)
 
     switch (bytes) {
         case 1:   // char array
-            ASSERT(__FILE__, __LINE__, 0==data16);
-            ASSERT(__FILE__, __LINE__, 0==data32);
+            MEDDLY_DCASSERT(0==data16);
+            MEDDLY_DCASSERT(0==data32);
             d8 = (unsigned char*) realloc(data8, ns * bytes);
             if (!d8) {
                 throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
@@ -243,8 +243,8 @@ void MEDDLY::counter_array::expand(size_t ns)
                 }
                 memset(d16 + size, 0, (ns-size) * bytes );
                 data16 = d16;
-                ASSERT(__FILE__, __LINE__, 0==data8);
-                ASSERT(__FILE__, __LINE__, 0==data32);
+                MEDDLY_DCASSERT(0==data8);
+                MEDDLY_DCASSERT(0==data32);
             } else {
                 shrink16to8(ns);
                 memset(data8 + size, 0, (ns-size) * bytes );
@@ -259,8 +259,8 @@ void MEDDLY::counter_array::expand(size_t ns)
                 }
                 memset(d32 + size, 0, (ns-size) * bytes );
                 data32 = d32;
-                ASSERT(__FILE__, __LINE__, 0==data8);
-                ASSERT(__FILE__, __LINE__, 0==data16);
+                MEDDLY_DCASSERT(0==data8);
+                MEDDLY_DCASSERT(0==data16);
             } else if (counts_09bit) {
                 shrink32to16(ns);
                 memset(data16 + size, 0, (ns-size) * bytes );
@@ -290,8 +290,8 @@ void MEDDLY::counter_array::shrink(size_t ns)
 
     switch (bytes) {
         case 1:   // char array
-            ASSERT(__FILE__, __LINE__, 0==counts_09bit);
-            ASSERT(__FILE__, __LINE__, 0==counts_17bit);
+            MEDDLY_DCASSERT(0==counts_09bit);
+            MEDDLY_DCASSERT(0==counts_17bit);
             d8 = (unsigned char*) realloc(data8, ns * bytes);
             if (!d8) {
                 throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
@@ -300,7 +300,7 @@ void MEDDLY::counter_array::shrink(size_t ns)
             break;
 
         case 2:   // short array
-            ASSERT(__FILE__, __LINE__, 0==counts_17bit);
+            MEDDLY_DCASSERT(0==counts_17bit);
             if (counts_09bit) {
                 d16 = (unsigned short*) realloc(data16, ns * bytes);
                 if (!d16) {
@@ -354,11 +354,11 @@ void MEDDLY::counter_array::expand8to16(size_t j)
     std::cerr << "Widening counter array from 8 to 16 bits (due to element "
               << j << ")\n";
 #endif
-    ASSERT(__FILE__, __LINE__, 1==bytes);
-    ASSERT(__FILE__, __LINE__, !data16);
-    ASSERT(__FILE__, __LINE__, !data32);
-    ASSERT(__FILE__, __LINE__, !counts_09bit);
-    ASSERT(__FILE__, __LINE__, !counts_17bit);
+    MEDDLY_DCASSERT(1==bytes);
+    MEDDLY_DCASSERT(!data16);
+    MEDDLY_DCASSERT(!data32);
+    MEDDLY_DCASSERT(!counts_09bit);
+    MEDDLY_DCASSERT(!counts_17bit);
 
     counts_09bit = 1;
     bytes = sizeof(unsigned short);
@@ -381,10 +381,10 @@ void MEDDLY::counter_array::expand16to32(size_t j)
     std::cerr << "Widening counter array from 16 to 32 bits (due to element "
               << j << ")\n";
 #endif
-    ASSERT(__FILE__, __LINE__, 2==bytes);
-    ASSERT(__FILE__, __LINE__, !data8);
-    ASSERT(__FILE__, __LINE__, !data32);
-    ASSERT(__FILE__, __LINE__, !counts_17bit);
+    MEDDLY_DCASSERT(2==bytes);
+    MEDDLY_DCASSERT(!data8);
+    MEDDLY_DCASSERT(!data32);
+    MEDDLY_DCASSERT(!counts_17bit);
 
     counts_17bit = 1;
     bytes = sizeof(unsigned int);
@@ -406,12 +406,12 @@ void MEDDLY::counter_array::shrink16to8(size_t ns)
 #ifdef DEBUG_COUNTER_RESIZE
     std::cerr << "Narrowing counter array from 16 to 8 bits\n";
 #endif
-    ASSERT(__FILE__, __LINE__, 2==bytes);
-    ASSERT(__FILE__, __LINE__, data16);
-    ASSERT(__FILE__, __LINE__, !data8);
-    ASSERT(__FILE__, __LINE__, !data32);
-    ASSERT(__FILE__, __LINE__, !counts_09bit);
-    ASSERT(__FILE__, __LINE__, !counts_17bit);
+    MEDDLY_DCASSERT(2==bytes);
+    MEDDLY_DCASSERT(data16);
+    MEDDLY_DCASSERT(!data8);
+    MEDDLY_DCASSERT(!data32);
+    MEDDLY_DCASSERT(!counts_09bit);
+    MEDDLY_DCASSERT(!counts_17bit);
 
     bytes = sizeof(unsigned char);
     data8 = (unsigned char*) malloc(ns * bytes);
@@ -432,11 +432,11 @@ void MEDDLY::counter_array::shrink32to16(size_t ns)
 #ifdef DEBUG_COUNTER_RESIZE
     std::cerr << "Narrowing counter array from 16 to 8 bits\n";
 #endif
-    ASSERT(__FILE__, __LINE__, 4==bytes);
-    ASSERT(__FILE__, __LINE__, data32);
-    ASSERT(__FILE__, __LINE__, !data8);
-    ASSERT(__FILE__, __LINE__, !data16);
-    ASSERT(__FILE__, __LINE__, !counts_17bit);
+    MEDDLY_DCASSERT(4==bytes);
+    MEDDLY_DCASSERT(data32);
+    MEDDLY_DCASSERT(!data8);
+    MEDDLY_DCASSERT(!data16);
+    MEDDLY_DCASSERT(!counts_17bit);
 
     bytes = sizeof(unsigned short);
     data16 = (unsigned short*) malloc(ns * bytes);
@@ -457,12 +457,12 @@ void MEDDLY::counter_array::shrink32to8(size_t ns)
 #ifdef DEBUG_COUNTER_RESIZE
     std::cerr << "Narrowing counter array from 16 to 8 bits\n";
 #endif
-    ASSERT(__FILE__, __LINE__, 4==bytes);
-    ASSERT(__FILE__, __LINE__, data32);
-    ASSERT(__FILE__, __LINE__, !data8);
-    ASSERT(__FILE__, __LINE__, !data16);
-    ASSERT(__FILE__, __LINE__, !counts_09bit);
-    ASSERT(__FILE__, __LINE__, !counts_17bit);
+    MEDDLY_DCASSERT(4==bytes);
+    MEDDLY_DCASSERT(data32);
+    MEDDLY_DCASSERT(!data8);
+    MEDDLY_DCASSERT(!data16);
+    MEDDLY_DCASSERT(!counts_09bit);
+    MEDDLY_DCASSERT(!counts_17bit);
 
     bytes = sizeof(unsigned char);
     data8 = (unsigned char*) malloc(ns * bytes);
@@ -509,7 +509,7 @@ void MEDDLY::address_array::expand(size_t ns)
     if (ns <= size) return;
 
     if (4==bytes) {
-        ASSERT(__FILE__, __LINE__, !data64);
+        MEDDLY_DCASSERT(!data64);
         unsigned int* d = (unsigned int*) realloc(data32, ns * bytes);
         if (!d) {
             throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
@@ -517,8 +517,8 @@ void MEDDLY::address_array::expand(size_t ns)
         memset(d + size, 0, (ns-size) * bytes);
         data32 = d;
     } else {
-        ASSERT(__FILE__, __LINE__, !data32);
-        ASSERT(__FILE__, __LINE__, 8==bytes);
+        MEDDLY_DCASSERT(!data32);
+        MEDDLY_DCASSERT(8==bytes);
         if (num_large_elements) {
             // Stay at 64 bits
             unsigned long* d = (unsigned long*) realloc(data64, ns * bytes);
@@ -543,16 +543,16 @@ void MEDDLY::address_array::shrink(size_t ns)
     if (ns >= size) return;
 
     if (4==bytes) {
-        ASSERT(__FILE__, __LINE__, data32);
-        ASSERT(__FILE__, __LINE__, !data64);
+        MEDDLY_DCASSERT(data32);
+        MEDDLY_DCASSERT(!data64);
         unsigned int* d = (unsigned int*) realloc(data32, ns * bytes);
         if (!d) {
         throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
         }
         data32 = d;
     } else {
-        ASSERT(__FILE__, __LINE__, 8==bytes);
-        ASSERT(__FILE__, __LINE__, 0==data32);
+        MEDDLY_DCASSERT(8==bytes);
+        MEDDLY_DCASSERT(0==data32);
         if (num_large_elements) {
             // Stay at 64 bits
             unsigned long* d = (unsigned long*)
@@ -589,12 +589,12 @@ void MEDDLY::address_array::expand32to64()
 #ifdef DEBUG_ADDRESS_RESIZE
     std::cerr << "Widening counter array from 32 to 64 bits\n";
 #endif
-    ASSERT(__FILE__, __LINE__, 4==bytes);
-    ASSERT(__FILE__, __LINE__, !data64);
-    ASSERT(__FILE__, __LINE__, !num_large_elements);
+    MEDDLY_DCASSERT(4==bytes);
+    MEDDLY_DCASSERT(!data64);
+    MEDDLY_DCASSERT(!num_large_elements);
 
     bytes = 8;
-    ASSERT(__FILE__, __LINE__, sizeof(unsigned long) == bytes);
+    MEDDLY_DCASSERT(sizeof(unsigned long) == bytes);
     data64 = (unsigned long*) malloc(size * bytes);
     if (!data64) {
         throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
@@ -613,13 +613,13 @@ void MEDDLY::address_array::shrink64to32(size_t ns)
 #ifdef DEBUG_ADDRESS_RESIZE
     std::cerr << "Narrowing counter array from 64 to 32 bits\n";
 #endif
-    ASSERT(__FILE__, __LINE__, 8==bytes);
-    ASSERT(__FILE__, __LINE__, data64);
-    ASSERT(__FILE__, __LINE__, !data32);
-    ASSERT(__FILE__, __LINE__, !num_large_elements);
+    MEDDLY_DCASSERT(8==bytes);
+    MEDDLY_DCASSERT(data64);
+    MEDDLY_DCASSERT(!data32);
+    MEDDLY_DCASSERT(!num_large_elements);
 
     bytes = 4;
-    ASSERT(__FILE__, __LINE__, sizeof(unsigned int) == bytes);
+    MEDDLY_DCASSERT(sizeof(unsigned int) == bytes);
     data32 = (unsigned int*) malloc(ns * bytes);
     if (!data32) {
         throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
@@ -657,8 +657,8 @@ MEDDLY::bitvector::~bitvector()
 
 void MEDDLY::bitvector::attach(array_watcher *w)
 {
-    ASSERT(__FILE__, __LINE__, !watch);
-    ASSERT(__FILE__, __LINE__, !size);
+    MEDDLY_DCASSERT(!watch);
+    MEDDLY_DCASSERT(!size);
     if (!w) return;
     watch = w;
     watch->expandElementSize(0, sizeof(bool)*8);

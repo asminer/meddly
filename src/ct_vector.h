@@ -111,13 +111,13 @@ class MEDDLY::ct_item {
         /// Set item from a compacted CT entry, and advance the pointer.
         inline const unsigned* set(ct_typeID t, const unsigned* ptr)
         {
-            ASSERT(__FILE__, __LINE__, sizeof(the_node) == sizeof(unsigned));
-            ASSERT(__FILE__, __LINE__, sizeof(the_int) == sizeof(unsigned));
-            ASSERT(__FILE__, __LINE__, sizeof(the_float) == sizeof(unsigned));
+            MEDDLY_DCASSERT(sizeof(the_node) == sizeof(unsigned));
+            MEDDLY_DCASSERT(sizeof(the_int) == sizeof(unsigned));
+            MEDDLY_DCASSERT(sizeof(the_float) == sizeof(unsigned));
 
-            ASSERT(__FILE__, __LINE__, sizeof(the_long) == 2*sizeof(unsigned));
-            ASSERT(__FILE__, __LINE__, sizeof(the_double) == 2*sizeof(unsigned));
-            ASSERT(__FILE__, __LINE__, sizeof(the_generic) == 2*sizeof(unsigned));
+            MEDDLY_DCASSERT(sizeof(the_long) == 2*sizeof(unsigned));
+            MEDDLY_DCASSERT(sizeof(the_double) == 2*sizeof(unsigned));
+            MEDDLY_DCASSERT(sizeof(the_generic) == 2*sizeof(unsigned));
 
             type = t;
             switch (t) {
@@ -155,37 +155,37 @@ class MEDDLY::ct_item {
     public: // Getters
         /// Get a node
         inline node_handle getN() const {
-            ASSERT(__FILE__, __LINE__, type == ct_typeID::NODE);
+            MEDDLY_DCASSERT(type == ct_typeID::NODE);
             return the_node;
         }
         /// Get an integer
         inline int getI() const {
-            ASSERT(__FILE__, __LINE__, type == ct_typeID::INTEGER);
+            MEDDLY_DCASSERT(type == ct_typeID::INTEGER);
             return the_int;
         }
         /// Get a long
         inline long getL() const {
-            ASSERT(__FILE__, __LINE__, type == ct_typeID::LONG);
+            MEDDLY_DCASSERT(type == ct_typeID::LONG);
             return the_long;
         }
         /// Get a float
         inline float getF() const {
-            ASSERT(__FILE__, __LINE__, type == ct_typeID::FLOAT);
+            MEDDLY_DCASSERT(type == ct_typeID::FLOAT);
             return the_float;
         }
         /// Get a double
         inline double getD() const {
-            ASSERT(__FILE__, __LINE__, type == ct_typeID::DOUBLE);
+            MEDDLY_DCASSERT(type == ct_typeID::DOUBLE);
             return the_double;
         }
         /// Get a generic
         inline ct_object* getG() const {
-            ASSERT(__FILE__, __LINE__, type == ct_typeID::GENERIC);
+            MEDDLY_DCASSERT(type == ct_typeID::GENERIC);
             return the_generic;
         }
         /// Get a relation node
         inline node_handle getR() const {
-            ASSERT(__FILE__, __LINE__, type == ct_typeID::RELNODE);
+            MEDDLY_DCASSERT(type == ct_typeID::RELNODE);
             return the_node;
         }
 
@@ -208,7 +208,7 @@ class MEDDLY::ct_item {
 
         // For recycling and such
         inline ct_item* getNext() const {
-            ASSERT(__FILE__, __LINE__, type == ct_typeID::ERROR);
+            MEDDLY_DCASSERT(type == ct_typeID::ERROR);
             return next;
         }
 
@@ -280,13 +280,13 @@ class MEDDLY::ct_vector {
         ~ct_vector();
 
         inline const ct_item& operator[](unsigned u) const {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, u, size());
-            ASSERT(__FILE__, __LINE__, data);
+            MEDDLY_CHECK_RANGE(0u, u, size());
+            MEDDLY_DCASSERT(data);
             return data[u];
         }
         inline ct_item& operator[](unsigned u) {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, u, size());
-            ASSERT(__FILE__, __LINE__, data);
+            MEDDLY_CHECK_RANGE(0u, u, size());
+            MEDDLY_DCASSERT(data);
             return data[u];
         }
 
@@ -302,7 +302,7 @@ class MEDDLY::ct_vector {
         }
         inline unsigned getHash() const {
 #ifdef DEVELOPMENT_CODE
-            ASSERT(__FILE__, __LINE__, hasHashVal);
+            MEDDLY_DCASSERT(hasHashVal);
 #endif
             return hashVal;
         }

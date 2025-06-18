@@ -57,16 +57,16 @@ MEDDLY::prepostplus_evplus::prepostplus_evplus(binary_list &cache,
     checkDomains(__FILE__, __LINE__);
     checkAllLabelings(__FILE__, __LINE__, edge_labeling::EVPLUS);
 
-    ASSERT(__FILE__, __LINE__, arg1->isForRelations());
-    ASSERT(__FILE__, __LINE__, !arg2->isForRelations());
+    MEDDLY_DCASSERT(arg1->isForRelations());
+    MEDDLY_DCASSERT(!arg2->isForRelations());
 }
 
 MEDDLY::ct_entry_key* MEDDLY::prepostplus_evplus::findResult(long aev, node_handle a,
   long bev, node_handle b, long& cev, node_handle &c)
 {
   ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-  ASSERT(__FILE__, __LINE__, CTsrch);
-  ASSERT(__FILE__, __LINE__, !canCommute());
+  MEDDLY_DCASSERT(CTsrch);
+  MEDDLY_DCASSERT(!canCommute());
   CTsrch->writeL(0);
   CTsrch->writeN(a);
   CTsrch->writeL(0);
@@ -98,7 +98,7 @@ bool MEDDLY::prepostplus_evplus::checkTerminals(long aev, node_handle a, long be
   if (a == -1 && b == -1) {
     c = -1;
     cev = aev + bev;
-    ASSERT(__FILE__, __LINE__, cev >= 0);
+    MEDDLY_DCASSERT(cev >= 0);
     return true;
   }
   if (a == 0 || b == 0) {
@@ -140,7 +140,7 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
 
-  ASSERT(__FILE__, __LINE__, bLevel >= 0);
+  MEDDLY_DCASSERT(bLevel >= 0);
 
   const int resultLevel = ABS(aLevel) > bLevel ? ABS(aLevel): bLevel;
   const unsigned resultSize = unsigned(resF->getLevelSize(resultLevel));
@@ -250,7 +250,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
   const int aLevel = arg1F->getNodeLevel(a);
   const int bLevel = arg2F->getNodeLevel(b);
 
-  ASSERT(__FILE__, __LINE__, bLevel >= 0);
+  MEDDLY_DCASSERT(bLevel >= 0);
 
   const int resultLevel = ABS(aLevel) > bLevel ? ABS(aLevel): bLevel;
   const unsigned resultSize = unsigned(resF->getLevelSize(resultLevel));
@@ -366,7 +366,7 @@ void MEDDLY::PRE_PLUS_init()
 
 void MEDDLY::PRE_PLUS_done()
 {
-    ASSERT(__FILE__, __LINE__, PREPLUS_cache.isEmpty());
+    MEDDLY_DCASSERT(PREPLUS_cache.isEmpty());
 }
 
 MEDDLY::binary_operation* MEDDLY::POST_PLUS(forest* a, forest* b, forest* c)
@@ -400,5 +400,5 @@ void MEDDLY::POST_PLUS_init()
 
 void MEDDLY::POST_PLUS_done()
 {
-    ASSERT(__FILE__, __LINE__, POSTPLUS_cache.isEmpty());
+    MEDDLY_DCASSERT(POSTPLUS_cache.isEmpty());
 }

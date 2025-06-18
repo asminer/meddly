@@ -141,19 +141,19 @@ class MEDDLY::terminal {
         //
 
         inline node_handle getOmega() const {
-            ASSERT(__FILE__, __LINE__, isOmega());
+            MEDDLY_DCASSERT(isOmega());
             return t_omega;
         }
         inline bool getBoolean() const {
-            ASSERT(__FILE__, __LINE__, isBoolean());
+            MEDDLY_DCASSERT(isBoolean());
             return t_boolean;
         }
         inline long getInteger() const {
-            ASSERT(__FILE__, __LINE__, isInteger());
+            MEDDLY_DCASSERT(isInteger());
             return t_integer;
         }
         inline double getReal() const {
-            ASSERT(__FILE__, __LINE__, isReal());
+            MEDDLY_DCASSERT(isReal());
             return t_real;
         }
 
@@ -190,7 +190,7 @@ class MEDDLY::terminal {
         // Get the node handle for an integer terminal
         //
         inline node_handle getIntegerHandle() const {
-            ASSERT(__FILE__, __LINE__, isInteger());
+            MEDDLY_DCASSERT(isInteger());
             if (t_integer) {
                 if (t_integer < -1073741824 ||
                         t_integer > 1073741823)
@@ -209,7 +209,7 @@ class MEDDLY::terminal {
         // Get the node handle for a real terminal
         //
         inline node_handle getRealHandle() const {
-            ASSERT(__FILE__, __LINE__, isReal());
+            MEDDLY_DCASSERT(isReal());
             if (t_real) {
                 union {
                     node_handle h;
@@ -282,7 +282,7 @@ class MEDDLY::terminal {
             t_real = v;
         }
         inline void adjustReal(double v) {
-            ASSERT(__FILE__, __LINE__, isReal());
+            MEDDLY_DCASSERT(isReal());
             t_real = v;
         }
 
@@ -325,8 +325,8 @@ class MEDDLY::terminal {
                         return;
 
                 case terminal_type::BOOLEAN:
-                        ASSERT(__FILE__, __LINE__, h <= 0);
-                        ASSERT(__FILE__, __LINE__, h >= -1);
+                        MEDDLY_DCASSERT(h <= 0);
+                        MEDDLY_DCASSERT(h >= -1);
                         if (h<-1 || h>0) {
                             throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
                         }

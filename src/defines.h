@@ -56,10 +56,24 @@
 // *                                                                     *
 // ***********************************************************************
 
-#define smart_cast	dynamic_cast
-
 #include <cassert>
 #include <iostream>
+#include <cassert>
+
+#define smart_cast	dynamic_cast
+#define MEDDLY_DCASSERT(X)  assert(X)
+#define MEDDLY_CHECK_RANGE(L, X, U)  \
+    do { \
+        if ((X) < (L) || (X) >= (U) ) { \
+            std::cerr << "Check range at " << __FILE__ \
+                      << " line " << __LINE__ \
+                      << " failed:\n    min: " << (L) \
+                      << "\n    val: " << (X) \
+                      << "\n    max: " << (U) << '\n'; \
+            exit(1); \
+        } \
+    } while (0)
+
 
 // ***********************************************************************
 #else
@@ -70,6 +84,8 @@
 // ***********************************************************************
 
 #define smart_cast	static_cast
+#define MEDDLY_DCASSERT(X)
+#define MEDDLY_CHECK_RANGE(L, X, U)
 
 // ***********************************************************************
 #endif
@@ -176,31 +192,6 @@ namespace MEDDLY {
                         << ln << "\n";
         }
         exit(1);
-#endif
-    }
-
-    template <class INT>
-    inline void CHECK_RANGE(const char* fn, unsigned ln,
-            INT min, INT value, INT max)
-    {
-#ifdef DEVELOPMENT_CODE
-        if (value < min || value >= max ) {
-            std::cerr << "Check range at " << fn << " line " << ln;
-            std::cerr << " failed:\n    min: " << min;
-            std::cerr << "\n    val: " << value;
-            std::cerr << "\n    max: " << max << '\n';
-            exit(1);
-        }
-#endif
-    }
-
-    inline void ASSERT(const char* fn, unsigned ln, bool X)
-    {
-#ifdef DEVELOPMENT_CODE
-        if (!X) {
-            std::cerr << "Assertion at " << fn << " line " << ln << " failed\n";
-            exit(1);
-        }
 #endif
     }
 

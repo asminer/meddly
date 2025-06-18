@@ -62,8 +62,8 @@ MEDDLY::global_rebuilder::~global_rebuilder() {
 
 int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) const
 {
-  ASSERT(__FILE__, __LINE__, !_source->isTerminalNode(p));
-  ASSERT(__FILE__, __LINE__, target_level > 0);
+  MEDDLY_DCASSERT(!_source->isTerminalNode(p));
+  MEDDLY_DCASSERT(target_level > 0);
 
 #ifdef DEVELOPMENT_CODE
   int level = target_level;
@@ -88,7 +88,7 @@ int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) 
 
     while(isLevelAbove(source_level, _source->getNodeLevel(pv))) {
       target_level--;
-      ASSERT(__FILE__, __LINE__, target_level > 0);
+      MEDDLY_DCASSERT(target_level > 0);
       top_var = _target->getVarByLevel(target_level);
       if(depended.find(top_var) != depended.end()) {
         return top_var;
@@ -98,7 +98,7 @@ int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) 
 
     int var = _source->getVarByLevel(_source->getNodeLevel(pv));
     int size = _source->getVariableSize(var);
-    ASSERT(__FILE__, __LINE__, size == 2);
+    MEDDLY_DCASSERT(size == 2);
     unpacked_node *nr = unpacked_node::newFromNode(_source, pv, FULL_ONLY);
     // source->newUnpacked(pv, FULL_ONLY);
     for(int i = 1; i < size; i++) {
@@ -108,7 +108,7 @@ int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) 
         }
         else {
 #ifdef DEVELOPMENT_CODE
-          ASSERT(__FILE__, __LINE__, !isLevelAbove(_target->getLevelByVar(var), level));
+          MEDDLY_DCASSERT(!isLevelAbove(_target->getLevelByVar(var), level));
 #endif
           depended.emplace(var);
           if(!_source->isTerminalNode(nr->down(i)) && visited.find(nr->down(i)) == visited.end()) {
@@ -129,7 +129,7 @@ int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) 
 
   while(true) {
     target_level--;
-    ASSERT(__FILE__, __LINE__, target_level > 0);
+    MEDDLY_DCASSERT(target_level > 0);
     top_var = _target->getVarByLevel(target_level);
     // There must exist a variable the decision diagram depends on
     if(depended.find(top_var) != depended.end()) {
@@ -195,7 +195,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::transform(node_handle p,
   }
 
   int size = _target->getVariableSize(top_var);
-  ASSERT(__FILE__, __LINE__, size == 2);
+  MEDDLY_DCASSERT(size == 2);
   unpacked_node* nb = unpacked_node::newWritable(_target, target_level, size, FULL_ONLY);
   for (int i = 0; i < size; i++) {
     pa.push_back(i == 0 ? -top_var : top_var);
@@ -204,7 +204,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::transform(node_handle p,
 //    _source->showNodeGraph(output, &pr, 1);
 //
 //    int top_pr = check_dependency(pr, _target->getNumVariables());
-//    ASSERT(__FILE__, __LINE__, _target->getLevelByVar(top_pr) < _target->getLevelByVar(top_var));
+//    MEDDLY_DCASSERT(_target->getLevelByVar(top_pr) < _target->getLevelByVar(top_var));
 
     _computed_restrict.clear();
     nb->setFull(i, transform(pr, target_level - 1, pa));
@@ -222,7 +222,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::transform(node_handle p,
   std::vector<int> cpa(pa);
   std::sort(cpa.begin(), cpa.end(),
       [this](const int& x, const int& y) {
-        ASSERT(__FILE__, __LINE__, ABS(x) != ABS(y));
+        MEDDLY_DCASSERT(ABS(x) != ABS(y));
         return this->_source->getLevelByVar(ABS(x)) > this->_source->getLevelByVar(ABS(y));
       });
   _computed_transform.insert( { { sig }, { cpa, pt } });
@@ -253,7 +253,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::restrict(node_handle p,
       int size = _source->getVariableSize(_source->getVarByLevel(level1));
       unpacked_node* nb = unpacked_node::newWritable(_source, level1, size, FULL_ONLY);
       for (int i = 0; i < size; i++) {
-        ASSERT(__FILE__, __LINE__, size==2);
+        MEDDLY_DCASSERT(size==2);
         nb->setFull(i, restrict(nr->down(i), pa));
       }
       unpacked_node::Recycle(nr);
@@ -280,7 +280,7 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::restrict(node_handle p,
 //		return true;
 //	}
 //
-//	ASSERT(__FILE__, __LINE__, start <= pa.size());
+//	MEDDLY_DCASSERT(start <= pa.size());
 //	if(start == pa.size()) {
 //		result = _source->linkNode(p);
 //		return true;
@@ -342,7 +342,7 @@ bool MEDDLY::global_rebuilder::restrict_exist(node_handle p,
     return true;
   }
 
-  ASSERT(__FILE__, __LINE__, start <= pa.size());
+  MEDDLY_DCASSERT(start <= pa.size());
   if (start == pa.size()) {
     result = _source->linkNode(p);
     return true;
@@ -572,7 +572,7 @@ int MEDDLY::global_rebuilder::TopDownSignatureGenerator::signature(
 
     int level = source->getNodeLevel(pv);
     int size = source->getVariableSize(source->getVarByLevel(level));
-    ASSERT(__FILE__, __LINE__, size == 2);
+    MEDDLY_DCASSERT(size == 2);
 
     unpacked_node* nr = unpacked_node::newFromNode(source, pv, FULL_ONLY);
     for (int i = 0; i < size; i++) {
@@ -665,7 +665,7 @@ int MEDDLY::global_rebuilder::BottomUpSignatureGenerator::rec_signature(node_han
 
   int level = source->getNodeLevel(p);
   int size = source->getVariableSize(source->getVarByLevel(level));
-  ASSERT(__FILE__, __LINE__, size == 2);
+  MEDDLY_DCASSERT(size == 2);
 
   unpacked_node* nr = unpacked_node::newFromNode(source, p, FULL_ONLY);
   for (int i = 0; i < size; i++) {

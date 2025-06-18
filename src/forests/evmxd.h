@@ -76,7 +76,7 @@ class MEDDLY::evmxd_forest : public ev_forest {
           //
           // Identity node
           //
-          ASSERT(__FILE__, __LINE__, DONT_CARE == vlist[i]);
+          MEDDLY_DCASSERT(DONT_CARE == vlist[i]);
           if (isIdentityReduced()) continue;
           // Build an identity node by hand
           unsigned sz = unsigned(getLevelSize(i));
@@ -232,8 +232,8 @@ namespace MEDDLY {
           unprimed levels, for use by evmxd_forest descendants.
       */
       void createEdgeUn(int k, int start, int stop, T &ev, node_handle &ed) {
-        ASSERT(__FILE__, __LINE__, k>=0);
-        ASSERT(__FILE__, __LINE__, stop > start);
+        MEDDLY_DCASSERT(k>=0);
+        MEDDLY_DCASSERT(stop > start);
         //
         // Fast special case
         //
@@ -276,7 +276,7 @@ namespace MEDDLY {
             }
             batchP++;
           } else {
-            ASSERT(__FILE__, __LINE__, unprimed(i, k) >= 0);
+            MEDDLY_DCASSERT(unprimed(i, k) >= 0);
             nextV = MIN(nextV, unsigned(unprimed(i, k)));
           }
         }
@@ -322,7 +322,7 @@ namespace MEDDLY {
           dd_edge dcnormal(F);
           dcnormal.set(dcnormal_ev, dcnormal_nh);
 
-          ASSERT(__FILE__, __LINE__, unionOp);
+          MEDDLY_DCASSERT(unionOp);
           unionOp->computeTemp(dontcare, dcnormal, dontcare);
         }
 
@@ -374,7 +374,7 @@ namespace MEDDLY {
         //
         // Union with don't cares
         //
-        ASSERT(__FILE__, __LINE__, unionOp);
+        MEDDLY_DCASSERT(unionOp);
         node_handle built_nh;
         T built_ev;
         nb->shrink(z);
@@ -395,8 +395,8 @@ namespace MEDDLY {
       */
       void createEdgePr(int in, int k, int start, int stop,
         T &ev, node_handle &ed) {
-        ASSERT(__FILE__, __LINE__, k<0);
-        ASSERT(__FILE__, __LINE__, stop > start);
+        MEDDLY_DCASSERT(k<0);
+        MEDDLY_DCASSERT(stop > start);
 
         //
         // Don't need to check for terminals
@@ -489,7 +489,7 @@ namespace MEDDLY {
           //
           // (3) union with don't cares
           //
-          ASSERT(__FILE__, __LINE__, unionOp);
+          MEDDLY_DCASSERT(unionOp);
           unionOp->computeTemp(dontcare, these, these);
 
           //

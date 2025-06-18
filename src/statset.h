@@ -59,12 +59,12 @@ public:
         if (active_nodes > peak_active) {
             peak_active = active_nodes;
         }
-        ASSERT(__FILE__, __LINE__, active_nodes >= 0);
+        MEDDLY_DCASSERT(active_nodes >= 0);
     }
 
     inline void decActive(long b) {
         active_nodes -= b;
-        ASSERT(__FILE__, __LINE__, active_nodes >= 0);
+        MEDDLY_DCASSERT(active_nodes >= 0);
     }
 };
 

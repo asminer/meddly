@@ -66,7 +66,7 @@ namespace MEDDLY {
         {
             // max(a, a) = a; just copy it
             //
-            ASSERT(__FILE__, __LINE__, copier);
+            MEDDLY_DCASSERT(copier);
             edge_value zero;
             copier->compute(L, in, zero, a, cv, c);
         }
@@ -96,8 +96,8 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
-            ASSERT(__FILE__, __LINE__, a.isVoid());
-            ASSERT(__FILE__, __LINE__, b.isVoid());
+            MEDDLY_DCASSERT(a.isVoid());
+            MEDDLY_DCASSERT(b.isVoid());
             c.set();
         }
     };
@@ -381,6 +381,6 @@ void MEDDLY::MAXIMUM_init()
 
 void MEDDLY::MAXIMUM_done()
 {
-    ASSERT(__FILE__, __LINE__, MAXIMUM_cache.isEmpty());
+    MEDDLY_DCASSERT(MAXIMUM_cache.isEmpty());
 }
 

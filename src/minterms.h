@@ -124,36 +124,36 @@ class MEDDLY::minterm {
         // set access
 
         inline int getVar(unsigned i) const {
-            ASSERT(__FILE__, __LINE__, isForSets());
-            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
-            ASSERT(__FILE__, __LINE__, _from);
+            MEDDLY_DCASSERT(isForSets());
+            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
+            MEDDLY_DCASSERT(_from);
             return _from[i];
         }
         inline void setVar(unsigned i, int from) {
-            ASSERT(__FILE__, __LINE__, isForSets());
-            ASSERT(__FILE__, __LINE__, from >= 0 || from == DONT_CARE);
-            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
-            ASSERT(__FILE__, __LINE__, _from);
+            MEDDLY_DCASSERT(isForSets());
+            MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
+            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
+            MEDDLY_DCASSERT(_from);
             _from[i] = from;
         }
 
         // relation access
 
         inline void getVars(unsigned i, int &from, int &to) const {
-            ASSERT(__FILE__, __LINE__, isForRelations());
-            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
-            ASSERT(__FILE__, __LINE__, _from);
-            ASSERT(__FILE__, __LINE__, _to);
+            MEDDLY_DCASSERT(isForRelations());
+            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
+            MEDDLY_DCASSERT(_from);
+            MEDDLY_DCASSERT(_to);
             from = _from[i];
             to   = _to[i];
         }
         inline void setVars(unsigned i, int from, int to) {
-            ASSERT(__FILE__, __LINE__, isForRelations());
-            ASSERT(__FILE__, __LINE__, from >= 0 || from == DONT_CARE);
-            ASSERT(__FILE__, __LINE__, to >= 0 || to == DONT_CARE || to == DONT_CHANGE);
-            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
-            ASSERT(__FILE__, __LINE__, _from);
-            ASSERT(__FILE__, __LINE__, _to);
+            MEDDLY_DCASSERT(isForRelations());
+            MEDDLY_DCASSERT(from >= 0 || from == DONT_CARE);
+            MEDDLY_DCASSERT(to >= 0 || to == DONT_CARE || to == DONT_CHANGE);
+            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
+            MEDDLY_DCASSERT(_from);
+            MEDDLY_DCASSERT(_to);
             if (DONT_CHANGE == to) {
                 if (from >= 0) {
                     to = from;
@@ -166,23 +166,23 @@ class MEDDLY::minterm {
         // both access
 
         inline int from(unsigned i) const {
-            ASSERT(__FILE__, __LINE__, _from);
-            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
+            MEDDLY_DCASSERT(_from);
+            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
             return _from[i];
         }
         inline int& from(unsigned i) {
-            ASSERT(__FILE__, __LINE__, _from);
-            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
+            MEDDLY_DCASSERT(_from);
+            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
             return _from[i];
         }
         inline int to(unsigned i) const {
-            ASSERT(__FILE__, __LINE__, _to);
-            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
+            MEDDLY_DCASSERT(_to);
+            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
             return _to[i];
         }
         inline int& to(unsigned i) {
-            ASSERT(__FILE__, __LINE__, _to);
-            CHECK_RANGE(__FILE__, __LINE__, 1u, i, num_vars+1);
+            MEDDLY_DCASSERT(_to);
+            MEDDLY_CHECK_RANGE(1u, i, num_vars+1);
             return _to[i];
         }
 
@@ -195,8 +195,8 @@ class MEDDLY::minterm {
         //
         inline void setAllVars(int v)
         {
-            ASSERT(__FILE__, __LINE__, isForSets());
-            ASSERT(__FILE__, __LINE__, _from);
+            MEDDLY_DCASSERT(isForSets());
+            MEDDLY_DCASSERT(_from);
             for (unsigned i=num_vars; i; --i) {
                 _from[i] = v;
             }
@@ -206,9 +206,9 @@ class MEDDLY::minterm {
         //
         inline void setAllVars(int un, int pr)
         {
-            ASSERT(__FILE__, __LINE__, isForRelations());
-            ASSERT(__FILE__, __LINE__, _from);
-            ASSERT(__FILE__, __LINE__, _to);
+            MEDDLY_DCASSERT(isForRelations());
+            MEDDLY_DCASSERT(_from);
+            MEDDLY_DCASSERT(_to);
             for (unsigned i=num_vars; i; --i) {
                 _from[i] = un;
                 _to[i] = pr;
@@ -220,9 +220,9 @@ class MEDDLY::minterm {
         //
         inline void setAll(const int* v, const rangeval &rv)
         {
-            ASSERT(__FILE__, __LINE__, isForSets());
-            ASSERT(__FILE__, __LINE__, v);
-            ASSERT(__FILE__, __LINE__, _from);
+            MEDDLY_DCASSERT(isForSets());
+            MEDDLY_DCASSERT(v);
+            MEDDLY_DCASSERT(_from);
             for (unsigned i=num_vars; i; --i) {
                 _from[i] = v[i];
             }
@@ -234,11 +234,11 @@ class MEDDLY::minterm {
         //
         inline void setAll(const int* un, const int* pr, const rangeval &v)
         {
-            ASSERT(__FILE__, __LINE__, isForRelations());
-            ASSERT(__FILE__, __LINE__, un);
-            ASSERT(__FILE__, __LINE__, pr);
-            ASSERT(__FILE__, __LINE__, _from);
-            ASSERT(__FILE__, __LINE__, _to);
+            MEDDLY_DCASSERT(isForRelations());
+            MEDDLY_DCASSERT(un);
+            MEDDLY_DCASSERT(pr);
+            MEDDLY_DCASSERT(_from);
+            MEDDLY_DCASSERT(_to);
             for (unsigned i=num_vars; i; --i) {
                 _from[i] = un[i];
                 _to[i] = pr[i];
@@ -316,8 +316,8 @@ class MEDDLY::minterm_coll {
         {
             long bytes = sizeof(minterm_coll);
             if (max_coll_size) {
-                ASSERT(__FILE__, __LINE__, _mtlist);
-                ASSERT(__FILE__, __LINE__, _mtlist[0]);
+                MEDDLY_DCASSERT(_mtlist);
+                MEDDLY_DCASSERT(_mtlist[0]);
                 bytes += max_coll_size * _mtlist[0]->memoryUsage();
             }
             return bytes;
@@ -339,33 +339,33 @@ class MEDDLY::minterm_coll {
 
         /// Get an element
         inline minterm& at(unsigned i) {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, i, 1+first_unused);
-            ASSERT(__FILE__, __LINE__, _mtlist);
-            ASSERT(__FILE__, __LINE__, _mtlist[i]);
+            MEDDLY_CHECK_RANGE(0u, i, 1+first_unused);
+            MEDDLY_DCASSERT(_mtlist);
+            MEDDLY_DCASSERT(_mtlist[i]);
             return *(_mtlist[i]);
         }
 
         /// Get minterm i
         inline const minterm& at(unsigned i) const {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, i, 1+first_unused);
-            ASSERT(__FILE__, __LINE__, _mtlist);
-            ASSERT(__FILE__, __LINE__, _mtlist[i]);
+            MEDDLY_CHECK_RANGE(0u, i, 1+first_unused);
+            MEDDLY_DCASSERT(_mtlist);
+            MEDDLY_DCASSERT(_mtlist[i]);
             return *(_mtlist[i]);
         }
 
         /// Get x_k (unprimed) from minterm i
         inline int unprimed(unsigned i, int k) const {
-            CHECK_RANGE(__FILE__, __LINE__, 1, k, int(num_vars)+1);
-            ASSERT(__FILE__, __LINE__, _mtlist);
-            ASSERT(__FILE__, __LINE__, _mtlist[i]);
+            MEDDLY_CHECK_RANGE(1, k, int(num_vars)+1);
+            MEDDLY_DCASSERT(_mtlist);
+            MEDDLY_DCASSERT(_mtlist[i]);
             return _mtlist[i]->from(k);
         }
 
         /// Get x'_k (primed) from minterm i
         inline int primed(unsigned i, int k) const {
-            CHECK_RANGE(__FILE__, __LINE__, 1, k, int(num_vars)+1);
-            ASSERT(__FILE__, __LINE__, _mtlist);
-            ASSERT(__FILE__, __LINE__, _mtlist[i]);
+            MEDDLY_CHECK_RANGE(1, k, int(num_vars)+1);
+            MEDDLY_DCASSERT(_mtlist);
+            MEDDLY_DCASSERT(_mtlist[i]);
             return _mtlist[i]->to(k);
         }
 
@@ -376,7 +376,7 @@ class MEDDLY::minterm_coll {
 
         /// Add the unused element to the collection.
         inline void pushUnused() {
-            ASSERT(__FILE__, __LINE__, first_unused < maxsize());
+            MEDDLY_DCASSERT(first_unused < maxsize());
             ++first_unused;
         }
 
@@ -391,10 +391,10 @@ class MEDDLY::minterm_coll {
         /// Swap minterms i and j
         inline void swap(unsigned i, unsigned j)
         {
-            CHECK_RANGE(__FILE__, __LINE__, 0u, i, first_unused);
-            CHECK_RANGE(__FILE__, __LINE__, 0u, j, first_unused);
-            ASSERT(__FILE__, __LINE__, _mtlist);
-            ASSERT(__FILE__, __LINE__, i != j);
+            MEDDLY_CHECK_RANGE(0u, i, first_unused);
+            MEDDLY_CHECK_RANGE(0u, j, first_unused);
+            MEDDLY_DCASSERT(_mtlist);
+            MEDDLY_DCASSERT(i != j);
             SWAP(_mtlist[i], _mtlist[j]);
         }
 

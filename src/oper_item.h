@@ -51,20 +51,20 @@ class MEDDLY::oper_item {
         //
 
         inline void init(long v) {
-            ASSERT(__FILE__, __LINE__, mytype == opnd_type::FOREST);
+            MEDDLY_DCASSERT(mytype == opnd_type::FOREST);
             mytype = opnd_type::INTEGER;
             the_long = v;
         }
 
         inline void init(double v) {
-            ASSERT(__FILE__, __LINE__, mytype == opnd_type::FOREST);
+            MEDDLY_DCASSERT(mytype == opnd_type::FOREST);
             mytype = opnd_type::REAL;
             the_double = v;
         }
 
 #ifdef HAVE_LIBGMP
         inline void init(mpz_ptr v) {
-            ASSERT(__FILE__, __LINE__, mytype == opnd_type::FOREST);
+            MEDDLY_DCASSERT(mytype == opnd_type::FOREST);
             mytype = opnd_type::HUGEINT;
             the_mpz = v;
         }
@@ -86,16 +86,16 @@ class MEDDLY::oper_item {
         //
 
         inline long getInteger() const {
-            ASSERT(__FILE__, __LINE__, hasType(opnd_type::INTEGER));
+            MEDDLY_DCASSERT(hasType(opnd_type::INTEGER));
             return the_long;
         }
         inline double getReal() const {
-            ASSERT(__FILE__, __LINE__, hasType(opnd_type::REAL));
+            MEDDLY_DCASSERT(hasType(opnd_type::REAL));
             return the_double;
         }
 #ifdef HAVE_LIBGMP
         inline mpz_ptr getHugeint() const {
-            ASSERT(__FILE__, __LINE__, hasType(opnd_type::HUGEINT));
+            MEDDLY_DCASSERT(hasType(opnd_type::HUGEINT));
             return the_mpz;
         }
 #endif
@@ -105,17 +105,17 @@ class MEDDLY::oper_item {
         //
 
         inline long& integer() {
-            ASSERT(__FILE__, __LINE__, hasType(opnd_type::INTEGER));
+            MEDDLY_DCASSERT(hasType(opnd_type::INTEGER));
             return the_long;
         }
 
         inline double& real() {
-            ASSERT(__FILE__, __LINE__, hasType(opnd_type::REAL));
+            MEDDLY_DCASSERT(hasType(opnd_type::REAL));
             return the_double;
         }
 #ifdef HAVE_LIBGMP
         inline mpz_ptr hugeint() {
-            ASSERT(__FILE__, __LINE__, hasType(opnd_type::HUGEINT));
+            MEDDLY_DCASSERT(hasType(opnd_type::HUGEINT));
             return the_mpz;
         }
 #endif

@@ -264,7 +264,7 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         //
         edge_value zero;
         EOP::clear(zero);
-        ASSERT(__FILE__, __LINE__, copy_arg1res);
+        MEDDLY_DCASSERT(copy_arg1res);
         copy_arg1res->compute(L, in, zero, A, cv, C);
         return;
     }
@@ -276,7 +276,7 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
         //
         edge_value zero;
         EOP::clear(zero);
-        ASSERT(__FILE__, __LINE__, copy_arg2res);
+        MEDDLY_DCASSERT(copy_arg2res);
         copy_arg2res->compute(L, in, zero, B, cv, C);
         return;
     }
@@ -377,37 +377,37 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
     unpacked_node* Au = unpacked_node::New(arg1F, FULL_ONLY);
     if (Alevel != Clevel) {
         if (arg1F->isIdentityReduced() && Clevel<0) {
-            ASSERT(__FILE__, __LINE__, Clevel == L);
+            MEDDLY_DCASSERT(Clevel == L);
             Au->initIdentity(Clevel, in, zero, A);
-            ASSERT(__FILE__, __LINE__, Au->wasIdentity());
+            MEDDLY_DCASSERT(Au->wasIdentity());
         } else {
             Au->initRedundant(Clevel, zero, A);
-            ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
+            MEDDLY_DCASSERT(!Au->wasIdentity());
         }
     } else {
         Au->initFromNode(A);
-        ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
+        MEDDLY_DCASSERT(!Au->wasIdentity());
     }
 
     unpacked_node* Bu = unpacked_node::New(arg2F, FULL_ONLY);
     if (Blevel != Clevel) {
         if (arg2F->isIdentityReduced() && Clevel<0) {
-            ASSERT(__FILE__, __LINE__, Clevel == L);
+            MEDDLY_DCASSERT(Clevel == L);
             Bu->initIdentity(Clevel, in, zero, B);
-            ASSERT(__FILE__, __LINE__, Bu->wasIdentity());
+            MEDDLY_DCASSERT(Bu->wasIdentity());
         } else {
             Bu->initRedundant(Clevel, zero, B);
-            ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
+            MEDDLY_DCASSERT(!Bu->wasIdentity());
         }
     } else {
         Bu->initFromNode(B);
-        ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
+        MEDDLY_DCASSERT(!Bu->wasIdentity());
     }
 
     unpacked_node* Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
 
-    ASSERT(__FILE__, __LINE__, Cu->getSize() == Au->getSize());
-    ASSERT(__FILE__, __LINE__, Cu->getSize() == Bu->getSize());
+    MEDDLY_DCASSERT(Cu->getSize() == Au->getSize());
+    MEDDLY_DCASSERT(Cu->getSize() == Bu->getSize());
 
 #ifdef TRACE
     out << "A: ";
@@ -742,7 +742,7 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
         return;
         /*
         ATYPE::makeEqualResult(av, A);
-        ASSERT(__FILE__, __LINE__, copy_arg1res);
+        MEDDLY_DCASSERT(copy_arg1res);
         copy_arg1res->compute(L, in, av, A, cv, C);
         return;
         */
@@ -753,7 +753,7 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
         //
         // Result is <av, A>
         //
-        ASSERT(__FILE__, __LINE__, copy_arg1res);
+        MEDDLY_DCASSERT(copy_arg1res);
         copy_arg1res->compute(L, in, av, A, cv, C);
         return;
     }
@@ -763,7 +763,7 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
         //
         // Result is <bv, B>
         //
-        ASSERT(__FILE__, __LINE__, copy_arg2res);
+        MEDDLY_DCASSERT(copy_arg2res);
         copy_arg2res->compute(L, in, bv, B, cv, C);
         return;
     }
@@ -870,37 +870,37 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
     unpacked_node* Au = unpacked_node::New(arg1F, FULL_ONLY);
     if (Alevel != Clevel) {
         if (arg1F->isIdentityReduced() && Clevel<0) {
-            ASSERT(__FILE__, __LINE__, Clevel == L);
+            MEDDLY_DCASSERT(Clevel == L);
             Au->initIdentity(Clevel, in, zero, A);
-            ASSERT(__FILE__, __LINE__, Au->wasIdentity());
+            MEDDLY_DCASSERT(Au->wasIdentity());
         } else {
             Au->initRedundant(Clevel, zero, A);
-            ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
+            MEDDLY_DCASSERT(!Au->wasIdentity());
         }
     } else {
         Au->initFromNode(A);
-        ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
+        MEDDLY_DCASSERT(!Au->wasIdentity());
     }
 
     unpacked_node* Bu = unpacked_node::New(arg2F, FULL_ONLY);
     if (Blevel != Clevel) {
         if (arg2F->isIdentityReduced() && Clevel<0) {
-            ASSERT(__FILE__, __LINE__, Clevel == L);
+            MEDDLY_DCASSERT(Clevel == L);
             Bu->initIdentity(Clevel, in, zero, B);
-            ASSERT(__FILE__, __LINE__, Bu->wasIdentity());
+            MEDDLY_DCASSERT(Bu->wasIdentity());
         } else {
             Bu->initRedundant(Clevel, zero, B);
-            ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
+            MEDDLY_DCASSERT(!Bu->wasIdentity());
         }
     } else {
         Bu->initFromNode(B);
-        ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
+        MEDDLY_DCASSERT(!Bu->wasIdentity());
     }
 
     unpacked_node* Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
 
-    ASSERT(__FILE__, __LINE__, Cu->getSize() == Au->getSize());
-    ASSERT(__FILE__, __LINE__, Cu->getSize() == Bu->getSize());
+    MEDDLY_DCASSERT(Cu->getSize() == Au->getSize());
+    MEDDLY_DCASSERT(Cu->getSize() == Bu->getSize());
 
 #ifdef TRACE
     out << "A: ";
@@ -1208,7 +1208,7 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
         ATYPE::makeEqualResult(L, in, av, A, resF, cv, C, copy_arg1res);
         return;
         /*
-        ASSERT(__FILE__, __LINE__, copy_arg1res);
+        MEDDLY_DCASSERT(copy_arg1res);
         copy_arg1res->compute(L, in, av, A, cv, C);
         return;
         */
@@ -1219,7 +1219,7 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
         //
         // Result is <av, A>
         //
-        ASSERT(__FILE__, __LINE__, copy_arg1res);
+        MEDDLY_DCASSERT(copy_arg1res);
         copy_arg1res->compute(L, in, av, A, cv, C);
         return;
     }
@@ -1229,7 +1229,7 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
         //
         // Result is <bv, B>
         //
-        ASSERT(__FILE__, __LINE__, copy_arg2res);
+        MEDDLY_DCASSERT(copy_arg2res);
         copy_arg2res->compute(L, in, bv, B, cv, C);
         return;
     }
@@ -1327,37 +1327,37 @@ void MEDDLY::arith_pushdn<EOP, ATYPE>::_compute(int L, unsigned in,
     unpacked_node* Au = unpacked_node::New(arg1F, FULL_ONLY);
     if (Alevel != Clevel) {
         if (arg1F->isIdentityReduced() && Clevel<0) {
-            ASSERT(__FILE__, __LINE__, Clevel == L);
+            MEDDLY_DCASSERT(Clevel == L);
             Au->initIdentity(Clevel, in, zero, A);
-            ASSERT(__FILE__, __LINE__, Au->wasIdentity());
+            MEDDLY_DCASSERT(Au->wasIdentity());
         } else {
             Au->initRedundant(Clevel, zero, A);
-            ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
+            MEDDLY_DCASSERT(!Au->wasIdentity());
         }
     } else {
         Au->initFromNode(A);
-        ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
+        MEDDLY_DCASSERT(!Au->wasIdentity());
     }
 
     unpacked_node* Bu = unpacked_node::New(arg2F, FULL_ONLY);
     if (Blevel != Clevel) {
         if (arg2F->isIdentityReduced() && Clevel<0) {
-            ASSERT(__FILE__, __LINE__, Clevel == L);
+            MEDDLY_DCASSERT(Clevel == L);
             Bu->initIdentity(Clevel, in, zero, B);
-            ASSERT(__FILE__, __LINE__, Bu->wasIdentity());
+            MEDDLY_DCASSERT(Bu->wasIdentity());
         } else {
             Bu->initRedundant(Clevel, zero, B);
-            ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
+            MEDDLY_DCASSERT(!Bu->wasIdentity());
         }
     } else {
         Bu->initFromNode(B);
-        ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
+        MEDDLY_DCASSERT(!Bu->wasIdentity());
     }
 
     unpacked_node* Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
 
-    ASSERT(__FILE__, __LINE__, Cu->getSize() == Au->getSize());
-    ASSERT(__FILE__, __LINE__, Cu->getSize() == Bu->getSize());
+    MEDDLY_DCASSERT(Cu->getSize() == Au->getSize());
+    MEDDLY_DCASSERT(Cu->getSize() == Bu->getSize());
 
 #ifdef TRACE
     out << "A: ";

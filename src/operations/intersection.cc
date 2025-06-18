@@ -204,8 +204,8 @@ void MEDDLY::inter_mt::compute(int L, unsigned in,
                 const edge_value &bv, node_handle bp,
                 edge_value &cv, node_handle &cp)
 {
-    ASSERT(__FILE__, __LINE__, av.isVoid());
-    ASSERT(__FILE__, __LINE__, bv.isVoid());
+    MEDDLY_DCASSERT(av.isVoid());
+    MEDDLY_DCASSERT(bv.isVoid());
 #ifdef TRACE
     out.indentation(0);
     ++top_count;
@@ -236,9 +236,9 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
             // TRUE and B = B
             edge_value dummy;
             dummy.set();
-            ASSERT(__FILE__, __LINE__, copy_arg2res);
+            MEDDLY_DCASSERT(copy_arg2res);
             copy_arg2res->compute(L, in, dummy, B, dummy, C);
-            ASSERT(__FILE__, __LINE__, dummy.isVoid());
+            MEDDLY_DCASSERT(dummy.isVoid());
             return;
         }
     }
@@ -248,9 +248,9 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
             // A and TRUE = A
             edge_value dummy;
             dummy.set();
-            ASSERT(__FILE__, __LINE__, copy_arg1res);
+            MEDDLY_DCASSERT(copy_arg1res);
             copy_arg1res->compute(L, in, dummy, A, dummy, C);
-            ASSERT(__FILE__, __LINE__, dummy.isVoid());
+            MEDDLY_DCASSERT(dummy.isVoid());
             return;
         }
     }
@@ -259,9 +259,9 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
         // A and A = A
         edge_value dummy;
         dummy.set();
-        ASSERT(__FILE__, __LINE__, copy_arg1res);
+        MEDDLY_DCASSERT(copy_arg1res);
         copy_arg1res->compute(L, in, dummy, A, dummy, C);
-        ASSERT(__FILE__, __LINE__, dummy.isVoid());
+        MEDDLY_DCASSERT(dummy.isVoid());
         return;
     }
 
@@ -290,7 +290,7 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
 #ifdef USE_PRIMED_CACHE
     const bool useCTpr = !useCT && (L<0) &&
         (Alevel == L) && (Blevel == L) && (Clevel == L);
-    ASSERT(__FILE__, __LINE__, !useCTpr || ct_primed);
+    MEDDLY_DCASSERT(!useCTpr || ct_primed);
 #endif
 
 #ifdef TRACE
@@ -389,32 +389,32 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
     unpacked_node* Au = unpacked_node::New(arg1F, SPARSE_ONLY);
     if (Alevel != Clevel) {
         if (arg1F->isIdentityReduced() && Clevel<0) {
-            ASSERT(__FILE__, __LINE__, Clevel == L);
+            MEDDLY_DCASSERT(Clevel == L);
             // ^ if we skip too much, in is irrelevant
             Au->initIdentity(Clevel, in, A);
-            ASSERT(__FILE__, __LINE__, Au->wasIdentity());
+            MEDDLY_DCASSERT(Au->wasIdentity());
         } else {
             Au->initRedundant(Clevel, A);
-            ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
+            MEDDLY_DCASSERT(!Au->wasIdentity());
         }
     } else {
         Au->initFromNode(A);
-        ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
+        MEDDLY_DCASSERT(!Au->wasIdentity());
     }
 
     unpacked_node* Bu = unpacked_node::New(arg2F, SPARSE_ONLY);
     if (Blevel != Clevel) {
         if (arg2F->isIdentityReduced() && Clevel<0) {
-            ASSERT(__FILE__, __LINE__, Clevel == L);
+            MEDDLY_DCASSERT(Clevel == L);
             Bu->initIdentity(Clevel, in, B);
-            ASSERT(__FILE__, __LINE__, Bu->wasIdentity());
+            MEDDLY_DCASSERT(Bu->wasIdentity());
         } else {
             Bu->initRedundant(Clevel, B);
-            ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
+            MEDDLY_DCASSERT(!Bu->wasIdentity());
         }
     } else {
         Bu->initFromNode(B);
-        ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
+        MEDDLY_DCASSERT(!Bu->wasIdentity());
     }
 
     unpacked_node* Cu = unpacked_node::newWritable(resF, Clevel,
@@ -444,7 +444,7 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
             continue;
         }
         const unsigned i = Au->index(za);
-        ASSERT(__FILE__, __LINE__, i == Bu->index(zb));
+        MEDDLY_DCASSERT(i == Bu->index(zb));
 
         node_handle cd;
         _compute(Cnextlevel, i, Au->down(za), Bu->down(zb), cd);
@@ -474,7 +474,7 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
     //
     edge_value dummy;
     resF->createReducedNode(Cu, dummy, C);
-    ASSERT(__FILE__, __LINE__, dummy.isVoid());
+    MEDDLY_DCASSERT(dummy.isVoid());
 #ifdef TRACE
     out << "reduced to " << C << ": ";
     resF->showNode(out, C, SHOW_DETAILS);
@@ -493,8 +493,8 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
         }
 #ifdef USE_PRIMED_CACHE
     } else if (useCTpr) {
-        ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
-        ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
+        MEDDLY_DCASSERT(!Au->wasIdentity());
+        MEDDLY_DCASSERT(!Bu->wasIdentity());
         res[0].setN(C);
         ct_primed->addCT(key, res);
 #endif // USE_PRIMED_CACHE
@@ -556,6 +556,6 @@ void MEDDLY::INTERSECTION_init()
 
 void MEDDLY::INTERSECTION_done()
 {
-    ASSERT(__FILE__, __LINE__, INTER_cache.isEmpty());
+    MEDDLY_DCASSERT(INTER_cache.isEmpty());
 }
 

@@ -211,7 +211,7 @@ void MEDDLY::unique_table::subtable::init(forest *ef)
 
 void MEDDLY::unique_table::subtable::add(unsigned hash, node_handle item)
 {
-    ASSERT(__FILE__, __LINE__, item>0);
+    MEDDLY_DCASSERT(item>0);
 
     if (num_entries >= next_expand){
         expand();
@@ -230,7 +230,7 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::remove(unsigned hash,
 {
     unsigned h = hash%size;
 
-    CHECK_RANGE(__FILE__, __LINE__, 0u, h, size);
+    MEDDLY_CHECK_RANGE(0, h, size);
 
     node_handle prev = 0;
     for (node_handle ptr = table[h]; ptr!=0; ptr = parent->getNext(ptr)) {
@@ -277,7 +277,7 @@ unsigned MEDDLY::unique_table::subtable::getItems(node_handle* items,
         }
     }
 
-    ASSERT(__FILE__, __LINE__, k == num_entries);
+    MEDDLY_DCASSERT(k == num_entries);
     return k;
 }
 
@@ -308,7 +308,7 @@ void MEDDLY::unique_table::subtable::buildFromList(node_handle front)
     for (node_handle next = 0; front != 0; front = next) {
         next = parent->getNext(front);
         unsigned h = parent->hashNode(front) % size;
-        ASSERT(__FILE__, __LINE__, h < size);
+        MEDDLY_DCASSERT(h < size);
         parent->setNext(front, table[h]);
         table[h] = front;
         num_entries++;
@@ -317,7 +317,7 @@ void MEDDLY::unique_table::subtable::buildFromList(node_handle front)
 
 void MEDDLY::unique_table::subtable::expand()
 {
-    ASSERT(__FILE__, __LINE__, size < MAX_SIZE);
+    MEDDLY_DCASSERT(size < MAX_SIZE);
 #ifdef DEBUG_SLOW
     fprintf(stderr, "Enlarging unique table (current size: %d)\n", size);
 #endif
@@ -344,7 +344,7 @@ void MEDDLY::unique_table::subtable::expand()
 
 void MEDDLY::unique_table::subtable::shrink()
 {
-    ASSERT(__FILE__, __LINE__, size > MIN_SIZE);
+    MEDDLY_DCASSERT(size > MIN_SIZE);
 #ifdef DEBUG_SLOW
     fprintf(stderr, "Shrinking unique table (current size: %d)\n", size);
 #endif

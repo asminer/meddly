@@ -143,8 +143,8 @@ namespace MEDDLY {
           for use by evmdd_forest descendants.
       */
       void createEdge(int k, int start, int stop, T &ev, node_handle &ed) {
-        ASSERT(__FILE__, __LINE__, k>=0);
-        ASSERT(__FILE__, __LINE__, stop > start);
+        MEDDLY_DCASSERT(k>=0);
+        MEDDLY_DCASSERT(stop > start);
         //
         // Fast special case
         //
@@ -186,7 +186,7 @@ namespace MEDDLY {
             }
             batchP++;
           } else {
-            ASSERT(__FILE__, __LINE__, unprimed(i, k) >= 0);
+            MEDDLY_DCASSERT(unprimed(i, k) >= 0);
             nextV = MIN(nextV, unsigned(unprimed(i, k)));
           }
         }
@@ -260,7 +260,7 @@ namespace MEDDLY {
               if (0==unionOp) {
                 throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
               }
-              ASSERT(__FILE__, __LINE__, unionOp);
+              MEDDLY_DCASSERT(unionOp);
               unionOp->computeTemp(dontcare, these, these);
             } else {
               these = dontcare;

@@ -78,9 +78,9 @@ MEDDLY::base_evplus_mt::base_evplus_mt(const char* name,
     fx = x_ind.getForest();
     fA = A.getForest();
     fy = y_ind.getForest();
-    ASSERT(__FILE__, __LINE__, fx);
-    ASSERT(__FILE__, __LINE__, fA);
-    ASSERT(__FILE__, __LINE__, fy);
+    MEDDLY_DCASSERT(fx);
+    MEDDLY_DCASSERT(fA);
+    MEDDLY_DCASSERT(fy);
     // everyone must use the same domain
     if  (       (fx->getDomain() != fy->getDomain())
             ||  (fx->getDomain() != fA->getDomain())  )
@@ -164,8 +164,8 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
     }
 
     // It should be impossible for an indexing function to skip levels, right?
-    ASSERT(__FILE__, __LINE__, fx->getNodeLevel(x_ind) == k);
-    ASSERT(__FILE__, __LINE__, fy->getNodeLevel(y_ind) == k);
+    MEDDLY_DCASSERT(fx->getNodeLevel(x_ind) == k);
+    MEDDLY_DCASSERT(fy->getNodeLevel(y_ind) == k);
     int aLevel = fA->getNodeLevel(a);
 
     //
@@ -344,8 +344,8 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
     }
 
     // It should be impossible for an indexing function to skip levels, right?
-    ASSERT(__FILE__, __LINE__, fx->getNodeLevel(x_ind) == k);
-    ASSERT(__FILE__, __LINE__, fy->getNodeLevel(y_ind) == k);
+    MEDDLY_DCASSERT(fx->getNodeLevel(x_ind) == k);
+    MEDDLY_DCASSERT(fy->getNodeLevel(y_ind) == k);
     int aLevel = fA->getNodeLevel(a);
 
     //

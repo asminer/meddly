@@ -58,8 +58,8 @@
 template <class LNT>
 unsigned add_to_circular_list(unsigned& List, unsigned node, LNT* edges)
 {
-    MEDDLY::ASSERT(__FILE__, __LINE__, edges);
-    MEDDLY::ASSERT(__FILE__, __LINE__, node);
+    MEDDLY_DCASSERT(edges);
+    MEDDLY_DCASSERT(node);
 
     if (0==List) {
         // Trivial case - empty list
@@ -114,7 +114,7 @@ unsigned add_to_circular_list(unsigned& List, unsigned node, LNT* edges)
         //
         prev = curr;
         curr = edges[curr].next;
-        MEDDLY::ASSERT(__FILE__, __LINE__, prev != List);
+        MEDDLY_DCASSERT(prev != List);
         // we should never loop back around
     } // infinite loop
 }
@@ -285,10 +285,10 @@ void MEDDLY::sccgraph::dumpGraph(MEDDLY::output &out) const
 
 void MEDDLY::sccgraph::add_edge(unsigned I, unsigned J, edge_label* L)
 {
-    CHECK_RANGE(__FILE__, __LINE__, 0u, I, graph_vertices_used);
-    CHECK_RANGE(__FILE__, __LINE__, 0u, J, graph_vertices_used);
-    ASSERT(__FILE__, __LINE__, L);
-    ASSERT(__FILE__, __LINE__, vertex_to_scc);
+    MEDDLY_CHECK_RANGE(0u, I, graph_vertices_used);
+    MEDDLY_CHECK_RANGE(0u, J, graph_vertices_used);
+    MEDDLY_DCASSERT(L);
+    MEDDLY_DCASSERT(vertex_to_scc);
 
     //
     // Add edge to the main graph
@@ -445,7 +445,7 @@ void MEDDLY::sccgraph::update_SCCs()
             scc_edges[list].to = newj;
 
             // Check our invariant
-            ASSERT(__FILE__, __LINE__, newj >= newi);
+            MEDDLY_DCASSERT(newj >= newi);
 
             if ((newi == newj) || (list != add_to_circular_list(scc_from[newi], list, scc_edges))) {
                 // this edge collapses now
@@ -459,7 +459,7 @@ void MEDDLY::sccgraph::update_SCCs()
     // Update vertex_to_scc mapping
     //
     for (unsigned i=0; i<graph_vertices_used; i++) {
-        CHECK_RANGE(__FILE__, __LINE__, 0u, vertex_to_scc[i], scc_vertices_used);
+        MEDDLY_CHECK_RANGE(0u, vertex_to_scc[i], scc_vertices_used);
         vertex_to_scc[i] = visit_index[ vertex_to_scc[i] ];
     }
 
@@ -495,7 +495,7 @@ void MEDDLY::sccgraph::update_SCCs()
     // Shrink scc_vertices_used by discarding end sccs with no vertices
     //
     while (scc_vertex_offset[scc_vertices_used] == scc_vertex_offset[scc_vertices_used-1]) {
-        ASSERT(__FILE__, __LINE__, scc_vertices_used>1);
+        MEDDLY_DCASSERT(scc_vertices_used>1);
         scc_vertices_used--;
     }
 }

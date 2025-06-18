@@ -117,13 +117,13 @@ class MEDDLY::domain {
 
         /// @return The variable at level \a lev. Const version.
         inline const variable* getVar(unsigned lev) const {
-            CHECK_RANGE(__FILE__, __LINE__, 1U, lev, 1+nVars);
+            MEDDLY_CHECK_RANGE(1U, lev, 1+nVars);
             return vars[lev];
         }
 
         /// @return The variable at level \a lev.
         inline variable* getVar(unsigned lev) {
-            CHECK_RANGE(__FILE__, __LINE__, 1U, lev, 1+nVars);
+            MEDDLY_CHECK_RANGE(1U, lev, 1+nVars);
             return vars[lev];
         }
 
@@ -136,7 +136,7 @@ class MEDDLY::domain {
         */
         inline int getVariableBound(unsigned lev, bool prime = false) const {
             const variable* v = getVar(lev);
-            ASSERT(__FILE__, __LINE__, v);
+            MEDDLY_DCASSERT(v);
             return v->getBound(prime);
         }
 
@@ -160,7 +160,7 @@ class MEDDLY::domain {
         */
         inline void enlargeVariableBound(unsigned lev, bool prime, int b) {
             variable* v = getVar(lev);
-            ASSERT(__FILE__, __LINE__, v);
+            MEDDLY_DCASSERT(v);
             v->enlargeBound(prime, b);
         }
 
@@ -181,7 +181,7 @@ class MEDDLY::domain {
         */
         inline void shrinkVariableBound(unsigned lev, int b, bool force) {
             variable* v = getVar(lev);
-            ASSERT(__FILE__, __LINE__, v);
+            MEDDLY_DCASSERT(v);
             v->shrinkBound(b, force);
         }
 

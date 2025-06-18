@@ -53,40 +53,40 @@ class MEDDLY::iterator_helper {
         iterator_helper(dd_edge::iterator &it) : I(it) { }
 
         inline unpacked_node* U_from(unsigned k) {
-            ASSERT(__FILE__, __LINE__, I.U_from);
+            MEDDLY_DCASSERT(I.U_from);
             return I.U_from[k];
         }
         inline unpacked_node* U_to(unsigned k) {
-            ASSERT(__FILE__, __LINE__, I.U_to);
+            MEDDLY_DCASSERT(I.U_to);
             return I.U_to[k];
         }
         inline unsigned& Z_from(unsigned k) {
-            ASSERT(__FILE__, __LINE__, I.Z_from);
+            MEDDLY_DCASSERT(I.Z_from);
             return I.Z_from[k];
         }
         inline unsigned& Z_to(unsigned k) {
-            ASSERT(__FILE__, __LINE__, I.Z_to);
+            MEDDLY_DCASSERT(I.Z_to);
             return I.Z_to[k];
         }
         inline edge_value& ev_from(unsigned k) {
-            ASSERT(__FILE__, __LINE__, I.ev_from);
+            MEDDLY_DCASSERT(I.ev_from);
             return I.ev_from[k];
         }
         inline edge_value& ev_to(unsigned k) {
-            ASSERT(__FILE__, __LINE__, I.ev_to);
+            MEDDLY_DCASSERT(I.ev_to);
             return I.ev_to[k];
         }
 
         inline unsigned getNumVars() const {
-            ASSERT(__FILE__, __LINE__, I.M);
+            MEDDLY_DCASSERT(I.M);
             return I.M->getNumVars();
         }
         inline int& M_from(unsigned k) {
-            ASSERT(__FILE__, __LINE__, I.M);
+            MEDDLY_DCASSERT(I.M);
             return I.M->from(k);
         }
         inline int& M_to(unsigned k) {
-            ASSERT(__FILE__, __LINE__, I.M);
+            MEDDLY_DCASSERT(I.M);
             return I.M->to(k);
         }
         inline void M_setTerm(node_handle p) const {
@@ -97,16 +97,16 @@ class MEDDLY::iterator_helper {
             I.F->getValueForEdge(v, p, I.M->setValue());
         }
         inline bool isForSets() const {
-            ASSERT(__FILE__, __LINE__, I.M);
+            MEDDLY_DCASSERT(I.M);
             return I.M->isForSets();
         }
 
         inline int mask_from(unsigned k) const {
-            ASSERT(__FILE__, __LINE__, I.mask);
+            MEDDLY_DCASSERT(I.mask);
             return I.mask->from(k);
         }
         inline int mask_to(unsigned k) const {
-            ASSERT(__FILE__, __LINE__, I.mask);
+            MEDDLY_DCASSERT(I.mask);
             return I.mask->to(k);
         }
 
@@ -115,20 +115,20 @@ class MEDDLY::iterator_helper {
         }
 
         inline bool isMultiTerminal() const {
-            ASSERT(__FILE__, __LINE__, I.F);
+            MEDDLY_DCASSERT(I.F);
             return I.F->isMultiTerminal();
         }
         inline terminal_type getTerminalType() const {
-            ASSERT(__FILE__, __LINE__, I.F);
+            MEDDLY_DCASSERT(I.F);
             return I.F->getTerminalType();
         }
         inline int getNodeLevel(node_handle p) const {
-            ASSERT(__FILE__, __LINE__, I.F);
+            MEDDLY_DCASSERT(I.F);
             return I.F->getNodeLevel(p);
         }
 
         inline const forest* F() {
-            ASSERT(__FILE__, __LINE__, I.F);
+            MEDDLY_DCASSERT(I.F);
             return I.F;
         }
 
@@ -164,7 +164,7 @@ namespace MEDDLY {
 
             inline unsigned down_random(const unpacked_node* U)
             {
-                ASSERT(__FILE__, __LINE__, RNG);
+                MEDDLY_DCASSERT(RNG);
                 return RNG(U->getSize());
             }
 
@@ -285,7 +285,7 @@ bool MEDDLY::iterator_templ<EOP>::first_unpr(unsigned k, node_handle p)
         // This value is fixed, determine the down pointer and recurse.
         //
         node_handle pdn = p;
-        ASSERT(__FILE__, __LINE__, mask_from(k) >= 0);
+        MEDDLY_DCASSERT(mask_from(k) >= 0);
 
         if (EOP::hasEdgeValues()) {
             //
@@ -371,8 +371,8 @@ bool MEDDLY::iterator_templ<EOP>::first_unpr(unsigned k, node_handle p)
 template <class EOP>
 bool MEDDLY::iterator_templ<EOP>::first_pri(unsigned k, node_handle p)
 {
-    ASSERT(__FILE__, __LINE__, !isForSets());
-    ASSERT(__FILE__, __LINE__, k);
+    MEDDLY_DCASSERT(!isForSets());
+    MEDDLY_DCASSERT(k);
 
     if (0==p) return false;
 
@@ -394,7 +394,7 @@ bool MEDDLY::iterator_templ<EOP>::first_pri(unsigned k, node_handle p)
             i = M_from(k);
             M_to(k) = i;
         }
-        ASSERT(__FILE__, __LINE__, i>=0);
+        MEDDLY_DCASSERT(i>=0);
 
         if (EOP::hasEdgeValues()) {
             //
@@ -504,7 +504,7 @@ bool MEDDLY::iterator_templ<EOP>::random_unpr(unsigned k, node_handle p)
     //
     const int plvl = getNodeLevel(p);
     unpacked_node *U = U_from(k);
-    ASSERT(__FILE__, __LINE__, U);
+    MEDDLY_DCASSERT(U);
 
     //
     // Free variable.
@@ -548,8 +548,8 @@ bool MEDDLY::iterator_templ<EOP>::random_unpr(unsigned k, node_handle p)
 template <class EOP>
 bool MEDDLY::iterator_templ<EOP>::random_pri(unsigned k, node_handle p)
 {
-    ASSERT(__FILE__, __LINE__, !isForSets());
-    ASSERT(__FILE__, __LINE__, k);
+    MEDDLY_DCASSERT(!isForSets());
+    MEDDLY_DCASSERT(k);
 
     if (0==p) return false;
 
@@ -558,7 +558,7 @@ bool MEDDLY::iterator_templ<EOP>::random_pri(unsigned k, node_handle p)
     //
     const int plvl = getNodeLevel(p);
     unpacked_node *U = U_to(k);
-    ASSERT(__FILE__, __LINE__, U);
+    MEDDLY_DCASSERT(U);
 
     //
     // Free variable.
@@ -820,7 +820,7 @@ MEDDLY::dd_edge::iterator::iterator(iterator &&I)
 MEDDLY::dd_edge::iterator::~iterator()
 {
     if (U_from) {
-        ASSERT(__FILE__, __LINE__, M);
+        MEDDLY_DCASSERT(M);
         for (unsigned i=M->getNumVars(); i; --i) {
             unpacked_node::Recycle(U_from[i]);
         }
@@ -828,7 +828,7 @@ MEDDLY::dd_edge::iterator::~iterator()
         U_from = nullptr;
     }
     if (U_to) {
-        ASSERT(__FILE__, __LINE__, M);
+        MEDDLY_DCASSERT(M);
         for (unsigned i=M->getNumVars(); i; --i) {
             unpacked_node::Recycle(U_to[i]);
         }
@@ -954,7 +954,7 @@ void MEDDLY::dd_edge::iterator::restart(const dd_edge &E, const minterm* _mask)
 
 void MEDDLY::dd_edge::iterator::next()
 {
-    ASSERT(__FILE__, __LINE__, F);
+    MEDDLY_DCASSERT(F);
 
     switch (F->getEdgeLabeling()) {
         case edge_labeling::MULTI_TERMINAL:
@@ -1014,7 +1014,7 @@ bool MEDDLY::dd_edge::iterator::equals(const iterator &I) const
     if (root_node != I.root_node) return false;
     if (mask != I.mask) return false;
 
-    ASSERT(__FILE__, __LINE__, M);
+    MEDDLY_DCASSERT(M);
     if (M->isForSets()) {
         for (unsigned i = M->getNumVars(); i; --i) {
             if (Z_from[i] != I.Z_from[i]) return false;
@@ -1132,7 +1132,7 @@ int MEDDLY::dd_edge::getLevel() const
     if (0==node) return 0;
 
     forest* efp = forest::getForestWithID(parentFID);
-    ASSERT(__FILE__, __LINE__, efp);
+    MEDDLY_DCASSERT(efp);
     return efp->getNodeLevel(node);
 }
 
@@ -1287,7 +1287,7 @@ unsigned MEDDLY::dd_edge::deflt_RNG(unsigned a)
     X *= a;
     X /= 2147483648u;   // divide by 2**31, X will be less than a
 
-    CHECK_RANGE(__FILE__, __LINE__, 0ul, X, (unsigned long)a);
+    MEDDLY_CHECK_RANGE(0, X, a);
     return X;
 }
 
@@ -1307,29 +1307,29 @@ namespace MEDDLY {
             evaluator_helper_mt(const forest* _F, const minterm &_m)
                 : F(_F), m(_m)
             {
-                ASSERT(__FILE__, __LINE__, F);
+                MEDDLY_DCASSERT(F);
             }
 
             inline void set_eval(node_handle &p)
             {
-                ASSERT(__FILE__, __LINE__,  !m.isForRelations() );
+                MEDDLY_DCASSERT( !m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
     	            int level = F->getNodeLevel(p);
-                    ASSERT(__FILE__, __LINE__, m.from(level)>=0);
+                    MEDDLY_DCASSERT(m.from(level)>=0);
                     p = F->getDownPtr(p, m.from(level));
                 }
             }
 
             inline void fully_rel_eval(node_handle &p)
             {
-                ASSERT(__FILE__, __LINE__,  m.isForRelations() );
+                MEDDLY_DCASSERT( m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
     	            int level = F->getNodeLevel(p);
                     if (level > 0) {
-                        ASSERT(__FILE__, __LINE__, m.from(level)>=0);
+                        MEDDLY_DCASSERT(m.from(level)>=0);
                         p = F->getDownPtr(p, m.from(level));
                     } else {
-                        ASSERT(__FILE__, __LINE__, m.to(-level)>=0);
+                        MEDDLY_DCASSERT(m.to(-level)>=0);
                         p = F->getDownPtr(p, m.to(-level));
                     }
                 }
@@ -1338,16 +1338,16 @@ namespace MEDDLY {
             inline void ident_rel_eval(node_handle &p)
             {
                 if (0==p) return;
-                ASSERT(__FILE__, __LINE__,  m.isForRelations() );
+                MEDDLY_DCASSERT( m.isForRelations() );
                 int plvl = F->getNodeLevel(p);
                 int L = F->getNumVariables();
                 while (L) {
                     //
                     // Unprimed
                     //
-                    ASSERT(__FILE__, __LINE__, L>0);
+                    MEDDLY_DCASSERT(L>0);
                     if (plvl == L) {
-                        ASSERT(__FILE__, __LINE__, m.from(L)>=0);
+                        MEDDLY_DCASSERT(m.from(L)>=0);
                         p = F->getDownPtr(p, m.from(L));
                         if (0==p) return;
                         plvl = F->getNodeLevel(p);
@@ -1356,9 +1356,9 @@ namespace MEDDLY {
                     //
                     // Primed
                     //
-                    ASSERT(__FILE__, __LINE__, L<0);
+                    MEDDLY_DCASSERT(L<0);
                     if (plvl == L) {
-                        ASSERT(__FILE__, __LINE__, m.to(-L)>=0);
+                        MEDDLY_DCASSERT(m.to(-L)>=0);
                         p = F->getDownPtr(p, m.to(-L));
                         if (0==p) return;
                         plvl = F->getNodeLevel(p);
@@ -1381,7 +1381,7 @@ namespace MEDDLY {
             evaluator_helper(const forest* _F, const minterm &_m)
                 : F(_F), m(_m)
             {
-                ASSERT(__FILE__, __LINE__, F);
+                MEDDLY_DCASSERT(F);
             }
 
             inline void evaluate(edge_value &ev, node_handle &p)
@@ -1399,12 +1399,12 @@ namespace MEDDLY {
 
             inline void set_eval(edge_value &ev, node_handle &p)
             {
-                ASSERT(__FILE__, __LINE__,  !m.isForRelations() );
+                MEDDLY_DCASSERT( !m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
                     edge_value pv;
     	            int level = F->getNodeLevel(p);
-                    ASSERT(__FILE__, __LINE__, level>0);
-                    ASSERT(__FILE__, __LINE__, m.from(level)>=0);
+                    MEDDLY_DCASSERT(level>0);
+                    MEDDLY_DCASSERT(m.from(level)>=0);
                     F->getDownPtr(p, m.from(level), pv, p);
                     EOP::accumulateOp(ev, pv);
                 }
@@ -1412,15 +1412,15 @@ namespace MEDDLY {
 
             inline void fully_rel_eval(edge_value &ev, node_handle &p)
             {
-                ASSERT(__FILE__, __LINE__,  m.isForRelations() );
+                MEDDLY_DCASSERT( m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
                     edge_value pv;
                     int level = F->getNodeLevel(p);
                     if (level > 0) {
-                        ASSERT(__FILE__, __LINE__, m.from(level)>=0);
+                        MEDDLY_DCASSERT(m.from(level)>=0);
                         F->getDownPtr(p, m.from(level), pv, p);
                     } else {
-                        ASSERT(__FILE__, __LINE__, m.to(-level)>=0);
+                        MEDDLY_DCASSERT(m.to(-level)>=0);
                         F->getDownPtr(p, m.to(-level), pv, p);
                     }
                     EOP::accumulateOp(ev, pv);
@@ -1430,7 +1430,7 @@ namespace MEDDLY {
             inline void ident_rel_eval(edge_value &ev, node_handle &p)
             {
                 if (0==p) return;
-                ASSERT(__FILE__, __LINE__,  m.isForRelations() );
+                MEDDLY_DCASSERT( m.isForRelations() );
                 int plvl = F->getNodeLevel(p);
                 int L = F->getNumVariables();
                 while (L) {
@@ -1438,9 +1438,9 @@ namespace MEDDLY {
                     //
                     // Unprimed
                     //
-                    ASSERT(__FILE__, __LINE__, L>0);
+                    MEDDLY_DCASSERT(L>0);
                     if (plvl == L) {
-                        ASSERT(__FILE__, __LINE__, m.from(L)>=0);
+                        MEDDLY_DCASSERT(m.from(L)>=0);
                         F->getDownPtr(p, m.from(L), pv, p);
                         EOP::accumulateOp(ev, pv);
                         if (0==p) return;
@@ -1450,9 +1450,9 @@ namespace MEDDLY {
                     //
                     // Primed
                     //
-                    ASSERT(__FILE__, __LINE__, L<0);
+                    MEDDLY_DCASSERT(L<0);
                     if (plvl == L) {
-                        ASSERT(__FILE__, __LINE__, m.to(-L)>=0);
+                        MEDDLY_DCASSERT(m.to(-L)>=0);
                         F->getDownPtr(p, m.to(-L), pv, p);
                         EOP::accumulateOp(ev, pv);
                         if (0==p) return;
@@ -1567,7 +1567,7 @@ bool MEDDLY::dd_edge::getElemInt(long index, minterm &m) const
     if (m.isForRelations() ) {
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }
-    ASSERT(__FILE__, __LINE__, fp->getEdgeType() == edge_type::LONG);
+    MEDDLY_DCASSERT(fp->getEdgeType() == edge_type::LONG);
 
     if (index < 0) return false;
 
@@ -1577,7 +1577,7 @@ bool MEDDLY::dd_edge::getElemInt(long index, minterm &m) const
         //
         // I don't think index sets can skip levels at all
         //
-        ASSERT(__FILE__, __LINE__, k == fp->getNodeLevel(p));
+        MEDDLY_DCASSERT(k == fp->getNodeLevel(p));
         U->initFromNode(p);
 
         //
@@ -1624,7 +1624,7 @@ bool MEDDLY::dd_edge::getElemLong(long index, minterm &m) const
     if (m.isForRelations() ) {
         throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
     }
-    ASSERT(__FILE__, __LINE__, fp->getEdgeType() == edge_type::LONG);
+    MEDDLY_DCASSERT(fp->getEdgeType() == edge_type::LONG);
 
     if (index < 0) return false;
 
@@ -1634,7 +1634,7 @@ bool MEDDLY::dd_edge::getElemLong(long index, minterm &m) const
         //
         // I don't think index sets can skip levels at all
         //
-        ASSERT(__FILE__, __LINE__, k == fp->getNodeLevel(p));
+        MEDDLY_DCASSERT(k == fp->getNodeLevel(p));
         U->initFromNode(p);
 
         //

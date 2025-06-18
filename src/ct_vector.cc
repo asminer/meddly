@@ -142,7 +142,7 @@ MEDDLY::ct_item* MEDDLY::ct_vector::useArray(unsigned sz)
 void MEDDLY::ct_vector::recycleArray(ct_item* v, unsigned sz)
 {
     if (!v) return;
-    ASSERT(__FILE__, __LINE__, sz);
+    MEDDLY_DCASSERT(sz);
     if (sz<=64) {
         v->setNext(lists[sz-1]);
         lists[sz-1] = v;

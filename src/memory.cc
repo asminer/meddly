@@ -44,7 +44,7 @@ MEDDLY::memory_manager::memory_manager(unsigned chmult, const char* n,
 {
     style_name = n;
     chunk_base = 0;
-    ASSERT(__FILE__, __LINE__, chunk_multiplier);
+    MEDDLY_DCASSERT(chunk_multiplier);
 }
 
 MEDDLY::memory_manager::~memory_manager()

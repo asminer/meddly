@@ -84,7 +84,7 @@ class MEDDLY::compl_mt : public unary_operation {
         {
             if (0==L) return p;
             if (K==L) return p;
-            ASSERT(__FILE__, __LINE__, MXD_levels::topLevel(L, K) == L);
+            MEDDLY_DCASSERT(MXD_levels::topLevel(L, K) == L);
             return _identity_complement(p, K, L, in);
         }
 
@@ -141,7 +141,7 @@ void MEDDLY::compl_mt::compute(int L, unsigned in,
     out.indentation(0);
     out << "Starting top-level compl_mt::compute #" << top_count << "\n";
 #endif
-    ASSERT(__FILE__, __LINE__, av.isVoid());
+    MEDDLY_DCASSERT(av.isVoid());
     cv.set();
     _compute(L, in, ap, cp);
 #ifdef TRACE
@@ -229,7 +229,7 @@ void MEDDLY::compl_mt::_compute(int L, unsigned in,
         //
         unpacked_node* Au = unpacked_node::newFromNode(argF, A, FULL_ONLY);
         unpacked_node* Cu = unpacked_node::newWritable(resF, Alevel, FULL_ONLY);
-        ASSERT(__FILE__, __LINE__, Au->getSize() == Cu->getSize());
+        MEDDLY_DCASSERT(Au->getSize() == Cu->getSize());
 #ifdef TRACE
         out << "A: ";
         Au->show(out, true);
@@ -265,7 +265,7 @@ void MEDDLY::compl_mt::_compute(int L, unsigned in,
         //
         edge_value cv;
         resF->createReducedNode(Cu, cv, cp);
-        ASSERT(__FILE__, __LINE__, cv.isVoid());
+        MEDDLY_DCASSERT(cv.isVoid());
 #ifdef TRACE
         out << "reduced to " << cp << ": ";
         resF->showNode(out, cp, SHOW_DETAILS);
@@ -336,7 +336,7 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
     trout << "identity_complement(" << p << ", " << K << ", "
           << L << ", " << in << ")\n";
 #endif
-    ASSERT(__FILE__, __LINE__, L!=0);
+    MEDDLY_DCASSERT(L!=0);
     unpacked_node* Uun;
     unpacked_node* Upr;
     edge_value voidedge;
@@ -362,7 +362,7 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
         if (L == K) return p;
     }
 
-    ASSERT(__FILE__, __LINE__, K>=0);
+    MEDDLY_DCASSERT(K>=0);
     const int Lstop = (L<0) ? MXD_levels::downLevel(L) : L;
 
     terminal ONE(true);
@@ -393,7 +393,7 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
             }
             node_handle h;
             resF->createReducedNode(Upr, voidedge, h);
-            ASSERT(__FILE__, __LINE__, voidedge.isVoid());
+            MEDDLY_DCASSERT(voidedge.isVoid());
             Uun->setFull(i, h);
         }
 #ifdef TRACE_IC
@@ -409,7 +409,7 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
         trout << "\n";
 #endif
         resF->createReducedNode(Uun, voidedge, p);
-        ASSERT(__FILE__, __LINE__, voidedge.isVoid());
+        MEDDLY_DCASSERT(voidedge.isVoid());
 
 #ifdef TRACE_IC
         trout << "    cto " << chain_to_one << " ";
@@ -431,7 +431,7 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
     // Add top primed node, if L is negative
     //
     if (L<0) {
-        ASSERT(__FILE__, __LINE__, -K == L);
+        MEDDLY_DCASSERT(-K == L);
         Upr = unpacked_node::newWritable(resF, -K, FULL_ONLY);
         for (unsigned j=0; j<Upr->getSize(); j++) {
             if (j == in) {
@@ -441,7 +441,7 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
             }
         }
         resF->createReducedNode(Upr, voidedge, p);
-        ASSERT(__FILE__, __LINE__, voidedge.isVoid());
+        MEDDLY_DCASSERT(voidedge.isVoid());
     }
     resF->unlinkNode(chain_to_one);
 
@@ -473,6 +473,6 @@ void MEDDLY::COMPLEMENT_init()
 
 void MEDDLY::COMPLEMENT_done()
 {
-    ASSERT(__FILE__, __LINE__,  COMPL_cache.isEmpty() );
+    MEDDLY_DCASSERT( COMPL_cache.isEmpty() );
 }
 

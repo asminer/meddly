@@ -58,7 +58,7 @@ class MEDDLY::ct_entry_key {
 
         /// Write an edge value into the next slot
         inline void writeEV(const edge_value &ev) {
-            ASSERT(__FILE__, __LINE__, currslot < total_slots);
+            MEDDLY_DCASSERT(currslot < total_slots);
 
             switch (etype->getKeyType(currslot).getType()) {
                 case ct_typeID::INTEGER:
@@ -78,7 +78,7 @@ class MEDDLY::ct_entry_key {
                     break;
 
                 default:
-                    ASSERT(__FILE__, __LINE__, false);
+                    MEDDLY_DCASSERT(false);
             }
         }
 
@@ -119,7 +119,7 @@ class MEDDLY::ct_entry_key {
 
         inline unsigned getHash() const {
 #ifdef DEVELOPMENT_CODE
-            ASSERT(__FILE__, __LINE__, has_hash);
+            MEDDLY_DCASSERT(has_hash);
 #endif
             return hash_value;
         }
@@ -147,8 +147,8 @@ class MEDDLY::ct_entry_key {
     private:
         inline void WRITE_SLOT(ct_typeID t)
         {
-            ASSERT(__FILE__, __LINE__, currslot < total_slots);
-            ASSERT(__FILE__, __LINE__, etype->getKeyType(currslot).hasType(t));
+            MEDDLY_DCASSERT(currslot < total_slots);
+            MEDDLY_DCASSERT(etype->getKeyType(currslot).hasType(t));
         }
 
 

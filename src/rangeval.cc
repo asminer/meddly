@@ -23,7 +23,7 @@ void MEDDLY::rangeval::write(output &s) const
 {
     switch (the_type) {
         case range_type::BOOLEAN:
-            ASSERT(__FILE__, __LINE__, range_special::NORMAL == s_value);
+            MEDDLY_DCASSERT(range_special::NORMAL == s_value);
             s.put("b ");
             s.put( l_value ? 'T' : 'F' );
             break;
@@ -45,7 +45,7 @@ void MEDDLY::rangeval::write(output &s) const
             break;
 
         case range_type::REAL:
-            ASSERT(__FILE__, __LINE__, range_special::NORMAL == s_value);
+            MEDDLY_DCASSERT(range_special::NORMAL == s_value);
             s.put("r ");
             s.put(d_value, 0, 10, 'e');
             break;

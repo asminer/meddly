@@ -109,7 +109,7 @@ void MEDDLY::generic_binary_evplus
     : unpacked_node::newFromNode(arg2F, b, FULL_ONLY)
   ;
 
-  ASSERT(__FILE__, __LINE__, !A->isExtensible() && !B->isExtensible());
+  MEDDLY_DCASSERT(!A->isExtensible() && !B->isExtensible());
 
 
   // do computation
@@ -119,7 +119,7 @@ void MEDDLY::generic_binary_evplus
     compute(aev + A->edgeval(i).getLong(), A->down(i),
             bev + B->edgeval(i).getLong(), B->down(i),
             ev, ed);
-    ASSERT(__FILE__, __LINE__, ed != 0 || ev == 0);
+    MEDDLY_DCASSERT(ed != 0 || ev == 0);
     nb->setFull(i, edge_value(ev), ed);
     // nb->d_ref(i) = ed;
     // nb->setEdge(i, ev);

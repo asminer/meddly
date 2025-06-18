@@ -181,8 +181,8 @@ namespace MEDDLY {
           unprimed levels, for use by mtmxd_forest descendants.
       */
       node_handle createEdgeUn(int k, int start, int stop) {
-        ASSERT(__FILE__, __LINE__, k>=0);
-        ASSERT(__FILE__, __LINE__, stop > start);
+        MEDDLY_DCASSERT(k>=0);
+        MEDDLY_DCASSERT(stop > start);
         //
         // Fast special case
         //
@@ -220,7 +220,7 @@ namespace MEDDLY {
             }
             batchP++;
           } else {
-            ASSERT(__FILE__, __LINE__, unprimed(i, k) >= 0);
+            MEDDLY_DCASSERT(unprimed(i, k) >= 0);
             nextV = MIN(nextV, unsigned(unprimed(i, k)));
           }
         }
@@ -257,7 +257,7 @@ namespace MEDDLY {
           node_handle dcnormal = F->makeNodeAtLevel(
               k, createEdgePr(-1, -k, start, batchP)
           );
-          ASSERT(__FILE__, __LINE__, unionOp);
+          MEDDLY_DCASSERT(unionOp);
           dd_edge dcE(F), dcnE(F);
           dcE.set(dontcares);
           dcnE.set(dcnormal);
@@ -317,7 +317,7 @@ namespace MEDDLY {
 
         nb->shrink(z);
 
-        ASSERT(__FILE__, __LINE__, unionOp);
+        MEDDLY_DCASSERT(unionOp);
         dd_edge dontcaresE(F), built(F);
         dontcaresE.set(dontcares);
         built.set( F->createReducedNode(-1, nb) );
@@ -332,8 +332,8 @@ namespace MEDDLY {
           primed levels
       */
       node_handle createEdgePr(int in, int k, int start, int stop) {
-        ASSERT(__FILE__, __LINE__, k<0);
-        ASSERT(__FILE__, __LINE__, stop > start);
+        MEDDLY_DCASSERT(k<0);
+        MEDDLY_DCASSERT(stop > start);
 
         //
         // Don't need to check for terminals
@@ -426,7 +426,7 @@ namespace MEDDLY {
           //
           // (3) union with don't cares
           //
-          ASSERT(__FILE__, __LINE__, unionOp);
+          MEDDLY_DCASSERT(unionOp);
           unionOp->computeTemp(dontcares, these, these);
 
           node_handle total = F->linkNode(these);
@@ -470,7 +470,7 @@ namespace MEDDLY {
 //        if(p==F->getTransparentNode()){
 //        	return p;
 //        }
-        ASSERT(__FILE__, __LINE__, !(F->getDomain()->getVar(k)->isExtensible()));
+        MEDDLY_DCASSERT(!(F->getDomain()->getVar(k)->isExtensible()));
         // build an identity node by hand
         unsigned lastV = unsigned(F->getLevelSize(k));
         unpacked_node* nb = unpacked_node::newFull(F, k, lastV);
@@ -486,7 +486,7 @@ namespace MEDDLY {
       /// Special case for createEdge(), with only one minterm.
       node_handle createEdgePath(int k, const int* _vlist, const int* _vplist, node_handle next)
       {
-        ASSERT(__FILE__, __LINE__, F->isForRelations());
+        MEDDLY_DCASSERT(F->isForRelations());
 
         if (0==next && (!F->isQuasiReduced() || F->getTransparentNode()==zero_terminal)) {
           return next;
@@ -534,7 +534,7 @@ namespace MEDDLY {
               continue;
             }
 
-            ASSERT(__FILE__, __LINE__, _vlist[i]>=0);
+            MEDDLY_DCASSERT(_vlist[i]>=0);
 
             if (F->isIdentityReduced()) {
               // DO NOTHING
@@ -662,8 +662,8 @@ namespace MEDDLY {
       // 2. the transparent value is not zero
       node_handle makeOpaqueZeroNodeAtLevel(int k)
       {
-  	    ASSERT(__FILE__, __LINE__, F->isQuasiReduced());
-  	    ASSERT(__FILE__, __LINE__, F->getTransparentNode()!=zero_terminal);
+  	    MEDDLY_DCASSERT(F->isQuasiReduced());
+  	    MEDDLY_DCASSERT(F->getTransparentNode()!=zero_terminal);
 
   	    return F->makeNodeAtLevel(k, zero_terminal);
       }

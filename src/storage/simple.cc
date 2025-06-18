@@ -177,7 +177,7 @@ class MEDDLY::simple_separated : public node_storage {
         return extra_slots + unhashed_slots + hashed_slots + node_slots;
       }
       inline node_handle* getChunkAddress(node_address addr) const {
-        ASSERT(__FILE__, __LINE__, MM);
+        MEDDLY_DCASSERT(MM);
         return (node_handle*) MM->getChunkAddress(addr);
       }
       inline static unsigned int getRawSize(const node_handle* chunk) {
@@ -196,9 +196,9 @@ class MEDDLY::simple_separated : public node_storage {
         return ((raw_size & 1U) != 0);
       }
       virtual bool isExtensible(node_address addr) const {
-        ASSERT(__FILE__, __LINE__, MM);
+        MEDDLY_DCASSERT(MM);
         const node_handle* chunk = getChunkAddress(addr);
-        ASSERT(__FILE__, __LINE__, chunk);
+        MEDDLY_DCASSERT(chunk);
         const unsigned int raw_size = getRawSize(chunk);
         return isExtensible(raw_size);
       }
@@ -211,7 +211,7 @@ class MEDDLY::simple_separated : public node_storage {
         int high = N;
         while (low < high) {
           int z = (low+high)/2;
-          CHECK_RANGE(__FILE__, __LINE__, 0, z, N);
+          MEDDLY_CHECK_RANGE(0, z, N);
           if (index[z] == i) return z;
           if (index[z] < i) low = z + 1;
           else              high = z;
@@ -221,7 +221,7 @@ class MEDDLY::simple_separated : public node_storage {
       // binary search for an index
       inline int findSparseIndex(int i, const node_handle* chunk) const {
         const unsigned int raw_size = getRawSize(chunk);
-        ASSERT(__FILE__, __LINE__, isSparse(raw_size));
+        MEDDLY_DCASSERT(isSparse(raw_size));
         int nnz = getSize(raw_size);
         const node_handle* index = chunk + down_start + nnz;
         if (isExtensible(raw_size) && i >= index[nnz-1]) return nnz-1;
@@ -375,7 +375,7 @@ MEDDLY::node_address MEDDLY::simple_separated
     // nb is sparse, easy to get nnzs
     //
     nnzs = nb.getSize();
-    ASSERT(__FILE__, __LINE__, nb.isSorted());
+    MEDDLY_DCASSERT(nb.isSorted());
     truncsize = nb.index(nnzs-1)+1;
   } else {
     //
@@ -441,7 +441,7 @@ MEDDLY::node_address MEDDLY::simple_separated
     fflush(stdout);
   }
 #endif
-  ASSERT(__FILE__, __LINE__, areDuplicates(addr, nb));
+  MEDDLY_DCASSERT(areDuplicates(addr, nb));
   return addr;
 }
 
@@ -455,7 +455,7 @@ void MEDDLY::simple_separated::unlinkDownAndRecycle(node_address addr)
   dumpInternalNode(out, addr, 0x03);
 #endif
   const node_handle* chunk = getChunkAddress(addr);
-  ASSERT(__FILE__, __LINE__, chunk);
+  MEDDLY_DCASSERT(chunk);
 
   const unsigned int raw_size = getRawSize(chunk);
   const unsigned int size = getSize(raw_size);
@@ -470,7 +470,7 @@ void MEDDLY::simple_separated::unlinkDownAndRecycle(node_address addr)
   }
 
   // Can this move after unlinking?
-  ASSERT(__FILE__, __LINE__, MM->getChunkAddress(addr) == chunk);
+  MEDDLY_DCASSERT(MM->getChunkAddress(addr) == chunk);
 
   //
   // Determine number of slots in this node
@@ -498,7 +498,7 @@ void MEDDLY::simple_separated::addDownToQueue(node_marker &nm,
   dumpInternalNode(out, addr, 0x03);
 #endif
   const node_handle* chunk = getChunkAddress(addr);
-  ASSERT(__FILE__, __LINE__, chunk);
+  MEDDLY_DCASSERT(chunk);
 
   const unsigned int raw_size = getRawSize(chunk);
   const unsigned int size = getSize(raw_size);
@@ -518,11 +518,11 @@ void MEDDLY::simple_separated::addDownToQueue(node_marker &nm,
 bool MEDDLY::simple_separated
 ::areDuplicates(node_address addr, const unpacked_node &n) const
 {
-  ASSERT(__FILE__, __LINE__, n.isTrim());
+  MEDDLY_DCASSERT(n.isTrim());
   const node_handle* chunk = getChunkAddress(addr);
-  ASSERT(__FILE__, __LINE__, chunk);
+  MEDDLY_DCASSERT(chunk);
 
-  ASSERT(__FILE__, __LINE__,  n.hasEdges() == (slots_per_edge>0) );
+  MEDDLY_DCASSERT( n.hasEdges() == (slots_per_edge>0) );
 
   //
   // Compare any extra header information
@@ -689,9 +689,9 @@ void MEDDLY::simple_separated
 #endif
 
     const node_handle* chunk = getChunkAddress(addr);
-    ASSERT(__FILE__, __LINE__, chunk);
+    MEDDLY_DCASSERT(chunk);
 
-    ASSERT(__FILE__, __LINE__, nr.hasEdges() == (slots_per_edge>0) );
+    MEDDLY_DCASSERT(nr.hasEdges() == (slots_per_edge>0) );
 
     //
     // Copy any extra header information
@@ -820,8 +820,8 @@ void MEDDLY::simple_separated
                 //
                 //  Not sure about this...
                 //
-                ASSERT(__FILE__, __LINE__, is_extensible);
-                ASSERT(__FILE__, __LINE__, !nr.isExtensible());
+                MEDDLY_DCASSERT(is_extensible);
+                MEDDLY_DCASSERT(!nr.isExtensible());
                 int i = ext_i+1;
                 if (nr.hasEdges()) {
                     for (int z=nnz; z<nr.getSize(); z++, i++) {
@@ -911,8 +911,8 @@ void MEDDLY::simple_separated
                 //
                 // Not sure about this either
                 //
-                ASSERT(__FILE__, __LINE__, is_extensible);
-                ASSERT(__FILE__, __LINE__, !nr.isExtensible());
+                MEDDLY_DCASSERT(is_extensible);
+                MEDDLY_DCASSERT(!nr.isExtensible());
                 const int ext_i = size-1;
                 const int ext_d = down[ext_i];
                 const void* ext_ptr = (edge + (ext_i)*slots_per_edge);
@@ -963,7 +963,7 @@ void MEDDLY::simple_separated
       fflush(stdout);
     }
 #else
-    ASSERT(__FILE__, __LINE__, !nr.isTrim() || areDuplicates(addr, nr));
+    MEDDLY_DCASSERT(!nr.isTrim() || areDuplicates(addr, nr));
 #endif
   }
 #endif
@@ -973,7 +973,7 @@ void MEDDLY::simple_separated
 unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
 {
   const node_handle* chunk = getChunkAddress(addr);
-  ASSERT(__FILE__, __LINE__, chunk);
+  MEDDLY_DCASSERT(chunk);
 
   hash_stream s;
   s.start(0);
@@ -1044,7 +1044,7 @@ bool MEDDLY::simple_separated
 ::isSingletonNode(node_address addr, unsigned &ind, node_handle &down) const
 {
     const node_handle* chunk = getChunkAddress(addr);
-    ASSERT(__FILE__, __LINE__, chunk);
+    MEDDLY_DCASSERT(chunk);
 
     const unsigned int raw_size = getRawSize(chunk);
     if (isExtensible(raw_size)) return false;
@@ -1052,7 +1052,7 @@ bool MEDDLY::simple_separated
     const unsigned int size = getSize(raw_size);
     const bool is_sparse = isSparse(raw_size);
 
-    ASSERT(__FILE__, __LINE__, size);
+    MEDDLY_DCASSERT(size);
 
     if (is_sparse) {
         //
@@ -1089,17 +1089,17 @@ MEDDLY::simple_separated
 ::getExtensibleIndex(node_address addr) const
 {
   const node_handle* chunk = getChunkAddress(addr);
-  ASSERT(__FILE__, __LINE__, chunk);
+  MEDDLY_DCASSERT(chunk);
   const unsigned int raw_size = getRawSize(chunk);
   if (!isExtensible(raw_size)) return -1;
   int sz = getSize(raw_size);
   const node_handle* down = chunk + down_start;
   if (isSparse(raw_size)) {
-    ASSERT(__FILE__, __LINE__, down[sz-1] != getParent()->getTransparentNode());
+    MEDDLY_DCASSERT(down[sz-1] != getParent()->getTransparentNode());
     const node_handle* index = down + sz;
     return index[sz-1];
   } else {
-    ASSERT(__FILE__, __LINE__, down[sz-1] != getParent()->getTransparentNode());
+    MEDDLY_DCASSERT(down[sz-1] != getParent()->getTransparentNode());
     return sz-1;
   }
 }
@@ -1109,11 +1109,11 @@ MEDDLY::node_handle
 MEDDLY::simple_separated
 ::getDownPtr(node_address addr, int i) const
 {
-    ASSERT(__FILE__, __LINE__, i>=0);
+    MEDDLY_DCASSERT(i>=0);
   if (i<0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
 
   const node_handle* chunk = getChunkAddress(addr);
-  ASSERT(__FILE__, __LINE__, chunk);
+  MEDDLY_DCASSERT(chunk);
 
   const unsigned int raw_size = getRawSize(chunk);
   const unsigned size = getSize(raw_size);
@@ -1145,7 +1145,7 @@ void MEDDLY::simple_separated
   if (i<0) throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
 
   const node_handle* chunk = getChunkAddress(addr);
-  ASSERT(__FILE__, __LINE__, chunk);
+  MEDDLY_DCASSERT(chunk);
 
   const unsigned int raw_size = getRawSize(chunk);
   const unsigned size = getSize(raw_size);
@@ -1181,8 +1181,8 @@ const void* MEDDLY::simple_separated
 ::getUnhashedHeaderOf(node_address addr) const
 {
   const node_handle* chunk = getChunkAddress(addr);
-  ASSERT(__FILE__, __LINE__, chunk);
-  ASSERT(__FILE__, __LINE__, unhashed_slots);
+  MEDDLY_DCASSERT(chunk);
+  MEDDLY_DCASSERT(unhashed_slots);
 
   return chunk + unhashed_start;
 }
@@ -1192,8 +1192,8 @@ const void* MEDDLY::simple_separated
 ::getHashedHeaderOf(node_address addr) const
 {
   const node_handle* chunk = getChunkAddress(addr);
-  ASSERT(__FILE__, __LINE__, chunk);
-  ASSERT(__FILE__, __LINE__, hashed_slots);
+  MEDDLY_DCASSERT(chunk);
+  MEDDLY_DCASSERT(hashed_slots);
 
   return chunk + hashed_start;
 }
@@ -1203,7 +1203,7 @@ MEDDLY::node_handle MEDDLY::simple_separated
 ::getNextOf(node_address addr) const
 {
   const node_handle* chunk = getChunkAddress(addr);
-  ASSERT(__FILE__, __LINE__, chunk);
+  MEDDLY_DCASSERT(chunk);
   return chunk[next_slot];
 }
 
@@ -1212,8 +1212,8 @@ void MEDDLY::simple_separated
 ::setNextOf(node_address addr, node_handle n)
 {
   node_handle* chunk = getChunkAddress(addr);
-  ASSERT(__FILE__, __LINE__, chunk);
-  ASSERT(__FILE__, __LINE__, n>=0);
+  MEDDLY_DCASSERT(chunk);
+  MEDDLY_DCASSERT(n>=0);
   chunk[next_slot] = n;
 }
 
@@ -1255,7 +1255,7 @@ MEDDLY::simple_separated
 {
   if (a<=0) return 0;
 
-  ASSERT(__FILE__, __LINE__, MM);
+  MEDDLY_DCASSERT(MM);
 
   int awidth = digits(getParent()->getLastNode());
 
@@ -1276,7 +1276,7 @@ MEDDLY::simple_separated
   //
   node_handle* end = getChunkAddress(a);
   const node_handle* chunk = end;
-  ASSERT(__FILE__, __LINE__, chunk);
+  MEDDLY_DCASSERT(chunk);
   const bool show_node = flags & 0x01;
 
   if (show_node) {
@@ -1430,21 +1430,21 @@ MEDDLY::node_address MEDDLY::simple_separated
   //
 
   size_t slots_req = slotsForNode(size, false);
-  ASSERT(__FILE__, __LINE__, slots_req > 0);
+  MEDDLY_DCASSERT(slots_req > 0);
   size_t slots_given = slots_req;
   node_address addr = MM->requestChunk(slots_given);
   if (0==addr) {
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  ASSERT(__FILE__, __LINE__, slots_given >= slots_req);
+  MEDDLY_DCASSERT(slots_given >= slots_req);
 
   node_handle* chunk = getChunkAddress(addr);
-  ASSERT(__FILE__, __LINE__, chunk);
+  MEDDLY_DCASSERT(chunk);
 
   //
   // Set size
   //
-  CHECK_RANGE(__FILE__, __LINE__, (size_t)0, (size_t)size_slot, slots_given);
+  MEDDLY_CHECK_RANGE(0, size_slot, slots_given);
   chunk[size_slot] = getRawSize(size, false, nb.isExtensible());
 
   //
@@ -1469,7 +1469,7 @@ MEDDLY::node_address MEDDLY::simple_separated
       //
       // There's edge values
       //
-      ASSERT(__FILE__, __LINE__, nb.hasEdges());
+      MEDDLY_DCASSERT(nb.hasEdges());
       char* edge = (char*) (down + size);
       int edge_bytes = bytesForSlots(slots_per_edge);
       if (nb.isSparse()) {
@@ -1481,7 +1481,7 @@ MEDDLY::node_address MEDDLY::simple_separated
         }
         for (int z=0; z<nb.getSize(); z++) {
           int i = nb.index(z);
-          CHECK_RANGE(__FILE__, __LINE__, 0, i, size);
+          MEDDLY_CHECK_RANGE(0, i, size);
           down[i] = nb.down(z);
           nb.edgeval(z).get(parent->getEdgeType(), edge + i * edge_bytes);
         }
@@ -1495,14 +1495,14 @@ MEDDLY::node_address MEDDLY::simple_separated
       //
       // No edge values
       //
-      ASSERT(__FILE__, __LINE__, !nb.hasEdges());
+      MEDDLY_DCASSERT(!nb.hasEdges());
       if (nb.isSparse()) {
         const node_handle tv = getParent()->getTransparentNode();
         for (int i=0; i<size; i++) {
           down[i] = tv;
         }
         for (int z=0; z<nb.getSize(); z++) {
-          CHECK_RANGE(__FILE__, __LINE__, 0, (int)nb.index(z), size);
+          MEDDLY_CHECK_RANGE(0, nb.index(z), size);
           down[nb.index(z)] = nb.down(z);
         }
       } else {
@@ -1516,9 +1516,9 @@ MEDDLY::node_address MEDDLY::simple_separated
 
   // int tail = down_start + size + slots_per_edge * size;
   long delta = slots_given - slots_req;
-  ASSERT(__FILE__, __LINE__, delta>=0);
-  ASSERT(__FILE__, __LINE__, delta<1024);    // Sanity check
-  ASSERT(__FILE__, __LINE__, size_t(down_start + size + slots_per_edge * size + 1) == slots_req);
+  MEDDLY_DCASSERT(delta>=0);
+  MEDDLY_DCASSERT(delta<1024);    // Sanity check
+  MEDDLY_DCASSERT(size_t(down_start + size + slots_per_edge * size + 1) == slots_req);
   chunk[slots_req-1] = -delta;  // Where we expect the node to end
   chunk[slots_given-1] = p;     // Where the node actually ends
   // Note: if slots_req == slots_given, then the second statement
@@ -1528,8 +1528,8 @@ MEDDLY::node_address MEDDLY::simple_separated
 /*
   node_handle* tail = down + size + slots_per_edge * size;
   int delta = slots_given - slots_req;
-  ASSERT(__FILE__, __LINE__, delta>=0);
-  ASSERT(__FILE__, __LINE__,  (tail-chunk)+1 == slots_req );
+  MEDDLY_DCASSERT(delta>=0);
+  MEDDLY_DCASSERT( (tail-chunk)+1 == slots_req );
   tail[0] = -delta;
   tail[delta] = p;  // if delta = 0, we just overwrote but that's fine
   */
@@ -1555,21 +1555,21 @@ MEDDLY::node_address MEDDLY::simple_separated
   //
 
   size_t slots_req = slotsForNode(size, true);
-  ASSERT(__FILE__, __LINE__, slots_req > 0);
+  MEDDLY_DCASSERT(slots_req > 0);
   size_t slots_given = slots_req;
   node_address addr = MM->requestChunk(slots_given);
   if (0==addr) {
     throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
   }
-  ASSERT(__FILE__, __LINE__, slots_given >= slots_req);
+  MEDDLY_DCASSERT(slots_given >= slots_req);
 
   node_handle* chunk = getChunkAddress(addr);
-  ASSERT(__FILE__, __LINE__, chunk);
+  MEDDLY_DCASSERT(chunk);
 
   //
   // Set size
   //
-  CHECK_RANGE(__FILE__, __LINE__, (size_t)0, (size_t)size_slot, slots_given);
+  MEDDLY_CHECK_RANGE(0, size_slot, slots_given);
   chunk[size_slot] = getRawSize(size, true, nb.isExtensible());
 
   //
@@ -1596,7 +1596,7 @@ MEDDLY::node_address MEDDLY::simple_separated
       //
       // There's edge values
       //
-      ASSERT(__FILE__, __LINE__, nb.hasEdges());
+      MEDDLY_DCASSERT(nb.hasEdges());
       char* edge = (char*) (index + size);
       int edge_bytes = bytesForSlots(slots_per_edge);
       if (nb.isSparse()) {
@@ -1609,19 +1609,19 @@ MEDDLY::node_address MEDDLY::simple_separated
         int z = 0;
         for (int i=0; i<nb.getSize(); i++) {
           if (getParent()->isTransparentEdge(nb.edgeval(i), nb.down(i))) continue;
-          CHECK_RANGE(__FILE__, __LINE__, 0, z, size);
+          MEDDLY_CHECK_RANGE(0, z, size);
           down[z] = nb.down(i);
           index[z] = i;
           nb.edgeval(i).get(parent->getEdgeType(), edge + z * edge_bytes);
           z++;
         }
-        ASSERT(__FILE__, __LINE__, size == z);
+        MEDDLY_DCASSERT(size == z);
       }
   } else {
       //
       // No edge values
       //
-      ASSERT(__FILE__, __LINE__, !nb.hasEdges());
+      MEDDLY_DCASSERT(!nb.hasEdges());
       if (nb.isSparse()) {
         for (int z=0; z<size; z++) {
           down[z] = nb.down(z);
@@ -1632,20 +1632,20 @@ MEDDLY::node_address MEDDLY::simple_separated
         const node_handle tv = getParent()->getTransparentNode();
         for (int i=0; i<nb.getSize(); i++) {
           if (nb.down(i)!=tv) {
-            CHECK_RANGE(__FILE__, __LINE__, 0, z, size);
+            MEDDLY_CHECK_RANGE(0, z, size);
             down[z] = nb.down(i);
             index[z] = i;
             z++;
           }
         }
-        ASSERT(__FILE__, __LINE__, size == z);
+        MEDDLY_DCASSERT(size == z);
       }
   }
 
 #ifdef DEVELOPMENT_CODE
   // check if the sparse node is sorted
   for (int z=1; z<size; z++) {
-    ASSERT(__FILE__, __LINE__, index[z-1] < index[z]);
+    MEDDLY_DCASSERT(index[z-1] < index[z]);
   }
 #endif
 
@@ -1653,9 +1653,9 @@ MEDDLY::node_address MEDDLY::simple_separated
   // Deal with any padding and the tail
   //
   long delta = slots_given - slots_req;
-  ASSERT(__FILE__, __LINE__, delta>=0);
-  ASSERT(__FILE__, __LINE__, delta<1024);    // Sanity check
-  ASSERT(__FILE__, __LINE__, size_t(down_start + 2*size + slots_per_edge * size + 1) == slots_req);
+  MEDDLY_DCASSERT(delta>=0);
+  MEDDLY_DCASSERT(delta<1024);    // Sanity check
+  MEDDLY_DCASSERT(size_t(down_start + 2*size + slots_per_edge * size + 1) == slots_req);
   chunk[slots_req-1] = -delta;  // Where we expect the node to end
   chunk[slots_given-1] = p;     // Where the node actually ends
   // Note: if slots_req == slots_given, then the second statement
@@ -1663,7 +1663,7 @@ MEDDLY::node_address MEDDLY::simple_separated
 
   /*
   node_handle* tail = down + 2*size + slots_per_edge * size;
-  ASSERT(__FILE__, __LINE__, delta>=0);
+  MEDDLY_DCASSERT(delta>=0);
   tail[0] = -delta;
   tail[delta] = p;  // if delta = 0, we just overwrote but that's fine
   */

@@ -203,8 +203,8 @@ void MEDDLY::diffr_mt::compute(int L, unsigned in,
                 const edge_value &bv, node_handle bp,
                 edge_value &cv, node_handle &cp)
 {
-    ASSERT(__FILE__, __LINE__, av.isVoid());
-    ASSERT(__FILE__, __LINE__, bv.isVoid());
+    MEDDLY_DCASSERT(av.isVoid());
+    MEDDLY_DCASSERT(bv.isVoid());
 #ifdef TRACE
     out.indentation(0);
 #endif
@@ -235,7 +235,7 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
         //
         // Must be identity reduced, so B=I
         //
-        ASSERT(__FILE__, __LINE__, arg2F->isIdentityReduced());
+        MEDDLY_DCASSERT(arg2F->isIdentityReduced());
         if (A < 0) {
             if (arg1F->isIdentityReduced()) {
                 // I - I
@@ -251,9 +251,9 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
         // A - 0 = A
         edge_value dummy;
         dummy.set();
-        ASSERT(__FILE__, __LINE__, copy_arg1res);
+        MEDDLY_DCASSERT(copy_arg1res);
         copy_arg1res->compute(L, in,  dummy, A, dummy, C);
-        ASSERT(__FILE__, __LINE__, dummy.isVoid());
+        MEDDLY_DCASSERT(dummy.isVoid());
         return;
     }
 
@@ -279,7 +279,7 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
     const bool useCT = !force_by_unprimed || Clevel>0;
     const bool useCTpr = !useCT && (L<0) &&
         (Alevel == L) && (Blevel == L) && (Clevel == L);
-    ASSERT(__FILE__, __LINE__, !useCTpr || ct_primed);
+    MEDDLY_DCASSERT(!useCTpr || ct_primed);
 
 
 #ifdef TRACE
@@ -367,32 +367,32 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
     unpacked_node* Au = unpacked_node::New(arg1F, SPARSE_ONLY);
     if (Alevel != Clevel) {
         if (arg1F->isIdentityReduced() && Clevel<0) {
-            ASSERT(__FILE__, __LINE__, Clevel == L);
+            MEDDLY_DCASSERT(Clevel == L);
             // ^ if we skip too much, in is irrelevant
             Au->initIdentity(Clevel, in, A);
-            ASSERT(__FILE__, __LINE__, Au->wasIdentity());
+            MEDDLY_DCASSERT(Au->wasIdentity());
         } else {
             Au->initRedundant(Clevel, A);
-            ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
+            MEDDLY_DCASSERT(!Au->wasIdentity());
         }
     } else {
         Au->initFromNode(A);
-        ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
+        MEDDLY_DCASSERT(!Au->wasIdentity());
     }
 
     unpacked_node* Bu = unpacked_node::New(arg2F, FULL_ONLY);
     if (Blevel != Clevel) {
         if (arg2F->isIdentityReduced() && Clevel<0) {
-            ASSERT(__FILE__, __LINE__, Clevel == L);
+            MEDDLY_DCASSERT(Clevel == L);
             Bu->initIdentity(Clevel, in, B);
-            ASSERT(__FILE__, __LINE__, Bu->wasIdentity());
+            MEDDLY_DCASSERT(Bu->wasIdentity());
         } else {
             Bu->initRedundant(Clevel, B);
-            ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
+            MEDDLY_DCASSERT(!Bu->wasIdentity());
         }
     } else {
         Bu->initFromNode(B);
-        ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
+        MEDDLY_DCASSERT(!Bu->wasIdentity());
     }
 
     unpacked_node* Cu =
@@ -441,7 +441,7 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
     //
     edge_value dummy;
     resF->createReducedNode(Cu, dummy, C);
-    ASSERT(__FILE__, __LINE__, dummy.isVoid());
+    MEDDLY_DCASSERT(dummy.isVoid());
 #ifdef TRACE
     out << "reduced to " << C << ": ";
     resF->showNode(out, C, SHOW_DETAILS);
@@ -459,8 +459,8 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
             ct->addCT(key, res);
         }
     } else if (useCTpr) {
-        ASSERT(__FILE__, __LINE__, !Au->wasIdentity());
-        ASSERT(__FILE__, __LINE__, !Bu->wasIdentity());
+        MEDDLY_DCASSERT(!Au->wasIdentity());
+        MEDDLY_DCASSERT(!Bu->wasIdentity());
         res[0].setN(C);
         ct_primed->addCT(key, res);
     } else {
@@ -520,5 +520,5 @@ void MEDDLY::DIFFERENCE_init()
 
 void MEDDLY::DIFFERENCE_done()
 {
-    ASSERT(__FILE__, __LINE__, DIFFR_cache.isEmpty());
+    MEDDLY_DCASSERT(DIFFR_cache.isEmpty());
 }

@@ -97,19 +97,19 @@ class MEDDLY::edge_value {
         //
 
         inline int getInt() const {
-            ASSERT(__FILE__, __LINE__, isInt());
+            MEDDLY_DCASSERT(isInt());
             return ev_int;
         }
         inline long getLong() const {
-            ASSERT(__FILE__, __LINE__, isLong());
+            MEDDLY_DCASSERT(isLong());
             return ev_long;
         }
         inline float getFloat() const {
-            ASSERT(__FILE__, __LINE__, isFloat());
+            MEDDLY_DCASSERT(isFloat());
             return ev_float;
         }
         inline double getDouble() const {
-            ASSERT(__FILE__, __LINE__, isDouble());
+            MEDDLY_DCASSERT(isDouble());
             return ev_double;
         }
 
@@ -118,19 +118,19 @@ class MEDDLY::edge_value {
         //
 
         inline void get(int &v) const {
-            ASSERT(__FILE__, __LINE__, isInt());
+            MEDDLY_DCASSERT(isInt());
             v = ev_int;
         }
         inline void get(long &v) const {
-            ASSERT(__FILE__, __LINE__, isLong());
+            MEDDLY_DCASSERT(isLong());
             v = ev_long;
         }
         inline void get(float &v) const {
-            ASSERT(__FILE__, __LINE__, isFloat());
+            MEDDLY_DCASSERT(isFloat());
             v = ev_float;
         }
         inline void get(double &v) const {
-            ASSERT(__FILE__, __LINE__, isDouble());
+            MEDDLY_DCASSERT(isDouble());
             v = ev_double;
         }
 
@@ -138,19 +138,19 @@ class MEDDLY::edge_value {
         // Getters, for low-level storage objects
         //
         inline void getInt(void *p) const {
-            ASSERT(__FILE__, __LINE__, p);
+            MEDDLY_DCASSERT(p);
             get( *((int*) p) );
         }
         inline void getLong(void *p) const {
-            ASSERT(__FILE__, __LINE__, p);
+            MEDDLY_DCASSERT(p);
             get( *((long*) p) );
         }
         inline void getFloat(void *p) const {
-            ASSERT(__FILE__, __LINE__, p);
+            MEDDLY_DCASSERT(p);
             get( *((float*) p) );
         }
         inline void getDouble(void *p) const {
-            ASSERT(__FILE__, __LINE__, p);
+            MEDDLY_DCASSERT(p);
             get( *((double*) p) );
         }
         inline void get(edge_type et, void* p) const {
@@ -261,19 +261,19 @@ class MEDDLY::edge_value {
             mytype = edge_type::VOID;
         }
         inline void setInt(const void *p) {
-            ASSERT(__FILE__, __LINE__, p);
+            MEDDLY_DCASSERT(p);
             set( *((const int*) p) );
         }
         inline void setLong(const void *p) {
-            ASSERT(__FILE__, __LINE__, p);
+            MEDDLY_DCASSERT(p);
             set( *((const long*) p) );
         }
         inline void setFloat(const void *p) {
-            ASSERT(__FILE__, __LINE__, p);
+            MEDDLY_DCASSERT(p);
             set( *((const float*) p) );
         }
         inline void setDouble(const void *p) {
-            ASSERT(__FILE__, __LINE__, p);
+            MEDDLY_DCASSERT(p);
             set( *((const double*) p) );
         }
         inline void setType(edge_type et) {
@@ -315,19 +315,19 @@ class MEDDLY::edge_value {
         //
 
         inline void add(int v) {
-            ASSERT(__FILE__, __LINE__, isInt());
+            MEDDLY_DCASSERT(isInt());
             ev_int += v;
         }
         inline void add(long v) {
-            ASSERT(__FILE__, __LINE__, isLong());
+            MEDDLY_DCASSERT(isLong());
             ev_long += v;
         }
         inline void add(float v) {
-            ASSERT(__FILE__, __LINE__, isFloat());
+            MEDDLY_DCASSERT(isFloat());
             ev_float += v;
         }
         inline void add(double v) {
-            ASSERT(__FILE__, __LINE__, isDouble());
+            MEDDLY_DCASSERT(isDouble());
             ev_double += v;
         }
 
@@ -337,19 +337,19 @@ class MEDDLY::edge_value {
         //
 
         inline void subtract(int v) {
-            ASSERT(__FILE__, __LINE__, isInt());
+            MEDDLY_DCASSERT(isInt());
             ev_int -= v;
         }
         inline void subtract(long v) {
-            ASSERT(__FILE__, __LINE__, isLong());
+            MEDDLY_DCASSERT(isLong());
             ev_long -= v;
         }
         inline void subtract(float v) {
-            ASSERT(__FILE__, __LINE__, isFloat());
+            MEDDLY_DCASSERT(isFloat());
             ev_float -= v;
         }
         inline void subtract(double v) {
-            ASSERT(__FILE__, __LINE__, isDouble());
+            MEDDLY_DCASSERT(isDouble());
             ev_double -= v;
         }
 
@@ -358,19 +358,19 @@ class MEDDLY::edge_value {
         //
 
         inline void multiply(int v) {
-            ASSERT(__FILE__, __LINE__, isInt());
+            MEDDLY_DCASSERT(isInt());
             ev_int *= v;
         }
         inline void multiply(long v) {
-            ASSERT(__FILE__, __LINE__, isLong());
+            MEDDLY_DCASSERT(isLong());
             ev_long *= v;
         }
         inline void multiply(float v) {
-            ASSERT(__FILE__, __LINE__, isFloat());
+            MEDDLY_DCASSERT(isFloat());
             ev_float *= v;
         }
         inline void multiply(double v) {
-            ASSERT(__FILE__, __LINE__, isDouble());
+            MEDDLY_DCASSERT(isDouble());
             ev_double *= v;
         }
 
@@ -380,23 +380,23 @@ class MEDDLY::edge_value {
         //
 
         inline void divide(int v) {
-            ASSERT(__FILE__, __LINE__, isInt());
-            ASSERT(__FILE__, __LINE__, v);
+            MEDDLY_DCASSERT(isInt());
+            MEDDLY_DCASSERT(v);
             ev_int /= v;
         }
         inline void divide(long v) {
-            ASSERT(__FILE__, __LINE__, isLong());
-            ASSERT(__FILE__, __LINE__, v);
+            MEDDLY_DCASSERT(isLong());
+            MEDDLY_DCASSERT(v);
             ev_long /= v;
         }
         inline void divide(float v) {
-            ASSERT(__FILE__, __LINE__, isFloat());
-            ASSERT(__FILE__, __LINE__, v);
+            MEDDLY_DCASSERT(isFloat());
+            MEDDLY_DCASSERT(v);
             ev_float /= v;
         }
         inline void divide(double v) {
-            ASSERT(__FILE__, __LINE__, isDouble());
-            ASSERT(__FILE__, __LINE__, v);
+            MEDDLY_DCASSERT(isDouble());
+            MEDDLY_DCASSERT(v);
             ev_double /= v;
         }
 

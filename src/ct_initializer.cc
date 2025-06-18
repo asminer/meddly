@@ -64,7 +64,7 @@ void MEDDLY::ct_initializer::setup()
         throw error(error::INVALID_ASSIGNMENT, __FILE__, __LINE__);
     }
 
-    ASSERT(__FILE__, __LINE__, FREELISTS);
+    MEDDLY_DCASSERT(FREELISTS);
     setMemoryManager(FREELISTS);
 
     compute_table::initStatics(ct_factory, the_settings);
@@ -136,7 +136,7 @@ void MEDDLY::ct_initializer::setHugeTables(bool on)
 
 MEDDLY::compute_table* MEDDLY::ct_initializer::createForOp(const ct_entry_type* et)
 {
-    ASSERT(__FILE__, __LINE__, et);
+    MEDDLY_DCASSERT(et);
     if (ct_factory) {
         return ct_factory->create(the_settings, et->getID());
     } else {

@@ -503,11 +503,11 @@ class MEDDLY::forest {
 
         */
         inline node_handle createReducedNode(int in, unpacked_node *un) {
-            ASSERT(__FILE__, __LINE__, un);
+            MEDDLY_DCASSERT(un);
             edge_value ev;
             node_handle node;
             createReducedNode(un, ev, node, in);
-            ASSERT(__FILE__, __LINE__, ev.isVoid());
+            MEDDLY_DCASSERT(ev.isVoid());
             return node;
         }
 
@@ -536,7 +536,7 @@ class MEDDLY::forest {
         inline void createReducedNode(int in, unpacked_node* un,
                 T& ev, node_handle& node)
         {
-            ASSERT(__FILE__, __LINE__, un);
+            MEDDLY_DCASSERT(un);
             edge_value _ev;
             createReducedNode(un, _ev, node, in);
             _ev.get(ev);
@@ -552,7 +552,7 @@ class MEDDLY::forest {
 
         */
         inline node_handle createRelationNode(MEDDLY::relation_node *un) {
-            ASSERT(__FILE__, __LINE__, un);
+            MEDDLY_DCASSERT(un);
             node_handle q = createImplicitNode(*un);
 #ifdef TRACK_DELETIONS
             std::cerr << "Created relation node " << q << "\n";
@@ -611,7 +611,7 @@ class MEDDLY::forest {
         {
             if (0==L) return p;
             if (K==L) return p;
-            ASSERT(__FILE__, __LINE__,  ABS(L) >= ABS(K) );
+            MEDDLY_DCASSERT( ABS(L) >= ABS(K) );
             if (isFullyReduced()) return p;
             if (0==p) return p;
 
@@ -659,7 +659,7 @@ class MEDDLY::forest {
         {
             if (0==L) return p;
             if (K==L) return p;
-            ASSERT(__FILE__, __LINE__, MXD_levels::topLevel(L, K) == L);
+            MEDDLY_DCASSERT(MXD_levels::topLevel(L, K) == L);
             if (0==p) return p;
             if (isIdentityReduced()) {
                 //
@@ -855,7 +855,7 @@ class MEDDLY::forest {
         /// Returns the in-count for a node.
         inline unsigned long getNodeInCount(node_handle p) const {
 #ifdef REFCOUNTS_ON
-            ASSERT(__FILE__, __LINE__, deflt.useReferenceCounts);
+            MEDDLY_DCASSERT(deflt.useReferenceCounts);
             return nodeHeaders.getIncomingCount(p);
 #else
             return 0;
@@ -885,7 +885,7 @@ class MEDDLY::forest {
         */
         inline node_handle linkNode(const dd_edge &p) {
 #ifdef REFCOUNTS_ON
-            ASSERT(__FILE__, __LINE__, p.isAttachedTo(this));
+            MEDDLY_DCASSERT(p.isAttachedTo(this));
             if (deflt.useReferenceCounts) {
                 return nodeHeaders.linkNode(p.getNode());
             } else {
@@ -1203,7 +1203,7 @@ class MEDDLY::forest {
         */
         inline bool areDuplicates(node_handle p, const unpacked_node &nr) const
         {
-            ASSERT(__FILE__, __LINE__, p > 0);
+            MEDDLY_DCASSERT(p > 0);
             if (nodeHeaders.getNodeLevel(p) != nr.getLevel()) {
                 return false;
             }
@@ -1225,7 +1225,7 @@ class MEDDLY::forest {
             const int* uhh = (const int*) nodeMan->getUnhashedHeaderOf(
                     getNodeAddress(node)
             );
-            ASSERT(__FILE__, __LINE__, *uhh > 0);
+            MEDDLY_DCASSERT(*uhh > 0);
             return *uhh;
         }
 
@@ -1328,7 +1328,7 @@ class MEDDLY::forest {
         */
         template <typename T>
         inline node_handle handleForValue(T v) const {
-            ASSERT(__FILE__, __LINE__, isMultiTerminal());
+            MEDDLY_DCASSERT(isMultiTerminal());
             terminal t(v, the_terminal_type);
             return t.getHandle();
         }
@@ -1342,28 +1342,28 @@ class MEDDLY::forest {
         */
         template <typename T>
         inline void getValueFromHandle(node_handle n, T& v) const {
-            ASSERT(__FILE__, __LINE__, isMultiTerminal());
-            ASSERT(__FILE__, __LINE__, n <= 0);
+            MEDDLY_DCASSERT(isMultiTerminal());
+            MEDDLY_DCASSERT(n <= 0);
             terminal t(the_terminal_type, n);
             t.getValue(v);
         }
 
         inline bool getBooleanFromHandle(MEDDLY::node_handle n) const {
-            ASSERT(__FILE__, __LINE__, isMultiTerminal());
+            MEDDLY_DCASSERT(isMultiTerminal());
             bool v;
             getValueFromHandle(n, v);
             return v;
         }
 
         inline int getIntegerFromHandle(MEDDLY::node_handle n) const {
-            ASSERT(__FILE__, __LINE__, isMultiTerminal());
+            MEDDLY_DCASSERT(isMultiTerminal());
             int v;
             getValueFromHandle(n, v);
             return v;
         }
 
         inline float getRealFromHandle(MEDDLY::node_handle n) const {
-            ASSERT(__FILE__, __LINE__, isMultiTerminal());
+            MEDDLY_DCASSERT(isMultiTerminal());
             float v;
             getValueFromHandle(n, v);
             return v;
@@ -1450,36 +1450,36 @@ class MEDDLY::forest {
         // ... then one of these
 
         inline void setTransparentEdge(node_handle p) {
-            ASSERT(__FILE__, __LINE__, edge_type::VOID == the_edge_type);
-            ASSERT(__FILE__, __LINE__, isTerminalNode(p));
+            MEDDLY_DCASSERT(edge_type::VOID == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set();
             noop_edge.set();
         }
         inline void setTransparentEdge(node_handle p, int v) {
-            ASSERT(__FILE__, __LINE__, edge_type::INT == the_edge_type);
-            ASSERT(__FILE__, __LINE__, isTerminalNode(p));
+            MEDDLY_DCASSERT(edge_type::INT == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
             setNoOpEdgeval();
         }
         inline void setTransparentEdge(node_handle p, long v) {
-            ASSERT(__FILE__, __LINE__, edge_type::LONG == the_edge_type);
-            ASSERT(__FILE__, __LINE__, isTerminalNode(p));
+            MEDDLY_DCASSERT(edge_type::LONG == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
             setNoOpEdgeval();
         }
         inline void setTransparentEdge(node_handle p, float v) {
-            ASSERT(__FILE__, __LINE__, edge_type::FLOAT == the_edge_type);
-            ASSERT(__FILE__, __LINE__, isTerminalNode(p));
+            MEDDLY_DCASSERT(edge_type::FLOAT == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
             setNoOpEdgeval();
         }
         inline void setTransparentEdge(node_handle p, double v) {
-            ASSERT(__FILE__, __LINE__, edge_type::DOUBLE == the_edge_type);
-            ASSERT(__FILE__, __LINE__, isTerminalNode(p));
+            MEDDLY_DCASSERT(edge_type::DOUBLE == the_edge_type);
+            MEDDLY_DCASSERT(isTerminalNode(p));
             transparent_node = p;
             transparent_edge.set(v);
             setNoOpEdgeval();
@@ -1490,7 +1490,7 @@ class MEDDLY::forest {
     // ------------------------------------------------------------
 
         inline void setNoOpEdgeval() {
-            ASSERT(__FILE__, __LINE__, !isMultiTerminal());
+            MEDDLY_DCASSERT(!isMultiTerminal());
             if (isEVTimes()) {
                 noop_edge.setTempl(transparent_edge.getType(), 1);
             } else {
@@ -1553,7 +1553,7 @@ class MEDDLY::forest {
         /// Call as needed in derived classes;
         /// otherwise we assume 0 bytes.
         inline void setUnhashedSize(unsigned ubytes) {
-            ASSERT(__FILE__, __LINE__, 0 == unhashed_bytes);
+            MEDDLY_DCASSERT(0 == unhashed_bytes);
             unhashed_bytes = ubytes;
         }
 
@@ -1561,7 +1561,7 @@ class MEDDLY::forest {
         /// Call as needed in derived classes;
         /// otherwise we assume 0 bytes.
         inline void setHashedSize(unsigned hbytes) {
-            ASSERT(__FILE__, __LINE__, 0 == hashed_bytes);
+            MEDDLY_DCASSERT(0 == hashed_bytes);
             hashed_bytes = hbytes;
         }
 
@@ -1666,13 +1666,13 @@ class MEDDLY::forest {
 
         /// Can we have extensible nodes at level k?
         inline bool isExtensibleLevel(int k) const {
-            ASSERT(__FILE__, __LINE__, isValidLevel(k));
+            MEDDLY_DCASSERT(isValidLevel(k));
             return d->getVar(unsigned(k < 0? -k: k))->isExtensible();
         }
 
         /// The maximum size (number of indices) a node at this level can have
         inline int getLevelSize(int k) const {
-            ASSERT(__FILE__, __LINE__, isValidLevel(k));
+            MEDDLY_DCASSERT(isValidLevel(k));
             int var=getVarByLevel(k);
             if (var < 0) {
                 return getDomain()->getVariableBound(unsigned(-var), true);

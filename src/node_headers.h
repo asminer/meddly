@@ -108,8 +108,8 @@ class MEDDLY::node_headers : public array_watcher {
 
         /// Is this a deleted node
         inline bool isDeleted(node_handle p) const {
-            ASSERT(__FILE__, __LINE__, p>0);
-            ASSERT(__FILE__, __LINE__, levels);
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(levels);
             return (0==levels->get(size_t(p)));
         }
 
@@ -120,8 +120,8 @@ class MEDDLY::node_headers : public array_watcher {
 
         /// Set the given node as inactive/deleted
         inline void deactivate(node_handle p) {
-            ASSERT(__FILE__, __LINE__, isActive(p));
-            ASSERT(__FILE__, __LINE__, levels);
+            MEDDLY_DCASSERT(isActive(p));
+            MEDDLY_DCASSERT(levels);
             levels->set(size_t(p), 0);
         }
 
@@ -140,15 +140,15 @@ class MEDDLY::node_headers : public array_watcher {
 
         /// Get the address for node p.
         inline node_address getNodeAddress(node_handle p) const {
-            ASSERT(__FILE__, __LINE__, p>0);
-            ASSERT(__FILE__, __LINE__, addresses);
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(addresses);
             return addresses->get(size_t(p));
         }
 
         /// Set the address for node p to a.
         inline void setNodeAddress(node_handle p, node_address a) {
-            ASSERT(__FILE__, __LINE__, p>0);
-            ASSERT(__FILE__, __LINE__, addresses);
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(addresses);
             addresses->set(size_t(p), a);
         }
 
@@ -159,9 +159,9 @@ class MEDDLY::node_headers : public array_watcher {
         inline void moveNodeAddress(node_handle p, node_address old_addr,
                 node_address new_addr)
         {
-            ASSERT(__FILE__, __LINE__, p>0);
-            ASSERT(__FILE__, __LINE__, addresses);
-            ASSERT(__FILE__, __LINE__, old_addr == addresses->get(size_t(p)));
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(addresses);
+            MEDDLY_DCASSERT(old_addr == addresses->get(size_t(p)));
             addresses->set(size_t(p), new_addr);
         }
 
@@ -169,15 +169,15 @@ class MEDDLY::node_headers : public array_watcher {
 
         /// Get the level for node p.
         inline int getNodeLevel(node_handle p) const {
-            ASSERT(__FILE__, __LINE__, p>0);
-            ASSERT(__FILE__, __LINE__, levels);
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(levels);
             return levels->get(size_t(p));
         }
 
         /// Set the level for node p to k.
         inline void setNodeLevel(node_handle p, int k) {
-            ASSERT(__FILE__, __LINE__, p>0);
-            ASSERT(__FILE__, __LINE__, levels);
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(levels);
             levels->set(size_t(p), k);
         }
 
@@ -186,8 +186,8 @@ class MEDDLY::node_headers : public array_watcher {
         /// Get the cache count for node p.
         inline unsigned long getNodeCacheCount(node_handle p) const {
 #ifdef REFCOUNTS_ON
-            ASSERT(__FILE__, __LINE__, p>0);
-            ASSERT(__FILE__, __LINE__, cache_counts);
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(cache_counts);
             return cache_counts->get(size_t(p));
 #else
             return 0;
@@ -201,8 +201,8 @@ class MEDDLY::node_headers : public array_watcher {
         inline void cacheNode(node_handle p) {
             if (p<1) return;    // terminal node
 
-            ASSERT(__FILE__, __LINE__, isActive(p));
-            ASSERT(__FILE__, __LINE__, cache_counts);
+            MEDDLY_DCASSERT(isActive(p));
+            MEDDLY_DCASSERT(cache_counts);
             cache_counts->increment(size_t(p));
 #ifdef TRACK_CACHECOUNT
             std::cerr << "\t+Node " << p << " is in " <<
@@ -214,7 +214,7 @@ class MEDDLY::node_headers : public array_watcher {
         inline void uncacheNode(node_handle p) {
             if (p<1) return;
 
-            ASSERT(__FILE__, __LINE__, cache_counts);
+            MEDDLY_DCASSERT(cache_counts);
 
             if (cache_counts->isPositiveAfterDecrement(size_t(p))) {
 #ifdef TRACK_CACHECOUNT
@@ -238,13 +238,13 @@ class MEDDLY::node_headers : public array_watcher {
         inline void setInCacheBit(node_handle p) {
             if (p<1) return;    // terminal node
 
-            ASSERT(__FILE__, __LINE__, is_in_cache);
+            MEDDLY_DCASSERT(is_in_cache);
             is_in_cache->set(size_t(p), 1);
         }
 
         /// Clear cache entry bit for all nodes
         inline void clearAllInCacheBits() {
-            ASSERT(__FILE__, __LINE__, is_in_cache);
+            MEDDLY_DCASSERT(is_in_cache);
             is_in_cache->clearAll();
         }
 
@@ -253,8 +253,8 @@ class MEDDLY::node_headers : public array_watcher {
         /// Get the incoming count for node p.
         inline unsigned long getIncomingCount(node_handle p) const {
 #ifdef REFCOUNTS_ON
-            ASSERT(__FILE__, __LINE__, p>0);
-            ASSERT(__FILE__, __LINE__, incoming_counts);
+            MEDDLY_DCASSERT(p>0);
+            MEDDLY_DCASSERT(incoming_counts);
             return incoming_counts->get(size_t(p));
 #else
             return 0;
@@ -267,8 +267,8 @@ class MEDDLY::node_headers : public array_watcher {
         inline node_handle linkNode(node_handle p) {
             if (p<1) return p;    // terminal node
 
-            ASSERT(__FILE__, __LINE__, isActive(p));
-            ASSERT(__FILE__, __LINE__, incoming_counts);
+            MEDDLY_DCASSERT(isActive(p));
+            MEDDLY_DCASSERT(incoming_counts);
 
             if (incoming_counts->isZeroBeforeIncrement(size_t(p))) {
                 reviveNode(p);
@@ -286,8 +286,8 @@ class MEDDLY::node_headers : public array_watcher {
         inline void unlinkNode(node_handle p) {
             if (p<1) return;    // terminal node
 
-            ASSERT(__FILE__, __LINE__, isActive(p));
-            ASSERT(__FILE__, __LINE__, incoming_counts);
+            MEDDLY_DCASSERT(isActive(p));
+            MEDDLY_DCASSERT(incoming_counts);
 
             if (incoming_counts->isPositiveAfterDecrement(size_t(p))) {
 #ifdef TRACK_DELETIONS
@@ -317,13 +317,13 @@ class MEDDLY::node_headers : public array_watcher {
 
         /// Get whether node p is implicit.
         inline int getNodeImplicitFlag(node_handle p) const {
-            ASSERT(__FILE__, __LINE__, p>0);
+            MEDDLY_DCASSERT(p>0);
             return (implicit_bits) ? implicit_bits->get(size_t(p)) : false;
         }
 
         /// Set as true if node p is implicit.
         inline void setNodeImplicitFlag(node_handle p,bool flag) {
-            ASSERT(__FILE__, __LINE__, p>0);
+            MEDDLY_DCASSERT(p>0);
             if (implicit_bits) {
                 implicit_bits->set(size_t(p), flag);
             } else {
@@ -424,16 +424,16 @@ class MEDDLY::node_headers : public array_watcher {
 
         /// Get next deleted node header.
         inline size_t getNextOf(size_t p) const {
-            ASSERT(__FILE__, __LINE__, isDeleted(p));
-            ASSERT(__FILE__, __LINE__, addresses);
+            MEDDLY_DCASSERT(isDeleted(p));
+            MEDDLY_DCASSERT(addresses);
             return addresses->get(size_t(p));
         }
 
         /// Set next deleted node header.
         inline void setNextOf(size_t p, size_t n) {
-            ASSERT(__FILE__, __LINE__, isDeleted(p));
-            ASSERT(__FILE__, __LINE__, n>=0);
-            ASSERT(__FILE__, __LINE__, addresses);
+            MEDDLY_DCASSERT(isDeleted(p));
+            MEDDLY_DCASSERT(n>=0);
+            MEDDLY_DCASSERT(addresses);
             addresses->set(size_t(p), node_address(n));
         }
 

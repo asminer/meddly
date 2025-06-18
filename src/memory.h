@@ -202,7 +202,7 @@ class MEDDLY::memory_manager {
                         the pointer for a handle could change.
         */
         inline void* getChunkAddress(node_address h) const {
-            ASSERT(__FILE__, __LINE__, isValidHandle(h));
+            MEDDLY_DCASSERT(isValidHandle(h));
             return chunk_base + chunk_multiplier * h;
         }
 

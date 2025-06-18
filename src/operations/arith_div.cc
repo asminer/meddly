@@ -103,8 +103,8 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
-            ASSERT(__FILE__, __LINE__, a.isVoid());
-            ASSERT(__FILE__, __LINE__, b.isVoid());
+            MEDDLY_DCASSERT(a.isVoid());
+            MEDDLY_DCASSERT(b.isVoid());
             c.set();
         }
     };
@@ -185,7 +185,7 @@ namespace MEDDLY {
             //
             // Special case: dividing by zero
             //
-            ASSERT(__FILE__, __LINE__, OMEGA_NORMAL == bn);
+            MEDDLY_DCASSERT(OMEGA_NORMAL == bn);
             EDGETYPE bev;
             bv.get(bev);
             if (0 == bev) {
@@ -203,7 +203,7 @@ namespace MEDDLY {
                 return;
             }
 
-            ASSERT(__FILE__, __LINE__, OMEGA_NORMAL == an);
+            MEDDLY_DCASSERT(OMEGA_NORMAL == an);
             EDGETYPE aev;
             av.get(aev);
 
@@ -364,6 +364,6 @@ void MEDDLY::DIVIDE_init()
 
 void MEDDLY::DIVIDE_done()
 {
-    ASSERT(__FILE__, __LINE__, DIV_cache.isEmpty());
+    MEDDLY_DCASSERT(DIV_cache.isEmpty());
 }
 

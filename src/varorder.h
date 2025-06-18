@@ -44,11 +44,11 @@ class MEDDLY::variable_order {
         variable_order(const variable_order& order);
 
         inline int getVarByLevel(int level) const {
-            ASSERT(__FILE__, __LINE__, level>=0);
+            MEDDLY_DCASSERT(level>=0);
             return level2var[std::size_t(level)];
         }
         inline int getLevelByVar(int var) const {
-            ASSERT(__FILE__, __LINE__, var>=0);
+            MEDDLY_DCASSERT(var>=0);
             return var2level[std::size_t(var)];
         }
 

@@ -183,50 +183,50 @@ namespace MEDDLY {
       // Pointers common to all types of holes except small
 
       inline INT Prev(node_address h) const {
-        ASSERT(__FILE__, __LINE__, !isSmallHole(h));
+        MEDDLY_DCASSERT(!isSmallHole(h));
         return hole_manager<INT>::readSlot(h, 1);
       }
       inline void setPrev(node_address h, INT v) {
-        ASSERT(__FILE__, __LINE__, !isSmallHole(h));
+        MEDDLY_DCASSERT(!isSmallHole(h));
         hole_manager<INT>::refSlot(h, 1) = v;
       }
 
       inline INT Next(node_address h) const {
-        ASSERT(__FILE__, __LINE__, !isSmallHole(h));
+        MEDDLY_DCASSERT(!isSmallHole(h));
         return hole_manager<INT>::readSlot(h, 2);
       }
       inline void setNext(node_address h, INT v) {
-        ASSERT(__FILE__, __LINE__, !isSmallHole(h));
+        MEDDLY_DCASSERT(!isSmallHole(h));
         hole_manager<INT>::refSlot(h, 2) = v;
       }
 
 
       // Large hole handy methods
       inline void setNonIndex(node_address h) {
-        ASSERT(__FILE__, __LINE__, isLargeHole(h));
+        MEDDLY_DCASSERT(isLargeHole(h));
         hole_manager<INT>::refSlot(h, 3) = -1;
         // hole_manager<INT>::refSlot(h, 4) = -1;
       }
       inline bool isIndexHole(node_address h) {
-        ASSERT(__FILE__, __LINE__, isLargeHole(h));
+        MEDDLY_DCASSERT(isLargeHole(h));
         return hole_manager<INT>::readSlot(h, 3) >= 0;
       }
 
       inline INT Up(node_address h) const {
-        ASSERT(__FILE__, __LINE__, isLargeHole(h));
+        MEDDLY_DCASSERT(isLargeHole(h));
         return hole_manager<INT>::readSlot(h, 3);
       }
       inline void setUp(node_address h, INT v) {
-        ASSERT(__FILE__, __LINE__, isLargeHole(h));
+        MEDDLY_DCASSERT(isLargeHole(h));
         hole_manager<INT>::refSlot(h, 3) = v;
       }
 
       inline INT Down(node_address h) const {
-        ASSERT(__FILE__, __LINE__, isLargeHole(h));
+        MEDDLY_DCASSERT(isLargeHole(h));
         return hole_manager<INT>::readSlot(h, 4);
       }
       inline void setDown(node_address h, INT v) {
-        ASSERT(__FILE__, __LINE__, isLargeHole(h));
+        MEDDLY_DCASSERT(isLargeHole(h));
         hole_manager<INT>::refSlot(h, 4) = v;
       }
 
@@ -363,8 +363,8 @@ MEDDLY::array_plus_grid<INT>::requestChunk(size_t &numSlots)
     // Check the grid for a hole of exactly this size
     //
     if (0==moveCurrentToRow(numSlots, grid_current)) {
-      ASSERT(__FILE__, __LINE__, grid_current);
-      ASSERT(__FILE__, __LINE__, size_t(getHoleSize(grid_current)) == numSlots);
+      MEDDLY_DCASSERT(grid_current);
+      MEDDLY_DCASSERT(size_t(getHoleSize(grid_current)) == numSlots);
       // It's easier to remove a non-index node, try that first
       h = node_address(Next(grid_current));
       if (0==h) {
@@ -388,7 +388,7 @@ MEDDLY::array_plus_grid<INT>::requestChunk(size_t &numSlots)
   //
   if (h) {
     stopTrackingHole(h);
-    ASSERT(__FILE__, __LINE__, size_t(getHoleSize(h)) >= numSlots);
+    MEDDLY_DCASSERT(size_t(getHoleSize(h)) >= numSlots);
     memory_manager::incMemUsed(getHoleSize(h) * sizeof(INT));
     size_t leftover_slots = size_t(getHoleSize(h)) - numSlots;
     if (leftover_slots > 0) {
@@ -437,7 +437,7 @@ void MEDDLY::array_plus_grid<INT>
   // Check to the left for another hole
   //
   if (isHole(h-1)) {
-    ASSERT(__FILE__, __LINE__, node_address(getHoleSize(h-1)) < h);
+    MEDDLY_DCASSERT(node_address(getHoleSize(h-1)) < h);
     node_address hleft = h - getHoleSize(h-1);
 #ifdef MEMORY_TRACE_DETAILS
     printf("\tMerging to the left, holes %lu and %lu\n", hleft, h);
@@ -679,7 +679,7 @@ int MEDDLY::array_plus_grid<INT>
     }
   }
 
-  ASSERT(__FILE__, __LINE__, getHoleSize(current) > size);
+  MEDDLY_DCASSERT(getHoleSize(current) > size);
   // go to smaller holes until not greater than size
   for (;;) {
     INT down = Down(current);
@@ -690,7 +690,7 @@ int MEDDLY::array_plus_grid<INT>
   }
 
   // should never get here.
-  ASSERT(__FILE__, __LINE__, 0);
+  MEDDLY_DCASSERT(0);
   return -1;
 }
 
@@ -706,8 +706,8 @@ void MEDDLY::array_plus_grid<INT>
   printf("stopTrackingHole(%lu)\n", h);
 #endif
 
-  ASSERT(__FILE__, __LINE__, getHoleSize(h)>0);
-  ASSERT(__FILE__, __LINE__, matchingHoleSizes(h));
+  MEDDLY_DCASSERT(getHoleSize(h)>0);
+  MEDDLY_DCASSERT(matchingHoleSizes(h));
 
   //
   // Is this a small hole?  If so, we don't track them,
@@ -736,15 +736,15 @@ void MEDDLY::array_plus_grid<INT>
     INT right = Next(h);
 
     if (left) {
-      ASSERT(__FILE__, __LINE__, h == node_address(Next(left)));
+      MEDDLY_DCASSERT(h == node_address(Next(left)));
       setNext(left, right);
     } else {
-      ASSERT(__FILE__, __LINE__, node_address(medium_hole_list[size]) == h);
+      MEDDLY_DCASSERT(node_address(medium_hole_list[size]) == h);
       medium_hole_list[size] = right;
     }
 
     if (right) {
-      ASSERT(__FILE__, __LINE__, h == node_address(Prev(right)));
+      MEDDLY_DCASSERT(h == node_address(Prev(right)));
       setPrev(right, left);
     }
 
@@ -766,15 +766,15 @@ void MEDDLY::array_plus_grid<INT>
     INT right = Next(h);
 
     if (left) {
-      ASSERT(__FILE__, __LINE__, h == node_address(Next(left)));
+      MEDDLY_DCASSERT(h == node_address(Next(left)));
       setNext(left, right);
     } else {
-      ASSERT(__FILE__, __LINE__, node_address(huge_holes) == h);
+      MEDDLY_DCASSERT(node_address(huge_holes) == h);
       huge_holes = right;
     }
 
     if (right) {
-      ASSERT(__FILE__, __LINE__, h == node_address(Prev(right)));
+      MEDDLY_DCASSERT(h == node_address(Prev(right)));
       setPrev(right, left);
     }
 
@@ -803,13 +803,13 @@ void MEDDLY::array_plus_grid<INT>
     INT left = Prev(h);
     INT right = Next(h);
 
-    ASSERT(__FILE__, __LINE__, left);
+    MEDDLY_DCASSERT(left);
 
-    ASSERT(__FILE__, __LINE__, h == node_address(Next(left)));
+    MEDDLY_DCASSERT(h == node_address(Next(left)));
     setNext(left, right);
 
     if (right) {
-      ASSERT(__FILE__, __LINE__, h == node_address(Prev(right)));
+      MEDDLY_DCASSERT(h == node_address(Prev(right)));
       setPrev(right, left);
     }
     return;
@@ -845,18 +845,18 @@ void MEDDLY::array_plus_grid<INT>
     }
 
     if (below) {
-      ASSERT(__FILE__, __LINE__, node_address(Up(below)) == h);
+      MEDDLY_DCASSERT(node_address(Up(below)) == h);
       setUp(below, above);
     } else {
-      ASSERT(__FILE__, __LINE__, node_address(grid_bottom) == h);
+      MEDDLY_DCASSERT(node_address(grid_bottom) == h);
       grid_bottom = above;
     }
 
     if (above) {
-      ASSERT(__FILE__, __LINE__, node_address(Down(above)) == h);
+      MEDDLY_DCASSERT(node_address(Down(above)) == h);
       setDown(above, below);
     } else {
-      ASSERT(__FILE__, __LINE__, node_address(grid_top) == h);
+      MEDDLY_DCASSERT(node_address(grid_top) == h);
       grid_top = below;
     }
 
@@ -874,7 +874,7 @@ void MEDDLY::array_plus_grid<INT>
   INT above = Up(h);
   INT below = Down(h);
   INT next = Next(h);
-  ASSERT(__FILE__, __LINE__, next);
+  MEDDLY_DCASSERT(next);
 
   if (node_address(grid_current) == h) {
     grid_current = next;
@@ -884,18 +884,18 @@ void MEDDLY::array_plus_grid<INT>
   setDown(next, below);
 
   if (below) {
-    ASSERT(__FILE__, __LINE__, node_address(Up(below)) == h);
+    MEDDLY_DCASSERT(node_address(Up(below)) == h);
     setUp(below, next);
   } else {
-    ASSERT(__FILE__, __LINE__, node_address(grid_bottom) == h);
+    MEDDLY_DCASSERT(node_address(grid_bottom) == h);
     grid_bottom = next;
   }
 
   if (above) {
-    ASSERT(__FILE__, __LINE__, node_address(Down(above)) == h);
+    MEDDLY_DCASSERT(node_address(Down(above)) == h);
     setDown(above, next);
   } else {
-    ASSERT(__FILE__, __LINE__, node_address(grid_top) == h);
+    MEDDLY_DCASSERT(node_address(grid_top) == h);
     grid_top = next;
   }
 }
@@ -911,8 +911,8 @@ void MEDDLY::array_plus_grid<INT>
   printf("startTrackingHole(%lu) size %ld\n", h, long(getHoleSize(h)));
 #endif
 
-  ASSERT(__FILE__, __LINE__, getHoleSize(h)>0);
-  ASSERT(__FILE__, __LINE__, matchingHoleSizes(h));
+  MEDDLY_DCASSERT(getHoleSize(h)>0);
+  MEDDLY_DCASSERT(matchingHoleSizes(h));
 
   //
   // Check if the hole is too small to track.
@@ -976,7 +976,7 @@ void MEDDLY::array_plus_grid<INT>
   //
   // Must be a large hole; add it to the grid
   //
-  ASSERT(__FILE__, __LINE__, isLargeHole(h));
+  MEDDLY_DCASSERT(isLargeHole(h));
   // update stats
   num_grid_holes++;
   num_grid_slots += getHoleSize(h);
@@ -1019,7 +1019,7 @@ void MEDDLY::array_plus_grid<INT>
   //
   INT curr = grid_bottom;
   int status = moveCurrentToRow(getHoleSize(h), curr);
-  ASSERT(__FILE__, __LINE__, curr);
+  MEDDLY_DCASSERT(curr);
   if (0==status) {
     //
     // There's a chain of our size, add to it

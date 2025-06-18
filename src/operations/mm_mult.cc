@@ -60,7 +60,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
     findResult(node_handle a, node_handle b, node_handle &c)
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      ASSERT(__FILE__, __LINE__, CTsrch);
+      MEDDLY_DCASSERT(CTsrch);
       CTsrch->writeN(a);
       CTsrch->writeN(b);
       CT0->find(CTsrch, CTresult[0]);
@@ -114,7 +114,7 @@ void MEDDLY::mm_mult_op
 
 MEDDLY::node_handle MEDDLY::mm_mult_op::compute(node_handle a, node_handle b)
 {
-  ASSERT(__FILE__, __LINE__, accumulateOp);
+  MEDDLY_DCASSERT(accumulateOp);
   return compute_rec(a, b);
 }
 
@@ -185,8 +185,8 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
   int bLevel = arg2F->getNodeLevel(b);
 
   // No primed levels at this point
-  ASSERT(__FILE__, __LINE__, aLevel >= 0);
-  ASSERT(__FILE__, __LINE__, bLevel >= 0);
+  MEDDLY_DCASSERT(aLevel >= 0);
+  MEDDLY_DCASSERT(bLevel >= 0);
 
   // Create a node builder for the result.
   int rLevel = MAX(aLevel, bLevel);
@@ -217,11 +217,11 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
       unsigned i = nrb->index(iz);
       for (unsigned jz = 0; jz < nrbp->getSize(); ++jz) {
         unsigned j = nrbp->index(jz);
-        ASSERT(__FILE__, __LINE__, 0 == nbri->down(j));
+        MEDDLY_DCASSERT(0 == nbri->down(j));
         // nbri->d_ref(j) = compute_rec(a, nrbp->down(jz));
         nbri->setFull(j, compute_rec(a, nrbp->down(jz)));
       }
-      ASSERT(__FILE__, __LINE__, 0 == nbr->down(i));
+      MEDDLY_DCASSERT(0 == nbr->down(i));
       // nbr->d_ref(i) = resF->createReducedNode(int(i), nbri);
       nbr->setFull(i, resF->createReducedNode(int(i), nbri));
     }
@@ -239,11 +239,11 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
       unsigned i = nra->index(iz);
       for (unsigned jz = 0; jz < nrap->getSize(); ++jz) {
         unsigned j = nrap->index(jz);
-        ASSERT(__FILE__, __LINE__, 0 == nbri->down(j));
+        MEDDLY_DCASSERT(0 == nbri->down(j));
         // nbri->d_ref(j) = compute_rec(nrap->down(jz), b);
         nbri->setFull(j, compute_rec(nrap->down(jz), b));
       }
-      ASSERT(__FILE__, __LINE__, 0 == nbr->down(i));
+      MEDDLY_DCASSERT(0 == nbr->down(i));
       // nbr->d_ref(i) = resF->createReducedNode(int(i), nbri);
       nbr->setFull(i, resF->createReducedNode(int(i), nbri));
     }
@@ -252,8 +252,8 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
   }
   else {
     // For all i, j and k, r[i][k] += compute_rec(a[i][j], b[j][k])
-    ASSERT(__FILE__, __LINE__, aLevel == rLevel);
-    ASSERT(__FILE__, __LINE__, bLevel == rLevel);
+    MEDDLY_DCASSERT(aLevel == rLevel);
+    MEDDLY_DCASSERT(bLevel == rLevel);
 
     // Node readers for a, b and all b[j].
     unpacked_node* nra = unpacked_node::newFromNode(arg1F, a, SPARSE_ONLY);
@@ -296,7 +296,7 @@ MEDDLY::node_handle MEDDLY::mm_mult_mxd::compute_rec(node_handle a,
           nbri->setFull(k, resultik);
         }
       }
-      ASSERT(__FILE__, __LINE__, 0 == nbr->down(i));
+      MEDDLY_DCASSERT(0 == nbr->down(i));
       // nbr->d_ref(i) = resF->createReducedNode(int(i), nbri);
       nbr->setFull(i, resF->createReducedNode(int(i), nbri));
     }
@@ -467,5 +467,5 @@ void MEDDLY::MM_MULTIPLY_init()
 
 void MEDDLY::MM_MULTIPLY_done()
 {
-    ASSERT(__FILE__, __LINE__, MMMULT_cache.isEmpty());
+    MEDDLY_DCASSERT(MMMULT_cache.isEmpty());
 }

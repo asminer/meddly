@@ -172,35 +172,35 @@ class MEDDLY::rangeval {
         }
 
         inline operator bool() const {
-            ASSERT(__FILE__, __LINE__, isBoolean());
+            MEDDLY_DCASSERT(isBoolean());
             if (!isNormal()) {
                 throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
             }
             return l_value;
         }
         inline operator int() const {
-            ASSERT(__FILE__, __LINE__, isInteger());
+            MEDDLY_DCASSERT(isInteger());
             if (!isNormal()) {
                 throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
             }
             return l_value;
         }
         inline operator long() const {
-            ASSERT(__FILE__, __LINE__, isInteger());
+            MEDDLY_DCASSERT(isInteger());
             if (!isNormal()) {
                 throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
             }
             return l_value;
         }
         inline operator float() const {
-            ASSERT(__FILE__, __LINE__, isReal());
+            MEDDLY_DCASSERT(isReal());
             if (!isNormal()) {
                 throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
             }
             return d_value;
         }
         inline operator double() const {
-            ASSERT(__FILE__, __LINE__, isReal());
+            MEDDLY_DCASSERT(isReal());
             if (!isNormal()) {
                 throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
             }

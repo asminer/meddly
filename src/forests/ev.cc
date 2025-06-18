@@ -33,7 +33,7 @@ MEDDLY::ev_forest::ev_forest(domain *d, bool rel,
   range_type t, edge_labeling ev, const policies &p)
 : forest(d, rel, t, ev, p)
 {
-  ASSERT(__FILE__, __LINE__, ev != edge_labeling::MULTI_TERMINAL);
+  MEDDLY_DCASSERT(ev != edge_labeling::MULTI_TERMINAL);
 }
 
 // statics
@@ -46,7 +46,7 @@ void MEDDLY::ev_forest::initStatics()
 
 void MEDDLY::ev_forest::enlargeStatics(int n)
 {
-  ASSERT(__FILE__, __LINE__, n>0);
+  MEDDLY_DCASSERT(n>0);
   if (n>order_size) {
     order = (int*) realloc(order, unsigned(n)*sizeof(int));
     //terminals = (node_handle*) realloc(terminals, n*sizeof(node_handle));

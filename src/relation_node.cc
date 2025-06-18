@@ -82,6 +82,6 @@ MEDDLY::relation_node::expandTokenUpdate(long i)
 void
 MEDDLY::relation_node::setTokenUpdateAtIndex(long i,long val)
 {
-  ASSERT(__FILE__, __LINE__, i<getPieceSize());
+  MEDDLY_DCASSERT(i<getPieceSize());
   token_update[i] = val;
 }

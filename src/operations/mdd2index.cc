@@ -95,7 +95,7 @@ void MEDDLY::mdd2index_operation::compute(int L, unsigned in,
 #ifdef TRACE
     out.indentation(0);
 #endif
-    ASSERT(__FILE__, __LINE__, av.isVoid());
+    MEDDLY_DCASSERT(av.isVoid());
     long lcv;
     _compute(L, ap, lcv, cp);
     cv.set(0L);  // NOT lcv!
@@ -122,7 +122,7 @@ void MEDDLY::mdd2index_operation::_compute(int L,
     // Determine level information
     //
     const int Alevel = argF->getNodeLevel(A);
-    ASSERT(__FILE__, __LINE__, Alevel <= L);
+    MEDDLY_DCASSERT(Alevel <= L);
 #ifdef TRACE
     out << "mdd2index::_compute(" << L << ", " << A << ")\n";
 #endif
@@ -165,7 +165,7 @@ void MEDDLY::mdd2index_operation::_compute(int L,
         : unpacked_node::newFromNode(argF, A, FULL_ONLY);
 
     unpacked_node* Cu = unpacked_node::newWritable(resF, L, FULL_ONLY);
-    ASSERT(__FILE__, __LINE__, Au->getSize() == Cu->getSize());
+    MEDDLY_DCASSERT(Au->getSize() == Cu->getSize());
 #ifdef TRACE
     out << "A: ";
     Au->show(out, true);
@@ -206,7 +206,7 @@ void MEDDLY::mdd2index_operation::_compute(int L,
     //
     edge_value ev;
     resF->createReducedNode(Cu, ev, cp);
-    ASSERT(__FILE__, __LINE__, 0 == ev.getLong());
+    MEDDLY_DCASSERT(0 == ev.getLong());
 
 #ifdef TRACE
     out << "reduced to (" << cp << ", " << cv << "):";
@@ -258,6 +258,6 @@ void MEDDLY::CONVERT_TO_INDEX_SET_init()
 
 void MEDDLY::CONVERT_TO_INDEX_SET_done()
 {
-    ASSERT(__FILE__, __LINE__, MDD2INDEX_cache.isEmpty());
+    MEDDLY_DCASSERT(MDD2INDEX_cache.isEmpty());
 }
 

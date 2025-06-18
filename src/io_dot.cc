@@ -29,10 +29,10 @@ MEDDLY::dot_maker::dot_maker(const forest* F, const char* bn)
     outfile.open(fname);
 
     For = F;
-    ASSERT(__FILE__, __LINE__, For);
+    MEDDLY_DCASSERT(For);
 
     nm = new node_marker(For);
-    ASSERT(__FILE__, __LINE__, nm);
+    MEDDLY_DCASSERT(nm);
 }
 
 MEDDLY::dot_maker::~dot_maker()
@@ -145,7 +145,7 @@ void MEDDLY::dot_maker::doneGraph()
     {
         // Graph rank for this level
         const int k_rank = (k<0) ? (-k*2) -1 : k*2;
-        ASSERT(__FILE__, __LINE__, k_rank > 0);
+        MEDDLY_DCASSERT(k_rank > 0);
 
         //
         // Write the level label

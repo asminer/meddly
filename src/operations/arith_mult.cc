@@ -98,8 +98,8 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
-            ASSERT(__FILE__, __LINE__, a.isVoid());
-            ASSERT(__FILE__, __LINE__, b.isVoid());
+            MEDDLY_DCASSERT(a.isVoid());
+            MEDDLY_DCASSERT(b.isVoid());
             c.set();
         }
     };
@@ -175,8 +175,8 @@ namespace MEDDLY {
                 cv = EDGETYPE(0);
                 return;
             }
-            ASSERT(__FILE__, __LINE__, OMEGA_NORMAL == an);
-            ASSERT(__FILE__, __LINE__, OMEGA_NORMAL == bn);
+            MEDDLY_DCASSERT(OMEGA_NORMAL == an);
+            MEDDLY_DCASSERT(OMEGA_NORMAL == bn);
             cn = OMEGA_NORMAL;
             EDGETYPE aev, bev;
             av.get(aev);
@@ -327,6 +327,6 @@ void MEDDLY::MULTIPLY_init()
 
 void MEDDLY::MULTIPLY_done()
 {
-    ASSERT(__FILE__, __LINE__, MULT_cache.isEmpty());
+    MEDDLY_DCASSERT(MULT_cache.isEmpty());
 }
 

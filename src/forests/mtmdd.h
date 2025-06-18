@@ -131,8 +131,8 @@ namespace MEDDLY {
           for use by mtmdd_forest descendants.
       */
       node_handle createEdge(int k, int start, int stop) {
-        ASSERT(__FILE__, __LINE__, k>=0);
-        ASSERT(__FILE__, __LINE__, stop > start);
+        MEDDLY_DCASSERT(k>=0);
+        MEDDLY_DCASSERT(stop > start);
         //
         // Fast special case
         //
@@ -170,7 +170,7 @@ namespace MEDDLY {
             }
             batchP++;
           } else {
-            ASSERT(__FILE__, __LINE__, unprimed(i, k) >= 0);
+            MEDDLY_DCASSERT(unprimed(i, k) >= 0);
             nextV = MIN(nextV, unsigned(unprimed(i, k)));
           }
         }
@@ -236,7 +236,7 @@ namespace MEDDLY {
 			      //
 			      // (2) recurse if necessary
 			      //
-			      ASSERT(__FILE__, __LINE__, batchP > start);
+			      MEDDLY_DCASSERT(batchP > start);
 			      node_handle total = createEdge(k-1, start, batchP);
 
 			      //
@@ -293,7 +293,7 @@ namespace MEDDLY {
 			    //
 			    // (2) recurse if necessary
 			    //
-			    ASSERT(__FILE__, __LINE__, batchP > start);
+			    MEDDLY_DCASSERT(batchP > start);
 			    node_handle total = createEdge(k-1, start, batchP);
 
 			    //
@@ -310,7 +310,7 @@ namespace MEDDLY {
         //
         nb->shrink(z);
 
-        ASSERT(__FILE__, __LINE__, unionOp);
+        MEDDLY_DCASSERT(unionOp);
         dd_edge dontcaresE(F), built(F);
         dontcaresE.set(dontcares);
         built.set( F->createReducedNode(-1, nb) );
@@ -360,7 +360,7 @@ namespace MEDDLY {
               else{
                 // make a singleton node
                 unpacked_node* nb = unpacked_node::newSparse(F, i, 1);
-                ASSERT(__FILE__, __LINE__, _vlist[i] >= 0);
+                MEDDLY_DCASSERT(_vlist[i] >= 0);
                 nb->setSparse(0, unsigned(_vlist[i]), bottom);
                 bottom = F->createReducedNode(-1, nb);
               }
@@ -374,8 +374,8 @@ namespace MEDDLY {
       // 2. the transparent value is not zero
       node_handle makeOpaqueZeroNodeAtLevel(int k)
       {
-  	    ASSERT(__FILE__, __LINE__, F->isQuasiReduced());
-  	    ASSERT(__FILE__, __LINE__, F->getTransparentNode()!=zero_terminal);
+  	    MEDDLY_DCASSERT(F->isQuasiReduced());
+  	    MEDDLY_DCASSERT(F->getTransparentNode()!=zero_terminal);
 
   	    return F->makeNodeAtLevel(k, zero_terminal);
       }

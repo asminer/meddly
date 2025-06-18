@@ -55,7 +55,7 @@ class MEDDLY::mt_forest : public forest
     template <class T>
     inline node_handle makeNodeAtLevel(T k, node_handle d)
     {
-        ASSERT(__FILE__, __LINE__, ABS(k) >= ABS(getNodeLevel(d)));
+        MEDDLY_DCASSERT(ABS(k) >= ABS(getNodeLevel(d)));
         if (isFullyReduced()) return d;
         if (isQuasiReduced() && d==getTransparentNode()) return d;
         return _makeNodeAtLevel(int(k), d);

@@ -69,7 +69,7 @@ void MEDDLY::evmxd_timesreal
   const float* terms, int N, dd_edge &e)
 {
   binary_operation* unionOp = PLUS(this, this, this);
-  ASSERT(__FILE__, __LINE__, unionOp);
+  MEDDLY_DCASSERT(unionOp);
   enlargeStatics(N);
   enlargeVariables(vlist, N, false);
   enlargeVariables(vplist, N, true);
@@ -135,7 +135,7 @@ MEDDLY::evmxd_timesreal::evtrmxd_baseiter::~evtrmxd_baseiter()
 
 void MEDDLY::evmxd_timesreal::evtrmxd_baseiter::getValue(float &tv) const
 {
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(acc_evs);
   tv = acc_evs[0];
 }
 
@@ -153,7 +153,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::start(const dd_edge &e)
     throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(acc_evs);
   float ev;
   e.getEdgeValue(ev);
   acc_evs[maxLevel] = ev;
@@ -163,12 +163,12 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::start(const dd_edge &e)
 
 bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::next()
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
 
   int k = -1;
   node_handle down = 0;
@@ -177,7 +177,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::next()
     if (nzp[k] < path[k].getSize()) {
       index[k] = path[k].index(nzp[k]);
       down = path[k].down(nzp[k]);
-      ASSERT(__FILE__, __LINE__, down);
+      MEDDLY_DCASSERT(down);
       const float ev = path[k].edgeval(nzp[k]).getFloat();
       acc_evs[MXD_levels::downLevel(k)] = acc_evs[k] * ev;
       break;
@@ -194,21 +194,21 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::next()
 
 bool MEDDLY::evmxd_timesreal::evtrmxd_iterator::first(int k, node_handle down)
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
 
   if (0==down) return false;
 
   bool isFully = F->isFullyReduced();
 
   for ( ; k; k = MXD_levels::downLevel(k) ) {
-    ASSERT(__FILE__, __LINE__, down);
+    MEDDLY_DCASSERT(down);
     int kdn = F->getNodeLevel(down);
-    ASSERT(__FILE__, __LINE__, !isLevelAbove(kdn, k));
+    MEDDLY_DCASSERT(!isLevelAbove(kdn, k));
 
     if (isLevelAbove(k, kdn)) {
       if (k>0 || isFully) {
@@ -245,7 +245,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter
     throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(acc_evs);
   float ev;
   e.getEdgeValue(ev);
   acc_evs[maxLevel] = ev;
@@ -258,12 +258,12 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter
 
 bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::next()
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
 
   node_handle down = 0;
   // Only try to advance the column, because the row is fixed.
@@ -271,7 +271,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::next()
     for (nzp[k]++; nzp[k] < path[k].getSize(); nzp[k]++) {
       index[k] = path[k].index(nzp[k]);
       down = path[k].down(nzp[k]);
-      ASSERT(__FILE__, __LINE__, down);
+      MEDDLY_DCASSERT(down);
       level_change = k;
       const float ev = path[k].edgeval(nzp[k]).getFloat();
       acc_evs[MXD_levels::downLevel(k)] = acc_evs[k] * ev;
@@ -285,12 +285,12 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::next()
 
 bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::first(int k, node_handle down)
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
 
   if (0==k) {
     index[0] = down;
@@ -299,7 +299,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::first(int k, node_handle do
 
   // Check that this "row" node has a non-zero pointer
   // for the fixed index.
-  ASSERT(__FILE__, __LINE__, k>0);
+  MEDDLY_DCASSERT(k>0);
   int cdown;
   if (isLevelAbove(k, F->getNodeLevel(down))) {
     // skipped unprimed level, must be "fully" reduced
@@ -316,7 +316,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedrow_iter::first(int k, node_handle do
   //
   // Ok, set up the "column" node below
   k = MXD_levels::downLevel(k);
-  ASSERT(__FILE__, __LINE__, k<0);
+  MEDDLY_DCASSERT(k<0);
 
   if (isLevelAbove(k, F->getNodeLevel(cdown))) {
     // Skipped level, we can be fast about this.
@@ -369,7 +369,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter
     throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(acc_evs);
   float ev;
   e.getEdgeValue(ev);
   acc_evs[maxLevel] = ev;
@@ -382,12 +382,12 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter
 
 bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::next()
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
 
   node_handle down = 0;
   // Only try to advance the row, because the column is fixed.
@@ -395,7 +395,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::next()
     for (nzp[k]++; nzp[k] < path[k].getSize(); nzp[k]++) {
       index[k] = path[k].index(nzp[k]);
       down = path[k].down(nzp[k]);
-      ASSERT(__FILE__, __LINE__, down);
+      MEDDLY_DCASSERT(down);
       const float ev = path[k].edgeval(nzp[k]).getFloat();
       acc_evs[MXD_levels::downLevel(k)] = acc_evs[k] * ev;
       level_change = k;
@@ -408,12 +408,12 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::next()
 
 bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::first(int k, node_handle down)
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
 
   if (0==k) {
     index[0] = down;
@@ -441,7 +441,7 @@ bool MEDDLY::evmxd_timesreal::evtrmxd_fixedcol_iter::first(int k, node_handle do
 
   // Row node.  Find an index, if any,
   // such that there is a valid path below.
-  ASSERT(__FILE__, __LINE__, k>0);
+  MEDDLY_DCASSERT(k>0);
   int kdn = F->getNodeLevel(down);
   if (isLevelAbove(k, kdn)) {
     // Skipped level, handle quickly

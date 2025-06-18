@@ -96,8 +96,8 @@ class MEDDLY::ct_entry_result {
         }
 
         inline void writeEV(const edge_value &ev) {
-            ASSERT(__FILE__, __LINE__, build);
-            ASSERT(__FILE__, __LINE__, currslot < dataLength());
+            MEDDLY_DCASSERT(build);
+            MEDDLY_DCASSERT(currslot < dataLength());
 
             switch (etype->getResultType(currslot).getType()) {
                 case ct_typeID::INTEGER:
@@ -117,7 +117,7 @@ class MEDDLY::ct_entry_result {
                     break;
 
                 default:
-                    ASSERT(__FILE__, __LINE__, false);
+                    MEDDLY_DCASSERT(false);
             }
         }
 
@@ -181,15 +181,15 @@ class MEDDLY::ct_entry_result {
     private:
         inline void READ_SLOT(ct_typeID t)
         {
-            ASSERT(__FILE__, __LINE__, data);
-            ASSERT(__FILE__, __LINE__, currslot < dataLength());
-            ASSERT(__FILE__, __LINE__, etype->getResultType(currslot).hasType(t));
+            MEDDLY_DCASSERT(data);
+            MEDDLY_DCASSERT(currslot < dataLength());
+            MEDDLY_DCASSERT(etype->getResultType(currslot).hasType(t));
         }
         inline void WRITE_SLOT(ct_typeID t)
         {
-            ASSERT(__FILE__, __LINE__, build);
-            ASSERT(__FILE__, __LINE__, currslot < dataLength());
-            ASSERT(__FILE__, __LINE__, etype->getResultType(currslot).hasType(t));
+            MEDDLY_DCASSERT(build);
+            MEDDLY_DCASSERT(currslot < dataLength());
+            MEDDLY_DCASSERT(etype->getResultType(currslot).hasType(t));
         }
 
 

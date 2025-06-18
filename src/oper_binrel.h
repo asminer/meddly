@@ -218,7 +218,7 @@ class MEDDLY::binrel_list {
             if (bop) {
                 if (bop->parent) {
                     // REMOVE EVENTUALLY
-                    ASSERT(__FILE__, __LINE__, bop->parent == this);
+                    MEDDLY_DCASSERT(bop->parent == this);
                 } else {
                     bop->parent = this;
                     bop->setName(name);

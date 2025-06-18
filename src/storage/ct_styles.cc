@@ -213,7 +213,7 @@ namespace MEDDLY {
 
             inline static TTYPE getNext(const void* raw)
             {
-                ASSERT(__FILE__, __LINE__, CHAINED);
+                MEDDLY_DCASSERT(CHAINED);
 
                 union {
                     TTYPE tt;
@@ -240,7 +240,7 @@ namespace MEDDLY {
             }
             inline static void setNext(void* raw, TTYPE n)
             {
-                ASSERT(__FILE__, __LINE__, CHAINED);
+                MEDDLY_DCASSERT(CHAINED);
 
                 union {
                     TTYPE tt;
@@ -322,7 +322,7 @@ namespace MEDDLY {
             */
             inline void setTable(TTYPE h, TTYPE curr)
             {
-                ASSERT(__FILE__, __LINE__, !CHAINED);
+                MEDDLY_DCASSERT(!CHAINED);
                 TTYPE hfree = h;
                 //
                 // Look for a free slot
@@ -342,7 +342,7 @@ namespace MEDDLY {
                 // Nothing free; remove entry at our slot.
                 //
                 collisions++;
-                ASSERT(__FILE__, __LINE__, table[h]);
+                MEDDLY_DCASSERT(table[h]);
                 deleteEntry(table[h]);
                 table[h] = curr;
             }
@@ -520,15 +520,15 @@ MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>::ct_tmpl(
     const ct_settings &s, unsigned etid) : compute_table(s, etid)
 {
     if (MONOLITHIC) {
-        ASSERT(__FILE__, __LINE__, 0==etid);
+        MEDDLY_DCASSERT(0==etid);
     } else {
-        ASSERT(__FILE__, __LINE__, etid);
+        MEDDLY_DCASSERT(etid);
     }
 
     /*
         Initialize memory management for entries.
     */
-    ASSERT(__FILE__, __LINE__, s.MMS);
+    MEDDLY_DCASSERT(s.MMS);
     if (INTSLOTS) {
         MMAN = s.MMS->initManager(sizeof(unsigned), 2, mstats);
     } else {
@@ -576,9 +576,9 @@ template <class TTYPE, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
 void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
     ::find(ct_entry_key* key, ct_entry_result &res)
 {
-    ASSERT(__FILE__, __LINE__, key);
+    MEDDLY_DCASSERT(key);
     const ct_entry_type* et = key->getET();
-    ASSERT(__FILE__, __LINE__, et);
+    MEDDLY_DCASSERT(et);
     if (!MONOLITHIC) {
         if (et->getID() != global_etid)
             throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
@@ -630,7 +630,7 @@ void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
     if (num_slots < key->entry_slots) {
         throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
-    ASSERT(__FILE__, __LINE__, key->my_entry);
+    MEDDLY_DCASSERT(key->my_entry);
 
     genentry keyentry, keyafterchain;
     keyentry.vptr = MMAN->getChunkAddress(key->my_entry);
@@ -742,7 +742,7 @@ void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
         //
         key->setHash(hash32());
     }
-    ASSERT(__FILE__, __LINE__, key->getHash() == hashEntry(keyentry.vptr));
+    MEDDLY_DCASSERT(key->getHash() == hashEntry(keyentry.vptr));
     const TTYPE hslot = key->getHash() % table.size();
     TTYPE hcurr = hslot;
     // TBD: use a 64-bit hash when TTYPE is 64 bit
@@ -974,9 +974,9 @@ template <class TTYPE, bool MONOLITHIC, bool CHAINED, bool INTSLOTS>
 void MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
     ::addEntry(ct_entry_key* key, const ct_entry_result& res)
 {
-    ASSERT(__FILE__, __LINE__, key);
+    MEDDLY_DCASSERT(key);
     const ct_entry_type* et = key->getET();
-    ASSERT(__FILE__, __LINE__, et);
+    MEDDLY_DCASSERT(et);
     if (!MONOLITHIC) {
         if (et->getID() != global_etid)
             throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
@@ -993,7 +993,7 @@ void MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
     //
     // Copy the result portion, and increment cache counters in the result
     //
-    ASSERT(__FILE__, __LINE__, key->my_entry);
+    MEDDLY_DCASSERT(key->my_entry);
     void* rawentry = MMAN->getChunkAddress(key->my_entry);
     if (INTSLOTS) {
         unsigned* entry = (unsigned*) rawentry;
@@ -1121,7 +1121,7 @@ bool MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
 
     const unsigned op_slots = MONOLITHIC ? 1 : 0;
 
-    ASSERT(__FILE__, __LINE__, ET.canHaveKeySize(key.size()));
+    MEDDLY_DCASSERT(ET.canHaveKeySize(key.size()));
     const unsigned repeats = ET.repeatsForKeySize(key.size());
 
     const unsigned key_slots =
@@ -1149,7 +1149,7 @@ bool MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
     if (num_slots < key.entry_slots) {
         throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     }
-    ASSERT(__FILE__, __LINE__, key.my_entry);
+    MEDDLY_DCASSERT(key.my_entry);
 
     const void* entry_vptr = MMAN->getChunkAddress(key.my_entry);
     unsigned* entry_after_chain = nullptr;
@@ -1264,7 +1264,7 @@ bool MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
         //
         key.setHash(hash32());
     }
-    ASSERT(__FILE__, __LINE__, key.getHash() == hashEntry(entry_vptr));
+    MEDDLY_DCASSERT(key.getHash() == hashEntry(entry_vptr));
     const TTYPE hslot = key.getHash() % table.size();
     TTYPE hcurr = hslot;
     // TBD: use a 64-bit hash when TTYPE is 64 bit
@@ -1495,7 +1495,7 @@ void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
         if (ET.getID() != global_etid)
             throw error(error::UNKNOWN_OPERATION, __FILE__, __LINE__);
     }
-    ASSERT(__FILE__, __LINE__, res.size() == ET.getResultSize());
+    MEDDLY_DCASSERT(res.size() == ET.getResultSize());
 
     ct_entry_type::incEntries(ET.getID());
 
@@ -1514,7 +1514,7 @@ void MEDDLY::ct_tmpl<TTYPE,MONOLITHIC,CHAINED,INTSLOTS>
     //
     // Copy the result portion, and increment cache counters in the result
     //
-    ASSERT(__FILE__, __LINE__, key.my_entry);
+    MEDDLY_DCASSERT(key.my_entry);
     void* rawentry = MMAN->getChunkAddress(key.my_entry);
     if (INTSLOTS) {
         unsigned* entry = (unsigned*) rawentry;
@@ -1953,7 +1953,7 @@ template <class T, bool M, bool C, bool I>
 void* MEDDLY::ct_tmpl<T,M,C,I>::key2entry(const ct_entry_key& key, void* e)
 {
     const ct_entry_type* et = key.getET();
-    ASSERT(__FILE__, __LINE__, et);
+    MEDDLY_DCASSERT(et);
     const unsigned keylen = et->getKeySize(key.numRepeats());
     const ct_entry_item* data = key.rawData();
 
@@ -2067,7 +2067,7 @@ void MEDDLY::ct_tmpl<T,M,C,I>
     ::result2entry(const ct_entry_result& res, void* e)
 {
     const ct_entry_type* et = res.getET();
-    ASSERT(__FILE__, __LINE__, et);
+    MEDDLY_DCASSERT(et);
 
     //
     // Copy the result
@@ -2087,9 +2087,9 @@ void MEDDLY::ct_tmpl<T,M,C,I>
 
             case ct_typeID::INTEGER:
             case ct_typeID::FLOAT:
-                    ASSERT(__FILE__, __LINE__, sizeof(data[i].N) == sizeof(data[i].U));
-                    ASSERT(__FILE__, __LINE__, sizeof(data[i].I) == sizeof(data[i].U));
-                    ASSERT(__FILE__, __LINE__, sizeof(data[i].F) == sizeof(data[i].U));
+                    MEDDLY_DCASSERT(sizeof(data[i].N) == sizeof(data[i].U));
+                    MEDDLY_DCASSERT(sizeof(data[i].I) == sizeof(data[i].U));
+                    MEDDLY_DCASSERT(sizeof(data[i].F) == sizeof(data[i].U));
                     if (I) {
                         *ue = data[i].U;
                         ue++;
@@ -2102,8 +2102,8 @@ void MEDDLY::ct_tmpl<T,M,C,I>
             case ct_typeID::DOUBLE:
             case ct_typeID::GENERIC:
             case ct_typeID::LONG:
-                    ASSERT(__FILE__, __LINE__, sizeof(data[i].G) == sizeof(data[i].UL));
-                    ASSERT(__FILE__, __LINE__, sizeof(data[i].D) == sizeof(data[i].UL));
+                    MEDDLY_DCASSERT(sizeof(data[i].G) == sizeof(data[i].UL));
+                    MEDDLY_DCASSERT(sizeof(data[i].D) == sizeof(data[i].UL));
                     if (I) {
                         ue[0] = data[i].raw[0];
                         ue[1] = data[i].raw[1];
@@ -2140,7 +2140,7 @@ void* MEDDLY::ct_tmpl<T,M,C,I>::key2entry(const ct_entry_type &ET,
         //
         for (unsigned i=0; i<key.size(); i++) {
             const ct_itemtype &it = ET.getKeyType(i);
-            ASSERT(__FILE__, __LINE__, it.hasType(key[i].getType()));
+            MEDDLY_DCASSERT(it.hasType(key[i].getType()));
 
             if (it.requiresTwoSlots()) {
                 if (I) {
@@ -2171,7 +2171,7 @@ void* MEDDLY::ct_tmpl<T,M,C,I>::key2entry(const ct_entry_type &ET,
         //
         for (unsigned i=0; i<key.size(); i++) {
             const ct_itemtype &it = ET.getKeyType(i);
-            ASSERT(__FILE__, __LINE__, it.hasType(key[i].getType()));
+            MEDDLY_DCASSERT(it.hasType(key[i].getType()));
 
             if (it.shouldBeHashed()) {
                 // copy and hash
@@ -2245,9 +2245,9 @@ void MEDDLY::ct_tmpl<T,M,C,I>
 
     for (unsigned i=0; i<res.size(); i++) {
         const ct_itemtype &it = ET.getResultType(i);
-        ASSERT(__FILE__, __LINE__, it.hasType(res[i].getType()));
+        MEDDLY_DCASSERT(it.hasType(res[i].getType()));
         if (it.hasNodeType()) {
-            ASSERT(__FILE__, __LINE__, !it.requiresTwoSlots());
+            MEDDLY_DCASSERT(!it.requiresTwoSlots());
             it.cacheNode(res[i].getN());
             if (I) {
                 *ue = res[i].raw0();
@@ -2288,9 +2288,9 @@ template <class T, bool M, bool C, bool I>
 bool MEDDLY::ct_tmpl<T,M,C,I>::isDead(const ct_entry_type &ET,
         const void* sres, ct_entry_result &dres)
 {
-    ASSERT(__FILE__, __LINE__, sres);
+    MEDDLY_DCASSERT(sres);
     ct_entry_item* data = dres.rawData();
-    ASSERT(__FILE__, __LINE__, dres.dataLength() == ET.getResultSize());
+    MEDDLY_DCASSERT(dres.dataLength() == ET.getResultSize());
 
     const unsigned* ures = (const unsigned*) sres;
     const ct_entry_item* ctres = (const ct_entry_item*) sres;
@@ -2330,8 +2330,8 @@ template <class T, bool M, bool C, bool I>
 bool MEDDLY::ct_tmpl<T,M,C,I>::isDead(const ct_entry_type &ET,
         const void* sres, ct_vector &dres)
 {
-    ASSERT(__FILE__, __LINE__, sres);
-    ASSERT(__FILE__, __LINE__, dres.size() == ET.getResultSize());
+    MEDDLY_DCASSERT(sres);
+    MEDDLY_DCASSERT(dres.size() == ET.getResultSize());
 
     const unsigned* ures = (const unsigned*) sres;
     const ct_entry_item* ctres = (const ct_entry_item*) sres;
@@ -2403,7 +2403,7 @@ bool MEDDLY::ct_tmpl<T,M,C,I>::isStale(const void* entry, bool mark) const
             ++ctptr;
         }
     }
-    ASSERT(__FILE__, __LINE__, et);
+    MEDDLY_DCASSERT(et);
     if (et->isMarkedForDeletion()) return true;
 
     //
@@ -2495,7 +2495,7 @@ bool MEDDLY::ct_tmpl<T,M,C,I>::isStale(const void* entry, bool mark) const
 template <class TTYPE, bool M, bool C, bool I>
 void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
 {
-    ASSERT(__FILE__, __LINE__, h);
+    MEDDLY_DCASSERT(h);
     const void* hptr = MMAN->getChunkAddress(h);
     const unsigned* uptr = (unsigned*) hptr;
     const ct_entry_item* ctptr = (ct_entry_item*) hptr;
@@ -2714,7 +2714,7 @@ TTYPE MEDDLY::ct_tmpl<TTYPE, MONOLITHIC, CHAINED, INTSLOTS>
     } else {
         et = ct_entry_type::getEntryType(global_etid);
     }
-    ASSERT(__FILE__, __LINE__, et);
+    MEDDLY_DCASSERT(et);
 
     //
     // Determine key size; do NOT advance pointer
@@ -2812,7 +2812,7 @@ template <class TTYPE, bool M, bool C, bool I>
 void MEDDLY::ct_tmpl<TTYPE, M, C, I>
     ::showEntry(output &s, TTYPE h, bool keyonly) const
 {
-    ASSERT(__FILE__, __LINE__, h);
+    MEDDLY_DCASSERT(h);
     const void* hptr = MMAN->getChunkAddress(h);
     const unsigned* uptr = (unsigned*) hptr;
     const ct_entry_item* ctptr = (ct_entry_item*) hptr;

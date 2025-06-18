@@ -65,7 +65,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
       long bev, node_handle b, long& cev, node_handle &c)
     {
       ct_entry_key* CTsrch = CT0->useEntryKey(etype[0], 0);
-      ASSERT(__FILE__, __LINE__, CTsrch);
+      MEDDLY_DCASSERT(CTsrch);
       if (canCommute() && a > b) {
         CTsrch->writeL(bev);
         CTsrch->writeN(b);

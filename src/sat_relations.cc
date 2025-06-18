@@ -148,7 +148,7 @@ MEDDLY::pregen_relation::~pregen_relation()
 
 void MEDDLY::pregen_relation::addToRelation(const dd_edge &r)
 {
-  ASSERT(__FILE__, __LINE__, mxdF);
+  MEDDLY_DCASSERT(mxdF);
 
   if (r.getForest() != mxdF)  throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
 
@@ -200,20 +200,20 @@ void MEDDLY::pregen_relation::splitMxd(splittingOption split)
 
   // Initialize operations
   binary_operation* mxdUnion = UNION(mxdF, mxdF, mxdF);
-  ASSERT(__FILE__, __LINE__, mxdUnion);
+  MEDDLY_DCASSERT(mxdUnion);
 
   binary_operation* mxdIntersection = INTERSECTION(mxdF, mxdF, mxdF);
-  ASSERT(__FILE__, __LINE__, mxdIntersection);
+  MEDDLY_DCASSERT(mxdIntersection);
 
   binary_operation* mxdDifference = DIFFERENCE(mxdF, mxdF, mxdF);
-  ASSERT(__FILE__, __LINE__, mxdDifference);
+  MEDDLY_DCASSERT(mxdDifference);
 
   dd_edge maxDiag(mxdF);
 
   for (int k = int(K); k > 1; k--) {
     if (0 == events[k].getNode()) continue;
 
-    ASSERT(__FILE__, __LINE__, ABS(events[k].getLevel()) <= k);
+    MEDDLY_DCASSERT(ABS(events[k].getLevel()) <= k);
 
     // Initialize unpacked nodes
     unpacked_node* Mu = (isLevelAbove(k, events[k].getLevel()))
@@ -320,7 +320,7 @@ void MEDDLY::pregen_relation::unionLevels()
   if (K < 1) return;
 
   binary_operation* mxdUnion = UNION(mxdF, mxdF, mxdF);
-  ASSERT(__FILE__, __LINE__, mxdUnion);
+  MEDDLY_DCASSERT(mxdUnion);
 
   dd_edge u(mxdF);
   for (unsigned k=1; k<=K; k++) {
@@ -353,7 +353,7 @@ void MEDDLY::pregen_relation::finalize(splittingOption split)
       }
       splitMxd(MonolithicSplit);
       binary_operation* mxdDifference = DIFFERENCE(mxdF, mxdF, mxdF);
-      ASSERT(__FILE__, __LINE__, mxdDifference);
+      MEDDLY_DCASSERT(mxdDifference);
       for(unsigned k = 0; k <= K; k++) {
         if (old_events[k] != events[k]) {
           node_handle diff1 = mxdDifference->computeTemp(old_events[k], events[k]);
@@ -453,9 +453,9 @@ MEDDLY::otf_subevent::otf_subevent(forest* f, int* v, int nv, bool firing)
 #endif
     is_firing(firing)
 {
-  ASSERT(__FILE__, __LINE__, f != 0);
-  ASSERT(__FILE__, __LINE__, v != 0);
-  ASSERT(__FILE__, __LINE__, nv > 0);
+  MEDDLY_DCASSERT(f != 0);
+  MEDDLY_DCASSERT(v != 0);
+  MEDDLY_DCASSERT(nv > 0);
 
   vars = new int[num_vars];
   memcpy(vars, v, unsigned(num_vars) * sizeof(int));
@@ -544,7 +544,7 @@ bool MEDDLY::otf_subevent::addMinterm(const int* from, const int* to)
   }
   if (0==unpminterms[num_minterms]) {
     unpminterms[num_minterms] = new int[f->getNumVariables() + 1];
-    ASSERT(__FILE__, __LINE__, 0==pminterms[num_minterms]);
+    MEDDLY_DCASSERT(0==pminterms[num_minterms]);
     pminterms[num_minterms] = new int[f->getNumVariables() + 1];
   }
   // out << "Added minterm: [";
@@ -582,7 +582,7 @@ void MEDDLY::otf_subevent::buildRoot() {
         // root += sum;
         binary_operation* opPlus = UNION(root.getForest(),
                 sum.getForest(), root.getForest());
-        ASSERT(__FILE__, __LINE__, opPlus);
+        MEDDLY_DCASSERT(opPlus);
         opPlus->computeTemp(root, sum, root);
     } else {
         mtlist.buildFunctionMax(false, root);
@@ -607,7 +607,7 @@ void MEDDLY::otf_subevent::buildRoot() {
     //
     // root += sum;
     binary_operation* opPlus = UNION(root.getForest(), sum.getForest(), root.getForest());
-    ASSERT(__FILE__, __LINE__, opPlus);
+    MEDDLY_DCASSERT(opPlus);
     opPlus->computeTemp(root, sum, root);
   } else {
     f->createEdge(unpminterms, pminterms, num_minterms, root);
@@ -704,7 +704,7 @@ MEDDLY::otf_event::otf_event(otf_subevent** p, int np)
   }
 
 #ifdef DEVELOPMENT_CODE
-  ASSERT(__FILE__, __LINE__, all_enabling_subevents || !firingVars.empty());
+  MEDDLY_DCASSERT(all_enabling_subevents || !firingVars.empty());
 #endif
 
 #if 0
@@ -754,8 +754,8 @@ MEDDLY::otf_event::~otf_event()
 
 void MEDDLY::otf_event::buildEventMask()
 {
-  ASSERT(__FILE__, __LINE__, num_subevents > 0);
-  ASSERT(__FILE__, __LINE__, f);
+  MEDDLY_DCASSERT(num_subevents > 0);
+  MEDDLY_DCASSERT(f);
 
 #ifdef USE_MINTERMS
     if (!event_mask_minterm) {
@@ -797,7 +797,7 @@ void MEDDLY::otf_event::buildEventMask()
 
 bool MEDDLY::otf_event::rebuild()
 {
-  ASSERT(__FILE__, __LINE__, num_subevents > 0);
+  MEDDLY_DCASSERT(num_subevents > 0);
   if (is_disabled) return false;
   if (!needs_rebuilding) return false;
   needs_rebuilding = false;
@@ -813,7 +813,7 @@ bool MEDDLY::otf_event::rebuild()
     binary_operation* opAnd = INTERSECTION(
         e.getForest(), subevents[i]->getRoot().getForest(), e.getForest()
     );
-    ASSERT(__FILE__, __LINE__, opAnd);
+    MEDDLY_DCASSERT(opAnd);
     opAnd->compute(e, subevents[i]->getRoot(), e);
     //
     // e *= subevents[i]->getRoot();
@@ -857,7 +857,7 @@ void MEDDLY::otf_event::enlargeVariables()
       else
         vh->enlargeBound(false, primedSize);
     }
-    ASSERT(__FILE__, __LINE__, f->getLevelSize(unprimed) == f->getLevelSize(primed));
+    MEDDLY_DCASSERT(f->getLevelSize(unprimed) == f->getLevelSize(primed));
   }
 }
 
@@ -1078,7 +1078,7 @@ bool MEDDLY::otf_relation::confirm(int level, int index)
 
   enlargeConfirmedArrays(level, index+1);
 
-  ASSERT(__FILE__, __LINE__, size_confirmed[level] > index);
+  MEDDLY_DCASSERT(size_confirmed[level] > index);
   if (isConfirmed(level, index)) return false;
 
   // Get subevents affected by this level, and rebuild them.
@@ -1223,8 +1223,8 @@ void MEDDLY::otf_relation::bindExtensibleVariables() {
       if (confirmed[k][j]) { bound = j+1; n_confirmed++; }
     }
 
-    ASSERT(__FILE__, __LINE__, bound > 0);
-    ASSERT(__FILE__, __LINE__, n_confirmed == num_confirmed[k]);
+    MEDDLY_DCASSERT(bound > 0);
+    MEDDLY_DCASSERT(n_confirmed == num_confirmed[k]);
     ed->enlargeVariableBound(k, false, bound);
   }
 }
@@ -1234,8 +1234,8 @@ double MEDDLY::otf_relation::getArcCount(
   const dd_edge& mask,
   bool count_duplicates)
 {
-  ASSERT(__FILE__, __LINE__, resF->isQuasiReduced());
-  ASSERT(__FILE__, __LINE__, mxdF->isIdentityReduced());
+  MEDDLY_DCASSERT(resF->isQuasiReduced());
+  MEDDLY_DCASSERT(mxdF->isIdentityReduced());
 
   double arc_count = 0;
   dd_edge mxd_mask(mxdF);
@@ -1248,7 +1248,7 @@ double MEDDLY::otf_relation::getArcCount(
     node_handle current_node = confirmed_local_states.getNode();
     int current_level = resF->getNodeLevel(current_node);
     int next_level = MXD_levels::upLevel(MXD_levels::upLevel(current_level));
-    ASSERT(__FILE__, __LINE__, next_level >= 0);
+    MEDDLY_DCASSERT(next_level >= 0);
     unpacked_node* node = unpacked_node::newWritable(resF, next_level,
             FULL_ONLY);
     for (unsigned i = 0; i < node->getSize(); i++) {
@@ -1341,7 +1341,7 @@ void MEDDLY::otf_relation::getBoundedMonolithicNSF(dd_edge &root) const
       int j = 0;
       for (j = size_confirmed[i]-1; j >= 0 && !confirmed[i][j]; j--);
       bounds[i] = j+1;
-      ASSERT(__FILE__, __LINE__, bounds[i] > 0);
+      MEDDLY_DCASSERT(bounds[i] > 0);
     }
 
     //
@@ -1499,9 +1499,9 @@ MEDDLY::implicit_relation::resizeEventArray(int level)
   event_added[level] += 1;
   if (event_added[level] > event_list_alloc[level]) {
     int nalloc = ((event_added[level]/8)+1)*8;
-    ASSERT(__FILE__, __LINE__, nalloc > 0);
-    ASSERT(__FILE__, __LINE__, nalloc > event_added[level]);
-    ASSERT(__FILE__, __LINE__, nalloc > event_list_alloc[level]);
+    MEDDLY_DCASSERT(nalloc > 0);
+    MEDDLY_DCASSERT(nalloc > event_added[level]);
+    MEDDLY_DCASSERT(nalloc > event_list_alloc[level]);
     event_list[level] = (rel_node_handle*) realloc(event_list[level], nalloc*sizeof(rel_node_handle));
     if (0==event_list[level]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     event_list_alloc[level] = nalloc;
@@ -1515,8 +1515,8 @@ MEDDLY::implicit_relation::resizeConfirmedArray(int level,int index)
  if(nalloc>confirmed_array_size[level])
     {
 
-       ASSERT(__FILE__, __LINE__, nalloc > 0);
-       ASSERT(__FILE__, __LINE__, confirmed_array_size[level] >= 0);
+       MEDDLY_DCASSERT(nalloc > 0);
+       MEDDLY_DCASSERT(confirmed_array_size[level] >= 0);
        if(confirmed_array_size[level]==0)
          {
            confirmed[level] = (bool*)malloc(nalloc*sizeof(bool));
@@ -1598,7 +1598,7 @@ MEDDLY::implicit_relation::registerNode(bool is_event_top, relation_node* n)
   rel_node_handle downHandle = n->getDown();
   relation_node* downNode = nodeExists(downHandle);
   rel_node_handle downLevel = downNode->getLevel();
-  ASSERT(__FILE__, __LINE__,  ( ( downNode!=NULL ) && ( nLevel > downLevel ) )
+  MEDDLY_DCASSERT( ( ( downNode!=NULL ) && ( nLevel > downLevel ) )
                     ||
                    ( downLevel == 0 ) );
 #endif
@@ -1702,8 +1702,8 @@ void MEDDLY::implicit_relation::bindExtensibleVariables() {
       if (confirmed[k][j]) { bound = j+1; n_confirmed++; }
     }
 
-    ASSERT(__FILE__, __LINE__, bound > 0);
-    ASSERT(__FILE__, __LINE__, n_confirmed == confirm_states[k]);
+    MEDDLY_DCASSERT(bound > 0);
+    MEDDLY_DCASSERT(n_confirmed == confirm_states[k]);
     ed->enlargeVariableBound(k, false, bound);
   }
 }
@@ -1795,7 +1795,7 @@ MEDDLY::implicit_relation::buildEventMxd(rel_node_handle eventTop, forest *mxd)
             const int maxVar = ef->getDomain()->getVariableBound(i);
             Rnode = nodeExists(rnh_array[i]);
             //Create a new unprimed node for variable i
-            ASSERT(__FILE__, __LINE__, outsetF->getVariableSize(i)>=Rnode->getPieceSize());
+            MEDDLY_DCASSERT(outsetF->getVariableSize(i)>=Rnode->getPieceSize());
             unpacked_node* UP_var = unpacked_node::newWritable(ef, i,
                     Rnode->getPieceSize(), FULL_ONLY);
 
@@ -1896,9 +1896,9 @@ MEDDLY::hybrid_subevent::hybrid_subevent(forest* f, int* v, int nv, bool firing)
 #endif
     is_firing(firing)
 {
-  ASSERT(__FILE__, __LINE__, f != 0);
-  ASSERT(__FILE__, __LINE__, v != 0);
-  ASSERT(__FILE__, __LINE__, nv > 0);
+  MEDDLY_DCASSERT(f != 0);
+  MEDDLY_DCASSERT(v != 0);
+  MEDDLY_DCASSERT(nv > 0);
 
   vars = new int[num_vars];
   memcpy(vars, v, unsigned(num_vars) * sizeof(int));
@@ -1990,7 +1990,7 @@ bool MEDDLY::hybrid_subevent::addMinterm(const int* from, const int* to)
   }
   if (0==unpminterms[num_minterms]) {
     unpminterms[num_minterms] = new int[f->getNumVariables() + 1];
-    ASSERT(__FILE__, __LINE__, 0==pminterms[num_minterms]);
+    MEDDLY_DCASSERT(0==pminterms[num_minterms]);
     pminterms[num_minterms] = new int[f->getNumVariables() + 1];
   }
   // out << "Added minterm: [";
@@ -2353,7 +2353,7 @@ MEDDLY::hybrid_event::hybrid_event(hybrid_subevent** p, int np,
     }
 
 #ifdef DEVELOPMENT_CODE
-  ASSERT(__FILE__, __LINE__, all_enabling_subevents || !firingVars.empty());
+  MEDDLY_DCASSERT(all_enabling_subevents || !firingVars.empty());
 #endif
 
 #if 0
@@ -2459,8 +2459,8 @@ MEDDLY::hybrid_event::~hybrid_event()
 
 void MEDDLY::hybrid_event::buildEventMask()
 {
-  ASSERT(__FILE__, __LINE__, num_subevents > 0);
-  ASSERT(__FILE__, __LINE__, f);
+  MEDDLY_DCASSERT(num_subevents > 0);
+  MEDDLY_DCASSERT(f);
 
 #ifdef USE_MINTERMS
     if (!event_mask_minterm) {
@@ -2509,7 +2509,7 @@ bool MEDDLY::hybrid_event::rebuild()
   for(auto m = all_components.begin(); m!=all_components.end();m++)
     printf("->%d", *m);*/
 
-    //ASSERT(__FILE__, __LINE__, num_subevents > 0);
+    //MEDDLY_DCASSERT(num_subevents > 0);
   if  (!first_time_build && !num_subevents) return false;
   /*if (is_disabled) return false;*/
   if((first_time_build)&&(num_relnodes>0))
@@ -2636,7 +2636,7 @@ void MEDDLY::hybrid_event::enlargeVariables()
       else
         vh->enlargeBound(false, primedSize);
     }
-    ASSERT(__FILE__, __LINE__, f->getLevelSize(unprimed) == f->getLevelSize(primed));
+    MEDDLY_DCASSERT(f->getLevelSize(unprimed) == f->getLevelSize(primed));
   }
 }
 
@@ -2851,9 +2851,9 @@ MEDDLY::hybrid_relation::resizeEventArray(int level)
   event_added[level] += 1;
   if (event_added[level] > event_list_alloc[level]) {
     int nalloc = ((event_added[level]/8)+1)*8;
-    ASSERT(__FILE__, __LINE__, nalloc > 0);
-    ASSERT(__FILE__, __LINE__, nalloc > event_added[level]);
-    ASSERT(__FILE__, __LINE__, nalloc > event_list_alloc[level]);
+    MEDDLY_DCASSERT(nalloc > 0);
+    MEDDLY_DCASSERT(nalloc > event_added[level]);
+    MEDDLY_DCASSERT(nalloc > event_list_alloc[level]);
     event_list[level] = (node_handle*) realloc(event_list[level], nalloc*sizeof(node_handle));
     if (0==event_list[level]) throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
     event_list_alloc[level] = nalloc;
@@ -2868,8 +2868,8 @@ MEDDLY::hybrid_relation::resizeConfirmedArray(int level, int index)
  if(nalloc>confirmed_array_size[level])
     {
 
-       ASSERT(__FILE__, __LINE__, nalloc > 0);
-       ASSERT(__FILE__, __LINE__, confirmed_array_size[level] >= 0);
+       MEDDLY_DCASSERT(nalloc > 0);
+       MEDDLY_DCASSERT(confirmed_array_size[level] >= 0);
        if(confirmed_array_size[level]==0)
          {
            confirmed[level] = (bool*)malloc(nalloc*sizeof(bool));
@@ -2967,7 +2967,7 @@ MEDDLY::hybrid_relation::confirm(int level, int index)
 
   resizeConfirmedArray(level, index+1);
 
-  ASSERT(__FILE__, __LINE__, confirmed_array_size[level] > index);
+  MEDDLY_DCASSERT(confirmed_array_size[level] > index);
   if (isConfirmedState(level, index)) return;
 
 
@@ -3082,8 +3082,8 @@ void MEDDLY::hybrid_relation::bindExtensibleVariables() {
       if (confirmed[k][j]) { bound = j+1; n_confirmed++; }
     }
 
-    ASSERT(__FILE__, __LINE__, bound > 0);
-    ASSERT(__FILE__, __LINE__, n_confirmed == confirm_states[k]);
+    MEDDLY_DCASSERT(bound > 0);
+    MEDDLY_DCASSERT(n_confirmed == confirm_states[k]);
     ed->enlargeVariableBound(k, false, bound);
   }
 }
@@ -3170,7 +3170,7 @@ MEDDLY::hybrid_relation::buildEventMxd(node_handle eventTop, forest *mxd)
           {
             Rnode = nodeExists(rnh_array[i]);
             //Create a new unprimed node for variable i
-            ASSERT(__FILE__, __LINE__, outsetF->getVariableSize(i)>=Rnode->getPieceSize());
+            MEDDLY_DCASSERT(outsetF->getVariableSize(i)>=Rnode->getPieceSize());
             unpacked_node* UP_var = unpacked_node::newFull(ef, i, Rnode->getPieceSize());
 
             for (int j=0; j<Rnode->getPieceSize(); j++) {

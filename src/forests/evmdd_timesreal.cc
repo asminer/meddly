@@ -122,7 +122,7 @@ MEDDLY::evmdd_timesreal::evtrmdd_iterator::~evtrmdd_iterator()
 
 void MEDDLY::evmdd_timesreal::evtrmdd_iterator::getValue(float &tv) const
 {
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(acc_evs);
   tv = acc_evs[0];
 }
 
@@ -132,7 +132,7 @@ bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::start(const dd_edge &e)
     throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
   }
 
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(acc_evs);
   float ev;
   e.getEdgeValue(ev);
   acc_evs[maxLevel] = ev;
@@ -142,12 +142,12 @@ bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::start(const dd_edge &e)
 
 bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::next()
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, !F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(!F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
 
   int k;
   node_handle down = 0;
@@ -156,7 +156,7 @@ bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::next()
     if (nzp[k] < path[k].getSize()) {
       index[k] = path[k].index(nzp[k]);
       down = path[k].down(nzp[k]);
-      ASSERT(__FILE__, __LINE__, down);
+      MEDDLY_DCASSERT(down);
       const float ev = path[k].edgeval(nzp[k]).getFloat();
       acc_evs[k-1] = acc_evs[k] * ev;
       break;
@@ -172,19 +172,19 @@ bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::next()
 
 bool MEDDLY::evmdd_timesreal::evtrmdd_iterator::first(int k, node_handle down)
 {
-  ASSERT(__FILE__, __LINE__, F);
-  ASSERT(__FILE__, __LINE__, !F->isForRelations());
-  ASSERT(__FILE__, __LINE__, index);
-  ASSERT(__FILE__, __LINE__, nzp);
-  ASSERT(__FILE__, __LINE__, path);
-  ASSERT(__FILE__, __LINE__, acc_evs);
+  MEDDLY_DCASSERT(F);
+  MEDDLY_DCASSERT(!F->isForRelations());
+  MEDDLY_DCASSERT(index);
+  MEDDLY_DCASSERT(nzp);
+  MEDDLY_DCASSERT(path);
+  MEDDLY_DCASSERT(acc_evs);
 
   if (0==down) return false;
 
   for ( ; k; k--) {
-    ASSERT(__FILE__, __LINE__, down);
+    MEDDLY_DCASSERT(down);
     int kdn = F->getNodeLevel(down);
-    ASSERT(__FILE__, __LINE__, kdn <= k);
+    MEDDLY_DCASSERT(kdn <= k);
     if (kdn < k)  {
       path[k].initRedundant(F, k, 1.0f, down, SPARSE_ONLY);
     } else {
