@@ -86,12 +86,6 @@ class MEDDLY::node_storage_style {
     node, will be greater than 0.  The first valid address
     must be 1.
 
-    Whatever scheme is used to store nodes internally,
-    it must be possible to set pointers \a count and \a next
-    such that count[addr] and next[addr] give the incoming
-    count and next pointer for the given node addr.
-    Derived classes are responsible for setting up
-    and maintaining these pointers.
 */
 class MEDDLY::node_storage {
     public:

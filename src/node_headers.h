@@ -52,22 +52,25 @@ namespace MEDDLY {
     "real" nodes must have a non-zero handle.
 
     For each node, its header contains:
-      node_address  address     The "address" of the node in the
-                                node_storage class.
 
-      integer       level       Level number of the node.  0 indicates that
-                                the node has been deleted, but we cannot
-                                recycle the node handle yet (probably because
-                                it might be contained in a compute table
-                                somewhere).
+        node_address    address     The "address" of the node in the
+                                    node_storage class.
 
-      natural       cache_count Optional (i.e., can be turned on/off for all
-                                nodes).  Number of compute table references
-                                to this handle.
+        integer         level       Level number of the node.  0 indicates that
+                                    the node has been deleted, but we cannot
+                                    recycle the node handle yet (probably
+                                    because it might be contained in a compute
+                                    table somewhere).
 
-      natural       incoming    Optional (i.e., can be turned on/off for all
-                                nodes).  Number of incoming edges to the node
-                                referred to by this handle.
+        natural         cache_count Optional (i.e., can be turned on/off for
+                                    all nodes).  Number of compute table
+                                    references to this handle.
+
+        natural         incoming    Optional (i.e., can be turned on/off for
+                                    all nodes).  Number of incoming edges to
+                                    the node referred to by this handle.
+
+        boolean         reachable   Mark/sweep bit
 
     In practice, we may use a different data structure for speed
     or (more likely) to save space.
