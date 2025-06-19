@@ -55,7 +55,7 @@ void MEDDLY::evmdd_pluslong
 ::createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e)
 {
   binary_operation* unionOp = 0;  // for now
-  enlargeStatics(N);
+  // enlargeStatics(N);
   enlargeVariables(vlist, N, false);
 
   int num_vars = getNumVariables();
@@ -408,7 +408,7 @@ void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, long index, int*
     return;
   }
   int p = a.getNode();
-  unpacked_node* R = unpacked_node::New(this);
+  unpacked_node* R = unpacked_node::New(this, SPARSE_ONLY);
   for (int k = getNumVariables(); k > 0; k--) {
 	int var = getVarByLevel(k);
 

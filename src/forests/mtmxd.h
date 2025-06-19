@@ -145,30 +145,30 @@ namespace MEDDLY {
       }
 
       inline const int* unprimed(int i) const {
-        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
+        MEDDLY_CHECK_RANGE(0, i, N);
         return vulist[order[i]];
       }
       inline int unprimed(int i, int k) const {
-        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
-        CHECK_RANGE(__FILE__, __LINE__, 1, k, K+1);
+        MEDDLY_CHECK_RANGE(0, i, N);
+        MEDDLY_CHECK_RANGE(1, k, K+1);
         return vulist[order[i]][k];
       }
       inline const int* primed(int i) const {
-        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
+        MEDDLY_CHECK_RANGE(0, i, N);
         return vplist[order[i]];
       }
       inline int primed(int i, int k) const {
-        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
-        CHECK_RANGE(__FILE__, __LINE__, 1, k, K+1);
+        MEDDLY_CHECK_RANGE(0, i, N);
+        MEDDLY_CHECK_RANGE(1, k, K+1);
         return vplist[order[i]][k];
       }
       inline T term(int i) const {
-        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
+        MEDDLY_CHECK_RANGE(0, i, N);
         return values ? values[order[i]]: 1;
       }
       inline void swap(int i, int j) {
-        CHECK_RANGE(__FILE__, __LINE__, 0, i, N);
-        CHECK_RANGE(__FILE__, __LINE__, 0, j, N);
+        MEDDLY_CHECK_RANGE(0, i, N);
+        MEDDLY_CHECK_RANGE(0, j, N);
         MEDDLY::SWAP(order[i], order[j]);
       }
 

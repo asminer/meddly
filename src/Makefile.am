@@ -36,6 +36,7 @@ libmeddly_la_SOURCES = \
     hash_stream.h           \
     heap.h                  \
     impl_unique_table.h     impl_unique_table.cc \
+    init_forests.h          init_forests.cc \
     initializer.h           initializer.cc \
     io.h                    io.cc \
     io_dot.h                io_dot.cc \
@@ -78,7 +79,6 @@ libmeddly_la_SOURCES = \
     forests/evmxd.h                 forests/evmxd.cc \
     forests/evmxd_pluslong.h        forests/evmxd_pluslong.cc \
     forests/evmxd_timesreal.h       forests/evmxd_timesreal.cc \
-    forests/init_forests.h          forests/init_forests.cc \
     forests/mt.h                    forests/mt.cc \
     forests/mtmdd.h                 forests/mtmdd.cc \
     forests/mtmddbool.h             forests/mtmddbool.cc \

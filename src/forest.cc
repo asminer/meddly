@@ -1426,6 +1426,9 @@ void MEDDLY::forest::removeAllComputeTableEntries()
 
 void MEDDLY::forest::initStatics()
 {
+    mddDefaults.useDefaults(false);
+    mxdDefaults.useDefaults(true);
+
     all_forests.clear();
     all_forests.push_back(nullptr);
     // reserve index 0 for 'no forest'
@@ -1913,7 +1916,7 @@ MEDDLY::forest::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
     //
     // Empty logger
     //
-    theLogger = 0;
+    theLogger = nullptr;
 
     //
     // Unique table(s)

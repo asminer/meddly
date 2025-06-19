@@ -20,7 +20,6 @@
 #include "initializer.h"
 #include "error.h"
 #include "domain.h"
-#include "forest.h"
 #include "relforest.h"
 #include "oper.h"
 #include "unpacked_node.h"
@@ -29,7 +28,7 @@
 #include "ops_builtin.h"
 #include "memory_managers/init_managers.h"
 #include "storage/init_storage.h"
-#include "forests/init_forests.h"
+#include "init_forests.h"
 #include "revision.h"
 
 // #define DEBUG_INITLIST
@@ -64,7 +63,6 @@ void MEDDLY::initializer_list::initializeLibrary(initializer_list* L)
     operation::initializeStatics();
     unpacked_node::initStatics();
     domain::initDomList();
-    forest::initStatics();
     relforest::initStatics();
     ct_vector::initStatics();
     ct_entry_type::initStatics();
@@ -114,7 +112,6 @@ void MEDDLY::initializer_list::cleanupLibrary()
     operation::destroyAllOps();
 
     domain::deleteDomList();
-    forest::freeStatics();
     relforest::freeStatics();
 
     //

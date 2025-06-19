@@ -167,7 +167,6 @@ class MEDDLY::mt_forest : public forest
         virtual void getValue(int &termVal) const;
         virtual void getValue(float &termVal) const;
     };
-#endif
 
   // statics
 
@@ -179,6 +178,7 @@ class MEDDLY::mt_forest : public forest
   protected:
     static int* order;
     static int order_size;
+#endif
 };
 
 

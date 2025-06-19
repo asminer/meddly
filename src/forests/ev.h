@@ -158,6 +158,7 @@ class MEDDLY::ev_forest : public forest
 
   // statics
 
+#ifdef ALLOW_DEPRECATED_0_17_7
   public:
     static void initStatics();
     static void enlargeStatics(int n);
@@ -166,6 +167,8 @@ class MEDDLY::ev_forest : public forest
   protected:
     static int* order;
     static int order_size;
+
+#endif
 };
 
 

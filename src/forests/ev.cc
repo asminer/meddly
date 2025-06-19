@@ -26,8 +26,12 @@
 // *                                                                *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 int* MEDDLY::ev_forest::order;
 int  MEDDLY::ev_forest::order_size;
+
+#endif
 
 MEDDLY::ev_forest::ev_forest(domain *d, bool rel,
   range_type t, edge_labeling ev, const policies &p)
@@ -37,6 +41,8 @@ MEDDLY::ev_forest::ev_forest(domain *d, bool rel,
 }
 
 // statics
+
+#ifdef ALLOW_DEPRECATED_0_17_7
 
 void MEDDLY::ev_forest::initStatics()
 {
@@ -66,3 +72,4 @@ void MEDDLY::ev_forest::clearStatics()
   order_size = 0;
 }
 
+#endif

@@ -28,7 +28,10 @@
 #include "policies.h"
 #include "rangeval.h"
 #include "domain.h"
+
+#ifdef ALLOW_DEPRECATED_0_17_7
 #include "enumerator.h"
+#endif
 
 #include "statset.h"
 
@@ -2763,5 +2766,4 @@ class MEDDLY::forest {
 
 };
 
-
-#endif
+#endif // #ifndef MEDDLY_FOREST_H

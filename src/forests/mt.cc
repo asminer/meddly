@@ -30,8 +30,10 @@
 // *                                                                *
 // ******************************************************************
 
+#ifdef ALLOW_DEPRECATED_0_17_7
 int* MEDDLY::mt_forest::order;
 int  MEDDLY::mt_forest::order_size;
+#endif
 
 MEDDLY::mt_forest::mt_forest(domain *d, bool rel,
   range_type t, const policies &p)
@@ -112,6 +114,8 @@ MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
 
 #endif
 
+#ifdef ALLOW_DEPRECATED_0_17_7
+
 void MEDDLY::mt_forest::initStatics()
 {
   order = 0;
@@ -139,6 +143,8 @@ void MEDDLY::mt_forest::clearStatics()
   order = 0;
   order_size = 0;
 }
+
+#endif
 
 // ******************************************************************
 // *                                                                *
