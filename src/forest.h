@@ -406,20 +406,17 @@ class MEDDLY::forest {
 
             @param  p       Policies to use within the forest.
 
-            @param  tv      Transparent value.
-
             @return nullptr if an error occurs, a new forest otherwise.
         */
         static forest* create(domain* d, set_or_rel sr, range_type t,
-            edge_labeling ev, const policies &p, int tv=0);
+            edge_labeling ev, const policies &p);
 
         /// Create a forest using the library default policies.
         inline static forest* create(domain* d, set_or_rel sr, range_type t,
             edge_labeling ev)
         {
             return create(d, sr, t, ev,
-                sr ? getDefaultPoliciesMXDs() : getDefaultPoliciesMDDs(),
-                0
+                sr ? getDefaultPoliciesMXDs() : getDefaultPoliciesMDDs()
             );
         }
 
@@ -1406,7 +1403,7 @@ class MEDDLY::forest {
         }
 
     // ------------------------------------------------------------
-    protected: // methods to set edge info, for derived classes
+    private: // methods to set edge info
     // ------------------------------------------------------------
 
         // Call one of these first...
@@ -1415,9 +1412,11 @@ class MEDDLY::forest {
             switch (rangeType) {
                 case range_type::BOOLEAN:
                         the_terminal_type = terminal_type::BOOLEAN;
+                        setTerminalPrecision(0);
                         break;
                 case range_type::INTEGER:
                         the_terminal_type = terminal_type::INTEGER;
+                        setTerminalPrecision(0);
                         break;
                 case range_type::REAL:
                         the_terminal_type = terminal_type::REAL;
@@ -1433,24 +1432,30 @@ class MEDDLY::forest {
             the_terminal_type = terminal_type::OMEGA;
             the_edge_type = edge_type::INT;
             hash_edge_values = hashed;
+            setTerminalPrecision(0);
         }
         inline void setLongEdges(bool hashed = true) {
             the_terminal_type = terminal_type::OMEGA;
             the_edge_type = edge_type::LONG;
             hash_edge_values = hashed;
+            setTerminalPrecision(0);
         }
         inline void setFloatEdges(bool hashed = false) {
             the_terminal_type = terminal_type::OMEGA;
             the_edge_type = edge_type::FLOAT;
             hash_edge_values = hashed;
+            setTerminalPrecision(0);
         }
         inline void setDoubleEdges(bool hashed = false) {
             the_terminal_type = terminal_type::OMEGA;
             the_edge_type = edge_type::DOUBLE;
             hash_edge_values = hashed;
+            setTerminalPrecision(0);
         }
 
         // ... then one of these
+
+    public:
 
         inline void setTransparentEdge(node_handle p) {
             MEDDLY_DCASSERT(edge_type::VOID == the_edge_type);
@@ -1549,27 +1554,6 @@ class MEDDLY::forest {
 
 
     // ------------------------------------------------------------
-    protected: // methods to set header size, for derived classes
-    // ------------------------------------------------------------
-
-        /// Set the unhashed extra bytes per node.
-        /// Call as needed in derived classes;
-        /// otherwise we assume 0 bytes.
-        inline void setUnhashedSize(unsigned ubytes) {
-            MEDDLY_DCASSERT(0 == unhashed_bytes);
-            unhashed_bytes = ubytes;
-        }
-
-        /// Set the hashed extra bytes per node.
-        /// Call as needed in derived classes;
-        /// otherwise we assume 0 bytes.
-        inline void setHashedSize(unsigned hbytes) {
-            MEDDLY_DCASSERT(0 == hashed_bytes);
-            hashed_bytes = hbytes;
-        }
-
-
-    // ------------------------------------------------------------
     private: // members for header size
     // ------------------------------------------------------------
 
@@ -1578,18 +1562,6 @@ class MEDDLY::forest {
 
         /// Number of bytes of hashed header
         unsigned hashed_bytes;
-
-
-    // ------------------------------------------------------------
-    protected: // must be called in derived class constructors
-    // ------------------------------------------------------------
-
-        /** Initialize node storage.
-            Should be called in the child class constructors,
-            after calling setHashedSize() and setUnhashedSize().
-            Allows us to use class properties to initialize the data.
-        */
-        void initializeStorage();
 
 
 // ===================================================================
@@ -1644,28 +1616,6 @@ class MEDDLY::forest {
         inline bool isValidLevel(int k) const {
             return (k >= getMinLevelIndex()) && (k <= getMaxLevelIndex());
         }
-
-
-        /** Go "down a level" in a relation.
-            Safest to use this, in case in later versions
-            the level numbering changes, or becomes forest dependent.
-                @param  k   Current level
-                @return Level immediately below level k
-        */
-        // static inline int downLevel(int k) {
-            // return (k>0) ? (-k) : (-k-1);
-        // }
-
-        /** Go "up a level" in a relation.
-            Safest to use this, in case in later versions
-            the level numbering changes, or becomes forest dependent.
-                @param  k   Current level
-                @return Level immediately above level k
-        */
-        // static inline int upLevel(int k) {
-            // return (k<0) ? (-k) : (-k-1);
-        // }
-
 
         /// Can we have extensible nodes at level k?
         inline bool isExtensibleLevel(int k) const {

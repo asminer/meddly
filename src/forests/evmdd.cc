@@ -22,7 +22,6 @@ MEDDLY::evmdd_forest
 ::evmdd_forest(domain* d, range_type t, edge_labeling ev,
   const policies &p) : ev_forest(d, false, t, ev, p)
 {
-  // anything to construct?
 }
 
 void MEDDLY::evmdd_forest::swapAdjacentVariables(int level)

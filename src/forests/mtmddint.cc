@@ -19,13 +19,9 @@
 
 #include "mtmddint.h"
 
-MEDDLY::mt_mdd_int::mt_mdd_int(domain *d, const policies &p, int tv)
+MEDDLY::mt_mdd_int::mt_mdd_int(domain *d, const policies &p)
 : mtmdd_forest(d, range_type::INTEGER, p)
 {
-    terminal t(tv);
-    setTransparentEdge(t.getHandle());
-    // setTransparentEdge(int_Tencoder::value2handle(tv));
-    initializeStorage();
 }
 
 MEDDLY::mt_mdd_int::~mt_mdd_int()

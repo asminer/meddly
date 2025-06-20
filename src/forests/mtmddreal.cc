@@ -19,13 +19,9 @@
 
 #include "mtmddreal.h"
 
-MEDDLY::mt_mdd_real::mt_mdd_real(domain *d, const policies &p, float tv)
+MEDDLY::mt_mdd_real::mt_mdd_real(domain *d, const policies &p)
 : mtmdd_forest(d, range_type::REAL, p)
 {
-    terminal t(tv);
-    setTransparentEdge(t.getHandle());
-    // setTransparentEdge(float_Tencoder::value2handle(tv));
-    initializeStorage();
 }
 
 MEDDLY::mt_mdd_real::~mt_mdd_real()

@@ -39,7 +39,6 @@ MEDDLY::mt_forest::mt_forest(domain *d, bool rel,
   range_type t, const policies &p)
 : forest(d, rel, t, edge_labeling::MULTI_TERMINAL, p)
 {
-    setVoidEdges();
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_9

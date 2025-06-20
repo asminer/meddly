@@ -22,7 +22,6 @@ MEDDLY::evmxd_forest
 ::evmxd_forest(domain* d, range_type t, edge_labeling ev,
   const policies &p) : ev_forest(d, true, t, ev, p)
 {
-  // anything to construct?
 }
 
 void MEDDLY::evmxd_forest::reorderVariables(const int* level2var)

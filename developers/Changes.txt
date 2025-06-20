@@ -1,5 +1,8 @@
 Implement next:
 
+    * Split forest into base_forest and dd_forest (derived from base_forest)
+        Make sure there's no impact on speed
+
     * Design general purpose 'model' or 'transition relation' interface
 
     pool of relation nodes (like forest):

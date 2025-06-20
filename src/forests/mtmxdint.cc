@@ -19,13 +19,9 @@
 
 #include "mtmxdint.h"
 
-MEDDLY::mt_mxd_int::mt_mxd_int(domain *d, const policies &p, int tv)
+MEDDLY::mt_mxd_int::mt_mxd_int(domain *d, const policies &p)
 : mtmxd_forest(d, range_type::INTEGER, p)
 {
-    terminal t(tv);
-    setTransparentEdge(t.getHandle());
-    // setTransparentEdge(int_Tencoder::value2handle(tv));
-    initializeStorage();
 }
 
 MEDDLY::mt_mxd_int::~mt_mxd_int()

@@ -110,30 +110,28 @@ std::vector <MEDDLY::forest*> MEDDLY::forest::all_forests;
 
 MEDDLY::forest*
 MEDDLY::forest::create(domain* d, set_or_rel sr, range_type t,
-            edge_labeling el, const policies &p,
-            // int* level_reduction_rule,
-            int tv)
+            edge_labeling el, const policies &p)
 {
     switch (el) {
         case edge_labeling::MULTI_TERMINAL:
             switch (t) {
                 case range_type::BOOLEAN:
                     if (sr)
-                        return new mt_mxd_bool(d, p, tv);
+                        return new mt_mxd_bool(d, p);
                     else
-                        return new mt_mdd_bool(d, p, tv);
+                        return new mt_mdd_bool(d, p);
 
                 case range_type::INTEGER:
                     if (sr)
-                        return new mt_mxd_int(d, p, tv);
+                        return new mt_mxd_int(d, p);
                     else
-                        return new mt_mdd_int(d, p, tv);
+                        return new mt_mdd_int(d, p);
 
                 case range_type::REAL:
                     if (sr)
-                        return new mt_mxd_real(d, p, (float)tv);
+                        return new mt_mxd_real(d, p);
                     else
-                        return new mt_mdd_real(d, p, (float)tv);
+                        return new mt_mdd_real(d, p);
 
                 default:
                     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1234,23 +1232,6 @@ void MEDDLY::forest::getValueForEdge(const edge_value &v, node_handle p,
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Node manager initialization
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-void MEDDLY::forest::initializeStorage()
-{
-  //
-  // Initialize node storage
-  //
-
-  if (!deflt.nodestor) {
-    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-  }
-  nodeMan = deflt.nodestor->createForForest(this, deflt.nodemm, mstats);
-}
-
-
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // I/O methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -1937,11 +1918,6 @@ MEDDLY::forest::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
     }
 
     //
-    // nodeMan is initialized in initializeStorage()
-    //
-    nodeMan = nullptr;
-
-    //
     // Initialize node characteristics to defaults
     //
     unhashed_bytes = 0;
@@ -1953,9 +1929,43 @@ MEDDLY::forest::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
     delete_depth = 0;
 
     //
-    // Other defaults
+    // Initialize based on EV/MT and type
     //
-    setTerminalPrecision(0);
+
+    switch (edgeLabel) {
+        case edge_labeling::MULTI_TERMINAL:
+            setVoidEdges();
+            setTransparentEdge(0);
+            break;
+
+        case edge_labeling::EVPLUS:
+            // TBD: what about integer edges
+            setLongEdges();
+            setTransparentEdge(0, long(0));
+            break;
+
+        case edge_labeling::INDEX_SET:
+            // TBD: what about integer edges
+            setLongEdges();
+            setTransparentEdge(0, long(0));
+            unhashed_bytes = sizeof(long);
+            break;
+
+        case edge_labeling::EVTIMES:
+            // TBD: what about double edges
+            setFloatEdges();
+            setTransparentEdge(0, float(0));
+
+    };  // switch edgeLabel
+
+
+    //
+    // Initialize node manager
+    //
+    if (!deflt.nodestor) {
+        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
+    nodeMan = deflt.nodestor->createForForest(this, deflt.nodemm, mstats);
 }
 
 MEDDLY::forest::~forest()

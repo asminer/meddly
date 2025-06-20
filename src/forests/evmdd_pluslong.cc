@@ -32,13 +32,8 @@
 MEDDLY::evmdd_pluslong
  ::evmdd_pluslong(domain *d, const policies &p, bool index_set)
  : evmdd_forest(d, range_type::INTEGER,
-         index_set ? edge_labeling::INDEX_SET : edge_labeling::EVPLUS,
-         p)
+         index_set ? edge_labeling::INDEX_SET : edge_labeling::EVPLUS, p)
 {
-    setLongEdges();
-    setTransparentEdge(0, long(0));
-    if (index_set) setUnhashedSize(sizeof(long));
-    initializeStorage();
 }
 
 MEDDLY::evmdd_pluslong::~evmdd_pluslong()

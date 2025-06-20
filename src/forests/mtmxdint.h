@@ -33,7 +33,7 @@ namespace MEDDLY {
 class MEDDLY::mt_mxd_int : public mtmxd_forest {
   public:
 
-    mt_mxd_int(domain *d, const policies &p, int tv=0);
+    mt_mxd_int(domain *d, const policies &p);
     ~mt_mxd_int();
 
 #ifdef ALLOW_DEPRECATED_0_17_9

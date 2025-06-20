@@ -27,12 +27,8 @@
 // ******************************************************************
 
 MEDDLY::evmxd_timesreal::evmxd_timesreal(domain *d, const policies &p)
- : evmxd_forest(d, range_type::REAL, edge_labeling::EVTIMES,
-         p)
+ : evmxd_forest(d, range_type::REAL, edge_labeling::EVTIMES, p)
 {
-    setFloatEdges();
-    setTransparentEdge(0, float(0));
-    initializeStorage();
 }
 
 MEDDLY::evmxd_timesreal::~evmxd_timesreal()

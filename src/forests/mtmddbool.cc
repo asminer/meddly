@@ -20,13 +20,9 @@
 #include "mtmddbool.h"
 #include "../terminal.h"
 
-MEDDLY::mt_mdd_bool::mt_mdd_bool(domain *d, const policies &p, bool tv)
+MEDDLY::mt_mdd_bool::mt_mdd_bool(domain *d, const policies &p)
 : mtmdd_forest(d, range_type::BOOLEAN, p)
 {
-    terminal t(tv);
-    setTransparentEdge(t.getHandle());
-    // setTransparentEdge(bool_Tencoder::value2handle(tv));
-    initializeStorage();
 }
 
 MEDDLY::mt_mdd_bool::~mt_mdd_bool()
