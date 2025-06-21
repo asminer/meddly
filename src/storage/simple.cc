@@ -76,9 +76,8 @@ namespace MEDDLY {
 
 
       common   {  slot[0] : next pointer >=0 in unique table.
-      header --{  slot[1] : Bit 0 (LSB) : 1 for extensible, 0 for not.
-                            Bit 1       : 1 for sparse, 0 for full.
-                            Bit MSB..2  : size
+      header --{  slot[1] : Bit 0 (LSB) : 1 for sparse, 0 for full.
+                            Bit MSB..1  : size
 
       unhashed    {       : slots used for any extra information
       header    --{       : as needed on a forest-by-forest basis.
@@ -182,16 +181,13 @@ class MEDDLY::simple_separated : public node_storage {
       inline static unsigned int getRawSize(const node_handle* chunk) {
         return chunk[size_slot];
       }
-      inline static unsigned int getRawSize(int size, bool sparse, bool extensible) {
-        return (((unsigned int)(size) << 2) | (sparse? 2U: 0) | (extensible? 1U: 0));
+      inline static unsigned int getRawSize(int size, bool sparse) {
+        return (((unsigned int)(size) << 1) | (sparse? 1U: 0));
       }
       inline static unsigned int getSize(unsigned int raw_size) {
-        return ((unsigned int)raw_size) >> 2;
+        return ((unsigned int)raw_size) >> 1;
       }
       inline static bool isSparse(unsigned int raw_size) {
-        return ((raw_size & 2U) != 0);
-      }
-      inline static bool isExtensible(unsigned int raw_size) {
         return ((raw_size & 1U) != 0);
       }
 
@@ -716,8 +712,8 @@ void MEDDLY::simple_separated
         default:                assert(0);
     };
 
-    // Make sure that when an extensible node is unpacked, the trailing edges
-    // are filled correctly (regardless of the storage scheme of the unpacked node)
+    // Make sure that when a node is unpacked, the trailing edges are
+    // filled correctly (regardless of the storage scheme of the unpacked node)
 
     const node_handle tv = getParent()->getTransparentNode();
 
@@ -1305,7 +1301,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   // Set size
   //
   MEDDLY_CHECK_RANGE(0, size_slot, slots_given);
-  chunk[size_slot] = getRawSize(size, false, false);
+  chunk[size_slot] = getRawSize(size, false);
 
   //
   // Copy any extra header information
@@ -1430,7 +1426,7 @@ MEDDLY::node_address MEDDLY::simple_separated
   // Set size
   //
   MEDDLY_CHECK_RANGE(0, size_slot, slots_given);
-  chunk[size_slot] = getRawSize(size, true, false);
+  chunk[size_slot] = getRawSize(size, true);
 
   //
   // Copy any extra header information
