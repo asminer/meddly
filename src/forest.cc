@@ -448,10 +448,6 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     validateDownPointers(*un);
 #endif
 
-#ifdef ALLOW_EXTENSIBLE
-//    if (un->isExtensible()) return createReducedExtensibleNodeHelper(in, *un);
-#endif
-
     //
     // Eliminate identity patterns
     //
@@ -630,21 +626,8 @@ void MEDDLY::forest::deleteNode(node_handle p)
 
     unsigned h = hashNode(p);
 #ifdef DEVELOPMENT_CODE
-    if (!isExtensible(p) || isExtensibleLevel(getNodeLevel(p))) {
-        unpacked_node* key = unpacked_node::newFromNode(this, p, SPARSE_ONLY);
-        key->computeHash();
-        if (unique->find(*key, getVarByLevel(key->getLevel())) != p) {
-            fprintf(stderr, "Error in deleteNode\nFind: %ld\np: %ld\n",
-            static_cast<long>(unique->find(*key,
-                    getVarByLevel(key->getLevel()))), static_cast<long>(p));
-            FILE_output myout(stdout);
-            dumpInternal(myout);
-            FAIL(__FILE__, __LINE__);
-        }
-        node_handle x = unique->remove(h, p);
-        MEDDLY_DCASSERT(p == x);
-        unpacked_node::Recycle(key);
-    }
+    node_handle x = unique->remove(h, p);
+    MEDDLY_DCASSERT(p == x);
 #else
     unique->remove(h, p);
 #endif
@@ -679,108 +662,6 @@ void MEDDLY::forest::deleteNode(node_handle p)
 // Node packing helper methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-
-#ifdef ALLOW_EXTENSIBLE
-MEDDLY::node_handle MEDDLY::forest
-::createReducedExtensibleNodeHelper(int in, unpacked_node &nb)
-{
-#ifdef DEVELOPMENT_CODE
-  validateDownPointers(nb);
-#endif
-  MEDDLY_DCASSERT(nb.isExtensible());
-  MEDDLY_DCASSERT(nb.isTrim());
-
-  // NOTE: Identity reduction not possible for nodes marked as extensible.
-  //       Fully-Identity reduction is still possible when
-  //       prime-level nodes are non-extensible, and get Identity reduced.
-
-  // get sparse, truncated full sizes and check
-  // for redundant / identity reductions.
-  int nnz = 0;
-  for (unsigned i=0; i<nb.getSize(); i++) {
-    if (nb.down(i)!=getTransparentNode()) nnz++;
-  } // for i
-
-  // Is this a transparent node?
-  if (0==nnz) {
-    // no need to unlink
-    return getTransparentNode();
-  }
-
-  // Check for redundant nodes
-  if (isRedundant(nb)) {
-    MEDDLY_DCASSERT(nnz == 1 && nb.ext_i() == 0);
-#ifdef DEBUG_CREATE_REDUCED
-    printf("Redundant node ");
-    FILE_output s(stdout);
-    showNode(s, nb.ext_d(), SHOW_DETAILS | SHOW_INDEX);
-    printf("\n");
-#endif
-    return nb.ext_d();
-  }
-
-  // check for duplicates in unique table
-  node_handle q = unique->find(nb, getVarByLevel(nb.getLevel()));
-  if (q) {
-    // unlink all downward pointers
-    unlinkAllDown(nb);
-    return linkNode(q);
-  }
-
-  //
-  // Not eliminated by reduction rule.
-  // Not a duplicate.
-  //
-  // We need to create a new node for this.
-
-  // NOW is the best time to run the garbage collector, if necessary.
-#ifndef GC_OFF
-  // if (isTimeToGc()) garbageCollect();
-#endif
-
-  // Expand level size
-  const int nb_ext_i = nb.ext_i();
-  if (nb_ext_i >= getLevelSize(nb.getLevel())) {
-    getDomain()->enlargeVariableBound(nb.getLevel(), false, -(nb_ext_i+1));
-  }
-
-  // Grab a new node
-  node_handle p = nodeHeaders.getFreeNodeHandle();
-  nodeHeaders.setNodeLevel(p, nb.getLevel());
-  MEDDLY_DCASSERT(0 == nodeHeaders.getNodeCacheCount(p));
-  MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
-
-  stats.incActive(1);
-  if (theLogger && theLogger->recordingNodeCounts()) {
-    theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
-  }
-
-  // All of the work is in nodeMan now :^)
-  nodeHeaders.setNodeAddress(p, nodeMan->makeNode(p, nb, getPolicies().storage_flags));
-  // TODO: need to link?
-  linkNode(p);
-
-  // add to UT
-  unique->add(nb.hash(), p);
-
-#ifdef DEVELOPMENT_CODE
-  unpacked_node* key = newUnpacked(p, SPARSE_ONLY);
-  key->computeHash();
-  MEDDLY_DCASSERT(key->hash() == nb.hash());
-  node_handle f = unique->find(*key, getVarByLevel(key->getLevel()));
-  MEDDLY_DCASSERT(f == p);
-  unpacked_node::Recycle(key);
-#endif
-#ifdef DEBUG_CREATE_REDUCED
-  printf("Created node ");
-  FILE_output s(stdout);
-  showNode(s, p, SHOW_DETAILS | SHOW_INDEX);
-  printf("\n");
-#endif
-
-  return p;
-}
-#endif
 
 MEDDLY::node_handle MEDDLY::forest
 ::createImplicitNode(MEDDLY::relation_node &nb)

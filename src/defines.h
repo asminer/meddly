@@ -34,9 +34,6 @@
 // Reference counts on for now
 #define REFCOUNTS_ON
 
-// Turn off extensible nodes for now
-// #define ALLOW_EXTENSIBLE
-
 /*
 
     There are now two modes of code generation:

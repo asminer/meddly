@@ -576,14 +576,9 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       }
       // check if row i of the event ei is empty
       if (0 == Ru[ei]) continue;
-      MEDDLY_DCASSERT(!Ru[ei]->isExtensible());
       node_handle ei_i = (i < Ru[ei]->getSize())
                         ? Ru[ei]->down(i)
-#ifdef ALLOW_EXTENSIBLE
-                        : (Ru[ei]->isExtensible() ? Ru[ei]->ext_d() : 0);
-#else
                         : 0;
-#endif
       if (0 == ei_i) continue;
 
       // grab column (TBD: build these ahead of time?)
@@ -594,8 +589,6 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       } else {
         Rp->initIdentity(-level, i, ei_i);
       }
-
-      MEDDLY_DCASSERT(!Rp->isExtensible());
 
       for (unsigned jz=0; jz<Rp->getSize(); jz++) {
         const unsigned j = Rp->index(jz);
@@ -776,16 +769,6 @@ MEDDLY::node_handle MEDDLY::forwd_otf_dfs_by_events_mt::recFire(
       recFireHelper(i, rLevel, Ru->down(iz), A->down(i), Rp, nb);
     }
     // loop over the extensible portion of mxd (if any)
-#ifdef ALLOW_EXTENSIBLE
-    MEDDLY_DCASSERT(!Ru->isExtensible());
-    if (Ru->isExtensible()) {
-      const node_handle pnode = Ru->ext_d();
-      for (unsigned i = Ru->ext_i()+1; i < A->getSize(); i++) {
-        if (0 == A->down(i)) continue;
-        recFireHelper(i, rLevel, pnode, A->down(i), Rp, nb);
-      }
-    }
-#endif
 #endif
 
     unpacked_node::Recycle(Rp);
@@ -825,8 +808,6 @@ void MEDDLY::forwd_otf_dfs_by_events_mt::recFireHelper(
   } else {
     Rp->initFromNode(Ru_i);
   }
-
-  MEDDLY_DCASSERT(!Rp->isExtensible());
 
   dd_edge nbdj(resF), newst(resF);
 

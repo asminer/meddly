@@ -109,8 +109,6 @@ void MEDDLY::generic_binary_evplus
     : unpacked_node::newFromNode(arg2F, b, FULL_ONLY)
   ;
 
-  MEDDLY_DCASSERT(!A->isExtensible() && !B->isExtensible());
-
 
   // do computation
   for (unsigned i=0; i<resultSize; i++) {

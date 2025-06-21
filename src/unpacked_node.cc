@@ -197,11 +197,6 @@ MEDDLY::unpacked_node::unpacked_node(const forest* f)
 
     level = 0;
 
-#ifdef ALLOW_EXTENSIBLE
-    can_be_extensible = false;
-    is_extensible = false;
-#endif
-
 #ifdef DEVELOPMENT_CODE
     can_be_recycled = false;
     has_hash = false;
@@ -275,12 +270,7 @@ void MEDDLY::unpacked_node::initRedundant(int k, node_handle node)
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(parent->isTerminalNode(node) || !parent->isDeletedNode(node));
     MEDDLY_DCASSERT(!hasEdges());
-#ifdef ALLOW_EXTENSIBLE
-    is_extensible = parent->isExtensibleLevel(k);
-    resize( is_extensible ? 1 : unsigned(parent->getLevelSize(k)) );
-#else
     resize( unsigned(parent->getLevelSize(k)) );
-#endif
     level = k;
 
     if (is_full) {
@@ -305,12 +295,7 @@ void MEDDLY::unpacked_node::_initRedundant(int k, const edge_value &ev,
     MEDDLY_DCASSERT(k);
     MEDDLY_DCASSERT(parent->isTerminalNode(node) || !parent->isDeletedNode(node));
     MEDDLY_DCASSERT(hasEdges());
-#ifdef ALLOW_EXTENSIBLE
-    is_extensible = parent->isExtensibleLevel(k);
-    resize( is_extensible ? 1 : unsigned(parent->getLevelSize(k)) );
-#else
     resize( unsigned(parent->getLevelSize(k)) );
-#endif
     level = k;
 
     if (is_full) {
@@ -424,9 +409,6 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
     if (details) {
         s << "level: " << level;
         s << (isSparse() ? " nnzs: " : " size: ") << long(getSize());
-#ifdef ALLOW_EXTENSIBLE
-        if (isExtensible()) s.put('*');
-#endif
         s.put(' ');
     }
     s << "down: " << (isSparse() ? '(' : '[');
@@ -445,10 +427,6 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
             parent->showEdge(s, none, down(z));
         }
     }
-
-#ifdef ALLOW_EXTENSIBLE
-    if (isExtensible()) s.put('*');
-#endif
 
     s.put( isSparse() ? ')' : ']' );
 
@@ -605,7 +583,6 @@ void MEDDLY::unpacked_node::computeHash()
 #ifdef DEVELOPMENT_CODE
     MEDDLY_DCASSERT(!has_hash);
 #endif
-    trim();
 
     hash_stream s;
     s.start(0);
@@ -710,45 +687,6 @@ void MEDDLY::unpacked_node::debugHash(output &debug) const
     debug << "stored hash  : " << the_hash << "\n";
 }
 #endif
-
-// remove all edges starting at the given index
-void MEDDLY::unpacked_node::trim()
-{
-#ifdef ALLOW_EXTENSIBLE
-    if (isTrim()) return;
-
-    //
-    // If extensible edge is transparent,
-    // mark the node as not-extensible and return
-    //
-    if (parent->getTransparentNode() == _down[getSize()-1]) {
-        markAsNotExtensible();
-        // TBD: do we need to shrink the size by 1?
-        // --size;
-        return;
-    }
-
-    MEDDLY_DCASSERT(modparent);
-
-    if (isSparse()) {
-        unsigned z = getSize()-1;
-        while (z && (_index[z-1]+1 == _index[z]) && (_down[z-1] == _down[z])) {
-            modparent->unlinkNode(_down[z]);
-            z--;
-        }
-        shrink(z+1);
-    } else {
-        unsigned z = getSize()-1;
-        while (z && (_down[z-1] == _down[z])) {
-            modparent->unlinkNode(_down[z]);
-            z--;
-        }
-        shrink(z+1);
-    }
-
-    MEDDLY_DCASSERT(isExtensible() && isTrim());
-#endif
-}
 
 
 // check is the node is written in order,

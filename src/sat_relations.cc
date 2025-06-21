@@ -467,14 +467,6 @@ MEDDLY::otf_subevent::otf_subevent(forest* f, int* v, int nv, bool firing)
     if (isLevelAbove(vars[i],top)) top = vars[i];
   }
 
-  uses_extensible_variables = false;
-  for (int i = 0; i < num_vars; i++) {
-    if (this->f->isExtensibleLevel(vars[i])) {
-      uses_extensible_variables = true;
-      break;
-    }
-  }
-
 #ifndef USE_MINTERMS
   unpminterms = pminterms = 0;
   num_minterms = size_minterms = 0;
@@ -563,10 +555,7 @@ bool MEDDLY::otf_subevent::addMinterm(const int* from, const int* to)
     int level = vars[i];
     // expand "to" since the set of unconfirmed local states is always larger
     if (to[level] > 0 && to[level] >= f->getLevelSize(-level)) {
-      if (f->isExtensibleLevel(level))
-        d->enlargeVariableBound(level, false, -(1+to[level]));
-      else
-        d->enlargeVariableBound(level, false, 1+to[level]);
+      d->enlargeVariableBound(level, false, 1+to[level]);
     }
   }
   return true;
@@ -575,19 +564,7 @@ bool MEDDLY::otf_subevent::addMinterm(const int* from, const int* to)
 void MEDDLY::otf_subevent::buildRoot() {
 #ifdef USE_MINTERMS
     if (0 == mtlist.size()) return;
-    if (usesExtensibleVariables()) {
-        dd_edge sum(root);
-        mtlist.buildFunctionMax(false, sum);
-        mtlist.clear();
-        //
-        // root += sum;
-        binary_operation* opPlus = UNION(root.getForest(),
-                sum.getForest(), root.getForest());
-        MEDDLY_DCASSERT(opPlus);
-        opPlus->computeTemp(root, sum, root);
-    } else {
-        mtlist.buildFunctionMax(false, root);
-    }
+    mtlist.buildFunctionMax(false, root);
 #else
   if (0 == num_minterms) return;
   /*
@@ -853,10 +830,7 @@ void MEDDLY::otf_event::enlargeVariables()
     int primedSize = f->getLevelSize(primed);
     if (unprimedSize < primedSize) {
       variable* vh = ed->getVar(unprimed);
-      if (vh->isExtensible())
-        vh->enlargeBound(false, -primedSize);
-      else
-        vh->enlargeBound(false, primedSize);
+      vh->enlargeBound(false, -primedSize);
     }
     MEDDLY_DCASSERT(f->getLevelSize(unprimed) == f->getLevelSize(primed));
   }
@@ -1910,14 +1884,6 @@ MEDDLY::hybrid_subevent::hybrid_subevent(forest* f, int* v, int nv, bool firing)
     if (isLevelAbove(vars[i], top)) top = vars[i];
   }
 
-  uses_extensible_variables = false;
-  for (int i = 0; i < num_vars; i++) {
-    if (this->f->isExtensibleLevel(vars[i])) {
-      uses_extensible_variables = true;
-      break;
-    }
-  }
-
   down = -1;
 #ifndef USE_MINTERMS
   unpminterms = pminterms = nullptr;
@@ -2009,14 +1975,7 @@ bool MEDDLY::hybrid_subevent::addMinterm(const int* from, const int* to)
     int level = vars[i];
     // expand "to" since the set of unconfirmed local states is always larger
     if (to[level] > 0 && to[level] >= f->getLevelSize(-level)) {
-      if (f->isExtensibleLevel(level))
-        {
-          d->enlargeVariableBound(level, false, -(1+to[level]));
-          }
-      else
-        {
-         d->enlargeVariableBound(level, false, 1+to[level]);
-        }
+       d->enlargeVariableBound(level, false, 1+to[level]);
     }
   }
   process_minterm_pos +=1;
@@ -2156,25 +2115,11 @@ void MEDDLY::hybrid_subevent::buildRoot() {
 
   // Older version: Create mxd, union, destroy mxd
   #if 1
-  if (usesExtensibleVariables()) {
-      dd_edge sum(root);
-#ifdef USE_MINTERMS
-      mtlist.buildFunctionMax(false, sum);
-      mtlist.clear();
-#else
-      f->createEdge(unpminterms, pminterms, num_minterms, sum);
-      num_minterms = 0;
-#endif
-      //
-      // root += sum;
-      apply(UNION, root, sum, root);
-    } else {
 #ifdef USE_MINTERMS
        mtlist.buildFunctionMax(false, root);
 #else
        f->createEdge(unpminterms, pminterms, num_minterms, root);
 #endif
-    }
   #endif
 
 
@@ -2632,10 +2577,7 @@ void MEDDLY::hybrid_event::enlargeVariables()
     int primedSize = f->getLevelSize(primed);
     if (unprimedSize < primedSize) {
       variable* vh = ed->getVar(unprimed);
-      if (vh->isExtensible())
-        vh->enlargeBound(false, -primedSize);
-      else
-        vh->enlargeBound(false, primedSize);
+      vh->enlargeBound(false, primedSize);
     }
     MEDDLY_DCASSERT(f->getLevelSize(unprimed) == f->getLevelSize(primed));
   }

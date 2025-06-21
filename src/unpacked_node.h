@@ -63,10 +63,6 @@ namespace MEDDLY {
     All arrays are the same size, which could be larger than
     the requested size.
 
-    If a node is extensible, the last element of the arrays
-    is the extensible edge. In sparse storage, the index gives
-    the starting index for the extensible edges.
-
     Unpacked nodes may be created and destroyed using the
     constructor and destructor as usual, or with static
     methods New() and Recycle(), which will pull from
@@ -822,78 +818,6 @@ class MEDDLY::unpacked_node {
 
     public:
         //
-        // Methods to access the extensible portion of the node
-        //
-        // Note: Only nodes that belong to an extensible level can
-        // be extensible.
-        //
-        // Extensible node  : (Regular part, Extensible part).
-        // Regular Part     : same as non-extensible nodes.
-        // Extensible Part  : a single edge <index, node, edge-value>,
-        //                    for all indices in [extensible_index, +infinity].
-        //
-        // Example:
-        // The node
-        //    [0:n0:ev0, 1:n1:ev1, 2:n2:ev2, 3:n2:ev2, ..., +infinity:n2:ev2]
-        // is represented as the following extensible node:
-        //    ([0:n0:ev0, 1:n1:ev1], Extensible: [2:n2:ev2])
-        // with,
-        //    size of node           : 2
-        //    extensible index       : 2
-        //    extensible node_handle : n2
-        //    extensible edge-value  : ev2
-        //
-
-
-
-        /// Does this node have an extensible edge?
-        inline bool isExtensible() const
-        {
-#ifdef ALLOW_EXTENSIBLE
-            return is_extensible;
-#else
-            return false;
-#endif
-        }
-
-#ifdef ALLOW_EXTENSIBLE
-        /// Set this node as extensible
-        inline void markAsExtensible()
-        {
-            MEDDLY_DCASSERT(can_be_extensible);
-            is_extensible = true;
-        }
-
-        /// Set this node as not extensible
-        inline void markAsNotExtensible()
-        {
-            is_extensible = false;
-        }
-
-        /// Get extensible down pointer
-        inline node_handle ext_d() const
-        {
-            MEDDLY_DCASSERT(isExtensible());
-            return down(size-1);
-        }
-
-        /// Get the extensible index
-        inline unsigned ext_i() const
-        {
-            MEDDLY_DCASSERT(isExtensible());
-            return index(size - 1);
-        }
-
-        /// Get the extensible edge value
-        inline const edge_value& ext_ev() const
-        {
-            MEDDLY_DCASSERT(isExtensible());
-            return edgeval(size - 1);
-        }
-#endif
-
-    public:
-        //
         // Access of other information
         //
 
@@ -954,40 +878,6 @@ class MEDDLY::unpacked_node {
 #ifdef DEBUG_UNPACKED_HASH
         void debugHash(output &s) const;
 #endif
-
-        /// Checks if the node has no trailing redundant edges.
-        /// I.e., the node does NOT have trailing edges that can
-        /// be collapsed into the extensible edge.
-        inline bool isTrim() const
-        {
-#ifdef ALLOW_EXTENSIBLE
-            if (!isExtensible()) return true;
-            if (size < 2) {
-                // We have only the extensible edge.
-                return true;
-            }
-            if (_down[size-1] != _down[size-2]) {
-                // extensible pointer != trailing pointer
-                return true;
-            }
-            // TBD: check edge values
-            if (isSparse() && (_index[size-1] != _index[size-2]+1) ) {
-                // There's a gap between the last normal pointer
-                // and the extensible pointer
-                return true;
-            }
-            // Still here? we can truncate edges.
-            return false;
-#else
-            return true;
-#endif
-        }
-
-
-        /// Removes redundant trailing edges.
-        /// If the unpacked node is sparse, it assumes its indices
-        /// to be in ascending order.
-        void trim();
 
         /// If the unpacked node is sparse, it is sorted so that the
         /// indices are in ascending order.
@@ -1234,15 +1124,6 @@ class MEDDLY::unpacked_node {
 
         /// Are we using full storage?
         bool is_full;
-
-#ifdef ALLOW_EXTENSIBLE
-        /// Can this node be extensible?
-        /// Determined by the parent forest.
-        bool can_be_extensible;
-
-        /// Is this node extensible?
-        bool is_extensible;
-#endif
 
 #ifdef DEVELOPMENT_CODE
         /// only node pointers built by New() should be Recycle()d.

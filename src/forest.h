@@ -426,19 +426,6 @@ class MEDDLY::forest {
     protected:  // helpers for reducing nodes
     // ------------------------------------------------------------
 
-        /** Apply reduction rule to the temporary extensible node and finalize it.
-            Once a node is reduced, its contents cannot be modified.
-                @param  in      Incoming index, used only for identity reduction;
-                                Or -1.
-                @param  un      Unpacked extensible node. Must be sorted by
-                                indices if sparse.
-                @return         Handle to a node that encodes the same thing.
-        */
-#ifdef ALLOW_EXTENSIBLE
-        node_handle createReducedExtensibleNodeHelper(int in, unpacked_node &nb);
-#endif
-
-
         /** Create implicit node in the forest.
             Just add a handle and it points to original location
                 @param  un    Relation node.
@@ -914,11 +901,6 @@ class MEDDLY::forest {
             return nodeMan->areDuplicates(nodeHeaders.getNodeAddress(p), nr);
         }
 
-        /// Is this an extensible node
-        inline bool isExtensible(node_handle p) const {
-            return nodeMan->isExtensible(getNodeAddress(p));
-        }
-
         /// Get the cardinality of an Index Set.
         inline int getIndexSetCardinality(node_handle node) const {
             if (!isIndexSet()) {
@@ -1319,12 +1301,6 @@ class MEDDLY::forest {
         /// Check if the given level is valid
         inline bool isValidLevel(int k) const {
             return (k >= getMinLevelIndex()) && (k <= getMaxLevelIndex());
-        }
-
-        /// Can we have extensible nodes at level k?
-        inline bool isExtensibleLevel(int k) const {
-            MEDDLY_DCASSERT(isValidLevel(k));
-            return d->getVar(unsigned(k < 0? -k: k))->isExtensible();
         }
 
         /// The maximum size (number of indices) a node at this level can have

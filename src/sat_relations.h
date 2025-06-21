@@ -237,9 +237,6 @@ class MEDDLY::otf_subevent {
 
     protected:
         bool addMinterm(const int* from, const int* to);
-        inline bool usesExtensibleVariables() const {
-            return uses_extensible_variables;
-        }
 
         int* vars;
         int num_vars;
@@ -255,7 +252,6 @@ class MEDDLY::otf_subevent {
         int size_minterms;
 #endif
         bool is_firing;
-        bool uses_extensible_variables;
 
 };  // end of class otf_subevent
 
@@ -881,9 +877,6 @@ class MEDDLY::hybrid_subevent {
 
     protected:
       bool addMinterm(const int* from, const int* to);
-      inline bool usesExtensibleVariables() const {
-        return uses_extensible_variables;
-      }
 
       int* vars;
       int num_vars;
@@ -907,7 +900,6 @@ class MEDDLY::hybrid_subevent {
       int process_minterm_pos;
       int processed_minterm_pos;
       bool is_firing;
-      bool uses_extensible_variables;
 
 };  // end of class hybrid_subevent
 

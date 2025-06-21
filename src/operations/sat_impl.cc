@@ -339,7 +339,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
         if(j>=nb.getSize())
           {
-          int new_var_bound = resF->isExtensibleLevel(nb.getLevel())? -(j+1): (j+1);
+          int new_var_bound = j+1;
           dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
           const unsigned oldSize = nb.getSize();
           nb.resize(j+1);
@@ -396,7 +396,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
       if(j>=nb.getSize())
         {
-        int new_var_bound = resF->isExtensibleLevel(nb.getLevel())? -(j+1): (j+1);
+        int new_var_bound = j+1;
         dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
         const unsigned oldSize = nb.getSize();
         nb.resize(j+1);
@@ -544,7 +544,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
             {
             rel->confirm(rLevel,j); // confirm and enlarge
             if (j >= nb->getSize()) {
-              int new_var_bound = resF->isExtensibleLevel(nb->getLevel())? -(j+1): (j+1);
+              int new_var_bound = j+1;
               dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);
               const unsigned oldSize = nb->getSize();
               nb->resize(j+1);
@@ -1056,7 +1056,6 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   } else {
     mddDptrs->initFromNode(mdd);
   }
-  MEDDLY_DCASSERT(!mddDptrs->isExtensible());
 
   // Initialize constraint reader
   unpacked_node* consDptrs = unpacked_node::New(argF, FULL_ONLY);
@@ -1075,11 +1074,7 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
       mdd, k, sz, mdd_level);
 #endif
 
-#ifdef ALLOW_EXTENSIBLE
-  const node_handle ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
-#else
   const node_handle ext_d = 0;
-#endif
 
   // Do computation
   for (int i=0; i<sz; i++) {
@@ -1162,11 +1157,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
   } else {
     consDptrs->initFromNode(constraint);
   }
-#ifdef ALLOW_EXTENSIBLE
-  const node_handle cons_ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
-#else
   const node_handle cons_ext_d = 0;
-#endif
 
   // Initialize mxd readers, note we might skip the unprimed level
   node_handle* events = rel->arrayForLevel(level);
@@ -1221,7 +1212,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
 
       if(j>=nb.getSize())
       {
-        int new_var_bound = resF->isExtensibleLevel(nb.getLevel())? -(j+1): (j+1);
+        int new_var_bound = j+1;
         dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
         const unsigned oldSize = nb.getSize();
         nb.resize(j+1);
@@ -1340,11 +1331,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
   } else {
     consDptrs->initFromNode(constraint);
   }
-#ifdef ALLOW_EXTENSIBLE
-  const node_handle cons_ext_d = consDptrs->isExtensible() ? consDptrs->ext_d() : 0;
-#else
   const node_handle cons_ext_d = 0;
-#endif
 
   //Re-Think
   if (mddLevel > mxdLevel) {
@@ -1413,7 +1400,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       {
         rel->confirm(rLevel,j); // confirm and enlarge
         if (j >= nb->getSize()) {
-          int new_var_bound = resF->isExtensibleLevel(nb->getLevel())? -(j+1): (j+1);
+          int new_var_bound = j+1;
           dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);
           int oldSize = nb->getSize();
           nb->resize(j+1);

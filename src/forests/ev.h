@@ -80,10 +80,7 @@ class MEDDLY::ev_forest : public forest
         if (maxv < 1) continue;
         if (maxv >= getDomain()->getVariableBound(k, primed)) {
           variable* vh = getDomain()->getVar(k);
-          if (vh->isExtensible())
-            vh->enlargeBound(primed, -(maxv+1));
-          else
-            vh->enlargeBound(primed, (maxv+1));
+          vh->enlargeBound(primed, (maxv+1));
         }
       }
     }

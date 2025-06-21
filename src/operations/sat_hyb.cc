@@ -456,7 +456,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
         if(j>=nb.getSize())
           {
-          int new_var_bound = resF->isExtensibleLevel(nb.getLevel())? -(j+1): (j+1);
+          int new_var_bound = j+1;
           dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
           const unsigned oldSize = nb.getSize();
           nb.resize(j+1);
@@ -708,7 +708,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
       {
         rel->confirm(rLevel,j); // confirm and enlarge
         if (j >= nb->getSize()) {
-          int new_var_bound = resF->isExtensibleLevel(nb->getLevel())? -(j+1) : (j+1);
+          int new_var_bound = j+1;
           domain* dm = resF->getDomain();
           dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);
           const unsigned oldSize = nb->getSize();
