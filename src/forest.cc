@@ -25,6 +25,7 @@
 #include <cmath>  // for round()
 
 #include "defines.h"
+#include "forest_levels.h"
 #include "initializer.h"
 #include "unique_table.h"
 #include "relation_node.h"

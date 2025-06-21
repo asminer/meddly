@@ -21,6 +21,7 @@
 
 #include "../oper_unary.h"
 #include "../ct_vector.h"
+#include "../forest_levels.h"
 
 namespace MEDDLY {
     class mdd2index_operation;

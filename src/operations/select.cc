@@ -22,6 +22,7 @@
 #ifdef ALLOW_DEPRECATED_0_17_8
 
 #include "../forest.h"
+#include "../forest_levels.h"
 #include "../oper_unary.h"
 
 namespace MEDDLY {

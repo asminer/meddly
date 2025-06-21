@@ -21,6 +21,7 @@
 #include "operators.h"
 #include "minterms.h"
 #include "relation_node.h"
+#include "forest_levels.h"
 
 #include <algorithm>    // for std::sort
 

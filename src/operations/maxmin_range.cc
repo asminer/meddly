@@ -23,6 +23,7 @@
 #include "../oper_unary.h"
 #include "../ct_vector.h"
 #include "../ct_generics.h"
+#include "../forest_levels.h"
 
 
 namespace MEDDLY {

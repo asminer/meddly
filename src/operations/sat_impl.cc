@@ -31,6 +31,7 @@
 #include "../oper_satur.h"
 #include "../sat_relations.h"
 #include "../ops_builtin.h"
+#include "../forest_levels.h"
 
 
 namespace MEDDLY {

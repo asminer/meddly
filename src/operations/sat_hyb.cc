@@ -36,6 +36,7 @@
 #include "../oper_satur.h"
 #include "../ops_builtin.h"
 #include "../sat_relations.h"
+#include "../forest_levels.h"
 
    #define OUT_OF_BOUNDS -1
    #define NOT_KNOWN -2

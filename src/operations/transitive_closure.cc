@@ -28,6 +28,7 @@
 #include "../oper_binary.h"
 #include "../oper_ternary.h"
 #include "../ops_builtin.h"
+#include "../forest_levels.h"
 
 namespace MEDDLY {
 

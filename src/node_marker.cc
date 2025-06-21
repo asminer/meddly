@@ -18,6 +18,7 @@
 
 #include "node_marker.h"
 #include "operators.h"
+#include "forest_levels.h"
 
 // #define DEBUG_MARK
 

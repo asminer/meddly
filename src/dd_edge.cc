@@ -21,6 +21,7 @@
 #include "defines.h"
 #include "dd_edge.h"
 #include "forest.h"
+#include "forest_levels.h"
 #include "minterms.h"
 #include "io.h"
 

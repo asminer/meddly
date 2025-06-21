@@ -20,6 +20,7 @@
 #include "../ct_vector.h"
 #include "../compute_table.h"
 #include "../oper_binary.h"
+#include "../forest_levels.h"
 #include "cross.h"
 
 // #define TRACE

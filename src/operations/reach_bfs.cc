@@ -20,6 +20,7 @@
 #include "reach_bfs.h"
 
 #include "../forest.h"
+#include "../forest_levels.h"
 #include "../oper_binary.h"
 #include "../ops_builtin.h"
 

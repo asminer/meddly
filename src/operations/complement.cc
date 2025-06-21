@@ -22,6 +22,7 @@
 #include "../ct_vector.h"
 #include "../compute_table.h"
 #include "../oper_unary.h"
+#include "../forest_levels.h"
 
 namespace MEDDLY {
     class compl_mt;

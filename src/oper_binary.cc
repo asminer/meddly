@@ -19,6 +19,7 @@
 #include "oper_binary.h"
 #include "error.h"
 #include "forest.h"
+#include "forest_levels.h"
 
 #define DEBUG_THROWS
 

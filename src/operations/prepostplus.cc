@@ -19,6 +19,7 @@
 #include "../defines.h"
 #include "prepostplus.h"
 #include "apply_base.h"
+#include "../forest_levels.h"
 
 namespace MEDDLY {
     class prepostplus_evplus;

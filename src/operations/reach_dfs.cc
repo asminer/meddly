@@ -25,6 +25,7 @@
 #include "../oper_unary.h"
 #include "../oper_binary.h"
 #include "../ops_builtin.h"
+#include "../forest_levels.h"
 
 // #define TRACE_RECFIRE
 // #define DEBUG_DFS

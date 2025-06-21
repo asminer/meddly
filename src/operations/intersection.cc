@@ -24,6 +24,7 @@
 #include "../oper_binary.h"
 #include "../oper_unary.h"
 #include "../ct_vector.h"
+#include "../forest_levels.h"
 
 namespace MEDDLY {
     class inter_mt;

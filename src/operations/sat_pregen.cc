@@ -28,6 +28,7 @@
 #include "../oper_satur.h"
 #include "../ops_builtin.h"
 #include "../sat_relations.h"
+#include "../forest_levels.h"
 
 #define DEBUG_FINALIZE
 // #define DEBUG_FINALIZE_SPLIT

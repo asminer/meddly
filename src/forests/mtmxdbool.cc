@@ -18,6 +18,7 @@
 
 
 #include "mtmxdbool.h"
+#include "forest_levels.h"
 
 MEDDLY::mt_mxd_bool::mt_mxd_bool(domain *d, const policies &p)
 : mtmxd_forest(d, range_type::BOOLEAN, p)

@@ -22,6 +22,7 @@
 #include "../oper_item.h"
 #include "../oper_binary.h"
 #include "../ct_vector.h"
+#include "../forest_levels.h"
 
 // #define TRACE
 

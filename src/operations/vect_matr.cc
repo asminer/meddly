@@ -20,6 +20,7 @@
 #include "vect_matr.h"
 
 #include "../forest.h"
+#include "../forest_levels.h"
 #include "../oper_numer.h"
 
 namespace MEDDLY {

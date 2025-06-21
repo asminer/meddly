@@ -1,9 +1,14 @@
 Implement next:
 
-    * Split forest into base_forest and dd_forest (derived from base_forest)
-        Make sure there's no impact on speed
+    * Add 'relation node' construction from forests
 
-    * Design general purpose 'model' or 'transition relation' interface
+        + allow address in node header to be optional
+            (missing means 'address' is equal to node handle)
+
+        + allow node manager to be optional
+            (implicit node forests use null pointers here)
+
+
 
     pool of relation nodes (like forest):
         * Do we need a global relation registry, like forests?

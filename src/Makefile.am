@@ -32,6 +32,7 @@ libmeddly_la_SOURCES = \
     enumerator.h            enumerator.cc \
     error.h                 error.cc \
     forest.h                forest.cc \
+    forest_levels.h         \
     global_rebuilder.h      global_rebuilder.cc \
     hash_stream.h           \
     heap.h                  \
@@ -172,6 +173,7 @@ pkginclude_HEADERS = \
     enumerator.h \
     error.h \
     forest.h \
+    forest_levels.h \
     global_rebuilder.h \
     hash_stream.h \
     heap.h \
