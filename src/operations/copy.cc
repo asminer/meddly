@@ -22,6 +22,7 @@
 #include "../oper_unary.h"
 #include "../ct_vector.h"
 #include "../forest_levels.h"
+#include "../forest_edgerules.h"
 
 namespace MEDDLY {
     class copy_inforest;

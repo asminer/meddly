@@ -23,6 +23,7 @@
 #include "../oper_binary.h"
 #include "../ct_vector.h"
 #include "../forest_levels.h"
+#include "../forest_edgerules.h"
 
 // #define TRACE
 

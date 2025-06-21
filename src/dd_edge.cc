@@ -22,6 +22,7 @@
 #include "dd_edge.h"
 #include "forest.h"
 #include "forest_levels.h"
+#include "forest_edgerules.h"
 #include "minterms.h"
 #include "io.h"
 
