@@ -45,6 +45,7 @@ namespace MEDDLY {
     class node_marker;
     class node_storage;
     class unpacked_node;
+    class rel_node;
     class unique_table;
     class impl_unique_table;
     class relation_node;
@@ -137,6 +138,12 @@ class MEDDLY::forest {
     // ------------------------------------------------------------
     public: // Retrieve a node from the forest
     // ------------------------------------------------------------
+
+        /// Build a relation node for this forest
+        virtual rel_node* buildRelNode(node_handle p);
+
+        /// Recycle a relation node
+        virtual void doneRelNode(rel_node* rn);
 
 #ifdef ALLOW_DEPRECATED_0_17_8
         /*

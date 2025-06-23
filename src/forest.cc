@@ -192,6 +192,16 @@ void MEDDLY::forest::destroy(forest* &f)
 // Node unpacking methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+MEDDLY::rel_node* MEDDLY::forest::buildRelNode(node_handle)
+{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
+void MEDDLY::forest::doneRelNode(rel_node*)
+{
+    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+}
+
 #ifdef ALLOW_DEPRECATED_0_17_8
 
 void MEDDLY::forest::unpackNode(MEDDLY::unpacked_node* un,

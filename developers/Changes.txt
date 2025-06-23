@@ -1,6 +1,7 @@
 Implement next:
 
     * Add 'relation node' construction from forests
+        + forest contains free list of rel_nodes?
 
         + allow address in node header to be optional
             (missing means 'address' is equal to node handle)
@@ -76,6 +77,18 @@ Implement next:
     * Relational product operations, using new interface
 
     * Saturation operations, using new interface
+
+        - check timing: overhead for rel_node objects
+
+===========
+    release here?
+===========
+
+    * Split forest into 'node reading' portion
+        and derived class (dd_forest) with 'node writing' portion.
+
+    * Add some implicit relation forests with node readers
+
 
     * Again explore mark and sweep vs reference counts
       try a 'mark and count down' approach also

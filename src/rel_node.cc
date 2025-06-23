@@ -24,11 +24,22 @@
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::rel_node::rel_node()
+MEDDLY::rel_node::rel_node(forest* _parent)
 {
+    parent = _parent;
+    next = nullptr;
 }
 
 MEDDLY::rel_node:: ~rel_node()
 {
+}
+
+void MEDDLY::rel_node::deleteList(rel_node* p)
+{
+    while (p) {
+        rel_node* n = p->next;
+        delete p;
+        p = n;
+    }
 }
 

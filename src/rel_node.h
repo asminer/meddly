@@ -24,6 +24,7 @@
 namespace MEDDLY {
     class rel_node;
     class unpacked_node;
+    class forest;
 };
 
 /**
@@ -56,9 +57,33 @@ class MEDDLY::rel_node {
         */
         virtual bool incoming(unsigned i, unpacked_node &u) = 0;
 
+        /// Forest that owns us
+        forest* getParent() const {
+            return parent;
+        }
+
+        /// Add ourselves to the front of a list
+        inline void setNext(rel_node* nxt) {
+            next = nxt;
+        }
+
+        /// Return next in the list, and set our next to null
+        inline rel_node* pullNext() {
+            rel_node* n = next;
+            next = nullptr;
+            return n;
+        }
+
+        /// Delete a list
+        static void deleteList(rel_node* p);
+
     protected:
-        rel_node();
+        rel_node(forest* _parent);
         virtual ~rel_node();
+
+    private:
+        forest* parent;
+        rel_node* next;
 };
 
 #endif // include guard
