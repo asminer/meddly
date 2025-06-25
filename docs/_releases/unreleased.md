@@ -14,11 +14,10 @@ layout: single
     Also there is now a single implementation in the ```forest``` class,
     instead of various methods in derived classes.
 
-* Added a ```relation forest``` class;
-    the idea is to move implicit relation nodes here.
-    Added support for binary operations between a (set) forest
-    and a relation forest, with a result in a (set) forest;
-    this will be used for relational product and saturation.
+* Added a new ```rel_node``` class,
+    for abstracting (read-only) relation access.
+    Different forests may store relations differently, internally,
+    and might not be based on decision diagram nodes.
 
 ### Implementation
 

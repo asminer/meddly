@@ -37,7 +37,6 @@ namespace MEDDLY {
     class ct_vector;
 
     class output;
-    class relforest;
 
     enum class ct_typeID {
         ERROR   = 0,
@@ -46,8 +45,7 @@ namespace MEDDLY {
         LONG    = 3,
         FLOAT   = 4,
         DOUBLE  = 5,
-        GENERIC = 6, // ct_object
-        RELNODE = 7
+        GENERIC = 6  // ct_object
     };
 
     class ct_itemtype;
@@ -79,7 +77,7 @@ class MEDDLY::ct_itemtype {
         /// Default constructor
         ct_itemtype() {
             type = ct_typeID::ERROR;
-            typeUpdate(nullptr, nullptr);
+            typeUpdate(nullptr);
         }
         /** Set type based on the following codes:
                 'N': node (in a forest)
@@ -95,18 +93,13 @@ class MEDDLY::ct_itemtype {
         /// Set the type to 'node' and assign the forest.
         ct_itemtype(forest* f) {
             type = ct_typeID::NODE;
-            typeUpdate(f, nullptr);
-        }
-        /// Set the type to 'relnode' and assign the relation.
-        ct_itemtype(relforest* f) {
-            type = ct_typeID::RELNODE;
-            typeUpdate(nullptr, f);
+            typeUpdate(f);
         }
         /// Set the type from the actual type enum.
         ct_itemtype(ct_typeID t) {
             MEDDLY_DCASSERT(t != ct_typeID::NODE);
             type = t;
-            typeUpdate(nullptr, nullptr);
+            typeUpdate(nullptr);
         }
         /// Set the type from an edge value type
         ct_itemtype(edge_type et) {
@@ -130,7 +123,7 @@ class MEDDLY::ct_itemtype {
                 default:
                     type = ct_typeID::ERROR;
             }
-            typeUpdate(nullptr, nullptr);
+            typeUpdate(nullptr);
         }
 
         /// Get the type of this item.
@@ -263,7 +256,7 @@ class MEDDLY::ct_itemtype {
         void show(output &s) const;
 
     protected:
-        void typeUpdate(forest* f, relforest* rf);
+        void typeUpdate(forest* f);
 
     private:
         ct_typeID   type;
@@ -272,7 +265,6 @@ class MEDDLY::ct_itemtype {
 #else
         forest*     nodeF;
 #endif
-        relforest*  relnodeF;
 
         bool        twoslots;
         bool        should_hash;

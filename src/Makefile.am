@@ -54,7 +54,6 @@ libmeddly_la_SOURCES = \
     node_storage.h          node_storage.cc \
     oper.h                  oper.cc \
     oper_binary.h           oper_binary.cc \
-    oper_binrel.h           oper_binrel.cc \
     oper_item.h             oper_item.cc \
     oper_numer.h            oper_numer.cc \
     oper_satur.h            oper_satur.cc \
@@ -66,7 +65,6 @@ libmeddly_la_SOURCES = \
     rangeval.h              rangeval.cc \
     rel_node.h              rel_node.cc \
     relation_node.h         relation_node.cc \
-    relforest.h             relforest.cc \
     sat_relations.h         sat_relations.cc \
     statset.h               statset.cc \
     terminal.h              terminal.cc \

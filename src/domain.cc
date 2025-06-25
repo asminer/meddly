@@ -20,7 +20,6 @@
 #include "domain.h"
 #include "io.h"
 #include "forest.h"
-#include "relforest.h"
 
 #include "initializer.h"
 
@@ -327,31 +326,6 @@ void MEDDLY::domain::unregisterForest(forest* f)
     forestReg.erase(f->FID());
 }
 
-
-void MEDDLY::domain::registerRelforest(relforest* f)
-{
-    MEDDLY_DCASSERT(f);
-#ifdef DEBUG_CLEANUP
-    std::cerr << "In domain " << this << ": registering relforest " << f->FID() << "\n";
-#endif
-    relforestReg.insert(f->FID());
-}
-
-void MEDDLY::domain::unregisterRelforest(relforest* f)
-{
-    // Don't bother with the registry if we're marked for deletion.
-    // Also, this prevents us from trying to change the container
-    // while we're iterating through it in our destructor.
-    if (is_marked_for_deletion) return;
-
-    MEDDLY_DCASSERT(f);
-#ifdef DEBUG_CLEANUP
-    std::cerr << "In domain " << this << ": unregistering relforest " << f->FID() << "\n";
-#endif
-    relforestReg.erase(f->FID());
-}
-
-
 void MEDDLY::domain::markForDeletion()
 {
     if (is_marked_for_deletion) return;
@@ -421,19 +395,6 @@ MEDDLY::domain::~domain()
         std::cerr << "Destroying forest #" << *it << "\n";
         ostream_output s(std::cerr);
         f->dump(s, SHOW_DETAILS);
-#endif
-        delete f;
-    }
-
-    //
-    // Delete all relforests using this domain
-    //
-    for (auto it=relforestReg.begin(); it!=relforestReg.end(); ++it) {
-        relforest* f = relforest::getForestWithID(*it);
-        if (!f) continue;
-#ifdef DUMP_ON_FOREST_DESTROY
-        MEDDLY_DCASSERT(ef);
-        std::cerr << "Destroying relforest #" << *it << "\n";
 #endif
         delete f;
     }

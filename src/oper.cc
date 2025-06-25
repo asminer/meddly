@@ -21,7 +21,6 @@
 #include "ct_entry_result.h"
 #include "compute_table.h"
 #include "ct_initializer.h"
-#include "relforest.h"
 
 // ******************************************************************
 // *                       operation  statics                       *
@@ -80,7 +79,6 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     // Initialize list of forests
     //
     FList.clear();
-    RFList.clear();
 }
 
 MEDDLY::operation::operation()
@@ -88,7 +86,6 @@ MEDDLY::operation::operation()
     name = nullptr;
     registerOperation(*this);
     FList.clear();
-    RFList.clear();
 
 #ifdef ALLOW_DEPRECATED_0_17_6
     CT = nullptr;
@@ -182,29 +179,6 @@ void MEDDLY::operation::unregisterInForest(MEDDLY::forest* f)
 {
     //
     // It is safe to NOT update FList
-    //
-}
-
-void MEDDLY::operation::registerInForest(MEDDLY::relforest* f)
-{
-    if (!f) return;
-    //
-    // See if RFList already contains this FID
-    //
-    for (unsigned i=0; i<RFList.size(); i++) {
-        if (f->FID() == RFList[i]) return;
-    }
-
-    //
-    // Nope, add it
-    //
-    RFList.push_back(f->FID());
-}
-
-void MEDDLY::operation::unregisterInForest(MEDDLY::relforest* f)
-{
-    //
-    // It is safe to NOT update RFList
     //
 }
 

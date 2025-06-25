@@ -75,11 +75,6 @@ class MEDDLY::ct_item {
             the_generic = g;
             type = ct_typeID::GENERIC;
         }
-        /// Set item to a relation node
-        inline void setR(node_handle nh) {
-            the_node = nh;
-            type = ct_typeID::RELNODE;
-        }
 
         /// Set item from an edge value
         inline void set(const edge_value &ev) {
@@ -103,7 +98,6 @@ class MEDDLY::ct_item {
                 case ct_typeID::FLOAT:      setF(ci.F);         return;
                 case ct_typeID::DOUBLE:     setD(ci.D);         return;
                 case ct_typeID::GENERIC:    setG(ci.G);         return;
-                case ct_typeID::RELNODE:    setR(ci.N);         return;
                 default:                    FAIL(__FILE__, __LINE__);
             }
         }
@@ -126,7 +120,6 @@ class MEDDLY::ct_item {
                         return ptr;
 
                 case ct_typeID::NODE:
-                case ct_typeID::RELNODE:
                 case ct_typeID::INTEGER:
                 case ct_typeID::FLOAT:
                         raw[0] = ptr[0];
@@ -182,11 +175,6 @@ class MEDDLY::ct_item {
         inline ct_object* getG() const {
             MEDDLY_DCASSERT(type == ct_typeID::GENERIC);
             return the_generic;
-        }
-        /// Get a relation node
-        inline node_handle getR() const {
-            MEDDLY_DCASSERT(type == ct_typeID::RELNODE);
-            return the_node;
         }
 
         /// Get item into an edge value
