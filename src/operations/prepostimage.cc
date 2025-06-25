@@ -19,11 +19,14 @@
 #include "../defines.h"
 #include "prepostimage.h"
 
+#include "../ops_builtin.h"
+#include "../ct_vector.h"
+#include "../oper_unary.h"
+#include "../oper_binary.h"
+
 #include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
 #include "../compute_table.h"
-#include "../oper_binary.h"
-#include "../ops_builtin.h"
 #include "../forest_levels.h"
 
 // #define TRACE_ALL_OPS
@@ -47,10 +50,219 @@ namespace MEDDLY {
 };
 
 // ************************************************************************
+
+/*
+    Template class for MT-based pre-image and post-image operations.
+    This includes vector-matrix and matrix-vector multiplications.
+
+    Template parameters:
+
+        FORWD: if true, do post-image (one step forward), otherwise
+                        do pre-image  (one step backward).
+
+        ATYPE: arithmetic type class, must provide the following methods.
+
+            /// Get the operation name, for display purposes
+            static const char* name(bool forwd);
+
+            /// Get the accumulate operation for result nodes.
+            static void accumulateOp(const forest* resF);
+
+            /// Apply the operation when b is a terminal node.
+            static void apply(const forest* fa, node_handle a,
+                              const forest* fb, node_handle b,
+                              const forest* fc, node_handle &c);
+
+*/
+
+namespace MEDDLY {
+
+    template <bool FORWD, class ATYPE>
+    class mt_prepost_set_op : public binary_operation {
+        public:
+            mt_prepost_set_op(forest* arg1, forest* arg2, forest* res);
+
+            virtual ~mt_prepost_set_op();
+
+            virtual void compute(int L, unsigned in,
+                    const edge_value &av, node_handle ap,
+                    const edge_value &bv, node_handle bp,
+                    edge_value &cv, node_handle &cp);
+
+        protected:
+            void _compute(int L, unsigned in, node_handle A, node_handle B,
+                    node_handle &C);
+
+        private:
+            ct_entry_type* ct;
+            binary_operation* accumulateOp;
+#ifdef TRACE
+            ostream_output out;
+            unsigned top_count;
+#endif
+
+    }; // class mt_prepost_op
+}; // namespace MEDDLY
+
+// ************************************************************************
+
+template <bool FORWD, class ATYPE>
+MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::mt_prepost_set_op(forest* arg1,
+        forest* arg2, forest* res) : binary_operation(arg1, arg2, res)
+#ifdef TRACE
+      , out(std::cout), top_count(0)
+#endif
+{
+    checkDomains(__FILE__, __LINE__);
+    checkRelations(__FILE__, __LINE__, SET, RELATION, SET);
+    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
+    checkAllRanges(__FILE__, __LINE__, res->getRangeType());
+
+    //
+    // Addition operation for the vector-matrix multiply.
+    //  union for pre/post image, addition otherwise.
+    //
+    accumulateOp = ATYPE::accumulateOp(res);
+    MEDDLY_DCASSERT(accumulateOp);
+
+    //
+    // Build compute table key and result types.
+    //
+    ct = new ct_entry_type(ATYPE::name(FORWD));
+    ct->setFixed(arg1, arg2);
+    ct->setResult(res);
+    ct->doneBuilding();
+}
+
+template <bool FORWD, class ATYPE>
+MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::~mt_prepost_set_op()
+{
+    ct->markForDestroy();
+}
+
+template <bool FORWD, class ATYPE>
+void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap,
+        const edge_value &bv, node_handle bp,
+        edge_value &cv, node_handle &cp)
+{
+#ifdef TRACE
+    out.indentation(0);
+    ++top_count;
+    out << ATYPE::name(FORWD) << " #" << top_count << " begin\n";
+#endif
+
+    MEDDLY_DCASSERT(av.isVoid());
+    MEDDLY_DCASSERT(bv.isVoid());
+
+    _compute(L, in, ap, bp, cp);
+
+    cv.set();
+
+#ifdef TRACE
+    out << ATYPE::name(FORWD) << " #" << top_count << " end\n";
+#endif
+}
+
+template <bool FORWD, class ATYPE>
+void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L, unsigned in,
+        node_handle A, node_handle B, node_handle &C)
+{
+    // **************************************************************
+    //
+    // Check terminal cases
+    //
+    // **************************************************************
+    if (0==A || 0==B) {
+        C = 0;
+        return;
+    }
+
+    if (arg2F->isTerminalNode(B)) {
+        //
+        // We're either at the bottom,
+        // or the matrix is an identity (or a scalar times identity).
+        // Treat that case quickly.
+        //
+        ATYPE::apply(arg1F, A, arg2F, B, resF, C);
+        return;
+    }
+
+    // **************************************************************
+    //
+    // Determine level information
+    //
+    // **************************************************************
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = ABS(arg2F->getNodeLevel(B));
+    const int Clevel = MAX(Alevel, Blevel);
+    const int Cnextlevel = MDD_levels::downLevel(Clevel);
+
+#ifdef TRACE
+    out << ATYPE::name(FORWD) << " mt_prepost_set_op::compute("
+        << L << ", " << in << ", "
+        << A << ", " << B << ")\n";
+    out << A << " level " << Alevel << "\n";
+    out << B << " level " << Blevel << "\n";
+    out << "result level " << Clevel << "\n";
+#endif
+
+    // **************************************************************
+    //
+    // Check the compute table
+    //
+    // **************************************************************
+    ct_vector key(ct->getKeySize());
+    ct_vector res(ct->getResultSize());
+    key[0].setN(A);
+    key[1].setN(B);
+
+    if (ct->findCT(key, res)) {
+        //
+        // compute table hit
+        //
+        C = resF->linkNode(res[0].getN());
+#ifdef TRACE
+        out << "CT hit ";
+        key.show(out);
+        out << " -> ";
+        res.show(out);
+        out << "\n";
+#endif
+        C = resF->makeRedundantsTo(C, Clevel, L);
+        return;
+        //
+        // done compute table hit
+        //
+    }
+
+    // **************************************************************
+    //
+    // Compute table 'miss'; do computation
+    //
+    // **************************************************************
+
+    //
+    // Set up unpacked nodes
+    //
+
+    unpacked_node* Au = unpacked_node::New(arg1F, SPARSE_ONLY);
+    if (Alevel != Clevel) {
+        Au->initRedundant(Clevel, A);
+    } else {
+        Au->initFromNode(A);
+    }
+
+}
+
+
+// ************************************************************************
+// ************************************************************************
+// ************************************************************************
 // *                                                                      *
 // *                                                                      *
 // *                                                                      *
-// *                          actual  operations                          *
+// *                      OLD actual  operations OLD                      *
 // *                                                                      *
 // *                                                                      *
 // *                                                                      *
@@ -1203,6 +1415,8 @@ void MEDDLY::tcXrel_evplus::processTerminals(long ev, node_handle evmxd, node_ha
   resEvmxd = resF->handleForValue(rval);
 }
 
+// ******************************************************************
+// ******************************************************************
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *

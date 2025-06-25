@@ -20,7 +20,6 @@
 #include "arith_mod.h"
 
 #include "../ops_builtin.h" // for COPY
-#include "../oper_item.h"
 #include "../oper_binary.h"
 #include "../oper_unary.h"
 #include "../ct_vector.h"
