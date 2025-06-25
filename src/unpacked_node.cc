@@ -254,6 +254,96 @@ void MEDDLY::unpacked_node::attach(const forest* f)
 
 #endif
 
+void MEDDLY::unpacked_node::initFrom(const unpacked_node &u)
+{
+    MEDDLY_DCASSERT(parent == u.parent);
+
+    level = u.getLevel();
+    MEDDLY_DCASSERT(level != 0);
+    resize(parent->getLevelSize(level));
+
+    //
+    // copy unhashed, hashed header information
+    //
+    if (extra_unhashed_size) {
+        setUHdata(u.UHptr());
+    }
+    if (extra_hashed_size) {
+        setHHdata(u.HHptr());
+    }
+
+    //
+    // Copy down edges
+    //
+    MEDDLY_DCASSERT(_down);
+    MEDDLY_DCASSERT(u._down);
+    if (u.isFull()) {
+        if (isFull()) {
+            //
+            // copy full -> full
+            //
+            size = u.getSize();
+            memcpy(_down, u._down, size * sizeof(node_handle));
+            if (_edge) {
+                MEDDLY_DCASSERT(u._edge);
+                memcpy(_edge, u._edge, size * sizeof(edge_value));
+            }
+        } else {
+            //
+            // copy full -> sparse
+            //
+            unsigned z=0;
+
+            if (_edge) {
+                for (unsigned i=0; i<u.getSize(); i++) {
+                    if (parent->isTransparentEdge(u.edgeval(i), u.down(i))) {
+                        continue;
+                    }
+                    setSparse(z, i, u.edgeval(i), u.down(i));
+                    ++z;
+                }
+            } else {
+                for (unsigned i=0; i<u.getSize(); i++) {
+                    if (u.down(i) == parent->getTransparentNode()) {
+                        continue;
+                    }
+                    setSparse(z, i, u.down(i));
+                    ++z;
+                }
+            }
+            resize(z);
+        }
+    } else {
+        if (isFull()) {
+            //
+            // copy sparse -> full
+            //
+            _clear(*parent);
+            if (_edge) {
+                for (unsigned z=0; z<u.getSize(); z++) {
+                    setFull(u.index(z), u.edgeval(z), u.down(z));
+                }
+            } else {
+                for (unsigned z=0; z<u.getSize(); z++) {
+                    setFull(u.index(z), u.down(z));
+                }
+            }
+        } else {
+            //
+            // copy sparse -> sparse
+            //
+            size = u.getSize();
+            memcpy(_down, u._down, size * sizeof(node_handle));
+            memcpy(_index, u._index, size * sizeof(unsigned));
+            if (_edge) {
+                MEDDLY_DCASSERT(u._edge);
+                memcpy(_edge, u._edge, size * sizeof(edge_value));
+            }
+        }
+    }
+
+}
+
 void MEDDLY::unpacked_node::initFromNode(node_handle node)
 {
     level = parent->getNodeLevel(node);

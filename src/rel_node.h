@@ -37,53 +37,45 @@ namespace MEDDLY {
 class MEDDLY::rel_node {
     public:
         /**
+            Initialize this node from handle n.
+            Can be called more than once.
+            Use node handle 0 to 'clear' a node.
+         */
+        virtual void initFromHandle(node_handle n) = 0;
+
+
+        /**
             Get the outgoing edges from index i.
             When viewed as a matrix, this obtains row i.
                 @param  i   (unprimed) variable value
                 @param  u   will be filled with outgoing edges
 
                 @return true, iff there is at least one outgoing edge
+                        false, otherwise (in which case, u is left unchanged).
         */
         virtual bool outgoing(unsigned i, unpacked_node &u) = 0;
-
-
-        /**
-            Get the incoming edges to index i.
-            When viewed as a matrix, this obtains column i.
-                @param  i   (primed) variable value
-                @param  u   will be filled with outgoing edges
-
-                @return true, iff there is at least one incoming edge
-        */
-        virtual bool incoming(unsigned i, unpacked_node &u) = 0;
-
-        /// Forest that owns us
-        forest* getParent() const {
-            return parent;
-        }
-
-        /// Add ourselves to the front of a list
-        inline void setNext(rel_node* nxt) {
-            next = nxt;
-        }
-
-        /// Return next in the list, and set our next to null
-        inline rel_node* pullNext() {
-            rel_node* n = next;
-            next = nullptr;
-            return n;
-        }
-
-        /// Delete a list
-        static void deleteList(rel_node* p);
 
     protected:
         rel_node(forest* _parent);
         virtual ~rel_node();
 
+        inline forest* getParent() const {
+            return parent;
+        };
+
+        /// Check if the parent matches the given one
+        bool hasParent(const forest* f) const {
+            return (parent == f);
+        }
+
+        /// Delete a list
+        static void deleteList(rel_node* p);
+
     private:
         forest* parent;
         rel_node* next;
+
+        friend class forest;
 };
 
 #endif // include guard

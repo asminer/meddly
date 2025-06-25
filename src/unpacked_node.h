@@ -113,6 +113,14 @@ class MEDDLY::unpacked_node {
         /* Initialization methods, primarily for reading */
 
         /**
+            Initialize from another unpacked node.
+                @param  unp     Unpacked node to copy.
+                                Must be from the same forest, but
+                                not necessarily the same storage type.
+        */
+        void initFrom(const unpacked_node& u);
+
+        /**
             Initialize from a reduced node in our forest.
                 @param  node    Node to unpack from
          */

@@ -25,6 +25,7 @@
 #include "node_headers.h"
 #include "node_storage.h"
 #include "unpacked_node.h"
+#include "rel_node.h"
 #include "policies.h"
 #include "rangeval.h"
 #include "domain.h"
@@ -140,10 +141,35 @@ class MEDDLY::forest {
     // ------------------------------------------------------------
 
         /// Build a relation node for this forest
-        virtual rel_node* buildRelNode(node_handle p);
+        inline rel_node* buildRelNode(node_handle p)
+        {
+            if (free_relnodes) {
+                rel_node* n = free_relnodes;
+                free_relnodes = free_relnodes->next;
+                n->next = nullptr;
+                n->initFromHandle(p);
+                return n;
+            } else {
+                return _buildRelNode(p);
+            }
+        }
 
         /// Recycle a relation node
-        virtual void doneRelNode(rel_node* rn);
+        inline void doneRelNode(rel_node* rn)
+        {
+            MEDDLY_DCASSERT(rn);
+            MEDDLY_DCASSERT(rn->hasParent(this));
+            rn->next = free_relnodes;
+            free_relnodes = rn;
+        }
+
+    protected:
+        /// Build a new relation node for this forest
+        virtual rel_node* _buildRelNode(node_handle p);
+
+    private:
+        rel_node* free_relnodes;
+
 
 #ifdef ALLOW_DEPRECATED_0_17_8
         /*

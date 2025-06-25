@@ -41,6 +41,8 @@
 #include "compute_table.h"
 #include "ct_entry_type.h"  // for invalidateAllWithForest
 
+#include "rel_node.h"
+
 // for timestamps.
 // to do - check during configuration that these are present,
 // and act accordingly here
@@ -90,6 +92,90 @@
 
 // #define REPORT_ON_DESTROY
 // #define DUMP_ON_FOREST_DESTROY
+
+namespace MEDDLY {
+    class rel_node_from_dd;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                  rel_node_from_dd class                  *
+// *                                                                *
+// ******************************************************************
+
+/**
+    A relation node around a 2L-level DD,
+    starting from a node at an unprimed level.
+ */
+class MEDDLY::rel_node_from_dd : public rel_node {
+    public:
+        rel_node_from_dd(forest* p, node_handle n);
+        virtual ~rel_node_from_dd();
+
+        virtual void initFromHandle(node_handle n);
+        virtual bool outgoing(unsigned i, unpacked_node &u);
+    private:
+        unpacked_node* unp;
+};
+
+// ******************************************************************
+
+MEDDLY::rel_node_from_dd::rel_node_from_dd(forest* p,
+        node_handle n) : rel_node(p)
+{
+    unp = unpacked_node::newFromNode(p, n, FULL_ONLY);
+}
+
+MEDDLY::rel_node_from_dd::~rel_node_from_dd()
+{
+    unpacked_node::Recycle(unp);
+}
+
+void MEDDLY::rel_node_from_dd::initFromHandle(node_handle n)
+{
+    MEDDLY_DCASSERT(unp);
+    MEDDLY_DCASSERT(n>0);
+    unp->initFromNode(n);
+}
+
+bool MEDDLY::rel_node_from_dd::outgoing(unsigned i, unpacked_node &u)
+{
+    MEDDLY_DCASSERT(unp);
+
+    /*
+        If unp is actually at a primed level,
+        then there's an implicit redundant node an the unprimed level.
+        Copy unp into u regardless of i.
+    */
+    if (unp->getLevel() < 0) {
+        u.initFrom(*unp);
+        return true;
+    }
+
+    /*
+        unp is at an unprimed level.
+        Check downward pointer i.
+    */
+
+    if (i >= unp->getSize() || 0 == unp->down(i)) {
+        return false;
+    }
+
+    /*
+        unp[i] is non-zero. Unpack it into u,
+        unless the pointer skips the primed level.
+    */
+
+    node_handle dn = unp->down(i);
+    const int next_level = -unp->getLevel();
+
+    if (getParent()->getNodeLevel(dn) == next_level) {
+        u.initFromNode(dn);
+    } else {
+        u.initIdentity(next_level, i, dn);
+    }
+    return true;
+}
 
 // ******************************************************************
 // *                                                                *
@@ -192,14 +278,13 @@ void MEDDLY::forest::destroy(forest* &f)
 // Node unpacking methods
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-MEDDLY::rel_node* MEDDLY::forest::buildRelNode(node_handle)
+MEDDLY::rel_node* MEDDLY::forest::_buildRelNode(node_handle n)
 {
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
+    MEDDLY_DCASSERT(isForRelations());
 
-void MEDDLY::forest::doneRelNode(rel_node*)
-{
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    MEDDLY_DCASSERT(n>0);
+
+    return new rel_node_from_dd(this, n);
 }
 
 #ifdef ALLOW_DEPRECATED_0_17_8
@@ -1787,6 +1872,11 @@ MEDDLY::forest::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
     roots = nullptr;
 
     //
+    // Free list of rel_node
+    //
+    free_relnodes = nullptr;
+
+    //
     // Empty logger
     //
     theLogger = nullptr;
@@ -1868,6 +1958,11 @@ MEDDLY::forest::~forest()
 #ifdef REPORT_ON_DESTROY
     printf("Destroying forest.  Stats:\n");
     reportMemoryUsage(stdout, "\t", 9);
+#endif
+
+    rel_node::deleteList(free_relnodes);
+#ifdef DEVELOPMENT_CODE
+    free_relnodes = nullptr;
 #endif
 
     unregisterDDEdges();
