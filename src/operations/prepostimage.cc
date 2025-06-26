@@ -66,7 +66,7 @@ namespace MEDDLY {
             static const char* name(bool forwd);
 
             /// Get the accumulate operation for result nodes.
-            static void accumulateOp(const forest* resF);
+            static binary_operation* accumulateOp(const forest* resF);
 
             /// Apply the operation when b is a terminal node.
             static void apply(const forest* fa, node_handle a,
@@ -282,11 +282,16 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
         // Identity level
         //
         Cu = unpacked_node::newWritable(resF, Clevel, SPARSE_ONLY);
+        unsigned zc = 0;
         for (unsigned z=0; z<Au->getSize(); z++) {
             node_handle cd;
             _compute(Cnextlevel, Au->down(z), B, cd);
-            Cu->setSparse(z, Au->index(z), cd);
+            if (cd) {
+                Cu->setSparse(zc, Au->index(z), cd);
+                ++zc;
+            }
         }
+        Cu->resize(zc);
     } else {
         //
         // Non-identity level
@@ -405,6 +410,43 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
     //
     C = resF->makeRedundantsTo(C, Clevel, L);
 }
+
+// ******************************************************************
+// *                                                                *
+// *                       mt_prepost  struct                       *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    struct mt_prepost {
+        inline static const char* name(bool forwd)
+        {
+            return forwd ? "post-image" : "pre-image";
+        }
+
+        /// Get the accumulate operation for result nodes.
+        inline static binary_operation* accumulateOp(forest* resF)
+        {
+            return UNION(resF, resF, resF);
+        }
+
+        /// Apply the operation when b is a terminal node.
+        static void apply(forest* fa, node_handle a,
+                          const forest* fb, node_handle b,
+                          forest* fc, node_handle &c)
+        {
+            MEDDLY_DCASSERT(b<0);
+            unary_operation* copy = COPY(fa, fc);
+            MEDDLY_DCASSERT(copy);
+            edge_value dummy;
+            dummy.set();
+            copy->compute(fa->getNodeLevel(a), ~0,
+                dummy, a, dummy, c);
+        }
+
+
+    };
+};
 
 
 // ************************************************************************
@@ -1641,7 +1683,11 @@ MEDDLY::binary_operation* MEDDLY::POST_IMAGE(forest* a, forest* b, forest* c)
 
     if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         return POST_IMAGE_cache.add(
+#ifdef USE_NEW_PREPOST
+            new mt_prepost_set_op<true, mt_prepost>(a, b, c)
+#else
             new mtvect_mtmatr<bool>(POST_IMAGE_cache, a, b, c, acc)
+#endif
         );
     }
     if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {

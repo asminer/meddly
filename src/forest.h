@@ -157,7 +157,7 @@ class MEDDLY::forest {
         /// Recycle a relation node
         inline void doneRelNode(rel_node* rn)
         {
-            MEDDLY_DCASSERT(rn);
+            if (!rn) return;
             MEDDLY_DCASSERT(rn->hasParent(this));
             rn->next = free_relnodes;
             free_relnodes = rn;
