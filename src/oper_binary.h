@@ -69,6 +69,16 @@ class MEDDLY::binary_operation : public operation {
     protected:
         virtual ~binary_operation();
 
+    public:
+        inline forest* getOp1F() const {
+            return arg1F;
+        }
+        inline forest* getOp2F() const {
+            return arg2F;
+        }
+        inline forest* getResF() const {
+            return resF;
+        }
     protected:
         // Fairly standard checks; call these in the operator's constructor.
         //

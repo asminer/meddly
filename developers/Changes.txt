@@ -129,6 +129,7 @@ copy.cc
 difference.cc
 intersection.cc
 maxmin_range.cc
+reach_bfs.cc
 union.cc
 
 mdd2index.cc
@@ -165,12 +166,6 @@ prepostimage.cc
 prepostplus.cc
         NO      preplus_evplus
         NO      postplus_evplus
-
-reach_bfs.cc
-        NO      forwd_bfs_mt
-        NO      forwd_bfs_evplus
-        NO      bckwd_bfs_mt
-        NO      bckwd_bfs_evplus
 
 reach_dfs.cc
         NO      forwd_dfs_mt

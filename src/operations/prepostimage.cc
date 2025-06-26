@@ -444,10 +444,56 @@ namespace MEDDLY {
                 dummy, a, dummy, c);
         }
 
-
     };
 };
 
+// ******************************************************************
+// *                                                                *
+// *                      mt_vectXmatr  struct                      *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class TTYPE>
+    struct mt_vectXmatr {
+        inline static const char* name(bool forwd)
+        {
+            return forwd ? "VM-multiply" : "MV-multiply";
+        }
+
+        /// Get the accumulate operation for result nodes.
+        inline static binary_operation* accumulateOp(forest* resF)
+        {
+            return PLUS(resF, resF, resF);
+        }
+
+        /// Apply the operation when b is a terminal node.
+        static void apply(forest* fa, node_handle a,
+                          const forest* fb, node_handle b,
+                          forest* fc, node_handle &c)
+        {
+            MEDDLY_DCASSERT(b<0);
+            /*
+            unary_operation* copy = COPY(fa, fc);
+            MEDDLY_DCASSERT(copy);
+            edge_value dummy;
+            dummy.set();
+            copy->compute(fa->getNodeLevel(a), ~0,
+                dummy, a, dummy, c);
+
+        RTYPE evmddval;
+        RTYPE mxdval;
+        RTYPE rval;
+        argV->getValueFromHandle(mdd, evmddval);
+        argM->getValueFromHandle(mxd, mxdval);
+        rval = evmddval * mxdval;
+        resEv = ev;
+        resEvmdd = resF->handleForValue(rval);
+        */
+        }
+
+    };
+};
 
 // ************************************************************************
 // ************************************************************************
@@ -1638,7 +1684,11 @@ MEDDLY::binary_operation* MEDDLY::PRE_IMAGE(forest* a, forest* b, forest* c)
 
     if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         return PRE_IMAGE_cache.add(
+#ifdef USE_NEW_PREPOST
+            new mt_prepost_set_op<false, mt_prepost>(a, b, c)
+#else
             new mtmatr_mtvect<bool>(PRE_IMAGE_cache, a, b, c, acc)
+#endif
         );
     }
     if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
