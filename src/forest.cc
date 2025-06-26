@@ -99,7 +99,7 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                  rel_node_from_dd class                  *
+// *                     rel_node_from_dd class                     *
 // *                                                                *
 // ******************************************************************
 
@@ -112,8 +112,12 @@ class MEDDLY::rel_node_from_dd : public rel_node {
         rel_node_from_dd(forest* p, node_handle n);
         virtual ~rel_node_from_dd();
 
-        virtual void initFromHandle(node_handle n);
         virtual bool outgoing(unsigned i, unpacked_node &u);
+        virtual void show(output &out) const;
+
+    protected:
+        virtual void initFromHandle(node_handle n);
+
     private:
         unpacked_node* unp;
 };
@@ -175,6 +179,38 @@ bool MEDDLY::rel_node_from_dd::outgoing(unsigned i, unpacked_node &u)
         u.initIdentity(next_level, i, dn);
     }
     return true;
+}
+
+void MEDDLY::rel_node_from_dd::show(output &out) const
+{
+
+    if (unp->getLevel() < 0) {
+        out.put("redundant node\n");
+        for (unsigned i=0; i<unp->getSize(); i++) {
+            out.put("    ");
+            out.put(i);
+            out.put(": ");
+            unp->show(out, true);
+            out.put('\n');
+        }
+    } else {
+        unp->show(out, true);
+        out.put('\n');
+        for (unsigned i=0; i<unp->getSize(); i++) {
+            out.put("    ");
+            out.put(i);
+            out.put(": ");
+            out.put(unp->down(i));
+            if (unp->down(i)>0) {
+                out.put(": ");
+                unpacked_node* pr = unpacked_node::newFromNode(getParent(),
+                        unp->down(i), FULL_OR_SPARSE);
+                pr->show(out, true);
+                unpacked_node::Recycle(pr);
+            }
+            out.put('\n');
+        }
+    }
 }
 
 // ******************************************************************

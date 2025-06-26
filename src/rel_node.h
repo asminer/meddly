@@ -25,6 +25,7 @@ namespace MEDDLY {
     class rel_node;
     class unpacked_node;
     class forest;
+    class output;
 };
 
 /**
@@ -37,14 +38,6 @@ namespace MEDDLY {
 class MEDDLY::rel_node {
     public:
         /**
-            Initialize this node from handle n.
-            Can be called more than once.
-            Use node handle 0 to 'clear' a node.
-         */
-        virtual void initFromHandle(node_handle n) = 0;
-
-
-        /**
             Get the outgoing edges from index i.
             When viewed as a matrix, this obtains row i.
                 @param  i   (unprimed) variable value
@@ -54,6 +47,12 @@ class MEDDLY::rel_node {
                         false, otherwise (in which case, u is left unchanged).
         */
         virtual bool outgoing(unsigned i, unpacked_node &u) = 0;
+
+        /**
+            Show this node in some nice, human-readable form.
+            Primarily for debugging.
+        */
+        virtual void show(output &out) const = 0;
 
     protected:
         rel_node(forest* _parent);
@@ -67,6 +66,14 @@ class MEDDLY::rel_node {
         bool hasParent(const forest* f) const {
             return (parent == f);
         }
+
+        /**
+            Initialize this node from handle n.
+            Can be called more than once.
+            Use node handle 0 to 'clear' a node.
+         */
+        virtual void initFromHandle(node_handle n) = 0;
+
 
         /// Delete a list
         static void deleteList(rel_node* p);

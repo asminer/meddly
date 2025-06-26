@@ -90,8 +90,7 @@ namespace MEDDLY {
                     edge_value &cv, node_handle &cp);
 
         protected:
-            void _compute(int L, unsigned in, node_handle A, node_handle B,
-                    node_handle &C);
+            void _compute(int L, node_handle A, node_handle B, node_handle &C);
 
         private:
             ct_entry_type* ct;
@@ -155,7 +154,7 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::compute(int L, unsigned in,
     MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
 
-    _compute(L, in, ap, bp, cp);
+    _compute(L, ap, bp, cp);
 
     cv.set();
 
@@ -165,7 +164,7 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::compute(int L, unsigned in,
 }
 
 template <bool FORWD, class ATYPE>
-void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L, unsigned in,
+void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
         node_handle A, node_handle B, node_handle &C)
 {
     // **************************************************************
@@ -253,6 +252,158 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L, unsigned in,
         Au->initFromNode(A);
     }
 
+    rel_node* Brn;
+    if (Blevel != Clevel) {
+        Brn = nullptr;
+    } else {
+        Brn = arg2F->buildRelNode(B);
+    }
+
+    unpacked_node* Cu = nullptr;
+
+#ifdef TRACE
+    out << "A: ";
+    Au->show(out, true);
+    out << "\nB: ";
+    if (Brn) {
+        Brn->show(out);
+    } else {
+        out << "identity to " << B;
+    }
+    out.indent_more();
+    out.put('\n');
+#endif
+
+    //
+    // Recurse
+    //
+    if (!Brn) {
+        //
+        // Identity level
+        //
+        Cu = unpacked_node::newWritable(resF, Clevel, SPARSE_ONLY);
+        for (unsigned z=0; z<Au->getSize(); z++) {
+            node_handle cd;
+            _compute(Cnextlevel, Au->down(z), B, cd);
+            Cu->setSparse(z, Au->index(z), cd);
+        }
+    } else {
+        //
+        // Non-identity level
+        //
+        Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
+        // clear out result (important!)
+        Cu->clear(0, Cu->getSize());
+
+        edge_value nothing;
+        nothing.set();
+
+        if (FORWD) {
+            unpacked_node* Bu = unpacked_node::New(arg2F, SPARSE_ONLY);
+
+            for (unsigned zi=0; zi<Au->getSize(); zi++) {
+                const unsigned i = Au->index(zi);
+                if (Brn->outgoing(i, *Bu)) {
+                    for (unsigned zj=0; zj<Bu->getSize(); zj++) {
+                        const unsigned j = Bu->index(zj);
+                        // C[j] = C[j] + A[i] * B[i,j]
+                        node_handle newc;
+                        _compute(Cnextlevel, Au->down(zi), Bu->down(zj), newc);
+                        if (0==newc) {
+                            continue;
+                        }
+                        if (0==Cu->down(j)) {
+                            Cu->down(j) = newc;
+                            continue;
+                        }
+                        accumulateOp->compute(L, ~0,
+                                nothing, Cu->down(j),
+                                nothing, newc,
+                                nothing, Cu->down(j)
+                        );
+                    } // for zj
+                } // if brn[i]
+            } // for zi
+        } else {
+            const unsigned kSize = unsigned(resF->getLevelSize(Clevel));
+            unpacked_node* Bu = unpacked_node::New(arg2F, FULL_ONLY);
+            for (unsigned i=0; i<kSize; i++) {
+                if (Brn->outgoing(i, *Bu)) {
+                    for (unsigned zj=0; zj<Au->getSize(); zj++) {
+                        const unsigned j = Au->index(zj);
+                        if (Bu->down(j)) {
+                            // C[i] = C[i] + B[i,j] * A[j]
+                            node_handle newc;
+                            _compute(Cnextlevel, Au->down(zj),
+                                    Bu->down(j), newc);
+                            if (0==newc) {
+                                continue;
+                            }
+                            if (0==Cu->down(i)) {
+                                Cu->down(i) = newc;
+                                continue;
+                            }
+                            accumulateOp->compute(L, ~0,
+                                nothing, Cu->down(i),
+                                nothing, newc,
+                                nothing, Cu->down(i)
+                            );
+                        } // if bu[j]
+                    } // for zj
+                } // if brn[i]
+            } // for i
+        }
+    }
+
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << ATYPE::name(FORWD) << " mt_prepost_set_op::compute("
+        << L << ", " << in << ", "
+        << A << ", " << B << ") done\n";
+    out << "  A: ";
+    Au->show(out, true);
+    out << "\n  B: ";
+    if (Brn) {
+        Brn->show(out);
+    } else {
+        out << "identity to " << B;
+    }
+    out << "\n  C: ";
+    Cu->show(out, true);
+    out << "\n";
+#endif
+
+    //
+    // Reduce
+    //
+    edge_value dummy;
+    resF->createReducedNode(Cu, dummy, C);
+    MEDDLY_DCASSERT(dummy.isVoid());
+#ifdef TRACE
+    out << "reduced to ";
+    resF->showEdge(out, cv, C);
+    out << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
+
+    //
+    // Save result in CT
+    //
+    res[0].setN(C);
+    ct->addCT(key, res);
+
+    //
+    // Cleanup
+    //
+    arg2F->doneRelNode(Brn);
+    unpacked_node::Recycle(Au);
+
+    //
+    // Adjust result
+    //
+    C = resF->makeRedundantsTo(C, Clevel, L);
 }
 
 
