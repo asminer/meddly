@@ -30,6 +30,11 @@
 #include "../forest_levels.h"
 
 // #define TRACE_ALL_OPS
+// #define TRACE
+
+#ifdef TRACE
+#include "../operators.h"
+#endif
 
 namespace MEDDLY {
     class image_op;
@@ -80,7 +85,8 @@ namespace MEDDLY {
     template <bool FORWD, class ATYPE>
     class mt_prepost_set_op : public binary_operation {
         public:
-            mt_prepost_set_op(forest* arg1, forest* arg2, forest* res);
+            mt_prepost_set_op(forest* arg1, forest* arg2,
+                    forest* res, bool swap=false);
 
             virtual ~mt_prepost_set_op();
 
@@ -95,6 +101,7 @@ namespace MEDDLY {
         private:
             ct_entry_type* ct;
             binary_operation* accumulateOp;
+            const bool swap_opnds;
 #ifdef TRACE
             ostream_output out;
             unsigned top_count;
@@ -107,7 +114,10 @@ namespace MEDDLY {
 
 template <bool FORWD, class ATYPE>
 MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::mt_prepost_set_op(forest* arg1,
-        forest* arg2, forest* res) : binary_operation(arg1, arg2, res)
+        forest* arg2, forest* res, bool swap)
+    : binary_operation(
+            swap ? arg2 : arg1,
+            swap ? arg1 : arg2, res), swap_opnds(swap)
 #ifdef TRACE
       , out(std::cout), top_count(0)
 #endif
@@ -154,7 +164,11 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::compute(int L, unsigned in,
     MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
 
-    _compute(L, ap, bp, cp);
+    if (swap_opnds) {
+        _compute(L, bp, ap, cp);
+    } else {
+        _compute(L, ap, bp, cp);
+    }
 
     cv.set();
 
@@ -199,8 +213,7 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
 
 #ifdef TRACE
     out << ATYPE::name(FORWD) << " mt_prepost_set_op::compute("
-        << L << ", " << in << ", "
-        << A << ", " << B << ")\n";
+        << L << ", " << A << ", " << B << ")\n";
     out << A << " level " << Alevel << "\n";
     out << B << " level " << Blevel << "\n";
     out << "result level " << Clevel << "\n";
@@ -364,8 +377,7 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
     out.indent_less();
     out.put('\n');
     out << ATYPE::name(FORWD) << " mt_prepost_set_op::compute("
-        << L << ", " << in << ", "
-        << A << ", " << B << ") done\n";
+        << L << ", " << A << ", " << B << ") done\n";
     out << "  A: ";
     Au->show(out, true);
     out << "\n  B: ";
@@ -387,7 +399,7 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
     MEDDLY_DCASSERT(dummy.isVoid());
 #ifdef TRACE
     out << "reduced to ";
-    resF->showEdge(out, cv, C);
+    resF->showEdge(out, dummy, C);
     out << ": ";
     resF->showNode(out, C, SHOW_DETAILS);
     out << "\n";
@@ -473,23 +485,16 @@ namespace MEDDLY {
                           forest* fc, node_handle &c)
         {
             MEDDLY_DCASSERT(b<0);
-            /*
-            unary_operation* copy = COPY(fa, fc);
-            MEDDLY_DCASSERT(copy);
+            TTYPE mxdval;
+            fb->getValueFromHandle(b, mxdval);
+            binary_operation* mult = MULTIPLY(fa, fa, fc);
+            node_handle fa_mxdval = fa->handleForValue(mxdval);
+
             edge_value dummy;
             dummy.set();
-            copy->compute(fa->getNodeLevel(a), ~0,
-                dummy, a, dummy, c);
-
-        RTYPE evmddval;
-        RTYPE mxdval;
-        RTYPE rval;
-        argV->getValueFromHandle(mdd, evmddval);
-        argM->getValueFromHandle(mxd, mxdval);
-        rval = evmddval * mxdval;
-        resEv = ev;
-        resEvmdd = resF->handleForValue(rval);
-        */
+            mult->compute(fa->getNodeLevel(a), ~0,
+                dummy, a, dummy, fa_mxdval,
+                dummy, c);
         }
 
     };
@@ -1792,26 +1797,27 @@ MEDDLY::binary_operation* MEDDLY::VM_MULTIPLY(forest* a, forest* b, forest* c)
         return bop;
     }
 
-    if  (
-            (a->getRangeType() == range_type::BOOLEAN) ||
-            (b->getRangeType() == range_type::BOOLEAN) ||
-            (c->getRangeType() == range_type::BOOLEAN)
-        )
-    {
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-
+#ifndef USE_NEW_PREPOST
     binary_operation* acc = PLUS(c, c, c);
+#endif
 
     switch (c->getRangeType()) {
         case range_type::INTEGER:
             return VM_MULTIPLY_cache.add(
+#ifdef USE_NEW_PREPOST
+                new mt_prepost_set_op<true, mt_vectXmatr<int> >(a, b, c)
+#else
                 new mtvect_mtmatr<int>(VM_MULTIPLY_cache, a, b, c, acc)
+#endif
             );
 
         case range_type::REAL:
             return VM_MULTIPLY_cache.add(
+#ifdef USE_NEW_PREPOST
+                new mt_prepost_set_op<true, mt_vectXmatr<float> >(a, b, c)
+#else
                 new mtvect_mtmatr<float>(VM_MULTIPLY_cache, a, b, c, acc)
+#endif
             );
 
         default:
@@ -1839,16 +1845,9 @@ MEDDLY::binary_operation* MEDDLY::MV_MULTIPLY(forest* a, forest* b, forest* c)
         return bop;
     }
 
-    if  (
-            (a->getRangeType() == range_type::BOOLEAN) ||
-            (b->getRangeType() == range_type::BOOLEAN) ||
-            (c->getRangeType() == range_type::BOOLEAN)
-        )
-    {
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-
+#ifndef USE_NEW_PREPOST
     binary_operation* acc = PLUS(c, c, c);
+#endif
 
     //
     // We're switching the order of the arguments
@@ -1857,12 +1856,20 @@ MEDDLY::binary_operation* MEDDLY::MV_MULTIPLY(forest* a, forest* b, forest* c)
     switch (c->getRangeType()) {
         case range_type::INTEGER:
             return MV_MULTIPLY_cache.add(
+#ifdef USE_NEW_PREPOST
+                new mt_prepost_set_op<false, mt_vectXmatr<int> >(a, b, c, true)
+#else
                 new mtmatr_mtvect<int>(MV_MULTIPLY_cache, b, a, c, acc)
+#endif
             );
 
         case range_type::REAL:
             return MV_MULTIPLY_cache.add(
+#ifdef USE_NEW_PREPOST
+                new mt_prepost_set_op<false, mt_vectXmatr<float> >(a, b, c, true)
+#else
                 new mtmatr_mtvect<float>(MV_MULTIPLY_cache, b, a, c, acc)
+#endif
             );
 
         default:
