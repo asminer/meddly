@@ -36,6 +36,8 @@
 #include "../operators.h"
 #endif
 
+#define USE_NEW_PREPOST
+
 namespace MEDDLY {
     class image_op;
     class relXset_mdd;
@@ -530,6 +532,8 @@ namespace MEDDLY {
 // *                                                                      *
 // *                                                                      *
 // ************************************************************************
+
+#ifndef USE_NEW_PREPOST
 
 // ******************************************************************
 // *                                                                *
@@ -1026,6 +1030,8 @@ namespace MEDDLY {
 
   };
 };
+
+#endif // ifndef USE_NEW_PREPOST
 
 // ******************************************************************
 // *                                                                *

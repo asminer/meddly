@@ -31,8 +31,6 @@
 // ==================================================================
 // ^ This line is important for the release script, don't remove it
 
-#define USE_NEW_PREPOST
-
 // Reference counts on for now
 #define REFCOUNTS_ON
 
