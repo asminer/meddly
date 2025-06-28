@@ -138,7 +138,11 @@ MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::mt_prepost_set_op(forest* arg1,
     // Build compute table key and result types.
     //
     ct = new ct_entry_type(ATYPE::name(FORWD));
-    ct->setFixed(arg1, arg2);
+    if (swap_opnds) {
+        ct->setFixed(arg2, arg1);
+    } else {
+        ct->setFixed(arg1, arg2);
+    }
     ct->setResult(res);
     ct->doneBuilding();
 }
@@ -214,8 +218,14 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
 #ifdef TRACE
     out << ATYPE::name(FORWD) << " mt_prepost_set_op::compute("
         << L << ", " << A << ", " << B << ")\n";
-    out << A << " level " << Alevel << "\n";
-    out << B << " level " << Blevel << "\n";
+    out << "A: #" << A << " ";
+    arg1F->showNode(out, A, SHOW_DETAILS);
+    out << "\n";
+    out << "B: #" << B << " ";
+    arg2F->showNode(out, B, SHOW_DETAILS);
+    out << "\n";
+    // out << A << " level " << Alevel << "\n";
+    // out << B << " level " << Blevel << "\n";
     out << "result level " << Clevel << "\n";
 #endif
 
@@ -275,6 +285,7 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
     unpacked_node* Cu = nullptr;
 
 #ifdef TRACE
+    edge_value nothing;
     out << "A: ";
     Au->show(out, true);
     out << "\nB: ";
@@ -334,11 +345,15 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
                             Cu->down(j) = newc;
                             continue;
                         }
+                        node_handle cud;
                         accumulateOp->compute(L, ~0,
-                                nothing, Cu->down(j),
-                                nothing, newc,
-                                nothing, Cu->down(j)
+                            nothing, Cu->down(j),
+                            nothing, newc,
+                            nothing, cud
                         );
+                        resF->unlinkNode(newc);
+                        resF->unlinkNode(Cu->down(j));
+                        Cu->down(j) = cud;
                     } // for zj
                 } // if brn[i]
             } // for zi
@@ -361,11 +376,15 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
                                 Cu->down(i) = newc;
                                 continue;
                             }
+                            node_handle cud;
                             accumulateOp->compute(L, ~0,
                                 nothing, Cu->down(i),
                                 nothing, newc,
-                                nothing, Cu->down(i)
+                                nothing, cud
                             );
+                            resF->unlinkNode(newc);
+                            resF->unlinkNode(Cu->down(i));
+                            Cu->down(i) = cud;
                         } // if bu[j]
                     } // for zj
                 } // if brn[i]
@@ -378,9 +397,9 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
     out.put('\n');
     out << ATYPE::name(FORWD) << " mt_prepost_set_op::compute("
         << L << ", " << A << ", " << B << ") done\n";
-    out << "  A: ";
-    Au->show(out, true);
-    out << "\n  B: ";
+    out << "  A: #" << A << ": ";
+    arg1F->showNode(out, A, SHOW_DETAILS);
+    out << "\n  B: #" << B << ": ";
     if (Brn) {
         Brn->show(out);
     } else {

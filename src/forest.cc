@@ -200,14 +200,14 @@ void MEDDLY::rel_node_from_dd::show(output &out) const
             out.put("    ");
             out.put(i);
             out.put(": ");
-            out.put(unp->down(i));
-            if (unp->down(i)>0) {
-                out.put(": ");
-                unpacked_node* pr = unpacked_node::newFromNode(getParent(),
-                        unp->down(i), FULL_OR_SPARSE);
-                pr->show(out, true);
-                unpacked_node::Recycle(pr);
+            if (unp->hasEdges()) {
+                getParent()->showEdge(out, unp->edgeval(i), unp->down(i));
+            } else {
+                edge_value none;
+                getParent()->showEdge(out, none, unp->down(i));
             }
+            out.put(": ");
+            getParent()->showNode(out, unp->down(i), SHOW_DETAILS);
             out.put('\n');
         }
     }
