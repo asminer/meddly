@@ -28,6 +28,7 @@
 #include "../ct_entry_result.h"
 #include "../compute_table.h"
 #include "../forest_levels.h"
+#include "../forest_edgerules.h"
 
 // #define TRACE_ALL_OPS
 // #define TRACE
@@ -51,12 +52,15 @@ namespace MEDDLY {
 };
 
 // ************************************************************************
+// ************************************************************************
 
 /*
     Template class for MT-based pre-image and post-image operations.
     This includes vector-matrix and matrix-vector multiplications.
 
     Template parameters:
+
+        EOP: one of the EdgeOp classes in forests_edgerules.h.
 
         FORWD: if true, do post-image (one step forward), otherwise
                         do pre-image  (one step backward).
@@ -70,21 +74,23 @@ namespace MEDDLY {
             static binary_operation* accumulateOp(const forest* resF);
 
             /// Apply the operation when b is a terminal node.
-            static void apply(const forest* fa, node_handle a,
-                              const forest* fb, node_handle b,
-                              const forest* fc, node_handle &c);
+            static void apply(
+                const forest* fa, const edge_value &av, node_handle a,
+                const forest* fb, node_handle b,
+                const forest* fc, edge_value &cv, node_handle &c
+            );
 
 */
 
 namespace MEDDLY {
 
-    template <bool FORWD, class ATYPE>
-    class mt_prepost_set_op : public binary_operation {
+    template <class EOP, bool FORWD, class ATYPE>
+    class prepost_set_op : public binary_operation {
         public:
-            mt_prepost_set_op(forest* arg1, forest* arg2,
+            prepost_set_op(forest* arg1, forest* arg2,
                     forest* res, bool swap=false);
 
-            virtual ~mt_prepost_set_op();
+            virtual ~prepost_set_op();
 
             virtual void compute(int L, unsigned in,
                     const edge_value &av, node_handle ap,
@@ -92,7 +98,18 @@ namespace MEDDLY {
                     edge_value &cv, node_handle &cp);
 
         protected:
-            void _compute(int L, node_handle A, node_handle B, node_handle &C);
+            void _compute(int L, const edge_value &av, node_handle A,
+                    node_handle B, edge_value &cv, node_handle &C);
+
+        private:
+            inline const edge_value &edgeval(unpacked_node *U, unsigned i) const
+            {
+                if (EOP::hasEdgeValues()) {
+                    return U->edgeval(i);
+                } else {
+                    return nothing;
+                }
+            }
 
         private:
             ct_entry_type* ct;
@@ -102,15 +119,16 @@ namespace MEDDLY {
             ostream_output out;
             unsigned top_count;
 #endif
+            edge_value nothing;
 
-    }; // class mt_prepost_op
+    }; // class prepost_op
 }; // namespace MEDDLY
 
 // ************************************************************************
 
-template <bool FORWD, class ATYPE>
-MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::mt_prepost_set_op(forest* arg1,
-        forest* arg2, forest* res, bool swap)
+template <class EOP, bool FORWD, class ATYPE>
+MEDDLY::prepost_set_op<EOP, FORWD, ATYPE>
+    ::prepost_set_op(forest* arg1, forest* arg2, forest* res, bool swap)
     : binary_operation(
             swap ? arg2 : arg1,
             swap ? arg1 : arg2, res), swap_opnds(swap)
@@ -120,8 +138,19 @@ MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::mt_prepost_set_op(forest* arg1,
 {
     checkDomains(__FILE__, __LINE__);
     checkRelations(__FILE__, __LINE__, SET, RELATION, SET);
-    checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
-    checkAllRanges(__FILE__, __LINE__, res->getRangeType());
+    checkLabelings(__FILE__, __LINE__,
+        res->getEdgeLabeling(),
+        edge_labeling::MULTI_TERMINAL,
+        res->getEdgeLabeling()
+    );
+
+    if (range_type::BOOLEAN == arg2F->getRangeType()) {
+        if (arg1F->getRangeType() != resF->getRangeType()) {
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+        }
+    } else {
+        checkAllRanges(__FILE__, __LINE__, res->getRangeType());
+    }
 
     //
     // Addition operation for the vector-matrix multiply.
@@ -139,18 +168,23 @@ MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::mt_prepost_set_op(forest* arg1,
     } else {
         ct->setFixed(arg1, arg2);
     }
-    ct->setResult(res);
+    if (EOP::hasEdgeValues()) {
+        ct->setResult(EOP::edgeValueTypeLetter(), res);
+    } else {
+        ct->setResult(res);
+    }
     ct->doneBuilding();
 }
 
-template <bool FORWD, class ATYPE>
-MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::~mt_prepost_set_op()
+template <class EOP, bool FORWD, class ATYPE>
+MEDDLY::prepost_set_op<EOP, FORWD, ATYPE>::~prepost_set_op()
 {
     ct->markForDestroy();
 }
 
-template <bool FORWD, class ATYPE>
-void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::compute(int L, unsigned in,
+template <class EOP, bool FORWD, class ATYPE>
+void MEDDLY::prepost_set_op<EOP, FORWD, ATYPE>
+    ::compute(int L, unsigned in,
         const edge_value &av, node_handle ap,
         const edge_value &bv, node_handle bp,
         edge_value &cv, node_handle &cp)
@@ -161,25 +195,23 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::compute(int L, unsigned in,
     out << ATYPE::name(FORWD) << " #" << top_count << " begin\n";
 #endif
 
-    MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
 
     if (swap_opnds) {
-        _compute(L, bp, ap, cp);
+        _compute(L, bv, bp, ap, cv, cp);
     } else {
-        _compute(L, ap, bp, cp);
+        _compute(L, av, ap, bp, cv, cp);
     }
-
-    cv.set();
 
 #ifdef TRACE
     out << ATYPE::name(FORWD) << " #" << top_count << " end\n";
 #endif
 }
 
-template <bool FORWD, class ATYPE>
-void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
-        node_handle A, node_handle B, node_handle &C)
+template <class EOP, bool FORWD, class ATYPE>
+void MEDDLY::prepost_set_op<EOP, FORWD, ATYPE>::_compute(int L,
+        const edge_value &av, node_handle A, node_handle B,
+        edge_value &cv, node_handle &C)
 {
     // **************************************************************
     //
@@ -187,6 +219,7 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
     //
     // **************************************************************
     if (0==A || 0==B) {
+        cv = av;
         C = 0;
         return;
     }
@@ -197,7 +230,7 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
         // or the matrix is an identity (or a scalar times identity).
         // Treat that case quickly.
         //
-        ATYPE::apply(arg1F, A, arg2F, B, resF, C);
+        ATYPE::apply(arg1F, av, A, arg2F, B, resF, cv, C);
         return;
     }
 
@@ -212,7 +245,7 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
     const int Cnextlevel = MDD_levels::downLevel(Clevel);
 
 #ifdef TRACE
-    out << ATYPE::name(FORWD) << " mt_prepost_set_op::compute("
+    out << ATYPE::name(FORWD) << " prepost_set_op::compute("
         << L << ", " << A << ", " << B << ")\n";
     out << "A: #" << A << " ";
     arg1F->showNode(out, A, SHOW_DETAILS);
@@ -239,7 +272,14 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
         //
         // compute table hit
         //
-        C = resF->linkNode(res[0].getN());
+        if (EOP::hasEdgeValues()) {
+            res[0].get(cv);
+            EOP::accumulateOp(cv, av);
+            C = resF->linkNode(res[1].getN());
+        } else {
+            EOP::clear(cv);
+            C = resF->linkNode(res[0].getN());
+        }
 #ifdef TRACE
         out << "CT hit ";
         key.show(out);
@@ -304,10 +344,11 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
         Cu = unpacked_node::newWritable(resF, Clevel, SPARSE_ONLY);
         unsigned zc = 0;
         for (unsigned z=0; z<Au->getSize(); z++) {
-            node_handle cd;
-            _compute(Cnextlevel, Au->down(z), B, cd);
-            if (cd) {
-                Cu->setSparse(zc, Au->index(z), cd);
+            edge_value  cdv;
+            node_handle cdp;
+            _compute(Cnextlevel, edgeval(Au, z), Au->down(z), B, cdv, cdp);
+            if (!resF->isTransparentEdge(cdv, cdp)) {
+                Cu->setSparse(zc, Au->index(z), cdv, cdp);
                 ++zc;
             }
         }
@@ -320,9 +361,6 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
         // clear out result (important!)
         Cu->clear(0, Cu->getSize());
 
-        edge_value nothing;
-        nothing.set();
-
         if (FORWD) {
             unpacked_node* Bu = unpacked_node::New(arg2F, SPARSE_ONLY);
 
@@ -332,24 +370,29 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
                     for (unsigned zj=0; zj<Bu->getSize(); zj++) {
                         const unsigned j = Bu->index(zj);
                         // C[j] = C[j] + A[i] * B[i,j]
-                        node_handle newc;
-                        _compute(Cnextlevel, Au->down(zi), Bu->down(zj), newc);
-                        if (0==newc) {
+                        node_handle cdp;
+                        edge_value  cdv;
+                        _compute(Cnextlevel, edgeval(Au, zi), Au->down(zi),
+                                Bu->down(zj), cdv, cdp);
+                        if (EOP::isZeroFunction(cdv, cdp)) {
                             continue;
                         }
-                        if (0==Cu->down(j)) {
-                            Cu->down(j) = newc;
+                        if (EOP::isZeroFunction(edgeval(Cu, j), Cu->down(j)))
+                        {
+                            Cu->setFull(j, cdv, cdp);
                             continue;
                         }
-                        node_handle cud;
+
+                        edge_value  newdv;
+                        node_handle newdp;
                         accumulateOp->compute(L, ~0,
-                            nothing, Cu->down(j),
-                            nothing, newc,
-                            nothing, cud
+                            edgeval(Cu, j), Cu->down(j),
+                            cdv, cdp,
+                            newdv, newdp
                         );
-                        resF->unlinkNode(newc);
+                        resF->unlinkNode(cdp);
                         resF->unlinkNode(Cu->down(j));
-                        Cu->down(j) = cud;
+                        Cu->setFull(j, newdv, newdp);
                     } // for zj
                 } // if brn[i]
             } // for zi
@@ -362,25 +405,28 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
                         const unsigned j = Au->index(zj);
                         if (Bu->down(j)) {
                             // C[i] = C[i] + B[i,j] * A[j]
-                            node_handle newc;
-                            _compute(Cnextlevel, Au->down(zj),
-                                    Bu->down(j), newc);
-                            if (0==newc) {
+                            node_handle cdp;
+                            edge_value  cdv;
+                            _compute(Cnextlevel, edgeval(Au, zj), Au->down(zj),
+                                    Bu->down(j), cdv, cdp);
+                            if (EOP::isZeroFunction(cdv, cdp)) {
                                 continue;
                             }
-                            if (0==Cu->down(i)) {
-                                Cu->down(i) = newc;
+                            if (EOP::isZeroFunction(edgeval(Cu, i), Cu->down(i)))
+                            {
+                                Cu->setFull(i, cdv, cdp);
                                 continue;
                             }
-                            node_handle cud;
+                            edge_value  newdv;
+                            node_handle newdp;
                             accumulateOp->compute(L, ~0,
-                                nothing, Cu->down(i),
-                                nothing, newc,
-                                nothing, cud
+                                edgeval(Cu, i), Cu->down(i),
+                                cdv, cdp,
+                                newdv, newdp
                             );
-                            resF->unlinkNode(newc);
+                            resF->unlinkNode(cdp);
                             resF->unlinkNode(Cu->down(i));
-                            Cu->down(i) = cud;
+                            Cu->setFull(i, newdv, newdp);
                         } // if bu[j]
                     } // for zj
                 } // if brn[i]
@@ -391,7 +437,7 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
 #ifdef TRACE
     out.indent_less();
     out.put('\n');
-    out << ATYPE::name(FORWD) << " mt_prepost_set_op::compute("
+    out << ATYPE::name(FORWD) << " prepost_set_op::compute("
         << L << ", " << A << ", " << B << ") done\n";
     out << "  A: #" << A << ": ";
     arg1F->showNode(out, A, SHOW_DETAILS);
@@ -409,12 +455,10 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
     //
     // Reduce
     //
-    edge_value dummy;
-    resF->createReducedNode(Cu, dummy, C);
-    MEDDLY_DCASSERT(dummy.isVoid());
+    resF->createReducedNode(Cu, cv, C);
 #ifdef TRACE
     out << "reduced to ";
-    resF->showEdge(out, dummy, C);
+    resF->showEdge(out, cv, C);
     out << ": ";
     resF->showNode(out, C, SHOW_DETAILS);
     out << "\n";
@@ -423,7 +467,12 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
     //
     // Save result in CT
     //
-    res[0].setN(C);
+    if (EOP::hasEdgeValues()) {
+        res[0].set(cv);
+        res[1].setN(C);
+    } else {
+        res[0].setN(C);
+    }
     ct->addCT(key, res);
 
     //
@@ -436,6 +485,7 @@ void MEDDLY::mt_prepost_set_op<FORWD, ATYPE>::_compute(int L,
     // Adjust result
     //
     C = resF->makeRedundantsTo(C, Clevel, L);
+    EOP::accumulateOp(cv, av);
 }
 
 // ******************************************************************
@@ -458,9 +508,9 @@ namespace MEDDLY {
         }
 
         /// Apply the operation when b is a terminal node.
-        static void apply(forest* fa, node_handle a,
+        static void apply(forest* fa, const edge_value &av, node_handle a,
                           const forest* fb, node_handle b,
-                          forest* fc, node_handle &c)
+                          forest* fc, edge_value &cv, node_handle &c)
         {
             MEDDLY_DCASSERT(b<0);
             unary_operation* copy = COPY(fa, fc);
@@ -468,7 +518,7 @@ namespace MEDDLY {
             edge_value dummy;
             dummy.set();
             copy->compute(fa->getNodeLevel(a), ~0,
-                dummy, a, dummy, c);
+                av, a, cv, c);
         }
 
     };
@@ -495,9 +545,9 @@ namespace MEDDLY {
         }
 
         /// Apply the operation when b is a terminal node.
-        static void apply(forest* fa, node_handle a,
+        static void apply(forest* fa, const edge_value &av, node_handle a,
                           const forest* fb, node_handle b,
-                          forest* fc, node_handle &c)
+                          forest* fc, edge_value &cv, node_handle &c)
         {
             MEDDLY_DCASSERT(b<0);
             TTYPE mxdval;
@@ -508,12 +558,14 @@ namespace MEDDLY {
             edge_value dummy;
             dummy.set();
             mult->compute(fa->getNodeLevel(a), ~0,
-                dummy, a, dummy, fa_mxdval,
-                dummy, c);
+                av, a, dummy, fa_mxdval,
+                cv, c);
         }
 
     };
 };
+
+
 
 // ************************************************************************
 // ************************************************************************
@@ -1209,7 +1261,7 @@ MEDDLY::binary_operation* MEDDLY::PRE_IMAGE(forest* a, forest* b, forest* c)
 
     if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         return PRE_IMAGE_cache.add(
-            new mt_prepost_set_op<false, mt_prepost>(a, b, c)
+            new prepost_set_op<EdgeOp_none, false, mt_prepost>(a, b, c)
         );
     }
     /*
@@ -1256,7 +1308,7 @@ MEDDLY::binary_operation* MEDDLY::POST_IMAGE(forest* a, forest* b, forest* c)
 
     if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         return POST_IMAGE_cache.add(
-            new mt_prepost_set_op<true, mt_prepost>(a, b, c)
+            new prepost_set_op<EdgeOp_none, true, mt_prepost>(a, b, c)
         );
     }
     /*
@@ -1316,12 +1368,12 @@ MEDDLY::binary_operation* MEDDLY::VM_MULTIPLY(forest* a, forest* b, forest* c)
     switch (c->getRangeType()) {
         case range_type::INTEGER:
             return VM_MULTIPLY_cache.add(
-                new mt_prepost_set_op<true, mt_vectXmatr<int> >(a, b, c)
+                new prepost_set_op<EdgeOp_none, true, mt_vectXmatr<int> >(a, b, c)
             );
 
         case range_type::REAL:
             return VM_MULTIPLY_cache.add(
-                new mt_prepost_set_op<true, mt_vectXmatr<float> >(a, b, c)
+                new prepost_set_op<EdgeOp_none, true, mt_vectXmatr<float> >(a, b, c)
             );
 
         default:
@@ -1352,12 +1404,12 @@ MEDDLY::binary_operation* MEDDLY::MV_MULTIPLY(forest* a, forest* b, forest* c)
     switch (c->getRangeType()) {
         case range_type::INTEGER:
             return MV_MULTIPLY_cache.add(
-                new mt_prepost_set_op<false, mt_vectXmatr<int> >(a, b, c, true)
+                new prepost_set_op<EdgeOp_none, false, mt_vectXmatr<int> >(a, b, c, true)
             );
 
         case range_type::REAL:
             return MV_MULTIPLY_cache.add(
-                new mt_prepost_set_op<false, mt_vectXmatr<float> >(a, b, c, true)
+                new prepost_set_op<EdgeOp_none, false, mt_vectXmatr<float> >(a, b, c, true)
             );
 
         default:

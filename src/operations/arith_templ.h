@@ -49,6 +49,8 @@
     edge operator * with OP * or /,
     and any multi-terminal operator.
 
+    EOP class: should be one of the EdgeOp classes in forests_edgerules.h.
+
     Required methods for ATYPE classes (should be inlined):
 
         /// Get the operation name, for display purposes

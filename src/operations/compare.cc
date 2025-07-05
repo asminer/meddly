@@ -430,6 +430,9 @@ void MEDDLY::compare_mt<CTYPE>::_compute(int L, unsigned in,
 // ******************************************************************
 
 /*
+
+    EOP class: should be one of the EdgeOp classes in forests_edgerules.h.
+
     Required methods for CTYPE classes (should be inlined)
     for edge-valued comparisons:
 
