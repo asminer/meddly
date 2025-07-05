@@ -1,5 +1,9 @@
 Implement next:
 
+    * pre/post image on relations (e.g. transitive closure)
+        and test programs
+
+
     * Add 'relation node' construction from forests
         + forest contains free list of rel_nodes?
 
@@ -129,6 +133,10 @@ copy.cc
 difference.cc
 intersection.cc
 maxmin_range.cc
+
+prepost_set.cc  : vector-matrix stuff, TBD
+prepost_rel.cc  : matrix-matrix stuff, TBD
+
 reach_bfs.cc
 union.cc
 

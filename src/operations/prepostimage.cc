@@ -1212,11 +1212,13 @@ MEDDLY::binary_operation* MEDDLY::PRE_IMAGE(forest* a, forest* b, forest* c)
             new mt_prepost_set_op<false, mt_prepost>(a, b, c)
         );
     }
+    /*
     if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
         return PRE_IMAGE_cache.add(
             new mtmatr_evplusvect<int>(PRE_IMAGE_cache, a, b, c, acc)
         );
     }
+    */
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
@@ -1257,11 +1259,13 @@ MEDDLY::binary_operation* MEDDLY::POST_IMAGE(forest* a, forest* b, forest* c)
             new mt_prepost_set_op<true, mt_prepost>(a, b, c)
         );
     }
+    /*
     if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
         return POST_IMAGE_cache.add(
             new evplusvect_mtmatr<int>(POST_IMAGE_cache, a, b, c, acc)
         );
     }
+    */
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
