@@ -23,44 +23,72 @@
 #include "../src/meddly.h"
 #include "simple_model.h"
 
+struct statedist {
+    const char* state;
+    unsigned distance;
+};
+
+// #define HAVE_ORACLE
+
+#ifdef HAVE_ORACLE
 #include "kan_rs1.h"
 #include "kan_rs2.h"
 #include "kan_rs3.h"
+#endif
 
 const char* kanban[] = {
-  "X-+..............",  // Tin1
-  "X.-+.............",  // Tr1
-  "X.+-.............",  // Tb1
-  "X.-.+............",  // Tg1
-  "X.....-+.........",  // Tr2
-  "X.....+-.........",  // Tb2
-  "X.....-.+........",  // Tg2
-  "X+..--+..-+......",  // Ts1_23
-  "X.........-+.....",  // Tr3
-  "X.........+-.....",  // Tb3
-  "X.........-.+....",  // Tg3
-  "X....+..-+..--+..",  // Ts23_4
-  "X.............-+.",  // Tr4
-  "X.............+-.",  // Tb4
-  "X............+..-",  // Tout4
-  "X.............-.+"   // Tg4
+    "X-+..............",  // Tin1
+    "X.-+.............",  // Tr1
+    "X.+-.............",  // Tb1
+    "X.-.+............",  // Tg1
+    "X.....-+.........",  // Tr2
+    "X.....+-.........",  // Tb2
+    "X.....-.+........",  // Tg2
+    "X+..--+..-+......",  // Ts1_23
+    "X.........-+.....",  // Tr3
+    "X.........+-.....",  // Tb3
+    "X.........-.+....",  // Tg3
+    "X....+..-+..--+..",  // Ts23_4
+    "X.............-+.",  // Tr4
+    "X.............+-.",  // Tb4
+    "X............+..-",  // Tout4
+    "X.............-.+"   // Tg4
 };
 
 // 160 states for N=1
 long expected[] = {
-  1, 160, 4600, 58400, 454475, 2546432, 11261376,
-  41644800, 133865325, 384392800, 1005927208
+    1, 160, 4600, 58400, 454475, 2546432, 11261376,
+    41644800, 133865325, 384392800, 1005927208
 };
 
 using namespace MEDDLY;
 
-dd_edge buildReachset(domain* d, int N)
+// ============================================
+
+domain* buildDomain(int N)
+{
+    static int sizes[16];
+    for (unsigned i=0; i<16; i++) {
+        sizes[i] = N+1;
+    }
+    return domain::createBottomUp(sizes, 16);
+}
+
+// ============================================
+
+dd_edge buildReachset(domain* d, int N, edge_labeling E)
 {
     //
     // Build forests
     //
-    forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
-                        edge_labeling::MULTI_TERMINAL);
+    forest* mdd = nullptr;
+    if (edge_labeling::EVPLUS == E) {
+       mdd = forest::create(d, SET, range_type::INTEGER,
+                    edge_labeling::EVPLUS);
+    } else {
+       mdd = forest::create(d, SET, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL);
+    }
     forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL);
 
@@ -74,7 +102,15 @@ dd_edge buildReachset(domain* d, int N)
     initial.setVar(5, N);
     initial.setVar(9, N);
     initial.setVar(13, N);
-    initial.buildFunction(false, init_state);
+
+    if (edge_labeling::EVPLUS == E) {
+        initial.setValue(0);
+        rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
+        initial.buildFunction(infty, init_state);
+    } else {
+        initial.buildFunction(false, init_state);
+    }
+
     printf("\tbuilt initial state\n");
     fflush(stdout);
 
@@ -95,6 +131,8 @@ dd_edge buildReachset(domain* d, int N)
     return reachable;
 }
 
+// ============================================
+
 bool matches(const char* mark, const minterm &m)
 {
     for (unsigned i=m.getNumVars(); i; --i) {
@@ -103,13 +141,12 @@ bool matches(const char* mark, const minterm &m)
     return true;
 }
 
+// ============================================
+
+/*
 void checkRS(int N, const char* rs[])
 {
-    int sizes[16];
-
-    for (int i=15; i>=0; i--) sizes[i] = N+1;
-    domain* d = domain::createBottomUp(sizes, 16);
-
+    domain* d = buildDomain(N);
     dd_edge reachable = buildReachset(d, N);
 
     // enumerate states
@@ -133,7 +170,38 @@ void checkRS(int N, const char* rs[])
 
     domain::destroy(d);
 }
+*/
 
+// ============================================
+
+void genRS(int N)
+{
+    using namespace std;
+
+    domain* d = buildDomain(N);
+    dd_edge reachable = buildReachset(d, N, edge_labeling::EVPLUS);
+
+    cout << "//\n";
+    cout << "// Finite distance function for Kanban N=" << N << "\n";
+    cout << "//\n";
+    cout << "\n";
+    cout << "const statedist kanban_rs" << N << "[] = {\n";
+
+    // enumerate states
+    for (dd_edge::iterator i = reachable.begin(); i; ++i)
+    {
+        cout << "    { \"b";
+        for (unsigned k=1; k <= 16; ++k) {
+            cout << (*i).from(k);
+        }
+        cout << "\", " << long((*i).getValue()) << "},\n";
+    }
+    cout << "    { nullptr, 0 }\n";
+    cout << "};\n\n";
+
+    domain::destroy(d);
+
+}
 
 /*
 void showRS(int N)
@@ -159,10 +227,60 @@ void showRS(int N)
 }
 */
 
-int main()
+// ============================================
+
+int Usage(const char* exe)
 {
+    using namespace std;
+
+    cerr << "\n";
+    cerr << "Usage: " << exe << " [ switches ]\n";
+    cerr << "\n";
+    cerr << "Check reachable states (with distances as appropriate) on small\n";
+    cerr << "Kanban instances.\n";
+    cerr << "\n";
+    cerr << "Switches:\n";
+    cerr << "    -c     : check against expected states and distances (default)\n";
+    cerr << "    -g n   : generate header for N=n instance. Use n>0.\n";
+    cerr << "             Does not perform any checking.\n";
+    cerr << "\n";
+
+    return 1;
+}
+
+// ============================================
+
+
+
+int main(int argc, const char** argv)
+{
+    long geninstance = 0;
+    for (int i=1; i<argc; i++) {
+        if (0==strcmp("-g", argv[i])) {
+            if (argv[i+1]) {
+                geninstance = atol(argv[i+1]);
+                if (geninstance<1) {
+                    return Usage(argv[0]);
+                }
+            }
+            continue;
+        }
+        if (0==strcmp("-c", argv[i])) {
+            geninstance = 0;
+            continue;
+        }
+    }
+
     try {
         MEDDLY::initialize();
+
+        if (geninstance) {
+            genRS(geninstance);
+            MEDDLY::cleanup();
+            return 0;
+        }
+
+        /*
 
         printf("Checking Kanban reachability set, N=1\n");
         checkRS(1, kanban_rs1);
@@ -175,6 +293,7 @@ int main()
         printf("Checking Kanban reachability set, N=3\n");
         checkRS(3, kanban_rs3);
         printf("\t%ld markings checked out\n", expected[3]);
+        */
 
         MEDDLY::cleanup();
         printf("Done\n");

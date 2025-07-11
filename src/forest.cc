@@ -25,7 +25,6 @@
 #include <cmath>  // for round()
 
 #include "defines.h"
-#include "forest_levels.h"
 #include "initializer.h"
 #include "unique_table.h"
 #include "relation_node.h"
@@ -42,6 +41,9 @@
 #include "ct_entry_type.h"  // for invalidateAllWithForest
 
 #include "rel_node.h"
+
+#include "forest_levels.h"
+#include "forest_edgerules.h"
 
 // for timestamps.
 // to do - check during configuration that these are present,
@@ -175,8 +177,47 @@ bool MEDDLY::rel_node_from_dd::outgoing(unsigned i, unpacked_node &u)
 
     if (getParent()->getNodeLevel(dn) == next_level) {
         u.initFromNode(dn);
+
+        //
+        // "Add" unp's edge value to u
+        //
+        switch (getParent()->getEdgeLabeling())
+        {
+            case edge_labeling::MULTI_TERMINAL:
+                // nothing to do
+                break;
+
+            case edge_labeling::EVPLUS:
+                MEDDLY_DCASSERT(getParent()->isRangeType(range_type::INTEGER));
+                for (unsigned j=0; j<u.getSize(); j++) {
+                    if (u.down(j)) {
+                        EdgeOp_plus<long>::accumulateOp(
+                                u.edgeval(j), unp->edgeval(i)
+                        );
+                    }
+                }
+                break;
+
+            case edge_labeling::EVTIMES:
+                MEDDLY_DCASSERT(getParent()->isRangeType(range_type::REAL));
+                for (unsigned j=0; j<u.getSize(); j++) {
+                    if (u.down(j)) {
+                        EdgeOp_times<float>::accumulateOp(
+                                u.edgeval(j), unp->edgeval(i)
+                        );
+                    }
+                }
+                break;
+
+            default:
+                FAIL(__FILE__, __LINE__, "Unknown edge labeling");
+        }
     } else {
-        u.initIdentity(next_level, i, dn);
+        if (unp->hasEdges()) {
+            u.initIdentity(next_level, i, unp->edgeval(i), dn);
+        } else {
+            u.initIdentity(next_level, i, dn);
+        }
     }
     return true;
 }

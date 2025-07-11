@@ -25,8 +25,6 @@
 
 // #define SHOW_INDEXES
 
-// #define OLD_ITERATORS
-
 const char* kanban[] = {
   "X-+..............",  // Tin1
   "X.-+.............",  // Tr1
@@ -131,20 +129,6 @@ bool checkReachset(int N)
     //
     long c = 0;
     minterm assign(mdd);
-#ifdef OLD_ITERATORS
-    for (enumerator s(reachable); s; ++s)
-    {
-        long index;
-        const int* state = s.getAssignments();
-        assign.setAll(state, true);   // UGH, copy, for now
-        reach_index.evaluate(assign, index);
-        if (c != index) {
-            printf("\nState number %ld has index %ld\n", c, index);
-            return false;
-        }
-        c++;
-    }
-#else
     for (dd_edge::iterator s = reachable.begin(); s; ++s)
     {
         long index;
@@ -159,7 +143,6 @@ bool checkReachset(int N)
         }
         c++;
     }
-#endif
     printf("\tverified `forward'\n");
     fflush(stdout);
 
@@ -169,19 +152,6 @@ bool checkReachset(int N)
     //
 
     c = 0;
-#ifdef OLD_ITERATORS
-    for (enumerator s(reach_index); s; ++s) {
-        const int* state = s.getAssignments();
-        bool ok;
-        assign.setAll(state, true);
-        reachable.evaluate(assign, ok);
-        if (!ok) {
-            printf("\nIndex number %ld does not appear in reachability set\n", c);
-            return false;
-        }
-        c++;
-    }
-#else
     for (dd_edge::iterator s = reach_index.begin(); s; ++s)
     {
         long index = (*s).getValue();
@@ -197,24 +167,11 @@ bool checkReachset(int N)
         }
         c++;
     }
-#endif
     printf("\tverified `backward'\n");
     fflush(stdout);
 
     // Verify index search
     c = 0;
-#ifdef OLD_ITERATORS
-    int elem[17];
-    for (enumerator s(reachable); s; ++s) {
-        const int* state = s.getAssignments();
-        evmdd->getElement(reach_index, c, elem);
-        if (!equal(state, elem, 16)) {
-            printf("\nFetch index %ld got wrong state\n", c);
-            return false;
-        }
-        c++;
-    } // for s
-#else
     for (dd_edge::iterator s = reachable.begin(); s; ++s)
     {
         bool ok = reach_index.getElement(c, assign);
@@ -228,7 +185,6 @@ bool checkReachset(int N)
         }
         c++;
     }
-#endif
     printf("\tverified `getElement'\n");
     fflush(stdout);
 

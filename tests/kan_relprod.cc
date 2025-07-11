@@ -190,16 +190,22 @@ void genStates(const bool fwd)
 //
 // Generate and Check forward/backward distance sets
 //
-void checkStates(const bool fwd)
+void checkStates(const bool fwd, range_type rt, edge_labeling el)
 {
-    std::cout << "Checking " << (fwd ? "forward" : "backward") << " states\n";
+    std::cout   << "Checking " << (fwd ? "forward" : "backward")
+                << " with " << nameOf(el) << ", " << nameOf(rt)
+                << " 'states'\n";
+
     int sizes[16];
 
     for (int i=15; i>=0; i--) sizes[i] = 2;
 
     domain* d = domain::createBottomUp(sizes, 16);
+    forest* mdd = forest::create(d, SET, rt, el);
+    /*
     forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
             edge_labeling::MULTI_TERMINAL);
+            */
     forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
             edge_labeling::MULTI_TERMINAL);
 
@@ -284,8 +290,8 @@ int main(int argc, const char** argv)
             genStates(true);
             genStates(false);
         } else {
-            checkStates(true);
-            checkStates(false);
+            checkStates(true,   range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+            checkStates(false,  range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
         }
 
         MEDDLY::cleanup();

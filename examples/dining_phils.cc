@@ -98,8 +98,6 @@
 #include "../timing/timer.h"
 #include "../src/log_simple.h"
 
-// #define OLD_ITERATORS
-
 using namespace MEDDLY;
 
 // #define NAME_VARIABLES
@@ -636,30 +634,6 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
 #endif
 
     if (sw.printReachableStates) {
-#ifdef OLD_ITERATORS
-        // Create a EV+MDD forest in this domain (to store index set)
-        forest* evplusmdd =
-            forest::create(d, false, range_type::INTEGER, edge_labeling::INDEX_SET);
-        assert(evplusmdd != NULL);
-
-        // Test Convert MDD to Index Set EV+MDD
-        dd_edge indexSet(evplusmdd);
-        testIndexSet(reachableStates, indexSet);
-        int* element = (int *) malloc((nLevels + 1) * sizeof(int));
-
-        double cardinality;
-        apply(CARDINALITY, indexSet, cardinality);
-        for (int index = 0; index < int(cardinality); index++)
-        {
-            evplusmdd->getElement(indexSet, index, element);
-            printf("Element at index %d: [ ", index);
-            for (int i = nLevels; i > 0; i--)
-            {
-                printf("%d ", element[i]);
-            }
-            printf("]\n");
-        }
-#else
         FILE_output out(stdout);
         long c=0;
         for (auto I = reachableStates.begin(); I; ++I) {
@@ -669,7 +643,6 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
             ++c;
         }
         out << c << " reachable states\n";
-#endif
     }
 
 

@@ -35,8 +35,6 @@
 
 // #define SAME_FOREST_OPERATIONS
 
-// #define OLD_ITERATORS
-
 inline unsigned MAX(unsigned a, int b) {
     if (b<0) return a;
     return (a> unsigned(b)) ? a : unsigned(b);
@@ -304,33 +302,6 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 //  Explicit RS construction
 //
 
-#ifdef OLD_ITERATORS
-
-bool fireEvent(const char* event, const int* current,
-        MEDDLY::minterm& next)
-{
-    for (unsigned i=next.getNumVars(); i; i--) {
-        if ('.' == event[i]) {
-            next.from(i) = current[i];
-            continue;
-        }
-        if ('-' == event[i]) {
-            next.from(i) = current[i] - 1;
-            if (next.from(i) < 0) return false;
-            continue;
-        }
-        if ('+' == event[i]) {
-            next.from(i) = current[i] + 1;
-            // TBD ... check for overflow
-            continue;
-        }
-        throw 1;  // bad event string
-    }
-    return true;
-}
-
-#else
-
 bool fireEvent(const char* event, const MEDDLY::minterm &current,
         MEDDLY::minterm& next)
 {
@@ -354,8 +325,6 @@ bool fireEvent(const char* event, const MEDDLY::minterm &current,
     return true;
 }
 
-#endif
-
 void explicitReachset(const char* const* events, unsigned nEvents,
   MEDDLY::forest* f, MEDDLY::dd_edge &expl, MEDDLY::dd_edge &RS,
   unsigned batchsize)
@@ -371,60 +340,14 @@ void explicitReachset(const char* const* events, unsigned nEvents,
     dd_edge unexplored(f);
     // batch of states
     dd_edge batch(f);
-#ifdef OLD_ITERATORS
-    // exploration loop.
-    enumerator I(expl);
-#else
     // exploration loop.
     dd_edge::iterator I(expl);
-#endif
     for (;;) {
         f->createConstant(false, unexplored);
-#ifdef OLD_ITERATORS
-        I.start(expl);
-#else
         I.restart(expl);
-#endif
         if (!I) break;    // nothing left to explore, bail out
         // explore everything in expl
         for (; I; ++I) {
-#ifdef OLD_ITERATORS
-            //
-            // old iterators
-            //
-            const int* curr = I.getAssignments();
-#ifdef DEBUG_GENERATE
-            printf("Exploring state: (%d", curr[1]);
-            for (int n=2; n<=minterms.getNumVars(); n++) {
-                printf(", %d", curr[n]);
-            }
-            printf(")\n");
-#endif
-            // what's enabled?
-            for (unsigned e=0; e<nEvents; e++) {
-                if (!fireEvent(events[e], curr, minterms.unused())) continue;
-#ifdef DEBUG_GENERATE
-                printf("  -- (event %d) --> ", e);
-                MEDDLY::FILE_output fout(stdout);
-                minterms.unused().show(fout);
-                printf("\n");
-#endif
-
-                // Have we seen this already in the RS
-                rangeval seen;
-                RS.evaluate(minterms.unused(), seen);
-                if (seen) continue;
-
-                minterms.pushUnused();
-                if (minterms.size() >= batchsize) {
-                    // Buffer is full; flush it
-                    minterms.buildFunction(batch);
-                    minterms.clear();
-                    unexplored += batch;
-                    RS += batch;
-                }
-            } // for e
-#else
             //
             // New iterators
             //
@@ -457,7 +380,6 @@ void explicitReachset(const char* const* events, unsigned nEvents,
                     RS += batch;
                 }
             } // for e
-#endif
         } // for I
         // expl is empty.
         // Flush the buffer
