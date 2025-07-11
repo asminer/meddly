@@ -1231,7 +1231,7 @@ void MEDDLY::common_dfs_evplus
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
   // Initialize operations
-  mddUnion = UNION(resF, resF, resF);
+  mddUnion = MINIMUM(resF, resF, resF);
   MEDDLY_DCASSERT(mddUnion);
 
   mxdIntersection = INTERSECTION(arg2F, arg2F, arg2F);
