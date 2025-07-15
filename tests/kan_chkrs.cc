@@ -76,7 +76,7 @@ domain* buildDomain(int N)
 
 // ============================================
 
-dd_edge buildReachset(domain* d, int N, edge_labeling E)
+dd_edge buildReachset(domain* d, int N, edge_labeling E, bool use_sat)
 {
     //
     // Build forests
@@ -127,10 +127,14 @@ dd_edge buildReachset(domain* d, int N, edge_labeling E)
     //
     // Build reachable states
     //
-    // TBD: traditional vs saturation
-    //
     dd_edge reachable(mdd);
-    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    if (use_sat) {
+        std::cout << "\t\tusing saturation\n";
+        apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    } else {
+        std::cout << "\t\tusing traditional iteration\n";
+        apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+    }
 
     return reachable;
 }
@@ -159,12 +163,12 @@ bool matches(const statedist &sd, const minterm &m)
 
 // ============================================
 
-void checkRS(int N, edge_labeling E)
+void checkRS(int N, edge_labeling E, bool use_sat)
 {
     std::cout << "Checking Kanban reachability set, N=" << N << "\n";
 
     domain* d = buildDomain(N);
-    dd_edge reachable = buildReachset(d, N, E);
+    dd_edge reachable = buildReachset(d, N, E, use_sat);
 
     const statedist* krs = nullptr;
 #ifdef HAVE_ORACLE
@@ -217,7 +221,7 @@ void genRS(int N)
     using namespace std;
 
     domain* d = buildDomain(N);
-    dd_edge reachable = buildReachset(d, N, edge_labeling::EVPLUS);
+    dd_edge reachable = buildReachset(d, N, edge_labeling::EVPLUS, true);
 
     cout << "//\n";
     cout << "// Finite distance function for Kanban N=" << N << "\n";
@@ -261,6 +265,8 @@ int Usage(const char* exe)
     cerr << "    --mt   : use MTMDDs (default)\n";
     cerr << "    --ev   : use EV+MDDs\n";
     cerr << "\n";
+    cerr << "    --sat  : use saturation (default)\n";
+    cerr << "    --trad : use traditional iteration\n";
 
     return 1;
 }
@@ -273,6 +279,7 @@ int main(int argc, const char** argv)
 {
     long geninstance = 0;
     edge_labeling elmdd = edge_labeling::MULTI_TERMINAL;
+    bool use_sat = true;
 
     //
     // Process switches
@@ -294,6 +301,10 @@ int main(int argc, const char** argv)
             continue;
         }
 
+        //
+        // mt vs ev
+        //
+
         if (0==strcmp("--mt", argv[i])) {
             elmdd = edge_labeling::MULTI_TERMINAL;
             continue;
@@ -301,6 +312,20 @@ int main(int argc, const char** argv)
 
         if (0==strcmp("--ev", argv[i])) {
             elmdd = edge_labeling::EVPLUS;
+            continue;
+        }
+
+        //
+        // saturation vs traditional
+        //
+
+        if (0==strcmp("--sat", argv[i])) {
+            use_sat = true;
+            continue;
+        }
+
+        if (0==strcmp("--trad", argv[i])) {
+            use_sat = false;
             continue;
         }
 
@@ -320,9 +345,9 @@ int main(int argc, const char** argv)
             return 0;
         }
 
-        checkRS(1, elmdd);
-        checkRS(2, elmdd);
-        checkRS(3, elmdd);
+        checkRS(1, elmdd, use_sat);
+        checkRS(2, elmdd, use_sat);
+        checkRS(3, elmdd, use_sat);
 
         MEDDLY::cleanup();
         std::cout << "Done\n";
