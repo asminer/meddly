@@ -28,12 +28,12 @@ struct statedist {
     unsigned distance;
 };
 
-// #define HAVE_ORACLE
+#define HAVE_ORACLE
 
 #ifdef HAVE_ORACLE
-#include "kan_rs1.h"
-#include "kan_rs2.h"
-#include "kan_rs3.h"
+#include "kan_df1.h"
+#include "kan_df2.h"
+#include "kan_df3.h"
 #endif
 
 const char* kanban[] = {
@@ -83,11 +83,13 @@ dd_edge buildReachset(domain* d, int N, edge_labeling E)
     //
     forest* mdd = nullptr;
     if (edge_labeling::EVPLUS == E) {
-       mdd = forest::create(d, SET, range_type::INTEGER,
-                    edge_labeling::EVPLUS);
+        std::cout << "\tusing EV+MDD for distance\n";
+        mdd = forest::create(d, SET, range_type::INTEGER,
+                edge_labeling::EVPLUS);
     } else {
-       mdd = forest::create(d, SET, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL);
+        std::cout << "\tusing MTMDD for reachable states\n";
+        mdd = forest::create(d, SET, range_type::BOOLEAN,
+                edge_labeling::MULTI_TERMINAL);
     }
     forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL);
@@ -111,19 +113,21 @@ dd_edge buildReachset(domain* d, int N, edge_labeling E)
         initial.buildFunction(false, init_state);
     }
 
-    printf("\tbuilt initial state\n");
-    fflush(stdout);
+    std::cout << "\t\tbuilt initial state\n";
 
     //
     // Build next-state function
     //
+    // TBD: monolithic vs implicit vs ...
+    //
     dd_edge nsf(mxd);
     buildNextStateFunction(kanban, 16, mxd, nsf);
-    printf("\tbuilt next-state function\n");
-    fflush(stdout);
+    std::cout << "\t\tbuilt next-state function\n";
 
     //
     // Build reachable states
+    //
+    // TBD: traditional vs saturation
     //
     dd_edge reachable(mdd);
     apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
@@ -133,44 +137,78 @@ dd_edge buildReachset(domain* d, int N, edge_labeling E)
 
 // ============================================
 
-bool matches(const char* mark, const minterm &m)
+bool matches(const statedist &sd, const minterm &m)
 {
-    for (unsigned i=m.getNumVars(); i; --i) {
-        if (mark[i-1]-48 != m.from(i)) return false;
+    if (!sd.state) {
+        throw "not enough reachable markings";
     }
-    return true;
+
+    for (unsigned k=1; k <= 16; ++k) {
+        if (sd.state[k]-48 != m.from(k)) return false;
+    }
+
+    const rangeval& oracle = m.getValue();
+    if (oracle.isBoolean()) return true;
+
+    if (oracle.isInteger()) {
+        return long(oracle) == sd.distance;
+    }
+
+    throw "Unexpected state value type";
 }
 
 // ============================================
 
-/*
-void checkRS(int N, const char* rs[])
+void checkRS(int N, edge_labeling E)
 {
+    std::cout << "Checking Kanban reachability set, N=" << N << "\n";
+
     domain* d = buildDomain(N);
-    dd_edge reachable = buildReachset(d, N);
+    dd_edge reachable = buildReachset(d, N, E);
 
-    // enumerate states
-    long c = 0;
-
-    for (dd_edge::iterator i = reachable.begin(); i; ++i)
-    {
-        if (c>=expected[N]) {
-            throw "too many markings";
-        }
-        if (!matches(rs[c], *i))
-        {
-            fprintf(stderr, "Marking %ld mismatched\n", c);
+    const statedist* krs = nullptr;
+#ifdef HAVE_ORACLE
+    switch (N) {
+        case 1:
+            krs = kanban_rs1;
             break;
-        }
-        c++;
+
+        case 2:
+            krs = kanban_rs2;
+            break;
+
+        case 3:
+            krs = kanban_rs3;
+            break;
+
+        default:
+            krs = nullptr;
     }
-    if (c<expected[N]) {
-        throw "not enough markings";
+#endif
+
+    if (krs) {
+        std::cout << "\tverifying against oracle\n";
+
+        // enumerate states
+        long c = 0;
+
+        for (dd_edge::iterator i = reachable.begin(); i; ++i)
+        {
+            if (!matches( krs[c], *i) ) {
+                std::cerr << "Marking " << c << " mismatched\n";
+                throw "mismatch";
+            }
+            c++;
+        }
+        if (krs[c].state) {
+            throw "not enough markings";
+        }
+
+        std::cout << "\tperfect match!\n";
     }
 
     domain::destroy(d);
 }
-*/
 
 // ============================================
 
@@ -203,30 +241,6 @@ void genRS(int N)
 
 }
 
-/*
-void showRS(int N)
-{
-    int sizes[16];
-
-    for (int i=15; i>=0; i--) sizes[i] = N+1;
-    domain* d = domain::createBottomUp(sizes, 16);
-
-    dd_edge reachable = buildReachset(d, N);
-
-    // enumerate states
-    long c = 0;
-    for (enumerator i(reachable); i; ++i) {
-        const int* minterm = i.getAssignments();
-        printf("%5ld: %d", c, minterm[1]);
-        for (int l=2; l<=16; l++) printf(", %d", minterm[l]);
-        printf("\n");
-        c++;
-    }
-
-    domain::destroy(d);
-}
-*/
-
 // ============================================
 
 int Usage(const char* exe)
@@ -241,8 +255,11 @@ int Usage(const char* exe)
     cerr << "\n";
     cerr << "Switches:\n";
     cerr << "    -c     : check against expected states and distances (default)\n";
-    cerr << "    -g n   : generate header for N=n instance. Use n>0.\n";
-    cerr << "             Does not perform any checking.\n";
+    cerr << "    -g n   : generate header for N=n instance. Use n>0. Does not\n";
+    cerr << "             perform any checking. Ignores all other switches.\n";
+    cerr << "\n";
+    cerr << "    --mt   : use MTMDDs (default)\n";
+    cerr << "    --ev   : use EV+MDDs\n";
     cerr << "\n";
 
     return 1;
@@ -255,6 +272,12 @@ int Usage(const char* exe)
 int main(int argc, const char** argv)
 {
     long geninstance = 0;
+    edge_labeling elmdd = edge_labeling::MULTI_TERMINAL;
+
+    //
+    // Process switches
+    //
+
     for (int i=1; i<argc; i++) {
         if (0==strcmp("-g", argv[i])) {
             if (argv[i+1]) {
@@ -263,13 +286,30 @@ int main(int argc, const char** argv)
                     return Usage(argv[0]);
                 }
             }
+            ++i;
             continue;
         }
         if (0==strcmp("-c", argv[i])) {
             geninstance = 0;
             continue;
         }
+
+        if (0==strcmp("--mt", argv[i])) {
+            elmdd = edge_labeling::MULTI_TERMINAL;
+            continue;
+        }
+
+        if (0==strcmp("--ev", argv[i])) {
+            elmdd = edge_labeling::EVPLUS;
+            continue;
+        }
+
+        return Usage(argv[0]);
     }
+
+    //
+    // Run
+    //
 
     try {
         MEDDLY::initialize();
@@ -280,33 +320,22 @@ int main(int argc, const char** argv)
             return 0;
         }
 
-        /*
-
-        printf("Checking Kanban reachability set, N=1\n");
-        checkRS(1, kanban_rs1);
-        printf("\t%ld markings checked out\n", expected[1]);
-
-        printf("Checking Kanban reachability set, N=2\n");
-        checkRS(2, kanban_rs2);
-        printf("\t%ld markings checked out\n", expected[2]);
-
-        printf("Checking Kanban reachability set, N=3\n");
-        checkRS(3, kanban_rs3);
-        printf("\t%ld markings checked out\n", expected[3]);
-        */
+        checkRS(1, elmdd);
+        checkRS(2, elmdd);
+        checkRS(3, elmdd);
 
         MEDDLY::cleanup();
-        printf("Done\n");
+        std::cout << "Done\n";
         return 0;
     }
     catch (MEDDLY::error e) {
-        fprintf(stderr, "\nCaught meddly error %s\n", e.getName());
-        fprintf(stderr, "    thrown in %s line %u\n",
-                e.getFile(), e.getLine());
+        std::cerr   << "\nCaught meddly error " << e.getName() << "\n"
+                    << "    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
         return 1;
     }
     catch (const char* e) {
-        fprintf(stderr, "\nCaught our own error: %s\n", e);
+        std::cerr   << "\nCaught our own error: " << e << "\n";
         return 2;
     }
     return 4;
