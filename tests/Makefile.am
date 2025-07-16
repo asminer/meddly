@@ -66,7 +66,12 @@ TESTS = \
     ddedge \
     domain_list \
     kan_batch \
-    kan_chkrs \
+    \
+    kan_chkrs.--mt.--trad._sh \
+    kan_chkrs.--mt.--sat._sh \
+    kan_chkrs.--ev.--trad._sh \
+    kan_chkrs.--ev.--sat._sh \
+    \
     kan_index \
     kan_io \
     kan_relprod \
@@ -129,164 +134,9 @@ EXTRA_DIST = buildWrapper.sh
 # Automatically build a wrapper script,
 # for tests with command line arguments.
 #
-###########################################
 
-chk_minterms.--set.--fully._sh: buildWrapper.sh
+%._sh: buildWrapper.sh
 	./buildWrapper.sh $@
-
-chk_minterms.--set.--quasi._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-chk_minterms.--rel.--fully._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-chk_minterms.--rel.--quasi._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-chk_minterms.--rel.--ident._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-###########################################
-
-chk_mtcoll.--set.--fully._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-chk_mtcoll.--set.--quasi._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-chk_mtcoll.--rel.--fully._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-chk_mtcoll.--rel.--quasi._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-chk_mtcoll.--rel.--ident._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-###########################################
-
-ops_comp.--set.--MT.--int._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_comp.--set.--MT.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_comp.--set.--EVp.--long._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_comp.--rel.--MT.--int._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_comp.--rel.--MT.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_comp.--rel.--EVp.--long._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_comp.--rel.--EVs.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-###########################################
-
-ops_maxmin.--set.--MT.--int._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_maxmin.--set.--MT.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_maxmin.--set.--EVp.--long._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_maxmin.--rel.--MT.--int._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_maxmin.--rel.--MT.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_maxmin.--rel.--EVp.--long._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_maxmin.--rel.--EVs.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-###########################################
-
-ops_plusminus.--set.--MT.--int._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_plusminus.--set.--MT.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_plusminus.--set.--EVp.--long._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_plusminus.--rel.--MT.--int._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_plusminus.--rel.--MT.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_plusminus.--rel.--EVp.--long._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_plusminus.--rel.--EVs.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-###########################################
-
-ops_mult.--set.--MT.--int._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_mult.--set.--MT.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_mult.--set.--EVp.--long._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_mult.--rel.--MT.--int._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_mult.--rel.--MT.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_mult.--rel.--EVp.--long._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_mult.--rel.--EVs.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-###########################################
-
-ops_divmod.--set.--MT.--int._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_divmod.--set.--MT.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_divmod.--set.--EVp.--long._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_divmod.--rel.--MT.--int._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_divmod.--rel.--MT.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_divmod.--rel.--EVp.--long._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_divmod.--rel.--EVs.--float._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-###########################################
-
-ops_set.--set._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-ops_set.--rel._sh: buildWrapper.sh
-	./buildWrapper.sh $@
-
-###########################################
 
 clean-local:
 	rm -f *._sh

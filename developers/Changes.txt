@@ -84,6 +84,16 @@ Implement next:
 
         - check timing: overhead for rel_node objects
 
+    * Protected nodes
+        very light dd_edge for mark and sweep registry
+
+        constructor:    register itself
+        destructor:     unregister itself
+        override = and such
+        keep track of index for fast unregister
+
+        forest: vector of pointers to protected nodes
+
 ===========
     release here?
 ===========

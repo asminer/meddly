@@ -134,15 +134,15 @@ MEDDLY::binary_operation* MEDDLY::REACHABLE_STATES_BFS(forest* a,
     binary_operation *img = POST_IMAGE(a, b, c);
     binary_operation *acc = nullptr;
 
-    if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+    // if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         if (a->getRangeType() == range_type::BOOLEAN) {
             acc = UNION(c, c, c);
         } else {
-            acc = MAXIMUM(c, c, c);
+            acc = MINIMUM(c, c, c);
         }
 
         return FWD_BFS_cache.add( new reach_bfs(img, acc) );
-    }
+    // }
 
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -171,15 +171,15 @@ MEDDLY::binary_operation* MEDDLY::REVERSE_REACHABLE_BFS(forest* a,
     binary_operation *img = PRE_IMAGE(a, b, c);
     binary_operation *acc = nullptr;
 
-    if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+    // if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         if (a->getRangeType() == range_type::BOOLEAN) {
             acc = UNION(c, c, c);
         } else {
-            acc = MAXIMUM(c, c, c);
+            acc = MINIMUM(c, c, c);
         }
 
         return REV_BFS_cache.add( new reach_bfs(img, acc) );
-    }
+    // }
 
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
