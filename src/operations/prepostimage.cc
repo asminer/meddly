@@ -1249,13 +1249,12 @@ MEDDLY::binary_operation* MEDDLY::PRE_IMAGE(forest* a, forest* b, forest* c)
 
     binary_operation *acc = nullptr;
     if  (
-            a->getEdgeLabeling() == edge_labeling::EVPLUS ||
             c->getRangeType() == range_type::BOOLEAN
         )
     {
         acc = UNION(c, c, c);
     } else {
-        acc = MAXIMUM(c, c, c);
+        acc = MINIMUM(c, c, c);
     }
     MEDDLY_DCASSERT(acc);
 
@@ -1296,13 +1295,12 @@ MEDDLY::binary_operation* MEDDLY::POST_IMAGE(forest* a, forest* b, forest* c)
 
     binary_operation *acc = nullptr;
     if  (
-            a->getEdgeLabeling() == edge_labeling::EVPLUS ||
             c->getRangeType() == range_type::BOOLEAN
         )
     {
         acc = UNION(c, c, c);
     } else {
-        acc = MAXIMUM(c, c, c);
+        acc = MINIMUM(c, c, c);
     }
     MEDDLY_DCASSERT(acc);
 
