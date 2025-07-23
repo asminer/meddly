@@ -55,7 +55,8 @@ namespace MEDDLY {
 // ************************************************************************
 
 /*
-    Template class for MT-based pre-image and post-image operations.
+    Template class for pre-image and post-image operations,
+    when the relation is MT-based.
     This includes vector-matrix and matrix-vector multiplications.
 
     Template parameters:
@@ -85,12 +86,12 @@ namespace MEDDLY {
 namespace MEDDLY {
 
     template <class EOP, bool FORWD, class ATYPE>
-    class prepost_set_op : public binary_operation {
+    class prepost_set_mtrel : public binary_operation {
         public:
-            prepost_set_op(forest* arg1, forest* arg2,
+            prepost_set_mtrel(forest* arg1, forest* arg2,
                     forest* res, bool swap=false);
 
-            virtual ~prepost_set_op();
+            virtual ~prepost_set_mtrel();
 
             virtual void compute(int L, unsigned in,
                     const edge_value &av, node_handle ap,
@@ -127,8 +128,8 @@ namespace MEDDLY {
 // ************************************************************************
 
 template <class EOP, bool FORWD, class ATYPE>
-MEDDLY::prepost_set_op<EOP, FORWD, ATYPE>
-    ::prepost_set_op(forest* arg1, forest* arg2, forest* res, bool swap)
+MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
+    ::prepost_set_mtrel(forest* arg1, forest* arg2, forest* res, bool swap)
     : binary_operation(
             swap ? arg2 : arg1,
             swap ? arg1 : arg2, res), swap_opnds(swap)
@@ -177,13 +178,13 @@ MEDDLY::prepost_set_op<EOP, FORWD, ATYPE>
 }
 
 template <class EOP, bool FORWD, class ATYPE>
-MEDDLY::prepost_set_op<EOP, FORWD, ATYPE>::~prepost_set_op()
+MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::~prepost_set_mtrel()
 {
     ct->markForDestroy();
 }
 
 template <class EOP, bool FORWD, class ATYPE>
-void MEDDLY::prepost_set_op<EOP, FORWD, ATYPE>
+void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
     ::compute(int L, unsigned in,
         const edge_value &av, node_handle ap,
         const edge_value &bv, node_handle bp,
@@ -209,7 +210,7 @@ void MEDDLY::prepost_set_op<EOP, FORWD, ATYPE>
 }
 
 template <class EOP, bool FORWD, class ATYPE>
-void MEDDLY::prepost_set_op<EOP, FORWD, ATYPE>::_compute(int L,
+void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
         const edge_value &av, node_handle A, node_handle B,
         edge_value &cv, node_handle &C)
 {
@@ -245,7 +246,7 @@ void MEDDLY::prepost_set_op<EOP, FORWD, ATYPE>::_compute(int L,
     const int Cnextlevel = MDD_levels::downLevel(Clevel);
 
 #ifdef TRACE
-    out << ATYPE::name(FORWD) << " prepost_set_op::compute("
+    out << ATYPE::name(FORWD) << " prepost_set_mtrel::compute("
         << L << ", " << A << ", " << B << ")\n";
     out << "A: #" << A << " ";
     arg1F->showNode(out, A, SHOW_DETAILS);
@@ -437,7 +438,7 @@ void MEDDLY::prepost_set_op<EOP, FORWD, ATYPE>::_compute(int L,
 #ifdef TRACE
     out.indent_less();
     out.put('\n');
-    out << ATYPE::name(FORWD) << " prepost_set_op::compute("
+    out << ATYPE::name(FORWD) << " prepost_set_mtrel::compute("
         << L << ", " << A << ", " << B << ") done\n";
     out << "  A: #" << A << ": ";
     arg1F->showNode(out, A, SHOW_DETAILS);
@@ -515,10 +516,45 @@ namespace MEDDLY {
             MEDDLY_DCASSERT(b<0);
             unary_operation* copy = COPY(fa, fc);
             MEDDLY_DCASSERT(copy);
-            edge_value dummy;
-            dummy.set();
-            copy->compute(fa->getNodeLevel(a), ~0,
-                av, a, cv, c);
+            copy->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
+        }
+
+    };
+};
+
+// ******************************************************************
+// *                                                                *
+// *                       ev_prepost  struct                       *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <typename INT>
+    struct ev_prepost {
+        inline static const char* name(bool forwd)
+        {
+            return forwd ? "post-image" : "pre-image";
+        }
+
+        /// Get the accumulate operation for result nodes.
+        inline static binary_operation* accumulateOp(forest* resF)
+        {
+            return MINIMUM(resF, resF, resF);
+        }
+
+        /// Apply the operation when b is a terminal node.
+        static void apply(forest* fa, const edge_value &av, node_handle a,
+                          const forest* fb, node_handle b,
+                          forest* fc, edge_value &cv, node_handle &c)
+        {
+            MEDDLY_DCASSERT(b<0);
+            unary_operation* copy = COPY(fa, fc);
+            MEDDLY_DCASSERT(copy);
+            copy->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
+
+            if (c) {
+                cv.add(INT(1));
+            }
         }
 
     };
@@ -1239,6 +1275,46 @@ void MEDDLY::tcXrel_evplus::processTerminals(long ev, node_handle evmxd, node_ha
 // *                                                                *
 // ******************************************************************
 
+namespace MEDDLY {
+    template <bool FWD>
+    MEDDLY::binary_operation* _IMAGE(forest* a, forest* b, forest* c)
+    {
+        binary_operation *acc = nullptr;
+        if  (
+                c->getRangeType() == range_type::BOOLEAN
+            )
+        {
+            acc = UNION(c, c, c);
+        } else {
+            acc = MINIMUM(c, c, c);
+        }
+        MEDDLY_DCASSERT(acc);
+
+        if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+            return new prepost_set_mtrel<EdgeOp_none, FWD, mt_prepost>(a, b, c);
+        }
+
+        if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
+
+            switch (a->getEdgeType()) {
+                case edge_type::INT:
+                    return new prepost_set_mtrel<EdgeOp_plus<int>, FWD,
+                           ev_prepost<int> > (a, b, c);
+
+                case edge_type::LONG:
+                    return new prepost_set_mtrel<EdgeOp_plus<long>, FWD,
+                           ev_prepost<long> > (a, b, c);
+
+                default:
+                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            };
+        }
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+};
+
+// ******************************************************************
+
 MEDDLY::binary_operation* MEDDLY::PRE_IMAGE(forest* a, forest* b, forest* c)
 {
     if (!a || !b || !c) return nullptr;
@@ -1246,31 +1322,7 @@ MEDDLY::binary_operation* MEDDLY::PRE_IMAGE(forest* a, forest* b, forest* c)
     if (bop) {
         return bop;
     }
-
-    binary_operation *acc = nullptr;
-    if  (
-            c->getRangeType() == range_type::BOOLEAN
-        )
-    {
-        acc = UNION(c, c, c);
-    } else {
-        acc = MINIMUM(c, c, c);
-    }
-    MEDDLY_DCASSERT(acc);
-
-    if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-        return PRE_IMAGE_cache.add(
-            new prepost_set_op<EdgeOp_none, false, mt_prepost>(a, b, c)
-        );
-    }
-    /*
-    if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
-        return PRE_IMAGE_cache.add(
-            new mtmatr_evplusvect<int>(PRE_IMAGE_cache, a, b, c, acc)
-        );
-    }
-    */
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    return PRE_IMAGE_cache.add( _IMAGE<false>(a, b, c) );
 }
 
 void MEDDLY::PRE_IMAGE_init()
@@ -1292,31 +1344,7 @@ MEDDLY::binary_operation* MEDDLY::POST_IMAGE(forest* a, forest* b, forest* c)
     if (bop) {
         return bop;
     }
-
-    binary_operation *acc = nullptr;
-    if  (
-            c->getRangeType() == range_type::BOOLEAN
-        )
-    {
-        acc = UNION(c, c, c);
-    } else {
-        acc = MINIMUM(c, c, c);
-    }
-    MEDDLY_DCASSERT(acc);
-
-    if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-        return POST_IMAGE_cache.add(
-            new prepost_set_op<EdgeOp_none, true, mt_prepost>(a, b, c)
-        );
-    }
-    /*
-    if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
-        return POST_IMAGE_cache.add(
-            new evplusvect_mtmatr<int>(POST_IMAGE_cache, a, b, c, acc)
-        );
-    }
-    */
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    return POST_IMAGE_cache.add( _IMAGE<true>(a, b, c) );
 }
 
 void MEDDLY::POST_IMAGE_init()
@@ -1366,12 +1394,12 @@ MEDDLY::binary_operation* MEDDLY::VM_MULTIPLY(forest* a, forest* b, forest* c)
     switch (c->getRangeType()) {
         case range_type::INTEGER:
             return VM_MULTIPLY_cache.add(
-                new prepost_set_op<EdgeOp_none, true, mt_vectXmatr<int> >(a, b, c)
+                new prepost_set_mtrel<EdgeOp_none, true, mt_vectXmatr<int> >(a, b, c)
             );
 
         case range_type::REAL:
             return VM_MULTIPLY_cache.add(
-                new prepost_set_op<EdgeOp_none, true, mt_vectXmatr<float> >(a, b, c)
+                new prepost_set_mtrel<EdgeOp_none, true, mt_vectXmatr<float> >(a, b, c)
             );
 
         default:
@@ -1402,12 +1430,12 @@ MEDDLY::binary_operation* MEDDLY::MV_MULTIPLY(forest* a, forest* b, forest* c)
     switch (c->getRangeType()) {
         case range_type::INTEGER:
             return MV_MULTIPLY_cache.add(
-                new prepost_set_op<EdgeOp_none, false, mt_vectXmatr<int> >(a, b, c, true)
+                new prepost_set_mtrel<EdgeOp_none, false, mt_vectXmatr<int> >(a, b, c, true)
             );
 
         case range_type::REAL:
             return MV_MULTIPLY_cache.add(
-                new prepost_set_op<EdgeOp_none, false, mt_vectXmatr<float> >(a, b, c, true)
+                new prepost_set_mtrel<EdgeOp_none, false, mt_vectXmatr<float> >(a, b, c, true)
             );
 
         default:
