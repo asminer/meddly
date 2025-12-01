@@ -21,6 +21,45 @@
 
 #include "../src/meddly.h"
 
+// Number of rings.
+int N;
+
+// **********************************************************************
+// build an event to move a ring
+//    @param ring2level     Mapping from rings to level
+//    @param ring           Which ring to move
+//    @param src            Source peg (0, 1, 2)
+//    @param dest           Destination peg (0, 1, 2)
+//    @param aux            Unused peg (0, 1, 2)
+//
+//    @param E              in:  blank dd_edge attached to relation forest
+//                          out: dd_edge holding the event
+// **********************************************************************
+void moveRing(std::vector <int> &ring2level, int ring,
+        int src, int dest, int aux, MEDDLY::dd_edge &E)
+{
+    assert(src != dest);
+    assert(src != aux);
+    assert(dest != aux);
+
+    MEDDLY::minterm delta(E.getForest());
+
+    for (unsigned i=N; i>0; i--) {
+        const int k = ring2level[i];
+        if (i > ring) {
+            delta.setVars(k, MEDDLY::DONT_CARE, MEDDLY::DONT_CHANGE);
+            continue;
+        }
+        if (i < ring) {
+            delta.setVars(k, aux, aux);
+            continue;
+        }
+        delta.setVars(k, src, dest);
+    }
+
+    delta.buildFunction(0, E);
+}
+
 // **********************************************************************
 // print usage instructions
 // **********************************************************************
@@ -68,7 +107,7 @@ int main(int argc, const char** argv)
 {
     using namespace std;
 
-    int N = -1;
+    N = -1;
     bool reverse_order = false;
     //
     // Process command line
