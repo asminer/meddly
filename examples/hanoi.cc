@@ -22,7 +22,7 @@
 #include "../src/meddly.h"
 #include "../timing/timer.h"
 
-#define SHOW_EVENTS
+// #define SHOW_EVENTS
 
 // Number of rings.
 int N;
@@ -67,6 +67,59 @@ void moveRing(std::vector <int> &ring2level, int ring,
     delta.show(merr);
     */
     delta.buildFunction(false, E);
+}
+
+// **********************************************************************
+// build overall (partitioned) transition relation
+//    @param ring2level     Mapping from rings to level
+//    @param prel           Partitioned pre-generated transition relation
+// **********************************************************************
+
+void buildRelation(std::vector <int> &ring2level, MEDDLY::pregen_relation& prel)
+{
+    using namespace MEDDLY;
+
+    timer stopwatch;
+    std::cout << "Building transition relation (events grouped by top level)..." << std::endl;
+    stopwatch.note_time();
+    dd_edge event(prel.getRelForest());
+
+    for (int ring=1; ring<=N; ring++) {
+        moveRing(ring2level, ring, 0, 1, 2, event);
+        prel.addToRelation(event);
+        moveRing(ring2level, ring, 0, 2, 1, event);
+        prel.addToRelation(event);
+        moveRing(ring2level, ring, 1, 0, 2, event);
+        prel.addToRelation(event);
+        moveRing(ring2level, ring, 1, 2, 0, event);
+        prel.addToRelation(event);
+        moveRing(ring2level, ring, 2, 0, 1, event);
+        prel.addToRelation(event);
+        moveRing(ring2level, ring, 2, 1, 0, event);
+        prel.addToRelation(event);
+    } // for ring
+    prel.finalize();
+
+    stopwatch.note_time();
+    std::cout << "    transition relation construction took "
+              << stopwatch.get_last_seconds() << " seconds" << std::endl;
+
+#ifdef SHOW_EVENTS
+    ostream_output merr(std::cerr);
+
+    for (int k=1; k<=N; k++) {
+        merr.indent_more();
+        merr << "Events with top level=" << k << ":\n";
+        for (unsigned i=0; i<prel.lengthForLevel(k); i++) {
+            merr.indent_more();
+            merr << "event " << i << ":\n";
+            prel.arrayForLevel(k)[i].showGraph(merr);
+            merr.indent_less();
+        }
+        merr.indent_less();
+        merr << "\n";
+    }
+#endif
 }
 
 // **********************************************************************
@@ -217,43 +270,9 @@ int main(int argc, const char** argv)
         //
         // Build transition relation
         //
-        timer start;
-        start.note_time();
-        dd_edge event(mxd);
         pregen_relation* lnsf = new pregen_relation(mxd);
+        buildRelation(ring2level, *lnsf);
 
-        for (int ring=1; ring<=N; ring++) {
-            moveRing(ring2level, ring, 0, 1, 2, event);
-            lnsf->addToRelation(event);
-            moveRing(ring2level, ring, 0, 2, 1, event);
-            lnsf->addToRelation(event);
-            moveRing(ring2level, ring, 1, 0, 2, event);
-            lnsf->addToRelation(event);
-            moveRing(ring2level, ring, 1, 2, 0, event);
-            lnsf->addToRelation(event);
-            moveRing(ring2level, ring, 2, 0, 1, event);
-            lnsf->addToRelation(event);
-            moveRing(ring2level, ring, 2, 1, 0, event);
-            lnsf->addToRelation(event);
-        } // for ring
-        lnsf->finalize();
-
-#ifdef SHOW_EVENTS
-        ostream_output merr(std::cerr);
-
-        for (int k=1; k<=N; k++) {
-            merr.indent_more();
-            merr << "Events with top level=" << k << ":\n";
-            for (unsigned i=0; i<lnsf->lengthForLevel(k); i++) {
-                merr.indent_more();
-                merr << "event " << i << ":\n";
-                lnsf->arrayForLevel(k)[i].showGraph(merr);
-                merr.indent_less();
-            }
-            merr.indent_less();
-            merr << "\n";
-        }
-#endif
 
         //
         // TBD!
