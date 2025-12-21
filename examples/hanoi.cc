@@ -20,6 +20,9 @@
 #include <vector>
 
 #include "../src/meddly.h"
+#include "../timing/timer.h"
+
+#define SHOW_EVENTS
 
 // Number of rings.
 int N;
@@ -35,6 +38,7 @@ int N;
 //    @param E              in:  blank dd_edge attached to relation forest
 //                          out: dd_edge holding the event
 // **********************************************************************
+
 void moveRing(std::vector <int> &ring2level, int ring,
         int src, int dest, int aux, MEDDLY::dd_edge &E)
 {
@@ -44,7 +48,7 @@ void moveRing(std::vector <int> &ring2level, int ring,
 
     MEDDLY::minterm delta(E.getForest());
 
-    for (unsigned i=N; i>0; i--) {
+    for (int i=N; i>0; i--) {
         const int k = ring2level[i];
         if (i > ring) {
             delta.setVars(k, MEDDLY::DONT_CARE, MEDDLY::DONT_CHANGE);
@@ -57,7 +61,12 @@ void moveRing(std::vector <int> &ring2level, int ring,
         delta.setVars(k, src, dest);
     }
 
-    delta.buildFunction(0, E);
+    delta.setValue(true);
+    /*
+    MEDDLY::ostream_output merr(std::cerr);
+    delta.show(merr);
+    */
+    delta.buildFunction(false, E);
 }
 
 // **********************************************************************
@@ -106,6 +115,7 @@ inline int naturalArg(const char* arg)
 int main(int argc, const char** argv)
 {
     using namespace std;
+    using namespace MEDDLY;
 
     N = -1;
     bool reverse_order = false;
@@ -185,5 +195,83 @@ int main(int argc, const char** argv)
     }
     cout << "BOTTOM\n";
 
-    return 0;
+    try {
+        //
+        // Bring up MDD library
+        //
+        MEDDLY::initialize();
+
+        //
+        // Build domain, forests
+        //
+        int* sizes = new int[N];
+        for (int i=N-1; i>=0; i--) sizes[i] = 3;
+        domain* d = domain::createBottomUp(sizes, N);
+        delete[] sizes;
+
+        policies pmdd(false), pmxd(true);
+        // any policy changes?
+        forest* mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
+        forest* mxd = forest::create(d, true,  range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
+
+        //
+        // Build transition relation
+        //
+        timer start;
+        start.note_time();
+        dd_edge event(mxd);
+        pregen_relation* lnsf = new pregen_relation(mxd);
+
+        for (int ring=1; ring<=N; ring++) {
+            moveRing(ring2level, ring, 0, 1, 2, event);
+            lnsf->addToRelation(event);
+            moveRing(ring2level, ring, 0, 2, 1, event);
+            lnsf->addToRelation(event);
+            moveRing(ring2level, ring, 1, 0, 2, event);
+            lnsf->addToRelation(event);
+            moveRing(ring2level, ring, 1, 2, 0, event);
+            lnsf->addToRelation(event);
+            moveRing(ring2level, ring, 2, 0, 1, event);
+            lnsf->addToRelation(event);
+            moveRing(ring2level, ring, 2, 1, 0, event);
+            lnsf->addToRelation(event);
+        } // for ring
+        lnsf->finalize();
+
+#ifdef SHOW_EVENTS
+        ostream_output merr(std::cerr);
+
+        for (int k=1; k<=N; k++) {
+            merr.indent_more();
+            merr << "Events with top level=" << k << ":\n";
+            for (unsigned i=0; i<lnsf->lengthForLevel(k); i++) {
+                merr.indent_more();
+                merr << "event " << i << ":\n";
+                lnsf->arrayForLevel(k)[i].showGraph(merr);
+                merr.indent_less();
+            }
+            merr.indent_less();
+            merr << "\n";
+        }
+#endif
+
+        //
+        // TBD!
+        //
+
+        cout << "Done!\n";
+        return 0;
+    }
+    catch (MEDDLY::error e) {
+        cerr    << "\nCaught meddly error '" << e.getName()
+                << "'\n    thrown in " << e.getFile()
+                << " line " << e.getLine() << "\n";
+        return 2;
+    }
+    catch (const char* e) {
+        cerr    << "\nCaught our own error: " << e << "\n";
+        return 4;
+    }
+    cerr << "\nSome other error?\n";
+    return 6;
 }
