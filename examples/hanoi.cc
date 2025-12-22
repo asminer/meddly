@@ -27,6 +27,9 @@
 // Number of rings.
 int N;
 
+// Approximate cardinality.
+bool approx_count;
+
 // **********************************************************************
 // build an event to move a ring
 //    @param ring2level     Mapping from rings to level
@@ -123,6 +126,121 @@ void buildRelation(std::vector <int> &ring2level, MEDDLY::pregen_relation& prel)
 }
 
 // **********************************************************************
+// build reachable states or whatever was asked for
+//    @param prel           Partitioned pre-generated transition relation
+//    @param initial        Initial state
+//    @param reachable      (output) reachable states
+// **********************************************************************
+
+void buildReachable(MEDDLY::pregen_relation* prel, MEDDLY::dd_edge &initial,
+        MEDDLY::dd_edge &reachable)
+{
+    using namespace MEDDLY;
+
+    //
+    // TBD: do different things based on command line switches
+    //
+
+    const char* what = "reachability set";
+
+    std::cout << "Building " << what << " using saturation..." << std::endl;
+
+    timer watch;
+    watch.note_time();
+
+    saturation_operation* sat =
+        SATURATION_FORWARD(initial.getForest(), prel, reachable.getForest());
+    if (!sat) {
+        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    }
+    sat->compute(initial, reachable);
+    watch.note_time();
+    std::cout << "    " << what << " construction took "
+              << watch.get_last_seconds() << " seconds" << std::endl;
+
+}
+
+// **********************************************************************
+// Add comma separators to a large integer
+// **********************************************************************
+#ifdef HAVE_LIBGMP
+void showNumber(mpz_t x)
+{
+    unsigned digits = mpz_sizeinbase(x, 10)+2;
+    char* str = new char[digits];
+    mpz_get_str(str, 10, x);
+    unsigned nextcomma = strlen(str) % 3;
+    if (0==nextcomma) {
+        nextcomma = 3;
+    }
+    for (unsigned i=0; str[i]; i++) {
+        if (i == nextcomma) {
+            std::cout << ",";
+            nextcomma += 3;
+        }
+        std::cout << str[i];
+    }
+    delete[] str;
+}
+#endif
+
+// **********************************************************************
+// compute and show cardinality
+//    @param reachable      reachable states
+// **********************************************************************
+void showCardinality(const MEDDLY::dd_edge &reachable)
+{
+    using namespace std;
+    using namespace MEDDLY;
+
+    cout << "Counting states..." << endl;
+
+    oper_item numstates;
+    if (approx_count) {
+        numstates.init(0.0);
+    } else {
+#ifdef HAVE_LIBGMP
+        mpz_t ns_mpz;
+        mpz_init(ns_mpz);
+        numstates.init(ns_mpz);
+#endif
+    }
+    timer watch;
+    watch.note_time();
+    apply(CARDINALITY, reachable, numstates);
+    watch.note_time();
+    cout << "    counting took " << watch.get_last_seconds()
+         << " seconds" << endl;
+
+    if (approx_count) {
+        cout << "Approx. " << numstates.getReal()
+             << " reachable states" << endl;
+
+        double theory = 1.0;
+        for (unsigned i=0; i<N; i++) {
+            theory *= 3.0;
+        }
+        cout << "Theory: " << theory << " reachable states" << endl;
+    } else {
+#ifdef HAVE_LIBGMP
+        cout << "Exactly ";
+        showNumber(numstates.getHugeint());
+        cout << " reachable states" << endl;
+
+        mpz_t theory;
+        mpz_init_set_ui(theory, 1);
+        for (unsigned i=0; i<N; i++) {
+            mpz_mul_ui(theory, theory, 3);
+        }
+        cout << "Theory: ";
+        showNumber(theory);
+        cout << " reachable states" << endl;
+#endif
+    }
+
+}
+
+// **********************************************************************
 // print usage instructions
 // **********************************************************************
 
@@ -146,6 +264,12 @@ int usage(const char* exe)
     cerr << "\n";
     cerr << "Switches:\n";
     cerr << "    -h:    This help\n\n";
+
+#ifdef HAVE_LIBGMP
+    cerr << "    -a:    Approximate count for number of states (default).\n";
+    cerr << "    -e:    Exact count for number of states.\n\n";
+#endif
+
     cerr << "    -o:    Order the variables so that the smallest ring is the bottom-most\n";
     cerr << "           variable in the MDD. (Default)\n";
     cerr << "    -O:    Order the variables so that the largest ring is the bottom-most\n";
@@ -171,6 +295,7 @@ int main(int argc, const char** argv)
     using namespace MEDDLY;
 
     N = -1;
+    approx_count = true;
     bool reverse_order = false;
     //
     // Process command line
@@ -184,6 +309,13 @@ int main(int argc, const char** argv)
             if (arg[1] && 0==arg[2]) {
                 switch (arg[1])
                 {
+#ifdef HAVE_LIBGMP
+                    case 'a':   approx_count = true;
+                                continue;
+
+                    case 'e':   approx_count = false;
+                                continue;
+#endif
                     case 'o':
                                 reverse_order = false;
                                 continue;
@@ -267,15 +399,31 @@ int main(int argc, const char** argv)
         forest* mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
         forest* mxd = forest::create(d, true,  range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
 
+
+        //
+        // Build initial state
+        //
+        minterm init_minterm(mdd);
+        init_minterm.setAllVars(0);
+        dd_edge initial(mdd);
+        init_minterm.buildFunction(false, initial);
+
+
         //
         // Build transition relation
         //
         pregen_relation* lnsf = new pregen_relation(mxd);
         buildRelation(ring2level, *lnsf);
 
+        //
+        // Build reachable states
+        //
+        dd_edge reachable(mdd);
+        buildReachable(lnsf, initial, reachable);
+        showCardinality(reachable);
 
         //
-        // TBD!
+        // Reporting
         //
 
         cout << "Done!\n";
