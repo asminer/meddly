@@ -158,6 +158,9 @@ void buildReachable(MEDDLY::pregen_relation* prel, MEDDLY::dd_edge &initial,
     std::cout << "    " << what << " construction took "
               << watch.get_last_seconds() << " seconds" << std::endl;
 
+
+    std::cout << "MDD for " << what << " requires "
+              << reachable.getNodeCount() << " nodes" << std::endl;
 }
 
 // **********************************************************************
@@ -425,6 +428,17 @@ int main(int argc, const char** argv)
         //
         // Reporting
         //
+        ostream_output meddlyout(cout);
+        meddlyout << "\n======================================================================\n\n";
+        meddlyout << "MxD stats:\n";
+        mxd->reportStats(meddlyout, "    ",
+                HUMAN_READABLE_MEMORY | BASIC_STATS
+        );
+        meddlyout << "MDD stats:\n";
+        mdd->reportStats(meddlyout, "    ",
+                HUMAN_READABLE_MEMORY | BASIC_STATS | EXTRA_STATS
+        );
+
 
         cout << "Done!\n";
         return 0;
