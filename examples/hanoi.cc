@@ -127,33 +127,69 @@ void buildRelation(std::vector <int> &ring2level, MEDDLY::pregen_relation& prel)
 
 // **********************************************************************
 // build reachable states or whatever was asked for
+//    @param method         What to do:
+//                              'd': saturation for distances
+//                              'k': saturation, partitioned by level
+//                              'm': saturation, monolithic
+//
 //    @param prel           Partitioned pre-generated transition relation
 //    @param initial        Initial state
 //    @param reachable      (output) reachable states
 // **********************************************************************
 
-void buildReachable(MEDDLY::pregen_relation* prel, MEDDLY::dd_edge &initial,
-        MEDDLY::dd_edge &reachable)
+void buildReachable(char method, MEDDLY::pregen_relation* prel,
+        MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable)
 {
     using namespace MEDDLY;
+    timer watch;
+
+    dd_edge monolithic(prel->getRelForest());
+    prel->getRelForest()->createConstant(false, monolithic);
+
+    if ('k' != method) {
+        std::cout << "Building monolithic relation..." << std::endl;
+        watch.note_time();
+
+        for (int k=1; k<=N; k++) {
+            for (unsigned i=0; i<prel->lengthForLevel(k); i++) {
+                apply(UNION, monolithic, prel->arrayForLevel(k)[i], monolithic);
+            }
+        }
+
+        watch.note_time();
+        std::cout << "    monolithic relation construction took "
+                  << watch.get_last_seconds() << " seconds" << std::endl;
+    }
 
     //
     // TBD: do different things based on command line switches
     //
 
-    const char* what = "reachability set";
+    const char* what = ('d' == method) ? "state distances" : "reachability set";
 
     std::cout << "Building " << what << " using saturation..." << std::endl;
-
-    timer watch;
     watch.note_time();
 
-    saturation_operation* sat =
-        SATURATION_FORWARD(initial.getForest(), prel, reachable.getForest());
-    if (!sat) {
-        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+    saturation_operation* sat = nullptr;
+
+    switch (method) {
+        case 'k':
+                    sat = SATURATION_FORWARD(initial.getForest(), prel, reachable.getForest());
+                    if (!sat) {
+                        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+                    }
+                    sat->compute(initial, reachable);
+                    break;
+
+        case 'm':
+        case 'd':
+                    apply(REACHABLE_STATES_DFS, initial, monolithic, reachable);
+                    break;
+
+        default:
+                    throw "unknown method";
     }
-    sat->compute(initial, reachable);
+
     watch.note_time();
     std::cout << "    " << what << " construction took "
               << watch.get_last_seconds() << " seconds" << std::endl;
@@ -277,8 +313,11 @@ int usage(const char* exe)
     cerr << "           variable in the MDD. (Default)\n";
     cerr << "    -O:    Order the variables so that the largest ring is the bottom-most\n";
     cerr << "           variable in the MDD.\n";
-
     cerr << "\n";
+
+    cerr << "    --dsat     Saturation for distance\n";
+    cerr << "    --ksat     Saturation, relation partitioned by levels (default)\n";
+    cerr << "    --msat     Saturation, monolithic relation\n";
     return 1;
 }
 
@@ -300,6 +339,7 @@ int main(int argc, const char** argv)
     N = -1;
     approx_count = true;
     bool reverse_order = false;
+    char satmethod = 'k';
     //
     // Process command line
     //
@@ -332,6 +372,21 @@ int main(int argc, const char** argv)
                                     cerr << "Unknown switch \"-" << arg[1] << "\"\n";
                                 }
                                 return usage(argv[0]);
+                }
+            }
+            // double dash switches
+            if ('-' == arg[1]) {
+                if (0==strcmp("--dsat", arg)) {
+                    satmethod = 'd';
+                    continue;
+                }
+                if (0==strcmp("--ksat", arg)) {
+                    satmethod = 'k';
+                    continue;
+                }
+                if (0==strcmp("--msat", arg)) {
+                    satmethod = 'm';
+                    continue;
                 }
             }
             cerr << "Unknown switch \"" << arg << "\"\n";
@@ -399,7 +454,13 @@ int main(int argc, const char** argv)
 
         policies pmdd(false), pmxd(true);
         // any policy changes?
-        forest* mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
+        forest* mdd = nullptr;
+
+        if ('d' == satmethod) {
+            mdd = forest::create(d, false, range_type::INTEGER, edge_labeling::EVPLUS, pmdd);
+        } else {
+            mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
+        }
         forest* mxd = forest::create(d, true,  range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
 
 
@@ -409,7 +470,13 @@ int main(int argc, const char** argv)
         minterm init_minterm(mdd);
         init_minterm.setAllVars(0);
         dd_edge initial(mdd);
-        init_minterm.buildFunction(false, initial);
+        if ('d' == satmethod) {
+            init_minterm.setValue(0);
+            init_minterm.buildFunction(rangeval(range_special::PLUS_INFINITY, range_type::INTEGER), initial);
+        } else {
+            init_minterm.setValue(true);
+            init_minterm.buildFunction(false, initial);
+        }
 
 
         //
@@ -422,7 +489,7 @@ int main(int argc, const char** argv)
         // Build reachable states
         //
         dd_edge reachable(mdd);
-        buildReachable(lnsf, initial, reachable);
+        buildReachable(satmethod, lnsf, initial, reachable);
         showCardinality(reachable);
 
         //
@@ -434,9 +501,13 @@ int main(int argc, const char** argv)
         mxd->reportStats(meddlyout, "    ",
                 HUMAN_READABLE_MEMORY | BASIC_STATS
         );
-        meddlyout << "MDD stats:\n";
+        if ('d' == satmethod) {
+            meddlyout << "EV+MDD stats:\n";
+        } else {
+            meddlyout << "MDD stats:\n";
+        }
         mdd->reportStats(meddlyout, "    ",
-                HUMAN_READABLE_MEMORY | BASIC_STATS | EXTRA_STATS
+            HUMAN_READABLE_MEMORY | BASIC_STATS | EXTRA_STATS
         );
 
 
