@@ -7,6 +7,7 @@
 noinst_PROGRAMS = \
 dining_phils \
 graphs_to_mdds \
+hanoi \
 kanban \
 knight \
 knight2 \
@@ -37,6 +38,9 @@ dining_phils_LDADD = ../src/libmeddly.la
 
 graphs_to_mdds_SOURCES = graphs_to_mdds.cc
 graphs_to_mdds_LDADD = ../src/libmeddly.la
+
+hanoi_SOURCES = hanoi.cc
+hanoi_LDADD = ../src/libmeddly.la
 
 kanban_SOURCES = kanban.cc simple_model.h simple_model.cc
 kanban_LDADD = ../src/libmeddly.la

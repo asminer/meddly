@@ -24,6 +24,7 @@
 #include "forest.h"
 #include "storage/bytepack.h"
 #include <climits>
+#include <cstdint>
 
 // #define DEBUG_HANDLE_MGT
 

@@ -336,6 +336,7 @@ void MEDDLY::pregen_relation::finalize(splittingOption split)
 {
   if (0==level_index) {
     // by levels
+#ifdef DEBUG_FINALIZE_SPLIT
     switch (split) {
       case SplitOnly: printf("Split: SplitOnly\n"); break;
       case SplitSubtract: printf("Split: SplitSubtract\n"); break;
@@ -343,6 +344,7 @@ void MEDDLY::pregen_relation::finalize(splittingOption split)
       case MonolithicSplit: printf("Split: MonolithicSplit\n"); break;
       default: printf("Split: None\n");
     }
+#endif
     splitMxd(split);
     if (split != None && split != MonolithicSplit) {
 #ifdef DEBUG_FINALIZE_SPLIT
