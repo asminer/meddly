@@ -325,9 +325,10 @@ void buildReachsetFrontier(MEDDLY::output *fout, const MEDDLY::dd_edge &nsf,
     if (fout) {
         *fout << "Building reachability set using frontier iteration:\n";
         *fout << "    S = init\n";
+        *fout << "    F = init\n";
         *fout << "    do {\n";
-        *fout << "        N = post_image(S, R);\n";
-        *fout << "        F = N \\ R;\n";
+        *fout << "        N = post_image(F, R);\n";
+        *fout << "        F = N \\ S;\n";
         *fout << "        if (0==F) break;\n";
         *fout << "        S = S u F\n";
         *fout << "    }\n";
@@ -343,7 +344,7 @@ void buildReachsetFrontier(MEDDLY::output *fout, const MEDDLY::dd_edge &nsf,
         }
 
         watch.note_time();
-        apply(POST_IMAGE, reach, nsf, nxt);
+        apply(POST_IMAGE, frnt, nsf, nxt);
         watch.note_time();
         showResult(fout, "N", nxt, watch);
 

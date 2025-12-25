@@ -64,8 +64,10 @@ int usage(const char* who)
     }
     cout << "\nUsage: " << name << " [options] nnnn\n\n";
     cout << "\tnnnn: number of parts\n";
-    cout << "\t-bfs: use traditional iterations\n";
-    cout << "\t-dfs: use saturation\n";
+    cout << "\t-bfs:  use traditional iterations\n";
+    cout << "\t-bbfs: use and show traditional iterations\n";
+    cout << "\t-fbfs: use and show traditional with frontier iterations\n";
+    cout << "\t-dfs:  use saturation\n";
     cout << "\t-esat: use saturation by events\n";
     cout << "\t-ksat: use saturation by levels\n";
     cout << "\t-msat: use monolithic saturation (default)\n\n";
@@ -129,6 +131,14 @@ int main(int argc, const char** argv)
     for (int i=1; i<argc; i++) {
         if (strcmp("-bfs", argv[i])==0) {
             method = 'b';
+            continue;
+        }
+        if (strcmp("-bbfs", argv[i])==0) {
+            method = 'B';
+            continue;
+        }
+        if (strcmp("-fbfs", argv[i])==0) {
+            method = 'F';
             continue;
         }
         if (strcmp("-dfs", argv[i])==0) {
@@ -315,6 +325,18 @@ int main(int argc, const char** argv)
         dd_edge reachable(mdd);
         start.note_time();
         switch (method) {
+            case 'B':
+                meddlyout.indent_more();
+                buildReachsetBFS(&meddlyout, nsf, init_state, reachable);
+                meddlyout.indent_less();
+                break;
+
+            case 'F':
+                meddlyout.indent_more();
+                buildReachsetFrontier(&meddlyout, nsf, init_state, reachable);
+                meddlyout.indent_less();
+                break;
+
             case 'b':
                 cout << "Building reachability set using traditional algorithm"
                      << endl;
