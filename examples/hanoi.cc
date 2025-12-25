@@ -21,6 +21,7 @@
 
 #include "../src/meddly.h"
 #include "../timing/timer.h"
+#include "simple_model.h"
 
 // #define SHOW_EVENTS
 
@@ -29,6 +30,9 @@ int N;
 
 // Approximate cardinality.
 bool approx_count;
+
+// Verbose output: show iteration details
+bool verbose;
 
 // **********************************************************************
 // build an event to move a ring
@@ -132,6 +136,9 @@ void buildRelation(std::vector <int> &ring2level, MEDDLY::pregen_relation& prel)
 //                              'k': saturation, partitioned by level
 //                              'm': saturation, monolithic
 //
+//                              'f': BFS with frontier
+//                              'b': BFS without frontier
+//
 //    @param prel           Partitioned pre-generated transition relation
 //    @param initial        Initial state
 //    @param reachable      (output) reachable states
@@ -167,13 +174,15 @@ void buildReachable(char method, MEDDLY::pregen_relation* prel,
 
     const char* what = ('d' == method) ? "state distances" : "reachability set";
 
-    std::cout << "Building " << what << " using saturation..." << std::endl;
     watch.note_time();
 
     saturation_operation* sat = nullptr;
+    ostream_output merr(std::cerr);
+    merr.indent_more();
 
     switch (method) {
         case 'k':
+                    std::cout << "Building " << what << " using saturation..." << std::endl;
                     sat = SATURATION_FORWARD(initial.getForest(), prel, reachable.getForest());
                     if (!sat) {
                         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
@@ -183,7 +192,26 @@ void buildReachable(char method, MEDDLY::pregen_relation* prel,
 
         case 'm':
         case 'd':
+                    std::cout << "Building " << what << " using saturation..." << std::endl;
                     apply(REACHABLE_STATES_DFS, initial, monolithic, reachable);
+                    break;
+
+        case 'f':
+                    if (verbose) {
+                        buildReachsetFrontier(&merr, monolithic, initial, reachable);
+                    } else {
+                        std::cout << "Building " << what << " using traditional with frontier..." << std::endl;
+                        buildReachsetFrontier(nullptr, monolithic, initial, reachable);
+                    }
+                    break;
+
+        case 'b':
+                    if (verbose) {
+                        buildReachsetBFS(&merr, monolithic, initial, reachable);
+                    } else {
+                        std::cout << "Building " << what << " using traditional without frontier..." << std::endl;
+                        buildReachsetBFS(nullptr, monolithic, initial, reachable);
+                    }
                     break;
 
         default:
@@ -314,10 +342,18 @@ int usage(const char* exe)
     cerr << "    -O:    Order the variables so that the largest ring is the bottom-most\n";
     cerr << "           variable in the MDD.\n";
     cerr << "\n";
+    cerr << "    -q:    Quiet. Do not show BFS iteration details (default).\n";
+    cerr << "    -v:    Verbose. Show BFS iteration details.\n";
+    cerr << "\n";
 
     cerr << "    --dsat     Saturation for distance\n";
     cerr << "    --ksat     Saturation, relation partitioned by levels (default)\n";
     cerr << "    --msat     Saturation, monolithic relation\n";
+    cerr << "\n";
+
+    cerr << "    --bfs      BFS without frontier set\n";
+    cerr << "    --fbfs     BFS with frontier set\n";
+    cerr << "\n";
     return 1;
 }
 
@@ -338,6 +374,7 @@ int main(int argc, const char** argv)
 
     N = -1;
     approx_count = true;
+    verbose = false;
     bool reverse_order = false;
     char satmethod = 'k';
     //
@@ -367,6 +404,14 @@ int main(int argc, const char** argv)
                                 reverse_order = true;
                                 continue;
 
+                    case 'q':
+                                verbose = false;
+                                continue;
+
+                    case 'v':
+                                verbose = true;
+                                continue;
+
                     default:
                                 if (arg[1] != 'h') {
                                     cerr << "Unknown switch \"-" << arg[1] << "\"\n";
@@ -386,6 +431,15 @@ int main(int argc, const char** argv)
                 }
                 if (0==strcmp("--msat", arg)) {
                     satmethod = 'm';
+                    continue;
+                }
+
+                if (0==strcmp("--bfs", arg)) {
+                    satmethod = 'b';
+                    continue;
+                }
+                if (0==strcmp("--fbfs", arg)) {
+                    satmethod = 'f';
                     continue;
                 }
             }

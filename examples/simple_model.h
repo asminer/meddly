@@ -52,6 +52,28 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 void buildNextStateFunction(const char* const* events, unsigned nEvents,
     MEDDLY::pregen_relation* pnsf, int verb);
 
+/**
+    Build the reachability set using breadth-first and a frontier set.
+        @param fout     If non-null, stream to write progess to
+        @param nsf      Monolithic next-state function
+        @param initial  Initial states
+        @param reach    Output: reachable states
+ */
+void buildReachsetFrontier(MEDDLY::output *fout, const MEDDLY::dd_edge &nsf,
+        const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reach);
+
+/**
+    Build the reachability set using breadth-first without a frontier set.
+        @param fout     If non-null, stream to write progess to
+        @param nsf      Monolithic next-state function
+        @param initial  Initial states
+        @param reach    Output: reachable states
+ */
+void buildReachsetBFS(MEDDLY::output *fout, const MEDDLY::dd_edge &nsf,
+        const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reach);
+
+
+
 /** Use explicit search to build the reachability set.
       @param  events    Array of dimension \a nEvents.
                         Same format as buildNextStateFunction().
