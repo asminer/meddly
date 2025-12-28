@@ -277,6 +277,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
             res[0].get(cv);
             EOP::accumulateOp(cv, av);
             C = resF->linkNode(res[1].getN());
+            EOP::normalize(cv, C);
         } else {
             EOP::clear(cv);
             C = resF->linkNode(res[0].getN());
@@ -487,6 +488,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
     //
     C = resF->makeRedundantsTo(C, Clevel, L);
     EOP::accumulateOp(cv, av);
+    EOP::normalize(cv, C);
 }
 
 // ******************************************************************

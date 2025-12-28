@@ -596,6 +596,12 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
                 FAIL(__FILE__, __LINE__, "Unknown edge labeling");
     }
 
+#ifdef DEBUG_CREATE_REDUCED
+    out << "After normalization: ";
+    un->show(out, true);
+    out << "\n";
+#endif
+
     //
     // Is this a transparent node?
     //
@@ -2000,20 +2006,20 @@ MEDDLY::forest::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
         case edge_labeling::EVPLUS:
             // TBD: what about integer edges
             setLongEdges();
-            setTransparentEdge(0, long(0));
+            setTransparentEdge(OMEGA_INFINITY, long(0));
             break;
 
         case edge_labeling::INDEX_SET:
             // TBD: what about integer edges
             setLongEdges();
-            setTransparentEdge(0, long(0));
+            setTransparentEdge(OMEGA_INFINITY, long(0));
             unhashed_bytes = sizeof(long);
             break;
 
         case edge_labeling::EVTIMES:
             // TBD: what about double edges
             setFloatEdges();
-            setTransparentEdge(0, float(0));
+            setTransparentEdge(OMEGA_ZERO, float(0));
 
     };  // switch edgeLabel
 

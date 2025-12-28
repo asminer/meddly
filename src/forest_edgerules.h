@@ -64,6 +64,10 @@ namespace MEDDLY {
                     const edge_value &b)
             {
             }
+            /// Normalize edge value
+            static inline void normalize(edge_value &ev, node_handle p)
+            {
+            }
             static inline terminal buildTerm(
                             const edge_value &val, node_handle p)
             {
@@ -130,6 +134,13 @@ namespace MEDDLY {
                 TYPE bv;
                 b.get(bv);
                 a.subtract(bv);
+            }
+            /// Normalize edge value
+            static inline void normalize(edge_value &ev, node_handle p)
+            {
+                if (OMEGA_INFINITY == p) {
+                    ev.set(TYPE(0));
+                }
             }
             /// Build terminal value for edge <val, p>
             static inline terminal buildTerm(
@@ -218,6 +229,13 @@ namespace MEDDLY {
                 TYPE bv;
                 b.get(bv);
                 a.divide(bv);
+            }
+            /// Normalize edge value
+            static inline void normalize(edge_value &ev, node_handle p)
+            {
+                if (OMEGA_ZERO == p) {
+                    ev.set(TYPE(0));
+                }
             }
             /// Build terminal value for edge <val, p>
             static inline terminal buildTerm(

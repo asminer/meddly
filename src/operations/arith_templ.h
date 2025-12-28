@@ -219,6 +219,7 @@ void MEDDLY::arith_compat<EOP, ATYPE>::compute(int L, unsigned in,
         edge_value ab;
         ATYPE::apply(av, bv, ab);
         EOP::accumulateOp(cv, ab);
+        EOP::normalize(cv, cp);
     }
 
 #ifdef TRACE
@@ -434,6 +435,7 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
             edge_value ab;
             ATYPE::apply(Au->edgeval(i), Bu->edgeval(i), ab);
             EOP::accumulateOp(x, ab);
+            EOP::normalize(x, cd);
             Cu->setFull(i, x, cd);
         }
         else
@@ -853,6 +855,7 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
             C = resF->makeRedundantsTo(C, Clevel, L);
         }
         EOP::accumulateOp(cv, fac);
+        EOP::normalize(cv, C);
         return;
         //
         // done compute table hit
@@ -992,6 +995,7 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
         C = resF->makeRedundantsTo(C, Clevel, L);
     }
     EOP::accumulateOp(cv, fac);
+    EOP::normalize(cv, C);
 }
 
 //  ****************************************************************
