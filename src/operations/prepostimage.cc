@@ -364,6 +364,9 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
         Cu->clear(0, Cu->getSize());
 
         if (FORWD) {
+            /*
+             * Go forward one step.
+             */
             unpacked_node* Bu = unpacked_node::New(arg2F, SPARSE_ONLY);
 
             for (unsigned zi=0; zi<Au->getSize(); zi++) {
@@ -399,6 +402,9 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                 } // if brn[i]
             } // for zi
         } else {
+            /*
+             * Go backward one step.
+             */
             const unsigned kSize = unsigned(resF->getLevelSize(Clevel));
             unpacked_node* Bu = unpacked_node::New(arg2F, FULL_ONLY);
             for (unsigned i=0; i<kSize; i++) {
