@@ -150,7 +150,7 @@ void MEDDLY::operation::destroyAllWithForest(const forest* f)
         if (!uses_f) continue;
 
         delete op;
-        MEDDLY_DCASSERT(nullptr == op_list[i]);
+        MEDDLY_DCASSERT( (i >= op_list.size()) || (nullptr == op_list[i]) );
     }
 }
 
@@ -247,7 +247,7 @@ void MEDDLY::operation::destroyAllOps()
 #else
         delete op_list[i];
 #endif
-        MEDDLY_DCASSERT(nullptr == op_list[i]);
+        MEDDLY_DCASSERT( (i >= op_list.size()) || (nullptr == op_list[i]) );
     }
     op_list.clear();
     free_list.clear();
