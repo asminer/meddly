@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cassert>
 
 #include "../src/meddly.h"
 #include "../timing/timer.h"
