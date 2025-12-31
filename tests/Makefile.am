@@ -88,6 +88,14 @@ TESTS = \
     ops_comp.--rel.--EVp.--long._sh \
     ops_comp.--rel.--EVs.--float._sh \
     \
+    ops_divmod.--set.--MT.--int._sh \
+    ops_divmod.--set.--MT.--float._sh \
+    ops_divmod.--set.--EVp.--long._sh \
+    ops_divmod.--rel.--MT.--int._sh \
+    ops_divmod.--rel.--MT.--float._sh \
+    ops_divmod.--rel.--EVp.--long._sh \
+    ops_divmod.--rel.--EVs.--float._sh \
+    \
     ops_maxmin.--set.--MT.--int._sh \
     ops_maxmin.--set.--MT.--float._sh \
     ops_maxmin.--set.--EVp.--long._sh \
@@ -95,14 +103,6 @@ TESTS = \
     ops_maxmin.--rel.--MT.--float._sh \
     ops_maxmin.--rel.--EVp.--long._sh \
     ops_maxmin.--rel.--EVs.--float._sh \
-    \
-    ops_plusminus.--set.--MT.--int._sh \
-    ops_plusminus.--set.--MT.--float._sh \
-    ops_plusminus.--set.--EVp.--long._sh \
-    ops_plusminus.--rel.--MT.--int._sh \
-    ops_plusminus.--rel.--MT.--float._sh \
-    ops_plusminus.--rel.--EVp.--long._sh \
-    ops_plusminus.--rel.--EVs.--float._sh \
     \
     ops_mult.--set.--MT.--int._sh \
     ops_mult.--set.--MT.--float._sh \
@@ -112,13 +112,13 @@ TESTS = \
     ops_mult.--rel.--EVp.--long._sh \
     ops_mult.--rel.--EVs.--float._sh \
     \
-    ops_divmod.--set.--MT.--int._sh \
-    ops_divmod.--set.--MT.--float._sh \
-    ops_divmod.--set.--EVp.--long._sh \
-    ops_divmod.--rel.--MT.--int._sh \
-    ops_divmod.--rel.--MT.--float._sh \
-    ops_divmod.--rel.--EVp.--long._sh \
-    ops_divmod.--rel.--EVs.--float._sh \
+    ops_plusminus.--set.--MT.--int._sh \
+    ops_plusminus.--set.--MT.--float._sh \
+    ops_plusminus.--set.--EVp.--long._sh \
+    ops_plusminus.--rel.--MT.--int._sh \
+    ops_plusminus.--rel.--MT.--float._sh \
+    ops_plusminus.--rel.--EVp.--long._sh \
+    ops_plusminus.--rel.--EVs.--float._sh \
     \
     ops_set.--set._sh \
     ops_set.--rel._sh \

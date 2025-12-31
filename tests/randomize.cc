@@ -174,10 +174,26 @@ void vectorgen::index2minterm(unsigned x, MEDDLY::minterm &m) const
     }
 }
 
+void vectorgen::indexes2minterm(unsigned f, unsigned t, MEDDLY::minterm &m) const
+{
+    if (m.getNumVars() != vars()) {
+        throw "minterm mismatch in call to indexes2minterm";
+    }
+    if (m.isForSets()) {
+        throw "minterm should be for relations in call to indexes2minterm";
+    }
+    for (unsigned j=1; j<=m.getNumVars(); j++) {
+        m.setVars(j, f % dom(), t % dom());
+        f /= dom();
+        t /= dom();
+    }
+}
+
+
 unsigned vectorgen::minterm2index(const MEDDLY::minterm &m) const
 {
     if (m.getNumVars() != vars()) {
-        throw "minterm mismatch in call to index2minterm";
+        throw "minterm mismatch in call to minterm2index";
     }
     unsigned x = 0;
     unsigned base = 1;
@@ -197,6 +213,26 @@ unsigned vectorgen::minterm2index(const MEDDLY::minterm &m) const
         }
     }
     return x;
+}
+
+void vectorgen::minterm2indexes(const MEDDLY::minterm &m, unsigned &f, unsigned &t) const
+{
+    if (m.getNumVars() != vars()) {
+        throw "minterm mismatch in call to minterm2indexes";
+    }
+    if (m.isForSets()) {
+        throw "minterm should be for relations in call to minterm2indexes";
+    }
+    f = 0;
+    t = 0;
+    unsigned base = 1;
+    for (unsigned j=1; j<=m.getNumVars(); j++) {
+        int fv, tv;
+        m.getVars(j, fv, tv);
+        f += base * fv;
+        t += base * tv;
+        base *= dom();
+    }
 }
 
 void vectorgen::buildIdentityFromIndex(unsigned ndx,

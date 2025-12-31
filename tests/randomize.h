@@ -126,6 +126,23 @@ class vectorgen {
         void index2minterm(unsigned x, MEDDLY::minterm &m) const;
 
         ///
+        /// Converts a pair of indexes (from, to) to a relation minterm.
+        ///
+        ///     @param  fr  Index of source state.
+        ///                 Only fr % POTENTIAL is significant;
+        ///                 any excess is ignored.
+        ///
+        ///     @param  to  Index of destination state.
+        ///                 Only to % POTENTIAL is significant;
+        ///                 any excess is ignored.
+        ///
+        ///     @param  m   Minterm to fill.
+        ///                 Should have VARS variables and be for relations.
+        ///
+        void indexes2minterm(unsigned fr, unsigned to, MEDDLY::minterm &m) const;
+
+
+        ///
         /// Calculates the index of a minterm.
         /// Essentially, the reverse of index2minterm().
         ///
@@ -133,6 +150,19 @@ class vectorgen {
         ///                 Should have VARS variables.
         ///
         unsigned minterm2index(const MEDDLY::minterm &m) const;
+
+        ///
+        /// Calculates a pair of indexes (from, to) from a minterm.
+        /// Essentially, the reverse of indexes2minterm().
+        ///
+        ///     @param  m   Minterm in question.
+        ///                 Should have VARS variables.
+        ///
+        ///     @param  fr  On return: Index of source state.
+        ///
+        ///     @param  to  On return: Index of destination state.
+        ///
+        void minterm2indexes(const MEDDLY::minterm &m, unsigned &fr, unsigned &to) const;
 
         ///
         /// Converts ndx into an array of digits, and then loops
