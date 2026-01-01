@@ -30,10 +30,11 @@ noinst_PROGRAMS = \
     nodestor \
     nqueens \
     ops_comp \
-    ops_maxmin \
-    ops_plusminus \
-    ops_mult \
     ops_divmod \
+    ops_maxmin \
+    ops_mult \
+    ops_prepost \
+    ops_plusminus \
     ops_set \
     refcount \
     sat_test \
@@ -226,17 +227,20 @@ nqueens_LDADD = ../src/libmeddly.la
 ops_comp_SOURCES = ops_comp.cc randomize.h randomize.cc
 ops_comp_LDADD = ../src/libmeddly.la
 
+ops_divmod_SOURCES = ops_divmod.cc randomize.h randomize.cc
+ops_divmod_LDADD = ../src/libmeddly.la
+
 ops_maxmin_SOURCES = ops_maxmin.cc randomize.h randomize.cc
 ops_maxmin_LDADD = ../src/libmeddly.la
-
-ops_plusminus_SOURCES = ops_plusminus.cc randomize.h randomize.cc
-ops_plusminus_LDADD = ../src/libmeddly.la
 
 ops_mult_SOURCES = ops_mult.cc randomize.h randomize.cc
 ops_mult_LDADD = ../src/libmeddly.la
 
-ops_divmod_SOURCES = ops_divmod.cc randomize.h randomize.cc
-ops_divmod_LDADD = ../src/libmeddly.la
+ops_prepost_SOURCES = ops_prepost.cc randomize.h randomize.cc
+ops_prepost_LDADD = ../src/libmeddly.la
+
+ops_plusminus_SOURCES = ops_plusminus.cc randomize.h randomize.cc
+ops_plusminus_LDADD = ../src/libmeddly.la
 
 ops_set_SOURCES = ops_set.cc randomize.h randomize.cc
 ops_set_LDADD = ../src/libmeddly.la

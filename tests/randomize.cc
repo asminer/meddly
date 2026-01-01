@@ -55,8 +55,6 @@ vectorgen::vectorgen(bool sr, unsigned v, unsigned d)
     }
 
     current_terminal = 0;
-
-    _D = nullptr;
 }
 
 void vectorgen::setSeed(long s, bool print)
@@ -96,7 +94,6 @@ MEDDLY::domain* vectorgen::makeDomain()
         bs[i] = dom();
     }
     MEDDLY::domain* d = MEDDLY::domain::createBottomUp(bs, vars());
-    _D = d;
     delete[] bs;
     return d;
 }

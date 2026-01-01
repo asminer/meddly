@@ -17,7 +17,7 @@
 */
 
 /*
-    Tests union, intersection, set difference operations.
+    Tests pre-image and post-image operations.
 */
 
 
@@ -29,21 +29,196 @@
 
 #include "randomize.h"
 
-vectorgen SG(MEDDLY::SET, 5, 4);
-vectorgen RG(MEDDLY::RELATION, 5, 2);
-MEDDLY::domain *D = nullptr;
+vectorgen SG(MEDDLY::SET,      5, 3);
+vectorgen RG(MEDDLY::RELATION, 5, 3);
 
-const unsigned MIN_SET_CARD = 1;
-const unsigned MAX_SET_CARD = 256;
-const unsigned MULT_SET_CARD = 2;
+// const unsigned MIN_SET_CARD = 1;
+// const unsigned MAX_SET_CARD = 256;
+// const unsigned MULT_SET_CARD = 2;
 
-const unsigned MIN_REL_CARD = 1;
-const unsigned MAX_REL_CARD = 256;
-const unsigned MULT_REL_CARD = 4;
+// const unsigned MIN_REL_CARD = 1;
+// const unsigned MAX_REL_CARD = 1024;
+// const unsigned MULT_REL_CARD = 4;
 
 using namespace MEDDLY;
 
-// #define DEBUG_OPS
+struct intlist {
+    unsigned index;
+    intlist* next;
+
+    intlist(unsigned i, intlist* n) {
+        index = i;
+        next = n;
+    }
+};
+
+void showList(intlist* L)
+{
+    while (L) {
+        std::cout << L->index;
+        std::cout << " -> ";
+        L = L->next;
+    }
+    std::cout << " null\n";
+}
+
+void usage(const char* arg0)
+{
+    /* Strip leading directory, if any: */
+    const char* name = arg0;
+    for (const char* ptr=arg0; *ptr; ptr++) {
+        if ('/' == *ptr) name = ptr+1;
+    }
+    std::cerr << "\nUsage: " << name << "options seed\n\n";
+    std::cerr << "Options:\n";
+    std::cerr << "    --set:    Test on sets (default).\n";
+    std::cerr << "    --rel:    Test on relations\n";
+    std::cerr << "\n";
+
+    exit(1);
+}
+
+void makeExplicitGraph(const dd_edge &E, std::vector <intlist*> &elist)
+{
+    elist.resize(SG.potential());
+    for (unsigned i=0; i<elist.size(); i++) {
+        elist[i] = nullptr;
+    }
+    for (dd_edge::iterator I = E.begin(); I != E.end(); I++) {
+        unsigned f, t;
+        RG.minterm2indexes(*I, f, t);
+        std::cout << f << " -> " << t << "\n";
+
+        elist[f] = new intlist(t, elist[f]);
+    }
+}
+
+void showExplicitGraph(const std::vector <intlist*> &elist)
+{
+    for (unsigned i=0; i<elist.size(); i++) {
+        if (elist[i]) {
+            std::cout << i << ": ";
+            showList(elist[i]);
+        }
+    }
+}
+
+void randomizeRelation(forest* F)
+{
+    std::vector <bool> Eset(RG.potential());
+    std::vector <bool> values(1);
+    values[0] = true;
+
+    RG.randomizeVector(Eset, 16, values);
+
+    dd_edge Emxd(F);
+    RG.explicit2edge(Eset, Emxd);
+
+    std::cout << "Random edges:\n";
+
+    ostream_output mout(std::cout);
+
+    minterm m(F);
+    for (unsigned i=0; i<RG.potential(); i++) {
+        if (!Eset[i]) continue;
+        mout << "    " << i << "\n";
+
+        RG.index2minterm(i, m);
+        mout << "        minterm ";
+        m.show(mout);
+        mout << "\n";
+
+        unsigned f, t;
+        RG.minterm2indexes(m, f, t);
+        mout << "        " << f << " -> " << t << "\n";
+
+    }
+
+    std::cout << "makeExplicitGraph\n";
+
+    std::vector <intlist*> graph;
+
+    makeExplicitGraph(Emxd, graph);
+
+    std::cout << "Got graph:\n";
+    showExplicitGraph(graph);
+}
+
+
+int main(int argc, const char** argv)
+{
+    /*
+     * Command-line options
+     */
+    bool sets = true;
+    long seed = 0;
+
+    for (int i=1; i<argc; i++) {
+
+        if (0==strcmp("--set", argv[i])) {
+            sets = true;
+            continue;
+        }
+        if (0==strcmp("--rel", argv[i])) {
+            sets = false;
+            continue;
+        }
+
+        if ((argv[i][0] < '0') || (argv[i][0] > '9')) {
+            usage(argv[0]);
+        }
+
+        seed = atol(argv[i]);
+    }
+    vectorgen::setSeed(seed);
+
+    /*
+     * Run requested test
+     */
+
+    try {
+        MEDDLY::initialize();
+        domain* D = RG.makeDomain();
+
+        policies p;
+        p.useDefaults(RELATION);
+        p.setIdentityReduced();
+
+        forest* R3 = forest::create(D, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
+
+        randomizeRelation(R3);
+
+
+        /*
+        if (sets) {
+            test_sets(D);
+        } else {
+            test_rels(D);
+        }
+        */
+
+        domain::destroy(D);
+        MEDDLY::cleanup();
+        return 0;
+    }
+
+    catch (MEDDLY::error e) {
+        std::cerr   << "\nCaught meddly error " << e.getName()
+                    << "\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
+    }
+    catch (const char* e) {
+        std::cerr << "\nCaught our own error: " << e << "\n";
+        return 2;
+    }
+    std::cerr << "\nSome other error?\n";
+    return 4;
+}
+
+
+#if 0
 
 unsigned set_cardinality(const std::vector <bool> &A)
 {
@@ -226,11 +401,11 @@ void compare(vectorgen &Gen,
     std::cout << "    A: ";
     Gen.showSet(std::cout, Aset);
     std::cout << "\n  = ";
-    Gen.showMinterms(std::cout, D, Aset);
+    Gen.showMinterms(std::cout, Aset);
     std::cout << "\n    B: ";
     Gen.showSet(std::cout, Bset);
     std::cout << "\n  = ";
-    Gen.showMinterms(std::cout, D, Bset);
+    Gen.showMinterms(std::cout, Bset);
     std::cout << "\nMDD/MXDs:\n";
     std::cout << "    A:\n";
     Add.showGraph(out);
@@ -406,78 +581,4 @@ void test_rels(domain* D)
     std::cout << "    union\n";
 }
 
-void usage(const char* arg0)
-{
-    /* Strip leading directory, if any: */
-    const char* name = arg0;
-    for (const char* ptr=arg0; *ptr; ptr++) {
-        if ('/' == *ptr) name = ptr+1;
-    }
-    std::cerr << "\nUsage: " << name << "options seed\n\n";
-    std::cerr << "Options:\n";
-    std::cerr << "    --set:    Test sets (default).\n";
-    std::cerr << "    --rel:    Test relations\n";
-    std::cerr << "\n";
-
-    exit(1);
-}
-
-
-int main(int argc, const char** argv)
-{
-    /*
-     * Command-line options
-     */
-    bool sets = true;
-    long seed = 0;
-
-    for (int i=1; i<argc; i++) {
-
-        if (0==strcmp("--set", argv[i])) {
-            sets = true;
-            continue;
-        }
-        if (0==strcmp("--rel", argv[i])) {
-            sets = false;
-            continue;
-        }
-
-        if ((argv[i][0] < '0') || (argv[i][0] > '9')) {
-            usage(argv[0]);
-        }
-
-        seed = atol(argv[i]);
-    }
-    vectorgen::setSeed(seed);
-
-    /*
-     * Run requested test
-     */
-
-    try {
-        MEDDLY::initialize();
-        if (sets) {
-            D = SG.makeDomain();
-            test_sets(D);
-        } else {
-            D = RG.makeDomain();
-            test_rels(D);
-        }
-        domain::destroy(D);
-        MEDDLY::cleanup();
-        return 0;
-    }
-
-    catch (MEDDLY::error e) {
-        std::cerr   << "\nCaught meddly error " << e.getName()
-                    << "\n    thrown in " << e.getFile()
-                    << " line " << e.getLine() << "\n";
-        return 1;
-    }
-    catch (const char* e) {
-        std::cerr << "\nCaught our own error: " << e << "\n";
-        return 2;
-    }
-    std::cerr << "\nSome other error?\n";
-    return 4;
-}
+#endif

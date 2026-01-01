@@ -33,8 +33,9 @@ ops_arith
 ops_comp
 ops_divmod
 ops_maxmin
-ops_plusminus
 ops_mult
+ops_prepost
+ops_plusminus
 ops_set
 randtest
 refcount

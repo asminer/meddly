@@ -360,11 +360,11 @@ class vectorgen {
         // Display minterms corresponding to an explicit vector
         //
         template <typename TYPE>
-        void showMinterms(std::ostream &out, const std::vector <TYPE> &elems)
-            const
+        void showMinterms(std::ostream &out, const MEDDLY::domain* D,
+                const std::vector <TYPE> &elems) const
         {
-            if (!_D) throw "null domain, showMinterms";
-            MEDDLY::minterm mt(_D, isForRelations());
+            if (!D) throw "null domain, showMinterms";
+            MEDDLY::minterm mt(D, isForRelations());
             MEDDLY::ostream_output mout(out);
             mout << "{ ";
             bool printed = false;
@@ -391,7 +391,6 @@ class vectorgen {
         const unsigned DOM;
         unsigned POTENTIAL;
         std::vector <unsigned> ilist;
-        const MEDDLY::domain* _D;
 
         static long seed;
 
