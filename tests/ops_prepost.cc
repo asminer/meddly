@@ -103,6 +103,68 @@ void showExplicitGraph(const std::vector <intlist*> &elist)
     }
 }
 
+void preImage(const std::vector <bool> &s0,
+        const std::vector <intlist*> &E, std::vector <bool> &s1)
+{
+    if (s0.size() != E.size()) {
+        throw "preImage size mismatch s0, E";
+    }
+    if (s1.size() != E.size()) {
+        throw "preImage size mismatch s1, E";
+    }
+    for (unsigned i=0; i<s1.size(); i++) {
+        s1[i] = false;
+    }
+    for (unsigned i=0; i<E.size(); i++) {
+        const intlist* curr = E[i];
+        while (curr) {
+            if (s0[curr->index]) {
+                s1[i] = true;
+                break;
+            }
+            curr = curr->next;
+        }
+    }
+}
+
+void postImage(const std::vector <bool> &s0,
+        const std::vector <intlist*> &E, std::vector <bool> &s1)
+{
+    if (s0.size() != E.size()) {
+        throw "postImage size mismatch s0, E";
+    }
+    if (s1.size() != E.size()) {
+        throw "postImage size mismatch s1, E";
+    }
+    for (unsigned i=0; i<s1.size(); i++) {
+        s1[i] = false;
+    }
+    for (unsigned i=0; i<E.size(); i++) {
+        if (!s0[i]) continue;
+        const intlist* curr = E[i];
+        while (curr) {
+            s1[curr->index] = true;
+            curr = curr->next;
+        }
+    }
+}
+
+void setUnion(const std::vector <bool> &A,
+        const std::vector <bool> &B, std::vector <bool> &C)
+{
+    if (A.size() != B.size()) {
+        throw "set union size mismatch A,B";
+    }
+    if (A.size() != C.size()) {
+        throw "set union size mismatch A,C";
+    }
+
+    for (unsigned i=0; i<C.size(); i++) {
+        C[i] = A[i] || B[i];
+    }
+}
+
+
 void randomizeRelation(forest* F)
 {
     std::vector <bool> Eset(RG.potential());
@@ -241,21 +303,6 @@ void set_intersection(const std::vector <bool> &A,
 
     for (unsigned i=0; i<C.size(); i++) {
         C[i] = A[i] && B[i];
-    }
-}
-
-void set_union(const std::vector <bool> &A,
-        const std::vector <bool> &B, std::vector <bool> &C)
-{
-    if (A.size() != B.size()) {
-        throw "set union size mismatch A,B";
-    }
-    if (A.size() != C.size()) {
-        throw "set union size mismatch A,C";
-    }
-
-    for (unsigned i=0; i<C.size(); i++) {
-        C[i] = A[i] || B[i];
     }
 }
 
