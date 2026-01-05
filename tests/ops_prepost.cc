@@ -24,6 +24,8 @@
 #include <cstdlib>
 #include <time.h>
 #include <cassert>
+#include <iostream>
+#include <iomanip>
 
 #include "../src/meddly.h"
 
@@ -33,14 +35,44 @@ vectorgen SG(MEDDLY::SET,      5, 3);
 vectorgen RG(MEDDLY::RELATION, 5, 3);
 
 const unsigned MIN_SET_CARD = 1;
-const unsigned MAX_SET_CARD = 8;
-const unsigned MULT_SET_CARD = 2;
+const unsigned MAX_SET_CARD = 16;
+const unsigned MULT_SET_CARD = 4;
 
 const unsigned MIN_REL_CARD = 16;
 const unsigned MAX_REL_CARD = 4096;
 const unsigned MULT_REL_CARD = 4;
 
 using namespace MEDDLY;
+
+void usage(const char* arg0)
+{
+    /* Strip leading directory, if any: */
+    const char* name = arg0;
+    for (const char* ptr=arg0; *ptr; ptr++) {
+        if ('/' == *ptr) name = ptr+1;
+    }
+    std::cerr << "\nUsage: " << name << "options seed\n\n";
+    std::cerr << "Options:\n";
+    std::cerr << "    --set:    Test on sets (default).\n";
+    std::cerr << "    --rel:    Test on relations\n";
+    std::cerr << "\n";
+    std::cerr << "    --inF:    Input/output set/rel is fully-reduced\n";
+    std::cerr << "    --inI:    Input/output set/rel is identity-reduced\n";
+    std::cerr << "    --inQ:    Input/output set/rel is quasi-reduced\n";
+    std::cerr << "\n";
+    std::cerr << "    --inMTB:  Input/output set/rel is multi-terminal, boolean\n";
+    std::cerr << "    --inMTI:  Input/output set/rel is multi-terminal, integer\n";
+    std::cerr << "    --inEV:   Input/output set/rel is edge-valued integer\n";
+    std::cerr << "\n";
+
+    std::cerr << "    --relF:   Transition relation is fully-reduced\n";
+    std::cerr << "    --relI:   Transition relation is identity-reduced\n";
+    std::cerr << "    --relQ:   Transition relation is quasi-reduced\n";
+    std::cerr << "\n";
+
+    exit(1);
+}
+
 
 struct intlist {
     unsigned index;
@@ -60,22 +92,6 @@ void showList(intlist* L)
         L = L->next;
     }
     std::cout << " null\n";
-}
-
-void usage(const char* arg0)
-{
-    /* Strip leading directory, if any: */
-    const char* name = arg0;
-    for (const char* ptr=arg0; *ptr; ptr++) {
-        if ('/' == *ptr) name = ptr+1;
-    }
-    std::cerr << "\nUsage: " << name << "options seed\n\n";
-    std::cerr << "Options:\n";
-    std::cerr << "    --set:    Test on sets (default).\n";
-    std::cerr << "    --rel:    Test on relations\n";
-    std::cerr << "\n";
-
-    exit(1);
 }
 
 void makeExplicitGraph(const dd_edge &E, std::vector <intlist*> &elist)
@@ -147,6 +163,13 @@ void postImage(const std::vector <bool> &s0,
             curr = curr->next;
         }
     }
+/*
+    unsigned card = 0;
+    for (unsigned i=0; i<s1.size(); i++) {
+        if (s1[i]) card++;
+    }
+    std::cerr << " card " << card << "\n";
+    */
 }
 
 void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2)
@@ -164,8 +187,7 @@ void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2)
     throw "mismatch";
 }
 
-void setCompare(const std::vector <bool> &S0, const dd_edge &ddR,
-        forest* fin, forest* fout)
+void setCompare(const std::vector <bool> &S0, const dd_edge &ddR, forest* Fset)
 {
     std::vector <bool> post1(S0.size());
     std::vector <bool> post2(S0.size());
@@ -185,11 +207,11 @@ void setCompare(const std::vector <bool> &S0, const dd_edge &ddR,
     preImage(pre1, R, pre2);
     preImage(pre2, R, pre3);
 
-    dd_edge dd0(fin);
+    dd_edge dd0(Fset);
     SG.explicit2edge(S0, dd0);
 
-    dd_edge ddpost1(fout), ddpost2(fout), ddpost3(fout),
-            ddpre1(fout), ddpre2(fout), ddpre3(fout);
+    dd_edge ddpost1(Fset), ddpost2(Fset), ddpost3(Fset),
+            ddpre1(Fset), ddpre2(Fset), ddpre3(Fset);
 
     SG.explicit2edge(post1, ddpost1);
     SG.explicit2edge(post2, ddpost2);
@@ -198,8 +220,8 @@ void setCompare(const std::vector <bool> &S0, const dd_edge &ddR,
     SG.explicit2edge(pre2, ddpre2);
     SG.explicit2edge(pre3, ddpre3);
 
-    dd_edge sympost1(fout), sympost2(fout), sympost3(fout),
-            sympre1(fout), sympre2(fout), sympre3(fout);
+    dd_edge sympost1(Fset), sympost2(Fset), sympost3(Fset),
+            sympre1(Fset), sympre2(Fset), sympre3(Fset);
 
     apply(POST_IMAGE, dd0, ddR, sympost1);
     apply(POST_IMAGE, sympost1, ddR, sympost2);
@@ -218,145 +240,87 @@ void setCompare(const std::vector <bool> &S0, const dd_edge &ddR,
     checkEqual("pre image 3", sympre3, ddpre3);
 }
 
-void setTestsOnForests(unsigned scard, forest* fin,
-        unsigned rcard, forest* frel, forest* fout)
+void setTestsOnForests(unsigned scard, forest* Fset,
+        unsigned rcard, forest* Frel)
 {
-    if (!fin)  throw "null fin";
-    if (!frel) throw "null frel";
-    if (!fout) throw "null fout";
-
-    std::cerr << "        " << shortNameOf(fin->getReductionRule())
-              << "  " << shortNameOf(frel->getReductionRule())
-              << "  : " << shortNameOf(fout->getReductionRule()) << "  ";
+    if (!Fset)  throw "null Fset";
+    if (!Frel) throw "null frel";
 
     std::vector <bool> expset(SG.potential());
     std::vector <bool> exprel(RG.potential());
-    dd_edge Rel(frel);
+    dd_edge Rel(Frel);
 
     std::vector <bool> values(1);
     values[0] = true;
 
-    for (unsigned i=0; i<10; i++) {
+    const unsigned N = 10;
+
+    std::cerr << "    " << std::setw(5) << scard << " x "
+              << std::setw(5) << rcard << " ";
+
+    for (unsigned i=0; i<N; i++) {
         std::cerr << '.';
         RG.randomizeVector(exprel, rcard, values);
         RG.explicit2edge(exprel, Rel);
 
         SG.randomizeVector(expset, scard, values);
-        setCompare(expset, Rel, fin, fout);
+        setCompare(expset, Rel, Fset);
 
         SG.randomizeFully(expset, scard, values);
-        setCompare(expset, Rel, fin, fout);
+        setCompare(expset, Rel, Fset);
     }
-    for (unsigned i=0; i<10; i++) {
+    for (unsigned i=0; i<N; i++) {
         std::cerr << "x";
         RG.randomizeFully(exprel, rcard, values);
         RG.explicit2edge(exprel, Rel);
 
         SG.randomizeVector(expset, scard, values);
-        setCompare(expset, Rel, fin, fout);
+        setCompare(expset, Rel, Fset);
 
         SG.randomizeFully(expset, scard, values);
-        setCompare(expset, Rel, fin, fout);
+        setCompare(expset, Rel, Fset);
     }
-    for (unsigned i=0; i<10; i++) {
+    for (unsigned i=0; i<N; i++) {
         std::cerr << "i";
         RG.randomizeIdentity(exprel, rcard, values);
         RG.explicit2edge(exprel, Rel);
 
         SG.randomizeVector(expset, scard, values);
-        setCompare(expset, Rel, fin, fout);
+        setCompare(expset, Rel, Fset);
 
         SG.randomizeFully(expset, scard, values);
-        setCompare(expset, Rel, fin, fout);
+        setCompare(expset, Rel, Fset);
     }
     std::cerr << std::endl;
 }
 
 
-void testSets(domain* D)
+void testSets(domain* D, const policies &sp, const policies &rp)
 {
-    policies p;
-    p.useDefaults(SET);
+    forest* Fset = forest::create(D, SET, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL, sp);
 
-    //
-    // 2 set types: fully and quasi-reduced
-    //
-
-    p.setFullyReduced();
-    forest* Fset1 = forest::create(D, SET, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL, p);
-
-    p.setQuasiReduced();
-    forest* Fset2 = forest::create(D, SET, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL, p);
-
-    //
-    // 3 relation types: fully, identity, quasi-reduced
-    //
-
-    p.useDefaults(RELATION);
-
-    p.setFullyReduced();
-    forest* Frel1 = forest::create(D, RELATION, range_type::BOOLEAN,
-                        edge_labeling::MULTI_TERMINAL, p);
-
-    p.setIdentityReduced();
-    forest* Frel2 = forest::create(D, RELATION, range_type::BOOLEAN,
-                        edge_labeling::MULTI_TERMINAL, p);
-
-    p.setQuasiReduced();
-    forest* Frel3 = forest::create(D, RELATION, range_type::BOOLEAN,
-                        edge_labeling::MULTI_TERMINAL, p);
+    forest* Frel = forest::create(D, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, rp);
 
 
-    /*
+    std::cerr << "Input/output forest:\n"
+              << "    " << nameOf(Fset->getReductionRule()) << "\n";
 
-    p.setQuasiReduced();
+    std::cerr << "Transition relation forest:\n"
+              << "    " << nameOf(Frel->getReductionRule()) << "\n";
 
-    forest* Fset2 = forest::create(D, SET, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL, p);
 
-    */
+    std::cerr << "Running tests for input cardinality x transition relation cardinality\n";
+
     for (unsigned rc=MIN_REL_CARD; rc<=MAX_REL_CARD; rc*=MULT_REL_CARD)
     {
-        std::cerr << "Relation size " << rc << " out of " << RG.potential() << " edges\n";
         for (unsigned sc=MIN_SET_CARD; sc<=MAX_SET_CARD; sc*=MULT_SET_CARD)
         {
-            std::cerr << "    Initial set size " << sc << " out of " << SG.potential() << " edges\n";
-            std::cerr << "        Set Rel : Set\n";
-            setTestsOnForests(sc, Fset1, rc, Frel2, Fset1);
-            // setTestsOnForests(sc, Fset1, rc, Frel2, Fset2);
-            // setTestsOnForests(sc, Fset2, rc, Frel2, Fset1);
-            // setTestsOnForests(sc, Fset2, rc, Frel2, Fset2);
+            setTestsOnForests(sc, Fset, rc, Frel);
         }
-
     }
 
-
-/*
-    for (unsigned i=MIN_SET_CARD; i<=MAX_SET_CARD; i*=MULT_SET_CARD)
-    {
-        std::cout << "Testing set operations on sets of size " << i
-                  << " out of " << SG.potential() << "\n";
-
-        set
-        test_on_forests(i, F1, F1, F1, Findex);
-        test_on_forests(i, F1, F1, F2, Findex);
-        test_on_forests(i, F1, F2, F1, Findex);
-        test_on_forests(i, F1, F2, F2, Findex);
-        test_on_forests(i, F2, F1, F1, Findex);
-        test_on_forests(i, F2, F1, F2, Findex);
-        test_on_forests(i, F2, F2, F1, Findex);
-        test_on_forests(i, F2, F2, F2, Findex);
-    }
-    std::cout << "\nDone testing set operations:\n";
-    std::cout << "    cardinality\n";
-    std::cout << "    set indexing\n";
-    std::cout << "    complement\n";
-    std::cout << "    difference\n";
-    std::cout << "    intersection\n";
-    std::cout << "    union\n";
-    */
 }
 
 /*
@@ -405,7 +369,7 @@ void randomizeRelation(forest* F)
 
 // void test_sets(domain* D)
 
-void testRels(domain* D)
+void testRels(domain* D, policies sp, policies rp)
 {
 }
 
@@ -444,10 +408,16 @@ int main(int argc, const char** argv)
         MEDDLY::initialize();
         domain* D = RG.makeDomain();
 
+        policies sp;
+        policies rp;
+
+        sp.useDefaults(sets ? SET : RELATION);
+        rp.useDefaults(RELATION);
+
         if (sets) {
-            testSets(D);
+            testSets(D, sp, rp);
         } else {
-            testRels(D);
+            testRels(D, sp, rp);
         }
 
         domain::destroy(D);
