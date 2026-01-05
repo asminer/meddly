@@ -1935,6 +1935,11 @@ MEDDLY::policies MEDDLY::forest::mxdDefaults;
 MEDDLY::forest::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
   const policies &p) : nodeHeaders(*this, mstats, stats), deflt(p)
 {
+    // Fix any policy inconsistencies
+    if (deflt.isIdentityReduced() && !rel) {
+        deflt.setFullyReduced();
+    }
+
     // Set up domain
     d = _d;
 
