@@ -390,7 +390,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
 
                         edge_value  newdv;
                         node_handle newdp;
-                        accumulateOp->compute(L, ~0,
+                        accumulateOp->compute(Cnextlevel, ~0,
                             edgeval(Cu, j), Cu->down(j),
                             cdv, cdp,
                             newdv, newdp
@@ -427,7 +427,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                             }
                             edge_value  newdv;
                             node_handle newdp;
-                            accumulateOp->compute(L, ~0,
+                            accumulateOp->compute(Cnextlevel, ~0,
                                 edgeval(Cu, i), Cu->down(i),
                                 cdv, cdp,
                                 newdv, newdp
