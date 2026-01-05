@@ -60,10 +60,10 @@ void usage(const char* arg0)
     std::cerr << "    --inI:    Input/output set/rel is identity-reduced\n";
     std::cerr << "    --inQ:    Input/output set/rel is quasi-reduced\n";
     std::cerr << "\n";
-    std::cerr << "    --inMTB:  Input/output set/rel is multi-terminal, boolean\n";
-    std::cerr << "    --inMTI:  Input/output set/rel is multi-terminal, integer\n";
-    std::cerr << "    --inEV:   Input/output set/rel is edge-valued integer\n";
-    std::cerr << "\n";
+    // std::cerr << "    --inMTB:  Input/output set/rel is multi-terminal, boolean\n";
+    // std::cerr << "    --inMTI:  Input/output set/rel is multi-terminal, integer\n";
+    // std::cerr << "    --inEV:   Input/output set/rel is edge-valued integer\n";
+    // std::cerr << "\n";
 
     std::cerr << "    --relF:   Transition relation is fully-reduced\n";
     std::cerr << "    --relI:   Transition relation is identity-reduced\n";
@@ -380,6 +380,8 @@ int main(int argc, const char** argv)
      */
     bool sets = true;
     long seed = 0;
+    char setred = 'F';
+    char relred = 'I';
 
     for (int i=1; i<argc; i++) {
 
@@ -389,6 +391,32 @@ int main(int argc, const char** argv)
         }
         if (0==strcmp("--rel", argv[i])) {
             sets = false;
+            continue;
+        }
+
+        if (0==strcmp("--inF", argv[i])) {
+            setred = 'F';
+            continue;
+        }
+        if (0==strcmp("--inI", argv[i])) {
+            setred = 'I';
+            continue;
+        }
+        if (0==strcmp("--inQ", argv[i])) {
+            setred = 'Q';
+            continue;
+        }
+
+        if (0==strcmp("--relF", argv[i])) {
+            relred = 'F';
+            continue;
+        }
+        if (0==strcmp("--relI", argv[i])) {
+            relred = 'I';
+            continue;
+        }
+        if (0==strcmp("--relQ", argv[i])) {
+            relred = 'Q';
             continue;
         }
 
@@ -413,6 +441,40 @@ int main(int argc, const char** argv)
 
         sp.useDefaults(sets ? SET : RELATION);
         rp.useDefaults(RELATION);
+
+        switch (setred) {
+            case 'Q':
+                sp.setQuasiReduced();
+                break;
+
+            case 'F':
+                sp.setFullyReduced();
+                break;
+
+            case 'I':
+                sp.setIdentityReduced();
+                break;
+
+            default:
+                throw "internal error 1";
+        }
+        switch (relred) {
+            case 'Q':
+                rp.setQuasiReduced();
+                break;
+
+            case 'F':
+                rp.setFullyReduced();
+                break;
+
+            case 'I':
+                rp.setIdentityReduced();
+                break;
+
+            default:
+                throw "internal error 2";
+        }
+
 
         if (sets) {
             testSets(D, sp, rp);
