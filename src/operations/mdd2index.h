@@ -20,6 +20,10 @@
 #define MEDDLY_MDD2INDEX_H
 
 namespace MEDDLY {
+    class unary_factory;
+    unary_factory& CONVERT_TO_INDEX_SET();
+
+    /*
     class forest;
     class unary_operation;
 
@@ -27,6 +31,7 @@ namespace MEDDLY {
     unary_operation* CONVERT_TO_INDEX_SET(forest* arg, forest* res);
     void CONVERT_TO_INDEX_SET_init();
     void CONVERT_TO_INDEX_SET_done();
+    */
 };
 
 #endif

@@ -41,7 +41,7 @@ namespace MEDDLY {
     unary_factory& COMPLEMENT();
 
     /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
-    unary_operation* CONVERT_TO_INDEX_SET(forest* arg, forest* res);
+    unary_factory& CONVERT_TO_INDEX_SET();
 
     /// Copy a function across forests, with the same domain.
     unary_factory& COPY();

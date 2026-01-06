@@ -25,8 +25,7 @@
 
 namespace MEDDLY {
     class mdd2index_operation;
-
-    unary_list MDD2INDEX_cache;
+    class MDD2INDEX_factory;
 };
 
 // #define TRACE
@@ -237,6 +236,7 @@ void MEDDLY::mdd2index_operation::_compute(int L,
 // *                                                                *
 // ******************************************************************
 
+/*
 MEDDLY::unary_operation*
 MEDDLY::CONVERT_TO_INDEX_SET(forest* arg, forest* res)
 {
@@ -260,5 +260,51 @@ void MEDDLY::CONVERT_TO_INDEX_SET_init()
 void MEDDLY::CONVERT_TO_INDEX_SET_done()
 {
     MEDDLY_DCASSERT(MDD2INDEX_cache.isEmpty());
+}
+*/
+
+// ******************************************************************
+// *                                                                *
+// *                    MDD2INDEX_factory  class                    *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::MDD2INDEX_factory : public unary_factory {
+    public:
+        virtual void setup();
+        virtual unary_operation* build(forest* arg, forest* res);
+};
+
+// ******************************************************************
+
+void MEDDLY::MDD2INDEX_factory::setup()
+{
+    _setup("CONVERT_TO_INDEX_SET", "Converts sets (boolean functions) from one forest, into an indexed set (integer functions) in another (EV+MDD) forest. In the resulting function, variable assignments causing the original function to return false, will return infinity. Variable assignments causing the original function to return true, will return a unique integer between 0 and one less than the cardinality of the input function. In fact, the integer will be the count of the number of variable assignments before this one (in lexicographical order) causing the original function to return true.");
+}
+
+MEDDLY::unary_operation* MEDDLY::MDD2INDEX_factory::build(forest* arg, forest* res)
+{
+    if (!arg || !res) {
+        return nullptr;
+    }
+
+    unary_operation* uop =  cache_find(arg, res);
+    if (uop) {
+        return uop;
+    }
+
+    return cache_add(new mdd2index_operation(arg, res));
+}
+
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::unary_factory& MEDDLY::CONVERT_TO_INDEX_SET()
+{
+    static MDD2INDEX_factory F;
+    return F;
 }
 
