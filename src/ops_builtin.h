@@ -243,7 +243,13 @@ namespace MEDDLY {
         public:
             builtin_init(initializer_list* p);
 
-        protected:
+            inline unsigned numUnary() const {
+                return all_unary.size();
+            }
+            inline const unary_factory* getUnary(unsigned i) const {
+                MEDDLY_CHECK_RANGE(0, i, all_unary.size());
+                return all_unary[i];
+            }
             virtual void setup();
             virtual void cleanup();
     };

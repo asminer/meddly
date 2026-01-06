@@ -2,12 +2,11 @@
 *.lo
 .dirstamp
 .libs
-build_expression
+applyinfo
 dining_phils
 graphs_to_mdds
 hanoi
 kanban
-kan1_batch
 knight
 knight2
 libinfo
@@ -16,13 +15,7 @@ nqueens
 qc2
 queen_cover
 rebuild_mdd
-rubiks_cube
-rubiks_cube_orient
-rubiks_cube_phase
-rubiks_rings
 slot
-slot_phase
-square1
 swaps
 test_evmdd
 test_implicit_kanban
