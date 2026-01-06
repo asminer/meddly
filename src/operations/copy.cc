@@ -944,6 +944,8 @@ class MEDDLY::COPY_factory : public unary_factory {
         virtual unary_operation* build(forest* arg, forest* res);
 };
 
+// ******************************************************************
+
 void MEDDLY::COPY_factory::setup()
 {
     _setup("COPY", "Copy functions, within the same forest or across forests. The argument and result forests must have the same domain, and must both be sets or both be relations. The function ranges may be different.");
@@ -955,7 +957,7 @@ MEDDLY::unary_operation* MEDDLY::COPY_factory::build(forest* arg, forest* res)
         return nullptr;
     }
 
-    unary_operation* uop =  find(arg, res);
+    unary_operation* uop = cache_find(arg, res);
     if (uop) {
         return uop;
     }
@@ -968,7 +970,7 @@ MEDDLY::unary_operation* MEDDLY::COPY_factory::build(forest* arg, forest* res)
     // Super fast case: same forests
     //
     if (arg == res) {
-        return add(new copy_inforest(res));
+        return cache_add(new copy_inforest(res));
     }
 
     //
@@ -976,7 +978,7 @@ MEDDLY::unary_operation* MEDDLY::COPY_factory::build(forest* arg, forest* res)
     //
     if (arg->isMultiTerminal())
     {
-        return add(new copy_MT(arg, res));
+        return cache_add(new copy_MT(arg, res));
     }
 
 
@@ -988,11 +990,11 @@ MEDDLY::unary_operation* MEDDLY::COPY_factory::build(forest* arg, forest* res)
     {
         switch (arg->getRangeType()) {
             case range_type::INTEGER:
-                return add( new copy_EV_fast(arg, res) );
+                return cache_add( new copy_EV_fast(arg, res) );
 
             case range_type::REAL:
                 if (res->getRangeType() == range_type::REAL) {
-                    return add( new copy_EV_fast(arg, res) );
+                    return cache_add( new copy_EV_fast(arg, res) );
                 }
 
             default:
@@ -1007,12 +1009,12 @@ MEDDLY::unary_operation* MEDDLY::COPY_factory::build(forest* arg, forest* res)
     if (arg->isEVPlus() || arg->isIndexSet()) {
         switch (arg->getRangeType()) {
             case range_type::INTEGER:
-                return add(
+                return cache_add(
                     new copy_EV< EdgeOp_plus<long> >(arg, res)
                 );
 
             case range_type::REAL:
-                return add(
+                return cache_add(
                     new copy_EV< EdgeOp_plus<float> >(arg, res)
                 );
 
@@ -1024,12 +1026,12 @@ MEDDLY::unary_operation* MEDDLY::COPY_factory::build(forest* arg, forest* res)
     if (arg->isEVTimes()) {
         switch (arg->getRangeType()) {
             case range_type::INTEGER:
-                return add(
+                return cache_add(
                     new copy_EV< EdgeOp_times<long> >(arg, res)
                 );
 
             case range_type::REAL:
-                return add(
+                return cache_add(
                     new copy_EV< EdgeOp_times<float> >(arg, res)
                 );
 

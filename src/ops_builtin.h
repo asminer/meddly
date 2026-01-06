@@ -30,12 +30,12 @@ namespace MEDDLY {
     // *                                                                *
     // ******************************************************************
 
-    class unary_operation;
+    class unary_operation;  // TBD - remove?
     class unary_factory;
 
     /// Return the number of variable assignments
     /// so that the function evaluates to non-zero.
-    unary_operation* CARDINALITY(forest* arg, opnd_type res);
+    unary_factory& CARDINALITY();
 
     /// For BOOLEAN forests, flip the return values.
     unary_operation* COMPLEMENT(forest* arg, forest* res);

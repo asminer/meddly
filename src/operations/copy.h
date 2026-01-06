@@ -21,7 +21,6 @@
 
 namespace MEDDLY {
     class unary_factory;
-
     unary_factory& COPY();
 };
 

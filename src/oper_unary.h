@@ -424,7 +424,7 @@ class MEDDLY::unary_factory {
         void _cleanup();
 
         /// Add an operation to the list.
-        inline unary_operation* add(unary_operation* uop) {
+        inline unary_operation* cache_add(unary_operation* uop) {
             if (uop) {
                 MEDDLY_DCASSERT(nullptr == uop->factory);
                 uop->factory = this;
@@ -435,14 +435,16 @@ class MEDDLY::unary_factory {
             return uop;
         }
 
-        inline unary_operation* find(const forest* argF, const forest* resF)
+        inline unary_operation*
+        cache_find(const forest* argF, const forest* resF)
         {
             if (!front) return nullptr;
             if ((front->argF == argF) && (front->resF == resF)) return front;
             return mtfUnary(argF, resF);
         }
 
-        inline unary_operation* find(const forest* argF, opnd_type resType)
+        inline unary_operation*
+        cache_find(const forest* argF, opnd_type resType)
         {
             if (!front) return nullptr;
             if ((front->argF == argF) && (front->resultType == resType)) return front;

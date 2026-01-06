@@ -96,7 +96,8 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     //
     // Add all unary factories here
     //
-    all_unary.push_back(&COPY());
+    all_unary.push_back( &CARDINALITY()     );
+    all_unary.push_back( &COPY()            );
 }
 
 void MEDDLY::builtin_init::setup()
@@ -115,7 +116,6 @@ void MEDDLY::builtin_init::setup()
     //
     // Unary ops
     //
-    CARDINALITY_init();
     COMPLEMENT_init();
     CONVERT_TO_INDEX_SET_init();
     CYCLE_init();
@@ -183,7 +183,6 @@ void MEDDLY::builtin_init::cleanup()
     //
     // Unary ops
     //
-    CARDINALITY_done();
     COMPLEMENT_done();
     CONVERT_TO_INDEX_SET_done();
     CYCLE_done();
