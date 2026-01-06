@@ -193,7 +193,6 @@ void MEDDLY::unary_factory::_setup(const char* name, const char* doc)
     _name = name;
     _doc = doc;
     front = nullptr;
-    printf("Reset factory %s\n", name);
 }
 
 void MEDDLY::unary_factory::_cleanup()
