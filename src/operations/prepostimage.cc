@@ -522,7 +522,7 @@ namespace MEDDLY {
                           forest* fc, edge_value &cv, node_handle &c)
         {
             MEDDLY_DCASSERT(b<0);
-            unary_operation* copy = COPY(fa, fc);
+            unary_operation* copy = build(COPY, fa, fc);
             MEDDLY_DCASSERT(copy);
             copy->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
         }
@@ -556,7 +556,7 @@ namespace MEDDLY {
                           forest* fc, edge_value &cv, node_handle &c)
         {
             MEDDLY_DCASSERT(b<0);
-            unary_operation* copy = COPY(fa, fc);
+            unary_operation* copy = build(COPY, fa, fc);
             MEDDLY_DCASSERT(copy);
             copy->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
 

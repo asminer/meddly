@@ -169,8 +169,8 @@ MEDDLY::arith_compat<EOP, ATYPE>::arith_compat(forest* arg1, forest* arg2,
     //
     // Quick copying, even across forests, for terminal cases :)
     //
-    copy_arg1res = COPY(arg1, res);
-    copy_arg2res = COPY(arg2, res);
+    copy_arg1res = build(COPY, arg1, res);
+    copy_arg2res = build(COPY, arg2, res);
 
     //
     // Do we need to recurse by levels and store level info in the CT?
@@ -658,8 +658,8 @@ MEDDLY::arith_factor<EOP, ATYPE>::arith_factor(forest* arg1, forest* arg2,
     //
     // Quick copying, even across forests, for terminal cases :)
     //
-    copy_arg1res = COPY(arg1, res);
-    copy_arg2res = COPY(arg2, res);
+    copy_arg1res = build(COPY, arg1, res);
+    copy_arg2res = build(COPY, arg2, res);
 
     //
     // Do we need to recurse by levels and store level info in the CT?
@@ -1129,8 +1129,8 @@ MEDDLY::arith_pushdn<EOP, ATYPE>::arith_pushdn(forest* arg1, forest* arg2,
     //
     // Quick copying, even across forests, for terminal cases :)
     //
-    copy_arg1res = COPY(arg1, res);
-    copy_arg2res = COPY(arg2, res);
+    copy_arg1res = build(COPY, arg1, res);
+    copy_arg2res = build(COPY, arg2, res);
 
     //
     // Do we need to recurse by levels and store level info in the CT?

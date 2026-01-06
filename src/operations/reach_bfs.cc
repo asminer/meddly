@@ -65,7 +65,7 @@ MEDDLY::reach_bfs::reach_bfs(binary_operation* Img,
     ImageOp = Img;
     UnionOp = Un;
 
-    CopyOp = COPY(arg1F, resF);
+    CopyOp = build(COPY, arg1F, resF);
 
     MEDDLY_DCASSERT(ImageOp);
     MEDDLY_DCASSERT(UnionOp);

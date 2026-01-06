@@ -129,7 +129,7 @@ MEDDLY::diffr_mt::diffr_mt(forest* arg1, forest* arg2, forest* res)
     //
     // Quick copying, even across forests, for terminal cases :)
     //
-    copy_arg1res = COPY(arg1, res);
+    copy_arg1res = build(COPY, arg1, res);
 
     //
     // How to handle different reductions

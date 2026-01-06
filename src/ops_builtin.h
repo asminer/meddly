@@ -44,7 +44,7 @@ namespace MEDDLY {
     unary_operation* CONVERT_TO_INDEX_SET(forest* arg, forest* res);
 
     /// Copy a function across forests, with the same domain.
-    unary_operation* COPY(forest* arg, forest* res);
+    unary_factory& COPY();
 
     /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
     unary_operation* CYCLE(forest* arg, forest* res);

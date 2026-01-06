@@ -17,6 +17,7 @@
 */
 
 #include "ops_builtin.h"
+#include "oper_unary.h"
 
 #include "initializer.h"
 
@@ -93,8 +94,9 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     : initializer_list(p)
 {
     //
-    // Add all unary factories
+    // Add all unary factories here
     //
+    all_unary.push_back(&COPY());
 }
 
 void MEDDLY::builtin_init::setup()
@@ -102,7 +104,17 @@ void MEDDLY::builtin_init::setup()
     //
     // Unary ops
     //
-    COPY_init();
+    for (unsigned i=0; i<all_unary.size(); i++) {
+        if (all_unary[i]) {
+            all_unary[i]->setup();
+        }
+    }
+
+    // OLD BELOW HERE
+
+    //
+    // Unary ops
+    //
     CARDINALITY_init();
     COMPLEMENT_init();
     CONVERT_TO_INDEX_SET_init();
@@ -160,7 +172,17 @@ void MEDDLY::builtin_init::cleanup()
     //
     // Unary ops
     //
-    COPY_done();
+    for (unsigned i=0; i<all_unary.size(); i++) {
+        if (all_unary[i]) {
+            all_unary[i]->cleanup();
+        }
+    }
+
+    // OLD BELOW HERE
+
+    //
+    // Unary ops
+    //
     CARDINALITY_done();
     COMPLEMENT_done();
     CONVERT_TO_INDEX_SET_done();

@@ -542,9 +542,26 @@ namespace MEDDLY {
     // *                          Unary  apply                          *
     // ******************************************************************
     template <class RES_T>
-    inline void apply(unary_builtin0 bu, const dd_edge &a, RES_T c)
+    inline void apply(unary_builtin0 bu, const dd_edge &a, RES_T &c)
     {
         bu().apply(a, c);
+    }
+
+#ifdef HAVE_LIBGMP
+    inline void apply(unary_builtin0 bu, const dd_edge &a, mpz_ptr c)
+    {
+        bu().apply(a, c);
+    }
+#endif
+
+    inline unary_operation* build(unary_builtin0 bu, forest* arg, forest* res)
+    {
+        return bu().build(arg, res);
+    }
+
+    inline unary_operation* build(unary_builtin0 bu, forest* arg, opnd_type res)
+    {
+        return bu().build(arg, res);
     }
 
 #ifdef OLD_UNARY
