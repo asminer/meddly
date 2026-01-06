@@ -38,7 +38,7 @@ namespace MEDDLY {
     unary_factory& CARDINALITY();
 
     /// For BOOLEAN forests, flip the return values.
-    unary_operation* COMPLEMENT(forest* arg, forest* res);
+    unary_factory& COMPLEMENT();
 
     /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
     unary_operation* CONVERT_TO_INDEX_SET(forest* arg, forest* res);
