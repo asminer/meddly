@@ -20,7 +20,7 @@
 #define MEDDLY_OPS_BUILTIN_H
 
 #include "oper.h"
-
+#include "initializer.h"
 
 namespace MEDDLY {
 
@@ -31,6 +31,7 @@ namespace MEDDLY {
     // ******************************************************************
 
     class unary_operation;
+    class unary_factory;
 
     /// Return the number of variable assignments
     /// so that the function evaluates to non-zero.
@@ -237,10 +238,16 @@ namespace MEDDLY {
     // *                                                                *
     // ******************************************************************
 
-    class initializer_list;
+    class builtin_init : public initializer_list {
+            std::vector <unary_factory*> all_unary;
+        public:
+            builtin_init(initializer_list* p);
 
-    /// Build the initializer for builtins.
-    initializer_list* makeBuiltinInitializer(initializer_list* prev);
+        protected:
+            virtual void setup();
+            virtual void cleanup();
+    };
+
 };
 
 #endif // #include guard

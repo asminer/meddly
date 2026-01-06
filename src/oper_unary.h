@@ -23,12 +23,22 @@
 #include "oper_item.h"
 #include "forest.h"
 
+#define OLD_UNARY
+
 namespace MEDDLY {
-    class ct_object;    // TBD: remove
     class oper_item;
     class unary_operation;
-    class unary_list;
+    class unary_factory;
     class forest;
+
+    typedef unary_factory&  (*unary_builtin0)();
+
+#ifdef OLD_UNARY
+    typedef unary_operation* (*unary_builtin1)(forest* arg, forest* res);
+    typedef unary_operation* (*unary_builtin2)(forest* arg, opnd_type res);
+    class unary_list;
+    class ct_object;
+#endif
 };
 
 // ******************************************************************
@@ -258,14 +268,200 @@ class MEDDLY::unary_operation : public operation {
         opnd_type resultType;
 
     private:
+        /// Who built us
+        unary_factory* factory;
         unary_list* parent;
         unary_operation* next;
 #ifdef ALLOW_DEPRECATED_0_17_6
         bool new_style;
 #endif
 
+        friend class unary_factory;
         friend class unary_list;
 };
+
+// ******************************************************************
+// *                                                                *
+// *                      unary_factory  class                      *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Mechanism to create specific unary operations.
+    Derive a subclass from this, and override methods setup(),
+        one of the build() methods, and optionally cleanup().
+ */
+class MEDDLY::unary_factory {
+    public:
+        // EMPTY constructor, always
+        unary_factory() { }
+
+        // EMPTY destructor, always
+        ~unary_factory() { }
+
+        /**
+            Must be overridden.
+            Essentially, the constructor, but called explicitly
+            during library initialization.
+        */
+        virtual void setup() = 0;
+
+        /**
+            Build a specific operation instance.
+            For this version, the result is another DD.
+            The default behavior returns NULL.
+        */
+        virtual unary_operation* build(forest* arg, forest* res);
+
+        /**
+            Build a specific operation instance.
+            For this version, the result is a value.
+            The default behavior returns NULL.
+        */
+        virtual unary_operation* build(forest* arg, opnd_type res);
+
+        /// Default: just calls _cleanup()
+        virtual void cleanup();
+
+        inline const char* getName() const { return _name; }
+        inline const char* getDocs() const { return _doc; }
+
+        /// Should ONLY be called in unary_operation destructor
+        inline void remove(unary_operation* uop)
+        {
+            if (front == uop) {
+                front = front->next;
+                return;
+            }
+            searchRemove(uop);
+        }
+
+
+        /** Apply a unary operator.
+            The operand and the result are not necessarily in the same forest,
+            but they must belong to forests that share the same domain.
+            This is useful, for instance, for copying a function
+            from one forest to another.
+                @param  a   Operand.
+                @param  c   Output parameter: the result,
+                            where \a c = \a op \a a.
+        */
+        inline void apply(const dd_edge &a, dd_edge &c)
+        {
+            unary_operation* uop = build(a.getForest(), c.getForest());
+            if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            uop->compute(a, c);
+        }
+
+        /** Apply a unary operator.
+            For operators whose result is an integer.
+                @param  a   Operand.
+                @param  c   Output parameter: the result,
+                            where \a c = \a op \a a.
+        */
+        inline void apply(const dd_edge &a, long &c)
+        {
+            unary_operation* uop = build(a.getForest(), opnd_type::INTEGER);
+            if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            uop->compute(a, c);
+        }
+
+        /** Apply a unary operator.
+            For operators whose result is a real.
+                @param  a   Operand.
+                @param  c   Output parameter: the result,
+            where \a c = \a op \a a.
+        */
+        inline void apply(const dd_edge &a, double &c)
+        {
+            unary_operation* uop = build(a.getForest(), opnd_type::REAL);
+            if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            uop->compute(a, c);
+        }
+
+        /** Apply a unary operator.
+            For operators whose result is a real.
+                @param  a   Operand.
+                @param  c   Output parameter: the result,
+                            where \a c = \a op \a a.
+        */
+        inline void apply(const dd_edge &a, oper_item &c)
+        {
+            unary_operation* uop = build(a.getForest(), c.getType());
+            if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            uop->compute(a, c);
+        }
+
+#ifdef HAVE_LIBGMP
+        /** Apply a unary operator.
+            For operators whose result is an arbitrary-precision integer
+            (as supplied by the GNU MP library).
+                @param  a   Operand.
+                @param  c   Input: an initialized MP integer.
+                            Output: the result, where \a c = \a op \a a.
+        */
+        inline void apply(const dd_edge &a, mpz_ptr c)
+        {
+            unary_operation* uop = build(a.getForest(), opnd_type::HUGEINT);
+            if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            uop->compute(a, c);
+        }
+#endif
+
+
+    protected:
+        /** Initialize base class.
+            Should be called by method setup().
+            Called during library initialization.
+                @param  name    Name of operator.
+                @param  doc     Documentation.
+        */
+        void _setup(const char* name, const char* doc);
+
+        /** Clean up base class.
+            Called during library cleanup.
+        */
+        void _cleanup();
+
+        /// Add an operation to the list.
+        inline unary_operation* add(unary_operation* uop) {
+            if (uop) {
+                MEDDLY_DCASSERT(nullptr == uop->factory);
+                uop->factory = this;
+                uop->setName(_name);
+                uop->next = front;
+                front = uop;
+            }
+            return uop;
+        }
+
+        inline unary_operation* find(const forest* argF, const forest* resF)
+        {
+            if (!front) return nullptr;
+            if ((front->argF == argF) && (front->resF == resF)) return front;
+            return mtfUnary(argF, resF);
+        }
+
+        inline unary_operation* find(const forest* argF, opnd_type resType)
+        {
+            if (!front) return nullptr;
+            if ((front->argF == argF) && (front->resultType == resType)) return front;
+            return mtfUnary(argF, resType);
+        }
+
+    private:
+        unary_operation* mtfUnary(const forest* argF, const forest* resF);
+        unary_operation* mtfUnary(const forest* argF, opnd_type resType);
+        void searchRemove(unary_operation* uop);
+
+    private:
+        const char* _name;
+        const char* _doc;
+        unary_operation* front;
+
+};
+
+#ifdef OLD_UNARY
 
 // ******************************************************************
 // *                                                                *
@@ -332,6 +528,8 @@ class MEDDLY::unary_list {
         void searchRemove(unary_operation* uop);
 };
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                          Unary  apply                          *
@@ -340,12 +538,16 @@ class MEDDLY::unary_list {
 
 namespace MEDDLY {
 
-    typedef unary_operation* (*unary_builtin1)(forest* arg, forest* res);
-    typedef unary_operation* (*unary_builtin2)(forest* arg, opnd_type res);
-
     // ******************************************************************
     // *                          Unary  apply                          *
     // ******************************************************************
+    template <class RES_T>
+    inline void apply(unary_builtin0 bu, const dd_edge &a, RES_T c)
+    {
+        bu().apply(a, c);
+    }
+
+#ifdef OLD_UNARY
 
     /** Apply a unary operator.
         The operand and the result are not necessarily in the same forest,
@@ -420,6 +622,8 @@ namespace MEDDLY {
         if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         uop->compute(a, c);
     }
+#endif
+
 #endif
 
 };

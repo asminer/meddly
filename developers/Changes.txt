@@ -1,3 +1,14 @@
+
+To Do:
+    * design unary, binary, etc factories
+    * unary list, etc gets incorporated into the factory
+    * apply functions return static instance of the factory
+    * factories provide a method to build the operation
+    * factories have documentation
+    * write an example app that displays the documentation
+        maybe using the builtin initializer class?
+
+
 Implement next, using new rel_node interface:
 
     * pre/post image on distances and test

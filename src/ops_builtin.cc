@@ -85,23 +85,16 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                       builtin_init class                       *
+// *                      builtin_init methods                      *
 // *                                                                *
-// ******************************************************************
-
-class MEDDLY::builtin_init : public initializer_list {
-    public:
-        builtin_init(initializer_list* p);
-    protected:
-        virtual void setup();
-        virtual void cleanup();
-};
-
 // ******************************************************************
 
 MEDDLY::builtin_init::builtin_init(initializer_list* p)
     : initializer_list(p)
 {
+    //
+    // Add all unary factories
+    //
 }
 
 void MEDDLY::builtin_init::setup()
@@ -222,17 +215,5 @@ void MEDDLY::builtin_init::cleanup()
     CONSTRAINED_FORWARD_DFS_done();
     CONSTRAINED_BACKWARD_DFS_done();
     TRANSITIVE_CLOSURE_DFS_done();
-}
-
-// ******************************************************************
-// *                                                                *
-// *                   front end:  initialization                   *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::initializer_list*
-MEDDLY::makeBuiltinInitializer(initializer_list* prev)
-{
-    return new builtin_init(prev);
 }
 
