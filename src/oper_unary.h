@@ -23,8 +23,6 @@
 #include "oper_item.h"
 #include "forest.h"
 
-#define OLD_UNARY
-
 namespace MEDDLY {
     class oper_item;
     class unary_operation;
@@ -33,7 +31,7 @@ namespace MEDDLY {
 
     typedef unary_factory&  (*unary_builtin0)();
 
-#ifdef OLD_UNARY
+#ifdef ALLOW_DEPRECATED_0_17_6
     typedef unary_operation* (*unary_builtin1)(forest* arg, forest* res);
     typedef unary_operation* (*unary_builtin2)(forest* arg, opnd_type res);
     class unary_list;
@@ -270,14 +268,15 @@ class MEDDLY::unary_operation : public operation {
     private:
         /// Who built us
         unary_factory* factory;
-        unary_list* parent;
         unary_operation* next;
 #ifdef ALLOW_DEPRECATED_0_17_6
+        unary_list* parent;
         bool new_style;
+
+        friend class unary_list;
 #endif
 
         friend class unary_factory;
-        friend class unary_list;
 };
 
 // ******************************************************************
@@ -466,7 +465,7 @@ class MEDDLY::unary_factory {
 
 };
 
-#ifdef OLD_UNARY
+#ifdef ALLOW_DEPRECATED_0_17_6
 
 // ******************************************************************
 // *                                                                *
@@ -569,7 +568,7 @@ namespace MEDDLY {
         return bu().build(arg, res);
     }
 
-#ifdef OLD_UNARY
+#ifdef ALLOW_DEPRECATED_0_17_6
 
     /** Apply a unary operator.
         The operand and the result are not necessarily in the same forest,

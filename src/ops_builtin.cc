@@ -101,6 +101,11 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     all_unary.push_back( &CONVERT_TO_INDEX_SET()    );
     all_unary.push_back( &COPY()                    );
     all_unary.push_back( &CYCLE()                   );
+    all_unary.push_back( &MAX_RANGE()               );
+    all_unary.push_back( &MIN_RANGE()               );
+#ifdef ALLOW_DEPRECATED_0_17_8
+    all_unary.push_back( &SELECT()                  );
+#endif
 }
 
 void MEDDLY::builtin_init::setup()
@@ -115,15 +120,6 @@ void MEDDLY::builtin_init::setup()
     }
 
     // OLD BELOW HERE
-
-    //
-    // Unary ops
-    //
-    MAX_RANGE_init();
-    MIN_RANGE_init();
-#ifdef ALLOW_DEPRECATED_0_17_8
-    SELECT_init();
-#endif
 
     //
     // Binary ops
@@ -179,15 +175,6 @@ void MEDDLY::builtin_init::cleanup()
     }
 
     // OLD BELOW HERE
-
-    //
-    // Unary ops
-    //
-    MAX_RANGE_done();
-    MIN_RANGE_done();
-#ifdef ALLOW_DEPRECATED_0_17_8
-    SELECT_done();
-#endif
 
     //
     // Binary ops

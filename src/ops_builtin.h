@@ -30,7 +30,6 @@ namespace MEDDLY {
     // *                                                                *
     // ******************************************************************
 
-    class unary_operation;  // TBD - remove?
     class unary_factory;
 
     /// Return the number of variable assignments
@@ -50,14 +49,14 @@ namespace MEDDLY {
     unary_factory& CYCLE();
 
     /// Find the largest value returned by the function.
-    unary_operation* MAX_RANGE(forest* arg, opnd_type res);
+    unary_factory& MAX_RANGE();
 
     /// Find the smallest value returned by the function.
-    unary_operation* MIN_RANGE(forest* arg, opnd_type res);
+    unary_factory& MIN_RANGE();
 
 #ifdef ALLOW_DEPRECATED_0_17_8
     /// Randomly select one state from a set of states
-    unary_operation* SELECT(forest* arg, forest* res);
+    unary_factory& SELECT();
 #endif
 
     // ******************************************************************
