@@ -33,6 +33,7 @@ MEDDLY::binary_operation::binary_operation(binary_list& owner,
     unsigned et_slots, forest* arg1, forest* arg2,
     forest* res) : operation(owner.getName(), et_slots)
 {
+    factory = nullptr;
     parent = &owner;
 
     arg1F = arg1;
@@ -51,7 +52,10 @@ MEDDLY::binary_operation::binary_operation(binary_list& owner,
 MEDDLY::binary_operation::binary_operation(forest* arg1, forest* arg2,
         forest* res): operation()
 {
+    factory = nullptr;
+#ifdef ALLOW_DEPRECATED_0_17_6
     parent = nullptr;
+#endif
 
     arg1F = arg1;
     arg2F = arg2;
@@ -74,7 +78,10 @@ MEDDLY::binary_operation::~binary_operation()
     unregisterInForest(arg2F);
     unregisterInForest(resF);
 
+    if (factory) factory->remove(this);
+#ifdef ALLOW_DEPRECATED_0_17_6
     if (parent) parent->remove(this);
+#endif
 }
 
 
@@ -156,6 +163,75 @@ void MEDDLY::binary_operation::compute(int L, unsigned in,
 }
 
 #endif
+
+// ******************************************************************
+// *                     binary_factory methods                     *
+// ******************************************************************
+
+MEDDLY::binary_operation*
+MEDDLY::binary_factory::build(forest* a, forest* b, forest* c)
+{
+    return nullptr;
+}
+
+void MEDDLY::binary_factory::cleanup()
+{
+    _cleanup();
+}
+
+void MEDDLY::binary_factory::_setup(const char* file, const char* name,
+        const char* doc)
+{
+    _file = file;
+    _name = name;
+    _doc = doc;
+    front = nullptr;
+}
+
+void MEDDLY::binary_factory::_cleanup()
+{
+    MEDDLY_DCASSERT(nullptr == front);
+}
+
+MEDDLY::binary_operation*
+MEDDLY::binary_factory::mtfBinary(const forest* arg1F,
+        const forest* arg2F, const forest* resF)
+{
+    binary_operation* prev = front;
+    binary_operation* curr = front->next;
+    while (curr) {
+        if ((curr->arg1F == arg1F) && (curr->arg2F == arg2F)
+                && (curr->resF == resF))
+        {
+            // Move to front
+            prev->next = curr->next;
+            curr->next = front;
+            front = curr;
+            return curr;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+    return nullptr;
+}
+
+
+void MEDDLY::binary_factory::searchRemove(binary_operation* bop)
+{
+    if (!front) return;
+    binary_operation* prev = front;
+    binary_operation* curr = front->next;
+    while (curr) {
+        if (curr == bop) {
+            prev->next = curr->next;
+            return;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+}
+
+
 
 // ******************************************************************
 // *                      binary_list  methods                      *

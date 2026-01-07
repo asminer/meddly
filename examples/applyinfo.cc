@@ -68,16 +68,32 @@ int main()
     builtin_init B(nullptr);
     B.setup();
 
-    cout << "Unary operations, for use in apply()\n\n";
+    cout << "===========================================================================\n";
+    cout << "Unary operations, for use in apply()\n";
+    cout << "===========================================================================\n\n";
     for (unsigned i=0; i<B.numUnary(); i++) {
-        const unary_factory *U = B.getUnary(i);
-        if (!U) continue;
+        const unary_factory *F = B.getUnary(i);
+        if (!F) continue;
 
-        cout << "    " << U->getName() << "\n";
-        showDocs(U->getDocs());
+        cout << "    " << F->getName() << "\n";
+        showDocs(F->getDocs());
         cout << "\n";
-        cout << "        Implemented in " << U->getFile() << ".\n";
+        cout << "        Implemented in " << F->getFile() << ".\n";
+        cout << "\n\n";
+    }
+
+    cout << "===========================================================================\n";
+    cout << "Binary operations, for use in apply()\n";
+    cout << "===========================================================================\n\n";
+    for (unsigned i=0; i<B.numBinary(); i++) {
+        const binary_factory *F = B.getBinary(i);
+        if (!F) continue;
+
+        cout << "    " << F->getName() << "\n";
+        showDocs(F->getDocs());
         cout << "\n";
+        cout << "        Implemented in " << F->getFile() << ".\n";
+        cout << "\n\n";
     }
 
     return 0;

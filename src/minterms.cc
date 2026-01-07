@@ -223,7 +223,7 @@ namespace MEDDLY {
     class fbuilder_common : public fbuilder_forest {
         public:
             fbuilder_common(forest* f, const rangeval &def,
-                    minterm_coll &mtl, binary_builtin Union)
+                    minterm_coll &mtl, binary_builtin2 Union)
                     : fbuilder_forest(f, def), mtc(mtl)
             {
                 union_op = Union(f, f, f);
@@ -401,7 +401,7 @@ namespace MEDDLY {
     class fbuilder : public fbuilder_common {
         public:
             fbuilder(forest* f, const rangeval &def,
-                    minterm_coll &mtl, binary_builtin Union)
+                    minterm_coll &mtl, binary_builtin2 Union)
                     : fbuilder_common(f, def, mtl, Union) { }
 
             inline void createEdge(int L, unsigned low, unsigned high,

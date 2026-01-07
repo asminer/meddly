@@ -27,15 +27,9 @@ namespace MEDDLY {
     class oper_item;
     class unary_operation;
     class unary_factory;
-    class forest;
-
-    typedef unary_factory&  (*unary_builtin0)();
 
 #ifdef ALLOW_DEPRECATED_0_17_6
-    typedef unary_operation* (*unary_builtin1)(forest* arg, forest* res);
-    typedef unary_operation* (*unary_builtin2)(forest* arg, opnd_type res);
     class unary_list;
-    class ct_object;
 #endif
 };
 
@@ -269,14 +263,14 @@ class MEDDLY::unary_operation : public operation {
         /// Who built us
         unary_factory* factory;
         unary_operation* next;
+        friend class unary_factory;
+
 #ifdef ALLOW_DEPRECATED_0_17_6
         unary_list* parent;
         bool new_style;
-
         friend class unary_list;
 #endif
 
-        friend class unary_factory;
 };
 
 // ******************************************************************
@@ -545,6 +539,8 @@ namespace MEDDLY {
     // ******************************************************************
     // *                          Unary  apply                          *
     // ******************************************************************
+    typedef unary_factory&  (*unary_builtin0)();
+
     template <class RES_T>
     inline void apply(unary_builtin0 bu, const dd_edge &a, RES_T &c)
     {
@@ -569,6 +565,8 @@ namespace MEDDLY {
     }
 
 #ifdef ALLOW_DEPRECATED_0_17_6
+    typedef unary_operation* (*unary_builtin1)(forest* arg, forest* res);
+    typedef unary_operation* (*unary_builtin2)(forest* arg, opnd_type res);
 
     /** Apply a unary operator.
         The operand and the result are not necessarily in the same forest,

@@ -65,7 +65,10 @@ namespace MEDDLY {
     // *                                                                *
     // ******************************************************************
 
-    class binary_operation;
+    class binary_operation; // to be removed
+    class binary_factory;
+
+    // ======================================================================
 
     /// Set union operation for forests with range_type of BOOLEAN
     binary_operation* UNION(forest* a, forest* b, forest* c);
@@ -239,8 +242,12 @@ namespace MEDDLY {
 
     class builtin_init : public initializer_list {
             std::vector <unary_factory*> all_unary;
+            std::vector <binary_factory*> all_binary;
         public:
             builtin_init(initializer_list* p);
+
+            virtual void setup();
+            virtual void cleanup();
 
             inline unsigned numUnary() const {
                 return all_unary.size();
@@ -249,8 +256,15 @@ namespace MEDDLY {
                 MEDDLY_CHECK_RANGE(0, i, all_unary.size());
                 return all_unary[i];
             }
-            virtual void setup();
-            virtual void cleanup();
+
+            inline unsigned numBinary() const {
+                return all_binary.size();
+            }
+            inline const binary_factory* getBinary(unsigned i) const {
+                MEDDLY_CHECK_RANGE(0, i, all_binary.size());
+                return all_binary[i];
+            }
+
     };
 
 };

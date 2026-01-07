@@ -18,6 +18,7 @@
 
 #include "ops_builtin.h"
 #include "oper_unary.h"
+#include "oper_binary.h"
 
 #include "initializer.h"
 
@@ -106,6 +107,11 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
 #ifdef ALLOW_DEPRECATED_0_17_8
     all_unary.push_back( &SELECT()                  );
 #endif
+
+    //
+    // Add all binary factories here
+    //
+
 }
 
 void MEDDLY::builtin_init::setup()
@@ -116,6 +122,14 @@ void MEDDLY::builtin_init::setup()
     for (unsigned i=0; i<all_unary.size(); i++) {
         if (all_unary[i]) {
             all_unary[i]->setup();
+        }
+    }
+    //
+    // Binary ops
+    //
+    for (unsigned i=0; i<all_binary.size(); i++) {
+        if (all_binary[i]) {
+            all_binary[i]->setup();
         }
     }
 
@@ -171,6 +185,14 @@ void MEDDLY::builtin_init::cleanup()
     for (unsigned i=0; i<all_unary.size(); i++) {
         if (all_unary[i]) {
             all_unary[i]->cleanup();
+        }
+    }
+    //
+    // Binary ops
+    //
+    for (unsigned i=0; i<all_binary.size(); i++) {
+        if (all_binary[i]) {
+            all_binary[i]->cleanup();
         }
     }
 

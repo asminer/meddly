@@ -19,6 +19,8 @@ layout: single
     Different forests may store relations differently, internally,
     and might not be based on decision diagram nodes.
 
+* Added a ```unary_factory``` class, for built-in unary operations.
+
 ### Implementation
 
 * Forest I/O methods are now centralized and non-virtual;
