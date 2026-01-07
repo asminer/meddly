@@ -279,7 +279,7 @@ class MEDDLY::MDD2INDEX_factory : public unary_factory {
 
 void MEDDLY::MDD2INDEX_factory::setup()
 {
-    _setup("CONVERT_TO_INDEX_SET", "Converts sets (boolean functions) from one forest, into an indexed set (integer functions) in another (EV+MDD) forest. In the resulting function, variable assignments causing the original function to return false, will return infinity. Variable assignments causing the original function to return true, will return a unique integer between 0 and one less than the cardinality of the input function. In fact, the integer will be the count of the number of variable assignments before this one (in lexicographical order) causing the original function to return true.");
+    _setup(__FILE__, "CONVERT_TO_INDEX_SET", "Converts sets (boolean functions) from one forest, into an indexed set (integer functions) in another (EV+MDD) forest. In the resulting function, variable assignments causing the original function to return false, will return infinity. Variable assignments causing the original function to return true, will return a unique integer between 0 and one less than the cardinality of the input function. In fact, the integer will be the count of the number of variable assignments before this one (in lexicographical order) causing the original function to return true.");
 }
 
 MEDDLY::unary_operation* MEDDLY::MDD2INDEX_factory::build(forest* arg, forest* res)

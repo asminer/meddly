@@ -47,7 +47,7 @@ namespace MEDDLY {
     unary_factory& COPY();
 
     /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
-    unary_operation* CYCLE(forest* arg, forest* res);
+    unary_factory& CYCLE();
 
     /// Find the largest value returned by the function.
     unary_operation* MAX_RANGE(forest* arg, opnd_type res);

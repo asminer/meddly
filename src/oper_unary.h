@@ -323,6 +323,7 @@ class MEDDLY::unary_factory {
         /// Default: just calls _cleanup()
         virtual void cleanup();
 
+        inline const char* getFile() const { return _file; }
         inline const char* getName() const { return _name; }
         inline const char* getDocs() const { return _doc; }
 
@@ -413,10 +414,11 @@ class MEDDLY::unary_factory {
         /** Initialize base class.
             Should be called by method setup().
             Called during library initialization.
+                @param  file    Source file of implementation.
                 @param  name    Name of operator.
                 @param  doc     Documentation.
         */
-        void _setup(const char* name, const char* doc);
+        void _setup(const char* file, const char* name, const char* doc);
 
         /** Clean up base class.
             Called during library cleanup.
@@ -457,6 +459,7 @@ class MEDDLY::unary_factory {
         void searchRemove(unary_operation* uop);
 
     private:
+        const char* _file;
         const char* _name;
         const char* _doc;
         unary_operation* front;

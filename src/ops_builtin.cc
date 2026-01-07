@@ -100,6 +100,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     all_unary.push_back( &COMPLEMENT()              );
     all_unary.push_back( &CONVERT_TO_INDEX_SET()    );
     all_unary.push_back( &COPY()                    );
+    all_unary.push_back( &CYCLE()                   );
 }
 
 void MEDDLY::builtin_init::setup()
@@ -118,7 +119,6 @@ void MEDDLY::builtin_init::setup()
     //
     // Unary ops
     //
-    CYCLE_init();
     MAX_RANGE_init();
     MIN_RANGE_init();
 #ifdef ALLOW_DEPRECATED_0_17_8
@@ -183,7 +183,6 @@ void MEDDLY::builtin_init::cleanup()
     //
     // Unary ops
     //
-    CYCLE_done();
     MAX_RANGE_done();
     MIN_RANGE_done();
 #ifdef ALLOW_DEPRECATED_0_17_8

@@ -188,8 +188,10 @@ MEDDLY::unary_factory::build(forest* arg, opnd_type res)
     return nullptr;
 }
 
-void MEDDLY::unary_factory::_setup(const char* name, const char* doc)
+void MEDDLY::unary_factory::_setup(const char* file, const char* name,
+        const char* doc)
 {
+    _file = file;
     _name = name;
     _doc = doc;
     front = nullptr;

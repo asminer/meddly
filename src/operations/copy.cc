@@ -948,7 +948,7 @@ class MEDDLY::COPY_factory : public unary_factory {
 
 void MEDDLY::COPY_factory::setup()
 {
-    _setup("COPY", "Copy functions, within the same forest or across forests. The argument and result forests must have the same domain, and must both be sets or both be relations. The function ranges may be different.");
+    _setup(__FILE__, "COPY", "Copy functions, within the same forest or across forests. The argument and result forests must have the same domain, and must both be sets or both be relations. The function ranges may be different.");
 }
 
 MEDDLY::unary_operation* MEDDLY::COPY_factory::build(forest* arg, forest* res)

@@ -414,7 +414,7 @@ class MEDDLY::CARD_factory : public unary_factory {
 
 void MEDDLY::CARD_factory::setup()
 {
-    _setup("CARDINALITY", "Set cardinality. Determines the number of variable assignments causing the function to evaluate to non-zero (or non-infinity, for EV+MDDs). The result is allowed to be type long, double, or mpz_t (requires GMP library).");
+    _setup(__FILE__, "CARDINALITY", "Set cardinality. Determines the number of variable assignments causing the function to evaluate to non-zero (or non-infinity, for EV+MDDs). The result is allowed to be type long, double, or mpz_t (requires GMP library).");
 }
 
 MEDDLY::unary_operation* MEDDLY::CARD_factory::build(forest* arg, opnd_type res)

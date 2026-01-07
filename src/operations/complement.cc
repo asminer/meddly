@@ -465,7 +465,7 @@ class MEDDLY::COMPL_factory : public unary_factory {
 
 void MEDDLY::COMPL_factory::setup()
 {
-    _setup("COMPLEMENT", "Complement, for functions with boolean range. Inverts the output (false becomes true, true becomes false). The input and output forests may be different, but must have the same domain.");
+    _setup(__FILE__, "COMPLEMENT", "Complement, for functions with boolean range. Inverts the output (false becomes true, true becomes false). The input and output forests may be different, but must have the same domain.");
 }
 
 MEDDLY::unary_operation* MEDDLY::COMPL_factory::build(forest* arg, forest* res)
