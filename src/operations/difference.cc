@@ -27,8 +27,7 @@
 
 namespace MEDDLY {
     class diffr_mt;
-
-    binary_list DIFFR_cache;
+    class DIFFR_factory;
 };
 
 // #define TRACE
@@ -496,30 +495,46 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
 
 // ******************************************************************
 // *                                                                *
-// *                           Front  end                           *
+// *                      DIFFR_factory  class                      *
 // *                                                                *
 // ******************************************************************
 
+class MEDDLY::DIFFR_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::DIFFR_factory::setup()
+{
+    _setup(__FILE__, "DIFFERENCE", "Set difference, meaning Boolean difference. Operands and the result may be within the same forest or across forests, but all forests must be over the same domain. Forests must be multi-terminal.");
+}
+
 MEDDLY::binary_operation*
-MEDDLY::DIFFERENCE(forest* a, forest* b, forest* c)
+MEDDLY::DIFFR_factory::build(forest* a, forest* b, forest* c)
 {
     if (!a || !b || !c) {
         return nullptr;
     }
-    binary_operation* bop =  DIFFR_cache.find(a, b, c);
+    binary_operation* bop =  cache_find(a, b, c);
     if (bop) {
         return bop;
     }
 
-    return DIFFR_cache.add(new diffr_mt(a, b, c));
+    return cache_add(new diffr_mt(a, b, c));
 }
 
-void MEDDLY::DIFFERENCE_init()
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_factory& MEDDLY::DIFFERENCE()
 {
-    DIFFR_cache.reset("Difference");
+    static DIFFR_factory F;
+    return F;
 }
 
-void MEDDLY::DIFFERENCE_done()
-{
-    MEDDLY_DCASSERT(DIFFR_cache.isEmpty());
-}

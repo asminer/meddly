@@ -27,8 +27,7 @@
 
 namespace MEDDLY {
     class inter_mt;
-
-    binary_list INTER_cache;
+    class INTER_factory;
 };
 
 // #define TRACE
@@ -530,32 +529,47 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
 
 // ******************************************************************
 // *                                                                *
-// *                           Front  end                           *
+// *                      INTER_factory  class                      *
 // *                                                                *
 // ******************************************************************
 
+class MEDDLY::INTER_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::INTER_factory::setup()
+{
+    _setup(__FILE__, "INTERSECTION", "Set intersection, meaning logical AND of the inputs. Operands and the result may be within the same forest or across forests, but all forests must be over the same domain. Forests must be multi-terminal.");
+}
+
 MEDDLY::binary_operation*
-MEDDLY::INTERSECTION(forest* a, forest* b, forest* c)
+MEDDLY::INTER_factory::build(forest* a, forest* b, forest* c)
 {
     if (!a || !b || !c) {
         return nullptr;
     }
 
-    binary_operation* bop =  INTER_cache.find(a, b, c);
+    binary_operation* bop =  cache_find(a, b, c);
     if (bop) {
         return bop;
     }
 
-    return INTER_cache.add(new inter_mt(a, b, c));
+    return cache_add(new inter_mt(a, b, c));
 }
 
-void MEDDLY::INTERSECTION_init()
-{
-    INTER_cache.reset("Intersection");
-}
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
 
-void MEDDLY::INTERSECTION_done()
+MEDDLY::binary_factory& MEDDLY::INTERSECTION()
 {
-    MEDDLY_DCASSERT(INTER_cache.isEmpty());
+    static INTER_factory F;
+    return F;
 }
 

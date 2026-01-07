@@ -203,10 +203,10 @@ void MEDDLY::pregen_relation::splitMxd(splittingOption split)
   binary_operation* mxdUnion = build(UNION, mxdF, mxdF, mxdF);
   MEDDLY_DCASSERT(mxdUnion);
 
-  binary_operation* mxdIntersection = INTERSECTION(mxdF, mxdF, mxdF);
+  binary_operation* mxdIntersection = build(INTERSECTION, mxdF, mxdF, mxdF);
   MEDDLY_DCASSERT(mxdIntersection);
 
-  binary_operation* mxdDifference = DIFFERENCE(mxdF, mxdF, mxdF);
+  binary_operation* mxdDifference = build(DIFFERENCE, mxdF, mxdF, mxdF);
   MEDDLY_DCASSERT(mxdDifference);
 
   dd_edge maxDiag(mxdF);
@@ -355,7 +355,7 @@ void MEDDLY::pregen_relation::finalize(splittingOption split)
         old_events[k] = events[k];
       }
       splitMxd(MonolithicSplit);
-      binary_operation* mxdDifference = DIFFERENCE(mxdF, mxdF, mxdF);
+      binary_operation* mxdDifference = build(DIFFERENCE, mxdF, mxdF, mxdF);
       MEDDLY_DCASSERT(mxdDifference);
       for(unsigned k = 0; k <= K; k++) {
         if (old_events[k] != events[k]) {
@@ -790,7 +790,7 @@ bool MEDDLY::otf_event::rebuild()
 
   dd_edge e(event_mask);
   for (int i = 0; i < num_subevents; i++) {
-    binary_operation* opAnd = INTERSECTION(
+    binary_operation* opAnd = build(INTERSECTION,
         e.getForest(), subevents[i]->getRoot().getForest(), e.getForest()
     );
     MEDDLY_DCASSERT(opAnd);

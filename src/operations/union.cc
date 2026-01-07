@@ -27,10 +27,7 @@
 
 namespace MEDDLY {
     class union_mt;
-
     class UNION_factory;
-
-    // binary_list UNION_cache;
 };
 
 // #define TRACE
@@ -538,40 +535,6 @@ void MEDDLY::union_mt::_compute(int L, unsigned in,
 
 // ******************************************************************
 // *                                                                *
-// *                           Front  end                           *
-// *                                                                *
-// ******************************************************************
-
-/*
-
-MEDDLY::binary_operation*
-MEDDLY::UNION(forest* a, forest* b, forest* c)
-{
-    if (!a || !b || !c) {
-        return nullptr;
-    }
-    binary_operation* bop =  UNION_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-
-    return UNION_cache.add(new union_mt(a, b, c));
-}
-
-void MEDDLY::UNION_init()
-{
-    UNION_cache.reset("Union");
-}
-
-void MEDDLY::UNION_done()
-{
-    MEDDLY_DCASSERT(UNION_cache.isEmpty());
-}
-
-*/
-
-// ******************************************************************
-// *                                                                *
 // *                      UNION_factory  class                      *
 // *                                                                *
 // ******************************************************************
@@ -586,7 +549,7 @@ class MEDDLY::UNION_factory : public binary_factory {
 
 void MEDDLY::UNION_factory::setup()
 {
-    _setup(__FILE__, "UNION", "Set union. Operands and the result may be within the same forest or across forests, but all forests must be over the same domain. Union really means logical OR of the inputs. Forests must be multi-terminal.");
+    _setup(__FILE__, "UNION", "Set union, meaning logical OR of the inputs. Operands and the result may be within the same forest or across forests, but all forests must be over the same domain. Forests must be multi-terminal.");
 }
 
 MEDDLY::binary_operation*
@@ -602,7 +565,6 @@ MEDDLY::UNION_factory::build(forest* a, forest* b, forest* c)
 
     return cache_add(new union_mt(a, b, c));
 }
-
 
 // ******************************************************************
 // *                                                                *

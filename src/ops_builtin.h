@@ -68,16 +68,17 @@ namespace MEDDLY {
     class binary_operation; // to be removed
     class binary_factory;
 
+    /// Set difference
+    binary_factory& DIFFERENCE();
+
+    /// Set intersection
+    binary_factory& INTERSECTION();
+
     /// Set union
     binary_factory& UNION();
 
     // ======================================================================
 
-    /// Set intersection operation for forests with range_type of BOOLEAN
-    binary_operation* INTERSECTION(forest* a, forest* b, forest* c);
-
-    /// Set difference operation for forests with range_type of BOOLEAN
-    binary_operation* DIFFERENCE(forest* a, forest* b, forest* c);
 
     /// Combine two functions into a single one, where the operands are MDDs
     /// and the result is an MXD.  Specifically, for MDD operands f and g,
