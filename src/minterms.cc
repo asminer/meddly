@@ -223,11 +223,20 @@ namespace MEDDLY {
     class fbuilder_common : public fbuilder_forest {
         public:
             fbuilder_common(forest* f, const rangeval &def,
+                    minterm_coll &mtl, binary_builtin0 Union)
+                    : fbuilder_forest(f, def), mtc(mtl)
+            {
+                union_op = build(Union, f, f, f);
+            }
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+            fbuilder_common(forest* f, const rangeval &def,
                     minterm_coll &mtl, binary_builtin2 Union)
                     : fbuilder_forest(f, def), mtc(mtl)
             {
                 union_op = Union(f, f, f);
             }
+#endif
 
             /// Get the minimum and maximum values for level L,
             /// on the interval [low, high).
@@ -401,8 +410,14 @@ namespace MEDDLY {
     class fbuilder : public fbuilder_common {
         public:
             fbuilder(forest* f, const rangeval &def,
+                    minterm_coll &mtl, binary_builtin0 Union)
+                    : fbuilder_common(f, def, mtl, Union) { }
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+            fbuilder(forest* f, const rangeval &def,
                     minterm_coll &mtl, binary_builtin2 Union)
                     : fbuilder_common(f, def, mtl, Union) { }
+#endif
 
             inline void createEdge(int L, unsigned low, unsigned high,
                     edge_value &cv, node_handle &cp)

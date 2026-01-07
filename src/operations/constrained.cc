@@ -279,8 +279,8 @@ MEDDLY::constrained_bckwd_bfs_evplus::constrained_bckwd_bfs_evplus(
         forest* res) : ternary_operation(c, 0, cons, arg, trans, res)
 {
     if (resF->getRangeType() == range_type::INTEGER) {
-        plusOp = PLUS(resF, arg1F, resF);
-        minOp = UNION(resF, resF, resF);
+        plusOp = build(PLUS, resF, arg1F, resF);
+        minOp = build(UNION, resF, resF, resF);
     } else {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     }
@@ -343,9 +343,9 @@ MEDDLY::constrained_dfs_mt::constrained_dfs_mt(ternary_list &c,
   MEDDLY_DCASSERT(trans->isMultiTerminal() && trans->isForRelations());
   MEDDLY_DCASSERT(res->isMultiTerminal() && !res->isForRelations());
 
-  mxdIntersectionOp = INTERSECTION(arg3F, arg3F, arg3F);
-  mxdDifferenceOp = DIFFERENCE(arg3F, arg3F, arg3F);
-  unionOp = UNION(resF, resF, resF);
+  mxdIntersectionOp = build(INTERSECTION, arg3F, arg3F, arg3F);
+  mxdDifferenceOp = build(DIFFERENCE, arg3F, arg3F, arg3F);
+  unionOp = build(UNION, resF, resF, resF);
 
   splits = nullptr;
 
@@ -1134,9 +1134,9 @@ MEDDLY::constrained_bckwd_dfs_evplus::constrained_bckwd_dfs_evplus(
   MEDDLY_DCASSERT(trans->isMultiTerminal() && trans->isForRelations());
   MEDDLY_DCASSERT(res->isEVPlus() && !res->isForRelations());
 
-  mxdIntersectionOp = INTERSECTION(arg3F, arg3F, arg3F);
-  mxdDifferenceOp = DIFFERENCE(arg3F, arg3F, arg3F);
-  minOp = UNION(resF, resF, resF);
+  mxdIntersectionOp = build(INTERSECTION, arg3F, arg3F, arg3F);
+  mxdDifferenceOp = build(DIFFERENCE, arg3F, arg3F, arg3F);
+  minOp = build(UNION, resF, resF, resF);
 
   splits = nullptr;
 

@@ -726,13 +726,13 @@ void MEDDLY::common_dfs_mt
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
   // Initialize operations
-  mddUnion = UNION(resF, resF, resF);
+  mddUnion = build(UNION, resF, resF, resF);
   MEDDLY_DCASSERT(mddUnion);
 
-  mxdIntersection = INTERSECTION(arg2F, arg2F, arg2F);
+  mxdIntersection = build(INTERSECTION, arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdIntersection);
 
-  mxdDifference = DIFFERENCE(arg2F, arg2F, arg2F);
+  mxdDifference = build(DIFFERENCE, arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdDifference);
 
 #ifdef DEBUG_INITIAL
@@ -1231,13 +1231,13 @@ void MEDDLY::common_dfs_evplus
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
   // Initialize operations
-  mddUnion = MINIMUM(resF, resF, resF);
+  mddUnion = build(MINIMUM, resF, resF, resF);
   MEDDLY_DCASSERT(mddUnion);
 
-  mxdIntersection = INTERSECTION(arg2F, arg2F, arg2F);
+  mxdIntersection = build(INTERSECTION, arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdIntersection);
 
-  mxdDifference = DIFFERENCE(arg2F, arg2F, arg2F);
+  mxdDifference = build(DIFFERENCE, arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdDifference);
 
 #ifdef DEBUG_INITIAL

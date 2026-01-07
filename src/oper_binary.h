@@ -480,9 +480,10 @@ namespace MEDDLY {
         bb().apply(a, b, c);
     }
 
-    inline void build(binary_builtin0 bb, forest* a, forest* b, forest* c)
+    inline binary_operation* build(binary_builtin0 bb,
+            forest* a, forest* b, forest* c)
     {
-        bb().build(a, b, c);
+        return bb().build(a, b, c);
     }
 
 
@@ -510,6 +511,12 @@ namespace MEDDLY {
         binary_operation* bop = bb(a.getForest(), b.getForest(), c.getForest());
         if (!bop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         bop->compute(a, b, c);
+    }
+
+    inline binary_operation* build(binary_builtin2 bb,
+            forest* a, forest* b, forest* c)
+    {
+        return bb(a, b, c);
     }
 #endif
 

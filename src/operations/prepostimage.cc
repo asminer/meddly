@@ -513,7 +513,7 @@ namespace MEDDLY {
         /// Get the accumulate operation for result nodes.
         inline static binary_operation* accumulateOp(forest* resF)
         {
-            return UNION(resF, resF, resF);
+            return build(UNION, resF, resF, resF);
         }
 
         /// Apply the operation when b is a terminal node.
@@ -1292,9 +1292,9 @@ namespace MEDDLY {
                 c->getRangeType() == range_type::BOOLEAN
             )
         {
-            acc = UNION(c, c, c);
+            acc = build(UNION, c, c, c);
         } else {
-            acc = MINIMUM(c, c, c);
+            acc = build(MINIMUM, c, c, c);
         }
         MEDDLY_DCASSERT(acc);
 
@@ -1375,7 +1375,7 @@ MEDDLY::binary_operation* MEDDLY::TC_POST_IMAGE(forest* a, forest* b, forest* c)
         return bop;
     }
     return TC_POST_IMAGE_cache.add(
-        new tcXrel_evplus(TC_POST_IMAGE_cache, a, b, c, UNION(c, c, c))
+        new tcXrel_evplus(TC_POST_IMAGE_cache, a, b, c, build(UNION, c, c, c))
     );
 }
 

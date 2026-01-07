@@ -111,7 +111,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     //
     // Add all binary factories here
     //
-
+    all_binary.push_back( &UNION()                  );
 }
 
 void MEDDLY::builtin_init::setup()
@@ -138,7 +138,7 @@ void MEDDLY::builtin_init::setup()
     //
     // Binary ops
     //
-    UNION_init();
+    // UNION_init();
     INTERSECTION_init();
     DIFFERENCE_init();
     CROSS_init();
@@ -201,7 +201,7 @@ void MEDDLY::builtin_init::cleanup()
     //
     // Binary ops
     //
-    UNION_done();
+    // UNION_done();
     INTERSECTION_done();
     DIFFERENCE_done();
     CROSS_done();

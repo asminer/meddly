@@ -37,6 +37,14 @@ void showDocs(const char* doc)
             if ('\n' == doc[i]) break;
             cout << doc[i];
             ++col;
+
+            // we could break a line on - if necessary
+            if ('-' == doc[i]) {
+                if (col > 70) {
+                    cout << "\n        ";
+                    col = 8;
+                }
+            }
         }
         // Ready for next line?
         if ('\n' == doc[i]) {

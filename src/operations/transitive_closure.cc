@@ -190,7 +190,7 @@ MEDDLY::transitive_closure_forwd_bfs
 {
   if (resF->getRangeType() == range_type::INTEGER && resF->isForRelations()) {
     plusOp = POST_PLUS(resF, arg1F, resF);
-    minOp = UNION(resF, resF, resF);
+    minOp = build(UNION, resF, resF, resF);
   } else {
     throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
@@ -271,9 +271,9 @@ MEDDLY::transitive_closure_dfs::transitive_closure_dfs(ternary_list &c,
   forest* cons, forest* tc, forest* trans, forest* res)
   : ternary_operation(c, 1, cons, tc, trans, res)
 {
-  mxdIntersectionOp = INTERSECTION(arg3F, arg3F, arg3F);
-  mxdDifferenceOp = DIFFERENCE(arg3F, arg3F, arg3F);
-  minOp = UNION(resF, resF, resF);
+  mxdIntersectionOp = build(INTERSECTION, arg3F, arg3F, arg3F);
+  mxdDifferenceOp = build(DIFFERENCE, arg3F, arg3F, arg3F);
+  minOp = build(UNION, resF, resF, resF);
 
   splits = nullptr;
 

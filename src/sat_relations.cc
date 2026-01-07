@@ -200,7 +200,7 @@ void MEDDLY::pregen_relation::splitMxd(splittingOption split)
 #endif
 
   // Initialize operations
-  binary_operation* mxdUnion = UNION(mxdF, mxdF, mxdF);
+  binary_operation* mxdUnion = build(UNION, mxdF, mxdF, mxdF);
   MEDDLY_DCASSERT(mxdUnion);
 
   binary_operation* mxdIntersection = INTERSECTION(mxdF, mxdF, mxdF);
@@ -320,7 +320,7 @@ void MEDDLY::pregen_relation::unionLevels()
 {
   if (K < 1) return;
 
-  binary_operation* mxdUnion = UNION(mxdF, mxdF, mxdF);
+  binary_operation* mxdUnion = build(UNION, mxdF, mxdF, mxdF);
   MEDDLY_DCASSERT(mxdUnion);
 
   dd_edge u(mxdF);
@@ -1712,7 +1712,7 @@ MEDDLY::implicit_relation::buildMxdForest()
 
   dd_edge* monolithic_nsf = new dd_edge(mxd);
 
-    binary_operation* opUnion = UNION(mxd, mxd, mxd);
+    binary_operation* opUnion = build(UNION, mxd, mxd, mxd);
     for(int i=0;i<nEvents;i++) {
         opUnion->computeTemp(
             *monolithic_nsf,  buildEventMxd(event_tops[i],mxd),

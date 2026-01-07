@@ -28,7 +28,9 @@
 namespace MEDDLY {
     class union_mt;
 
-    binary_list UNION_cache;
+    class UNION_factory;
+
+    // binary_list UNION_cache;
 };
 
 // #define TRACE
@@ -540,6 +542,8 @@ void MEDDLY::union_mt::_compute(int L, unsigned in,
 // *                                                                *
 // ******************************************************************
 
+/*
+
 MEDDLY::binary_operation*
 MEDDLY::UNION(forest* a, forest* b, forest* c)
 {
@@ -562,5 +566,53 @@ void MEDDLY::UNION_init()
 void MEDDLY::UNION_done()
 {
     MEDDLY_DCASSERT(UNION_cache.isEmpty());
+}
+
+*/
+
+// ******************************************************************
+// *                                                                *
+// *                      UNION_factory  class                      *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::UNION_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::UNION_factory::setup()
+{
+    _setup(__FILE__, "UNION", "Set union. Operands and the result may be within the same forest or across forests, but all forests must be over the same domain. Union really means logical OR of the inputs. Forests must be multi-terminal.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::UNION_factory::build(forest* a, forest* b, forest* c)
+{
+    if (!a || !b || !c) {
+        return nullptr;
+    }
+    binary_operation* bop =  cache_find(a, b, c);
+    if (bop) {
+        return bop;
+    }
+
+    return cache_add(new union_mt(a, b, c));
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_factory& MEDDLY::UNION()
+{
+    static UNION_factory F;
+    return F;
 }
 

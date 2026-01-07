@@ -20,13 +20,20 @@
 #define MEDDLY_UNION_H
 
 namespace MEDDLY {
+    class binary_factory;
+    binary_factory& UNION();
+
+    /*
+
     class forest;
     class binary_operation;
+
 
     /// The 'union' operation builder.
     binary_operation* UNION(forest* a, forest* b, forest* c);
     void UNION_init();
     void UNION_done();
+    */
 }
 
 #endif

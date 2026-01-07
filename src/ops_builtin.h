@@ -68,10 +68,10 @@ namespace MEDDLY {
     class binary_operation; // to be removed
     class binary_factory;
 
-    // ======================================================================
+    /// Set union
+    binary_factory& UNION();
 
-    /// Set union operation for forests with range_type of BOOLEAN
-    binary_operation* UNION(forest* a, forest* b, forest* c);
+    // ======================================================================
 
     /// Set intersection operation for forests with range_type of BOOLEAN
     binary_operation* INTERSECTION(forest* a, forest* b, forest* c);
