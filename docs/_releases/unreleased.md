@@ -21,6 +21,8 @@ layout: single
 
 * Added a ```unary_factory``` class, for built-in unary operations.
 
+* Added a ```binary_factory``` class, for built-in binary operations.
+
 ### Implementation
 
 * Forest I/O methods are now centralized and non-virtual;

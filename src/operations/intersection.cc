@@ -536,7 +536,7 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
 class MEDDLY::INTER_factory : public binary_factory {
     public:
         virtual void setup();
-        virtual binary_operation* build(forest* a, forest* b, forest* c);
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
 };
 
 // ******************************************************************
@@ -547,18 +547,9 @@ void MEDDLY::INTER_factory::setup()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::INTER_factory::build(forest* a, forest* b, forest* c)
+MEDDLY::INTER_factory::build_new(forest* a, forest* b, forest* c)
 {
-    if (!a || !b || !c) {
-        return nullptr;
-    }
-
-    binary_operation* bop =  cache_find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-
-    return cache_add(new inter_mt(a, b, c));
+    return new inter_mt(a, b, c);
 }
 
 // ******************************************************************

@@ -20,6 +20,9 @@
 #define MEDDLY_CROSS_H
 
 namespace MEDDLY {
+    class binary_factory;
+    binary_factory& CROSS();
+/*
     class forest;
     class binary_operation;
 
@@ -27,6 +30,7 @@ namespace MEDDLY {
     binary_operation* CROSS(forest* a, forest* b, forest* c);
     void CROSS_init();
     void CROSS_done();
+    */
 }
 
 #endif

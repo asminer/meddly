@@ -293,7 +293,7 @@ class MEDDLY::binary_operation : public operation {
 /**
     Mechanism to create specific binary operations.
     Derive a subclass from this, and override methods setup(),
-        one of the build() methods, and optionally cleanup().
+    build_new(), and optionally cleanup().
  */
 class MEDDLY::binary_factory {
     public:
@@ -312,10 +312,28 @@ class MEDDLY::binary_factory {
 
         /**
             Build a specific operation instance.
-            The default behavior returns NULL.
+            If there's one built already, use it.
         */
-        virtual binary_operation* build(forest* arg1, forest* arg2,
-                forest* res);
+        inline binary_operation* build(forest* a, forest* b, forest* c)
+        {
+            // Bail if any forest is null
+            if (!a || !b || !c) {
+                return nullptr;
+            }
+            // check cache
+            if (front) {
+                if ((front->arg1F == a) && (front->arg2F == b)
+                    && (front->resF == c))
+                {
+                    return front;
+                }
+                if (mtfBinary(a, b, c)) {
+                    return front;
+                }
+            }
+            // Not in cache. Build, and add to cache.
+            return cache_add( build_new(a, b, c) );
+        }
 
         /// Default: just calls _cleanup()
         virtual void cleanup();
@@ -351,6 +369,12 @@ class MEDDLY::binary_factory {
         }
 
     protected:
+        /**
+            Build a new operation instance.
+            The default behavior returns NULL.
+        */
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+
         /** Initialize base class.
             Should be called by method setup().
             Called during library initialization.
@@ -365,6 +389,11 @@ class MEDDLY::binary_factory {
         */
         void _cleanup();
 
+    private:
+        bool mtfBinary(const forest* arg1F, const forest* arg2F,
+                const forest* resF);
+        void searchRemove(binary_operation* uop);
+
         /// Add an operation to the list.
         inline binary_operation* cache_add(binary_operation* bop) {
             if (bop) {
@@ -377,22 +406,6 @@ class MEDDLY::binary_factory {
             return bop;
         }
 
-        inline binary_operation* cache_find(const forest* arg1F,
-                const forest* arg2F, const forest* resF)
-        {
-            if (!front) return nullptr;
-            if ((front->arg1F == arg1F) && (front->arg2F == arg2F)
-                    && (front->resF == resF))
-            {
-                return front;
-            }
-            return mtfBinary(arg1F, arg2F, resF);
-        }
-
-    private:
-        binary_operation* mtfBinary(const forest* arg1F,
-                const forest* arg2F, const forest* resF);
-        void searchRemove(binary_operation* uop);
 
     private:
         const char* _file;

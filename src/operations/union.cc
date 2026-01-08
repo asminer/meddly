@@ -542,7 +542,7 @@ void MEDDLY::union_mt::_compute(int L, unsigned in,
 class MEDDLY::UNION_factory : public binary_factory {
     public:
         virtual void setup();
-        virtual binary_operation* build(forest* a, forest* b, forest* c);
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
 };
 
 // ******************************************************************
@@ -553,17 +553,9 @@ void MEDDLY::UNION_factory::setup()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::UNION_factory::build(forest* a, forest* b, forest* c)
+MEDDLY::UNION_factory::build_new(forest* a, forest* b, forest* c)
 {
-    if (!a || !b || !c) {
-        return nullptr;
-    }
-    binary_operation* bop =  cache_find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-
-    return cache_add(new union_mt(a, b, c));
+    return new union_mt(a, b, c);
 }
 
 // ******************************************************************

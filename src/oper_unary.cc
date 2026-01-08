@@ -208,7 +208,7 @@ void MEDDLY::unary_factory::_cleanup()
     MEDDLY_DCASSERT(nullptr == front);
 }
 
-MEDDLY::unary_operation*
+bool
 MEDDLY::unary_factory::mtfUnary(const forest* argF, const forest* resF)
 {
     unary_operation* prev = front;
@@ -219,15 +219,15 @@ MEDDLY::unary_factory::mtfUnary(const forest* argF, const forest* resF)
             prev->next = curr->next;
             curr->next = front;
             front = curr;
-            return curr;
+            return true;
         }
         prev = curr;
         curr = curr->next;
     }
-    return nullptr;
+    return false;
 }
 
-MEDDLY::unary_operation*
+bool
 MEDDLY::unary_factory::mtfUnary(const forest* argF, opnd_type resType)
 {
     unary_operation* prev = front;
@@ -238,12 +238,12 @@ MEDDLY::unary_factory::mtfUnary(const forest* argF, opnd_type resType)
             prev->next = curr->next;
             curr->next = front;
             front = curr;
-            return curr;
+            return true;
         }
         prev = curr;
         curr = curr->next;
     }
-    return nullptr;
+    return false;
 }
 
 

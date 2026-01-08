@@ -502,7 +502,7 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
 class MEDDLY::DIFFR_factory : public binary_factory {
     public:
         virtual void setup();
-        virtual binary_operation* build(forest* a, forest* b, forest* c);
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
 };
 
 // ******************************************************************
@@ -513,17 +513,9 @@ void MEDDLY::DIFFR_factory::setup()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::DIFFR_factory::build(forest* a, forest* b, forest* c)
+MEDDLY::DIFFR_factory::build_new(forest* a, forest* b, forest* c)
 {
-    if (!a || !b || !c) {
-        return nullptr;
-    }
-    binary_operation* bop =  cache_find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-
-    return cache_add(new diffr_mt(a, b, c));
+    return new diffr_mt(a, b, c);
 }
 
 // ******************************************************************

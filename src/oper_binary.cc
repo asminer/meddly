@@ -168,15 +168,15 @@ void MEDDLY::binary_operation::compute(int L, unsigned in,
 // *                     binary_factory methods                     *
 // ******************************************************************
 
-MEDDLY::binary_operation*
-MEDDLY::binary_factory::build(forest* a, forest* b, forest* c)
-{
-    return nullptr;
-}
-
 void MEDDLY::binary_factory::cleanup()
 {
     _cleanup();
+}
+
+MEDDLY::binary_operation*
+MEDDLY::binary_factory::build_new(forest* a, forest* b, forest* c)
+{
+    return nullptr;
 }
 
 void MEDDLY::binary_factory::_setup(const char* file, const char* name,
@@ -193,7 +193,7 @@ void MEDDLY::binary_factory::_cleanup()
     MEDDLY_DCASSERT(nullptr == front);
 }
 
-MEDDLY::binary_operation*
+bool
 MEDDLY::binary_factory::mtfBinary(const forest* arg1F,
         const forest* arg2F, const forest* resF)
 {
@@ -207,12 +207,12 @@ MEDDLY::binary_factory::mtfBinary(const forest* arg1F,
             prev->next = curr->next;
             curr->next = front;
             front = curr;
-            return curr;
+            return true;
         }
         prev = curr;
         curr = curr->next;
     }
-    return nullptr;
+    return false;
 }
 
 
@@ -236,6 +236,8 @@ void MEDDLY::binary_factory::searchRemove(binary_operation* bop)
 // ******************************************************************
 // *                      binary_list  methods                      *
 // ******************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_6
 
 MEDDLY::binary_list::binary_list(const char* n)
 {
@@ -285,4 +287,4 @@ void MEDDLY::binary_list::searchRemove(binary_operation* bop)
     }
 }
 
-
+#endif

@@ -31,8 +31,7 @@
 
 namespace MEDDLY {
     class cross_bool;
-
-    binary_list CROSS_cache;
+    class CROSS_factory;
 };
 
 // ******************************************************************
@@ -77,7 +76,7 @@ MEDDLY::cross_bool::cross_bool(forest* arg1, forest* arg2, forest* res)
     checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
     checkRelations(__FILE__, __LINE__, SET, SET, RELATION);
 
-    ct = new ct_entry_type(CROSS_cache.getName());
+    ct = new ct_entry_type("cross");
     ct->setFixed('I', arg1, arg2);
     ct->setResult(res);
     ct->doneBuilding();
@@ -368,6 +367,8 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
 // *                                                                *
 // ******************************************************************
 
+/*
+
 MEDDLY::binary_operation*
 MEDDLY::CROSS(forest* a, forest* b, forest* c)
 {
@@ -391,4 +392,43 @@ void MEDDLY::CROSS_done()
 {
     MEDDLY_DCASSERT(CROSS_cache.isEmpty());
 }
+*/
+
+// ******************************************************************
+// *                                                                *
+// *                      CROSS_factory  class                      *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::CROSS_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::CROSS_factory::setup()
+{
+    _setup(__FILE__, "CROSS", "Cross product of sets (boolean functions). The result is a relation. The input sets may be in different forests, but must have the same domain. The output forest must have the same domain, but be a relation.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::CROSS_factory::build_new(forest* a, forest* b, forest* c)
+{
+    return new cross_bool(a, b, c);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_factory& MEDDLY::CROSS()
+{
+    static CROSS_factory F;
+    return F;
+}
+
 

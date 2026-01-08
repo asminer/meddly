@@ -111,6 +111,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     //
     // Add all binary factories here
     //
+    all_binary.push_back( &CROSS()                  );
     all_binary.push_back( &DIFFERENCE()             );
     all_binary.push_back( &INTERSECTION()           );
     all_binary.push_back( &UNION()                  );
@@ -140,7 +141,6 @@ void MEDDLY::builtin_init::setup()
     //
     // Binary ops
     //
-    CROSS_init();
     MAXIMUM_init();
     MINIMUM_init();
     PLUS_init();
@@ -200,7 +200,6 @@ void MEDDLY::builtin_init::cleanup()
     //
     // Binary ops
     //
-    CROSS_done();
     MAXIMUM_done();
     MINIMUM_done();
     PLUS_done();

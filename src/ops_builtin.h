@@ -77,15 +77,11 @@ namespace MEDDLY {
     /// Set union
     binary_factory& UNION();
 
+    /// Cross product: operands are sets, result is a relation.
+    binary_factory& CROSS();
+
     // ======================================================================
 
-
-    /// Combine two functions into a single one, where the operands are MDDs
-    /// and the result is an MXD.  Specifically, for MDD operands f and g,
-    /// produces MXD h where
-    ///     h(xn, x'n, ..., x1, x'1) = f(xn, ..., x1) * g(x'n, ..., x'1).
-    /// Works for BOOLEAN forests.
-    binary_operation* CROSS(forest* a, forest* b, forest* c);
 
     /// The minimum of two functions, with range_type INTEGER or REAL
     binary_operation* MINIMUM(forest* a, forest* b, forest* c);

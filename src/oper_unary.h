@@ -310,13 +310,13 @@ class MEDDLY::unary_factory {
                 return nullptr;
             }
             // check cache
-            unary_operation* uop = nullptr;
             if (front) {
                 if ((front->argF == arg) && (front->resF == res)) {
                     return front;
                 }
-                uop = mtfUnary(arg, res);
-                if (uop) return uop;
+                if (mtfUnary(arg, res)) {
+                    return front;
+                }
             }
             // Not in cache. Build, and add to cache.
             return cache_add( build_new(arg, res) );
@@ -331,13 +331,13 @@ class MEDDLY::unary_factory {
             // Bail if the forest is null
             if (!arg) return nullptr;
             // check cache
-            unary_operation* uop = nullptr;
             if (front) {
                 if ((front->argF == arg) && (front->resultType == res)) {
                     return front;
                 }
-                uop = mtfUnary(arg, res);
-                if (uop) return uop;
+                if (mtfUnary(arg, res)) {
+                    return front;
+                }
             }
             // Not in cache. Build, and add to cache.
             return cache_add( build_new(arg, res) );
@@ -469,8 +469,8 @@ class MEDDLY::unary_factory {
         void _cleanup();
 
     private:
-        unary_operation* mtfUnary(const forest* argF, const forest* resF);
-        unary_operation* mtfUnary(const forest* argF, opnd_type resType);
+        bool mtfUnary(const forest* argF, const forest* resF);
+        bool mtfUnary(const forest* argF, opnd_type resType);
         void searchRemove(unary_operation* uop);
 
         /// Add an operation to the list.
