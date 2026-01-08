@@ -282,7 +282,7 @@ class MEDDLY::unary_operation : public operation {
 /**
     Mechanism to create specific unary operations.
     Derive a subclass from this, and override methods setup(),
-        one of the build() methods, and optionally cleanup().
+        one of the build_new() methods, and optionally cleanup().
  */
 class MEDDLY::unary_factory {
     public:
@@ -301,17 +301,53 @@ class MEDDLY::unary_factory {
 
         /**
             Build a specific operation instance.
-            For this version, the result is another DD.
-            The default behavior returns NULL.
+            If there's one built already, use it.
         */
-        virtual unary_operation* build(forest* arg, forest* res);
+        inline unary_operation* build(forest* arg, forest* res)
+        {
+            // Bail if either forest is null
+            if (!arg || !res) {
+                return nullptr;
+            }
+            // check cache
+            unary_operation* uop = nullptr;
+            if (front) {
+                if ((front->argF == arg) && (front->resF == res)) {
+                    return front;
+                }
+                uop = mtfUnary(arg, res);
+                if (uop) return uop;
+            }
+            // Not in cache. Build, and add to cache.
+            return cache_add( build_new(arg, res) );
+        }
+
+        /**
+            Build a specific operation instance.
+            If there's one built already, use it.
+        */
+        inline unary_operation* build(forest* arg, opnd_type res)
+        {
+            // Bail if the forest is null
+            if (!arg) return nullptr;
+            // check cache
+            unary_operation* uop = nullptr;
+            if (front) {
+                if ((front->argF == arg) && (front->resultType == res)) {
+                    return front;
+                }
+                uop = mtfUnary(arg, res);
+                if (uop) return uop;
+            }
+            // Not in cache. Build, and add to cache.
+            return cache_add( build_new(arg, res) );
+        }
 
         /**
             Build a specific operation instance.
             For this version, the result is a value.
             The default behavior returns NULL.
         */
-        virtual unary_operation* build(forest* arg, opnd_type res);
 
         /// Default: just calls _cleanup()
         virtual void cleanup();
@@ -404,6 +440,20 @@ class MEDDLY::unary_factory {
 
 
     protected:
+        /**
+            Build a new operation instance.
+            For this version, the result is another DD.
+            The default behavior returns NULL.
+        */
+        virtual unary_operation* build_new(forest* arg, forest* res);
+
+        /**
+            Build a new operation instance.
+            For this version, the result is a value.
+            The default behavior returns NULL.
+        */
+        virtual unary_operation* build_new(forest* arg, opnd_type res);
+
         /** Initialize base class.
             Should be called by method setup().
             Called during library initialization.
@@ -418,6 +468,11 @@ class MEDDLY::unary_factory {
         */
         void _cleanup();
 
+    private:
+        unary_operation* mtfUnary(const forest* argF, const forest* resF);
+        unary_operation* mtfUnary(const forest* argF, opnd_type resType);
+        void searchRemove(unary_operation* uop);
+
         /// Add an operation to the list.
         inline unary_operation* cache_add(unary_operation* uop) {
             if (uop) {
@@ -430,26 +485,6 @@ class MEDDLY::unary_factory {
             return uop;
         }
 
-        inline unary_operation*
-        cache_find(const forest* argF, const forest* resF)
-        {
-            if (!front) return nullptr;
-            if ((front->argF == argF) && (front->resF == resF)) return front;
-            return mtfUnary(argF, resF);
-        }
-
-        inline unary_operation*
-        cache_find(const forest* argF, opnd_type resType)
-        {
-            if (!front) return nullptr;
-            if ((front->argF == argF) && (front->resultType == resType)) return front;
-            return mtfUnary(argF, resType);
-        }
-
-    private:
-        unary_operation* mtfUnary(const forest* argF, const forest* resF);
-        unary_operation* mtfUnary(const forest* argF, opnd_type resType);
-        void searchRemove(unary_operation* uop);
 
     private:
         const char* _file;

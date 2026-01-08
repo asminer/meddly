@@ -458,7 +458,7 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
 class MEDDLY::COMPL_factory : public unary_factory {
     public:
         virtual void setup();
-        virtual unary_operation* build(forest* arg, forest* res);
+        virtual unary_operation* build_new(forest* arg, forest* res);
 };
 
 // ******************************************************************
@@ -468,15 +468,10 @@ void MEDDLY::COMPL_factory::setup()
     _setup(__FILE__, "COMPLEMENT", "Complement, for functions with boolean range. Inverts the output (false becomes true, true becomes false). The input and output forests may be different, but must have the same domain.");
 }
 
-MEDDLY::unary_operation* MEDDLY::COMPL_factory::build(forest* arg, forest* res)
+MEDDLY::unary_operation*
+MEDDLY::COMPL_factory::build_new(forest* arg, forest* res)
 {
-    if (!arg || !res) return nullptr;
-
-    unary_operation* uop = cache_find(arg, res);
-    if (uop) {
-        return uop;
-    }
-    return cache_add(new compl_mt(arg, res));
+    return new compl_mt(arg, res);
 }
 
 // ******************************************************************

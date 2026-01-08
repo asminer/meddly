@@ -277,7 +277,7 @@ class MEDDLY::realmax : public MEDDLY::realrange {
 class MEDDLY::MAXRANGE_factory : public unary_factory {
     public:
         virtual void setup();
-        virtual unary_operation* build(forest* arg, opnd_type res);
+        virtual unary_operation* build_new(forest* arg, opnd_type res);
 };
 
 // ******************************************************************
@@ -288,14 +288,8 @@ void MEDDLY::MAXRANGE_factory::setup()
 }
 
 MEDDLY::unary_operation*
-MEDDLY::MAXRANGE_factory::build(forest* arg, opnd_type res)
+MEDDLY::MAXRANGE_factory::build_new(forest* arg, opnd_type res)
 {
-    if (!arg) return nullptr;
-    unary_operation* uop = cache_find(arg, res);
-    if (uop) {
-        return uop;
-    }
-
     if (arg->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
         return nullptr;
 
@@ -303,12 +297,12 @@ MEDDLY::MAXRANGE_factory::build(forest* arg, opnd_type res)
         case opnd_type::INTEGER:
             if (range_type::INTEGER != arg->getRangeType())
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            return cache_add(new range_templ<intmax>(arg));
+            return new range_templ<intmax>(arg);
 
         case opnd_type::REAL:
             if (range_type::REAL != arg->getRangeType())
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            return cache_add(new range_templ<realmax>(arg));
+            return new range_templ<realmax>(arg);
 
         default:
             throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -326,7 +320,7 @@ MEDDLY::MAXRANGE_factory::build(forest* arg, opnd_type res)
 class MEDDLY::MINRANGE_factory : public unary_factory {
     public:
         virtual void setup();
-        virtual unary_operation* build(forest* arg, opnd_type res);
+        virtual unary_operation* build_new(forest* arg, opnd_type res);
 };
 
 // ******************************************************************
@@ -337,14 +331,8 @@ void MEDDLY::MINRANGE_factory::setup()
 }
 
 MEDDLY::unary_operation*
-MEDDLY::MINRANGE_factory::build(forest* arg, opnd_type res)
+MEDDLY::MINRANGE_factory::build_new(forest* arg, opnd_type res)
 {
-    if (!arg) return nullptr;
-    unary_operation* uop = cache_find(arg, res);
-    if (uop) {
-        return uop;
-    }
-
     if (arg->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
         return nullptr;
 
@@ -352,12 +340,12 @@ MEDDLY::MINRANGE_factory::build(forest* arg, opnd_type res)
         case opnd_type::INTEGER:
             if (range_type::INTEGER != arg->getRangeType())
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            return cache_add(new range_templ<intmin>(arg));
+            return new range_templ<intmin>(arg);
 
         case opnd_type::REAL:
             if (range_type::REAL != arg->getRangeType())
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            return cache_add(new range_templ<realmin>(arg));
+            return new range_templ<realmin>(arg);
 
         default:
             throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);

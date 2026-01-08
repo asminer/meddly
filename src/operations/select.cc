@@ -199,7 +199,7 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
 class MEDDLY::SELECT_factory : public unary_factory {
     public:
         virtual void setup();
-        virtual unary_operation* build(forest* arg, forest* res);
+        virtual unary_operation* build_new(forest* arg, forest* res);
 };
 
 // ******************************************************************
@@ -209,21 +209,17 @@ void MEDDLY::SELECT_factory::setup()
     _setup(__FILE__, "SELECT", "Select an element. Deprecated.");
 }
 
-MEDDLY::unary_operation* MEDDLY::SELECT_factory::build(forest* arg, forest* res)
+MEDDLY::unary_operation*
+MEDDLY::SELECT_factory::build_new(forest* arg, forest* res)
 {
-    if (!arg || !res) return nullptr;
-    unary_operation* uop =  cache_find(arg, res);
-    if (uop) {
-        return uop;
-    }
     if (arg->isForRelations()) {
         return nullptr;
     }
     if (arg->isMultiTerminal()) {
-        return cache_add(new select_MT(arg, res));
+        return new select_MT(arg, res);
     }
     if (arg->isEVPlus()) {
-        return cache_add(new select_EVPlus(arg, res));
+        return new select_EVPlus(arg, res);
     }
     return nullptr;
 }

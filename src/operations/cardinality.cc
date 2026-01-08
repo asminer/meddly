@@ -407,7 +407,7 @@ class MEDDLY::mpzcard {
 class MEDDLY::CARD_factory : public unary_factory {
     public:
         virtual void setup();
-        virtual unary_operation* build(forest* arg, opnd_type res);
+        virtual unary_operation* build_new(forest* arg, opnd_type res);
 };
 
 // ******************************************************************
@@ -417,24 +417,19 @@ void MEDDLY::CARD_factory::setup()
     _setup(__FILE__, "CARDINALITY", "Set cardinality. Determines the number of variable assignments causing the function to evaluate to non-zero (or non-infinity, for EV+MDDs). The result is allowed to be type long, double, or mpz_t (requires GMP library).");
 }
 
-MEDDLY::unary_operation* MEDDLY::CARD_factory::build(forest* arg, opnd_type res)
+MEDDLY::unary_operation*
+MEDDLY::CARD_factory::build_new(forest* arg, opnd_type res)
 {
-    if (!arg) return nullptr;
-    unary_operation* uop =  cache_find(arg, res);
-    if (uop) {
-        return uop;
-    }
-
     switch (res) {
         case opnd_type::INTEGER:
-            return cache_add(new card_templ<intcard>(arg));
+            return new card_templ<intcard>(arg);
 
         case opnd_type::REAL:
-            return cache_add(new card_templ<realcard>(arg));
+            return new card_templ<realcard>(arg);
 
 #ifdef HAVE_LIBGMP
         case opnd_type::HUGEINT:
-            return cache_add(new card_templ<mpzcard>(arg));
+            return new card_templ<mpzcard>(arg);
 #endif
 
         default:

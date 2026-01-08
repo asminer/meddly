@@ -177,21 +177,21 @@ void MEDDLY::unary_operation::compute(int L, unsigned in,
 // *                     unary_factory  methods                     *
 // ******************************************************************
 
-MEDDLY::unary_operation*
-MEDDLY::unary_factory::build(forest* arg, forest* res)
-{
-    return nullptr;
-}
-
-MEDDLY::unary_operation*
-MEDDLY::unary_factory::build(forest* arg, opnd_type res)
-{
-    return nullptr;
-}
-
 void MEDDLY::unary_factory::cleanup()
 {
     _cleanup();
+}
+
+MEDDLY::unary_operation*
+MEDDLY::unary_factory::build_new(forest* arg, forest* res)
+{
+    return nullptr;
+}
+
+MEDDLY::unary_operation*
+MEDDLY::unary_factory::build_new(forest* arg, opnd_type res)
+{
+    return nullptr;
 }
 
 void MEDDLY::unary_factory::_setup(const char* file, const char* name,

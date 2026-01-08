@@ -338,7 +338,7 @@ void MEDDLY::CYCLE_done()
 class MEDDLY::CYCLE_factory : public unary_factory {
     public:
         virtual void setup();
-        virtual unary_operation* build(forest* arg, forest* res);
+        virtual unary_operation* build_new(forest* arg, forest* res);
 };
 
 // ******************************************************************
@@ -348,15 +348,11 @@ void MEDDLY::CYCLE_factory::setup()
     _setup(__FILE__, "CYCLE", "Cycle detection. The input forest should be an EV+MxD (relation) produced by a transitive closure operation, and the output should be an EV+MDD (set). TBD: needs testing");
 }
 
-MEDDLY::unary_operation* MEDDLY::CYCLE_factory::build(forest* arg, forest* res)
+MEDDLY::unary_operation*
+MEDDLY::CYCLE_factory::build_new(forest* arg, forest* res)
 {
-    if (!arg) return nullptr;
-    unary_operation* uop =  cache_find(arg, res);
-    if (uop) {
-        return uop;
-    }
     if (arg->isEVPlus()) {
-        return cache_add(new cycle_EV2EV(arg, res));
+        return new cycle_EV2EV(arg, res);
     }
     return nullptr;
 }
