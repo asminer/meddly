@@ -27,6 +27,8 @@
 
 void showDocs(const char* doc)
 {
+    const unsigned MAXCOL = 68;
+
     using namespace std;
     cout << "        ";
     unsigned col = 8;
@@ -40,7 +42,7 @@ void showDocs(const char* doc)
 
             // we could break a line on - if necessary
             if ('-' == doc[i]) {
-                if (col > 70) {
+                if (col > MAXCOL) {
                     cout << "\n        ";
                     col = 8;
                 }
@@ -51,9 +53,9 @@ void showDocs(const char* doc)
             // Paragraph; add a blank line
             cout << "\n";
             ++i;
-            col = 99999;
+            col = MAXCOL+2;
         }
-        if (col > 70) {
+        if (col > MAXCOL) {
             cout << "\n        ";
             col = 8;
         } else {

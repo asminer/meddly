@@ -19,20 +19,9 @@
 #ifndef MEDDLY_ARITH_MAX_H
 #define MEDDLY_ARITH_MAX_H
 
-#include "../oper.h"
-
-/*
- * Code for element-wise arithmetic and like operations.
- */
-
 namespace MEDDLY {
-    class forest;
-    class binary_operation;
-
-    /// The 'maximum' operation builder.
-    binary_operation* MAXIMUM(forest* a, forest* b, forest* c);
-    void MAXIMUM_init();
-    void MAXIMUM_done();
+    class binary_factory;
+    binary_factory& MAXIMUM();
 }
 
 #endif

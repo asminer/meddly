@@ -80,14 +80,14 @@ namespace MEDDLY {
     /// Cross product: operands are sets, result is a relation.
     binary_factory& CROSS();
 
-    // ======================================================================
-
+    /// The maximum of two functions, with range_type INTEGER or REAL
+    binary_factory& MAXIMUM();
 
     /// The minimum of two functions, with range_type INTEGER or REAL
-    binary_operation* MINIMUM(forest* a, forest* b, forest* c);
+    binary_factory& MINIMUM();
 
-    /// The maximum of two functions, with range_type INTEGER or REAL
-    binary_operation* MAXIMUM(forest* a, forest* b, forest* c);
+    // ======================================================================
+
 
     /// Add two functions, with range type INTEGER and REAL
     binary_operation* PLUS(forest* a, forest* b, forest* c);

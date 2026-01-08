@@ -37,7 +37,7 @@
 // Operation instance cache
 //
 namespace MEDDLY {
-    binary_list MINIMUM_cache;
+    class MINIMUM_factory;
 };
 
 
@@ -315,6 +315,72 @@ namespace MEDDLY {
     };
 };
 
+// ******************************************************************
+// *                                                                *
+// *                     MINIMUM_factory  class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::MINIMUM_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::MINIMUM_factory::setup()
+{
+    _setup(__FILE__, "MINIMUM", "Minimum value. Forest ranges must be integer or real. Forests should be all MT, EV+, or EV*, over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::MINIMUM_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (c->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new arith_compat<EdgeOp_none, mt_min<float> > (a,b,c);
+        } else {
+            return new arith_compat<EdgeOp_none, mt_min<long> > (a,b,c);
+        }
+    }
+
+    if (c->isEVPlus()) {
+        switch (c->getEdgeType()) {
+            case edge_type::INT:
+                return new arith_factor<EdgeOp_plus<int>, evplus_min<int> >
+                        (a,b,c);
+
+            case edge_type::LONG:
+                return new arith_factor<EdgeOp_plus<long>, evplus_min<long> >
+                        (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+
+    if (c->isEVTimes()) {
+        switch (c->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new arith_factor<EdgeOp_times<float>, evstar_min<float> >
+                        (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new arith_factor<EdgeOp_times<double>, evstar_min<double> >
+                        (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+
+    return nullptr;
+}
 
 // ******************************************************************
 // *                                                                *
@@ -322,72 +388,9 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_operation* MEDDLY::MINIMUM(forest* a, forest* b, forest* c)
+MEDDLY::binary_factory& MEDDLY::MINIMUM()
 {
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  MINIMUM_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-    if (c->isMultiTerminal()) {
-        bool use_reals = (
-            a->getRangeType() == range_type::REAL ||
-            b->getRangeType() == range_type::REAL
-        );
-        if (use_reals) {
-            bop = new arith_compat<EdgeOp_none, mt_min<float> > (a,b,c);
-        } else {
-            bop = new arith_compat<EdgeOp_none, mt_min<long> > (a,b,c);
-        }
-        return MINIMUM_cache.add( bop );
-    }
-
-    if (c->isEVPlus()) {
-        switch (c->getEdgeType()) {
-            case edge_type::INT:
-                bop = new arith_factor<EdgeOp_plus<int>, evplus_min<int> >
-                        (a,b,c);
-                break;
-
-            case edge_type::LONG:
-                bop = new arith_factor<EdgeOp_plus<long>, evplus_min<long> >
-                        (a,b,c);
-                break;
-
-            default:
-                return nullptr;
-        }
-        return MINIMUM_cache.add( bop );
-    }
-
-    if (c->isEVTimes()) {
-        switch (c->getEdgeType()) {
-            case edge_type::FLOAT:
-                bop = new arith_factor<EdgeOp_times<float>, evstar_min<float> >
-                        (a,b,c);
-                break;
-
-            case edge_type::DOUBLE:
-                bop = new arith_factor<EdgeOp_times<double>, evstar_min<double> >
-                        (a,b,c);
-                break;
-
-            default:
-                return nullptr;
-        }
-        return MINIMUM_cache.add( bop );
-    }
-
-    return nullptr;
-}
-
-void MEDDLY::MINIMUM_init()
-{
-    MINIMUM_cache.reset("Minimum");
-}
-
-void MEDDLY::MINIMUM_done()
-{
-    MEDDLY_DCASSERT(MINIMUM_cache.isEmpty());
+    static MINIMUM_factory F;
+    return F;
 }
 
