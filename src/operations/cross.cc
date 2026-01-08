@@ -363,39 +363,6 @@ MEDDLY::node_handle MEDDLY::cross_bool::compute_pr(unsigned in, int k, node_hand
 
 // ******************************************************************
 // *                                                                *
-// *                           Front  end                           *
-// *                                                                *
-// ******************************************************************
-
-/*
-
-MEDDLY::binary_operation*
-MEDDLY::CROSS(forest* a, forest* b, forest* c)
-{
-    if (!a || !b || !c) {
-        return nullptr;
-    }
-    binary_operation* bop =  CROSS_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-
-    return CROSS_cache.add(new cross_bool(a, b, c));
-}
-
-void MEDDLY::CROSS_init()
-{
-    CROSS_cache.reset("Cross");
-}
-
-void MEDDLY::CROSS_done()
-{
-    MEDDLY_DCASSERT(CROSS_cache.isEmpty());
-}
-*/
-
-// ******************************************************************
-// *                                                                *
 // *                      CROSS_factory  class                      *
 // *                                                                *
 // ******************************************************************
