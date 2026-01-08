@@ -596,7 +596,7 @@ namespace MEDDLY {
             MEDDLY_DCASSERT(b<0);
             TTYPE mxdval;
             fb->getValueFromHandle(b, mxdval);
-            binary_operation* mult = MULTIPLY(fa, fa, fc);
+            binary_operation* mult = build(MULTIPLY, fa, fa, fc);
             node_handle fa_mxdval = fa->handleForValue(mxdval);
 
             edge_value dummy;

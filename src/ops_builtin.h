@@ -92,14 +92,14 @@ namespace MEDDLY {
     /// Subtract two functions, with range type INTEGER and REAL
     binary_factory& MINUS();
 
-    // ======================================================================
-
-
     /// Multiply two functions, with range type INTEGER and REAL
-    binary_operation* MULTIPLY(forest* a, forest* b, forest* c);
+    binary_factory& MULTIPLY();
 
     /// Divide two functions, with range type INTEGER and REAL
-    binary_operation* DIVIDE(forest* a, forest* b, forest* c);
+    binary_factory& DIVIDE();
+
+    // ======================================================================
+
 
     /// Take the remainder of two functions, with range type INTEGER
     binary_operation* MODULO(forest* a, forest* b, forest* c);

@@ -33,11 +33,8 @@
 
 #include "arith_templ.h"
 
-//
-// Operation instance cache
-//
 namespace MEDDLY {
-    binary_list MULT_cache;
+    class MULT_factory;
 };
 
 
@@ -260,7 +257,7 @@ namespace MEDDLY {
 // *                       MULTIPLY front end                       *
 // *                                                                *
 // ******************************************************************
-
+/*
 MEDDLY::binary_operation* MEDDLY::MULTIPLY(forest* a, forest* b, forest* c)
 {
     if (!a || !b || !c) return nullptr;
@@ -328,5 +325,84 @@ void MEDDLY::MULTIPLY_init()
 void MEDDLY::MULTIPLY_done()
 {
     MEDDLY_DCASSERT(MULT_cache.isEmpty());
+}
+*/
+// ******************************************************************
+// *                                                                *
+// *                       MULT_factory class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::MULT_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::MULT_factory::setup()
+{
+    _setup(__FILE__, "MULTIPLY", "Multiplication. Forest ranges must be integer or real. Forests should be all MT, EV+, or EV*, over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::MULT_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (c->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new arith_compat<EdgeOp_none, mt_mult<float> > (a,b,c);
+        } else {
+            return new arith_compat<EdgeOp_none, mt_mult<long> > (a,b,c);
+        }
+    }
+
+    if (c->isEVPlus()) {
+        switch (c->getEdgeType()) {
+            case edge_type::INT:
+                return new arith_pushdn<EdgeOp_plus<int>, evplus_mult<int> >
+                        (a,b,c);
+
+            case edge_type::LONG:
+                return new arith_pushdn<EdgeOp_plus<long>, evplus_mult<long> >
+                        (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+
+    if (c->isEVTimes()) {
+        switch (c->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new arith_compat<EdgeOp_times<float>, evstar_mult<float> >
+                        (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new arith_compat<EdgeOp_times<double>, evstar_mult<double> >
+                        (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_factory& MEDDLY::MULTIPLY()
+{
+    static MULT_factory F;
+    return F;
 }
 

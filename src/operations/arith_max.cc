@@ -33,9 +33,6 @@
 
 #include "arith_templ.h"
 
-//
-// Operation instance cache
-//
 namespace MEDDLY {
     class MAXIMUM_factory;
 };

@@ -33,9 +33,6 @@
 
 #include "arith_templ.h"
 
-//
-// Operation instance cache
-//
 namespace MEDDLY {
     class MINUS_factory;
 };
@@ -342,7 +339,7 @@ void MEDDLY::MINUS_done()
 */
 // ******************************************************************
 // *                                                                *
-// *                       MINUS_factory class                       *
+// *                      MINUS_factory  class                      *
 // *                                                                *
 // ******************************************************************
 

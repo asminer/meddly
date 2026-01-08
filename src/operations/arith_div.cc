@@ -33,11 +33,8 @@
 
 #include "arith_templ.h"
 
-//
-// Operation instance cache
-//
 namespace MEDDLY {
-    binary_list DIV_cache;
+    class DIV_factory;
 };
 
 
@@ -297,7 +294,7 @@ namespace MEDDLY {
 // *                        DIVIDE front end                        *
 // *                                                                *
 // ******************************************************************
-
+/*
 MEDDLY::binary_operation* MEDDLY::DIVIDE(forest* a, forest* b, forest* c)
 {
     if (!a || !b || !c) return nullptr;
@@ -365,5 +362,84 @@ void MEDDLY::DIVIDE_init()
 void MEDDLY::DIVIDE_done()
 {
     MEDDLY_DCASSERT(DIV_cache.isEmpty());
+}
+*/
+// ******************************************************************
+// *                                                                *
+// *                       DIV_factory  class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::DIV_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::DIV_factory::setup()
+{
+    _setup(__FILE__, "DIVIDE", "Division. Behavior is undefined for division by zero. Forest ranges must be integer or real. Forests should be all MT, EV+, or EV*, over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::DIV_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (c->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new arith_compat<EdgeOp_none, mt_div<float> > (a,b,c);
+        } else {
+            return new arith_compat<EdgeOp_none, mt_div<long> > (a,b,c);
+        }
+    }
+
+    if (c->isEVPlus()) {
+        switch (c->getEdgeType()) {
+            case edge_type::INT:
+                return new arith_pushdn<EdgeOp_plus<int>, evplus_div<int> >
+                        (a,b,c);
+
+            case edge_type::LONG:
+                return new arith_pushdn<EdgeOp_plus<long>, evplus_div<long> >
+                        (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+
+    if (c->isEVTimes()) {
+        switch (c->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new arith_compat<EdgeOp_times<float>, evstar_div<float> >
+                        (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new arith_compat<EdgeOp_times<double>, evstar_div<double> >
+                        (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_factory& MEDDLY::DIVIDE()
+{
+    static DIV_factory F;
+    return F;
 }
 
