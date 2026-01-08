@@ -127,6 +127,8 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     all_binary.push_back( &MULTIPLY()               );
     all_binary.push_back( &NOT_EQUAL()              );
     all_binary.push_back( &PLUS()                   );
+    all_binary.push_back( &POST_IMAGE()             );
+    all_binary.push_back( &PRE_IMAGE()              );
     all_binary.push_back( &UNION()                  );
 }
 
@@ -157,8 +159,6 @@ void MEDDLY::builtin_init::setup()
 
     PRE_PLUS_init();
     POST_PLUS_init();
-    PRE_IMAGE_init();
-    POST_IMAGE_init();
     TC_POST_IMAGE_init();
     REACHABLE_STATES_BFS_init();
     REACHABLE_STATES_DFS_init();
@@ -201,8 +201,6 @@ void MEDDLY::builtin_init::cleanup()
     //
     PRE_PLUS_done();
     POST_PLUS_done();
-    PRE_IMAGE_done();
-    POST_IMAGE_done();
     TC_POST_IMAGE_done();
     REACHABLE_STATES_BFS_done();
     REACHABLE_STATES_DFS_done();

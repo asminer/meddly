@@ -284,7 +284,7 @@ MEDDLY::constrained_bckwd_bfs_evplus::constrained_bckwd_bfs_evplus(
     } else {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     }
-    imageOp = PRE_IMAGE(arg2F, arg3F, resF);
+    imageOp = build(PRE_IMAGE, arg2F, arg3F, resF);
 }
 
 void MEDDLY::constrained_bckwd_bfs_evplus::computeDDEdge(const dd_edge& a,

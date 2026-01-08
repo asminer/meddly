@@ -20,18 +20,14 @@
 #define MEDDLY_PREPOSTIMAGE_H
 
 namespace MEDDLY {
+    class binary_factory;
+    binary_factory& PRE_IMAGE();
+    binary_factory& POST_IMAGE();
+
+    // TBD below here
+
     class forest;
     class binary_operation;
-
-    /// The 'preimage' operation builder.
-    binary_operation* PRE_IMAGE(forest* a, forest* b, forest* c);
-    void PRE_IMAGE_init();
-    void PRE_IMAGE_done();
-
-    /// The 'postimage' operation builder.
-    binary_operation* POST_IMAGE(forest* a, forest* b, forest* c);
-    void POST_IMAGE_init();
-    void POST_IMAGE_done();
 
     /// The 'transitive closure postimage' operation builder.
     binary_operation* TC_POST_IMAGE(forest* a, forest* b, forest* c);

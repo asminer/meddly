@@ -38,13 +38,13 @@
 #endif
 
 namespace MEDDLY {
+    class PRE_IMAGE_factory;
+    class POST_IMAGE_factory;
+
     class image_op_evplus;
     class relXset_evplus;
     class setXrel_evplus;
     class tcXrel_evplus;
-
-    binary_list PRE_IMAGE_cache;
-    binary_list POST_IMAGE_cache;
 
     binary_list TC_POST_IMAGE_cache;
     binary_list VM_MULTIPLY_cache;
@@ -1277,92 +1277,88 @@ void MEDDLY::tcXrel_evplus::processTerminals(long ev, node_handle evmxd, node_ha
 
 // ******************************************************************
 // ******************************************************************
+
+// ******************************************************************
+// *                                                                *
+// *                 _IMAGE_factory  template class                 *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <bool FWD>
+    class _IMAGE_factory : public binary_factory {
+        public:
+            virtual void setup();
+            virtual binary_operation*
+                build_new(forest* a, forest* b, forest* c);
+        private:
+            char docs[1024];
+    };
+};
+
+// ******************************************************************
+
+template <bool FWD>
+void MEDDLY::_IMAGE_factory <FWD>::setup()
+{
+    snprintf(docs, 1024, "Follow edges %s in a transition relation. The first operand should be a set/vector. The second operand should be a relation/matrix. The result should be a set/vector. All forests should be over the same domain.\nIf the output function has type boolean, then the output is the set of states %s one of the input states.\nTBD...",
+            FWD ? "forward" : "backward",
+            FWD ? "reachable from" : "that can reach");
+
+    _setup(__FILE__, FWD ? "POST_IMAGE" : "PRE_IMAGE", docs);
+}
+
+template <bool FWD>
+MEDDLY::binary_operation*
+MEDDLY::_IMAGE_factory <FWD>::build_new(forest* a, forest* b, forest* c)
+{
+    binary_operation *acc = nullptr;
+    if  ( c->getRangeType() == range_type::BOOLEAN )
+    {
+        acc = MEDDLY::build(UNION, c, c, c);
+    } else {
+        acc = MEDDLY::build(MINIMUM, c, c, c);
+    }
+    MEDDLY_DCASSERT(acc);
+
+    if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+        return new prepost_set_mtrel<EdgeOp_none, FWD, mt_prepost>(a, b, c);
+    }
+
+    if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
+
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new prepost_set_mtrel<EdgeOp_plus<int>, FWD,
+                       ev_prepost<int> > (a, b, c);
+
+            case edge_type::LONG:
+                return new prepost_set_mtrel<EdgeOp_plus<long>, FWD,
+                       ev_prepost<long> > (a, b, c);
+
+            default:
+                return nullptr;
+        };
+    }
+    return nullptr;
+}
+
 // ******************************************************************
 // *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-namespace MEDDLY {
-    template <bool FWD>
-    MEDDLY::binary_operation* _IMAGE(forest* a, forest* b, forest* c)
-    {
-        binary_operation *acc = nullptr;
-        if  (
-                c->getRangeType() == range_type::BOOLEAN
-            )
-        {
-            acc = build(UNION, c, c, c);
-        } else {
-            acc = build(MINIMUM, c, c, c);
-        }
-        MEDDLY_DCASSERT(acc);
-
-        if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-            return new prepost_set_mtrel<EdgeOp_none, FWD, mt_prepost>(a, b, c);
-        }
-
-        if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
-
-            switch (a->getEdgeType()) {
-                case edge_type::INT:
-                    return new prepost_set_mtrel<EdgeOp_plus<int>, FWD,
-                           ev_prepost<int> > (a, b, c);
-
-                case edge_type::LONG:
-                    return new prepost_set_mtrel<EdgeOp_plus<long>, FWD,
-                           ev_prepost<long> > (a, b, c);
-
-                default:
-                    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            };
-        }
-        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-};
-
-// ******************************************************************
-
-MEDDLY::binary_operation* MEDDLY::PRE_IMAGE(forest* a, forest* b, forest* c)
+MEDDLY::binary_factory& MEDDLY::PRE_IMAGE()
 {
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  PRE_IMAGE_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-    return PRE_IMAGE_cache.add( _IMAGE<false>(a, b, c) );
+    static _IMAGE_factory<false> F;
+    return F;
 }
 
-void MEDDLY::PRE_IMAGE_init()
+MEDDLY::binary_factory& MEDDLY::POST_IMAGE()
 {
-    PRE_IMAGE_cache.reset("Pre-image");
-}
-
-void MEDDLY::PRE_IMAGE_done()
-{
-    MEDDLY_DCASSERT(PRE_IMAGE_cache.isEmpty());
-}
-
-// ******************************************************************
-
-MEDDLY::binary_operation* MEDDLY::POST_IMAGE(forest* a, forest* b, forest* c)
-{
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  POST_IMAGE_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-    return POST_IMAGE_cache.add( _IMAGE<true>(a, b, c) );
-}
-
-void MEDDLY::POST_IMAGE_init()
-{
-    POST_IMAGE_cache.reset("Post-image");
-}
-
-void MEDDLY::POST_IMAGE_done()
-{
-    MEDDLY_DCASSERT(POST_IMAGE_cache.isEmpty());
+    static _IMAGE_factory<true> F;
+    return F;
 }
 
 // ******************************************************************

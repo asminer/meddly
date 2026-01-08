@@ -119,6 +119,12 @@ namespace MEDDLY {
     /// Compare for >=, two functions with range type INTEGER or REAL
     binary_factory& GREATER_THAN_EQUAL();
 
+    /// Follow a transition relation, backwards.
+    binary_factory& PRE_IMAGE();
+
+    /// Follow a transition relation, forwards.
+    binary_factory& POST_IMAGE();
+
     // ======================================================================
 
     /** Plus operation used to compute transitive closure and further
@@ -139,8 +145,6 @@ namespace MEDDLY {
         REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
         REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
     */
-    binary_operation* PRE_IMAGE(forest* a, forest* b, forest* c);
-    binary_operation* POST_IMAGE(forest* a, forest* b, forest* c);
     binary_operation* TC_POST_IMAGE(forest* a, forest* b, forest* c);
     binary_operation* REACHABLE_STATES_DFS(forest* a, forest* b, forest* c);
     binary_operation* REACHABLE_STATES_BFS(forest* a, forest* b, forest* c);

@@ -131,7 +131,7 @@ MEDDLY::binary_operation* MEDDLY::REACHABLE_STATES_BFS(forest* a,
         return bop;
     }
 
-    binary_operation *img = POST_IMAGE(a, b, c);
+    binary_operation *img = build(POST_IMAGE, a, b, c);
     binary_operation *acc = nullptr;
 
     // if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
@@ -168,7 +168,7 @@ MEDDLY::binary_operation* MEDDLY::REVERSE_REACHABLE_BFS(forest* a,
         return bop;
     }
 
-    binary_operation *img = PRE_IMAGE(a, b, c);
+    binary_operation *img = build(PRE_IMAGE, a, b, c);
     binary_operation *acc = nullptr;
 
     // if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
