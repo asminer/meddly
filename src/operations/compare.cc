@@ -540,6 +540,9 @@ MEDDLY::compare_ev<EOP, FACTOR, CTYPE>::compare_ev(forest* arg1,
     if (arg1->getEdgeLabeling() != arg2->getEdgeLabeling()) {
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
+    if (res->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
     if (arg1->getEdgeType() != arg2->getEdgeType()) {
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
