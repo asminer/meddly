@@ -1,20 +1,41 @@
 
-To Do:
-    * design unary, binary, etc factories
-    * unary list, etc gets incorporated into the factory
-    * apply functions return static instance of the factory
-    * factories provide a method to build the operation
-    * factories have documentation
-    * write an example app that displays the documentation
-        maybe using the builtin initializer class?
-
-
 Implement next, using new rel_node interface:
 
     * pre/post image on distances and test
 
-    * pre/post image on relations (e.g. transitive closure)
-        and test programs
+    * move pre/post image on relations (transitive closure)
+        to new sources, maybe prepost_trans?
+
+    * vect/matr and matr/vect multiplication tests
+        (now within pre/post image)
+
+========= (release?)
+
+    * bfs with frontier sets.
+        as an operation?
+        or as a function?
+        need ability to provide call-backs so we can display (or not)
+            information after each iteration.
+
+    * bfs without frontier sets.
+
+========= (release?)
+
+    * saturation 1 monolithic relation
+        states only
+        distances
+
+========= (release?)
+
+    * saturation 2 monolithic relation
+        'saturate after' but on diagonal
+        states only
+        distances
+
+    * saturation 3 monolithic relation
+        'saturate before'
+        states only
+        distances
 
 ========= (release?)
 
@@ -22,26 +43,6 @@ Implement next, using new rel_node interface:
         (ugly implementation internally is fine)
 
     * AND/OR nodes
-
-    * saturation 1 using OR-partitioned relations
-        + reachability
-        + distance
-        + TC ?
-
-    * backward saturation 1 using OR-partitioned relations
-        + reachability
-
-========= (release?)
-
-    * saturation 2
-        + reachability
-        + distance
-        + TC ?
-
-    * backward saturation 2
-        + reachability
-
-========= (release?)
 
     * constraint nodes - for 'constrained saturation'
 
@@ -67,7 +68,17 @@ Implement next, using new rel_node interface:
         + how to efficiently use this?
             - automatically build MxD underneath?
 
-    * test all of these, and release
+========= (release?)
+
+    * pre/post image on relations (e.g. transitive closure)
+        and test programs
+        states only
+        distances
+
+    * saturation 1, 2, 3 on relations
+        states only
+        distances
+
 
 ========= (release?)
 
