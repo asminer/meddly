@@ -34,14 +34,14 @@
 // Operation instance caches
 //
 namespace MEDDLY {
-    binary_list EQUAL_cache;
-    binary_list NEQ_cache;
+    class EQUAL_factory;
+    class NEQ_factory;
 
-    binary_list GT_cache;
-    binary_list GE_cache;
+    class GT_factory;
+    class GE_factory;
 
-    binary_list LT_cache;
-    binary_list LE_cache;
+    class LT_factory;
+    class LE_factory;
 };
 
 // ******************************************************************
@@ -1519,11 +1519,395 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                                                                *
-// *                           Front ends                           *
-// *                                                                *
+// *                      EQUAL_factory  class                      *
 // *                                                                *
 // ******************************************************************
+
+class MEDDLY::EQUAL_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::EQUAL_factory::setup()
+{
+    _setup(__FILE__, "EQUAL", "Element-wise ==. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::EQUAL_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (a->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new compare_mt<eq_mt<float> > (a,b,c);
+        } else {
+            return new compare_mt<eq_mt<long> > (a,b,c);
+        }
+    }
+
+    if (a->isEVTimes()) {
+        switch (a->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new compare_ev<EdgeOp_times<float>,
+                    evstar_factor<float>, eq_evstar<float> > (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new compare_ev<EdgeOp_times<double>,
+                    evstar_factor<double>, eq_evstar<double> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    } else {
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
+                    eq_evplus<int> > (a,b,c);
+
+            case edge_type::LONG:
+                return new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
+                    eq_evplus<long> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+    // shouldn't get here
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                       NEQ_factory  class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::NEQ_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::NEQ_factory::setup()
+{
+    _setup(__FILE__, "NOT_EQUAL", "Element-wise !=. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::NEQ_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (a->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new compare_mt<ne_mt<float> > (a,b,c);
+        } else {
+            return new compare_mt<ne_mt<long> > (a,b,c);
+        }
+    }
+
+    if (a->isEVTimes()) {
+        switch (a->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new compare_ev<EdgeOp_times<float>,
+                    evstar_factor<float>, ne_evstar<float> > (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new compare_ev<EdgeOp_times<double>,
+                    evstar_factor<double>, ne_evstar<double> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    } else {
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
+                    ne_evplus<int> > (a,b,c);
+
+            case edge_type::LONG:
+                return new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
+                    ne_evplus<long> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+    // shouldn't get here
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                        GT_factory class                        *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::GT_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::GT_factory::setup()
+{
+    _setup(__FILE__, "GREATER_THAN", "Element-wise >. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::GT_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (a->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new compare_mt<gt_mt<float> > (a,b,c);
+        } else {
+            return new compare_mt<gt_mt<long> > (a,b,c);
+        }
+    }
+
+    if (a->isEVTimes()) {
+        switch (a->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new compare_ev<EdgeOp_times<float>,
+                    evstar_factor<float>, gt_evstar<float> > (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new compare_ev<EdgeOp_times<double>,
+                    evstar_factor<double>, gt_evstar<double> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    } else {
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
+                    gt_evplus<int> > (a,b,c);
+
+            case edge_type::LONG:
+                return new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
+                    gt_evplus<long> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+    // shouldn't get here
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                        GE_factory class                        *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::GE_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::GE_factory::setup()
+{
+    _setup(__FILE__, "GREATER_THAN_EQUAL", "Element-wise >=. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::GE_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (a->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new compare_mt<ge_mt<float> > (a,b,c);
+        } else {
+            return new compare_mt<ge_mt<long> > (a,b,c);
+        }
+    }
+
+    if (a->isEVTimes()) {
+        switch (a->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new compare_ev<EdgeOp_times<float>,
+                    evstar_factor<float>, ge_evstar<float> > (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new compare_ev<EdgeOp_times<double>,
+                    evstar_factor<double>, ge_evstar<double> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    } else {
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
+                    ge_evplus<int> > (a,b,c);
+
+            case edge_type::LONG:
+                return new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
+                    ge_evplus<long> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+    // shouldn't get here
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                        LT_factory class                        *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::LT_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::LT_factory::setup()
+{
+    _setup(__FILE__, "LESS_THAN", "Element-wise <. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::LT_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (a->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new compare_mt<lt_mt<float> > (a,b,c);
+        } else {
+            return new compare_mt<lt_mt<long> > (a,b,c);
+        }
+    }
+
+    if (a->isEVTimes()) {
+        switch (a->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new compare_ev<EdgeOp_times<float>,
+                    evstar_factor<float>, lt_evstar<float> > (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new compare_ev<EdgeOp_times<double>,
+                    evstar_factor<double>, lt_evstar<double> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    } else {
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
+                    lt_evplus<int> > (a,b,c);
+
+            case edge_type::LONG:
+                return new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
+                    lt_evplus<long> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+    // shouldn't get here
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                        LE_factory class                        *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::LE_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::LE_factory::setup()
+{
+    _setup(__FILE__, "LESS_THAN_EQUAL", "Element-wise <=. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::LE_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (a->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new compare_mt<le_mt<float> > (a,b,c);
+        } else {
+            return new compare_mt<le_mt<long> > (a,b,c);
+        }
+    }
+
+    if (a->isEVTimes()) {
+        switch (a->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new compare_ev<EdgeOp_times<float>,
+                    evstar_factor<float>, le_evstar<float> > (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new compare_ev<EdgeOp_times<double>,
+                    evstar_factor<double>, le_evstar<double> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    } else {
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
+                    le_evplus<int> > (a,b,c);
+
+            case edge_type::LONG:
+                return new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
+                    le_evplus<long> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+    // shouldn't get here
+    return nullptr;
+}
+
+#if 0
 
 // ******************************************************************
 // *                             EQUAL                              *
@@ -1931,5 +2315,51 @@ void MEDDLY::LESS_THAN_EQUAL_init()
 void MEDDLY::LESS_THAN_EQUAL_done()
 {
     MEDDLY_DCASSERT(LE_cache.isEmpty());
+}
+
+#endif
+
+// ******************************************************************
+// *                                                                *
+// *                                                                *
+// *                           Front ends                           *
+// *                                                                *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_factory& MEDDLY::EQUAL()
+{
+    static EQUAL_factory F;
+    return F;
+}
+
+MEDDLY::binary_factory& MEDDLY::NOT_EQUAL()
+{
+    static NEQ_factory F;
+    return F;
+}
+
+MEDDLY::binary_factory& MEDDLY::GREATER_THAN()
+{
+    static GT_factory F;
+    return F;
+}
+
+MEDDLY::binary_factory& MEDDLY::GREATER_THAN_EQUAL()
+{
+    static GE_factory F;
+    return F;
+}
+
+MEDDLY::binary_factory& MEDDLY::LESS_THAN()
+{
+    static LT_factory F;
+    return F;
+}
+
+MEDDLY::binary_factory& MEDDLY::LESS_THAN_EQUAL()
+{
+    static LE_factory F;
+    return F;
 }
 

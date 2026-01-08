@@ -101,25 +101,25 @@ namespace MEDDLY {
     /// Take the remainder of two functions, with range type INTEGER
     binary_factory& MODULO();
 
-    // ======================================================================
-
     /// Compare for equality, two functions with range type INTEGER or REAL
-    binary_operation* EQUAL(forest* a, forest* b, forest* c);
+    binary_factory& EQUAL();
 
     /// Compare for inequality, two functions with range type INTEGER or REAL
-    binary_operation* NOT_EQUAL(forest* a, forest* b, forest* c);
+    binary_factory& NOT_EQUAL();
 
     /// Compare for <, two functions with range type INTEGER or REAL
-    binary_operation* LESS_THAN(forest* a, forest* b, forest* c);
+    binary_factory& LESS_THAN();
 
     /// Compare for <=, two functions with range type INTEGER or REAL
-    binary_operation* LESS_THAN_EQUAL(forest* a, forest* b, forest* c);
+    binary_factory& LESS_THAN_EQUAL();
 
     /// Compare for >, two functions with range type INTEGER or REAL
-    binary_operation* GREATER_THAN(forest* a, forest* b, forest* c);
+    binary_factory& GREATER_THAN();
 
     /// Compare for >=, two functions with range type INTEGER or REAL
-    binary_operation* GREATER_THAN_EQUAL(forest* a, forest* b, forest* c);
+    binary_factory& GREATER_THAN_EQUAL();
+
+    // ======================================================================
 
     /** Plus operation used to compute transitive closure and further
         minimum witness. The first operand must be an EV+MxD and the second

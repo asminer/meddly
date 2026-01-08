@@ -114,12 +114,18 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     all_binary.push_back( &CROSS()                  );
     all_binary.push_back( &DIFFERENCE()             );
     all_binary.push_back( &DIVIDE()                 );
+    all_binary.push_back( &EQUAL()                  );
+    all_binary.push_back( &GREATER_THAN()           );
+    all_binary.push_back( &GREATER_THAN_EQUAL()     );
     all_binary.push_back( &INTERSECTION()           );
+    all_binary.push_back( &LESS_THAN()              );
+    all_binary.push_back( &LESS_THAN_EQUAL()        );
     all_binary.push_back( &MAXIMUM()                );
     all_binary.push_back( &MINIMUM()                );
     all_binary.push_back( &MINUS()                  );
     all_binary.push_back( &MODULO()                 );
     all_binary.push_back( &MULTIPLY()               );
+    all_binary.push_back( &NOT_EQUAL()              );
     all_binary.push_back( &PLUS()                   );
     all_binary.push_back( &UNION()                  );
 }
@@ -148,12 +154,6 @@ void MEDDLY::builtin_init::setup()
     //
     // Binary ops
     //
-    EQUAL_init();
-    NOT_EQUAL_init();
-    LESS_THAN_init();
-    LESS_THAN_EQUAL_init();
-    GREATER_THAN_init();
-    GREATER_THAN_EQUAL_init();
 
     PRE_PLUS_init();
     POST_PLUS_init();
@@ -199,13 +199,6 @@ void MEDDLY::builtin_init::cleanup()
     //
     // Binary ops
     //
-    EQUAL_done();
-    NOT_EQUAL_done();
-    LESS_THAN_done();
-    LESS_THAN_EQUAL_done();
-    GREATER_THAN_done();
-    GREATER_THAN_EQUAL_done();
-
     PRE_PLUS_done();
     POST_PLUS_done();
     PRE_IMAGE_done();

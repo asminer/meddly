@@ -19,52 +19,14 @@
 #ifndef MEDDLY_COMPARE_H
 #define MEDDLY_COMPARE_H
 
-#include "../oper.h"
-
 namespace MEDDLY {
-    class binary_operation;
-
-    //
-    // Builder for 'equal' operations.
-    //
-    binary_operation* EQUAL(forest* a, forest* b, forest* c);
-    void EQUAL_init();
-    void EQUAL_done();
-
-    //
-    // The 'not equal' operation builder.
-    //
-    binary_operation* NOT_EQUAL(forest* a, forest* b, forest* c);
-    void NOT_EQUAL_init();
-    void NOT_EQUAL_done();
-
-    //
-    // The 'greater than' operation builder.
-    //
-    binary_operation* GREATER_THAN(forest* a, forest* b, forest* c);
-    void GREATER_THAN_init();
-    void GREATER_THAN_done();
-
-    //
-    // The 'greater or equal' operation builder.
-    //
-    binary_operation* GREATER_THAN_EQUAL(forest* a, forest* b, forest* c);
-    void GREATER_THAN_EQUAL_init();
-    void GREATER_THAN_EQUAL_done();
-
-    //
-    // The 'less than' operation builder.
-    //
-    binary_operation* LESS_THAN(forest* a, forest* b, forest* c);
-    void LESS_THAN_init();
-    void LESS_THAN_done();
-
-    //
-    // The 'less or equal' operation builder.
-    //
-    binary_operation* LESS_THAN_EQUAL(forest* a, forest* b, forest* c);
-    void LESS_THAN_EQUAL_init();
-    void LESS_THAN_EQUAL_done();
+    class binary_factory;
+    binary_factory& EQUAL();
+    binary_factory& NOT_EQUAL();
+    binary_factory& GREATER_THAN();
+    binary_factory& GREATER_THAN_EQUAL();
+    binary_factory& LESS_THAN();
+    binary_factory& LESS_THAN_EQUAL();
 };
 
 #endif
