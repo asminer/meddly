@@ -19,20 +19,9 @@
 #ifndef MEDDLY_ARITH_PLUS_H
 #define MEDDLY_ARITH_PLUS_H
 
-#include "../oper.h"
-
-/*
- * Code for element-wise arithmetic and like operations.
- */
-
 namespace MEDDLY {
-    class forest;
-    class binary_operation;
-
-    /// The 'plus' operation builder.
-    binary_operation* PLUS(forest* a, forest* b, forest* c);
-    void PLUS_init();
-    void PLUS_done();
+    class binary_factory;
+    binary_factory& PLUS();
 }
 
 #endif

@@ -37,7 +37,7 @@
 // Operation instance cache
 //
 namespace MEDDLY {
-    binary_list PLUS_cache;
+    class PLUS_factory;
 };
 
 
@@ -264,7 +264,7 @@ namespace MEDDLY {
 // *                         PLUS front end                         *
 // *                                                                *
 // ******************************************************************
-
+/*
 MEDDLY::binary_operation* MEDDLY::PLUS(forest* a, forest* b, forest* c)
 {
     if (!a || !b || !c) return nullptr;
@@ -332,5 +332,84 @@ void MEDDLY::PLUS_init()
 void MEDDLY::PLUS_done()
 {
     MEDDLY_DCASSERT(PLUS_cache.isEmpty());
+}
+*/
+// ******************************************************************
+// *                                                                *
+// *                       PLUS_factory class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::PLUS_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::PLUS_factory::setup()
+{
+    _setup(__FILE__, "PLUS", "Addition. Forest ranges must be integer or real. Forests should be all MT, EV+, or EV*, over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::PLUS_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (c->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new arith_compat<EdgeOp_none, mt_plus<float> > (a,b,c);
+        } else {
+            return new arith_compat<EdgeOp_none, mt_plus<long> > (a,b,c);
+        }
+    }
+
+    if (c->isEVPlus()) {
+        switch (c->getEdgeType()) {
+            case edge_type::INT:
+                return new arith_compat<EdgeOp_plus<int>, evplus_plus<int> >
+                        (a,b,c);
+
+            case edge_type::LONG:
+                return new arith_compat<EdgeOp_plus<long>, evplus_plus<long> >
+                        (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+
+    if (c->isEVTimes()) {
+        switch (c->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new arith_factor<EdgeOp_times<float>, evstar_plus<float> >
+                        (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new arith_factor<EdgeOp_times<double>, evstar_plus<double> >
+                        (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_factory& MEDDLY::PLUS()
+{
+    static PLUS_factory F;
+    return F;
 }
 

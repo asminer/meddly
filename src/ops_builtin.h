@@ -86,14 +86,14 @@ namespace MEDDLY {
     /// The minimum of two functions, with range_type INTEGER or REAL
     binary_factory& MINIMUM();
 
-    // ======================================================================
-
-
     /// Add two functions, with range type INTEGER and REAL
-    binary_operation* PLUS(forest* a, forest* b, forest* c);
+    binary_factory& PLUS();
 
     /// Subtract two functions, with range type INTEGER and REAL
-    binary_operation* MINUS(forest* a, forest* b, forest* c);
+    binary_factory& MINUS();
+
+    // ======================================================================
+
 
     /// Multiply two functions, with range type INTEGER and REAL
     binary_operation* MULTIPLY(forest* a, forest* b, forest* c);

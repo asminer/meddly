@@ -585,7 +585,7 @@ namespace MEDDLY {
         /// Get the accumulate operation for result nodes.
         inline static binary_operation* accumulateOp(forest* resF)
         {
-            return PLUS(resF, resF, resF);
+            return build(PLUS, resF, resF, resF);
         }
 
         /// Apply the operation when b is a terminal node.
