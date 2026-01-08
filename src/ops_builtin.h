@@ -98,11 +98,10 @@ namespace MEDDLY {
     /// Divide two functions, with range type INTEGER and REAL
     binary_factory& DIVIDE();
 
-    // ======================================================================
-
-
     /// Take the remainder of two functions, with range type INTEGER
-    binary_operation* MODULO(forest* a, forest* b, forest* c);
+    binary_factory& MODULO();
+
+    // ======================================================================
 
     /// Compare for equality, two functions with range type INTEGER or REAL
     binary_operation* EQUAL(forest* a, forest* b, forest* c);

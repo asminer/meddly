@@ -118,6 +118,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     all_binary.push_back( &MAXIMUM()                );
     all_binary.push_back( &MINIMUM()                );
     all_binary.push_back( &MINUS()                  );
+    all_binary.push_back( &MODULO()                 );
     all_binary.push_back( &MULTIPLY()               );
     all_binary.push_back( &PLUS()                   );
     all_binary.push_back( &UNION()                  );
@@ -147,8 +148,6 @@ void MEDDLY::builtin_init::setup()
     //
     // Binary ops
     //
-    MODULO_init();
-
     EQUAL_init();
     NOT_EQUAL_init();
     LESS_THAN_init();
@@ -200,8 +199,6 @@ void MEDDLY::builtin_init::cleanup()
     //
     // Binary ops
     //
-    MODULO_done();
-
     EQUAL_done();
     NOT_EQUAL_done();
     LESS_THAN_done();

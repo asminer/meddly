@@ -33,11 +33,8 @@
 
 #include "arith_templ.h"
 
-//
-// Operation instance cache
-//
 namespace MEDDLY {
-    binary_list MOD_cache;
+    class MOD_factory;
 };
 
 
@@ -216,6 +213,7 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
+/*
 MEDDLY::binary_operation* MEDDLY::MODULO(forest* a, forest* b, forest* c)
 {
     if (!a || !b || !c) return nullptr;
@@ -274,5 +272,67 @@ void MEDDLY::MODULO_init()
 void MEDDLY::MODULO_done()
 {
     MEDDLY_DCASSERT(MOD_cache.isEmpty());
+}
+*/
+
+// ******************************************************************
+// *                                                                *
+// *                       MOD_factory  class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::MOD_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::MOD_factory::setup()
+{
+    _setup(__FILE__, "MODULO", "Integer modulo. Behavior is undefined for division by zero. Forest ranges must be integer. Forests should be all MT, EV+, or EV*, over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::MOD_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (c->isMultiTerminal()) {
+        if (a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL )
+        {
+            return nullptr;
+        }
+        return new arith_compat<EdgeOp_none, mt_mod<long> > (a,b,c);
+    }
+
+    if (c->isEVPlus()) {
+        switch (c->getEdgeType()) {
+            case edge_type::INT:
+                return new arith_pushdn<EdgeOp_plus<int>, evplus_mod<int> >
+                        (a,b,c);
+
+            case edge_type::LONG:
+                return new arith_pushdn<EdgeOp_plus<long>, evplus_mod<long> >
+                        (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_factory& MEDDLY::MODULO()
+{
+    static MOD_factory F;
+    return F;
 }
 

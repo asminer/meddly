@@ -20,13 +20,8 @@
 #define MEDDLY_ARITH_MOD_H
 
 namespace MEDDLY {
-    class forest;
-    class binary_operation;
-
-    /// The 'modulo' operation builder.
-    binary_operation* MODULO(forest* a, forest* b, forest* c);
-    void MODULO_init();
-    void MODULO_done();
+    class binary_factory;
+    binary_factory& MODULO();
 }
 
 #endif
