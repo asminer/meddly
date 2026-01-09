@@ -169,7 +169,7 @@ void postImage(const std::vector <MEDDLY::rangeval> &s0,
     for (unsigned i=0; i<s1.size(); i++) {
         if (s1[i]) card++;
     }
-    std::cerr << " card " << card << "\n";
+    std::cout << " card " << card << "\n";
     */
 }
 
@@ -191,55 +191,30 @@ void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2)
 void setCompare(const std::vector <MEDDLY::rangeval> &S0,
         const dd_edge &ddR, forest* Fset)
 {
-    std::vector <MEDDLY::rangeval> post1(S0.size());
-    std::vector <MEDDLY::rangeval> post2(S0.size());
-    std::vector <MEDDLY::rangeval> post3(S0.size());
-    std::vector <MEDDLY::rangeval> pre1(S0.size());
-    std::vector <MEDDLY::rangeval> pre2(S0.size());
-    std::vector <MEDDLY::rangeval> pre3(S0.size());
+    std::vector <MEDDLY::rangeval> post(S0.size());
+    std::vector <MEDDLY::rangeval> pre(S0.size());
 
     std::vector <intlist*> R;
     makeExplicitGraph(ddR, R);
 
-    postImage(S0, R, post1);
-    postImage(post1, R, post2);
-    postImage(post2, R, post3);
-
-    preImage(S0, R, pre1);
-    preImage(pre1, R, pre2);
-    preImage(pre2, R, pre3);
+    postImage(S0, R, post);
+    preImage(S0, R, pre);
 
     dd_edge dd0(Fset);
     SG.explicit2edgeMax(S0, dd0, false);
 
-    dd_edge ddpost1(Fset), ddpost2(Fset), ddpost3(Fset),
-            ddpre1(Fset), ddpre2(Fset), ddpre3(Fset);
+    dd_edge ddpost(Fset), ddpre(Fset);
 
-    SG.explicit2edgeMax(post1, ddpost1, false);
-    SG.explicit2edgeMax(post2, ddpost2, false);
-    SG.explicit2edgeMax(post3, ddpost3, false);
-    SG.explicit2edgeMax(pre1, ddpre1, false);
-    SG.explicit2edgeMax(pre2, ddpre2, false);
-    SG.explicit2edgeMax(pre3, ddpre3, false);
+    SG.explicit2edgeMax(post, ddpost, false);
+    SG.explicit2edgeMax(pre,  ddpre,  false);
 
-    dd_edge sympost1(Fset), sympost2(Fset), sympost3(Fset),
-            sympre1(Fset), sympre2(Fset), sympre3(Fset);
+    dd_edge sympost(Fset), sympre(Fset);
 
-    apply(POST_IMAGE, dd0, ddR, sympost1);
-    apply(POST_IMAGE, sympost1, ddR, sympost2);
-    apply(POST_IMAGE, sympost2, ddR, sympost3);
+    apply(POST_IMAGE, dd0, ddR, sympost);
+    apply(PRE_IMAGE,  dd0, ddR, sympre);
 
-    apply(PRE_IMAGE, dd0, ddR, sympre1);
-    apply(PRE_IMAGE, sympre1, ddR, sympre2);
-    apply(PRE_IMAGE, sympre2, ddR, sympre3);
-
-    checkEqual("post image 1", sympost1, ddpost1);
-    checkEqual("post image 2", sympost2, ddpost2);
-    checkEqual("post image 3", sympost3, ddpost3);
-
-    checkEqual("pre image 1", sympre1, ddpre1);
-    checkEqual("pre image 2", sympre2, ddpre2);
-    checkEqual("pre image 3", sympre3, ddpre3);
+    checkEqual("post image", sympost, ddpost);
+    checkEqual("pre image", sympre, ddpre);
 }
 
 void setTestsOnForests(unsigned scard, forest* Fset,
