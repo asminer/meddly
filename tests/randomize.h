@@ -207,7 +207,7 @@ class vectorgen {
         ///
         template <typename TYPE>
         void randomizeVector(std::vector <TYPE> &elems, unsigned card,
-                const std::vector <TYPE> &values)
+                const std::vector <TYPE> &values, TYPE deflt = 0)
         {
             if (elems.size() != potential()) {
                 throw "vector size mismatch in randomizeVector";
@@ -218,7 +218,7 @@ class vectorgen {
                     elems[i] = values[v];
                     v = (v+1) % values.size();
                 } else {
-                    elems[i] = 0;
+                    elems[i] = deflt;
                 }
             }
             //
@@ -246,13 +246,13 @@ class vectorgen {
         ///
         template <typename TYPE>
         void randomizeFully(std::vector <TYPE> &elems, unsigned card,
-                const std::vector <TYPE> &values)
+                const std::vector <TYPE> &values, TYPE deflt = 0)
         {
             if (elems.size() != potential()) {
                 throw "vector size mismatch in randomizeFully";
             }
             for (unsigned i=0; i<elems.size(); i++) {
-                elems[i] = 0;
+                elems[i] = deflt;
             }
             unsigned v=0;
             for (unsigned i=0; i<card; i++) {
@@ -281,13 +281,13 @@ class vectorgen {
         ///
         template <typename TYPE>
         void randomizeIdentity(std::vector <TYPE> &elems, unsigned card,
-                const std::vector <TYPE> &values)
+                const std::vector <TYPE> &values, TYPE deflt = 0)
         {
             if (elems.size() != potential()) {
                 throw "vector size mismatch in randomizeIdentity";
             }
             for (unsigned i=0; i<elems.size(); i++) {
-                elems[i] = 0;
+                elems[i] = deflt;
             }
             unsigned v=0;
             for (unsigned i=0; i<card; i++) {

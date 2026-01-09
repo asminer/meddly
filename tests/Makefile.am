@@ -33,8 +33,8 @@ noinst_PROGRAMS = \
     ops_divmod \
     ops_maxmin \
     ops_mult \
-    ops_prepost \
     ops_plusminus \
+    ops_prepost \
     ops_set \
     refcount \
     sat_test \
@@ -121,11 +121,16 @@ TESTS = \
     ops_plusminus.--rel.--EVp.--long._sh \
     ops_plusminus.--rel.--EVs.--float._sh \
     \
+    ops_prepost.--set.--MTb.--inF.--relI._sh \
+    ops_prepost.--set.--MTb.--inF.--relQ._sh \
+    \
     ops_set.--set._sh \
     ops_set.--rel._sh \
     \
     refcount \
     sat_test
+
+# TBD: more prepost tests
 
 AM_CXXFLAGS = -Wall
 
