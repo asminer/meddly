@@ -57,14 +57,9 @@ namespace MEDDLY {
 #include "operations/arith_mod.h"
 
 #include "operations/cross.h"
-// #include "operations/maxmin.h"
-// #include "operations/plus.h"
-// #include "operations/minus.h"
-// #include "operations/multiply.h"
-// #include "operations/divide.h"
-// #include "operations/modulo.h"
 #include "operations/prepostplus.h"
-#include "operations/prepostimage.h"
+#include "operations/prepost_sets.h"
+#include "operations/prepost_rels.h"
 #include "operations/vect_matr.h"
 #include "operations/mm_mult.h"
 //

@@ -17,7 +17,7 @@
 */
 
 #include "../defines.h"
-#include "prepostimage.h"
+#include "prepost_sets.h"
 
 #include "../ops_builtin.h"
 #include "../ct_vector.h"
@@ -44,9 +44,9 @@ namespace MEDDLY {
     class image_op_evplus;
     class relXset_evplus;
     class setXrel_evplus;
-    class tcXrel_evplus;
+    // class tcXrel_evplus;
 
-    binary_list TC_POST_IMAGE_cache;
+    // binary_list TC_POST_IMAGE_cache;
     binary_list VM_MULTIPLY_cache;
     binary_list MV_MULTIPLY_cache;
 };
@@ -1100,6 +1100,7 @@ namespace MEDDLY {
     Changing what happens at the terminals can give
     different meanings to this operation :^)
 */
+/*
 class MEDDLY::tcXrel_evplus : public image_op_evplus {
   public:
     tcXrel_evplus(binary_list& opcode, forest* tc,
@@ -1274,7 +1275,7 @@ void MEDDLY::tcXrel_evplus::processTerminals(long ev, node_handle evmxd, node_ha
   resEv = ev;
   resEvmxd = resF->handleForValue(rval);
 }
-
+*/
 // ******************************************************************
 // ******************************************************************
 
@@ -1363,6 +1364,7 @@ MEDDLY::binary_factory& MEDDLY::POST_IMAGE()
 
 // ******************************************************************
 
+/*
 MEDDLY::binary_operation* MEDDLY::TC_POST_IMAGE(forest* a, forest* b, forest* c)
 {
     if (!a || !b || !c) return nullptr;
@@ -1384,6 +1386,7 @@ void MEDDLY::TC_POST_IMAGE_done()
 {
     MEDDLY_DCASSERT(TC_POST_IMAGE_cache.isEmpty());
 }
+*/
 
 // ******************************************************************
 

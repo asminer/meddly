@@ -119,7 +119,8 @@ libmeddly_la_SOURCES = \
     operations/maxmin_range.h           operations/maxmin_range.cc \
     operations/mdd2index.h              operations/mdd2index.cc    \
     operations/mm_mult.h                operations/mm_mult.cc      \
-    operations/prepostimage.h           operations/prepostimage.cc \
+    operations/prepost_rels.h           operations/prepost_rels.cc \
+    operations/prepost_sets.h           operations/prepost_sets.cc \
     operations/prepostplus.h            operations/prepostplus.cc  \
     operations/reach_bfs.h              operations/reach_bfs.cc    \
     operations/reach_dfs.h              operations/reach_dfs.cc    \

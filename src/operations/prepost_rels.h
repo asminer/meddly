@@ -16,16 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEDDLY_PREPOSTIMAGE_H
-#define MEDDLY_PREPOSTIMAGE_H
+#ifndef MEDDLY_PREPOST_RELS_H
+#define MEDDLY_PREPOST_RELS_H
 
 namespace MEDDLY {
-    class binary_factory;
-    binary_factory& PRE_IMAGE();
-    binary_factory& POST_IMAGE();
-
-    // TBD below here
-
     class forest;
     class binary_operation;
 
@@ -33,16 +27,6 @@ namespace MEDDLY {
     binary_operation* TC_POST_IMAGE(forest* a, forest* b, forest* c);
     void TC_POST_IMAGE_init();
     void TC_POST_IMAGE_done();
-
-    /// The 'vector matrix multiplication' operation builder.
-    binary_operation* VM_MULTIPLY(forest* a, forest* b, forest* c);
-    void VM_MULTIPLY_init();
-    void VM_MULTIPLY_done();
-
-    /// The 'matrix vector multiplication' operation builder.
-    binary_operation* MV_MULTIPLY(forest* a, forest* b, forest* c);
-    void MV_MULTIPLY_init();
-    void MV_MULTIPLY_done();
 }
 
 #endif
