@@ -44,6 +44,15 @@ const unsigned MULT_REL_CARD = 4;
 
 using namespace MEDDLY;
 
+// Forest type, set in main()
+//
+//  'b' : multi terminal, boolean
+//  'i' : multi terminal, integer
+//  'p' : EV+, integer
+//
+char ftype;
+MEDDLY::rangeval unreachable;
+
 void usage(const char* arg0)
 {
     /* Strip leading directory, if any: */
@@ -120,7 +129,22 @@ void showExplicitGraph(const std::vector <intlist*> &elist)
     }
 }
 
-void preImage(const std::vector <MEDDLY::rangeval> &s0,
+inline void dist_update(MEDDLY::rangeval &x, long d)
+{
+    if (x.isPlusInfinity()) {
+        x = d;
+        return;
+    }
+    if (long(x) < 0) {
+        x = d;
+        return;
+    }
+    if (d < long(x)) {
+        x = d;
+    }
+}
+
+void preImage_b(const std::vector <MEDDLY::rangeval> &s0,
         const std::vector <intlist*> &E, std::vector <MEDDLY::rangeval> &s1)
 {
     if (s0.size() != E.size()) {
@@ -130,7 +154,7 @@ void preImage(const std::vector <MEDDLY::rangeval> &s0,
         throw "preImage size mismatch s1, E";
     }
     for (unsigned i=0; i<s1.size(); i++) {
-        s1[i] = false;
+        s1[i] = unreachable;
     }
     for (unsigned i=0; i<E.size(); i++) {
         const intlist* curr = E[i];
@@ -144,7 +168,31 @@ void preImage(const std::vector <MEDDLY::rangeval> &s0,
     }
 }
 
-void postImage(const std::vector <MEDDLY::rangeval> &s0,
+void preImage_i(const std::vector <MEDDLY::rangeval> &s0,
+        const std::vector <intlist*> &E, std::vector <MEDDLY::rangeval> &s1)
+{
+    if (s0.size() != E.size()) {
+        throw "preImage size mismatch s0, E";
+    }
+    if (s1.size() != E.size()) {
+        throw "preImage size mismatch s1, E";
+    }
+    for (unsigned i=0; i<s1.size(); i++) {
+        s1[i] = unreachable;
+    }
+
+    for (unsigned i=0; i<E.size(); i++) {
+        const intlist* curr = E[i];
+        while (curr) {
+            if (s0[curr->index] != unreachable) {
+                dist_update(s1[i], long(s0[curr->index]) + 1);
+            }
+            curr = curr->next;
+        }
+    }
+}
+
+void postImage_b(const std::vector <MEDDLY::rangeval> &s0,
         const std::vector <intlist*> &E, std::vector <MEDDLY::rangeval> &s1)
 {
     if (s0.size() != E.size()) {
@@ -154,7 +202,7 @@ void postImage(const std::vector <MEDDLY::rangeval> &s0,
         throw "postImage size mismatch s1, E";
     }
     for (unsigned i=0; i<s1.size(); i++) {
-        s1[i] = false;
+        s1[i] = unreachable;
     }
     for (unsigned i=0; i<E.size(); i++) {
         if (!s0[i]) continue;
@@ -172,6 +220,37 @@ void postImage(const std::vector <MEDDLY::rangeval> &s0,
     std::cout << " card " << card << "\n";
     */
 }
+
+void postImage_i(const std::vector <MEDDLY::rangeval> &s0,
+        const std::vector <intlist*> &E, std::vector <MEDDLY::rangeval> &s1)
+{
+    if (s0.size() != E.size()) {
+        throw "postImage size mismatch s0, E";
+    }
+    if (s1.size() != E.size()) {
+        throw "postImage size mismatch s1, E";
+    }
+    for (unsigned i=0; i<s1.size(); i++) {
+        s1[i] = unreachable;
+    }
+    for (unsigned i=0; i<E.size(); i++) {
+        if (unreachable == s0[i]) continue;
+        long newdist = long(s0[i]) + 1;
+        const intlist* curr = E[i];
+        while (curr) {
+            dist_update(s1[curr->index], newdist);
+            curr = curr->next;
+        }
+    }
+/*
+    unsigned card = 0;
+    for (unsigned i=0; i<s1.size(); i++) {
+        if (s1[i]) card++;
+    }
+    std::cout << " card " << card << "\n";
+    */
+}
+
 
 void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2)
 {
@@ -197,16 +276,21 @@ void setCompare(const std::vector <MEDDLY::rangeval> &S0,
     std::vector <intlist*> R;
     makeExplicitGraph(ddR, R);
 
-    postImage(S0, R, post);
-    preImage(S0, R, pre);
+    if ('b' == ftype) {
+        postImage_b(S0, R, post);
+        preImage_b(S0, R, pre);
+    } else {
+        postImage_i(S0, R, post);
+        preImage_i(S0, R, pre);
+    }
 
     dd_edge dd0(Fset);
-    SG.explicit2edgeMax(S0, dd0, false);
+    SG.explicit2edgeMax(S0, dd0, unreachable);
 
     dd_edge ddpost(Fset), ddpre(Fset);
 
-    SG.explicit2edgeMax(post, ddpost, false);
-    SG.explicit2edgeMax(pre,  ddpre,  false);
+    SG.explicit2edgeMax(post, ddpost, unreachable);
+    SG.explicit2edgeMax(pre,  ddpre,  unreachable);
 
     dd_edge sympost(Fset), sympre(Fset);
 
@@ -220,25 +304,39 @@ void setCompare(const std::vector <MEDDLY::rangeval> &S0,
 void setTestsOnForests(unsigned scard, forest* Fset,
         unsigned rcard, forest* Frel)
 {
-    if (!Fset)  throw "null Fset";
+    if (!Fset) throw "null Fset";
     if (!Frel) throw "null frel";
 
     std::vector <MEDDLY::rangeval> expset(SG.potential());
     std::vector <MEDDLY::rangeval> exprel(RG.potential());
     dd_edge Rel(Frel);
 
-    std::vector <MEDDLY::rangeval> values(2);
-    values[0] = false;
-    values[1] = true;
+    std::vector <MEDDLY::rangeval> rgvals(2);
+    rgvals[0] = false;
+    rgvals[1] = true;
 
-    const unsigned N = 10;
+    std::vector <MEDDLY::rangeval> values;
+
+    if (Fset->isRangeType(MEDDLY::range_type::BOOLEAN)) {
+        values.resize(2);
+        values[0] = false;
+        values[1] = true;
+    } else {
+        values.resize(4);
+        values[0] = unreachable;
+        values[1] =  0;
+        values[2] =  1;
+        values[3] =  2;
+    }
+
+    const unsigned N = 8;
 
     std::cerr << "    " << std::setw(5) << scard << " x "
               << std::setw(5) << rcard << " ";
 
     for (unsigned i=0; i<N; i++) {
         std::cerr << '.';
-        RG.randomizeVector(exprel, rcard, values);
+        RG.randomizeVector(exprel, rcard, rgvals);
         RG.explicit2edgeMax(exprel, Rel, false);
 
         SG.randomizeVector(expset, scard, values);
@@ -249,7 +347,7 @@ void setTestsOnForests(unsigned scard, forest* Fset,
     }
     for (unsigned i=0; i<N; i++) {
         std::cerr << "x";
-        RG.randomizeFully(exprel, rcard, values);
+        RG.randomizeFully(exprel, rcard, rgvals);
         RG.explicit2edgeMax(exprel, Rel, false);
 
         SG.randomizeVector(expset, scard, values);
@@ -260,7 +358,7 @@ void setTestsOnForests(unsigned scard, forest* Fset,
     }
     for (unsigned i=0; i<N; i++) {
         std::cerr << "i";
-        RG.randomizeIdentity(exprel, rcard, values);
+        RG.randomizeIdentity(exprel, rcard, rgvals);
         RG.explicit2edgeMax(exprel, Rel, false);
 
         SG.randomizeVector(expset, scard, values);
@@ -315,7 +413,7 @@ int main(int argc, const char** argv)
     long seed = 0;
     char setred = 'F';
     char relred = 'I';
-    bool isBoolean = true;
+    ftype = 'b';
     edge_labeling EL = edge_labeling::MULTI_TERMINAL;
     range_type    RT = range_type::BOOLEAN;
 
@@ -359,19 +457,19 @@ int main(int argc, const char** argv)
         if (0==strcmp("--MTb", argv[i])) {
             EL = edge_labeling::MULTI_TERMINAL;
             RT = range_type::BOOLEAN;
-            isBoolean = true;
+            ftype = 'b';
             continue;
         }
         if (0==strcmp("--MTi", argv[i])) {
             EL = edge_labeling::MULTI_TERMINAL;
             RT = range_type::INTEGER;
-            isBoolean = false;
+            ftype = 'i';
             continue;
         }
         if (0==strcmp("--EVp", argv[i])) {
             EL = edge_labeling::EVPLUS;
             RT = range_type::INTEGER;
-            isBoolean = false;
+            ftype = 'p';
             continue;
         }
 
@@ -382,6 +480,23 @@ int main(int argc, const char** argv)
         seed = atol(argv[i]);
     }
     vectorgen::setSeed(seed);
+
+    /*
+     * Full unreachable value
+     */
+    switch (ftype) {
+        case 'p':
+            unreachable = MEDDLY::rangeval(MEDDLY::range_special::PLUS_INFINITY,
+                            MEDDLY::range_type::INTEGER);
+            break;
+
+        case 'i':
+            unreachable = -1;
+            break;
+
+        default:
+            unreachable = false;
+    }
 
     /*
      * Run requested test

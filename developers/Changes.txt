@@ -3,9 +3,6 @@ Implement next, using new rel_node interface:
 
     * pre/post image on distances and test
 
-    * move pre/post image on relations (transitive closure)
-        to new sources, maybe prepost_trans?
-
     * vect/matr and matr/vect multiplication tests
         (now within pre/post image)
 
