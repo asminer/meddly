@@ -120,8 +120,8 @@ void showExplicitGraph(const std::vector <intlist*> &elist)
     }
 }
 
-void preImage(const std::vector <bool> &s0,
-        const std::vector <intlist*> &E, std::vector <bool> &s1)
+void preImage(const std::vector <MEDDLY::rangeval> &s0,
+        const std::vector <intlist*> &E, std::vector <MEDDLY::rangeval> &s1)
 {
     if (s0.size() != E.size()) {
         throw "preImage size mismatch s0, E";
@@ -144,8 +144,8 @@ void preImage(const std::vector <bool> &s0,
     }
 }
 
-void postImage(const std::vector <bool> &s0,
-        const std::vector <intlist*> &E, std::vector <bool> &s1)
+void postImage(const std::vector <MEDDLY::rangeval> &s0,
+        const std::vector <intlist*> &E, std::vector <MEDDLY::rangeval> &s1)
 {
     if (s0.size() != E.size()) {
         throw "postImage size mismatch s0, E";
@@ -188,14 +188,15 @@ void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2)
     throw "mismatch";
 }
 
-void setCompare(const std::vector <bool> &S0, const dd_edge &ddR, forest* Fset)
+void setCompare(const std::vector <MEDDLY::rangeval> &S0,
+        const dd_edge &ddR, forest* Fset)
 {
-    std::vector <bool> post1(S0.size());
-    std::vector <bool> post2(S0.size());
-    std::vector <bool> post3(S0.size());
-    std::vector <bool> pre1(S0.size());
-    std::vector <bool> pre2(S0.size());
-    std::vector <bool> pre3(S0.size());
+    std::vector <MEDDLY::rangeval> post1(S0.size());
+    std::vector <MEDDLY::rangeval> post2(S0.size());
+    std::vector <MEDDLY::rangeval> post3(S0.size());
+    std::vector <MEDDLY::rangeval> pre1(S0.size());
+    std::vector <MEDDLY::rangeval> pre2(S0.size());
+    std::vector <MEDDLY::rangeval> pre3(S0.size());
 
     std::vector <intlist*> R;
     makeExplicitGraph(ddR, R);
@@ -209,17 +210,17 @@ void setCompare(const std::vector <bool> &S0, const dd_edge &ddR, forest* Fset)
     preImage(pre2, R, pre3);
 
     dd_edge dd0(Fset);
-    SG.explicit2edge(S0, dd0);
+    SG.explicit2edgeMax(S0, dd0, false);
 
     dd_edge ddpost1(Fset), ddpost2(Fset), ddpost3(Fset),
             ddpre1(Fset), ddpre2(Fset), ddpre3(Fset);
 
-    SG.explicit2edge(post1, ddpost1);
-    SG.explicit2edge(post2, ddpost2);
-    SG.explicit2edge(post3, ddpost3);
-    SG.explicit2edge(pre1, ddpre1);
-    SG.explicit2edge(pre2, ddpre2);
-    SG.explicit2edge(pre3, ddpre3);
+    SG.explicit2edgeMax(post1, ddpost1, false);
+    SG.explicit2edgeMax(post2, ddpost2, false);
+    SG.explicit2edgeMax(post3, ddpost3, false);
+    SG.explicit2edgeMax(pre1, ddpre1, false);
+    SG.explicit2edgeMax(pre2, ddpre2, false);
+    SG.explicit2edgeMax(pre3, ddpre3, false);
 
     dd_edge sympost1(Fset), sympost2(Fset), sympost3(Fset),
             sympre1(Fset), sympre2(Fset), sympre3(Fset);
@@ -247,12 +248,13 @@ void setTestsOnForests(unsigned scard, forest* Fset,
     if (!Fset)  throw "null Fset";
     if (!Frel) throw "null frel";
 
-    std::vector <bool> expset(SG.potential());
-    std::vector <bool> exprel(RG.potential());
+    std::vector <MEDDLY::rangeval> expset(SG.potential());
+    std::vector <MEDDLY::rangeval> exprel(RG.potential());
     dd_edge Rel(Frel);
 
-    std::vector <bool> values(1);
-    values[0] = true;
+    std::vector <MEDDLY::rangeval> values(2);
+    values[0] = false;
+    values[1] = true;
 
     const unsigned N = 10;
 
@@ -262,7 +264,7 @@ void setTestsOnForests(unsigned scard, forest* Fset,
     for (unsigned i=0; i<N; i++) {
         std::cerr << '.';
         RG.randomizeVector(exprel, rcard, values);
-        RG.explicit2edge(exprel, Rel);
+        RG.explicit2edgeMax(exprel, Rel, false);
 
         SG.randomizeVector(expset, scard, values);
         setCompare(expset, Rel, Fset);
@@ -273,7 +275,7 @@ void setTestsOnForests(unsigned scard, forest* Fset,
     for (unsigned i=0; i<N; i++) {
         std::cerr << "x";
         RG.randomizeFully(exprel, rcard, values);
-        RG.explicit2edge(exprel, Rel);
+        RG.explicit2edgeMax(exprel, Rel, false);
 
         SG.randomizeVector(expset, scard, values);
         setCompare(expset, Rel, Fset);
@@ -284,7 +286,7 @@ void setTestsOnForests(unsigned scard, forest* Fset,
     for (unsigned i=0; i<N; i++) {
         std::cerr << "i";
         RG.randomizeIdentity(exprel, rcard, values);
-        RG.explicit2edge(exprel, Rel);
+        RG.explicit2edgeMax(exprel, Rel, false);
 
         SG.randomizeVector(expset, scard, values);
         setCompare(expset, Rel, Fset);

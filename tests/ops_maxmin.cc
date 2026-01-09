@@ -48,8 +48,9 @@ using namespace MEDDLY;
 // #define DEBUG_MXDOPS
 
 template <typename T>
-void Max(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<T> &C)
+void Max(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector<MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "Max size mismatch A,B";
@@ -58,13 +59,14 @@ void Max(const std::vector <T> &A, const std::vector <T> &B,
         throw "Max size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = MAX(A[i], B[i]);
+        C[i] = MAX(T(A[i]), T(B[i]));
     }
 }
 
 template <typename T>
-void Min(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<T> &C)
+void Min(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector<MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "Min size mismatch A,B";
@@ -73,7 +75,7 @@ void Min(const std::vector <T> &A, const std::vector <T> &B,
         throw "Min size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = MIN(A[i], B[i]);
+        C[i] = MIN(T(A[i]), T(B[i]));
     }
 }
 
@@ -84,9 +86,8 @@ inline const char* getReductionString(const dd_edge &e)
     return shortNameOf(f->getReductionRule());
 }
 
-template <typename T>
 void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
-        const dd_edge &e1, const dd_edge &e2, const std::vector<T> &set)
+        const dd_edge &e1, const dd_edge &e2)
 {
     if (e1 == e2) return;
 
@@ -108,32 +109,33 @@ void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
 
 template <typename T>
 void compare(vectorgen &Gen,
-        const std::vector <T> &Aset, const std::vector <T> &Bset,
+        const std::vector <MEDDLY::rangeval> &Aset,
+        const std::vector <MEDDLY::rangeval> &Bset,
         forest* f1, forest* f2, forest* fres)
 {
     const unsigned POTENTIAL = Gen.potential();
 
-    std::vector <T> AmaxBset(POTENTIAL);
-    std::vector <T> AminBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AmaxBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AminBset(POTENTIAL);
 
     dd_edge Add(f1), Bdd(f2),
             AmaxBdd(fres), AminBdd(fres);
 
-    Max(Aset, Bset, AmaxBset);
-    Min(Aset, Bset, AminBset);
+    Max<T>(Aset, Bset, AmaxBset);
+    Min<T>(Aset, Bset, AminBset);
 
-    Gen.explicit2edge(Aset, Add);
-    Gen.explicit2edge(Bset, Bdd);
-    Gen.explicit2edge(AmaxBset, AmaxBdd);
-    Gen.explicit2edge(AminBset, AminBdd);
+    Gen.explicit2edgeMax(Aset, Add, T(0));
+    Gen.explicit2edgeMax(Bset, Bdd, T(0));
+    Gen.explicit2edgeMax(AmaxBset, AmaxBdd, T(0));
+    Gen.explicit2edgeMax(AminBset, AminBdd, T(0));
 
     dd_edge AmaxBsym(fres), AminBsym(fres);
 
     apply(MAXIMUM, Add, Bdd, AmaxBsym);
-    checkEqual("max", Add, Bdd, AmaxBsym, AmaxBdd, AmaxBset);
+    checkEqual("max", Add, Bdd, AmaxBsym, AmaxBdd);
 
     apply(MINIMUM, Add, Bdd, AminBsym);
-    checkEqual("min", Add, Bdd, AminBsym, AminBdd, AminBset);
+    checkEqual("min", Add, Bdd, AminBsym, AminBdd);
 }
 
 template <typename TYPE>
@@ -149,28 +151,29 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
               << ' ' << shortNameOf(f2->getReductionRule())
               << " : " << shortNameOf(fres->getReductionRule()) << ' ';
 
-    std::vector <TYPE> Aset(Gen.potential());
-    std::vector <TYPE> Bset(Gen.potential());
+    std::vector <MEDDLY::rangeval> Aset(Gen.potential());
+    std::vector <MEDDLY::rangeval> Bset(Gen.potential());
 
-    std::vector <TYPE> values(4);
-    values[0] =  6;
-    values[1] =  4;
-    values[2] =  2;
-    values[3] = -2;
+    std::vector <MEDDLY::rangeval> values(5);
+    values[0] =  TYPE(0);
+    values[1] =  TYPE(6);
+    values[2] =  TYPE(4);
+    values[3] =  TYPE(2);
+    values[4] =  TYPE(-2);
 
     for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
         Gen.randomizeVector(Aset, scard, values);
         Gen.randomizeVector(Bset, scard, values);
 
-        compare(Gen, Aset, Bset, f1, f2, fres);
+        compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
         Gen.randomizeFully(Aset, scard, values);
         Gen.randomizeFully(Bset, scard, values);
 
-        compare(Gen, Aset, Bset, f1, f2, fres);
+        compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
     }
     if (fres->isForRelations()) {
         for (unsigned i=0; i<10; i++) {
@@ -178,7 +181,7 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
             Gen.randomizeIdentity(Aset, scard, values);
             Gen.randomizeIdentity(Bset, scard, values);
 
-            compare(Gen, Aset, Bset, f1, f2, fres);
+            compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
         }
     }
     std::cerr << std::endl;

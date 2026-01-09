@@ -243,6 +243,9 @@ class MEDDLY::rangeval {
                     delta = t.d_value - d_value;
                 }
                 delta /= d_value;
+                if (delta < 0) {
+                    delta = -delta;
+                }
                 return delta < 1e-8;
             } else {
                 //

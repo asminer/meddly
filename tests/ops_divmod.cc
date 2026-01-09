@@ -47,18 +47,19 @@ using namespace MEDDLY;
 // #define DEBUG_MXDOPS
 
 template <typename T>
-void RemoveZeroes(std::vector <T> &A)
+void RemoveZeroes(std::vector <MEDDLY::rangeval> &A)
 {
     for (unsigned i=0; i<A.size(); i++) {
-        if (0 == A[i]) {
-            A[i] = 1;
+        if (0 == T(A[i])) {
+            A[i] = T(1);
         }
     }
 }
 
 template <typename T>
-void Divide(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<T> &C)
+void Divide(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector<MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "div size mismatch A,B";
@@ -67,16 +68,17 @@ void Divide(const std::vector <T> &A, const std::vector <T> &B,
         throw "div size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        if (0 == B[i]) {
+        if (0 == T(B[i])) {
             throw "division by zero";
         }
-        C[i] = A[i] / B[i];
+        C[i] = T(A[i]) / T(B[i]);
     }
 }
 
 template <typename T>
-void Modulo(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<T> &C)
+void Modulo(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector<MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "mod size mismatch A,B";
@@ -85,10 +87,10 @@ void Modulo(const std::vector <T> &A, const std::vector <T> &B,
         throw "mod size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        if (0 == B[i]) {
+        if (0 == T(B[i])) {
             throw "modulo by zero";
         }
-        C[i] = long(A[i]) % long(B[i]);
+        C[i] = long(T(A[i])) % long(T(B[i]));
     }
 }
 
@@ -98,9 +100,8 @@ inline const char* getReductionString(const dd_edge &e)
     return shortNameOf(f->getReductionRule());
 }
 
-template <typename T>
 void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
-        const dd_edge &e1, const dd_edge &e2, const std::vector<T> &set)
+        const dd_edge &e1, const dd_edge &e2)
 {
     if (e1 == e2) return;
 
@@ -122,35 +123,36 @@ void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
 
 template <typename T>
 void compare(vectorgen &Gen,
-        const std::vector <T> &Aset, const std::vector <T> &Bset,
+        const std::vector <MEDDLY::rangeval> &Aset,
+        const std::vector <MEDDLY::rangeval> &Bset,
         forest* f1, forest* f2, forest* fres)
 {
     const unsigned POTENTIAL = Gen.potential();
 
-    std::vector <T> AdivBset(POTENTIAL);
-    std::vector <T> AmodBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AdivBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AmodBset(POTENTIAL);
 
     dd_edge Add(f1), Bdd(f2),
             AdivBdd(fres), AmodBdd(fres);
 
-    Gen.explicit2edge(Aset, Add);
-    Gen.explicit2edge(Bset, Bdd);
+    Gen.explicit2edgeMax(Aset, Add, T(0));
+    Gen.explicit2edgeMax(Bset, Bdd, T(0));
 
     dd_edge AdivBsym(fres), AmodBsym(fres);
 
-    Divide(Aset, Bset, AdivBset);
-    Gen.explicit2edge(AdivBset, AdivBdd);
+    Divide<T>(Aset, Bset, AdivBset);
+    Gen.explicit2edgeMax(AdivBset, AdivBdd, T(0));
     apply(DIVIDE, Add, Bdd, AdivBsym);
-    checkEqual("divide", Add, Bdd, AdivBsym, AdivBdd, AdivBset);
+    checkEqual("divide", Add, Bdd, AdivBsym, AdivBdd);
 
     if (fres->isRangeType(range_type::REAL)) {
         return;
     }
 
-    Modulo(Aset, Bset, AmodBset);
-    Gen.explicit2edge(AmodBset, AmodBdd);
+    Modulo<T>(Aset, Bset, AmodBset);
+    Gen.explicit2edgeMax(AmodBset, AmodBdd, T(0));
     apply(MODULO, Add, Bdd, AmodBsym);
-    checkEqual("modulo", Add, Bdd, AmodBsym, AmodBdd, AmodBset);
+    checkEqual("modulo", Add, Bdd, AmodBsym, AmodBdd);
 }
 
 template <typename TYPE>
@@ -166,39 +168,40 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
               << ' ' << shortNameOf(f2->getReductionRule())
               << " : " << shortNameOf(fres->getReductionRule()) << ' ';
 
-    std::vector <TYPE> Aset(Gen.potential());
-    std::vector <TYPE> Bset(Gen.potential());
+    std::vector <MEDDLY::rangeval> Aset(Gen.potential());
+    std::vector <MEDDLY::rangeval> Bset(Gen.potential());
 
-    std::vector <TYPE> values(4);
-    values[0] =  6;
-    values[1] =  5;
-    values[2] =  2;
-    values[3] = -2;
+    std::vector <MEDDLY::rangeval> values(5);
+    values[0] =  TYPE(0);
+    values[1] =  TYPE(6);
+    values[2] =  TYPE(5);
+    values[3] =  TYPE(2);
+    values[4] =  TYPE(-2);
 
     for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
         Gen.randomizeVector(Aset, scard, values);
         Gen.randomizeVector(Bset, scard, values);
-        RemoveZeroes(Bset);
+        RemoveZeroes<TYPE>(Bset);
 
-        compare(Gen, Aset, Bset, f1, f2, fres);
+        compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
         Gen.randomizeFully(Aset, scard, values);
         Gen.randomizeFully(Bset, scard, values);
-        RemoveZeroes(Bset);
+        RemoveZeroes<TYPE>(Bset);
 
-        compare(Gen, Aset, Bset, f1, f2, fres);
+        compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
     }
     if (fres->isForRelations()) {
         for (unsigned i=0; i<10; i++) {
             std::cerr << "i";
             Gen.randomizeIdentity(Aset, scard, values);
             Gen.randomizeIdentity(Bset, scard, values);
-            RemoveZeroes(Bset);
+            RemoveZeroes<TYPE>(Bset);
 
-            compare(Gen, Aset, Bset, f1, f2, fres);
+            compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
         }
     }
     std::cerr << std::endl;
