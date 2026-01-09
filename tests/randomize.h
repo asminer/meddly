@@ -254,16 +254,11 @@ class vectorgen {
         void showSet(std::ostream &out,
                 const std::vector <MEDDLY::rangeval> &elems) const;
 
-
         //
         // Display minterms corresponding to an explicit vector
         //
         void showMinterms(std::ostream &out, const MEDDLY::domain* D,
                 const std::vector <MEDDLY::rangeval> &elems) const;
-
-    protected:
-        template <typename TYPE>
-        static void showElem(std::ostream &out, TYPE elem);
 
     private:
         const bool is_for_relations;
