@@ -205,8 +205,8 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
                 continue;
             }
             // match, need to recurse
-            compute_r(k-1, y + yR->edgeval(yp).getLong(), yR->down(yp),
-                        x + xR->edgeval(xp).getLong(), xR->down(xp), a);
+            compute_r(k-1, y + long(yR->edgeval(yp)), yR->down(yp),
+                        x + long(xR->edgeval(xp)), xR->down(xp), a);
             xp++;
             if (xp >= xR->getSize()) break;
             yp++;
@@ -249,7 +249,7 @@ void MEDDLY::VM_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
             continue;
         }
         // match, need to recurse
-        comp_pr(k, y, y_ind, x + xR->edgeval(xp).getLong(),
+        comp_pr(k, y, y_ind, x + long(xR->edgeval(xp)),
                     xR->down(xp), aR->index(ap), aR->down(ap));
         ap++;
         if (ap >= aR->getSize()) break;
@@ -296,7 +296,7 @@ void MEDDLY::VM_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
             continue;
         }
         // match, need to recurse
-        compute_r(k-1, y + yR->edgeval(yp).getLong(), yR->down(yp),
+        compute_r(k-1, y + long(yR->edgeval(yp)), yR->down(yp),
                     x, x_ind, aR->down(ap));
         ap++;
         if (ap >= aR->getSize()) break;
@@ -385,8 +385,8 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
                 continue;
             }
             // match, need to recurse
-            compute_r(k-1, y + yR->edgeval(yp).getLong(), yR->down(yp),
-                        x + xR->edgeval(xp).getLong(), xR->down(xp), a);
+            compute_r(k-1, y + long(yR->edgeval(yp)), yR->down(yp),
+                        x + long(xR->edgeval(xp)), xR->down(xp), a);
             xp++;
             if (xp >= xR->getSize()) break;
             yp++;
@@ -430,7 +430,7 @@ void MEDDLY::MV_evplus_mt::compute_r(int k, double* y, node_handle y_ind,
             continue;
         }
         // match, need to recurse
-        comp_pr(k, y + yR->edgeval(yp).getLong(), yR->down(yp),
+        comp_pr(k, y + long(yR->edgeval(yp)), yR->down(yp),
                     x, x_ind, aR->index(ap), aR->down(ap));
         ap++;
         if (ap >= aR->getSize()) break;
@@ -478,7 +478,7 @@ void MEDDLY::MV_evplus_mt::comp_pr(int k, double* y, node_handle y_ind,
         }
         // match, need to recurse
         compute_r(k-1, y, y_ind,
-                    x + xR->edgeval(xp).getLong(), xR->down(xp), aR->down(ap));
+                    x + long(xR->edgeval(xp)), xR->down(xp), aR->down(ap));
         ap++;
         if (ap >= aR->getSize()) break;
         xp++;

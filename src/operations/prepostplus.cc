@@ -186,8 +186,8 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
 
       long ev = Inf<long>();
       node_handle ed = 0;
-      compute(aev + A->edgeval(i).getLong() + D->edgeval(j).getLong(), D->down(j),
-        bev + B->edgeval(i).getLong(), B->down(i),
+      compute(aev + long(A->edgeval(i)) + long(D->edgeval(j)), D->down(j),
+        bev + long(B->edgeval(i)), B->down(i),
         ev, ed);
       nb2->setFull(j, edge_value(ev), ed);
       // nb2->d_ref(j) = ed;
@@ -213,7 +213,7 @@ void MEDDLY::preplus_evplus::compute(long aev, node_handle a, long bev, node_han
   // Reduce
   edge_value ev;
   resF->createReducedNode( nb, ev, c);
-  cev = ev.getLong();
+  cev = long(ev);
 
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);
@@ -296,8 +296,8 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
 
       long ev = Inf<long>();
       node_handle ed = 0;
-      compute(aev + A->edgeval(i).getLong() + D->edgeval(j).getLong(), D->down(j),
-        bev + B->edgeval(j).getLong(), B->down(j),
+      compute(aev + long(A->edgeval(i)) + long(D->edgeval(j)), D->down(j),
+        bev + long(B->edgeval(j)), B->down(j),
         ev, ed);
       nb2->setFull(j, edge_value(ev), ed);
       // nb2->d_ref(j) = ed;
@@ -323,7 +323,7 @@ void MEDDLY::postplus_evplus::compute(long aev, node_handle a, long bev, node_ha
   // Reduce
   edge_value ev;
   resF->createReducedNode(nb, ev, c);
-  cev = ev.getLong();
+  cev = long(ev);
 
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);

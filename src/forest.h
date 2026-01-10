@@ -854,6 +854,7 @@ class MEDDLY::forest {
             nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
         }
 
+#ifdef ALLOW_DEPRECATED_0_17_9
         // TBD: remove these older 'getDownPtr' methods
 
         /** For a given node, get a specified downward pointer.
@@ -873,7 +874,7 @@ class MEDDLY::forest {
         {
             edge_value v = transparent_edge;
             nodeMan->getDownPtr(getNodeAddress(p), index, v, dn);
-            ev = v.getInt();
+            ev = int(v);
         }
 
 
@@ -894,7 +895,7 @@ class MEDDLY::forest {
         {
             edge_value v = transparent_edge;
             nodeMan->getDownPtr(getNodeAddress(p), index, v, dn);
-            ev = v.getLong();
+            ev = long(v);
         }
 
 
@@ -915,9 +916,9 @@ class MEDDLY::forest {
         {
             edge_value v = transparent_edge;
             nodeMan->getDownPtr(getNodeAddress(p), index, v, dn);
-            ev = v.getFloat();
+            ev = float(v);
         }
-
+#endif
 
         /** Check if an unpacked node duplicates one in the forest.
                 @param  p       Handle to a node in the forest.

@@ -1169,12 +1169,12 @@ void MEDDLY::forest::getEdgeForValue(rangeval T, edge_value &v, node_handle &p)
                 switch (the_edge_type) {
                     case edge_type::FLOAT:
                         v.set(float(T));
-                        p = (0.0 == v.getFloat()) ? OMEGA_ZERO : OMEGA_NORMAL;
+                        p = (0.0 == float(v)) ? OMEGA_ZERO : OMEGA_NORMAL;
                         return;
 
                     case edge_type::DOUBLE:
                         v.set(double(T));
-                        p = (0.0 == v.getDouble()) ? OMEGA_ZERO : OMEGA_NORMAL;
+                        p = (0.0 == double(v)) ? OMEGA_ZERO : OMEGA_NORMAL;
                         return;
 
                     default:
@@ -1246,11 +1246,11 @@ void MEDDLY::forest::getValueForEdge(const edge_value &v, node_handle p,
                 MEDDLY_DCASSERT(OMEGA_NORMAL == p);
                 switch (the_edge_type) {
                     case edge_type::INT:
-                        T = rangeval(v.getInt());
+                        T = rangeval(int(v));
                         return;
 
                     case edge_type::LONG:
-                        T = rangeval(v.getLong());
+                        T = rangeval(long(v));
                         return;
 
                     default:
@@ -1271,11 +1271,11 @@ void MEDDLY::forest::getValueForEdge(const edge_value &v, node_handle p,
 
                 switch (the_edge_type) {
                     case edge_type::FLOAT:
-                        T = rangeval(v.getFloat());
+                        T = rangeval(float(v));
                         return;
 
                     case edge_type::DOUBLE:
-                        T = rangeval(v.getDouble());
+                        T = rangeval(double(v));
                         return;
 
                     default:

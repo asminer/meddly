@@ -206,7 +206,7 @@ void MEDDLY::mdd2index_operation::_compute(int L,
     //
     edge_value ev;
     resF->createReducedNode(Cu, ev, cp);
-    MEDDLY_DCASSERT(0 == ev.getLong());
+    MEDDLY_DCASSERT(0 == long(ev));
 
 #ifdef TRACE
     out << "reduced to (" << cp << ", " << cv << "):";

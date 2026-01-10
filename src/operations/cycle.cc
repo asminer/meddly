@@ -172,7 +172,7 @@ void MEDDLY::cycle_EV2EV::_compute(int k, long aev, node_handle a,
         resF->unlinkNode(t);
         edge_value ev;
         resF->createReducedNode(T, ev, b);
-        bev = ev.getLong();
+        bev = long(ev);
         return;
     }
 
@@ -204,7 +204,7 @@ void MEDDLY::cycle_EV2EV::_compute(int k, long aev, node_handle a,
 
         long tev;
         node_handle t;
-        _compute(level - 1, aev + A->edgeval(i).getLong() + B->edgeval(i).getLong(), B->down(i), tev, t);
+        _compute(level - 1, aev + long(A->edgeval(i)) + long(B->edgeval(i)), B->down(i), tev, t);
         T->setFull(i, edge_value(tev), t);
         // T->setEdge(i, tev);
         // T->d_ref(i) = t;
@@ -216,7 +216,7 @@ void MEDDLY::cycle_EV2EV::_compute(int k, long aev, node_handle a,
 
     edge_value ev;
     resF->createReducedNode(T, ev, b);
-    bev = ev.getLong();
+    bev = long(ev);
 
     // Add to cache
     res[0].set(bev);

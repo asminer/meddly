@@ -291,10 +291,10 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
             edge_value ev;
             F->createReducedNode(nb, ev, map[node_index]);
 
-            MEDDLY_DCASSERT( !ev.isInt()    || (0==ev.getInt()) );
-            MEDDLY_DCASSERT( !ev.isLong()   || (0==ev.getLong()) );
-            MEDDLY_DCASSERT( !ev.isFloat()  || (0==ev.getFloat()) );
-            MEDDLY_DCASSERT( !ev.isDouble() || (0==ev.getDouble()) );
+            MEDDLY_DCASSERT( !ev.isInt()    || (0==int(ev)) );
+            MEDDLY_DCASSERT( !ev.isLong()   || (0==long(ev)) );
+            MEDDLY_DCASSERT( !ev.isFloat()  || (0==float(ev)) );
+            MEDDLY_DCASSERT( !ev.isDouble() || (0==double(ev)) );
 
 #ifdef DEBUG_READ
             std::cerr << "File node " << node_index << " reduced to ";

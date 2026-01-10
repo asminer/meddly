@@ -66,19 +66,19 @@ MEDDLY::edge_value::edge_value(edge_type newtype, const edge_value &v)
             throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
         case edge_type::INT:
-            setTempl(newtype, v.getInt());
+            setTempl(newtype, int(v));
             return;
 
         case edge_type::LONG:
-            setTempl(newtype, v.getLong());
+            setTempl(newtype, long(v));
             return;
 
         case edge_type::FLOAT:
-            setTempl(newtype, v.getFloat());
+            setTempl(newtype, float(v));
             return;
 
         case edge_type::DOUBLE:
-            setTempl(newtype, v.getDouble());
+            setTempl(newtype, double(v));
             return;
 
         default:

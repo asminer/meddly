@@ -114,8 +114,8 @@ void MEDDLY::generic_binary_evplus
   for (unsigned i=0; i<resultSize; i++) {
     long ev = 0;
     node_handle ed = 0;
-    compute(aev + A->edgeval(i).getLong(), A->down(i),
-            bev + B->edgeval(i).getLong(), B->down(i),
+    compute(aev + long(A->edgeval(i)), A->down(i),
+            bev + long(B->edgeval(i)), B->down(i),
             ev, ed);
     MEDDLY_DCASSERT(ed != 0 || ev == 0);
     nb->setFull(i, edge_value(ev), ed);
@@ -130,7 +130,7 @@ void MEDDLY::generic_binary_evplus
   // Reduce
   edge_value ev;
   resF->createReducedNode(nb, ev, c);
-  cev = ev.getLong();
+  cev = long(ev);
 
   // Add to CT
   saveResult(Key, aev, a, bev, b, cev, c);

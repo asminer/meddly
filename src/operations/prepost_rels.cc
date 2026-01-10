@@ -218,7 +218,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
       for (unsigned j = 0; j < rSize; j++) {
         long nev = Inf<long>();
         node_handle newstates = 0;
-        compute_rec(A->edgeval(i).getLong() + B->edgeval(j).getLong(), B->down(j), mxd, nev, newstates);
+        compute_rec(long(A->edgeval(i)) + long(B->edgeval(j)), B->down(j), mxd, nev, newstates);
 
         D->setFull(j, edge_value(newstates ? ev + nev : 0L), newstates);
         // D->setEdge(j, newstates == 0 ? 0L : ev + nev);
@@ -265,7 +265,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
           // and add them
           long nev = Inf<long>();
           node_handle newstates = 0;
-          compute_rec(A->edgeval(i).getLong() + B->edgeval(j).getLong(), B->down(j), Rp->down(jpz), nev, newstates);
+          compute_rec(long(A->edgeval(i)) + long(B->edgeval(j)), B->down(j), Rp->down(jpz), nev, newstates);
           if (0==newstates) {
             continue;
           }
@@ -278,7 +278,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
           }
           // there's new states and existing states; union them.
           newstatesE.set(nev, newstates);
-          djp.set(D->edgeval(jp).getLong(), D->down(jp));
+          djp.set(D->edgeval(jp), D->down(jp));
           accumulateOp->computeTemp(newstatesE, djp, djp);
           D->setFull(jp, djp);
         } // for j
@@ -304,7 +304,7 @@ void MEDDLY::tcXrel_evplus::compute_rec(long ev, node_handle evmxd, node_handle 
 
   edge_value Cev;
   resF->createReducedNode(C, Cev, resEvmdd);
-  resEv = Cev.getLong();
+  resEv = long(Cev);
 #ifdef TRACE_ALL_OPS
   printf("computed new tcXrel(<%ld, %d>, %d) = <%ld, %d>\n", ev, evmxd, mxd, resEv, resEvmdd);
 #endif

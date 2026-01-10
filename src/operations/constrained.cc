@@ -1354,7 +1354,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
     for (int iz = 0; iz < Ru->getSize(); iz++) {
       const unsigned i = Ru->index(iz);
       if (A->down(i) == 0) {
-        MEDDLY_DCASSERT(A->edgeval(i).getLong() == 0);
+        MEDDLY_DCASSERT(long(A->edgeval(i)) == 0);
         continue;
       }
 
@@ -1363,7 +1363,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
       if (Rps[iz]->down(j) != 0) {
         long recev = 0;
         node_handle rec = 0;
-        recFire(aev + A->edgeval(i).getLong(), A->down(i), nb.edgeval(j).getLong(), nb.down(j), Rps[iz]->down(j), recev, rec);
+        recFire(aev + long(A->edgeval(i)), A->down(i), long(nb.edgeval(j)), nb.down(j), Rps[iz]->down(j), recev, rec);
         MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
         if (rec == 0) {
@@ -1375,7 +1375,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
 
         if (rec == nb.down(i)) {
           // Compute the minimum
-          if (recev < nb.edgeval(i).getLong()) {
+          if (recev < long(nb.edgeval(i))) {
             nb.edgeval(i) = recev;
           }
           resF->unlinkNode(rec);
@@ -1385,11 +1385,11 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
         bool updated = true;
 
         if (nb.down(i) == 0) {
-          MEDDLY_DCASSERT(nb.edgeval(i).getLong() == 0);
+          MEDDLY_DCASSERT(long(nb.edgeval(i)) == 0);
           nb.setFull(i, edge_value(recev), rec);
         }
         else {
-          nbdi.set(nb.edgeval(i).getLong(), nb.down(i));
+          nbdi.set(nb.edgeval(i), nb.down(i));
           newst.set(recev, rec);
           minOp->computeTemp(nbdi, newst, nbdi);
           updated = (nbdi.getNode() != nb.down(i));
@@ -1397,7 +1397,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
 /*
           long accev = Inf<long>();
           node_handle acc = 0;
-          minOp->computeTemp(nb.edgeval(i).getLong(), nb.down(i), recev, rec, accev, acc);
+          minOp->computeTemp(long(nb.edgeval(i)), nb.down(i), recev, rec, accev, acc);
           resF->unlinkNode(rec);
           if (acc != nb.down(i)) {
             resF->unlinkNode(nb.down(i));
@@ -1405,7 +1405,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
             nb.d_ref(i) = acc;
           }
           else {
-            MEDDLY_DCASSERT(accev == nb.edgeval(i).getLong());
+            MEDDLY_DCASSERT(accev == long(nb.edgeval(i)));
             resF->unlinkNode(acc);
             updated = false;
           }
@@ -1482,7 +1482,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
     for (int i = 0; i < size; i++) {
       long tev = 0;
       node_handle t = 0;
-      recFire(aev + A->edgeval(i).getLong(), A->down(i), bev + B->edgeval(i).getLong(), B->down(i), r, tev, t);
+      recFire(aev + long(A->edgeval(i)), A->down(i), bev + long(B->edgeval(i)), B->down(i), r, tev, t);
       T->setFull(i, edge_value(tev), t);
     }
   }
@@ -1504,7 +1504,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
     for (int iz = 0; iz < Ru->getSize(); iz++) {
       const int i = Ru->index(iz);
       if (A->down(i) == 0) {
-        MEDDLY_DCASSERT(A->edgeval(i).getLong() == 0);
+        MEDDLY_DCASSERT(long(A->edgeval(i)) == 0);
         continue;
       }
 
@@ -1521,7 +1521,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
         // and add them
         long nev = 0;
         node_handle n = 0;
-        recFire(aev + A->edgeval(i).getLong(), A->down(i), bev + B->edgeval(j).getLong(), B->down(j), Rp->down(jz), nev, n);
+        recFire(aev + long(A->edgeval(i)), A->down(i), bev + long(B->edgeval(j)), B->down(j), Rp->down(jz), nev, n);
 
         if (n == 0) {
           MEDDLY_DCASSERT(nev == 0);
@@ -1529,7 +1529,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
         }
 
         if (T->down(i) == 0) {
-          MEDDLY_DCASSERT(T->edgeval(i).getLong() == 0);
+          MEDDLY_DCASSERT(long(T->edgeval(i)) == 0);
           T->setFull(i, edge_value(nev), n);
           continue;
         }
@@ -1539,7 +1539,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
         const node_handle oldi = T->down(i);
         long newev = Inf<long>();
         node_handle newstates = 0;
-        minOp->computeTemp(nev, n, T->edgeval(i).getLong(), oldi, newev, newstates);
+        minOp->computeTemp(nev, n, long(T->edgeval(i)), oldi, newev, newstates);
         T->setEdge(i, newev);
         T->d_ref(i) = newstates;
 
@@ -1548,7 +1548,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
 */
 
         // there's new states and existing states; union them.
-        Tdi.set(T->edgeval(i).getLong(), T->down(i));
+        Tdi.set(long(T->edgeval(i)), T->down(i));
         newst.set(nev, n);
         minOp->computeTemp(newst, Tdi, Tdi);
         T->setFull(i, Tdi);
@@ -1567,7 +1567,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
   saturateHelper(aev, a, *T);
   edge_value ev;
   resF->createReducedNode(T, ev, c);
-  cev = ev.getLong();
+  cev = long(ev);
   MEDDLY_DCASSERT(cev >= 0);
 
   saveResult(key, aev, a, bev, b, r, cev, c);
@@ -1730,7 +1730,7 @@ void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int
     else {
       long tev = Inf<long>();
       node_handle t = 0;
-      saturate(aev + A->edgeval(i).getLong(), A->down(i), B->edgeval(i).getLong(), B->down(i), level - 1, tev, t);
+      saturate(aev + long(A->edgeval(i)), A->down(i), long(B->edgeval(i)), B->down(i), level - 1, tev, t);
       T->setFull(i, edge_value(tev), t);
     }
   }
@@ -1742,7 +1742,7 @@ void MEDDLY::constrained_saturation_evplus::saturate(int aev, node_handle a, int
   parent->saturateHelper(aev, a, *T);
   edge_value ev;
   resF->createReducedNode(T, ev, c);
-  cev = ev.getLong();
+  cev = long(ev);
   cev += bev;
 
   // save in compute table

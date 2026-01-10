@@ -93,9 +93,30 @@ class MEDDLY::edge_value {
         }
 
         //
+        // Get the value using type conversion
+        //
+        inline operator int() const {
+            MEDDLY_DCASSERT(isInt());
+            return ev_int;
+        }
+        inline operator long() const {
+            MEDDLY_DCASSERT(isLong());
+            return ev_long;
+        }
+        inline operator float() const {
+            MEDDLY_DCASSERT(isFloat());
+            return ev_float;
+        }
+        inline operator double() const {
+            MEDDLY_DCASSERT(isDouble());
+            return ev_double;
+        }
+
+        //
         // Getters for the value
         //
 
+#ifdef ALLOW_DEPRECATED_0_17_9
         inline int getInt() const {
             MEDDLY_DCASSERT(isInt());
             return ev_int;
@@ -112,9 +133,10 @@ class MEDDLY::edge_value {
             MEDDLY_DCASSERT(isDouble());
             return ev_double;
         }
+#endif
 
         //
-        // Alternate getters (better for templates)
+        // Alternate getters
         //
 
         inline void get(int &v) const {

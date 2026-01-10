@@ -190,7 +190,7 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
     unpacked_node* high_nb =
         unpacked_node::newWritable(this, level + 1, lsize, FULL_ONLY);
     for (int j = 0; j < hsize; j++) {
-      long ev1 = high_nr->edgeval(j).getLong();
+      long ev1 = long(high_nr->edgeval(j));
       MEDDLY_DCASSERT(ev1 >= 0);
 
       if (isLevelAbove(level, getNodeLevel(high_nr->down(j)))) {
@@ -208,7 +208,7 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
         for (int k = 0; k < lsize; k++) {
           children[j][k] = nr->down(k);
 
-          long ev2 = nr->edgeval(k).getLong();
+          long ev2 = long(nr->edgeval(k));
           MEDDLY_DCASSERT(ev2 >= 0);
 
           sum_evs[j][k] = ev1 + ev2;

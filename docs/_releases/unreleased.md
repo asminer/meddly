@@ -23,6 +23,10 @@ layout: single
 
 * Added a ```binary_factory``` class, for built-in binary operations.
 
+* Edge values: some getters replaced by type conversion operators
+
+* Forest class: older getDownPtr methods are now deprecated
+
 ### Implementation
 
 * Forest I/O methods are now centralized and non-virtual;
