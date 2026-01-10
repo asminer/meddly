@@ -156,10 +156,10 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
 
     std::vector <MEDDLY::rangeval> values(5);
     values[0] =  TYPE(0);
-    values[1] =  TYPE(6);
-    values[2] =  TYPE(4);
-    values[3] =  TYPE(2);
-    values[4] =  TYPE(-2);
+    values[1] =  TYPE(4);
+    values[2] =  TYPE(2);
+    values[3] =  TYPE(-2);
+    values[4] =  TYPE(-4);
 
     for (unsigned i=0; i<10; i++) {
         std::cerr << '.';

@@ -1,7 +1,36 @@
 
 Implement next, using new rel_node interface:
 
-    * pre/post image on distances and test
+    * pre/post image on EV+
+
+    * User-defined element-wise unary functions
+        virtual void F(const rangeval &in, rangeval &out) const;
+
+        constructor     user_unary(range_type intype, range_type outtype);
+        // name?
+
+        // automatically determined by checking F(0) == 0
+        inline bool preserves_zero() const;
+        // if true we can use sparse nodes in apply()
+        // also might allow us to skip identities
+
+        stuff to try
+            ABS(x)      // preserves zero
+            NEG(x)      // preserves zero
+            INCNNEG(x) = { x+1, if x>=0; -1 otherwise }
+
+
+    * DISTUPDATE operation
+        element-wise distance update.
+        Given integers or reals a,b:
+            if a<0 and b<0, return -1
+            if a>=0 and b>=0, return MIN(a, b)
+            if a<0 and b>=0, return b
+            if b<0 and a>=0, return a
+        Useful for distance computation for MT, with -1 for unreachable.
+
+
+    * pre/post image on MT with negative for unreachable :)
 
     * vect/matr and matr/vect multiplication tests
         (now within pre/post image)
