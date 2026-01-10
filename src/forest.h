@@ -1910,6 +1910,7 @@ class MEDDLY::forest {
   // virtual, with default implementation.
   public:
 
+    /// TBD: remove when we fix sat_relations
    virtual node_handle unionOneMinterm(node_handle a,  int* from,  int* to, int level);
 
     /** Create an edge such that

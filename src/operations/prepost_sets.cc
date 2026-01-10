@@ -71,6 +71,9 @@ namespace MEDDLY {
             /// Get the operation name, for display purposes
             static const char* name(bool forwd);
 
+            /// Return true if the given edge is unreachable
+            static bool isUnreachable(const edge_value &cv, node_handle c);
+
             /// Get the accumulate operation for result nodes.
             static binary_operation* accumulateOp(const forest* resF);
 
@@ -308,7 +311,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
 
     unpacked_node* Au = unpacked_node::New(arg1F, SPARSE_ONLY);
     if (Alevel != Clevel) {
-        Au->initRedundant(Clevel, A);
+        Au->initRedundant(Clevel, av, A);
     } else {
         Au->initFromNode(A);
     }
@@ -338,6 +341,10 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
 
     //
     // Recurse
+    //
+
+    //
+    // TBD: fully-fully case
     //
     if (!Brn) {
         //
@@ -379,10 +386,10 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                         edge_value  cdv;
                         _compute(Cnextlevel, edgeval(Au, zi), Au->down(zi),
                                 Bu->down(zj), cdv, cdp);
-                        if (EOP::isZeroFunction(cdv, cdp)) {
+                        if (ATYPE::isUnreachable(cdv, cdp)) {
                             continue;
                         }
-                        if (EOP::isZeroFunction(edgeval(Cu, j), Cu->down(j)))
+                        if (ATYPE::isUnreachable(edgeval(Cu, j), Cu->down(j)))
                         {
                             Cu->setFull(j, cdv, cdp);
                             continue;
@@ -417,10 +424,10 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                             edge_value  cdv;
                             _compute(Cnextlevel, edgeval(Au, zj), Au->down(zj),
                                     Bu->down(j), cdv, cdp);
-                            if (EOP::isZeroFunction(cdv, cdp)) {
+                            if (ATYPE::isUnreachable(cdv, cdp)) {
                                 continue;
                             }
-                            if (EOP::isZeroFunction(edgeval(Cu, i), Cu->down(i)))
+                            if (ATYPE::isUnreachable(edgeval(Cu, i), Cu->down(i)))
                             {
                                 Cu->setFull(i, cdv, cdp);
                                 continue;
@@ -516,6 +523,13 @@ namespace MEDDLY {
             return build(UNION, resF, resF, resF);
         }
 
+        /// Does the edge correspond to an unreachable state?
+        inline static bool isUnreachable(const edge_value &ev, node_handle p)
+        {
+            MEDDLY_DCASSERT(ev.isVoid());
+            return 0==p;
+        }
+
         /// Apply the operation when b is a terminal node.
         static void apply(forest* fa, const edge_value &av, node_handle a,
                           const forest* fb, node_handle b,
@@ -550,6 +564,13 @@ namespace MEDDLY {
             return build(MINIMUM, resF, resF, resF);
         }
 
+        /// Does the edge correspond to an unreachable state?
+        inline static bool isUnreachable(const edge_value &ev, node_handle p)
+        {
+            return OMEGA_INFINITY == p;
+        }
+
+
         /// Apply the operation when b is a terminal node.
         static void apply(forest* fa, const edge_value &av, node_handle a,
                           const forest* fb, node_handle b,
@@ -560,7 +581,7 @@ namespace MEDDLY {
             MEDDLY_DCASSERT(copy);
             copy->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
 
-            if (c) {
+            if (OMEGA_INFINITY != c) {
                 cv.add(INT(1));
             }
         }
@@ -586,6 +607,13 @@ namespace MEDDLY {
         inline static binary_operation* accumulateOp(forest* resF)
         {
             return build(PLUS, resF, resF, resF);
+        }
+
+        /// Does the edge correspond to an unreachable state?
+        inline static bool isUnreachable(const edge_value &ev, node_handle p)
+        {
+            MEDDLY_DCASSERT(ev.isVoid());
+            return 0==p;
         }
 
         /// Apply the operation when b is a terminal node.
