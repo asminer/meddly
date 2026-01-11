@@ -133,14 +133,10 @@ namespace MEDDLY {
         {
             if (OMEGA_INFINITY == an) return (!f1->isIdentityReduced());
             if (OMEGA_NORMAL == an) {
-                EDGETYPE aev;
-                av.get(aev);
-                if (0 == aev) return true;
+                if (0 == EDGETYPE(av)) return true;
             }
             if (OMEGA_NORMAL == bn) {
-                EDGETYPE bev;
-                bv.get(bev);
-                if (1 == bev) return (!f2->isIdentityReduced());
+                if (1 == EDGETYPE(bv)) return (!f2->isIdentityReduced());
             }
             return false;
         }
@@ -150,14 +146,10 @@ namespace MEDDLY {
         {
             if (OMEGA_INFINITY == bn) return (!f2->isIdentityReduced());
             if (OMEGA_NORMAL == bn) {
-                EDGETYPE bev;
-                bv.get(bev);
-                if (0 == bev) return true;
+                if (0 == EDGETYPE(bv)) return true;
             }
             if (OMEGA_NORMAL == an) {
-                EDGETYPE aev;
-                av.get(aev);
-                if (1 == aev) return (!f1->isIdentityReduced());
+                if (1 == EDGETYPE(av)) return (!f1->isIdentityReduced());
             }
             return false;
         }
@@ -175,10 +167,7 @@ namespace MEDDLY {
             MEDDLY_DCASSERT(OMEGA_NORMAL == an);
             MEDDLY_DCASSERT(OMEGA_NORMAL == bn);
             cn = OMEGA_NORMAL;
-            EDGETYPE aev, bev;
-            av.get(aev);
-            bv.get(bev);
-            cv.set(aev * bev);
+            cv.set(EDGETYPE(av) * EDGETYPE(bv));
         }
 
     };
@@ -243,10 +232,7 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
-            EDGETYPE av, bv;
-            a.get(av);
-            b.get(bv);
-            c.set(av * bv);
+            c.set(EDGETYPE(a) * EDGETYPE(b));
         }
 
     };

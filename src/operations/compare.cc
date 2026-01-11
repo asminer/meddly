@@ -913,9 +913,7 @@ namespace MEDDLY {
                     //
                     a = c;
                     c = edge_value(EDGETYPE(0));
-                    EDGETYPE av;
-                    a.get(av);
-                    e.subtract(av);
+                    e.subtract(EDGETYPE(a));
                 }
             }
             static bool alwaysFactorsToIdentity()
@@ -1029,10 +1027,7 @@ namespace MEDDLY {
             }
             if ((OMEGA_NORMAL == ap) && (OMEGA_NORMAL == bp))
             {
-                EDGETYPE avv, bvv;
-                av.get(avv);
-                bv.get(bvv);
-                return avv == bvv;
+                return EDGETYPE(av) == EDGETYPE(bv);
             }
             return false;
         }
@@ -1055,10 +1050,7 @@ namespace MEDDLY {
             }
             if ((OMEGA_NORMAL == ap) && (OMEGA_NORMAL == bp))
             {
-                EDGETYPE avv, bvv;
-                av.get(avv);
-                bv.get(bvv);
-                return avv == bvv;
+                return EDGETYPE(av) == EDGETYPE(bv);
             }
             return false;
         }
@@ -1112,10 +1104,7 @@ namespace MEDDLY {
             }
             if ((OMEGA_NORMAL == ap) && (OMEGA_NORMAL == bp))
             {
-                EDGETYPE avv, bvv;
-                av.get(avv);
-                bv.get(bvv);
-                return avv != bvv;
+                return EDGETYPE(av) != EDGETYPE(bv);
             }
             return true;
         }
@@ -1138,10 +1127,7 @@ namespace MEDDLY {
             }
             if ((OMEGA_NORMAL == ap) && (OMEGA_NORMAL == bp))
             {
-                EDGETYPE avv, bvv;
-                av.get(avv);
-                bv.get(bvv);
-                return avv != bvv;
+                return EDGETYPE(av) != EDGETYPE(bv);
             }
             return true;
         }
@@ -1215,10 +1201,7 @@ namespace MEDDLY {
             {
                 return true;
             }
-            EDGETYPE avv, bvv;
-            av.get(avv);
-            bv.get(bvv);
-            return avv > bvv;
+            return EDGETYPE(av) > EDGETYPE(bv);
         }
     };
     template <class EDGETYPE>
@@ -1316,10 +1299,7 @@ namespace MEDDLY {
             {
                 return false;
             }
-            EDGETYPE avv, bvv;
-            av.get(avv);
-            bv.get(bvv);
-            return avv >= bvv;
+            return EDGETYPE(av) >= EDGETYPE(bv);
         }
     };
     template <class EDGETYPE>
@@ -1417,10 +1397,7 @@ namespace MEDDLY {
             {
                 return true;
             }
-            EDGETYPE avv, bvv;
-            av.get(avv);
-            bv.get(bvv);
-            return avv < bvv;
+            return EDGETYPE(av) < EDGETYPE(bv);
         }
     };
     template <class EDGETYPE>
@@ -1518,10 +1495,7 @@ namespace MEDDLY {
             {
                 return false;
             }
-            EDGETYPE avv, bvv;
-            av.get(avv);
-            bv.get(bvv);
-            return avv <= bvv;
+            return EDGETYPE(av) <= EDGETYPE(bv);
         }
     };
     template <class EDGETYPE>

@@ -159,10 +159,7 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
-            EDGETYPE av, bv;
-            a.get(av);
-            b.get(bv);
-            c.set(av+bv);
+            c.set(EDGETYPE(a) + EDGETYPE(b));
         }
     };
 };
@@ -245,10 +242,7 @@ namespace MEDDLY {
                           const edge_value &e, node_handle f,
                           edge_value &a, node_handle &b)
         {
-            EDGETYPE av, cv, ev;
-            c.get(cv);
-            e.get(ev);
-            av = cv + ev;
+            EDGETYPE av = EDGETYPE(c) + EDGETYPE(e);
             a = av;
             b = av ? OMEGA_NORMAL : OMEGA_ZERO;
         }

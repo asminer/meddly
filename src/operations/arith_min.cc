@@ -166,9 +166,7 @@ namespace MEDDLY {
                 //
                 a = c;
                 c = edge_value(EDGETYPE(0));
-                EDGETYPE av;
-                a.get(av);
-                e.subtract(av);
+                e.subtract(EDGETYPE(a));
             }
         }
 
@@ -198,10 +196,7 @@ namespace MEDDLY {
             // both finite
             //
             b = OMEGA_NORMAL;
-            EDGETYPE cv, ev;
-            c.get(cv);
-            e.get(ev);
-            a = edge_value(MIN(cv, ev));
+            a = edge_value(MIN(EDGETYPE(c), EDGETYPE(e)));
         }
     };
 };
@@ -301,10 +296,7 @@ namespace MEDDLY {
                           const edge_value &e, node_handle f,
                           edge_value &a, node_handle &b)
         {
-            EDGETYPE av, cv, ev;
-            c.get(cv);
-            e.get(ev);
-            av = MIN(cv, ev);
+            EDGETYPE av = MIN(EDGETYPE(c), EDGETYPE(e));
             a = av;
             b = av ? OMEGA_NORMAL : OMEGA_ZERO;
         }

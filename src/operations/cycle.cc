@@ -124,9 +124,8 @@ void MEDDLY::cycle_EV2EV::compute(int L, unsigned in,
                 const edge_value &av, node_handle ap,
                 edge_value &cv, node_handle &cp)
 {
-    long aev, cev;
-    av.get(aev);
-    _compute(L, aev, ap, cev, cp);
+    long cev;
+    _compute(L, long(av), ap, cev, cp);
     cv.set(cev);
 }
 

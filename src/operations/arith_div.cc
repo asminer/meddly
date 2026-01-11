@@ -144,14 +144,10 @@ namespace MEDDLY {
                 const forest* f2, const edge_value &bv, node_handle bn)
         {
             if (OMEGA_NORMAL == an) {
-                EDGETYPE aev;
-                av.get(aev);
-                if (0 == aev) return true;
+                if (0 == EDGETYPE(av)) return true;
             }
             if (OMEGA_NORMAL == bn) {
-                EDGETYPE bev;
-                bv.get(bev);
-                if (1 == bev) return (!f2->isIdentityReduced());
+                if (1 == EDGETYPE(bv)) return (!f2->isIdentityReduced());
             }
             return false;
         }
@@ -183,9 +179,7 @@ namespace MEDDLY {
             // Special case: dividing by zero
             //
             MEDDLY_DCASSERT(OMEGA_NORMAL == bn);
-            EDGETYPE bev;
-            bv.get(bev);
-            if (0 == bev) {
+            if (0 == EDGETYPE(bv)) {
                 throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
             }
 
@@ -201,11 +195,8 @@ namespace MEDDLY {
             }
 
             MEDDLY_DCASSERT(OMEGA_NORMAL == an);
-            EDGETYPE aev;
-            av.get(aev);
-
             cn = OMEGA_NORMAL;
-            cv.set(aev / bev);
+            cv.set(EDGETYPE(av) / EDGETYPE(bv));
         }
 
     };
@@ -277,13 +268,10 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
-            EDGETYPE av, bv;
-            a.get(av);
-            b.get(bv);
-            if (0 == bv) {
+            if (0 == EDGETYPE(b)) {
                 throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
             }
-            c.set(av / bv);
+            c.set(EDGETYPE(a) / EDGETYPE(b));
         }
 
     };

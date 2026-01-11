@@ -141,9 +141,7 @@ namespace MEDDLY {
                 const forest* f2, const edge_value &bv, node_handle bn)
         {
             if (OMEGA_NORMAL == an) {
-                EDGETYPE aev;
-                av.get(aev);
-                if (0 == aev) return true;
+                if (0 == EDGETYPE(av)) return true;
             }
             if (OMEGA_INFINITY == bn) {
                 return true;
@@ -178,9 +176,7 @@ namespace MEDDLY {
             // Special case: modding by zero
             //
             MEDDLY_DCASSERT(OMEGA_NORMAL == bn);
-            EDGETYPE bev;
-            bv.get(bev);
-            if (0 == bev) {
+            if (0 == EDGETYPE(bv)) {
                 throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
             }
 
@@ -196,11 +192,9 @@ namespace MEDDLY {
             }
 
             MEDDLY_DCASSERT(OMEGA_NORMAL == an);
-            EDGETYPE aev;
-            av.get(aev);
 
             cn = OMEGA_NORMAL;
-            cv.set(aev % bev);
+            cv.set(EDGETYPE(av) % EDGETYPE(bv));
         }
 
     };
