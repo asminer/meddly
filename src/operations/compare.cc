@@ -1170,17 +1170,22 @@ namespace MEDDLY {
         {
             // We can assume <av, ap> and <bv, bp>
             // are not both infinity, as that case
-            // would have been handled already
+            // would have been handled already.
+            // But as a sanity check:
+            MEDDLY_DCASSERT((OMEGA_INFINITY != ap) || (OMEGA_INFINITY != bp));
+
+            //
+            // A(...) > infinity  is false regardless of A()
+            //
             if (OMEGA_INFINITY == bp)
             {
                 answer = false;
                 return true;
             }
-            if (OMEGA_INFINITY == ap)
-            {
-                answer = true;
-                return true;
-            }
+            //
+            // Note: infinity > B(...) could be true or false,
+            // depending on if B() contains infinities or not.
+            //
             return false;
         }
         static bool compare(const edge_value& av, node_handle ap,
@@ -1266,17 +1271,22 @@ namespace MEDDLY {
         {
             // We can assume <av, ap> and <bv, bp>
             // are not both infinity, as that case
-            // would have been handled already
+            // would have been handled already.
+            // But as a sanity check:
+            MEDDLY_DCASSERT((OMEGA_INFINITY != ap) || (OMEGA_INFINITY != bp));
+
+            //
+            // infinity >= B(...)  is true regardless of B()
+            //
             if (OMEGA_INFINITY == ap)
             {
                 answer = true;
                 return true;
             }
-            if (OMEGA_INFINITY == bp)
-            {
-                answer = false;
-                return true;
-            }
+            //
+            // Note: A(...) >= infinity  could be true or false,
+            // depending on if A() contains infinities or not.
+            //
             return false;
         }
         static bool compare(const edge_value& av, node_handle ap,
@@ -1362,17 +1372,22 @@ namespace MEDDLY {
         {
             // We can assume <av, ap> and <bv, bp>
             // are not both infinity, as that case
-            // would have been handled already
+            // would have been handled already.
+            // But as a sanity check:
+            MEDDLY_DCASSERT((OMEGA_INFINITY != ap) || (OMEGA_INFINITY != bp));
+
+            //
+            // infinity <  B(...)  is false regardless of B()
+            //
             if (OMEGA_INFINITY == ap)
             {
                 answer = false;
                 return true;
             }
-            if (OMEGA_INFINITY == bp)
-            {
-                answer = true;
-                return true;
-            }
+            //
+            // Note: A(...) < infinity  could be true or false,
+            // depending on if A() contains infinities or not.
+            //
             return false;
         }
         static bool compare(const edge_value& av, node_handle ap,
@@ -1458,17 +1473,22 @@ namespace MEDDLY {
         {
             // We can assume <av, ap> and <bv, bp>
             // are not both infinity, as that case
-            // would have been handled already
-            if (OMEGA_INFINITY == ap)
-            {
-                answer = false;
-                return true;
-            }
+            // would have been handled already.
+            // But as a sanity check:
+            MEDDLY_DCASSERT((OMEGA_INFINITY != ap) || (OMEGA_INFINITY != bp));
+
+            //
+            // A(...) <= infinity  is true regardless of A()
+            //
             if (OMEGA_INFINITY == bp)
             {
                 answer = true;
                 return true;
             }
+            //
+            // Note: infinity <= B(...) could be true or false,
+            // depending on if B() contains infinities or not.
+            //
             return false;
         }
         static bool compare(const edge_value& av, node_handle ap,
