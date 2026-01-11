@@ -31,6 +31,9 @@
 
 #include "randomize.h"
 
+// #define SHOW_INITIAL
+// #define SHOW_GRAPH
+
 vectorgen SG(MEDDLY::SET,      5, 3);
 vectorgen RG(MEDDLY::RELATION, 5, 3);
 
@@ -110,10 +113,19 @@ void makeExplicitGraph(const dd_edge &E, std::vector <intlist*> &elist)
     for (unsigned i=0; i<elist.size(); i++) {
         elist[i] = nullptr;
     }
+#ifdef SHOW_GRAPH
+    ostream_output out(std::cout);
+    out << "Explicit graph:\n";
+#endif
     for (dd_edge::iterator I = E.begin(); I != E.end(); I++) {
         unsigned f, t;
+#ifdef SHOW_GRAPH
+        out << "    ";
+        (*I).show(out);
+        out << "\n";
+#endif
         RG.minterm2indexes(*I, f, t);
-        // std::cout << f << " -> " << t << "\n";
+        // std::cout << "    " << f << " -> " << t << "\n";
 
         elist[f] = new intlist(t, elist[f]);
     }
@@ -264,6 +276,23 @@ void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2)
     out << "Obtained DD:\n";
     e1.showGraph(out);
 
+    out << "\nExpected minterms:\n";
+    for (dd_edge::iterator s = e2.begin(); s; ++s)
+    {
+        out << "    ";
+        (*s).show(out);
+        out << "\n";
+    }
+
+    out << "Obtained minterms:\n";
+    for (dd_edge::iterator s = e1.begin(); s; ++s)
+    {
+        out << "    ";
+        (*s).show(out);
+        out << "\n";
+    }
+
+
     throw "mismatch";
 }
 
@@ -286,18 +315,31 @@ void setCompare(const std::vector <MEDDLY::rangeval> &S0,
 
     dd_edge dd0(Fset);
     SG.explicit2edgeMax(S0, dd0, unreachable);
+#ifdef SHOW_INITIAL
+    ostream_output out(std::cout);
+    out << "Initial minterms:\n";
+    for (dd_edge::iterator s = dd0.begin(); s; ++s)
+    {
+        out << "    ";
+        (*s).show(out);
+        out << "\n";
+    }
+#endif
 
-    dd_edge ddpost(Fset), ddpre(Fset);
-
+    //
+    // Check post-image
+    //
+    dd_edge ddpost(Fset), sympost(Fset);
     SG.explicit2edgeMax(post, ddpost, unreachable);
-    SG.explicit2edgeMax(pre,  ddpre,  unreachable);
-
-    dd_edge sympost(Fset), sympre(Fset);
-
     apply(POST_IMAGE, dd0, ddR, sympost);
-    apply(PRE_IMAGE,  dd0, ddR, sympre);
-
     checkEqual("post image", sympost, ddpost);
+
+    //
+    // Check pre-image
+    //
+    dd_edge ddpre(Fset), sympre(Fset);
+    SG.explicit2edgeMax(pre, ddpre, unreachable);
+    apply(PRE_IMAGE, dd0, ddR, sympre);
     checkEqual("pre image", sympre, ddpre);
 }
 

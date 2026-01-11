@@ -443,47 +443,26 @@ namespace MEDDLY {
     // *                                                                *
     // ******************************************************************
 
-    /*
-    struct fbop_union_bool {
-        static inline void finalize(
-                const minterm_coll &mc, unsigned low, unsigned high,
-                const forest* F, edge_value &cv, node_handle &cp)
-        {
-            bool val = false;
-            for (unsigned i=low; i<high; i++) {
-                if (mc.at(i).getValue()) {
-                    val = true;
-                    break;
-                }
-            }
-            F->getEdgeForValue(val, cv, cp);
-        }
-    };
-    struct fbop_inter_bool {
-        static inline void finalize(
-                const minterm_coll &mc, unsigned low, unsigned high,
-                const forest* F, edge_value &cv, node_handle &cp)
-        {
-            bool val = true;
-            for (unsigned i=low; i<high; i++) {
-                if (!mc.at(i).getValue()) {
-                    val = false;
-                    break;
-                }
-            }
-            F->getEdgeForValue(val, cv, cp);
-        }
-    };
-    */
     template <typename T>
     struct fbop_min_tmpl {
         static inline void finalize(
                 const minterm_coll &mc, unsigned low, unsigned high,
                 const forest* F, edge_value &cv, node_handle &cp)
         {
-            T val = T(mc.at(low).getValue());
+            rangeval val;
+            val = mc.at(low).getValue();
             for (unsigned i=low+1; i<high; i++) {
-                val = MIN(val, T(mc.at(i).getValue()));
+                const rangeval &mci = mc.at(i).getValue();
+                if (mci.isPlusInfinity()) {
+                    continue;
+                }
+                if (val.isPlusInfinity()) {
+                    val = mci;
+                    continue;
+                }
+                if (T(mci) < T(val)) {
+                    val = mci;
+                }
             }
             F->getEdgeForValue(val, cv, cp);
         }
@@ -494,9 +473,18 @@ namespace MEDDLY {
                 const minterm_coll &mc, unsigned low, unsigned high,
                 const forest* F, edge_value &cv, node_handle &cp)
         {
-            T val = T(mc.at(low).getValue());
+            rangeval val;
+            val = mc.at(low).getValue();
             for (unsigned i=low+1; i<high; i++) {
-                val = MAX(val, T(mc.at(i).getValue()));
+                if (val.isPlusInfinity()) break;
+                const rangeval &mci = mc.at(i).getValue();
+                if (mci.isPlusInfinity()) {
+                    val = mci;
+                    break;
+                }
+                if (T(mci) > T(val)) {
+                    val = T(mci);
+                }
             }
             F->getEdgeForValue(val, cv, cp);
         }

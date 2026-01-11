@@ -57,6 +57,10 @@ void Plus(const std::vector <MEDDLY::rangeval> &A,
         throw "plus size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
+        if (A[i].isPlusInfinity()) {
+            C[i] = A[i];
+            continue;
+        }
         C[i] = T(A[i]) + T(B[i]);
     }
 }
@@ -73,6 +77,10 @@ void Minus(const std::vector <MEDDLY::rangeval> &A,
         throw "minus size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
+        if (A[i].isPlusInfinity()) {
+            C[i] = A[i];
+            continue;
+        }
         C[i] =T(A[i]) - T(B[i]);
     }
 }
@@ -153,32 +161,43 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
     std::vector <MEDDLY::rangeval> Aset(Gen.potential());
     std::vector <MEDDLY::rangeval> Bset(Gen.potential());
 
-    std::vector <MEDDLY::rangeval> values(5);
-    values[0] =  TYPE(0);
-    values[1] =  TYPE(6);
-    values[2] =  TYPE(4);
-    values[3] =  TYPE(2);
-    values[4] =  TYPE(-2);
+    std::vector <MEDDLY::rangeval> a_values(5), b_values(5);
+    a_values[0] =  TYPE(0);
+    if (f1->isEVPlus()) {
+        a_values[1] = MEDDLY::rangeval(MEDDLY::range_special::PLUS_INFINITY,
+                            MEDDLY::range_type::INTEGER);
+    } else {
+        a_values[1] =  TYPE(6);
+    }
+    a_values[2] =  TYPE(4);
+    a_values[3] =  TYPE(2);
+    a_values[4] =  TYPE(-2);
+
+    b_values[0] = TYPE(0);
+    b_values[1] =  TYPE(6);
+    b_values[2] =  TYPE(4);
+    b_values[3] =  TYPE(2);
+    b_values[4] =  TYPE(-2);
 
     for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
-        Gen.randomizeVector(Aset, scard, values);
-        Gen.randomizeVector(Bset, scard, values);
+        Gen.randomizeVector(Aset, scard, a_values);
+        Gen.randomizeVector(Bset, scard, b_values);
 
         compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
-        Gen.randomizeFully(Aset, scard, values);
-        Gen.randomizeFully(Bset, scard, values);
+        Gen.randomizeFully(Aset, scard, a_values);
+        Gen.randomizeFully(Bset, scard, b_values);
 
         compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
     }
     if (fres->isForRelations()) {
         for (unsigned i=0; i<10; i++) {
             std::cerr << "i";
-            Gen.randomizeIdentity(Aset, scard, values);
-            Gen.randomizeIdentity(Bset, scard, values);
+            Gen.randomizeIdentity(Aset, scard, a_values);
+            Gen.randomizeIdentity(Bset, scard, b_values);
 
             compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
         }

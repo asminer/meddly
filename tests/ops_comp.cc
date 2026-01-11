@@ -58,7 +58,7 @@ void EQ(const std::vector <MEDDLY::rangeval> &A,
         throw "EQ size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = bool(T(A[i]) == T(B[i]));
+        C[i] = (A[i] == B[i]);
     }
 }
 
@@ -74,7 +74,7 @@ void NE(const std::vector <MEDDLY::rangeval> &A,
         throw "NE size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = bool(T(A[i]) != T(B[i]));
+        C[i] = (A[i] != B[i]);
     }
 }
 
@@ -90,7 +90,15 @@ void GE(const std::vector <MEDDLY::rangeval> &A,
         throw "GE size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = bool(T(A[i]) >= T(B[i]));
+        if (A[i].isPlusInfinity()) {
+            C[i] = true;
+            continue;
+        }
+        if (B[i].isPlusInfinity()) {
+            C[i] = false;
+            continue;
+        }
+        C[i] = T(A[i]) >= T(B[i]);
     }
 }
 
@@ -106,7 +114,15 @@ void GT(const std::vector <MEDDLY::rangeval> &A,
         throw "GT size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = bool(T(A[i]) > T(B[i]));
+        if (B[i].isPlusInfinity()) {
+            C[i] = false;
+            continue;
+        }
+        if (A[i].isPlusInfinity()) {
+            C[i] = true;
+            continue;
+        }
+        C[i] = T(A[i]) > T(B[i]);
     }
 }
 
@@ -122,7 +138,15 @@ void LE(const std::vector <MEDDLY::rangeval> &A,
         throw "LE size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = bool(T(A[i]) <= T(B[i]));
+        if (B[i].isPlusInfinity()) {
+            C[i] = true;
+            continue;
+        }
+        if (A[i].isPlusInfinity()) {
+            C[i] = false;
+            continue;
+        }
+        C[i] = T(A[i]) <= T(B[i]);
     }
 }
 
@@ -138,7 +162,15 @@ void LT(const std::vector <MEDDLY::rangeval> &A,
         throw "LT size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = bool(T(A[i]) < T(B[i]));
+        if (A[i].isPlusInfinity()) {
+            C[i] = false;
+            continue;
+        }
+        if (B[i].isPlusInfinity()) {
+            C[i] = true;
+            continue;
+        }
+        C[i] = T(A[i]) < T(B[i]);
     }
 }
 
@@ -246,7 +278,12 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
 
     std::vector <MEDDLY::rangeval> values(5);
     values[0] =  TYPE(0);
-    values[1] =  TYPE(6);
+    if (f1->isEVPlus()) {
+        values[1] = MEDDLY::rangeval(MEDDLY::range_special::PLUS_INFINITY,
+                            MEDDLY::range_type::INTEGER);
+    } else {
+        values[1] =  TYPE(6);
+    }
     values[2] =  TYPE(4);
     values[3] =  TYPE(2);
     values[4] =  TYPE(-2);

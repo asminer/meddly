@@ -59,6 +59,14 @@ void Max(const std::vector <MEDDLY::rangeval> &A,
         throw "Max size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
+        if (A[i].isPlusInfinity()) {
+            C[i] = A[i];
+            continue;
+        }
+        if (B[i].isPlusInfinity()) {
+            C[i] = B[i];
+            continue;
+        }
         C[i] = MAX(T(A[i]), T(B[i]));
     }
 }
@@ -75,6 +83,14 @@ void Min(const std::vector <MEDDLY::rangeval> &A,
         throw "Min size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
+        if (A[i].isPlusInfinity()) {
+            C[i] = B[i];
+            continue;
+        }
+        if (B[i].isPlusInfinity()) {
+            C[i] = A[i];
+            continue;
+        }
         C[i] = MIN(T(A[i]), T(B[i]));
     }
 }
@@ -156,7 +172,12 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
 
     std::vector <MEDDLY::rangeval> values(5);
     values[0] =  TYPE(0);
-    values[1] =  TYPE(4);
+    if (f1->isEVPlus()) {
+        values[1] = MEDDLY::rangeval(MEDDLY::range_special::PLUS_INFINITY,
+                            MEDDLY::range_type::INTEGER);
+    } else {
+        values[1] =  TYPE(4);
+    }
     values[2] =  TYPE(2);
     values[3] =  TYPE(-2);
     values[4] =  TYPE(-4);
