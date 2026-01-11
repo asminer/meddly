@@ -646,7 +646,7 @@ void MEDDLY::compare_ev<EOP, FACTOR, CTYPE>::_compute(int L, unsigned in,
     // Other special cases, like everything is less than infinity
     //
     bool answer;
-    if (CTYPE::isSpecialCase(av, A, bv, B, answer)) {
+    if (!forced_by_levels && CTYPE::isSpecialCase(av, A, bv, B, answer)) {
         terminal tt(answer, resF->getTerminalType());
         C = resF->makeRedundantsTo(tt.getHandle(), 0, L);
         return;

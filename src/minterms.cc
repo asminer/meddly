@@ -986,7 +986,6 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
                 unpacked_node* np = newPrimedNode(k, 1);
                 unsigned z=0;
                 addToNode(np, z, m.to(k), cv, cp);
-
                 F->createReducedNode(np, cv, cp);
             }
 
@@ -1002,7 +1001,9 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
 
                 unpacked_node* nu = newUnprimedNode(k, 1);
                 unsigned z=0;
-                addToNode(nu, z, m.from(k), cv, cp);
+                addToNode(nu, z, m.from(k), cv,
+                    F->redirectSingleton(m.from(k), cp)
+                );
 
                 F->createReducedNode(nu, cv, cp);
             }
