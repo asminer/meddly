@@ -258,7 +258,8 @@ class vectorgen {
         // Display minterms corresponding to an explicit vector
         //
         void showMinterms(std::ostream &out, const MEDDLY::domain* D,
-                const std::vector <MEDDLY::rangeval> &elems) const;
+                const std::vector <MEDDLY::rangeval> &elems,
+                MEDDLY::rangeval deflt) const;
 
     private:
         const bool is_for_relations;

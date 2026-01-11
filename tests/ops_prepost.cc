@@ -41,9 +41,9 @@ const unsigned MIN_SET_CARD = 1;
 const unsigned MAX_SET_CARD = 16;
 const unsigned MULT_SET_CARD = 4;
 
-const unsigned MIN_REL_CARD = 16;
+const unsigned MIN_REL_CARD = 8;
 const unsigned MAX_REL_CARD = 4096;
-const unsigned MULT_REL_CARD = 4;
+const unsigned MULT_REL_CARD = 8;
 
 using namespace MEDDLY;
 
@@ -314,8 +314,16 @@ void setCompare(const std::vector <MEDDLY::rangeval> &S0,
     }
 
     dd_edge dd0(Fset);
-    SG.explicit2edgeMax(S0, dd0, unreachable);
+    if ('p' == ftype) {
+        SG.explicit2edgeMin(S0, dd0, unreachable);
+    } else {
+        SG.explicit2edgeMax(S0, dd0, unreachable);
+    }
 #ifdef SHOW_INITIAL
+    /*
+    std::cout << "Initial minterm set:\n";
+    SG.showMinterms(std::cout, Fset->getDomain(), S0, unreachable);
+    */
     ostream_output out(std::cout);
     out << "Initial minterms:\n";
     for (dd_edge::iterator s = dd0.begin(); s; ++s)
@@ -330,7 +338,11 @@ void setCompare(const std::vector <MEDDLY::rangeval> &S0,
     // Check post-image
     //
     dd_edge ddpost(Fset), sympost(Fset);
-    SG.explicit2edgeMax(post, ddpost, unreachable);
+    if ('p' == ftype) {
+        SG.explicit2edgeMin(post, ddpost, unreachable);
+    } else {
+        SG.explicit2edgeMax(post, ddpost, unreachable);
+    }
     apply(POST_IMAGE, dd0, ddR, sympost);
     checkEqual("post image", sympost, ddpost);
 
@@ -338,7 +350,11 @@ void setCompare(const std::vector <MEDDLY::rangeval> &S0,
     // Check pre-image
     //
     dd_edge ddpre(Fset), sympre(Fset);
-    SG.explicit2edgeMax(pre, ddpre, unreachable);
+    if ('p' == ftype) {
+        SG.explicit2edgeMin(pre, ddpre, unreachable);
+    } else {
+        SG.explicit2edgeMax(pre, ddpre, unreachable);
+    }
     apply(PRE_IMAGE, dd0, ddR, sympre);
     checkEqual("pre image", sympre, ddpre);
 }
@@ -533,7 +549,7 @@ int main(int argc, const char** argv)
             break;
 
         case 'i':
-            unreachable = -1;
+            unreachable = 1000000000;
             break;
 
         default:

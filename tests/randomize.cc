@@ -526,7 +526,8 @@ void vectorgen::showSet(std::ostream &out,
 }
 
 void vectorgen::showMinterms(std::ostream &out, const MEDDLY::domain* D,
-        const std::vector <MEDDLY::rangeval> &elems) const
+        const std::vector <MEDDLY::rangeval> &elems,
+        MEDDLY::rangeval deflt) const
 {
     if (!D) throw "null domain, showMinterms";
     MEDDLY::minterm mt(D, isForRelations());
@@ -534,12 +535,13 @@ void vectorgen::showMinterms(std::ostream &out, const MEDDLY::domain* D,
     mout << "{ ";
     bool printed = false;
     for (unsigned i=0; i<elems.size(); i++) {
-        if (!bool(elems[i])) continue;
+        if (deflt == elems[i]) continue;
 
         if (printed) mout << ",\n      ";
         printed = true;
 
         index2minterm(i, mt);
+        mt.setValue(elems[i]);
         mt.show(mout);
     }
     mout << " }";

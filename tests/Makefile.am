@@ -123,6 +123,11 @@ TESTS = \
     \
     ops_prepost.--set.--MTb.--inF.--relI._sh \
     ops_prepost.--set.--MTb.--inF.--relQ._sh \
+    ops_prepost.--set.--MTb.--inF.--relF._sh \
+    ops_prepost.--set.--MTb.--inQ.--relI._sh \
+    ops_prepost.--set.--MTb.--inQ.--relQ._sh \
+    ops_prepost.--set.--MTb.--inQ.--relF._sh \
+    ops_prepost.--set.--EVp.--inF.--relI._sh \
     \
     ops_set.--set._sh \
     ops_set.--rel._sh \
