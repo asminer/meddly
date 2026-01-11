@@ -516,6 +516,7 @@ namespace MEDDLY {
             unsigned top_count;
 #endif
             bool forced_by_levels;
+            bool zero_check_is_valid;
     };
 };
 
@@ -554,6 +555,20 @@ MEDDLY::compare_ev<EOP, FACTOR, CTYPE>::compare_ev(forest* arg1,
     //       still jump to terminal 0)
     //
     forced_by_levels = arg1->isIdentityReduced() || arg2->isIdentityReduced();
+
+    //
+    // Can we conclude something on zero-edge functions?
+    // The only issue arises for EV+ with identity reduction,
+    // because the off-diagonals for that are infinity, not zero.
+    // In other words, EV+ with identity reduction is the only
+    // forest type (so far, anyway) where the zero function
+    // is NOT represented by an edge to a terminal node.
+    //
+    zero_check_is_valid =
+        ( !arg1->isIdentityReduced() || !arg1->isEVPlus() )
+        &&
+        ( !arg2->isIdentityReduced() || !arg2->isEVPlus() )
+    ;
 
     // Build compute table key and result types.
     // If we recurse by levels, then we need the level as part of the key.
@@ -615,7 +630,8 @@ void MEDDLY::compare_ev<EOP, FACTOR, CTYPE>::_compute(int L, unsigned in,
     //
     // Both are the zero function.
     //
-    if (EOP::isZeroFunction(av, A) && EOP::isZeroFunction(bv, B))
+    if (zero_check_is_valid &&
+            EOP::isZeroFunction(av, A) && EOP::isZeroFunction(bv, B))
     {
         terminal tt(CTYPE::isReflexive(), resF->getTerminalType());
         C = resF->makeRedundantsTo(tt.getHandle(), 0, L);
