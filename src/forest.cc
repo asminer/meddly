@@ -173,7 +173,7 @@ bool MEDDLY::rel_node_from_dd::outgoing(unsigned i, unpacked_node &u)
     */
 
     node_handle dn = unp->down(i);
-    const int next_level = -unp->getLevel();
+    const int next_level = MXD_levels::downLevel(unp->getLevel());
 
     if (getParent()->getNodeLevel(dn) == next_level) {
         u.initFromNode(dn);
@@ -214,9 +214,17 @@ bool MEDDLY::rel_node_from_dd::outgoing(unsigned i, unpacked_node &u)
         }
     } else {
         if (unp->hasEdges()) {
-            u.initIdentity(next_level, i, unp->edgeval(i), dn);
+            if (getParent()->isIdentityReduced()) {
+                u.initIdentity(next_level, i, unp->edgeval(i), dn);
+            } else {
+                u.initRedundant(next_level, unp->edgeval(i), dn);
+            }
         } else {
-            u.initIdentity(next_level, i, dn);
+            if (getParent()->isIdentityReduced()) {
+                u.initIdentity(next_level, i, dn);
+            } else {
+                u.initRedundant(next_level, dn);
+            }
         }
     }
     return true;
@@ -224,7 +232,6 @@ bool MEDDLY::rel_node_from_dd::outgoing(unsigned i, unpacked_node &u)
 
 void MEDDLY::rel_node_from_dd::show(output &out) const
 {
-
     if (unp->getLevel() < 0) {
         out.put("redundant node\n");
         for (unsigned i=0; i<unp->getSize(); i++) {
@@ -235,20 +242,48 @@ void MEDDLY::rel_node_from_dd::show(output &out) const
             out.put('\n');
         }
     } else {
+        const int next_level = MXD_levels::downLevel(unp->getLevel());
         unp->show(out, true);
         out.put('\n');
+        edge_value none;
         for (unsigned i=0; i<unp->getSize(); i++) {
+            const node_handle dn = unp->down(i);
             out.put("    ");
             out.put(i);
             out.put(": ");
             if (unp->hasEdges()) {
-                getParent()->showEdge(out, unp->edgeval(i), unp->down(i));
+                getParent()->showEdge(out, unp->edgeval(i), dn);
             } else {
-                edge_value none;
-                getParent()->showEdge(out, none, unp->down(i));
+                getParent()->showEdge(out, none, dn);
             }
             out.put(": ");
-            getParent()->showNode(out, unp->down(i), SHOW_DETAILS);
+            if (getParent()->getNodeLevel(dn) == next_level) {
+                getParent()->showNode(out, dn, SHOW_DETAILS);
+            } else {
+                if (getParent()->isIdentityReduced()) {
+                    out.put("identity: (");
+                    out.put(i);
+                    out.put(':');
+                    if (unp->hasEdges()) {
+                        getParent()->showEdge(out, unp->edgeval(i), dn);
+                    } else {
+                        getParent()->showEdge(out, none, dn);
+                    }
+                    out.put(')');
+                } else {
+                    out.put("redundant: [");
+                    for (unsigned j=0; j<unp->getSize(); j++) {
+                        if (j) out.put('|');
+                        if (unp->hasEdges()) {
+                            getParent()->showEdge(out, unp->edgeval(i), dn);
+                        } else {
+                            getParent()->showEdge(out, none, dn);
+                        }
+                    }
+                    out.put(']');
+
+                }
+            }
             out.put('\n');
         }
     }

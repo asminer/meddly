@@ -74,6 +74,9 @@ namespace MEDDLY {
             /// Return true if the given edge is unreachable
             static bool isUnreachable(const edge_value &cv, node_handle c);
 
+            /// Set an edge to be unreachable
+            static void setUnreachable(edge_value &cv, node_handle &c);
+
             /// Get the accumulate operation for result nodes.
             static binary_operation* accumulateOp(const forest* resF);
 
@@ -115,6 +118,29 @@ namespace MEDDLY {
                 }
             }
 
+            //
+            // Correctly do C[i] = C[i] + <v, p>
+            //
+            inline void addToCi(int nextL, unpacked_node *C, unsigned i,
+                    const edge_value &v, node_handle p)
+            {
+                // This case should be caught already
+                MEDDLY_DCASSERT( !ATYPE::isUnreachable(v, p) );
+                if (ATYPE::isUnreachable(edgeval(C, i), C->down(i)))
+                {
+                    C->setFull(i, v, p);
+                    return;
+                }
+                edge_value  newdv;
+                node_handle newdp;
+                accumulateOp->compute(nextL, ~0,
+                    edgeval(C, i), C->down(i), v, p, newdv, newdp
+                );
+                resF->unlinkNode(p);
+                resF->unlinkNode(C->down(i));
+                C->setFull(i, newdv, newdp);
+            }
+
         private:
             ct_entry_type* ct;
             binary_operation* accumulateOp;
@@ -124,6 +150,7 @@ namespace MEDDLY {
             unsigned top_count;
 #endif
             edge_value nothing;
+            bool forced_by_levels;
 
     }; // class prepost_op
 }; // namespace MEDDLY
@@ -164,13 +191,29 @@ MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
     MEDDLY_DCASSERT(accumulateOp);
 
     //
+    // Do we need to recurse by levels and store level info in the CT?
+    // YES, if the set and relation are both fully-reduced.
+    // (If the set is quasi reduced, we will recurse by levels anyway.)
+    // (If the relation is identity-reduced, we can skip levels.)
+    //
+    forced_by_levels = arg1->isFullyReduced() && arg2->isFullyReduced();
+
+    //
     // Build compute table key and result types.
     //
     ct = new ct_entry_type(ATYPE::name(FORWD));
-    if (swap_opnds) {
-        ct->setFixed(arg2, arg1);
+    if (forced_by_levels) {
+        if (swap_opnds) {
+            ct->setFixed('I', arg2, arg1);
+        } else {
+            ct->setFixed('I', arg1, arg2);
+        }
     } else {
-        ct->setFixed(arg1, arg2);
+        if (swap_opnds) {
+            ct->setFixed(arg2, arg1);
+        } else {
+            ct->setFixed(arg1, arg2);
+        }
     }
     if (EOP::hasEdgeValues()) {
         ct->setResult(EOP::edgeValueTypeLetter(), res);
@@ -222,13 +265,13 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
     // Check terminal cases
     //
     // **************************************************************
-    if (0==A || 0==B) {
-        cv = av;
-        C = 0;
+    if (0==B || ATYPE::isUnreachable(av, A)) {
+        ATYPE::setUnreachable(cv, C);
+        EOP::accumulateOp(cv, av);
         return;
     }
 
-    if (arg2F->isTerminalNode(B)) {
+    if (arg2F->isTerminalNode(B) && (0==L || arg2F->isIdentityReduced())) {
         //
         // We're either at the bottom,
         // or the matrix is an identity (or a scalar times identity).
@@ -245,8 +288,8 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
     // **************************************************************
     const int Alevel = arg1F->getNodeLevel(A);
     const int Blevel = ABS(arg2F->getNodeLevel(B));
-    const int Clevel = MAX(Alevel, Blevel);
-    const int Cnextlevel = MDD_levels::downLevel(Clevel);
+    const int Clevel = forced_by_levels ? L : MAX(Alevel, Blevel);
+    const int nextL = MDD_levels::downLevel(Clevel);
 
 #ifdef TRACE
     out << ATYPE::name(FORWD) << " prepost_set_mtrel::compute("
@@ -269,8 +312,14 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
     // **************************************************************
     ct_vector key(ct->getKeySize());
     ct_vector res(ct->getResultSize());
-    key[0].setN(A);
-    key[1].setN(B);
+    if (forced_by_levels) {
+        key[0].setI(L);
+        key[1].setN(A);
+        key[2].setN(B);
+    } else {
+        key[0].setN(A);
+        key[1].setN(B);
+    }
 
     if (ct->findCT(key, res)) {
         //
@@ -326,7 +375,6 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
     unpacked_node* Cu = nullptr;
 
 #ifdef TRACE
-    edge_value nothing;
     out << "A: ";
     Au->show(out, true);
     out << "\nB: ";
@@ -343,25 +391,55 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
     // Recurse
     //
 
-    //
-    // TBD: fully-fully case
-    //
     if (!Brn) {
-        //
-        // Identity level
-        //
-        Cu = unpacked_node::newWritable(resF, Clevel, SPARSE_ONLY);
-        unsigned zc = 0;
-        for (unsigned z=0; z<Au->getSize(); z++) {
-            edge_value  cdv;
-            node_handle cdp;
-            _compute(Cnextlevel, edgeval(Au, z), Au->down(z), B, cdv, cdp);
-            if (!resF->isTransparentEdge(cdv, cdp)) {
-                Cu->setSparse(zc, Au->index(z), cdv, cdp);
-                ++zc;
+        if (arg2F->isFullyReduced()) {
+            //
+            // Skipped Fully level(s)
+            //
+            // Forward:  C[j] = C[j] + A[i] * B, for all i,j
+            // Backward: C[i] = C[i] + B * A[j], for all i,j
+            //
+            // That's really the same thing, so we'll do:
+            // C = 0
+            // for all i s.t. A[i] != 0
+            //     tmp = A[i] * B
+            //     for all j
+            //         C[j] = C[j] + tmp
+            //
+            Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
+            // clear out result (important!)
+            Cu->clear(0, Cu->getSize());
+            for (unsigned zi=0; zi<Au->getSize(); zi++) {
+                node_handle ab_p;
+                edge_value  ab_v;
+                _compute(nextL, edgeval(Au, zi), Au->down(zi),
+                        B, ab_v, ab_p);
+                if (ATYPE::isUnreachable(ab_v, ab_p)) {
+                    continue;
+                }
+                for (unsigned j=0; j<Cu->getSize(); j++) {
+                    addToCi(nextL, Cu, j, ab_v, resF->linkNode(ab_p));
+                }
+                resF->unlinkNode(ab_p);
+            } // for zi
+        } else {
+            //
+            // Skipped Identity level(s)
+            //
+            MEDDLY_DCASSERT(arg2F->isIdentityReduced());
+            Cu = unpacked_node::newWritable(resF, Clevel, SPARSE_ONLY);
+            unsigned zc = 0;
+            for (unsigned z=0; z<Au->getSize(); z++) {
+                edge_value  ab_v;
+                node_handle ab_p;
+                _compute(nextL, edgeval(Au, z), Au->down(z), B, ab_v, ab_p);
+                if (!resF->isTransparentEdge(ab_v, ab_p)) {
+                    Cu->setSparse(zc, Au->index(z), ab_v, ab_p);
+                    ++zc;
+                }
             }
+            Cu->resize(zc);
         }
-        Cu->resize(zc);
     } else {
         //
         // Non-identity level
@@ -384,27 +462,12 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                         // C[j] = C[j] + A[i] * B[i,j]
                         node_handle cdp;
                         edge_value  cdv;
-                        _compute(Cnextlevel, edgeval(Au, zi), Au->down(zi),
+                        _compute(nextL, edgeval(Au, zi), Au->down(zi),
                                 Bu->down(zj), cdv, cdp);
                         if (ATYPE::isUnreachable(cdv, cdp)) {
                             continue;
                         }
-                        if (ATYPE::isUnreachable(edgeval(Cu, j), Cu->down(j)))
-                        {
-                            Cu->setFull(j, cdv, cdp);
-                            continue;
-                        }
-
-                        edge_value  newdv;
-                        node_handle newdp;
-                        accumulateOp->compute(Cnextlevel, ~0,
-                            edgeval(Cu, j), Cu->down(j),
-                            cdv, cdp,
-                            newdv, newdp
-                        );
-                        resF->unlinkNode(cdp);
-                        resF->unlinkNode(Cu->down(j));
-                        Cu->setFull(j, newdv, newdp);
+                        addToCi(nextL, Cu, j, cdv, cdp);
                     } // for zj
                 } // if brn[i]
             } // for zi
@@ -422,26 +485,12 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                             // C[i] = C[i] + B[i,j] * A[j]
                             node_handle cdp;
                             edge_value  cdv;
-                            _compute(Cnextlevel, edgeval(Au, zj), Au->down(zj),
+                            _compute(nextL, edgeval(Au, zj), Au->down(zj),
                                     Bu->down(j), cdv, cdp);
                             if (ATYPE::isUnreachable(cdv, cdp)) {
                                 continue;
                             }
-                            if (ATYPE::isUnreachable(edgeval(Cu, i), Cu->down(i)))
-                            {
-                                Cu->setFull(i, cdv, cdp);
-                                continue;
-                            }
-                            edge_value  newdv;
-                            node_handle newdp;
-                            accumulateOp->compute(Cnextlevel, ~0,
-                                edgeval(Cu, i), Cu->down(i),
-                                cdv, cdp,
-                                newdv, newdp
-                            );
-                            resF->unlinkNode(cdp);
-                            resF->unlinkNode(Cu->down(i));
-                            Cu->setFull(i, newdv, newdp);
+                            addToCi(nextL, Cu, i, cdv, cdp);
                         } // if bu[j]
                     } // for zj
                 } // if brn[i]
@@ -529,6 +578,12 @@ namespace MEDDLY {
             MEDDLY_DCASSERT(ev.isVoid());
             return 0==p;
         }
+        /// Set edge to be unreachable states
+        inline static void setUnreachable(edge_value &v, node_handle &p)
+        {
+            v.set();
+            p = 0;
+        }
 
         /// Apply the operation when b is a terminal node.
         static void apply(forest* fa, const edge_value &av, node_handle a,
@@ -568,6 +623,12 @@ namespace MEDDLY {
         inline static bool isUnreachable(const edge_value &ev, node_handle p)
         {
             return OMEGA_INFINITY == p;
+        }
+        /// Set edge to be unreachable states
+        inline static void setUnreachable(edge_value &v, node_handle &p)
+        {
+            p = OMEGA_INFINITY;
+            v = INT(0);
         }
 
 
@@ -614,6 +675,11 @@ namespace MEDDLY {
         {
             MEDDLY_DCASSERT(ev.isVoid());
             return 0==p;
+        }
+        inline static void setUnreachable(edge_value &v, node_handle &p)
+        {
+            v.set();
+            p = 0;
         }
 
         /// Apply the operation when b is a terminal node.
