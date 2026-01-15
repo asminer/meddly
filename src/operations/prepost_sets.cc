@@ -41,9 +41,9 @@ namespace MEDDLY {
     class PRE_IMAGE_factory;
     class POST_IMAGE_factory;
 
-    class image_op_evplus;
-    class relXset_evplus;
-    class setXrel_evplus;
+    // class image_op_evplus;
+    // class relXset_evplus;
+    // class setXrel_evplus;
     // class tcXrel_evplus;
 
     // binary_list TC_POST_IMAGE_cache;
@@ -742,6 +742,8 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
+#if 0
+
 /// Abstract base class for all MT-based pre/post image operations.
 class MEDDLY::image_op_evplus : public binary_operation {
   public:
@@ -830,11 +832,15 @@ void MEDDLY::image_op_evplus::compute(long ev, node_handle evmdd, node_handle mx
   compute_rec(ev, evmdd, mxd, resEv, resEvmdd);
 }
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                     relXset_evplus  class                      *
 // *                                                                *
 // ******************************************************************
+
+#if 0
 
 /** Generic base for relation multiplied by set.
     Changing what happens at the terminals can give
@@ -980,11 +986,15 @@ void MEDDLY::relXset_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   saveResult(Key, ev, evmdd, mxd, resEv, resEvmdd);
 }
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                     setXrel_evplus  class                      *
 // *                                                                *
 // ******************************************************************
+
+#if 0
 
 /** Generic base for set multiplied by relation.
     Changing what happens at the terminals can give
@@ -1130,11 +1140,15 @@ void MEDDLY::setXrel_evplus::compute_rec(long ev, node_handle evmdd, node_handle
   saveResult(Key, ev, evmdd, mxd, resEv, resEvmdd);
 }
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                    mtmatr_evplusvect  class                    *
 // *                                                                *
 // ******************************************************************
+
+#if 0
 
 namespace MEDDLY {
 
@@ -1166,11 +1180,15 @@ namespace MEDDLY {
   };
 };
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                    evplusvect_mtmatr  class                    *
 // *                                                                *
 // ******************************************************************
+
+#if 0
 
 namespace MEDDLY {
 
@@ -1202,6 +1220,8 @@ namespace MEDDLY {
   };
 };
 
+#endif
+
 // ******************************************************************
 // ******************************************************************
 
@@ -1228,7 +1248,7 @@ namespace MEDDLY {
 template <bool FWD>
 void MEDDLY::_IMAGE_factory <FWD>::setup()
 {
-    snprintf(docs, 1024, "Follow edges %s in a transition relation. The first operand should be a set/vector. The second operand should be a relation/matrix. The result should be a set/vector. All forests should be over the same domain.\nIf the output function has type boolean, then the output is the set of states %s one of the input states.\nTBD...",
+    snprintf(docs, 1024, "Follow edges %s in a transition relation. The first operand should be a set/vector. The second operand should be a relation/matrix. The result should be a set/vector, and should have the same range as the first operand. All forests should be over the same domain.\nIf the output function has type boolean, then the output is the set of states %s one of the input states.\nTBD...",
             FWD ? "forward" : "backward",
             FWD ? "reachable from" : "that can reach");
 
@@ -1239,17 +1259,6 @@ template <bool FWD>
 MEDDLY::binary_operation*
 MEDDLY::_IMAGE_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 {
-    /*
-    binary_operation *acc = nullptr;
-    if  ( c->getRangeType() == range_type::BOOLEAN )
-    {
-        acc = MEDDLY::build(UNION, c, c, c);
-    } else {
-        acc = MEDDLY::build(MINIMUM, c, c, c);
-    }
-    MEDDLY_DCASSERT(acc);
-    */
-
     if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         return new prepost_set_mtrel<EdgeOp_none, FWD, mt_prepost>(a, b, c);
     }
