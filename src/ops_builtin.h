@@ -125,6 +125,12 @@ namespace MEDDLY {
     /// Follow a transition relation, forwards.
     binary_factory& POST_IMAGE();
 
+    /// Vector-matrix multiplication.
+    binary_factory& VM_MULTIPLY();
+
+    /// Matrix-vector multiplication.
+    binary_factory& MV_MULTIPLY();
+
     // ======================================================================
 
     /** Plus operation used to compute transitive closure and further
@@ -150,18 +156,6 @@ namespace MEDDLY {
     binary_operation* REACHABLE_STATES_BFS(forest* a, forest* b, forest* c);
     binary_operation* REVERSE_REACHABLE_DFS(forest* a, forest* b, forest* c);
     binary_operation* REVERSE_REACHABLE_BFS(forest* a, forest* b, forest* c);
-
-    /** Vector matrix multiply, where the first argument is vector (MDD),
-        the second argument is a matrix (MXD),
-        and the result is a vector (MDD).
-    */
-    binary_operation* VM_MULTIPLY(forest* a, forest* b, forest* c);
-
-    /** Matrix vector multiply, where the first argument is a matrix (MXD),
-        the second argument is a vector (MDD),
-        and the result is a vector (MDD).
-    */
-    binary_operation* MV_MULTIPLY(forest* a, forest* b, forest* c);
 
     /** Matrix multiplication, where the first argument is a matrix (MXD),
         the second argument is a matrix (MXD),

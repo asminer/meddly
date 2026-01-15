@@ -24,6 +24,10 @@ namespace MEDDLY {
     binary_factory& PRE_IMAGE();
     binary_factory& POST_IMAGE();
 
+    binary_factory& VM_MULTIPLY();
+    binary_factory& MV_MULTIPLY();
+
+    /*
     // TBD below here
 
     class forest;
@@ -38,6 +42,7 @@ namespace MEDDLY {
     binary_operation* MV_MULTIPLY(forest* a, forest* b, forest* c);
     void MV_MULTIPLY_init();
     void MV_MULTIPLY_done();
+    */
 }
 
 #endif

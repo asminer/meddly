@@ -38,17 +38,16 @@
 #endif
 
 namespace MEDDLY {
-    class PRE_IMAGE_factory;
-    class POST_IMAGE_factory;
-
+    class VM_MULTIPLY_factory;
+    class MV_MULTIPLY_factory;
     // class image_op_evplus;
     // class relXset_evplus;
     // class setXrel_evplus;
     // class tcXrel_evplus;
 
     // binary_list TC_POST_IMAGE_cache;
-    binary_list VM_MULTIPLY_cache;
-    binary_list MV_MULTIPLY_cache;
+    // binary_list VM_MULTIPLY_cache;
+    // binary_list MV_MULTIPLY_cache;
 };
 
 // ************************************************************************
@@ -1283,6 +1282,78 @@ MEDDLY::_IMAGE_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 
 // ******************************************************************
 // *                                                                *
+// *                   VM_MULTIPLY_factory  class                   *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::VM_MULTIPLY_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::VM_MULTIPLY_factory::setup()
+{
+    _setup(__FILE__, "VM_MULTIPLY", "Vector matrix multiply. The first operand is a vector (MDD), the second operand is a matrix (MxD), and the result is a vector (MDD). All forests must multi-terminal and over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::VM_MULTIPLY_factory::build_new(forest* a, forest* b, forest* c)
+{
+    switch (c->getRangeType()) {
+        case range_type::INTEGER:
+            return new prepost_set_mtrel<EdgeOp_none, true,
+                            mt_vectXmatr<int> >(a, b, c);
+
+        case range_type::REAL:
+            return new prepost_set_mtrel<EdgeOp_none, true,
+                            mt_vectXmatr<float> >(a, b, c);
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+}
+
+// ******************************************************************
+// *                                                                *
+// *                   MV_MULTIPLY_factory  class                   *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::MV_MULTIPLY_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::MV_MULTIPLY_factory::setup()
+{
+    _setup(__FILE__, "MV_MULTIPLY", "Matrix vector multiply. The first operand is a matrix (MxD), the second operand is a vector (MDD), and the result is a vector (MDD). All forests must multi-terminal and over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::MV_MULTIPLY_factory::build_new(forest* a, forest* b, forest* c)
+{
+    switch (c->getRangeType()) {
+        case range_type::INTEGER:
+            return new prepost_set_mtrel<EdgeOp_none, false,
+                            mt_vectXmatr<int> >(a, b, c, true);
+
+        case range_type::REAL:
+            return new prepost_set_mtrel<EdgeOp_none, false,
+                            mt_vectXmatr<float> >(a, b, c, true);
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+}
+
+// ******************************************************************
+// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
@@ -1299,7 +1370,22 @@ MEDDLY::binary_factory& MEDDLY::POST_IMAGE()
     return F;
 }
 
+MEDDLY::binary_factory& MEDDLY::VM_MULTIPLY()
+{
+    static VM_MULTIPLY_factory F;
+    return F;
+}
+
+MEDDLY::binary_factory& MEDDLY::MV_MULTIPLY()
+{
+    static MV_MULTIPLY_factory F;
+    return F;
+}
+
+
 // ******************************************************************
+
+#if 0
 
 MEDDLY::binary_operation* MEDDLY::VM_MULTIPLY(forest* a, forest* b, forest* c)
 {
@@ -1371,3 +1457,4 @@ void MEDDLY::MV_MULTIPLY_done()
     MEDDLY_DCASSERT(MV_MULTIPLY_cache.isEmpty());
 }
 
+#endif

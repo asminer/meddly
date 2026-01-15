@@ -120,11 +120,13 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     all_binary.push_back( &MINUS()                  );
     all_binary.push_back( &MODULO()                 );
     all_binary.push_back( &MULTIPLY()               );
+    all_binary.push_back( &MV_MULTIPLY()            );
     all_binary.push_back( &NOT_EQUAL()              );
     all_binary.push_back( &PLUS()                   );
     all_binary.push_back( &POST_IMAGE()             );
     all_binary.push_back( &PRE_IMAGE()              );
     all_binary.push_back( &UNION()                  );
+    all_binary.push_back( &VM_MULTIPLY()            );
 }
 
 void MEDDLY::builtin_init::setup()
@@ -160,8 +162,6 @@ void MEDDLY::builtin_init::setup()
     REVERSE_REACHABLE_BFS_init();
     REVERSE_REACHABLE_DFS_init();
 
-    VM_MULTIPLY_init();
-    MV_MULTIPLY_init();
     MM_MULTIPLY_init();
 
     CONSTRAINED_BACKWARD_BFS_init();
@@ -202,8 +202,6 @@ void MEDDLY::builtin_init::cleanup()
     REVERSE_REACHABLE_BFS_done();
     REVERSE_REACHABLE_DFS_done();
 
-    VM_MULTIPLY_done();
-    MV_MULTIPLY_done();
     MM_MULTIPLY_done();
 
     //
