@@ -46,8 +46,6 @@ namespace MEDDLY {
     // class tcXrel_evplus;
 
     // binary_list TC_POST_IMAGE_cache;
-    // binary_list VM_MULTIPLY_cache;
-    // binary_list MV_MULTIPLY_cache;
 };
 
 // ************************************************************************
@@ -1382,79 +1380,3 @@ MEDDLY::binary_factory& MEDDLY::MV_MULTIPLY()
     return F;
 }
 
-
-// ******************************************************************
-
-#if 0
-
-MEDDLY::binary_operation* MEDDLY::VM_MULTIPLY(forest* a, forest* b, forest* c)
-{
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  VM_MULTIPLY_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-
-    switch (c->getRangeType()) {
-        case range_type::INTEGER:
-            return VM_MULTIPLY_cache.add(
-                new prepost_set_mtrel<EdgeOp_none, true, mt_vectXmatr<int> >(a, b, c)
-            );
-
-        case range_type::REAL:
-            return VM_MULTIPLY_cache.add(
-                new prepost_set_mtrel<EdgeOp_none, true, mt_vectXmatr<float> >(a, b, c)
-            );
-
-        default:
-            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-}
-
-void MEDDLY::VM_MULTIPLY_init()
-{
-    VM_MULTIPLY_cache.reset("VM-multiply");
-}
-
-void MEDDLY::VM_MULTIPLY_done()
-{
-    MEDDLY_DCASSERT(VM_MULTIPLY_cache.isEmpty());
-}
-
-// ******************************************************************
-
-MEDDLY::binary_operation* MEDDLY::MV_MULTIPLY(forest* a, forest* b, forest* c)
-{
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  MV_MULTIPLY_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-
-    switch (c->getRangeType()) {
-        case range_type::INTEGER:
-            return MV_MULTIPLY_cache.add(
-                new prepost_set_mtrel<EdgeOp_none, false, mt_vectXmatr<int> >(a, b, c, true)
-            );
-
-        case range_type::REAL:
-            return MV_MULTIPLY_cache.add(
-                new prepost_set_mtrel<EdgeOp_none, false, mt_vectXmatr<float> >(a, b, c, true)
-            );
-
-        default:
-            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    }
-}
-
-void MEDDLY::MV_MULTIPLY_init()
-{
-    MV_MULTIPLY_cache.reset("MV-multiply");
-}
-
-void MEDDLY::MV_MULTIPLY_done()
-{
-    MEDDLY_DCASSERT(MV_MULTIPLY_cache.isEmpty());
-}
-
-#endif

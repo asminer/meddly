@@ -26,23 +26,6 @@ namespace MEDDLY {
 
     binary_factory& VM_MULTIPLY();
     binary_factory& MV_MULTIPLY();
-
-    /*
-    // TBD below here
-
-    class forest;
-    class binary_operation;
-
-    /// The 'vector matrix multiplication' operation builder.
-    binary_operation* VM_MULTIPLY(forest* a, forest* b, forest* c);
-    void VM_MULTIPLY_init();
-    void VM_MULTIPLY_done();
-
-    /// The 'matrix vector multiplication' operation builder.
-    binary_operation* MV_MULTIPLY(forest* a, forest* b, forest* c);
-    void MV_MULTIPLY_init();
-    void MV_MULTIPLY_done();
-    */
 }
 
 #endif
