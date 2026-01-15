@@ -292,8 +292,9 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
     const int nextL = MDD_levels::downLevel(Clevel);
 
 #ifdef TRACE
-    out << ATYPE::name(FORWD) << " prepost_set_mtrel::compute("
-        << L << ", " << A << ", " << B << ")\n";
+    out << ATYPE::name(FORWD) << " prepost_set_mtrel::compute(" << L << ", ";
+    arg1F->showEdge(out, av, A);
+    out << ", " << B << ")\n";
     out << "A: #" << A << " ";
     arg1F->showNode(out, A, SHOW_DETAILS);
     out << "\n";
@@ -360,7 +361,9 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
 
     unpacked_node* Au = unpacked_node::New(arg1F, SPARSE_ONLY);
     if (Alevel != Clevel) {
-        Au->initRedundant(Clevel, av, A);
+        edge_value zero;
+        EOP::clear(zero);
+        Au->initRedundant(Clevel, zero, A);
     } else {
         Au->initFromNode(A);
     }
@@ -468,6 +471,13 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                             continue;
                         }
                         addToCi(nextL, Cu, j, cdv, cdp);
+#ifdef TRACE
+                        out << A << "x" << B << " completed "
+                            << i << "->" << j << "; C is now ";
+
+                        Cu->show(out, false);
+                        out << "\n";
+#endif
                     } // for zj
                 } // if brn[i]
             } // for zi
@@ -492,6 +502,13 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                             }
                             addToCi(nextL, Cu, i, cdv, cdp);
                         } // if bu[j]
+#ifdef TRACE
+                        out << A << "x" << B << " completed "
+                            << i << "<-" << j << "; C is now ";
+
+                        Cu->show(out, false);
+                        out << "\n";
+#endif
                     } // for zj
                 } // if brn[i]
             } // for i
@@ -501,8 +518,9 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
 #ifdef TRACE
     out.indent_less();
     out.put('\n');
-    out << ATYPE::name(FORWD) << " prepost_set_mtrel::compute("
-        << L << ", " << A << ", " << B << ") done\n";
+    out << ATYPE::name(FORWD) << " prepost_set_mtrel::compute(" << L << ", ";
+    arg1F->showEdge(out, av, A);
+    out << ", " << B << ") done\n";
     out << "  A: #" << A << ": ";
     arg1F->showNode(out, A, SHOW_DETAILS);
     out << "\n  B: #" << B << ": ";
