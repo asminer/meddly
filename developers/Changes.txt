@@ -4,9 +4,6 @@ Implement next, using new rel_node interface:
     * pre/post image on MT with -1 for unreachable
         (or INTMAX for unreachable? Uglier though.)
 
-    * vect/matr and matr/vect multiplication tests
-        (now within pre/post image)
-
 ========= (release?)
 
     * User-defined element-wise unary functions

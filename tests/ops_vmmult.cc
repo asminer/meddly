@@ -31,6 +31,11 @@
 
 #include "randomize.h"
 
+// #define SHOW_INITIAL
+// #define SHOW_MATRIX
+// #define SHOW_VMPROD
+// #define SHOW_MVPROD
+
 vectorgen SG(MEDDLY::SET,      5, 3);
 vectorgen RG(MEDDLY::RELATION, 5, 3);
 
@@ -100,13 +105,13 @@ void makeExplicitGraph(const dd_edge &E, std::vector <matrlist*> &elist)
     for (unsigned i=0; i<elist.size(); i++) {
         elist[i] = nullptr;
     }
-#ifdef SHOW_GRAPH
+#ifdef SHOW_MATRIX
     ostream_output out(std::cout);
-    out << "Explicit graph:\n";
+    out << "Explicit matrix:\n";
 #endif
     for (dd_edge::iterator I = E.begin(); I != E.end(); I++) {
         unsigned f, t;
-#ifdef SHOW_GRAPH
+#ifdef SHOW_MATRIX
         out << "    ";
         (*I).show(out);
         out << "\n";
@@ -232,6 +237,7 @@ template <typename TYPE>
 void compare(const std::vector <MEDDLY::rangeval> &x,
         const dd_edge &ddA, forest* Fset)
 {
+    ostream_output out(std::cout);
     std::vector <MEDDLY::rangeval> xA(x.size());
     std::vector <MEDDLY::rangeval> Ax(x.size());
 
@@ -244,13 +250,8 @@ void compare(const std::vector <MEDDLY::rangeval> &x,
     dd_edge ddx(Fset);
     SG.explicit2edgeMax(x, ddx, TYPE(0));
 #ifdef SHOW_INITIAL
-    /*
-    std::cout << "Initial minterm set:\n";
-    SG.showMinterms(std::cout, Fset->getDomain(), S0, unreachable);
-    */
-    ostream_output out(std::cout);
     out << "Initial minterms:\n";
-    for (dd_edge::iterator s = dd0.begin(); s; ++s)
+    for (dd_edge::iterator s = ddx.begin(); s; ++s)
     {
         out << "    ";
         (*s).show(out);
@@ -263,6 +264,15 @@ void compare(const std::vector <MEDDLY::rangeval> &x,
     //
     dd_edge ddxA(Fset), symxA(Fset);
     SG.explicit2edgeMax(xA, ddxA, TYPE(0));
+#ifdef SHOW_VMPROD
+    out << "v*m minterms:\n";
+    for (dd_edge::iterator s = ddxA.begin(); s; ++s)
+    {
+        out << "    ";
+        (*s).show(out);
+        out << "\n";
+    }
+#endif
     apply(VM_MULTIPLY, ddx, ddA, symxA);
     checkEqual("vector-matrix multiply", symxA, ddxA);
 
@@ -271,6 +281,15 @@ void compare(const std::vector <MEDDLY::rangeval> &x,
     //
     dd_edge ddAx(Fset), symAx(Fset);
     SG.explicit2edgeMax(Ax, ddAx, TYPE(0));
+#ifdef SHOW_MVPROD
+    out << "m*v minterms:\n";
+    for (dd_edge::iterator s = ddAx.begin(); s; ++s)
+    {
+        out << "    ";
+        (*s).show(out);
+        out << "\n";
+    }
+#endif
     apply(MV_MULTIPLY, ddA, ddx, symAx);
     checkEqual("matrix-vector multiply", symAx, ddAx);
 }
@@ -301,7 +320,7 @@ void testOnForests(unsigned scard, forest* Fset,
     for (unsigned i=0; i<N; i++) {
         std::cerr << '.';
         RG.randomizeVector(exprel, rcard, vals);
-        RG.explicit2edgeMax(exprel, Rel, false);
+        RG.explicit2edgeMax(exprel, Rel, vals[0]);
 
         SG.randomizeVector(expset, scard, vals);
         compare<TYPE>(expset, Rel, Fset);
@@ -312,7 +331,7 @@ void testOnForests(unsigned scard, forest* Fset,
     for (unsigned i=0; i<N; i++) {
         std::cerr << "x";
         RG.randomizeFully(exprel, rcard, vals);
-        RG.explicit2edgeMax(exprel, Rel, false);
+        RG.explicit2edgeMax(exprel, Rel, vals[0]);
 
         SG.randomizeVector(expset, scard, vals);
         compare<TYPE>(expset, Rel, Fset);
@@ -323,7 +342,7 @@ void testOnForests(unsigned scard, forest* Fset,
     for (unsigned i=0; i<N; i++) {
         std::cerr << "i";
         RG.randomizeIdentity(exprel, rcard, vals);
-        RG.explicit2edgeMax(exprel, Rel, false);
+        RG.explicit2edgeMax(exprel, Rel, vals[0]);
 
         SG.randomizeVector(expset, scard, vals);
         compare<TYPE>(expset, Rel, Fset);

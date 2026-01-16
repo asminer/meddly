@@ -139,6 +139,20 @@ TESTS = \
     ops_set.--set._sh \
     ops_set.--rel._sh \
     \
+    ops_vmmult.--int.--vF.--mF._sh \
+    ops_vmmult.--int.--vF.--mI._sh \
+    ops_vmmult.--int.--vF.--mQ._sh \
+    ops_vmmult.--int.--vQ.--mF._sh \
+    ops_vmmult.--int.--vQ.--mI._sh \
+    ops_vmmult.--int.--vQ.--mQ._sh \
+    \
+    ops_vmmult.--real.--vF.--mF._sh \
+    ops_vmmult.--real.--vF.--mI._sh \
+    ops_vmmult.--real.--vF.--mQ._sh \
+    ops_vmmult.--real.--vQ.--mF._sh \
+    ops_vmmult.--real.--vQ.--mI._sh \
+    ops_vmmult.--real.--vQ.--mQ._sh \
+    \
     refcount \
     sat_test
 
