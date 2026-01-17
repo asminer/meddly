@@ -1,8 +1,13 @@
 
 Implement next, using new rel_node interface:
 
+    * DISTMIN: like element-wise minimum except negative values
+                are treated like infinities:
+            dm(-, -) = -1
+            dm(-, x) = x, if x >= 0
+            dm(x, y) = MIN(x, y)
+
     * pre/post image on MT with -1 for unreachable
-        (or INTMAX for unreachable? Uglier though.)
 
 ========= (release?)
 

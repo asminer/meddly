@@ -16,6 +16,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "../ct_vector.h"
+#include "../oper_binary.h"
+#include "../oper_unary.h"
+#include "../ops_builtin.h" // for COPY
+#include "../forest_levels.h"
 #include "../forest_edgerules.h"
 
 //   **************************************************************

@@ -30,6 +30,7 @@ noinst_PROGRAMS = \
     nodestor \
     nqueens \
     ops_comp \
+    ops_distmin \
     ops_divmod \
     ops_maxmin \
     ops_mult \
@@ -257,6 +258,9 @@ nqueens_LDADD = ../src/libmeddly.la
 
 ops_comp_SOURCES = ops_comp.cc randomize.h randomize.cc
 ops_comp_LDADD = ../src/libmeddly.la
+
+ops_distmin_SOURCES = ops_distmin.cc randomize.h randomize.cc
+ops_distmin_LDADD = ../src/libmeddly.la
 
 ops_divmod_SOURCES = ops_divmod.cc randomize.h randomize.cc
 ops_divmod_LDADD = ../src/libmeddly.la

@@ -50,6 +50,7 @@ namespace MEDDLY {
 
 #include "operations/arith_max.h"
 #include "operations/arith_min.h"
+#include "operations/arith_distmin.h"
 #include "operations/arith_plus.h"
 #include "operations/arith_minus.h"
 #include "operations/arith_mult.h"
@@ -108,6 +109,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     //
     all_binary.push_back( &CROSS()                  );
     all_binary.push_back( &DIFFERENCE()             );
+    all_binary.push_back( &DIST_MIN()               );
     all_binary.push_back( &DIVIDE()                 );
     all_binary.push_back( &EQUAL()                  );
     all_binary.push_back( &GREATER_THAN()           );

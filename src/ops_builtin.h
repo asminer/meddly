@@ -86,6 +86,9 @@ namespace MEDDLY {
     /// The minimum of two functions, with range_type INTEGER or REAL
     binary_factory& MINIMUM();
 
+    /// Like minimum, except negatives mean infinity
+    binary_factory& DIST_MIN();
+
     /// Add two functions, with range type INTEGER and REAL
     binary_factory& PLUS();
 
