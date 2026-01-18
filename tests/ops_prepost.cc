@@ -320,18 +320,9 @@ void setCompare(const std::vector <MEDDLY::rangeval> &S0,
         SG.explicit2edgeMax(S0, dd0, unreachable);
     }
 #ifdef SHOW_INITIAL
-    /*
     std::cout << "Initial minterm set:\n";
     SG.showMinterms(std::cout, Fset->getDomain(), S0, unreachable);
-    */
-    ostream_output out(std::cout);
-    out << "Initial minterms:\n";
-    for (dd_edge::iterator s = dd0.begin(); s; ++s)
-    {
-        out << "    ";
-        (*s).show(out);
-        out << "\n";
-    }
+    std::cout << "\n";
 #endif
 
     //
@@ -377,14 +368,14 @@ void setTestsOnForests(unsigned scard, forest* Fset,
 
     if (Fset->isRangeType(MEDDLY::range_type::BOOLEAN)) {
         values.resize(2);
-        values[0] = false;
+        values[0] = unreachable;
         values[1] = true;
     } else {
         values.resize(4);
         values[0] = unreachable;
-        values[1] =  0;
-        values[2] =  1;
-        values[3] =  2;
+        values[1] = 0;
+        values[2] = 1;
+        values[3] = 2;
     }
 
     const unsigned N = 8;
@@ -549,7 +540,7 @@ int main(int argc, const char** argv)
             break;
 
         case 'i':
-            unreachable = 1000000000;
+            unreachable = -1;
             break;
 
         default:

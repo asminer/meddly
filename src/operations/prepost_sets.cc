@@ -26,7 +26,6 @@
 #include "../forest_levels.h"
 #include "../forest_edgerules.h"
 
-// #define TRACE_ALL_OPS
 // #define TRACE
 
 #ifdef TRACE
@@ -59,12 +58,13 @@ namespace MEDDLY {
             static const char* name(bool forwd);
 
             /// Return true if the given edge is unreachable
-            static bool isUnreachable(const forest* F,
-                            const edge_value &cv, node_handle c);
+            static bool isUnreachable(const edge_value &cv, node_handle c);
 
             /// Set an edge to be unreachable
-            static void setUnreachable(const forest* F,
-                            edge_value &cv, node_handle &c);
+            static void setUnreachable(edge_value &cv, node_handle &c);
+
+            /// Set all edges of an unpacked node to unreachable
+            static void setAllUnreachable(unpacked_node *u);
 
             /// Get the accumulate operation for result nodes.
             static binary_operation* accumulateOp(const forest* resF);
@@ -114,8 +114,8 @@ namespace MEDDLY {
                     const edge_value &v, node_handle p)
             {
                 // This case should be caught already
-                MEDDLY_DCASSERT( !ATYPE::isUnreachable(resF, v, p) );
-                if (ATYPE::isUnreachable(resF, edgeval(C, i), C->down(i)))
+                MEDDLY_DCASSERT( !ATYPE::isUnreachable(v, p) );
+                if (ATYPE::isUnreachable(edgeval(C, i), C->down(i)))
                 {
                     C->setFull(i, v, p);
                     return;
@@ -250,8 +250,8 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
     // Check terminal cases
     //
     // **************************************************************
-    if (0==B || ATYPE::isUnreachable(arg1F, av, A)) {
-        ATYPE::setUnreachable(resF, cv, C);
+    if (0==B || ATYPE::isUnreachable(av, A)) {
+        ATYPE::setUnreachable(cv, C);
         EOP::accumulateOp(cv, av);
         return;
     }
@@ -396,13 +396,13 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
             //
             Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
             // clear out result (important!)
-            Cu->clear(0, Cu->getSize());
+            ATYPE::setAllUnreachable(Cu);
             for (unsigned zi=0; zi<Au->getSize(); zi++) {
                 node_handle ab_p;
                 edge_value  ab_v;
                 _compute(nextL, edgeval(Au, zi), Au->down(zi),
                         B, ab_v, ab_p);
-                if (ATYPE::isUnreachable(arg1F, ab_v, ab_p)) {
+                if (ATYPE::isUnreachable(ab_v, ab_p)) {
                     continue;
                 }
                 for (unsigned j=0; j<Cu->getSize(); j++) {
@@ -434,7 +434,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
         //
         Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
         // clear out result (important!)
-        Cu->clear(0, Cu->getSize());
+        ATYPE::setAllUnreachable(Cu);
 
         if (FORWD) {
             /*
@@ -447,18 +447,22 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                 if (Brn->outgoing(i, *Bu)) {
                     for (unsigned zj=0; zj<Bu->getSize(); zj++) {
                         const unsigned j = Bu->index(zj);
+#ifdef TRACE
+                        out << A << "x" << B << " computes  "
+                            << i << ">->" << j << ": "
+                            << Au->down(zi) << "x" << Bu->down(zj) << "\n";
+#endif
                         // C[j] = C[j] + A[i] * B[i,j]
                         node_handle cdp;
                         edge_value  cdv;
                         _compute(nextL, edgeval(Au, zi), Au->down(zi),
                                 Bu->down(zj), cdv, cdp);
-                        if (ATYPE::isUnreachable(resF, cdv, cdp)) {
-                            continue;
+                        if (!ATYPE::isUnreachable(cdv, cdp)) {
+                            addToCi(nextL, Cu, j, cdv, cdp);
                         }
-                        addToCi(nextL, Cu, j, cdv, cdp);
 #ifdef TRACE
                         out << A << "x" << B << " completed "
-                            << i << "->" << j << "; C is now ";
+                            << i << ">->" << j << "; C is now ";
 
                         Cu->show(out, false);
                         out << "\n";
@@ -476,20 +480,24 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                 if (Brn->outgoing(i, *Bu)) {
                     for (unsigned zj=0; zj<Au->getSize(); zj++) {
                         const unsigned j = Au->index(zj);
+#ifdef TRACE
+                        out << A << "x" << B << " computes  "
+                            << i << "<-<" << j << ": "
+                            << Au->down(zj) << "x" << Bu->down(j) << "\n";
+#endif
                         if (Bu->down(j)) {
                             // C[i] = C[i] + B[i,j] * A[j]
                             node_handle cdp;
                             edge_value  cdv;
                             _compute(nextL, edgeval(Au, zj), Au->down(zj),
                                     Bu->down(j), cdv, cdp);
-                            if (ATYPE::isUnreachable(resF, cdv, cdp)) {
-                                continue;
+                            if (!ATYPE::isUnreachable(cdv, cdp)) {
+                                addToCi(nextL, Cu, i, cdv, cdp);
                             }
-                            addToCi(nextL, Cu, i, cdv, cdp);
                         } // if bu[j]
 #ifdef TRACE
                         out << A << "x" << B << " completed "
-                            << i << "<-" << j << "; C is now ";
+                            << i << "<-<" << j << "; C is now ";
 
                         Cu->show(out, false);
                         out << "\n";
@@ -576,18 +584,23 @@ namespace MEDDLY {
         }
 
         /// Does the edge correspond to an unreachable state?
-        inline static bool isUnreachable(const forest* F,
-                                const edge_value &ev, node_handle p)
+        inline static bool isUnreachable(const edge_value &ev, node_handle p)
         {
             MEDDLY_DCASSERT(ev.isVoid());
             return 0==p;
         }
+
         /// Set edge to be unreachable states
-        inline static void setUnreachable(const forest* F,
-                                edge_value &v, node_handle &p)
+        inline static void setUnreachable(edge_value &v, node_handle &p)
         {
             v.set();
             p = 0;
+        }
+
+        /// Set all edges to unreachable
+        inline static void setAllUnreachable(unpacked_node *U)
+        {
+            U->clear(0, U->getSize());
         }
 
         /// Apply the operation when b is a terminal node.
@@ -624,19 +637,32 @@ namespace MEDDLY {
         }
 
         /// Does the edge correspond to an unreachable state?
-        inline static bool isUnreachable(const forest* F,
-                                const edge_value &ev, node_handle p)
+        inline static bool isUnreachable(const edge_value &ev, node_handle p)
         {
             MEDDLY_DCASSERT(ev.isVoid());
             if (p >= 0) return false;
-            return F->getIntegerFromHandle(p) < 0;
+            terminal t(terminal_type::INTEGER, p);
+            return t.getInteger() < 0;
         }
 
         /// Set edge to be unreachable states
-        inline static void setUnreachable(const forest* F,
-                                edge_value &v, node_handle &p)
+        inline static void setUnreachable(edge_value &v, node_handle &p)
         {
-            F->getEdgeForValue(-1, v, p);
+            v.set();
+            // TBD: quasi-reduced
+            terminal t = -1;
+            p = t.getIntegerHandle();
+        }
+
+        /// Set all edges to unreachable
+        inline static void setAllUnreachable(unpacked_node *U)
+        {
+            terminal t = -1;
+            node_handle neg1 = t.getIntegerHandle();
+            // TBD: quasi-reduced
+            for (unsigned i=0; i<U->getSize(); i++) {
+                U->setFull(i, neg1);
+            }
         }
 
         /// Apply the operation when b is a terminal node.
@@ -648,6 +674,10 @@ namespace MEDDLY {
             unary_operation* copy = build(COPY, fa, fc);
             MEDDLY_DCASSERT(copy);
             copy->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
+
+            // TBD: instead of copy, use an 'increment distance'
+            // element-wise unary operation, which does nothing
+            // for negative elements, and adds one to non-negative elements.
         }
 
     };
@@ -675,19 +705,22 @@ namespace MEDDLY {
         }
 
         /// Does the edge correspond to an unreachable state?
-        inline static bool isUnreachable(const forest* F,
-                                const edge_value &ev, node_handle p)
+        inline static bool isUnreachable(const edge_value &ev, node_handle p)
         {
             return OMEGA_INFINITY == p;
         }
         /// Set edge to be unreachable states
-        inline static void setUnreachable(const forest* F,
-                                edge_value &v, node_handle &p)
+        inline static void setUnreachable(edge_value &v, node_handle &p)
         {
             p = OMEGA_INFINITY;
             v = INT(0);
         }
 
+        /// Set all edges to unreachable
+        inline static void setAllUnreachable(unpacked_node *U)
+        {
+            U->clear(0, U->getSize());
+        }
 
         /// Apply the operation when b is a terminal node.
         static void apply(forest* fa, const edge_value &av, node_handle a,
@@ -728,17 +761,19 @@ namespace MEDDLY {
         }
 
         /// Does the edge correspond to an unreachable state?
-        inline static bool isUnreachable(const forest* F,
-                                const edge_value &ev, node_handle p)
+        inline static bool isUnreachable(const edge_value &ev, node_handle p)
         {
             MEDDLY_DCASSERT(ev.isVoid());
             return 0==p;
         }
-        inline static void setUnreachable(const forest* F,
-                                edge_value &v, node_handle &p)
+        inline static void setUnreachable(edge_value &v, node_handle &p)
         {
             v.set();
             p = 0;
+        }
+        inline static void setAllUnreachable(unpacked_node *U)
+        {
+            U->clear(0, U->getSize());
         }
 
         /// Apply the operation when b is a terminal node.
