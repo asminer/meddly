@@ -23,10 +23,6 @@
 #include "../ct_vector.h"
 #include "../oper_unary.h"
 #include "../oper_binary.h"
-
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
 #include "../forest_levels.h"
 #include "../forest_edgerules.h"
 
@@ -63,10 +59,12 @@ namespace MEDDLY {
             static const char* name(bool forwd);
 
             /// Return true if the given edge is unreachable
-            static bool isUnreachable(const edge_value &cv, node_handle c);
+            static bool isUnreachable(const forest* F,
+                            const edge_value &cv, node_handle c);
 
             /// Set an edge to be unreachable
-            static void setUnreachable(edge_value &cv, node_handle &c);
+            static void setUnreachable(const forest* F,
+                            edge_value &cv, node_handle &c);
 
             /// Get the accumulate operation for result nodes.
             static binary_operation* accumulateOp(const forest* resF);
@@ -116,8 +114,8 @@ namespace MEDDLY {
                     const edge_value &v, node_handle p)
             {
                 // This case should be caught already
-                MEDDLY_DCASSERT( !ATYPE::isUnreachable(v, p) );
-                if (ATYPE::isUnreachable(edgeval(C, i), C->down(i)))
+                MEDDLY_DCASSERT( !ATYPE::isUnreachable(resF, v, p) );
+                if (ATYPE::isUnreachable(resF, edgeval(C, i), C->down(i)))
                 {
                     C->setFull(i, v, p);
                     return;
@@ -166,12 +164,8 @@ MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
         res->getEdgeLabeling()
     );
 
-    if (range_type::BOOLEAN == arg2F->getRangeType()) {
-        if (arg1F->getRangeType() != resF->getRangeType()) {
-            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-        }
-    } else {
-        checkAllRanges(__FILE__, __LINE__, res->getRangeType());
+    if (arg1F->getRangeType() != resF->getRangeType()) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
     //
@@ -256,8 +250,8 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
     // Check terminal cases
     //
     // **************************************************************
-    if (0==B || ATYPE::isUnreachable(av, A)) {
-        ATYPE::setUnreachable(cv, C);
+    if (0==B || ATYPE::isUnreachable(arg1F, av, A)) {
+        ATYPE::setUnreachable(resF, cv, C);
         EOP::accumulateOp(cv, av);
         return;
     }
@@ -408,7 +402,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                 edge_value  ab_v;
                 _compute(nextL, edgeval(Au, zi), Au->down(zi),
                         B, ab_v, ab_p);
-                if (ATYPE::isUnreachable(ab_v, ab_p)) {
+                if (ATYPE::isUnreachable(arg1F, ab_v, ab_p)) {
                     continue;
                 }
                 for (unsigned j=0; j<Cu->getSize(); j++) {
@@ -458,7 +452,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                         edge_value  cdv;
                         _compute(nextL, edgeval(Au, zi), Au->down(zi),
                                 Bu->down(zj), cdv, cdp);
-                        if (ATYPE::isUnreachable(cdv, cdp)) {
+                        if (ATYPE::isUnreachable(resF, cdv, cdp)) {
                             continue;
                         }
                         addToCi(nextL, Cu, j, cdv, cdp);
@@ -488,7 +482,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                             edge_value  cdv;
                             _compute(nextL, edgeval(Au, zj), Au->down(zj),
                                     Bu->down(j), cdv, cdp);
-                            if (ATYPE::isUnreachable(cdv, cdp)) {
+                            if (ATYPE::isUnreachable(resF, cdv, cdp)) {
                                 continue;
                             }
                             addToCi(nextL, Cu, i, cdv, cdp);
@@ -582,13 +576,15 @@ namespace MEDDLY {
         }
 
         /// Does the edge correspond to an unreachable state?
-        inline static bool isUnreachable(const edge_value &ev, node_handle p)
+        inline static bool isUnreachable(const forest* F,
+                                const edge_value &ev, node_handle p)
         {
             MEDDLY_DCASSERT(ev.isVoid());
             return 0==p;
         }
         /// Set edge to be unreachable states
-        inline static void setUnreachable(edge_value &v, node_handle &p)
+        inline static void setUnreachable(const forest* F,
+                                edge_value &v, node_handle &p)
         {
             v.set();
             p = 0;
@@ -607,6 +603,56 @@ namespace MEDDLY {
 
     };
 };
+
+// ******************************************************************
+// *                                                                *
+// *                       mt_distance struct                       *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    struct mt_distance {
+        inline static const char* name(bool forwd)
+        {
+            return forwd ? "post-image" : "pre-image";
+        }
+
+        /// Get the accumulate operation for result nodes.
+        inline static binary_operation* accumulateOp(forest* resF)
+        {
+            return build(DIST_MIN, resF, resF, resF);
+        }
+
+        /// Does the edge correspond to an unreachable state?
+        inline static bool isUnreachable(const forest* F,
+                                const edge_value &ev, node_handle p)
+        {
+            MEDDLY_DCASSERT(ev.isVoid());
+            if (p >= 0) return false;
+            return F->getIntegerFromHandle(p) < 0;
+        }
+
+        /// Set edge to be unreachable states
+        inline static void setUnreachable(const forest* F,
+                                edge_value &v, node_handle &p)
+        {
+            F->getEdgeForValue(-1, v, p);
+        }
+
+        /// Apply the operation when b is a terminal node.
+        static void apply(forest* fa, const edge_value &av, node_handle a,
+                          const forest* fb, node_handle b,
+                          forest* fc, edge_value &cv, node_handle &c)
+        {
+            MEDDLY_DCASSERT(b<0);
+            unary_operation* copy = build(COPY, fa, fc);
+            MEDDLY_DCASSERT(copy);
+            copy->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
+        }
+
+    };
+};
+
 
 // ******************************************************************
 // *                                                                *
@@ -629,12 +675,14 @@ namespace MEDDLY {
         }
 
         /// Does the edge correspond to an unreachable state?
-        inline static bool isUnreachable(const edge_value &ev, node_handle p)
+        inline static bool isUnreachable(const forest* F,
+                                const edge_value &ev, node_handle p)
         {
             return OMEGA_INFINITY == p;
         }
         /// Set edge to be unreachable states
-        inline static void setUnreachable(edge_value &v, node_handle &p)
+        inline static void setUnreachable(const forest* F,
+                                edge_value &v, node_handle &p)
         {
             p = OMEGA_INFINITY;
             v = INT(0);
@@ -680,12 +728,14 @@ namespace MEDDLY {
         }
 
         /// Does the edge correspond to an unreachable state?
-        inline static bool isUnreachable(const edge_value &ev, node_handle p)
+        inline static bool isUnreachable(const forest* F,
+                                const edge_value &ev, node_handle p)
         {
             MEDDLY_DCASSERT(ev.isVoid());
             return 0==p;
         }
-        inline static void setUnreachable(edge_value &v, node_handle &p)
+        inline static void setUnreachable(const forest* F,
+                                edge_value &v, node_handle &p)
         {
             v.set();
             p = 0;
@@ -749,7 +799,19 @@ MEDDLY::binary_operation*
 MEDDLY::_IMAGE_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 {
     if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
-        return new prepost_set_mtrel<EdgeOp_none, FWD, mt_prepost>(a, b, c);
+
+        switch (c->getRangeType()) {
+            case range_type::BOOLEAN:
+                return new prepost_set_mtrel<EdgeOp_none, FWD,
+                            mt_prepost>(a, b, c);
+
+            case range_type::INTEGER:
+                return new prepost_set_mtrel<EdgeOp_none, FWD,
+                            mt_distance>(a, b, c);
+
+            default:
+                return nullptr;
+        }
     }
 
     if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
@@ -757,11 +819,11 @@ MEDDLY::_IMAGE_factory <FWD>::build_new(forest* a, forest* b, forest* c)
         switch (a->getEdgeType()) {
             case edge_type::INT:
                 return new prepost_set_mtrel<EdgeOp_plus<int>, FWD,
-                       ev_prepost<int> > (a, b, c);
+                            ev_prepost<int> > (a, b, c);
 
             case edge_type::LONG:
                 return new prepost_set_mtrel<EdgeOp_plus<long>, FWD,
-                       ev_prepost<long> > (a, b, c);
+                            ev_prepost<long> > (a, b, c);
 
             default:
                 return nullptr;
