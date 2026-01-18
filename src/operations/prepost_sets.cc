@@ -344,7 +344,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
     // Set up unpacked nodes
     //
 
-    unpacked_node* Au = unpacked_node::New(arg1F, SPARSE_ONLY);
+    unpacked_node* Au = unpacked_node::New(arg1F, FULL_ONLY);
     if (Alevel != Clevel) {
         edge_value zero;
         EOP::clear(zero);
@@ -360,8 +360,6 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
         Brn = arg2F->buildRelNode(B);
     }
 
-    unpacked_node* Cu = nullptr;
-
 #ifdef TRACE
     out << "A: ";
     Au->show(out, true);
@@ -376,9 +374,14 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
 #endif
 
     //
+    // Initialize result
+    //
+    unpacked_node* Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
+    ATYPE::setAllUnreachable(Cu);
+
+    //
     // Recurse
     //
-
     if (!Brn) {
         if (arg2F->isFullyReduced()) {
             //
@@ -388,20 +391,18 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
             // Backward: C[i] = C[i] + B * A[j], for all i,j
             //
             // That's really the same thing, so we'll do:
-            // C = 0
             // for all i s.t. A[i] != 0
             //     tmp = A[i] * B
             //     for all j
             //         C[j] = C[j] + tmp
             //
-            Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
-            // clear out result (important!)
-            ATYPE::setAllUnreachable(Cu);
-            for (unsigned zi=0; zi<Au->getSize(); zi++) {
+            for (unsigned i=0; i<Au->getSize(); i++) {
+                if (ATYPE::isUnreachable(edgeval(Au, i), Au->down(i))) {
+                    continue;
+                }
                 node_handle ab_p;
                 edge_value  ab_v;
-                _compute(nextL, edgeval(Au, zi), Au->down(zi),
-                        B, ab_v, ab_p);
+                _compute(nextL, edgeval(Au, i), Au->down(i), B, ab_v, ab_p);
                 if (ATYPE::isUnreachable(ab_v, ab_p)) {
                     continue;
                 }
@@ -412,50 +413,49 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
             } // for zi
         } else {
             //
-            // Skipped Identity level(s)
+            //  Skipped Identity level(s)
+            //
+            //  For both forward and backward, compute
+            //      C[i] = A[i] * B
+            //  for all i.
             //
             MEDDLY_DCASSERT(arg2F->isIdentityReduced());
-            Cu = unpacked_node::newWritable(resF, Clevel, SPARSE_ONLY);
-            unsigned zc = 0;
-            for (unsigned z=0; z<Au->getSize(); z++) {
+            for (unsigned i=0; i<Au->getSize(); i++) {
+                if (ATYPE::isUnreachable(edgeval(Au, i), Au->down(i))) {
+                    continue;
+                }
                 edge_value  ab_v;
                 node_handle ab_p;
-                _compute(nextL, edgeval(Au, z), Au->down(z), B, ab_v, ab_p);
-                if (!resF->isTransparentEdge(ab_v, ab_p)) {
-                    Cu->setSparse(zc, Au->index(z), ab_v, ab_p);
-                    ++zc;
-                }
+                _compute(nextL, edgeval(Au, i), Au->down(i), B, ab_v, ab_p);
+                Cu->setFull(i, ab_v, ab_p);
             }
-            Cu->resize(zc);
         }
     } else {
         //
         // Non-identity level
         //
-        Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
-        // clear out result (important!)
-        ATYPE::setAllUnreachable(Cu);
-
         if (FORWD) {
             /*
              * Go forward one step.
              */
             unpacked_node* Bu = unpacked_node::New(arg2F, SPARSE_ONLY);
 
-            for (unsigned zi=0; zi<Au->getSize(); zi++) {
-                const unsigned i = Au->index(zi);
+            for (unsigned i=0; i<Au->getSize(); i++) {
+                if (ATYPE::isUnreachable(edgeval(Au, i), Au->down(i))) {
+                    continue;
+                }
                 if (Brn->outgoing(i, *Bu)) {
                     for (unsigned zj=0; zj<Bu->getSize(); zj++) {
                         const unsigned j = Bu->index(zj);
 #ifdef TRACE
                         out << A << "x" << B << " computes  "
                             << i << ">->" << j << ": "
-                            << Au->down(zi) << "x" << Bu->down(zj) << "\n";
+                            << Au->down(i) << "x" << Bu->down(zj) << "\n";
 #endif
                         // C[j] = C[j] + A[i] * B[i,j]
                         node_handle cdp;
                         edge_value  cdv;
-                        _compute(nextL, edgeval(Au, zi), Au->down(zi),
+                        _compute(nextL, edgeval(Au, i), Au->down(i),
                                 Bu->down(zj), cdv, cdp);
                         if (!ATYPE::isUnreachable(cdv, cdp)) {
                             addToCi(nextL, Cu, j, cdv, cdp);
@@ -478,18 +478,20 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
             unpacked_node* Bu = unpacked_node::New(arg2F, FULL_ONLY);
             for (unsigned i=0; i<kSize; i++) {
                 if (Brn->outgoing(i, *Bu)) {
-                    for (unsigned zj=0; zj<Au->getSize(); zj++) {
-                        const unsigned j = Au->index(zj);
+                    for (unsigned j=0; j<Au->getSize(); j++) {
+                        if (ATYPE::isUnreachable(edgeval(Au, j), Au->down(j))) {
+                            continue;
+                        }
 #ifdef TRACE
                         out << A << "x" << B << " computes  "
                             << i << "<-<" << j << ": "
-                            << Au->down(zj) << "x" << Bu->down(j) << "\n";
+                            << Au->down(j) << "x" << Bu->down(j) << "\n";
 #endif
                         if (Bu->down(j)) {
                             // C[i] = C[i] + B[i,j] * A[j]
                             node_handle cdp;
                             edge_value  cdv;
-                            _compute(nextL, edgeval(Au, zj), Au->down(zj),
+                            _compute(nextL, edgeval(Au, j), Au->down(j),
                                     Bu->down(j), cdv, cdp);
                             if (!ATYPE::isUnreachable(cdv, cdp)) {
                                 addToCi(nextL, Cu, i, cdv, cdp);
