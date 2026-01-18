@@ -91,6 +91,11 @@ TESTS = \
     ops_comp.--rel.--EVp.--long._sh \
     ops_comp.--rel.--EVs.--float._sh \
     \
+    ops_distmin.--set.--int._sh \
+    ops_distmin.--set.--float._sh \
+    ops_distmin.--rel.--int._sh \
+    ops_distmin.--rel.--float._sh \
+    \
     ops_divmod.--set.--MT.--int._sh \
     ops_divmod.--set.--MT.--float._sh \
     ops_divmod.--set.--EVp.--long._sh \

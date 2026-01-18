@@ -63,7 +63,7 @@ void DistMin(const std::vector <MEDDLY::rangeval> &A,
         T bv(B[i]);
         if (av < 0) {
             if (bv < 0) {
-                C[i] = -1;
+                C[i] = MIN(av, bv);
             } else {
                 C[i] = bv;
             }
@@ -83,10 +83,10 @@ inline const char* getReductionString(const dd_edge &e)
     return shortNameOf(f->getReductionRule());
 }
 
-void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
+bool checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
         const dd_edge &e1, const dd_edge &e2)
 {
-    if (e1 == e2) return;
+    if (e1 == e2) return true;
 
     ostream_output out(std::cout);
 
@@ -100,7 +100,8 @@ void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
     out << "Obtained Output (" << getReductionString(e1) << "):\n";
     e1.showGraph(out);
 
-    throw "mismatch";
+    return false;
+
 }
 
 
@@ -108,6 +109,7 @@ template <typename T>
 void compare(vectorgen &Gen,
         const std::vector <MEDDLY::rangeval> &Aset,
         const std::vector <MEDDLY::rangeval> &Bset,
+        MEDDLY::rangeval deflt,
         forest* f1, forest* f2, forest* fres)
 {
     const unsigned POTENTIAL = Gen.potential();
@@ -119,14 +121,18 @@ void compare(vectorgen &Gen,
 
     DistMin<T>(Aset, Bset, AminBset);
 
-    Gen.explicit2edgeMax(Aset, Add, T(0));
-    Gen.explicit2edgeMax(Bset, Bdd, T(0));
-    Gen.explicit2edgeMax(AminBset, AminBdd, T(0));
+    Gen.explicit2edgeMax(Aset, Add, deflt);
+    Gen.explicit2edgeMax(Bset, Bdd, deflt);
+    Gen.explicit2edgeMax(AminBset, AminBdd, deflt);
 
     dd_edge AminBsym(fres);
 
     apply(DIST_MIN, Add, Bdd, AminBsym);
-    checkEqual("distmin", Add, Bdd, AminBsym, AminBdd);
+    if (checkEqual("distmin", Add, Bdd, AminBsym, AminBdd)) {
+        return;
+    }
+
+    throw "mismatch";
 }
 
 template <typename TYPE>
@@ -146,30 +152,25 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
     std::vector <MEDDLY::rangeval> Bset(Gen.potential());
 
     std::vector <MEDDLY::rangeval> values(5);
-    values[0] =  TYPE(0);
-    if (f1->isEVPlus()) {
-        values[1] = MEDDLY::rangeval(MEDDLY::range_special::PLUS_INFINITY,
-                            MEDDLY::range_type::INTEGER);
-    } else {
-        values[1] =  TYPE(4);
-    }
-    values[2] =  TYPE(2);
-    values[3] =  TYPE(-2);
-    values[4] =  TYPE(-4);
+    values[0] =  TYPE(-1);
+    values[1] =  TYPE(0);
+    values[2] =  TYPE(5);
+    values[3] =  TYPE(20);
+    values[4] =  TYPE(-3);
 
     for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
         Gen.randomizeVector(Aset, scard, values);
         Gen.randomizeVector(Bset, scard, values);
 
-        compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
+        compare<TYPE>(Gen, Aset, Bset, values[0], f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
         Gen.randomizeFully(Aset, scard, values);
         Gen.randomizeFully(Bset, scard, values);
 
-        compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
+        compare<TYPE>(Gen, Aset, Bset, values[0], f1, f2, fres);
     }
     if (fres->isForRelations()) {
         for (unsigned i=0; i<10; i++) {
@@ -177,7 +178,7 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
             Gen.randomizeIdentity(Aset, scard, values);
             Gen.randomizeIdentity(Bset, scard, values);
 
-            compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
+            compare<TYPE>(Gen, Aset, Bset, values[0], f1, f2, fres);
         }
     }
     std::cerr << std::endl;

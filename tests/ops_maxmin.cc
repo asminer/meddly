@@ -127,6 +127,7 @@ template <typename T>
 void compare(vectorgen &Gen,
         const std::vector <MEDDLY::rangeval> &Aset,
         const std::vector <MEDDLY::rangeval> &Bset,
+        MEDDLY::rangeval deflt,
         forest* f1, forest* f2, forest* fres)
 {
     const unsigned POTENTIAL = Gen.potential();
@@ -140,10 +141,10 @@ void compare(vectorgen &Gen,
     Max<T>(Aset, Bset, AmaxBset);
     Min<T>(Aset, Bset, AminBset);
 
-    Gen.explicit2edgeMax(Aset, Add, T(0));
-    Gen.explicit2edgeMax(Bset, Bdd, T(0));
-    Gen.explicit2edgeMax(AmaxBset, AmaxBdd, T(0));
-    Gen.explicit2edgeMax(AminBset, AminBdd, T(0));
+    Gen.explicit2edgeMax(Aset, Add, deflt);
+    Gen.explicit2edgeMax(Bset, Bdd, deflt);
+    Gen.explicit2edgeMax(AmaxBset, AmaxBdd, deflt);
+    Gen.explicit2edgeMax(AminBset, AminBdd, deflt);
 
     dd_edge AmaxBsym(fres), AminBsym(fres);
 
@@ -187,14 +188,14 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
         Gen.randomizeVector(Aset, scard, values);
         Gen.randomizeVector(Bset, scard, values);
 
-        compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
+        compare<TYPE>(Gen, Aset, Bset, values[0], f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
         Gen.randomizeFully(Aset, scard, values);
         Gen.randomizeFully(Bset, scard, values);
 
-        compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
+        compare<TYPE>(Gen, Aset, Bset, values[0], f1, f2, fres);
     }
     if (fres->isForRelations()) {
         for (unsigned i=0; i<10; i++) {
@@ -202,7 +203,7 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
             Gen.randomizeIdentity(Aset, scard, values);
             Gen.randomizeIdentity(Bset, scard, values);
 
-            compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
+            compare<TYPE>(Gen, Aset, Bset, values[0], f1, f2, fres);
         }
     }
     std::cerr << std::endl;
