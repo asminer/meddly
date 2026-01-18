@@ -34,6 +34,9 @@
 // Operation instance caches
 //
 namespace MEDDLY {
+    // for consistent documentation:
+    class base_compare_factory;
+
     class EQUAL_factory;
     class NEQ_factory;
 
@@ -1529,11 +1532,33 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
+// *                   base_compare_factory class                   *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::base_compare_factory : public binary_factory {
+    protected:
+        void comp_setup(const char* name, const char* symbol);
+        char docs[300];
+};
+
+// ******************************************************************
+
+void MEDDLY::base_compare_factory::comp_setup(const char* name,
+        const char* symbol)
+{
+    snprintf(docs, 300, "Element-wise %s. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest.", symbol);
+
+    _setup(__FILE__, name, docs);
+}
+
+// ******************************************************************
+// *                                                                *
 // *                      EQUAL_factory  class                      *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::EQUAL_factory : public binary_factory {
+class MEDDLY::EQUAL_factory : public base_compare_factory {
     public:
         virtual void setup();
         virtual binary_operation* build_new(forest* a, forest* b, forest* c);
@@ -1543,7 +1568,7 @@ class MEDDLY::EQUAL_factory : public binary_factory {
 
 void MEDDLY::EQUAL_factory::setup()
 {
-    _setup(__FILE__, "EQUAL", "Element-wise ==. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest");
+    comp_setup("EQUAL", "==");
 }
 
 MEDDLY::binary_operation*
@@ -1598,7 +1623,7 @@ MEDDLY::EQUAL_factory::build_new(forest* a, forest* b, forest* c)
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::NEQ_factory : public binary_factory {
+class MEDDLY::NEQ_factory : public base_compare_factory {
     public:
         virtual void setup();
         virtual binary_operation* build_new(forest* a, forest* b, forest* c);
@@ -1608,7 +1633,7 @@ class MEDDLY::NEQ_factory : public binary_factory {
 
 void MEDDLY::NEQ_factory::setup()
 {
-    _setup(__FILE__, "NOT_EQUAL", "Element-wise !=. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest");
+    comp_setup("NOT_EQUAL", "!=");
 }
 
 MEDDLY::binary_operation*
@@ -1663,7 +1688,7 @@ MEDDLY::NEQ_factory::build_new(forest* a, forest* b, forest* c)
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::GT_factory : public binary_factory {
+class MEDDLY::GT_factory : public base_compare_factory {
     public:
         virtual void setup();
         virtual binary_operation* build_new(forest* a, forest* b, forest* c);
@@ -1673,7 +1698,7 @@ class MEDDLY::GT_factory : public binary_factory {
 
 void MEDDLY::GT_factory::setup()
 {
-    _setup(__FILE__, "GREATER_THAN", "Element-wise >. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest");
+    comp_setup("GREATER_THAN", ">");
 }
 
 MEDDLY::binary_operation*
@@ -1728,7 +1753,7 @@ MEDDLY::GT_factory::build_new(forest* a, forest* b, forest* c)
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::GE_factory : public binary_factory {
+class MEDDLY::GE_factory : public base_compare_factory {
     public:
         virtual void setup();
         virtual binary_operation* build_new(forest* a, forest* b, forest* c);
@@ -1738,7 +1763,7 @@ class MEDDLY::GE_factory : public binary_factory {
 
 void MEDDLY::GE_factory::setup()
 {
-    _setup(__FILE__, "GREATER_THAN_EQUAL", "Element-wise >=. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest");
+    comp_setup("GREATER_THAN_EQUAL", ">=");
 }
 
 MEDDLY::binary_operation*
@@ -1793,7 +1818,7 @@ MEDDLY::GE_factory::build_new(forest* a, forest* b, forest* c)
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::LT_factory : public binary_factory {
+class MEDDLY::LT_factory : public base_compare_factory {
     public:
         virtual void setup();
         virtual binary_operation* build_new(forest* a, forest* b, forest* c);
@@ -1803,7 +1828,7 @@ class MEDDLY::LT_factory : public binary_factory {
 
 void MEDDLY::LT_factory::setup()
 {
-    _setup(__FILE__, "LESS_THAN", "Element-wise <. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest");
+    comp_setup("LESS_THAN", "<");
 }
 
 MEDDLY::binary_operation*
@@ -1858,7 +1883,7 @@ MEDDLY::LT_factory::build_new(forest* a, forest* b, forest* c)
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::LE_factory : public binary_factory {
+class MEDDLY::LE_factory : public base_compare_factory {
     public:
         virtual void setup();
         virtual binary_operation* build_new(forest* a, forest* b, forest* c);
@@ -1868,7 +1893,7 @@ class MEDDLY::LE_factory : public binary_factory {
 
 void MEDDLY::LE_factory::setup()
 {
-    _setup(__FILE__, "LESS_THAN_EQUAL", "Element-wise <=. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest");
+    comp_setup("LESS_THAN_EQUAL", "<=");
 }
 
 MEDDLY::binary_operation*

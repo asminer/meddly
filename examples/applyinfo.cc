@@ -48,6 +48,10 @@ void showDocs(const char* doc)
                 }
             }
         }
+        // Break on end of string
+        if (0 == doc[i]) {
+            break;
+        }
         // Ready for next line?
         if ('\n' == doc[i]) {
             // Paragraph; add a blank line

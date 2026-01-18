@@ -123,7 +123,7 @@ class MEDDLY::DISTMIN_factory : public binary_factory {
 
 void MEDDLY::DISTMIN_factory::setup()
 {
-    _setup(__FILE__, "DIST_MIN", "Element-wise minimum value, except negatives are treated as infinity. For a set of values all with the same sign (zero counts as positive), DIST_MIN returns the smallest value. For a set of values with mixed signs, DIST_MIN returns the smallest non-negative value. Forest ranges must be integer or real. Forests must be multi-terminal, and over the same domain.");
+    _setup(__FILE__, "DIST_MIN", "Element-wise minimum value, except negatives are treated as infinity. For two negative values, or two non-negative values, DIST_MIN returns the smallest value; otherwise, DIST_MIN returns the non-negative value. Forest ranges must be integer or real. Forests must be multi-terminal, and over the same domain.");
 }
 
 MEDDLY::binary_operation*

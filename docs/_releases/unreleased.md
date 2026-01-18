@@ -5,6 +5,17 @@ number: changes
 layout: single
 ---
 
+### New features
+
+* Added application ```applyinfo``` in directory ```examples```,
+    for displaying documentation for built-in operations.
+
+* Added ```DIST_MIN``` operation, for minimum distance where
+  negatives may be used for infinity.
+
+* Added tests for pre/post image operations, and new DIST_MIN operation.
+
+
 ### Interface Changes
 
 * In the ```forest``` class, overloaded virtual methods
@@ -19,9 +30,11 @@ layout: single
     Different forests may store relations differently, internally,
     and might not be based on decision diagram nodes.
 
-* Added a ```unary_factory``` class, for built-in unary operations.
+* Added a ```unary_factory``` class, for built-in unary operations,
+    with documentation.
 
-* Added a ```binary_factory``` class, for built-in binary operations.
+* Added a ```binary_factory``` class, for built-in binary operations,
+    with documentation.
 
 * Edge values: some getters replaced by type conversion operators
 
