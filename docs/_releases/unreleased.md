@@ -10,10 +10,13 @@ layout: single
 * Added application ```applyinfo``` in directory ```examples```,
     for displaying documentation for built-in operations.
 
-* Added ```DIST_MIN``` operation, for minimum distance where
+* Added ```DIST_MIN``` binary operation, for minimum distance where
   negatives may be used for infinity.
 
-* Added tests for pre/post image operations, and new DIST_MIN operation.
+* Added ```DIST_INC``` unary operation, for incrementing distances
+  where negatives may be used for infinity.
+
+* Added tests for pre/post image operations.
 
 
 ### Interface Changes
