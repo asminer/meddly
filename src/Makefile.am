@@ -166,6 +166,7 @@ pkginclude_HEADERS = \
     ct_entry_result.h \
     ct_entry_type.h \
     ct_initializer.h \
+    ct_vector.h \
     dd_edge.h \
     defines.h \
     domain.h \
@@ -191,12 +192,15 @@ pkginclude_HEADERS = \
     node_storage.h \
     oper.h  \
     oper_binary.h  \
+    oper_item.h \
     oper_numer.h \
+    oper_satur.h \
     oper_ternary.h  \
     oper_unary.h  \
     operators.h \
     ops_builtin.h \
     policies.h \
+    rangeval.h \
     relation_node.h \
     sat_relations.h \
     revision.h \
