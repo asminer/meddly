@@ -86,7 +86,7 @@ void MEDDLY::mt_mdd_int
 
 #endif
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
 
 void MEDDLY::mt_mdd_int::
 createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)

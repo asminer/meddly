@@ -41,7 +41,7 @@ MEDDLY::mt_forest::mt_forest(domain *d, bool rel,
 {
 }
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
 
 MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
 {

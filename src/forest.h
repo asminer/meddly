@@ -854,7 +854,7 @@ class MEDDLY::forest {
             nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
         }
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
         // TBD: remove these older 'getDownPtr' methods
 
         /** For a given node, get a specified downward pointer.
@@ -1940,7 +1940,7 @@ class MEDDLY::forest {
     */
     void createEdgeForVar(int vh, bool vp, const rangeval* terms, dd_edge& a);
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
 
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).

@@ -46,7 +46,7 @@ class MEDDLY::evmxd_pluslong : public evmxd_forest {
 
     // using evmxd_forest::createEdgeForVar;
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
     virtual void createEdgeForVar(int vh, bool vp, const long* terms,
       dd_edge& a);
 #endif

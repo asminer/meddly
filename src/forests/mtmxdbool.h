@@ -36,7 +36,7 @@ class MEDDLY::mt_mxd_bool : public mtmxd_forest {
     mt_mxd_bool(domain *d, const policies &p);
     ~mt_mxd_bool();
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
     virtual void createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a);
 #endif
 #ifdef ALLOW_DEPRECATED_0_17_7

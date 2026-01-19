@@ -96,7 +96,7 @@ void MEDDLY::mt_mxd_bool::evaluate(const dd_edge &f, const int* vlist,
 
 #endif
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
 
 void MEDDLY::mt_mxd_bool::
 createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)

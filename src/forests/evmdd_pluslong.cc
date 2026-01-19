@@ -97,7 +97,7 @@ void MEDDLY::evmdd_pluslong
 
 #endif
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
 void MEDDLY::evmdd_pluslong
 ::createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 {

@@ -116,7 +116,7 @@ class MEDDLY::edge_value {
         // Getters for the value
         //
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
         inline int getInt() const {
             MEDDLY_DCASSERT(isInt());
             return ev_int;

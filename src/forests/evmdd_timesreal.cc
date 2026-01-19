@@ -80,7 +80,7 @@ void MEDDLY::evmdd_timesreal
 
 #endif
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
 
 void MEDDLY::evmdd_timesreal
 ::createEdgeForVar(int vh, bool vp, const float* terms, dd_edge& a)
