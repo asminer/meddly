@@ -16,6 +16,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "../ct_vector.h"
+#include "../oper_binary.h"
+#include "../oper_unary.h"
+#include "../ops_builtin.h" // for COPY
+#include "../forest_levels.h"
 #include "../forest_edgerules.h"
 
 //   **************************************************************
@@ -169,8 +174,8 @@ MEDDLY::arith_compat<EOP, ATYPE>::arith_compat(forest* arg1, forest* arg2,
     //
     // Quick copying, even across forests, for terminal cases :)
     //
-    copy_arg1res = COPY(arg1, res);
-    copy_arg2res = COPY(arg2, res);
+    copy_arg1res = build(COPY, arg1, res);
+    copy_arg2res = build(COPY, arg2, res);
 
     //
     // Do we need to recurse by levels and store level info in the CT?
@@ -219,6 +224,7 @@ void MEDDLY::arith_compat<EOP, ATYPE>::compute(int L, unsigned in,
         edge_value ab;
         ATYPE::apply(av, bv, ab);
         EOP::accumulateOp(cv, ab);
+        EOP::normalize(cv, cp);
     }
 
 #ifdef TRACE
@@ -434,6 +440,7 @@ void MEDDLY::arith_compat<EOP, ATYPE>::_compute(int L, unsigned in,
             edge_value ab;
             ATYPE::apply(Au->edgeval(i), Bu->edgeval(i), ab);
             EOP::accumulateOp(x, ab);
+            EOP::normalize(x, cd);
             Cu->setFull(i, x, cd);
         }
         else
@@ -656,8 +663,8 @@ MEDDLY::arith_factor<EOP, ATYPE>::arith_factor(forest* arg1, forest* arg2,
     //
     // Quick copying, even across forests, for terminal cases :)
     //
-    copy_arg1res = COPY(arg1, res);
-    copy_arg2res = COPY(arg2, res);
+    copy_arg1res = build(COPY, arg1, res);
+    copy_arg2res = build(COPY, arg2, res);
 
     //
     // Do we need to recurse by levels and store level info in the CT?
@@ -853,6 +860,7 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
             C = resF->makeRedundantsTo(C, Clevel, L);
         }
         EOP::accumulateOp(cv, fac);
+        EOP::normalize(cv, C);
         return;
         //
         // done compute table hit
@@ -992,6 +1000,7 @@ void MEDDLY::arith_factor<EOP, ATYPE>::_compute(int L, unsigned in,
         C = resF->makeRedundantsTo(C, Clevel, L);
     }
     EOP::accumulateOp(cv, fac);
+    EOP::normalize(cv, C);
 }
 
 //  ****************************************************************
@@ -1125,8 +1134,8 @@ MEDDLY::arith_pushdn<EOP, ATYPE>::arith_pushdn(forest* arg1, forest* arg2,
     //
     // Quick copying, even across forests, for terminal cases :)
     //
-    copy_arg1res = COPY(arg1, res);
-    copy_arg2res = COPY(arg2, res);
+    copy_arg1res = build(COPY, arg1, res);
+    copy_arg2res = build(COPY, arg2, res);
 
     //
     // Do we need to recurse by levels and store level info in the CT?

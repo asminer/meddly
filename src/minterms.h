@@ -371,6 +371,7 @@ class MEDDLY::minterm_coll {
 
         /// Get the first unused element
         inline minterm& unused() {
+            MEDDLY_DCASSERT(first_unused < maxsize());
             return at(first_unused);
         }
 

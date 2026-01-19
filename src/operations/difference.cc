@@ -27,8 +27,7 @@
 
 namespace MEDDLY {
     class diffr_mt;
-
-    binary_list DIFFR_cache;
+    class DIFFR_factory;
 };
 
 // #define TRACE
@@ -129,7 +128,7 @@ MEDDLY::diffr_mt::diffr_mt(forest* arg1, forest* arg2, forest* res)
     //
     // Quick copying, even across forests, for terminal cases :)
     //
-    copy_arg1res = COPY(arg1, res);
+    copy_arg1res = build(COPY, arg1, res);
 
     //
     // How to handle different reductions
@@ -496,30 +495,38 @@ void MEDDLY::diffr_mt::_compute(int L, unsigned in,
 
 // ******************************************************************
 // *                                                                *
+// *                      DIFFR_factory  class                      *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::DIFFR_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::DIFFR_factory::setup()
+{
+    _setup(__FILE__, "DIFFERENCE", "Set difference, meaning Boolean difference. Operands and the result may be within the same forest or across forests, but all forests must be over the same domain. Forests must be multi-terminal.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::DIFFR_factory::build_new(forest* a, forest* b, forest* c)
+{
+    return new diffr_mt(a, b, c);
+}
+
+// ******************************************************************
+// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_operation*
-MEDDLY::DIFFERENCE(forest* a, forest* b, forest* c)
+MEDDLY::binary_factory& MEDDLY::DIFFERENCE()
 {
-    if (!a || !b || !c) {
-        return nullptr;
-    }
-    binary_operation* bop =  DIFFR_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-
-    return DIFFR_cache.add(new diffr_mt(a, b, c));
+    static DIFFR_factory F;
+    return F;
 }
 
-void MEDDLY::DIFFERENCE_init()
-{
-    DIFFR_cache.reset("Difference");
-}
-
-void MEDDLY::DIFFERENCE_done()
-{
-    MEDDLY_DCASSERT(DIFFR_cache.isEmpty());
-}

@@ -17,6 +17,8 @@
 */
 
 #include "ops_builtin.h"
+#include "oper_unary.h"
+#include "oper_binary.h"
 
 #include "initializer.h"
 
@@ -48,6 +50,7 @@ namespace MEDDLY {
 
 #include "operations/arith_max.h"
 #include "operations/arith_min.h"
+#include "operations/arith_distmin.h"
 #include "operations/arith_plus.h"
 #include "operations/arith_minus.h"
 #include "operations/arith_mult.h"
@@ -55,14 +58,9 @@ namespace MEDDLY {
 #include "operations/arith_mod.h"
 
 #include "operations/cross.h"
-// #include "operations/maxmin.h"
-// #include "operations/plus.h"
-// #include "operations/minus.h"
-// #include "operations/multiply.h"
-// #include "operations/divide.h"
-// #include "operations/modulo.h"
 #include "operations/prepostplus.h"
-#include "operations/prepostimage.h"
+#include "operations/prepost_sets.h"
+#include "operations/prepost_rels.h"
 #include "operations/vect_matr.h"
 #include "operations/mm_mult.h"
 //
@@ -85,23 +83,53 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                       builtin_init class                       *
+// *                      builtin_init methods                      *
 // *                                                                *
-// ******************************************************************
-
-class MEDDLY::builtin_init : public initializer_list {
-    public:
-        builtin_init(initializer_list* p);
-    protected:
-        virtual void setup();
-        virtual void cleanup();
-};
-
 // ******************************************************************
 
 MEDDLY::builtin_init::builtin_init(initializer_list* p)
     : initializer_list(p)
 {
+    //
+    // Add all unary factories here
+    //
+    all_unary.push_back( &CARDINALITY()             );
+    all_unary.push_back( &COMPLEMENT()              );
+    all_unary.push_back( &CONVERT_TO_INDEX_SET()    );
+    all_unary.push_back( &COPY()                    );
+    all_unary.push_back( &CYCLE()                   );
+    all_unary.push_back( &DIST_INC()                );
+    all_unary.push_back( &MAX_RANGE()               );
+    all_unary.push_back( &MIN_RANGE()               );
+#ifdef ALLOW_DEPRECATED_0_17_8
+    all_unary.push_back( &SELECT()                  );
+#endif
+
+    //
+    // Add all binary factories here
+    //
+    all_binary.push_back( &CROSS()                  );
+    all_binary.push_back( &DIFFERENCE()             );
+    all_binary.push_back( &DIST_MIN()               );
+    all_binary.push_back( &DIVIDE()                 );
+    all_binary.push_back( &EQUAL()                  );
+    all_binary.push_back( &GREATER_THAN()           );
+    all_binary.push_back( &GREATER_THAN_EQUAL()     );
+    all_binary.push_back( &INTERSECTION()           );
+    all_binary.push_back( &LESS_THAN()              );
+    all_binary.push_back( &LESS_THAN_EQUAL()        );
+    all_binary.push_back( &MAXIMUM()                );
+    all_binary.push_back( &MINIMUM()                );
+    all_binary.push_back( &MINUS()                  );
+    all_binary.push_back( &MODULO()                 );
+    all_binary.push_back( &MULTIPLY()               );
+    all_binary.push_back( &MV_MULTIPLY()            );
+    all_binary.push_back( &NOT_EQUAL()              );
+    all_binary.push_back( &PLUS()                   );
+    all_binary.push_back( &POST_IMAGE()             );
+    all_binary.push_back( &PRE_IMAGE()              );
+    all_binary.push_back( &UNION()                  );
+    all_binary.push_back( &VM_MULTIPLY()            );
 }
 
 void MEDDLY::builtin_init::setup()
@@ -109,51 +137,34 @@ void MEDDLY::builtin_init::setup()
     //
     // Unary ops
     //
-    COPY_init();
-    CARDINALITY_init();
-    COMPLEMENT_init();
-    CONVERT_TO_INDEX_SET_init();
-    CYCLE_init();
-    MAX_RANGE_init();
-    MIN_RANGE_init();
-#ifdef ALLOW_DEPRECATED_0_17_8
-    SELECT_init();
-#endif
+    for (unsigned i=0; i<all_unary.size(); i++) {
+        if (all_unary[i]) {
+            all_unary[i]->setup();
+        }
+    }
+    //
+    // Binary ops
+    //
+    for (unsigned i=0; i<all_binary.size(); i++) {
+        if (all_binary[i]) {
+            all_binary[i]->setup();
+        }
+    }
+
+    // OLD BELOW HERE
 
     //
     // Binary ops
     //
-    UNION_init();
-    INTERSECTION_init();
-    DIFFERENCE_init();
-    CROSS_init();
-    MAXIMUM_init();
-    MINIMUM_init();
-    PLUS_init();
-    MINUS_init();
-    MULTIPLY_init();
-    DIVIDE_init();
-    MODULO_init();
-
-    EQUAL_init();
-    NOT_EQUAL_init();
-    LESS_THAN_init();
-    LESS_THAN_EQUAL_init();
-    GREATER_THAN_init();
-    GREATER_THAN_EQUAL_init();
 
     PRE_PLUS_init();
     POST_PLUS_init();
-    PRE_IMAGE_init();
-    POST_IMAGE_init();
     TC_POST_IMAGE_init();
     REACHABLE_STATES_BFS_init();
     REACHABLE_STATES_DFS_init();
     REVERSE_REACHABLE_BFS_init();
     REVERSE_REACHABLE_DFS_init();
 
-    VM_MULTIPLY_init();
-    MV_MULTIPLY_init();
     MM_MULTIPLY_init();
 
     CONSTRAINED_BACKWARD_BFS_init();
@@ -167,51 +178,33 @@ void MEDDLY::builtin_init::cleanup()
     //
     // Unary ops
     //
-    COPY_done();
-    CARDINALITY_done();
-    COMPLEMENT_done();
-    CONVERT_TO_INDEX_SET_done();
-    CYCLE_done();
-    MAX_RANGE_done();
-    MIN_RANGE_done();
-#ifdef ALLOW_DEPRECATED_0_17_8
-    SELECT_done();
-#endif
+    for (unsigned i=0; i<all_unary.size(); i++) {
+        if (all_unary[i]) {
+            all_unary[i]->cleanup();
+        }
+    }
+    //
+    // Binary ops
+    //
+    for (unsigned i=0; i<all_binary.size(); i++) {
+        if (all_binary[i]) {
+            all_binary[i]->cleanup();
+        }
+    }
+
+    // OLD BELOW HERE
 
     //
     // Binary ops
     //
-    UNION_done();
-    INTERSECTION_done();
-    DIFFERENCE_done();
-    CROSS_done();
-    MAXIMUM_done();
-    MINIMUM_done();
-    PLUS_done();
-    MINUS_done();
-    MULTIPLY_done();
-    DIVIDE_done();
-    MODULO_done();
-
-    EQUAL_done();
-    NOT_EQUAL_done();
-    LESS_THAN_done();
-    LESS_THAN_EQUAL_done();
-    GREATER_THAN_done();
-    GREATER_THAN_EQUAL_done();
-
     PRE_PLUS_done();
     POST_PLUS_done();
-    PRE_IMAGE_done();
-    POST_IMAGE_done();
     TC_POST_IMAGE_done();
     REACHABLE_STATES_BFS_done();
     REACHABLE_STATES_DFS_done();
     REVERSE_REACHABLE_BFS_done();
     REVERSE_REACHABLE_DFS_done();
 
-    VM_MULTIPLY_done();
-    MV_MULTIPLY_done();
     MM_MULTIPLY_done();
 
     //
@@ -222,17 +215,5 @@ void MEDDLY::builtin_init::cleanup()
     CONSTRAINED_FORWARD_DFS_done();
     CONSTRAINED_BACKWARD_DFS_done();
     TRANSITIVE_CLOSURE_DFS_done();
-}
-
-// ******************************************************************
-// *                                                                *
-// *                   front end:  initialization                   *
-// *                                                                *
-// ******************************************************************
-
-MEDDLY::initializer_list*
-MEDDLY::makeBuiltinInitializer(initializer_list* prev)
-{
-    return new builtin_init(prev);
 }
 

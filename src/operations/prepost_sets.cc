@@ -1,0 +1,970 @@
+/*
+    Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
+    Copyright (C) 2009, Iowa State University Research Foundation, Inc.
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "../defines.h"
+#include "prepost_sets.h"
+
+#include "../ops_builtin.h"
+#include "../ct_vector.h"
+#include "../oper_unary.h"
+#include "../oper_binary.h"
+#include "../forest_levels.h"
+#include "../forest_edgerules.h"
+
+// #define TRACE
+
+#ifdef TRACE
+#include "../operators.h"
+#endif
+
+namespace MEDDLY {
+    class VM_MULTIPLY_factory;
+    class MV_MULTIPLY_factory;
+};
+
+// ************************************************************************
+// ************************************************************************
+
+/*
+    Template class for pre-image and post-image operations,
+    when the relation is MT-based.
+    This includes vector-matrix and matrix-vector multiplications.
+
+    Template parameters:
+
+        EOP: one of the EdgeOp classes in forests_edgerules.h.
+
+        FORWD: if true, do post-image (one step forward), otherwise
+                        do pre-image  (one step backward).
+
+        ATYPE: arithmetic type class, must provide the following methods.
+
+            /// Get the operation name, for display purposes
+            static const char* name(bool forwd);
+
+            /// Return true if the given edge is unreachable
+            static bool isUnreachable(const edge_value &cv, node_handle c);
+
+            /// Set an edge to be unreachable
+            static void setUnreachable(edge_value &cv, node_handle &c);
+
+            /// Set all edges of an unpacked node to unreachable
+            static void setAllUnreachable(unpacked_node *u);
+
+            /// Get the accumulate operation for result nodes.
+            static binary_operation* accumulateOp(const forest* resF);
+
+            /// Apply the operation when b is a terminal node.
+            static void apply(
+                const forest* fa, const edge_value &av, node_handle a,
+                const forest* fb, node_handle b,
+                const forest* fc, edge_value &cv, node_handle &c
+            );
+
+*/
+
+namespace MEDDLY {
+
+    template <class EOP, bool FORWD, class ATYPE>
+    class prepost_set_mtrel : public binary_operation {
+        public:
+            prepost_set_mtrel(forest* arg1, forest* arg2,
+                    forest* res, bool swap=false);
+
+            virtual ~prepost_set_mtrel();
+
+            virtual void compute(int L, unsigned in,
+                    const edge_value &av, node_handle ap,
+                    const edge_value &bv, node_handle bp,
+                    edge_value &cv, node_handle &cp);
+
+        protected:
+            void _compute(int L, const edge_value &av, node_handle A,
+                    node_handle B, edge_value &cv, node_handle &C);
+
+        private:
+            inline const edge_value &edgeval(unpacked_node *U, unsigned i) const
+            {
+                if (EOP::hasEdgeValues()) {
+                    return U->edgeval(i);
+                } else {
+                    return nothing;
+                }
+            }
+
+            //
+            // Correctly do C[i] = C[i] + <v, p>
+            //
+            inline void addToCi(int nextL, unpacked_node *C, unsigned i,
+                    const edge_value &v, node_handle p)
+            {
+                // This case should be caught already
+                MEDDLY_DCASSERT( !ATYPE::isUnreachable(v, p) );
+                if (ATYPE::isUnreachable(edgeval(C, i), C->down(i)))
+                {
+                    C->setFull(i, v, p);
+                    return;
+                }
+                edge_value  newdv;
+                node_handle newdp;
+                accumulateOp->compute(nextL, ~0,
+                    edgeval(C, i), C->down(i), v, p, newdv, newdp
+                );
+                resF->unlinkNode(p);
+                resF->unlinkNode(C->down(i));
+                C->setFull(i, newdv, newdp);
+            }
+
+        private:
+            ct_entry_type* ct;
+            binary_operation* accumulateOp;
+            const bool swap_opnds;
+#ifdef TRACE
+            ostream_output out;
+            unsigned top_count;
+#endif
+            edge_value nothing;
+            bool forced_by_levels;
+
+    }; // class prepost_op
+}; // namespace MEDDLY
+
+// ************************************************************************
+
+template <class EOP, bool FORWD, class ATYPE>
+MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
+    ::prepost_set_mtrel(forest* arg1, forest* arg2, forest* res, bool swap)
+    : binary_operation(
+            swap ? arg2 : arg1,
+            swap ? arg1 : arg2, res), swap_opnds(swap)
+#ifdef TRACE
+      , out(std::cout), top_count(0)
+#endif
+{
+    checkDomains(__FILE__, __LINE__);
+    checkRelations(__FILE__, __LINE__, SET, RELATION, SET);
+    checkLabelings(__FILE__, __LINE__,
+        res->getEdgeLabeling(),
+        edge_labeling::MULTI_TERMINAL,
+        res->getEdgeLabeling()
+    );
+
+    if (arg1F->getRangeType() != resF->getRangeType()) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    //
+    // Addition operation for the vector-matrix multiply.
+    //  union for pre/post image, addition otherwise.
+    //
+    accumulateOp = ATYPE::accumulateOp(res);
+    MEDDLY_DCASSERT(accumulateOp);
+
+    //
+    // Do we need to recurse by levels and store level info in the CT?
+    // YES, if the set and relation are both fully-reduced.
+    // (If the set is quasi reduced, we will recurse by levels anyway.)
+    // (If the relation is identity-reduced, we can skip levels.)
+    //
+    forced_by_levels = arg1->isFullyReduced() && arg2->isFullyReduced();
+
+    //
+    // Build compute table key and result types.
+    //
+    ct = new ct_entry_type(ATYPE::name(FORWD));
+    if (forced_by_levels) {
+        if (swap_opnds) {
+            ct->setFixed('I', arg2, arg1);
+        } else {
+            ct->setFixed('I', arg1, arg2);
+        }
+    } else {
+        if (swap_opnds) {
+            ct->setFixed(arg2, arg1);
+        } else {
+            ct->setFixed(arg1, arg2);
+        }
+    }
+    if (EOP::hasEdgeValues()) {
+        ct->setResult(EOP::edgeValueTypeLetter(), res);
+    } else {
+        ct->setResult(res);
+    }
+    ct->doneBuilding();
+}
+
+template <class EOP, bool FORWD, class ATYPE>
+MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::~prepost_set_mtrel()
+{
+    ct->markForDestroy();
+}
+
+template <class EOP, bool FORWD, class ATYPE>
+void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
+    ::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap,
+        const edge_value &bv, node_handle bp,
+        edge_value &cv, node_handle &cp)
+{
+#ifdef TRACE
+    out.indentation(0);
+    ++top_count;
+    out << ATYPE::name(FORWD) << " #" << top_count << " begin\n";
+#endif
+
+    MEDDLY_DCASSERT(bv.isVoid());
+
+    if (swap_opnds) {
+        _compute(L, bv, bp, ap, cv, cp);
+    } else {
+        _compute(L, av, ap, bp, cv, cp);
+    }
+
+#ifdef TRACE
+    out << ATYPE::name(FORWD) << " #" << top_count << " end\n";
+#endif
+}
+
+template <class EOP, bool FORWD, class ATYPE>
+void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
+        const edge_value &av, node_handle A, node_handle B,
+        edge_value &cv, node_handle &C)
+{
+    // **************************************************************
+    //
+    // Determine level information
+    //
+    // **************************************************************
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = ABS(arg2F->getNodeLevel(B));
+    const int Clevel = forced_by_levels ? L : MAX(Alevel, Blevel);
+    const int nextL = MDD_levels::downLevel(Clevel);
+
+    // **************************************************************
+    //
+    // Check terminal cases
+    //
+    // **************************************************************
+    if (0==B || ATYPE::isUnreachable(av, A)) {
+        ATYPE::setUnreachable(cv, C);
+        EOP::accumulateOp(cv, av);
+        C = resF->makeRedundantsTo(C, Clevel, L);
+        return;
+    }
+
+    if (arg2F->isTerminalNode(B) && (0==L || arg2F->isIdentityReduced())) {
+        //
+        // We're either at the bottom,
+        // or the matrix is an identity (or a scalar times identity).
+        // Treat that case quickly.
+        //
+        ATYPE::apply(arg1F, av, A, arg2F, B, resF, cv, C);
+        return;
+    }
+
+#ifdef TRACE
+    out << ATYPE::name(FORWD) << " prepost_set_mtrel::compute(" << L << ", ";
+    arg1F->showEdge(out, av, A);
+    out << ", " << B << ")\n";
+    out << "A: #" << A << " ";
+    arg1F->showNode(out, A, SHOW_DETAILS);
+    out << "\n";
+    out << "B: #" << B << " ";
+    arg2F->showNode(out, B, SHOW_DETAILS);
+    out << "\n";
+    // out << A << " level " << Alevel << "\n";
+    // out << B << " level " << Blevel << "\n";
+    out << "result level " << Clevel << "\n";
+#endif
+
+    // **************************************************************
+    //
+    // Check the compute table
+    //
+    // **************************************************************
+    ct_vector key(ct->getKeySize());
+    ct_vector res(ct->getResultSize());
+    if (forced_by_levels) {
+        key[0].setI(L);
+        key[1].setN(A);
+        key[2].setN(B);
+    } else {
+        key[0].setN(A);
+        key[1].setN(B);
+    }
+
+    if (ct->findCT(key, res)) {
+        //
+        // compute table hit
+        //
+        if (EOP::hasEdgeValues()) {
+            res[0].get(cv);
+            EOP::accumulateOp(cv, av);
+            C = resF->linkNode(res[1].getN());
+            EOP::normalize(cv, C);
+        } else {
+            EOP::clear(cv);
+            C = resF->linkNode(res[0].getN());
+        }
+#ifdef TRACE
+        out << "CT hit ";
+        key.show(out);
+        out << " -> ";
+        res.show(out);
+        out << "\n";
+#endif
+        C = resF->makeRedundantsTo(C, Clevel, L);
+        return;
+        //
+        // done compute table hit
+        //
+    }
+
+    // **************************************************************
+    //
+    // Compute table 'miss'; do computation
+    //
+    // **************************************************************
+
+    //
+    // Set up unpacked nodes
+    //
+
+    unpacked_node* Au = unpacked_node::New(arg1F, FULL_ONLY);
+    if (Alevel != Clevel) {
+        edge_value zero;
+        EOP::clear(zero);
+        Au->initRedundant(Clevel, zero, A);
+    } else {
+        Au->initFromNode(A);
+    }
+
+    rel_node* Brn;
+    if (Blevel != Clevel) {
+        Brn = nullptr;
+    } else {
+        Brn = arg2F->buildRelNode(B);
+    }
+
+#ifdef TRACE
+    out << "A: ";
+    Au->show(out, true);
+    out << "\nB: ";
+    if (Brn) {
+        Brn->show(out);
+    } else {
+        out << "identity to " << B;
+    }
+    out.indent_more();
+    out.put('\n');
+#endif
+
+    //
+    // Initialize result
+    //
+    unpacked_node* Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
+    ATYPE::setAllUnreachable(Cu);
+
+    //
+    // Recurse
+    //
+    if (!Brn) {
+        if (arg2F->isFullyReduced()) {
+            //
+            // Skipped Fully level(s)
+            //
+            // Forward:  C[j] = C[j] + A[i] * B, for all i,j
+            // Backward: C[i] = C[i] + B * A[j], for all i,j
+            //
+            // That's really the same thing, so we'll do:
+            // for all i s.t. A[i] != 0
+            //     tmp = A[i] * B
+            //     for all j
+            //         C[j] = C[j] + tmp
+            //
+            for (unsigned i=0; i<Au->getSize(); i++) {
+                if (ATYPE::isUnreachable(edgeval(Au, i), Au->down(i))) {
+                    continue;
+                }
+                node_handle ab_p;
+                edge_value  ab_v;
+                _compute(nextL, edgeval(Au, i), Au->down(i), B, ab_v, ab_p);
+                if (ATYPE::isUnreachable(ab_v, ab_p)) {
+                    continue;
+                }
+                for (unsigned j=0; j<Cu->getSize(); j++) {
+                    addToCi(nextL, Cu, j, ab_v, resF->linkNode(ab_p));
+                }
+                resF->unlinkNode(ab_p);
+            } // for zi
+        } else {
+            //
+            //  Skipped Identity level(s)
+            //
+            //  For both forward and backward, compute
+            //      C[i] = A[i] * B
+            //  for all i.
+            //
+            MEDDLY_DCASSERT(arg2F->isIdentityReduced());
+            for (unsigned i=0; i<Au->getSize(); i++) {
+                if (ATYPE::isUnreachable(edgeval(Au, i), Au->down(i))) {
+                    continue;
+                }
+                edge_value  ab_v;
+                node_handle ab_p;
+                _compute(nextL, edgeval(Au, i), Au->down(i), B, ab_v, ab_p);
+                Cu->setFull(i, ab_v, ab_p);
+            }
+        }
+    } else {
+        //
+        // Non-identity level
+        //
+        if (FORWD) {
+            /*
+             * Go forward one step.
+             */
+            unpacked_node* Bu = unpacked_node::New(arg2F, SPARSE_ONLY);
+
+            for (unsigned i=0; i<Au->getSize(); i++) {
+                if (ATYPE::isUnreachable(edgeval(Au, i), Au->down(i))) {
+                    continue;
+                }
+                if (Brn->outgoing(i, *Bu)) {
+                    for (unsigned zj=0; zj<Bu->getSize(); zj++) {
+                        const unsigned j = Bu->index(zj);
+#ifdef TRACE
+                        out << A << "x" << B << " computes  "
+                            << i << ">->" << j << ": "
+                            << Au->down(i) << "x" << Bu->down(zj) << "\n";
+#endif
+                        // C[j] = C[j] + A[i] * B[i,j]
+                        node_handle cdp;
+                        edge_value  cdv;
+                        _compute(nextL, edgeval(Au, i), Au->down(i),
+                                Bu->down(zj), cdv, cdp);
+                        if (!ATYPE::isUnreachable(cdv, cdp)) {
+                            addToCi(nextL, Cu, j, cdv, cdp);
+                        }
+#ifdef TRACE
+                        out << A << "x" << B << " completed "
+                            << i << ">->" << j << "; C is now ";
+
+                        Cu->show(out, false);
+                        out << "\n";
+#endif
+                    } // for zj
+                } // if brn[i]
+            } // for zi
+        } else {
+            /*
+             * Go backward one step.
+             */
+            const unsigned kSize = unsigned(resF->getLevelSize(Clevel));
+            unpacked_node* Bu = unpacked_node::New(arg2F, FULL_ONLY);
+            for (unsigned i=0; i<kSize; i++) {
+                if (Brn->outgoing(i, *Bu)) {
+                    for (unsigned j=0; j<Au->getSize(); j++) {
+                        if (ATYPE::isUnreachable(edgeval(Au, j), Au->down(j))) {
+                            continue;
+                        }
+#ifdef TRACE
+                        out << A << "x" << B << " computes  "
+                            << i << "<-<" << j << ": "
+                            << Au->down(j) << "x" << Bu->down(j) << "\n";
+#endif
+                        if (Bu->down(j)) {
+                            // C[i] = C[i] + B[i,j] * A[j]
+                            node_handle cdp;
+                            edge_value  cdv;
+                            _compute(nextL, edgeval(Au, j), Au->down(j),
+                                    Bu->down(j), cdv, cdp);
+                            if (!ATYPE::isUnreachable(cdv, cdp)) {
+                                addToCi(nextL, Cu, i, cdv, cdp);
+                            }
+                        } // if bu[j]
+#ifdef TRACE
+                        out << A << "x" << B << " completed "
+                            << i << "<-<" << j << "; C is now ";
+
+                        Cu->show(out, false);
+                        out << "\n";
+#endif
+                    } // for zj
+                } // if brn[i]
+            } // for i
+        }
+    }
+
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << ATYPE::name(FORWD) << " prepost_set_mtrel::compute(" << L << ", ";
+    arg1F->showEdge(out, av, A);
+    out << ", " << B << ") done\n";
+    out << "  A: #" << A << ": ";
+    arg1F->showNode(out, A, SHOW_DETAILS);
+    out << "\n  B: #" << B << ": ";
+    if (Brn) {
+        Brn->show(out);
+    } else {
+        out << "identity to " << B;
+    }
+    out << "\n  C: ";
+    Cu->show(out, true);
+    out << "\n";
+#endif
+
+    //
+    // Reduce
+    //
+    resF->createReducedNode(Cu, cv, C);
+#ifdef TRACE
+    out << "reduced to ";
+    resF->showEdge(out, cv, C);
+    out << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
+
+    //
+    // Save result in CT
+    //
+    if (EOP::hasEdgeValues()) {
+        res[0].set(cv);
+        res[1].setN(C);
+    } else {
+        res[0].setN(C);
+    }
+    ct->addCT(key, res);
+
+    //
+    // Cleanup
+    //
+    arg2F->doneRelNode(Brn);
+    unpacked_node::Recycle(Au);
+
+    //
+    // Adjust result
+    //
+    C = resF->makeRedundantsTo(C, Clevel, L);
+    EOP::accumulateOp(cv, av);
+    EOP::normalize(cv, C);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                       mt_prepost  struct                       *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    struct mt_prepost {
+        inline static const char* name(bool forwd)
+        {
+            return forwd ? "post-image" : "pre-image";
+        }
+
+        /// Get the accumulate operation for result nodes.
+        inline static binary_operation* accumulateOp(forest* resF)
+        {
+            return build(UNION, resF, resF, resF);
+        }
+
+        /// Does the edge correspond to an unreachable state?
+        inline static bool isUnreachable(const edge_value &ev, node_handle p)
+        {
+            MEDDLY_DCASSERT(ev.isVoid());
+            return 0==p;
+        }
+
+        /// Set edge to be unreachable states
+        inline static void setUnreachable(edge_value &v, node_handle &p)
+        {
+            v.set();
+            p = 0;
+        }
+
+        /// Set all edges to unreachable
+        inline static void setAllUnreachable(unpacked_node *U)
+        {
+            U->clear(0, U->getSize());
+        }
+
+        /// Apply the operation when b is a terminal node.
+        static void apply(forest* fa, const edge_value &av, node_handle a,
+                          const forest* fb, node_handle b,
+                          forest* fc, edge_value &cv, node_handle &c)
+        {
+            MEDDLY_DCASSERT(b<0);
+            unary_operation* copy = build(COPY, fa, fc);
+            MEDDLY_DCASSERT(copy);
+            copy->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
+        }
+
+    };
+};
+
+// ******************************************************************
+// *                                                                *
+// *                       mt_distance struct                       *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    struct mt_distance {
+        inline static const char* name(bool forwd)
+        {
+            return forwd ? "post-image" : "pre-image";
+        }
+
+        /// Get the accumulate operation for result nodes.
+        inline static binary_operation* accumulateOp(forest* resF)
+        {
+            return build(DIST_MIN, resF, resF, resF);
+        }
+
+        /// Does the edge correspond to an unreachable state?
+        inline static bool isUnreachable(const edge_value &ev, node_handle p)
+        {
+            MEDDLY_DCASSERT(ev.isVoid());
+            if (p >= 0) return false;
+            terminal t(terminal_type::INTEGER, p);
+            return t.getInteger() < 0;
+        }
+
+        /// Set edge to be unreachable states
+        inline static void setUnreachable(edge_value &v, node_handle &p)
+        {
+            v.set();
+            terminal t = -1;
+            p = t.getIntegerHandle();
+        }
+
+        /// Set all edges to unreachable
+        inline static void setAllUnreachable(unpacked_node *U)
+        {
+            terminal t = -1;
+            node_handle neg1 = t.getIntegerHandle();
+            for (unsigned i=0; i<U->getSize(); i++) {
+                U->setFull(i, neg1);
+            }
+        }
+
+        /// Apply the operation when b is a terminal node.
+        static void apply(forest* fa, const edge_value &av, node_handle a,
+                          const forest* fb, node_handle b,
+                          forest* fc, edge_value &cv, node_handle &c)
+        {
+            MEDDLY_DCASSERT(b<0);
+            unary_operation* increment = build(DIST_INC, fa, fc);
+            MEDDLY_DCASSERT(increment);
+            increment->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
+        }
+
+    };
+};
+
+
+// ******************************************************************
+// *                                                                *
+// *                       ev_prepost  struct                       *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <typename INT>
+    struct ev_prepost {
+        inline static const char* name(bool forwd)
+        {
+            return forwd ? "post-image" : "pre-image";
+        }
+
+        /// Get the accumulate operation for result nodes.
+        inline static binary_operation* accumulateOp(forest* resF)
+        {
+            return build(MINIMUM, resF, resF, resF);
+        }
+
+        /// Does the edge correspond to an unreachable state?
+        inline static bool isUnreachable(const edge_value &ev, node_handle p)
+        {
+            return OMEGA_INFINITY == p;
+        }
+        /// Set edge to be unreachable states
+        inline static void setUnreachable(edge_value &v, node_handle &p)
+        {
+            p = OMEGA_INFINITY;
+            v = INT(0);
+        }
+
+        /// Set all edges to unreachable
+        inline static void setAllUnreachable(unpacked_node *U)
+        {
+            U->clear(0, U->getSize());
+        }
+
+        /// Apply the operation when b is a terminal node.
+        static void apply(forest* fa, const edge_value &av, node_handle a,
+                          const forest* fb, node_handle b,
+                          forest* fc, edge_value &cv, node_handle &c)
+        {
+            MEDDLY_DCASSERT(b<0);
+            unary_operation* copy = build(COPY, fa, fc);
+            MEDDLY_DCASSERT(copy);
+            copy->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
+
+            if (OMEGA_INFINITY != c) {
+                cv.add(INT(1));
+            }
+        }
+
+    };
+};
+
+// ******************************************************************
+// *                                                                *
+// *                      mt_vectXmatr  struct                      *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <class TTYPE>
+    struct mt_vectXmatr {
+        inline static const char* name(bool forwd)
+        {
+            return forwd ? "VM-multiply" : "MV-multiply";
+        }
+
+        /// Get the accumulate operation for result nodes.
+        inline static binary_operation* accumulateOp(forest* resF)
+        {
+            return build(PLUS, resF, resF, resF);
+        }
+
+        /// Does the edge correspond to an unreachable state?
+        inline static bool isUnreachable(const edge_value &ev, node_handle p)
+        {
+            MEDDLY_DCASSERT(ev.isVoid());
+            return 0==p;
+        }
+        inline static void setUnreachable(edge_value &v, node_handle &p)
+        {
+            v.set();
+            p = 0;
+        }
+        inline static void setAllUnreachable(unpacked_node *U)
+        {
+            U->clear(0, U->getSize());
+        }
+
+        /// Apply the operation when b is a terminal node.
+        static void apply(forest* fa, const edge_value &av, node_handle a,
+                          const forest* fb, node_handle b,
+                          forest* fc, edge_value &cv, node_handle &c)
+        {
+            MEDDLY_DCASSERT(b<0);
+            TTYPE mxdval;
+            fb->getValueFromHandle(b, mxdval);
+            binary_operation* mult = build(MULTIPLY, fa, fa, fc);
+            node_handle fa_mxdval = fa->handleForValue(mxdval);
+
+            edge_value dummy;
+            dummy.set();
+            mult->compute(fa->getNodeLevel(a), ~0,
+                av, a, dummy, fa_mxdval,
+                cv, c);
+        }
+
+    };
+};
+
+
+// ******************************************************************
+// *                                                                *
+// *                 _IMAGE_factory  template class                 *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    template <bool FWD>
+    class _IMAGE_factory : public binary_factory {
+        public:
+            virtual void setup();
+            virtual binary_operation*
+                build_new(forest* a, forest* b, forest* c);
+        private:
+            char docs[1024];
+    };
+};
+
+// ******************************************************************
+
+template <bool FWD>
+void MEDDLY::_IMAGE_factory <FWD>::setup()
+{
+    snprintf(docs, 1024, "Follow edges %s in a transition relation. The first operand should be a set/vector. The second operand should be a relation/matrix. The result should be a set/vector, and should have the same range and edge labeling type as the first operand. All forests should be over the same domain.\nIf the output function has type BOOLEAN, then the output value is true if and only if one of the input states has an %s the output state.\nIf the output function has type INTEGER, then the first operand is assumed to be a distance function over states, and the output value is one plus the minimum over all input states that have an %s the output state. For multi-terminal forests, a negative value is used to indicate unreachable or undefined distances, and the result forest should be fully reduced. For EV+ forests, positive infinity is used to indicate unreachable or undefined distances.",
+            FWD ? "forward" : "backward",
+            FWD ? "outgoing edge to" : "incoming edge from",
+            FWD ? "outgoing edge to" : "incoming edge from");
+
+    _setup(__FILE__, FWD ? "POST_IMAGE" : "PRE_IMAGE", docs);
+}
+
+template <bool FWD>
+MEDDLY::binary_operation*
+MEDDLY::_IMAGE_factory <FWD>::build_new(forest* a, forest* b, forest* c)
+{
+    if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+
+        switch (c->getRangeType()) {
+            case range_type::BOOLEAN:
+                return new prepost_set_mtrel<EdgeOp_none, FWD,
+                            mt_prepost>(a, b, c);
+
+            case range_type::INTEGER:
+                if (c->isFullyReduced())  {
+                    return new prepost_set_mtrel<EdgeOp_none, FWD,
+                            mt_distance>(a, b, c);
+                }
+
+            default:
+                return nullptr;
+        }
+    }
+
+    if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
+
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new prepost_set_mtrel<EdgeOp_plus<int>, FWD,
+                            ev_prepost<int> > (a, b, c);
+
+            case edge_type::LONG:
+                return new prepost_set_mtrel<EdgeOp_plus<long>, FWD,
+                            ev_prepost<long> > (a, b, c);
+
+            default:
+                return nullptr;
+        };
+    }
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                   VM_MULTIPLY_factory  class                   *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::VM_MULTIPLY_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::VM_MULTIPLY_factory::setup()
+{
+    _setup(__FILE__, "VM_MULTIPLY", "Vector matrix multiply. The first operand is a vector (MDD), the second operand is a matrix (MxD), and the result is a vector (MDD). All forests must multi-terminal and over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::VM_MULTIPLY_factory::build_new(forest* a, forest* b, forest* c)
+{
+    switch (c->getRangeType()) {
+        case range_type::INTEGER:
+            return new prepost_set_mtrel<EdgeOp_none, true,
+                            mt_vectXmatr<int> >(a, b, c);
+
+        case range_type::REAL:
+            return new prepost_set_mtrel<EdgeOp_none, true,
+                            mt_vectXmatr<float> >(a, b, c);
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+}
+
+// ******************************************************************
+// *                                                                *
+// *                   MV_MULTIPLY_factory  class                   *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::MV_MULTIPLY_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::MV_MULTIPLY_factory::setup()
+{
+    _setup(__FILE__, "MV_MULTIPLY", "Matrix vector multiply. The first operand is a matrix (MxD), the second operand is a vector (MDD), and the result is a vector (MDD). All forests must multi-terminal and over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::MV_MULTIPLY_factory::build_new(forest* a, forest* b, forest* c)
+{
+    switch (c->getRangeType()) {
+        case range_type::INTEGER:
+            return new prepost_set_mtrel<EdgeOp_none, false,
+                            mt_vectXmatr<int> >(a, b, c, true);
+
+        case range_type::REAL:
+            return new prepost_set_mtrel<EdgeOp_none, false,
+                            mt_vectXmatr<float> >(a, b, c, true);
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+}
+
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_factory& MEDDLY::PRE_IMAGE()
+{
+    static _IMAGE_factory<false> F;
+    return F;
+}
+
+MEDDLY::binary_factory& MEDDLY::POST_IMAGE()
+{
+    static _IMAGE_factory<true> F;
+    return F;
+}
+
+MEDDLY::binary_factory& MEDDLY::VM_MULTIPLY()
+{
+    static VM_MULTIPLY_factory F;
+    return F;
+}
+
+MEDDLY::binary_factory& MEDDLY::MV_MULTIPLY()
+{
+    static MV_MULTIPLY_factory F;
+    return F;
+}
+

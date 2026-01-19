@@ -30,7 +30,7 @@ namespace MEDDLY {
     class select_MT;
     class select_EVPlus;
 
-    unary_list SELECT_cache;
+    class SELECT_factory;
 };
 
 // ******************************************************************
@@ -46,7 +46,7 @@ class MEDDLY::select : public unary_operation {
 };
 
 MEDDLY::select::select(forest* arg, forest* res)
-    : unary_operation(SELECT_cache, 0, arg, res)
+    : unary_operation(arg, res)
 {
     checkDomains(__FILE__, __LINE__);
     checkAllRelations(__FILE__, __LINE__, SET);
@@ -190,54 +190,39 @@ void MEDDLY::select_EVPlus::_compute(long aev, node_handle a, int level, long& b
   bev = ev.getLong();
 }
 
-
 // ******************************************************************
 // *                                                                *
-// *                       copy_opname  class                       *
+// *                      SELECT_factory class                      *
 // *                                                                *
 // ******************************************************************
 
-/*
-
-class MEDDLY::select_opname : public unary_opname {
-  public:
-    select_opname();
-    virtual unary_operation* buildOperation(unary_list &c,
-            forest* ar, forest* res);
+class MEDDLY::SELECT_factory : public unary_factory {
+    public:
+        virtual void setup();
+        virtual unary_operation* build_new(forest* arg, forest* res);
 };
 
-MEDDLY::select_opname::select_opname()
- : unary_opname("Select")
+// ******************************************************************
+
+void MEDDLY::SELECT_factory::setup()
 {
+    _setup(__FILE__, "SELECT", "Select an element. Deprecated.");
 }
 
 MEDDLY::unary_operation*
-MEDDLY::select_opname
-::buildOperation(unary_list &c, forest* arg, forest* res)
+MEDDLY::SELECT_factory::build_new(forest* arg, forest* res)
 {
-  if (0==arg || 0==res) return 0;
-
-  if (arg->getDomain() != res->getDomain())
-    throw error(error::DOMAIN_MISMATCH);
-
-  if (arg->isForRelations() || res->isForRelations())
-    throw error(error::NOT_IMPLEMENTED);
-
-  if (arg->isMultiTerminal() && res->isMultiTerminal()){
-    return new select_MT(c, arg, res);
-  }
-
-  if (arg->isEVPlus() && res->isEVPlus()) {
-    return new select_EVPlus(c, arg, res);
-  }
-
-  //
-  // Catch all for any other cases
-  //
-  throw error(error::NOT_IMPLEMENTED);
-
+    if (arg->isForRelations()) {
+        return nullptr;
+    }
+    if (arg->isMultiTerminal()) {
+        return new select_MT(arg, res);
+    }
+    if (arg->isEVPlus()) {
+        return new select_EVPlus(arg, res);
+    }
+    return nullptr;
 }
-*/
 
 // ******************************************************************
 // *                                                                *
@@ -245,40 +230,10 @@ MEDDLY::select_opname
 // *                                                                *
 // ******************************************************************
 
-/*
-MEDDLY::unary_opname* MEDDLY::initializeSelect()
+MEDDLY::unary_factory& MEDDLY::SELECT()
 {
-  return new select_opname;
-}
-*/
-
-MEDDLY::unary_operation* MEDDLY::SELECT(forest* arg, forest* res)
-{
-    if (!arg || !res) return nullptr;
-    unary_operation* uop =  SELECT_cache.find(arg, res);
-    if (uop) {
-        return uop;
-    }
-    if (arg->isForRelations()) {
-        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-    }
-    if (arg->isMultiTerminal()) {
-        return SELECT_cache.add(new select_MT(arg, res));
-    }
-    if (arg->isEVPlus()) {
-        return SELECT_cache.add(new select_EVPlus(arg, res));
-    }
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-}
-
-void MEDDLY::SELECT_init()
-{
-    SELECT_cache.reset("Select");
-}
-
-void MEDDLY::SELECT_done()
-{
-    MEDDLY_DCASSERT(SELECT_cache.isEmpty());
+    static SELECT_factory F;
+    return F;
 }
 
 

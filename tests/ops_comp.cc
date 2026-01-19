@@ -47,8 +47,9 @@ using namespace MEDDLY;
 // #define DEBUG_MXDOPS
 
 template <typename T>
-void EQ(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<bool> &C)
+void EQ(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector<MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "EQ size mismatch A,B";
@@ -62,8 +63,9 @@ void EQ(const std::vector <T> &A, const std::vector <T> &B,
 }
 
 template <typename T>
-void NE(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<bool> &C)
+void NE(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector<MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "NE size mismatch A,B";
@@ -77,8 +79,9 @@ void NE(const std::vector <T> &A, const std::vector <T> &B,
 }
 
 template <typename T>
-void GE(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<bool> &C)
+void GE(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector<MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "GE size mismatch A,B";
@@ -87,13 +90,22 @@ void GE(const std::vector <T> &A, const std::vector <T> &B,
         throw "GE size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = (A[i] >= B[i]);
+        if (A[i].isPlusInfinity()) {
+            C[i] = true;
+            continue;
+        }
+        if (B[i].isPlusInfinity()) {
+            C[i] = false;
+            continue;
+        }
+        C[i] = T(A[i]) >= T(B[i]);
     }
 }
 
 template <typename T>
-void GT(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<bool> &C)
+void GT(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector<MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "GT size mismatch A,B";
@@ -102,13 +114,22 @@ void GT(const std::vector <T> &A, const std::vector <T> &B,
         throw "GT size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = (A[i] > B[i]);
+        if (B[i].isPlusInfinity()) {
+            C[i] = false;
+            continue;
+        }
+        if (A[i].isPlusInfinity()) {
+            C[i] = true;
+            continue;
+        }
+        C[i] = T(A[i]) > T(B[i]);
     }
 }
 
 template <typename T>
-void LE(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<bool> &C)
+void LE(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector<MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "LE size mismatch A,B";
@@ -117,13 +138,22 @@ void LE(const std::vector <T> &A, const std::vector <T> &B,
         throw "LE size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = (A[i] <= B[i]);
+        if (B[i].isPlusInfinity()) {
+            C[i] = true;
+            continue;
+        }
+        if (A[i].isPlusInfinity()) {
+            C[i] = false;
+            continue;
+        }
+        C[i] = T(A[i]) <= T(B[i]);
     }
 }
 
 template <typename T>
-void LT(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<bool> &C)
+void LT(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector<MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "LT size mismatch A,B";
@@ -132,7 +162,15 @@ void LT(const std::vector <T> &A, const std::vector <T> &B,
         throw "LT size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = (A[i] < B[i]);
+        if (A[i].isPlusInfinity()) {
+            C[i] = false;
+            continue;
+        }
+        if (B[i].isPlusInfinity()) {
+            C[i] = true;
+            continue;
+        }
+        C[i] = T(A[i]) < T(B[i]);
     }
 }
 
@@ -143,7 +181,7 @@ inline const char* getReductionString(const dd_edge &e)
 }
 
 void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
-        const dd_edge &e1, const dd_edge &e2, const std::vector<bool> &set)
+        const dd_edge &e1, const dd_edge &e2)
 {
     if (e1 == e2) return;
 
@@ -165,60 +203,61 @@ void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
 
 template <typename T>
 void compare(vectorgen &Gen,
-        const std::vector <T> &Aset, const std::vector <T> &Bset,
+        const std::vector <MEDDLY::rangeval> &Aset,
+        const std::vector <MEDDLY::rangeval> &Bset,
         forest* f1, forest* f2, forest* fres)
 {
     const unsigned POTENTIAL = Gen.potential();
 
-    std::vector <bool> AeqBset(POTENTIAL);
-    std::vector <bool> AneBset(POTENTIAL);
-    std::vector <bool> AgtBset(POTENTIAL);
-    std::vector <bool> AgeBset(POTENTIAL);
-    std::vector <bool> AltBset(POTENTIAL);
-    std::vector <bool> AleBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AeqBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AneBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AgtBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AgeBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AltBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AleBset(POTENTIAL);
 
     dd_edge Add(f1), Bdd(f2),
             AeqBdd(fres), AneBdd(fres),
             AgtBdd(fres), AgeBdd(fres),
             AltBdd(fres), AleBdd(fres);
 
-    EQ(Aset, Bset, AeqBset);
-    NE(Aset, Bset, AneBset);
-    GE(Aset, Bset, AgeBset);
-    GT(Aset, Bset, AgtBset);
-    LE(Aset, Bset, AleBset);
-    LT(Aset, Bset, AltBset);
+    EQ<T>(Aset, Bset, AeqBset);
+    NE<T>(Aset, Bset, AneBset);
+    GE<T>(Aset, Bset, AgeBset);
+    GT<T>(Aset, Bset, AgtBset);
+    LE<T>(Aset, Bset, AleBset);
+    LT<T>(Aset, Bset, AltBset);
 
-    Gen.explicit2edge(Aset, Add);
-    Gen.explicit2edge(Bset, Bdd);
-    Gen.explicit2edge(AeqBset, AeqBdd);
-    Gen.explicit2edge(AneBset, AneBdd);
-    Gen.explicit2edge(AgtBset, AgtBdd);
-    Gen.explicit2edge(AgeBset, AgeBdd);
-    Gen.explicit2edge(AltBset, AltBdd);
-    Gen.explicit2edge(AleBset, AleBdd);
+    Gen.explicit2edgeMax(Aset, Add, T(0));
+    Gen.explicit2edgeMax(Bset, Bdd, T(0));
+    Gen.explicit2edgeMax(AeqBset, AeqBdd, false);
+    Gen.explicit2edgeMax(AneBset, AneBdd, false);
+    Gen.explicit2edgeMax(AgtBset, AgtBdd, false);
+    Gen.explicit2edgeMax(AgeBset, AgeBdd, false);
+    Gen.explicit2edgeMax(AltBset, AltBdd, false);
+    Gen.explicit2edgeMax(AleBset, AleBdd, false);
 
     dd_edge AeqBsym(fres), AneBsym(fres),
             AgtBsym(fres), AgeBsym(fres),
             AltBsym(fres), AleBsym(fres);
 
     apply(EQUAL,        Add, Bdd, AeqBsym);
-    checkEqual("equal", Add, Bdd, AeqBsym, AeqBdd, AeqBset);
+    checkEqual("equal", Add, Bdd, AeqBsym, AeqBdd);
 
     apply(NOT_EQUAL,        Add, Bdd, AneBsym);
-    checkEqual("not_equal", Add, Bdd, AneBsym, AneBdd, AneBset);
+    checkEqual("not_equal", Add, Bdd, AneBsym, AneBdd);
 
     apply(GREATER_THAN,        Add, Bdd, AgtBsym);
-    checkEqual("greater_than", Add, Bdd, AgtBsym, AgtBdd, AgtBset);
+    checkEqual("greater_than", Add, Bdd, AgtBsym, AgtBdd);
 
     apply(GREATER_THAN_EQUAL,        Add, Bdd, AgeBsym);
-    checkEqual("greater_than_equal", Add, Bdd, AgeBsym, AgeBdd, AgeBset);
+    checkEqual("greater_than_equal", Add, Bdd, AgeBsym, AgeBdd);
 
     apply(LESS_THAN,        Add, Bdd, AltBsym);
-    checkEqual("less_than", Add, Bdd, AltBsym, AltBdd, AltBset);
+    checkEqual("less_than", Add, Bdd, AltBsym, AltBdd);
 
     apply(LESS_THAN_EQUAL,        Add, Bdd, AleBsym);
-    checkEqual("less_than_equal", Add, Bdd, AleBsym, AleBdd, AleBset);
+    checkEqual("less_than_equal", Add, Bdd, AleBsym, AleBdd);
 }
 
 template <typename TYPE>
@@ -234,28 +273,34 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
               << ' ' << shortNameOf(f2->getReductionRule())
               << " : " << shortNameOf(fres->getReductionRule()) << ' ';
 
-    std::vector <TYPE> Aset(Gen.potential());
-    std::vector <TYPE> Bset(Gen.potential());
+    std::vector <MEDDLY::rangeval> Aset(Gen.potential());
+    std::vector <MEDDLY::rangeval> Bset(Gen.potential());
 
-    std::vector <TYPE> values(4);
-    values[0] =  6;
-    values[1] =  4;
-    values[2] =  2;
-    values[3] = -2;
+    std::vector <MEDDLY::rangeval> values(5);
+    values[0] =  TYPE(0);
+    if (f1->isEVPlus()) {
+        values[1] = MEDDLY::rangeval(MEDDLY::range_special::PLUS_INFINITY,
+                            MEDDLY::range_type::INTEGER);
+    } else {
+        values[1] =  TYPE(6);
+    }
+    values[2] =  TYPE(4);
+    values[3] =  TYPE(2);
+    values[4] =  TYPE(-2);
 
     for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
         Gen.randomizeVector(Aset, scard, values);
         Gen.randomizeVector(Bset, scard, values);
 
-        compare(Gen, Aset, Bset, f1, f2, fres);
+        compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
         Gen.randomizeFully(Aset, scard, values);
         Gen.randomizeFully(Bset, scard, values);
 
-        compare(Gen, Aset, Bset, f1, f2, fres);
+        compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
     }
     if (fres->isForRelations()) {
         for (unsigned i=0; i<10; i++) {
@@ -263,7 +308,7 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
             Gen.randomizeIdentity(Aset, scard, values);
             Gen.randomizeIdentity(Bset, scard, values);
 
-            compare(Gen, Aset, Bset, f1, f2, fres);
+            compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
         }
     }
     std::cerr << std::endl;

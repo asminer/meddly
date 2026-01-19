@@ -29,11 +29,6 @@
 #include "policies.h"
 #include "rangeval.h"
 #include "domain.h"
-
-#ifdef ALLOW_DEPRECATED_0_17_7
-#include "enumerator.h"
-#endif
-
 #include "statset.h"
 
 #include <vector>
@@ -854,6 +849,7 @@ class MEDDLY::forest {
             nodeMan->getDownPtr(getNodeAddress(p), index, ev, dn);
         }
 
+#ifdef ALLOW_DEPRECATED_0_18_0
         // TBD: remove these older 'getDownPtr' methods
 
         /** For a given node, get a specified downward pointer.
@@ -873,7 +869,7 @@ class MEDDLY::forest {
         {
             edge_value v = transparent_edge;
             nodeMan->getDownPtr(getNodeAddress(p), index, v, dn);
-            ev = v.getInt();
+            ev = int(v);
         }
 
 
@@ -894,7 +890,7 @@ class MEDDLY::forest {
         {
             edge_value v = transparent_edge;
             nodeMan->getDownPtr(getNodeAddress(p), index, v, dn);
-            ev = v.getLong();
+            ev = long(v);
         }
 
 
@@ -915,9 +911,9 @@ class MEDDLY::forest {
         {
             edge_value v = transparent_edge;
             nodeMan->getDownPtr(getNodeAddress(p), index, v, dn);
-            ev = v.getFloat();
+            ev = float(v);
         }
-
+#endif
 
         /** Check if an unpacked node duplicates one in the forest.
                 @param  p       Handle to a node in the forest.
@@ -1909,6 +1905,7 @@ class MEDDLY::forest {
   // virtual, with default implementation.
   public:
 
+    /// TBD: remove when we fix sat_relations
    virtual node_handle unionOneMinterm(node_handle a,  int* from,  int* to, int level);
 
     /** Create an edge such that
@@ -1938,7 +1935,7 @@ class MEDDLY::forest {
     */
     void createEdgeForVar(int vh, bool vp, const rangeval* terms, dd_edge& a);
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
 
     /** Create an edge such that
         f(v_1, ..., vh=i, ..., v_n) = terms[i] for 0 <= i < size(vh).
@@ -2072,360 +2069,6 @@ class MEDDLY::forest {
 
     /// Mark for deletion.
     void markForDeletion();
-
-
-// ===================================================================
-//
-// Deprecated as of version 0.17.7
-//
-// ===================================================================
-
-#ifdef ALLOW_DEPRECATED_0_17_7
-    public:
-
-    /** Create an edge as the union of several explicit vectors.
-        @param  vlist Array of vectors. Each vector has dimension equal
-                      to one plus the largest variable handle in the domain.
-                      A vector \a x indicates a set of variable assignments,
-                      where x[vh] may have a value of DONT_CARE;
-                      otherwise x[vh] gives the variable assignment for vh.
-        @param  N     Number of vectors (dimension of \a vlist).
-        @param  e     returns a handle to a node in the forest, such that
-                      f(v_1, ..., v_n) = 1, iff there is a vector
-                      x in \a vlist corresponding to the variable assignments
-                      v_1, ..., v_n; f(v_1, ..., v_n) = 0, otherwise.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN,
-                        or the forest is for relations.
-    */
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
-
-    /** Create an edge as the union of several vectors and return values.
-        @param  vlist Array of vectors. Each vector has dimension equal
-                      to one plus the largest variable handle in the domain.
-                      A vector \a x indicates a set of variable assignments,
-                      where x[vh] may have a value of DONT_CARE;
-                      otherwise x[vh] gives the variable assignment for vh.
-        @param  terms Array of return values, same dimension as \a vlist.
-        @param  N     Number of vectors (dimension of \a vlist).
-        @param  e     returns a handle to a node in the forest that encodes
-                      the function f: f(v_1, ..., v_n) = terms[j]
-                      iff j is the smallest integer such that vector vlist[j]
-                      corresponds to the variable assignments v_1, ..., v_n;
-                      f(v_1, ..., v_n) = 0, otherwise.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not INTEGER,
-                        or the forest is for relations.
-    */
-    virtual void createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e);
-
-    /** Create an edge as the union of several vectors and return values.
-        @param  vlist Array of vectors. Each vector has dimension equal
-                      to one plus the largest variable handle in the domain.
-                      A vector \a x indicates a set of variable assignments,
-                      where x[vh] may have a value of DONT_CARE;
-                      otherwise x[vh] gives the variable assignment for vh.
-        @param  terms Array of return values, same dimension as \a vlist.
-        @param  N     Number of vectors (dimension of \a vlist).
-        @param  e     returns a handle to a node in the forest that encodes
-                      the function f: f(v_1, ..., v_n) = terms[j]
-                      iff j is the smallest integer such that vector vlist[j]
-                      corresponds to the variable assignments v_1, ..., v_n;
-                      f(v_1, ..., v_n) = 0, otherwise.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not REAL,
-                        or the forest is for relations.
-    */
-    virtual void createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e);
-
-
-    /** Create an edge as the union of several explicit matrices.
-        @param  vlist   Array of vectors. Each vector has dimension equal to
-                        one plus the largest variable handle in the domain.
-                        Vector vlist indicates the set of unprimed variable
-                        assignments, and vector vplist indicates the set of
-                        primed variable assignments.  Both vlist and vplist
-                        may have elements equal to DONT_CARE, and vplist
-                        may have elements equal to DONT_CHANGE.
-        @param  vplist  Array of vectors, same dimension as \a vlist.
-                        A vector \a x = vplist[i] indicates a set of primed
-                        variable assignments, where x[vh] less than 0 means
-                        "don't change for variable vh" iff we are not
-                        changing the unprimed variable, and
-                        "don't care for primed variable vh" otherwise.
-                        Otherwise x[vh] gives the variable assignment for
-                        primed variable vh.
-        @param  N       Number of vectors (dimension of \a vlist).
-        @param  e       returns a handle to a node in the forest, such that
-                        f(v_1, v'_1, ..., v_n, v'_n) = 1, iff there is a
-                        vector vlist[i] corresponding to the variable
-                        assignments v_1, ..., v_n, and vplist[i] corresponds
-                        to variable assignments v'_1, ..., v'_n.
-                        f(v_1, v'_1, ..., v_n, v'_n) = 0, otherwise.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN,
-                        or the forest is not for relations.
-    */
-    virtual void createEdge(const int* const* vlist, const int* const* vplist, int N, dd_edge &e);
-
-
-    /** Create an edge as the union of several explicit matrices.
-        @param  vlist   Array of vectors. Each vector has dimension equal to
-                        one plus the largest variable handle in the domain.
-                        Vector vlist indicates the set of unprimed variable
-                        assignments, and vector vplist indicates the set of
-                        primed variable assignments.  Both vlist and vplist
-                        may have elements equal to DONT_CARE, and vplist
-                        may have elements equal to DONT_CHANGE.
-        @param  vplist  Array of vectors, same dimension as \a vlist.
-                        A vector \a x = vplist[i] indicates a set of primed
-                        variable assignments, where x[vh] less than 0 means
-                        "don't change for variable vh" iff we are not
-                        changing the unprimed variable, and
-                        "don't care for primed variable vh" otherwise.
-                        Otherwise x[vh] gives the variable assignment for
-                        primed variable vh.
-        @param  terms   Array of return values, same dimension as \a vlist.
-        @param  N       Number of vectors (dimension of \a vlist).
-        @param  e       returns a handle to a node in the forest, such that
-                        f(v_1, v'_1, ..., v_n, v'_n) = term[i], iff there is
-                        a vector vlist[i] corresponding to the variable
-                        assignments v_1, ..., v_n, and vplist[i] corresponds
-                        to variable assignments v'_1, ..., v'_n.
-                        f(v_1, v'_1, ..., v_n, v'_n) = 0, otherwise.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not INTEGER,
-                        or the forest is not for relations.
-    */
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        const long* terms, int N, dd_edge &e);
-
-
-    /** Create an edge as the union of several explicit matrices.
-        @param  vlist   Array of vectors. Each vector has dimension equal to
-                        one plus the largest variable handle in the domain.
-                        Vector vlist indicates the set of unprimed variable
-                        assignments, and vector vplist indicates the set of
-                        primed variable assignments.  Both vlist and vplist
-                        may have elements equal to DONT_CARE, and vplist
-                        may have elements equal to DONT_CHANGE.
-        @param  vplist  Array of vectors, same dimension as \a vlist.
-                        A vector \a x = vplist[i] indicates a set of primed
-                        variable assignments, where x[vh] less than 0 means
-                        "don't change for variable vh" iff we are not
-                        changing the unprimed variable, and
-                        "don't care for primed variable vh" otherwise.
-                        Otherwise x[vh] gives the variable assignment for
-                        primed variable vh.
-        @param  terms   Array of return values, same dimension as \a vlist.
-        @param  N       Number of vectors (dimension of \a vlist).
-        @param  e       returns a handle to a node in the forest, such that
-                        f(v_1, v'_1, ..., v_n, v'_n) = term[i], iff there is
-                        a vector vlist[i] corresponding to the variable
-                        assignments v_1, ..., v_n, and vplist[i] corresponds
-                        to variable assignments v'_1, ..., v'_n.
-                        f(v_1, v'_1, ..., v_n, v'_n) = 0, otherwise.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not REAL,
-                        or the forest is not for relations.
-    */
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-        const float* terms, int N, dd_edge &e);
-
-
-
-    /** Create an edge for a boolean constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN.
-    */
-    virtual void createEdge(bool val, dd_edge &e);
-
-    /** Create an edge for an integer constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not INTEGER.
-    */
-    inline  void createEdge(int val, dd_edge &e) {
-        createEdge(long(val), e);
-    }
-
-    /** Create an edge for an integer constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not INTEGER.
-    */
-    virtual void createEdge(long val, dd_edge &e);
-
-    /** Create an edge for a real constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not REAL.
-    */
-    virtual void createEdge(float val, dd_edge &e);
-
-    /** Create an edge for a real constant.
-        @param  val   Requested constant.
-        @param  e     returns a handle to a node in the forest for
-                      function f = \a val.
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not REAL.
-    */
-    virtual void createEdge(double val, dd_edge &e);
-
-
-
-    /** Evaluate the function encoded by an edge.
-        @param  f     Edge (function) to evaluate.
-        @param  vlist List of variable assignments, of dimension one higher
-                      than the largest variable handle.
-        @param  term  Output parameter, will be set to
-                      f(v1 = vlist[v1], ..., vn = vlist[vn]).
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN,
-                        or the forest is for relations.
-    */
-    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const;
-
-    /** Evaluate the function encoded by an edge.
-        @param  f     Edge (function) to evaluate.
-        @param  vlist List of variable assignments, of dimension one higher
-                      than the largest variable handle.
-        @param  term  Output parameter, will be set to
-                      f(v1 = vlist[v1], ..., vn = vlist[vn]).
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not INTEGER,
-                        or the forest is for relations.
-    */
-    virtual void evaluate(const dd_edge &f, const int* vlist, long &term)
-      const;
-
-    /** Evaluate the function encoded by an edge.
-        @param  f     Edge (function) to evaluate.
-        @param  vlist List of variable assignments, of dimension one higher
-                      than the largest variable handle.
-        @param  term  Output parameter, will be set to
-                      f(v1 = vlist[v1], ..., vn = vlist[vn]).
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not REAL,
-                        or the forest is for relations.
-    */
-    virtual void evaluate(const dd_edge &f, const int* vlist, float &term)
-      const;
-
-    /** Evaluate the function encoded by an edge.
-        @param  f       Edge (function) to evaluate.
-        @param  vlist   List of variable assignments for unprimed variables,
-                        of dimension one higher than the largest variable
-                        handle.
-        @param  vplist  List of variable assignments for primed variables,
-                        of dimension one higher than the largest variable
-                        handle.
-        @param  term    Output parameter, will be set to
-                        f(v1 = vlist[v1], v'1 = vplist[v1], ...,
-                        vn = vlist[vn], v'n = vplist[vn]).
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not BOOLEAN,
-                        or the forest is not for relations.
-    */
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-      const int* vplist, bool &term) const;
-
-    /** Evaluate the function encoded by an edge.
-        @param  f       Edge (function) to evaluate.
-        @param  vlist   List of variable assignments for unprimed variables,
-                        of dimension one higher than the largest variable
-                        handle.
-        @param  vplist  List of variable assignments for primed variables,
-                        of dimension one higher than the largest variable
-                        handle.
-        @param  term    Output parameter, will be set to
-                        f(v1 = vlist[v1], v'1 = vplist[v1], ...,
-                        vn = vlist[vn], v'n = vplist[vn]).
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not INTEGER,
-                        or the forest is not for relations.
-    */
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-      const int* vplist, long &term) const;
-
-    /** Evaluate the function encoded by an edge.
-        @param  f       Edge (function) to evaluate.
-        @param  vlist   List of variable assignments for unprimed variables,
-                        of dimension one higher than the largest variable
-                        handle.
-        @param  vplist  List of variable assignments for primed variables,
-                        of dimension one higher than the largest variable
-                        handle.
-        @param  term    Output parameter, will be set to
-                        f(v1 = vlist[v1], v'1 = vplist[v1], ...,
-                        vn = vlist[vn], v'n = vplist[vn]).
-
-        @throws       TYPE_MISMATCH, if
-                        the range type of the forest is not REAL,
-                        or the forest is not for relations.
-    */
-    virtual void evaluate(const dd_edge& f, const int* vlist,
-      const int* vplist, float &term) const;
-
-
-    /** Returns element \a e at index \a i from an Index Set EV+MDD.
-
-        size(e) = number of variables in the forest + 1 (for terminals).
-        TODO: complete this description
-
-        on return: e[0] will be 1 if the element could be found, 0 otherwise.
-
-        @throws       INVALID_OPERATION, if this is not an Index Set EV+MDD.
-    */
-    virtual void getElement(const dd_edge& a, int index, int* e);
-    virtual void getElement(const dd_edge& a, long index, int* e);
-
-
-    /**
-        Build an iterator.
-        Used by class enumerator.
-    */
-    virtual enumerator::iterator* makeFullIter() const = 0;
-
-    /**
-        Build an iterator with a fixed row.
-        Default behavior - throw an "INVALID_FOREST" error.
-    */
-    virtual enumerator::iterator* makeFixedRowIter() const;
-
-    /**
-        Build an iterator with a fixed column.
-        Default behavior - throw an "INVALID_FOREST" error.
-    */
-    virtual enumerator::iterator* makeFixedColumnIter() const;
-
-#endif
 
 };
 

@@ -35,8 +35,8 @@ namespace MEDDLY {
     class realmin;
     class realmax;
 
-    unary_list MAXRANGE_cache;
-    unary_list MINRANGE_cache;
+    class MAXRANGE_factory;
+    class MINRANGE_factory;
 };
 
 // ******************************************************************
@@ -270,87 +270,105 @@ class MEDDLY::realmax : public MEDDLY::realrange {
 
 // ******************************************************************
 // *                                                                *
+// *                     MAXRANGE_factory class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::MAXRANGE_factory : public unary_factory {
+    public:
+        virtual void setup();
+        virtual unary_operation* build_new(forest* arg, opnd_type res);
+};
+
+// ******************************************************************
+
+void MEDDLY::MAXRANGE_factory::setup()
+{
+    _setup(__FILE__, "MAX_RANGE", "Find the maximum value returned by a function. The result type should match the input forest range type.");
+}
+
+MEDDLY::unary_operation*
+MEDDLY::MAXRANGE_factory::build_new(forest* arg, opnd_type res)
+{
+    if (arg->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
+        return nullptr;
+
+    switch (res) {
+        case opnd_type::INTEGER:
+            if (range_type::INTEGER != arg->getRangeType())
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            return new range_templ<intmax>(arg);
+
+        case opnd_type::REAL:
+            if (range_type::REAL != arg->getRangeType())
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            return new range_templ<realmax>(arg);
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    } // switch
+
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                     MINRANGE_factory class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::MINRANGE_factory : public unary_factory {
+    public:
+        virtual void setup();
+        virtual unary_operation* build_new(forest* arg, opnd_type res);
+};
+
+// ******************************************************************
+
+void MEDDLY::MINRANGE_factory::setup()
+{
+    _setup(__FILE__, "MIN_RANGE", "Find the minimum value returned by a function. The result type should match the input forest range type.");
+}
+
+MEDDLY::unary_operation*
+MEDDLY::MINRANGE_factory::build_new(forest* arg, opnd_type res)
+{
+    if (arg->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
+        return nullptr;
+
+    switch (res) {
+        case opnd_type::INTEGER:
+            if (range_type::INTEGER != arg->getRangeType())
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            return new range_templ<intmin>(arg);
+
+        case opnd_type::REAL:
+            if (range_type::REAL != arg->getRangeType())
+                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+            return new range_templ<realmin>(arg);
+
+        default:
+            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    } // switch
+
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_operation* MEDDLY::MAX_RANGE(forest* arg, opnd_type res)
+MEDDLY::unary_factory& MEDDLY::MAX_RANGE()
 {
-    if (!arg) return nullptr;
-    unary_operation* uop = MAXRANGE_cache.find(arg, res);
-    if (uop) {
-        return uop;
-    }
-
-    if (arg->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-
-    switch (res) {
-        case opnd_type::INTEGER:
-            if (range_type::INTEGER != arg->getRangeType())
-                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            return MAXRANGE_cache.add(new range_templ<intmax>(arg));
-
-        case opnd_type::REAL:
-            if (range_type::REAL != arg->getRangeType())
-                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            return MAXRANGE_cache.add(new range_templ<realmax>(arg));
-
-        default:
-            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    } // switch
-
-    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    static MAXRANGE_factory F;
+    return F;
 }
 
-void MEDDLY::MAX_RANGE_init()
+MEDDLY::unary_factory& MEDDLY::MIN_RANGE()
 {
-    MAXRANGE_cache.reset("Max_range");
-}
-
-void MEDDLY::MAX_RANGE_done()
-{
-    MEDDLY_DCASSERT(MAXRANGE_cache.isEmpty());
-}
-
-// ******************************************************************
-
-MEDDLY::unary_operation* MEDDLY::MIN_RANGE(forest* arg, opnd_type res)
-{
-    if (!arg) return nullptr;
-    unary_operation* uop = MINRANGE_cache.find(arg, res);
-    if (uop) {
-        return uop;
-    }
-
-    if (arg->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL)
-        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-
-    switch (res) {
-        case opnd_type::INTEGER:
-            if (range_type::INTEGER != arg->getRangeType())
-                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            return MINRANGE_cache.add(new range_templ<intmin>(arg));
-
-        case opnd_type::REAL:
-            if (range_type::REAL != arg->getRangeType())
-                throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-            return MINRANGE_cache.add(new range_templ<realmin>(arg));
-
-        default:
-            throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-    } // switch
-
-    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
-}
-
-void MEDDLY::MIN_RANGE_init()
-{
-    MINRANGE_cache.reset("Min_range");
-}
-
-void MEDDLY::MIN_RANGE_done()
-{
-    MEDDLY_DCASSERT(MINRANGE_cache.isEmpty());
+    static MINRANGE_factory F;
+    return F;
 }
 

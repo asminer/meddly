@@ -5,8 +5,10 @@
 
 ## bin_PROGRAMS = \
 noinst_PROGRAMS = \
+applyinfo \
 dining_phils \
 graphs_to_mdds \
+hanoi \
 kanban \
 knight \
 knight2 \
@@ -23,20 +25,24 @@ test_memory \
 test_implicit_kanban \
 test_implicit_pool \
 test_implicit_smallos \
-test_sccs \
-testmddlib
+test_sccs
 
 
 # test_user_operation
 
 AM_CXXFLAGS = -Wall
 
+applyinfo_SOURCES = applyinfo.cc
+applyinfo_LDADD = ../src/libmeddly.la
 
 dining_phils_SOURCES = dining_phils.cc
 dining_phils_LDADD = ../src/libmeddly.la
 
 graphs_to_mdds_SOURCES = graphs_to_mdds.cc
 graphs_to_mdds_LDADD = ../src/libmeddly.la
+
+hanoi_SOURCES = hanoi.cc simple_model.h simple_model.cc
+hanoi_LDADD = ../src/libmeddly.la
 
 kanban_SOURCES = kanban.cc simple_model.h simple_model.cc
 kanban_LDADD = ../src/libmeddly.la
@@ -91,10 +97,6 @@ test_memory_LDADD = ../src/libmeddly.la
 
 test_sccs_SOURCES = test_sccs.cc
 test_sccs_LDADD = ../src/libmeddly.la
-
-## testmddlib_SOURCES = `$(CXX) testmddlib.cc -MM`
-testmddlib_SOURCES = testmddlib.cc
-testmddlib_LDADD = ../src/libmeddly.la
 
 test_otf_sat_SOURCES = test_otf_sat.cc
 test_otf_sat_LDADD = ../src/libmeddly.la

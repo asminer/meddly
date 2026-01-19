@@ -25,7 +25,11 @@
 namespace MEDDLY {
     class dd_edge;
     class binary_operation;
+    class binary_factory;
+
+#ifdef ALLOW_DEPRECATED_0_17_6
     class binary_list;
+#endif
 };
 
 // ******************************************************************
@@ -267,15 +271,151 @@ class MEDDLY::binary_operation : public operation {
         forest* resF;
 
     private:
-        binary_list* parent;
+        binary_factory* factory;
         binary_operation* next;
+        friend class binary_factory;
+
 #ifdef ALLOW_DEPRECATED_0_17_6
+        binary_list* parent;
         bool can_commute;
         bool new_style;
+        friend class binary_list;
 #endif
 
-        friend class binary_list;
 };
+
+// ******************************************************************
+// *                                                                *
+// *                      binary_factory class                      *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Mechanism to create specific binary operations.
+    Derive a subclass from this, and override methods setup(),
+    build_new(), and optionally cleanup().
+ */
+class MEDDLY::binary_factory {
+    public:
+        // EMPTY constructor, always
+        binary_factory() { }
+
+        // EMPTY destructor, always
+        ~binary_factory() { }
+
+        /**
+            Must be overridden.
+            Essentially, the constructor, but called explicitly
+            during library initialization.
+        */
+        virtual void setup() = 0;
+
+        /**
+            Build a specific operation instance.
+            If there's one built already, use it.
+        */
+        inline binary_operation* build(forest* a, forest* b, forest* c)
+        {
+            // Bail if any forest is null
+            if (!a || !b || !c) {
+                return nullptr;
+            }
+            // check cache
+            if (front) {
+                if ((front->arg1F == a) && (front->arg2F == b)
+                    && (front->resF == c))
+                {
+                    return front;
+                }
+                if (mtfBinary(a, b, c)) {
+                    return front;
+                }
+            }
+            // Not in cache. Build, and add to cache.
+            return cache_add( build_new(a, b, c) );
+        }
+
+        /// Default: just calls _cleanup()
+        virtual void cleanup();
+
+        inline const char* getFile() const { return _file; }
+        inline const char* getName() const { return _name; }
+        inline const char* getDocs() const { return _doc; }
+
+        /// Should ONLY be called in binary_operation destructor
+        inline void remove(binary_operation* bop)
+        {
+            if (front == bop) {
+                front = front->next;
+                return;
+            }
+            searchRemove(bop);
+        }
+
+        /** Apply a binary operator.
+            The operand and the result are not necessarily in the same forest,
+            but they must belong to forests that share the same domain.
+                @param  a   First operand.
+                @param  b   Second operand.
+                @param  c   Output parameter: the result,
+                            where \a c = \a a \a op \a b.
+        */
+        inline void apply(const dd_edge &a, const dd_edge &b, dd_edge &c)
+        {
+            binary_operation* bop
+                = build(a.getForest(), b.getForest(), c.getForest());
+            if (!bop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            bop->compute(a, b, c);
+        }
+
+    protected:
+        /**
+            Build a new operation instance.
+            The default behavior returns NULL.
+        */
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+
+        /** Initialize base class.
+            Should be called by method setup().
+            Called during library initialization.
+                @param  file    Source file of implementation.
+                @param  name    Name of operator.
+                @param  doc     Documentation.
+        */
+        void _setup(const char* file, const char* name, const char* doc);
+
+        /** Clean up base class.
+            Called during library cleanup.
+        */
+        void _cleanup();
+
+    private:
+        bool mtfBinary(const forest* arg1F, const forest* arg2F,
+                const forest* resF);
+        void searchRemove(binary_operation* uop);
+
+        /// Add an operation to the list.
+        inline binary_operation* cache_add(binary_operation* bop) {
+            if (bop) {
+                MEDDLY_DCASSERT(nullptr == bop->factory);
+                bop->factory= this;
+                bop->setName(_name);
+                bop->next = front;
+                front = bop;
+            }
+            return bop;
+        }
+
+
+    private:
+        const char* _file;
+        const char* _name;
+        const char* _doc;
+        binary_operation* front;
+
+};
+
+#ifdef ALLOW_DEPRECATED_0_17_6
 
 // ******************************************************************
 // *                                                                *
@@ -334,6 +474,7 @@ class MEDDLY::binary_list {
         binary_operation* mtfBinary(const forest* arg1F, const forest* arg2F, const forest* resF);
         void searchRemove(binary_operation* uop);
 };
+#endif
 
 
 // ******************************************************************
@@ -344,7 +485,23 @@ class MEDDLY::binary_list {
 
 namespace MEDDLY {
 
-    typedef binary_operation* (*binary_builtin)(forest* arg1,
+    typedef binary_factory& (*binary_builtin0)();
+
+    inline void apply(binary_builtin0 bb, const dd_edge &a,
+            const dd_edge &b, dd_edge &c)
+    {
+        bb().apply(a, b, c);
+    }
+
+    inline binary_operation* build(binary_builtin0 bb,
+            forest* a, forest* b, forest* c)
+    {
+        return bb().build(a, b, c);
+    }
+
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+    typedef binary_operation* (*binary_builtin2)(forest* arg1,
             forest* arg2, forest* res);
 
     /** Apply a binary operator.
@@ -361,13 +518,20 @@ namespace MEDDLY {
             @param  c     Output parameter: the result,
                           where \a c = \a a \a op \a b.
     */
-    inline void apply(binary_builtin bb, const dd_edge &a, const dd_edge &b,
+    inline void apply(binary_builtin2 bb, const dd_edge &a, const dd_edge &b,
         dd_edge &c)
     {
         binary_operation* bop = bb(a.getForest(), b.getForest(), c.getForest());
         if (!bop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         bop->compute(a, b, c);
     }
+
+    inline binary_operation* build(binary_builtin2 bb,
+            forest* a, forest* b, forest* c)
+    {
+        return bb(a, b, c);
+    }
+#endif
 
 };
 

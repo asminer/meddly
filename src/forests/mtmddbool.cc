@@ -28,66 +28,7 @@ MEDDLY::mt_mdd_bool::mt_mdd_bool(domain *d, const policies &p)
 MEDDLY::mt_mdd_bool::~mt_mdd_bool()
 { }
 
-#ifdef ALLOW_DEPRECATED_0_17_7
-
-void MEDDLY::mt_mdd_bool::createEdge(bool term, dd_edge& e)
-{
-  // createEdgeTempl<bool_Tencoder, bool>(term, e);
-  createEdgeTempl<bool>(term, e);
-#ifdef DEVELOPMENT_CODE
-  validateIncounts(true, __FILE__, __LINE__);
-#endif
-}
-
-void MEDDLY::mt_mdd_bool::createEdge(const int* const* vlist, int N, dd_edge &e)
-{
-  binary_operation* unionOp = UNION(e.getForest(), e.getForest(), e.getForest());
-  enlargeStatics(N);
-  enlargeVariables(vlist, N, false);
-
-  int num_vars=getNumVariables();
-
-  // Create vlist following the mapping between variable and level
-  int** ordered_vlist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
-  if(ordered_vlist==0){
-	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  }
-
-  ordered_vlist[0]=reinterpret_cast<int*>(&ordered_vlist[N]);
-  for(int i=1; i<N; i++) {
-	  ordered_vlist[i]=(ordered_vlist[i-1]+num_vars+1);
-  }
-  for(int i=0; i<=num_vars; i++) {
-	  int level=getLevelByVar(i);
-	  for(int j=0; j<N; j++) {
-		  ordered_vlist[j][level]=vlist[j][i];
-	  }
-  }
-
-  // mtmdd_edgemaker<bool_Tencoder, bool>
-  mtmdd_edgemaker<bool>
-    EM(this, ordered_vlist, 0, order, N, getDomain()->getNumVariables(), unionOp);
-
-  e.set(EM.createEdge());
-
-  free(ordered_vlist);
-
-#ifdef DEVELOPMENT_CODE
-  validateIncounts(true, __FILE__, __LINE__);
-#endif
-}
-
-void MEDDLY::mt_mdd_bool
-::evaluate(const dd_edge &f, const int* vlist, bool &term) const
-{
-    terminal t(terminal_type::BOOLEAN, evaluateRaw(f, vlist));
-    term = t.getBoolean();
-    // term = bool_Tencoder::handle2value(evaluateRaw(f, vlist));
-}
-
-#endif
-
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
 
 void MEDDLY::mt_mdd_bool::
 createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)

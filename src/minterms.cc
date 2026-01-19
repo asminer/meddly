@@ -223,11 +223,20 @@ namespace MEDDLY {
     class fbuilder_common : public fbuilder_forest {
         public:
             fbuilder_common(forest* f, const rangeval &def,
-                    minterm_coll &mtl, binary_builtin Union)
+                    minterm_coll &mtl, binary_builtin0 Union)
+                    : fbuilder_forest(f, def), mtc(mtl)
+            {
+                union_op = build(Union, f, f, f);
+            }
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+            fbuilder_common(forest* f, const rangeval &def,
+                    minterm_coll &mtl, binary_builtin2 Union)
                     : fbuilder_forest(f, def), mtc(mtl)
             {
                 union_op = Union(f, f, f);
             }
+#endif
 
             /// Get the minimum and maximum values for level L,
             /// on the interval [low, high).
@@ -401,8 +410,14 @@ namespace MEDDLY {
     class fbuilder : public fbuilder_common {
         public:
             fbuilder(forest* f, const rangeval &def,
-                    minterm_coll &mtl, binary_builtin Union)
+                    minterm_coll &mtl, binary_builtin0 Union)
                     : fbuilder_common(f, def, mtl, Union) { }
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+            fbuilder(forest* f, const rangeval &def,
+                    minterm_coll &mtl, binary_builtin2 Union)
+                    : fbuilder_common(f, def, mtl, Union) { }
+#endif
 
             inline void createEdge(int L, unsigned low, unsigned high,
                     edge_value &cv, node_handle &cp)
@@ -428,47 +443,26 @@ namespace MEDDLY {
     // *                                                                *
     // ******************************************************************
 
-    /*
-    struct fbop_union_bool {
-        static inline void finalize(
-                const minterm_coll &mc, unsigned low, unsigned high,
-                const forest* F, edge_value &cv, node_handle &cp)
-        {
-            bool val = false;
-            for (unsigned i=low; i<high; i++) {
-                if (mc.at(i).getValue()) {
-                    val = true;
-                    break;
-                }
-            }
-            F->getEdgeForValue(val, cv, cp);
-        }
-    };
-    struct fbop_inter_bool {
-        static inline void finalize(
-                const minterm_coll &mc, unsigned low, unsigned high,
-                const forest* F, edge_value &cv, node_handle &cp)
-        {
-            bool val = true;
-            for (unsigned i=low; i<high; i++) {
-                if (!mc.at(i).getValue()) {
-                    val = false;
-                    break;
-                }
-            }
-            F->getEdgeForValue(val, cv, cp);
-        }
-    };
-    */
     template <typename T>
     struct fbop_min_tmpl {
         static inline void finalize(
                 const minterm_coll &mc, unsigned low, unsigned high,
                 const forest* F, edge_value &cv, node_handle &cp)
         {
-            T val = T(mc.at(low).getValue());
+            rangeval val;
+            val = mc.at(low).getValue();
             for (unsigned i=low+1; i<high; i++) {
-                val = MIN(val, T(mc.at(i).getValue()));
+                const rangeval &mci = mc.at(i).getValue();
+                if (mci.isPlusInfinity()) {
+                    continue;
+                }
+                if (val.isPlusInfinity()) {
+                    val = mci;
+                    continue;
+                }
+                if (T(mci) < T(val)) {
+                    val = mci;
+                }
             }
             F->getEdgeForValue(val, cv, cp);
         }
@@ -479,9 +473,18 @@ namespace MEDDLY {
                 const minterm_coll &mc, unsigned low, unsigned high,
                 const forest* F, edge_value &cv, node_handle &cp)
         {
-            T val = T(mc.at(low).getValue());
+            rangeval val;
+            val = mc.at(low).getValue();
             for (unsigned i=low+1; i<high; i++) {
-                val = MAX(val, T(mc.at(i).getValue()));
+                if (val.isPlusInfinity()) break;
+                const rangeval &mci = mc.at(i).getValue();
+                if (mci.isPlusInfinity()) {
+                    val = mci;
+                    break;
+                }
+                if (T(mci) > T(val)) {
+                    val = T(mci);
+                }
             }
             F->getEdgeForValue(val, cv, cp);
         }
@@ -983,7 +986,6 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
                 unpacked_node* np = newPrimedNode(k, 1);
                 unsigned z=0;
                 addToNode(np, z, m.to(k), cv, cp);
-
                 F->createReducedNode(np, cv, cp);
             }
 
@@ -999,7 +1001,9 @@ void MEDDLY::fbuilder_forest::relPathToBottom(int L, const minterm &m,
 
                 unpacked_node* nu = newUnprimedNode(k, 1);
                 unsigned z=0;
-                addToNode(nu, z, m.from(k), cv, cp);
+                addToNode(nu, z, m.from(k), cv,
+                    F->redirectSingleton(m.from(k), cp)
+                );
 
                 F->createReducedNode(nu, cv, cp);
             }

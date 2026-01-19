@@ -30,11 +30,14 @@ noinst_PROGRAMS = \
     nodestor \
     nqueens \
     ops_comp \
-    ops_maxmin \
-    ops_plusminus \
-    ops_mult \
+    ops_distmin \
     ops_divmod \
+    ops_maxmin \
+    ops_mult \
+    ops_plusminus \
+    ops_prepost \
     ops_set \
+    ops_vmmult \
     refcount \
     sat_test \
     randtest
@@ -88,29 +91,10 @@ TESTS = \
     ops_comp.--rel.--EVp.--long._sh \
     ops_comp.--rel.--EVs.--float._sh \
     \
-    ops_maxmin.--set.--MT.--int._sh \
-    ops_maxmin.--set.--MT.--float._sh \
-    ops_maxmin.--set.--EVp.--long._sh \
-    ops_maxmin.--rel.--MT.--int._sh \
-    ops_maxmin.--rel.--MT.--float._sh \
-    ops_maxmin.--rel.--EVp.--long._sh \
-    ops_maxmin.--rel.--EVs.--float._sh \
-    \
-    ops_plusminus.--set.--MT.--int._sh \
-    ops_plusminus.--set.--MT.--float._sh \
-    ops_plusminus.--set.--EVp.--long._sh \
-    ops_plusminus.--rel.--MT.--int._sh \
-    ops_plusminus.--rel.--MT.--float._sh \
-    ops_plusminus.--rel.--EVp.--long._sh \
-    ops_plusminus.--rel.--EVs.--float._sh \
-    \
-    ops_mult.--set.--MT.--int._sh \
-    ops_mult.--set.--MT.--float._sh \
-    ops_mult.--set.--EVp.--long._sh \
-    ops_mult.--rel.--MT.--int._sh \
-    ops_mult.--rel.--MT.--float._sh \
-    ops_mult.--rel.--EVp.--long._sh \
-    ops_mult.--rel.--EVs.--float._sh \
+    ops_distmin.--set.--int._sh \
+    ops_distmin.--set.--float._sh \
+    ops_distmin.--rel.--int._sh \
+    ops_distmin.--rel.--float._sh \
     \
     ops_divmod.--set.--MT.--int._sh \
     ops_divmod.--set.--MT.--float._sh \
@@ -120,11 +104,69 @@ TESTS = \
     ops_divmod.--rel.--EVp.--long._sh \
     ops_divmod.--rel.--EVs.--float._sh \
     \
+    ops_maxmin.--set.--MT.--int._sh \
+    ops_maxmin.--set.--MT.--float._sh \
+    ops_maxmin.--set.--EVp.--long._sh \
+    ops_maxmin.--rel.--MT.--int._sh \
+    ops_maxmin.--rel.--MT.--float._sh \
+    ops_maxmin.--rel.--EVp.--long._sh \
+    ops_maxmin.--rel.--EVs.--float._sh \
+    \
+    ops_mult.--set.--MT.--int._sh \
+    ops_mult.--set.--MT.--float._sh \
+    ops_mult.--set.--EVp.--long._sh \
+    ops_mult.--rel.--MT.--int._sh \
+    ops_mult.--rel.--MT.--float._sh \
+    ops_mult.--rel.--EVp.--long._sh \
+    ops_mult.--rel.--EVs.--float._sh \
+    \
+    ops_plusminus.--set.--MT.--int._sh \
+    ops_plusminus.--set.--MT.--float._sh \
+    ops_plusminus.--set.--EVp.--long._sh \
+    ops_plusminus.--rel.--MT.--int._sh \
+    ops_plusminus.--rel.--MT.--float._sh \
+    ops_plusminus.--rel.--EVp.--long._sh \
+    ops_plusminus.--rel.--EVs.--float._sh \
+    \
+    ops_prepost.--set.--MTb.--inF.--relI._sh \
+    ops_prepost.--set.--MTb.--inF.--relQ._sh \
+    ops_prepost.--set.--MTb.--inF.--relF._sh \
+    ops_prepost.--set.--MTb.--inQ.--relI._sh \
+    ops_prepost.--set.--MTb.--inQ.--relQ._sh \
+    ops_prepost.--set.--MTb.--inQ.--relF._sh \
+    \
+    ops_prepost.--set.--MTi.--inF.--relI._sh \
+    ops_prepost.--set.--MTi.--inF.--relQ._sh \
+    ops_prepost.--set.--MTi.--inF.--relF._sh \
+    \
+    ops_prepost.--set.--EVp.--inF.--relI._sh \
+    ops_prepost.--set.--EVp.--inF.--relQ._sh \
+    ops_prepost.--set.--EVp.--inF.--relF._sh \
+    ops_prepost.--set.--EVp.--inQ.--relI._sh \
+    ops_prepost.--set.--EVp.--inQ.--relQ._sh \
+    ops_prepost.--set.--EVp.--inQ.--relF._sh \
+    \
     ops_set.--set._sh \
     ops_set.--rel._sh \
     \
+    ops_vmmult.--int.--vF.--mF._sh \
+    ops_vmmult.--int.--vF.--mI._sh \
+    ops_vmmult.--int.--vF.--mQ._sh \
+    ops_vmmult.--int.--vQ.--mF._sh \
+    ops_vmmult.--int.--vQ.--mI._sh \
+    ops_vmmult.--int.--vQ.--mQ._sh \
+    \
+    ops_vmmult.--real.--vF.--mF._sh \
+    ops_vmmult.--real.--vF.--mI._sh \
+    ops_vmmult.--real.--vF.--mQ._sh \
+    ops_vmmult.--real.--vQ.--mF._sh \
+    ops_vmmult.--real.--vQ.--mI._sh \
+    ops_vmmult.--real.--vQ.--mQ._sh \
+    \
     refcount \
     sat_test
+
+# TBD: more prepost tests
 
 AM_CXXFLAGS = -Wall
 
@@ -226,20 +268,29 @@ nqueens_LDADD = ../src/libmeddly.la
 ops_comp_SOURCES = ops_comp.cc randomize.h randomize.cc
 ops_comp_LDADD = ../src/libmeddly.la
 
-ops_maxmin_SOURCES = ops_maxmin.cc randomize.h randomize.cc
-ops_maxmin_LDADD = ../src/libmeddly.la
-
-ops_plusminus_SOURCES = ops_plusminus.cc randomize.h randomize.cc
-ops_plusminus_LDADD = ../src/libmeddly.la
-
-ops_mult_SOURCES = ops_mult.cc randomize.h randomize.cc
-ops_mult_LDADD = ../src/libmeddly.la
+ops_distmin_SOURCES = ops_distmin.cc randomize.h randomize.cc
+ops_distmin_LDADD = ../src/libmeddly.la
 
 ops_divmod_SOURCES = ops_divmod.cc randomize.h randomize.cc
 ops_divmod_LDADD = ../src/libmeddly.la
 
+ops_maxmin_SOURCES = ops_maxmin.cc randomize.h randomize.cc
+ops_maxmin_LDADD = ../src/libmeddly.la
+
+ops_mult_SOURCES = ops_mult.cc randomize.h randomize.cc
+ops_mult_LDADD = ../src/libmeddly.la
+
+ops_prepost_SOURCES = ops_prepost.cc randomize.h randomize.cc
+ops_prepost_LDADD = ../src/libmeddly.la
+
+ops_plusminus_SOURCES = ops_plusminus.cc randomize.h randomize.cc
+ops_plusminus_LDADD = ../src/libmeddly.la
+
 ops_set_SOURCES = ops_set.cc randomize.h randomize.cc
 ops_set_LDADD = ../src/libmeddly.la
+
+ops_vmmult_SOURCES = ops_vmmult.cc randomize.h randomize.cc
+ops_vmmult_LDADD = ../src/libmeddly.la
 
 refcount_SOURCES = refcount.cc
 refcount_LDADD = ../src/libmeddly.la

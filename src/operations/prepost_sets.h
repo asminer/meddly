@@ -16,19 +16,17 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEDDLY_COMP_LE_H
-#define MEDDLY_COMP_LE_H
+#ifndef MEDDLY_PREPOST_SETS_H
+#define MEDDLY_PREPOST_SETS_H
 
 namespace MEDDLY {
-    class forest;
-    class binary_operation;
+    class binary_factory;
+    binary_factory& PRE_IMAGE();
+    binary_factory& POST_IMAGE();
 
-    /// The 'less or equal' operation builder.
-    binary_operation* LESS_THAN_EQUAL(forest* a, forest* b, forest* c);
-    void LESS_THAN_EQUAL_init();
-    void LESS_THAN_EQUAL_done();
+    binary_factory& VM_MULTIPLY();
+    binary_factory& MV_MULTIPLY();
 }
 
 #endif
-
 

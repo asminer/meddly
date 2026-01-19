@@ -19,12 +19,6 @@
 #include "../defines.h"
 #include "arith_minus.h"
 
-#include "../ops_builtin.h" // for COPY
-#include "../oper_binary.h"
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
-
 // #define TRACE
 
 #ifdef TRACE
@@ -33,11 +27,8 @@
 
 #include "arith_templ.h"
 
-//
-// Operation instance cache
-//
 namespace MEDDLY {
-    binary_list MINUS_cache;
+    class MINUS_factory;
 };
 
 
@@ -165,10 +156,7 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
-            EDGETYPE av, bv;
-            a.get(av);
-            b.get(bv);
-            c.set(av-bv);
+            c.set(EDGETYPE(a) - EDGETYPE(b));
         }
     };
 };
@@ -253,10 +241,7 @@ namespace MEDDLY {
                           const edge_value &e, node_handle f,
                           edge_value &a, node_handle &b)
         {
-            EDGETYPE av, cv, ev;
-            c.get(cv);
-            e.get(ev);
-            av = cv - ev;
+            EDGETYPE av = EDGETYPE(c) - EDGETYPE(e);
             a = av;
             b = av ? OMEGA_NORMAL : OMEGA_ZERO;
         }
@@ -264,79 +249,82 @@ namespace MEDDLY {
     };
 };
 
-
 // ******************************************************************
 // *                                                                *
-// *                        MINUS  front end                        *
+// *                      MINUS_factory  class                      *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_operation* MEDDLY::MINUS(forest* a, forest* b, forest* c)
+class MEDDLY::MINUS_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::MINUS_factory::setup()
 {
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  MINUS_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
+    _setup(__FILE__, "MINUS", "Subtraction. Forest ranges must be integer or real. Forests should be all MT, EV+, or EV*, over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::MINUS_factory::build_new(forest* a, forest* b, forest* c)
+{
     if (c->isMultiTerminal()) {
         bool use_reals = (
             a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            bop = new arith_compat<EdgeOp_none, mt_minus<float> > (a,b,c);
+            return new arith_compat<EdgeOp_none, mt_minus<float> > (a,b,c);
         } else {
-            bop = new arith_compat<EdgeOp_none, mt_minus<long> > (a,b,c);
+            return new arith_compat<EdgeOp_none, mt_minus<long> > (a,b,c);
         }
-        return MINUS_cache.add( bop );
     }
 
     if (c->isEVPlus()) {
         switch (c->getEdgeType()) {
             case edge_type::INT:
-                bop = new arith_compat<EdgeOp_plus<int>, evplus_minus<int> >
+                return new arith_compat<EdgeOp_plus<int>, evplus_minus<int> >
                         (a,b,c);
-                break;
 
             case edge_type::LONG:
-                bop = new arith_compat<EdgeOp_plus<long>, evplus_minus<long> >
+                return new arith_compat<EdgeOp_plus<long>, evplus_minus<long> >
                         (a,b,c);
-                break;
 
             default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                return nullptr;
         }
-        return MINUS_cache.add( bop );
     }
 
     if (c->isEVTimes()) {
         switch (c->getEdgeType()) {
             case edge_type::FLOAT:
-                bop = new arith_factor<EdgeOp_times<float>, evstar_minus<float> >
+                return new arith_factor<EdgeOp_times<float>, evstar_minus<float> >
                         (a,b,c);
-                break;
 
             case edge_type::DOUBLE:
-                bop = new arith_factor<EdgeOp_times<double>, evstar_minus<double> >
+                return new arith_factor<EdgeOp_times<double>, evstar_minus<double> >
                         (a,b,c);
-                break;
 
             default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                return nullptr;
         }
-        return MINUS_cache.add( bop );
     }
 
     return nullptr;
 }
 
-void MEDDLY::MINUS_init()
-{
-    MINUS_cache.reset("Minus");
-}
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
 
-void MEDDLY::MINUS_done()
+MEDDLY::binary_factory& MEDDLY::MINUS()
 {
-    MEDDLY_DCASSERT(MINUS_cache.isEmpty());
+    static MINUS_factory F;
+    return F;
 }
 

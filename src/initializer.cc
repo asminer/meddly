@@ -143,7 +143,7 @@ MEDDLY::initializer_list* MEDDLY::defaultInitializerList(initializer_list* prev)
     prev = new memman_initializer(prev);
     prev = new ct_initializer(prev);
     prev = new storage_initializer(prev);
-    prev = makeBuiltinInitializer(prev);
+    prev = new builtin_init(prev);
     prev = new forest_initializer(prev);
 
     return prev;

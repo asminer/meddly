@@ -33,7 +33,7 @@ namespace MEDDLY {
     class realcard;
     class mpzcard;
 
-    unary_list CARD_cache;
+    class CARD_factory;
 };
 
 // #define TRACE
@@ -400,28 +400,36 @@ class MEDDLY::mpzcard {
 
 // ******************************************************************
 // *                                                                *
-// *                           Front  end                           *
+// *                       CARD_factory class                       *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_operation* MEDDLY::CARDINALITY(forest* arg, opnd_type res)
-{
-    if (!arg) return nullptr;
-    unary_operation* uop =  CARD_cache.find(arg, res);
-    if (uop) {
-        return uop;
-    }
+class MEDDLY::CARD_factory : public unary_factory {
+    public:
+        virtual void setup();
+        virtual unary_operation* build_new(forest* arg, opnd_type res);
+};
 
+// ******************************************************************
+
+void MEDDLY::CARD_factory::setup()
+{
+    _setup(__FILE__, "CARDINALITY", "Set cardinality. Determines the number of variable assignments causing the function to evaluate to non-zero (or non-infinity, for EV+MDDs). The result is allowed to be type long, double, or mpz_t (requires GMP library).");
+}
+
+MEDDLY::unary_operation*
+MEDDLY::CARD_factory::build_new(forest* arg, opnd_type res)
+{
     switch (res) {
         case opnd_type::INTEGER:
-            return CARD_cache.add(new card_templ<intcard>(arg));
+            return new card_templ<intcard>(arg);
 
         case opnd_type::REAL:
-            return CARD_cache.add(new card_templ<realcard>(arg));
+            return new card_templ<realcard>(arg);
 
 #ifdef HAVE_LIBGMP
         case opnd_type::HUGEINT:
-            return CARD_cache.add(new card_templ<mpzcard>(arg));
+            return new card_templ<mpzcard>(arg);
 #endif
 
         default:
@@ -429,12 +437,15 @@ MEDDLY::unary_operation* MEDDLY::CARDINALITY(forest* arg, opnd_type res)
     }
 }
 
-void MEDDLY::CARDINALITY_init()
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::unary_factory& MEDDLY::CARDINALITY()
 {
-    CARD_cache.reset("Card");
+    static CARD_factory F;
+    return F;
 }
 
-void MEDDLY::CARDINALITY_done()
-{
-    MEDDLY_DCASSERT( CARD_cache.isEmpty() );
-}

@@ -20,13 +20,8 @@
 #define MEDDLY_CYCLE_H
 
 namespace MEDDLY {
-    class forest;
-    class unary_operation;
-
-    /// Builder for the 'cycle' detection operation.
-    unary_operation* CYCLE(forest* arg, forest* res);
-    void CYCLE_init();
-    void CYCLE_done();
+    class unary_factory;
+    unary_factory& CYCLE();
 }
 
 #endif

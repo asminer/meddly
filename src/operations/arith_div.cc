@@ -19,12 +19,6 @@
 #include "../defines.h"
 #include "arith_div.h"
 
-#include "../ops_builtin.h" // for COPY
-#include "../oper_binary.h"
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
-
 // #define TRACE
 
 #ifdef TRACE
@@ -33,11 +27,8 @@
 
 #include "arith_templ.h"
 
-//
-// Operation instance cache
-//
 namespace MEDDLY {
-    binary_list DIV_cache;
+    class DIV_factory;
 };
 
 
@@ -147,14 +138,10 @@ namespace MEDDLY {
                 const forest* f2, const edge_value &bv, node_handle bn)
         {
             if (OMEGA_NORMAL == an) {
-                EDGETYPE aev;
-                av.get(aev);
-                if (0 == aev) return true;
+                if (0 == EDGETYPE(av)) return true;
             }
             if (OMEGA_NORMAL == bn) {
-                EDGETYPE bev;
-                bv.get(bev);
-                if (1 == bev) return (!f2->isIdentityReduced());
+                if (1 == EDGETYPE(bv)) return (!f2->isIdentityReduced());
             }
             return false;
         }
@@ -186,9 +173,7 @@ namespace MEDDLY {
             // Special case: dividing by zero
             //
             MEDDLY_DCASSERT(OMEGA_NORMAL == bn);
-            EDGETYPE bev;
-            bv.get(bev);
-            if (0 == bev) {
+            if (0 == EDGETYPE(bv)) {
                 throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
             }
 
@@ -204,11 +189,8 @@ namespace MEDDLY {
             }
 
             MEDDLY_DCASSERT(OMEGA_NORMAL == an);
-            EDGETYPE aev;
-            av.get(aev);
-
             cn = OMEGA_NORMAL;
-            cv.set(aev / bev);
+            cv.set(EDGETYPE(av) / EDGETYPE(bv));
         }
 
     };
@@ -280,13 +262,10 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
-            EDGETYPE av, bv;
-            a.get(av);
-            b.get(bv);
-            if (0 == bv) {
+            if (0 == EDGETYPE(b)) {
                 throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
             }
-            c.set(av / bv);
+            c.set(EDGETYPE(a) / EDGETYPE(b));
         }
 
     };
@@ -294,76 +273,80 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                        DIVIDE front end                        *
+// *                       DIV_factory  class                       *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_operation* MEDDLY::DIVIDE(forest* a, forest* b, forest* c)
+class MEDDLY::DIV_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::DIV_factory::setup()
 {
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  DIV_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
+    _setup(__FILE__, "DIVIDE", "Division. Behavior is undefined for division by zero. Forest ranges must be integer or real. Forests should be all MT, EV+, or EV*, over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::DIV_factory::build_new(forest* a, forest* b, forest* c)
+{
     if (c->isMultiTerminal()) {
         bool use_reals = (
             a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            bop = new arith_compat<EdgeOp_none, mt_div<float> > (a,b,c);
+            return new arith_compat<EdgeOp_none, mt_div<float> > (a,b,c);
         } else {
-            bop = new arith_compat<EdgeOp_none, mt_div<long> > (a,b,c);
+            return new arith_compat<EdgeOp_none, mt_div<long> > (a,b,c);
         }
-        return DIV_cache.add( bop );
     }
 
     if (c->isEVPlus()) {
         switch (c->getEdgeType()) {
             case edge_type::INT:
-                bop = new arith_pushdn<EdgeOp_plus<int>, evplus_div<int> >
+                return new arith_pushdn<EdgeOp_plus<int>, evplus_div<int> >
                         (a,b,c);
-                break;
 
             case edge_type::LONG:
-                bop = new arith_pushdn<EdgeOp_plus<long>, evplus_div<long> >
+                return new arith_pushdn<EdgeOp_plus<long>, evplus_div<long> >
                         (a,b,c);
-                break;
 
             default:
                 return nullptr;
         }
-        return DIV_cache.add( bop );
     }
 
     if (c->isEVTimes()) {
         switch (c->getEdgeType()) {
             case edge_type::FLOAT:
-                bop = new arith_compat<EdgeOp_times<float>, evstar_div<float> >
+                return new arith_compat<EdgeOp_times<float>, evstar_div<float> >
                         (a,b,c);
-                break;
 
             case edge_type::DOUBLE:
-                bop = new arith_compat<EdgeOp_times<double>, evstar_div<double> >
+                return new arith_compat<EdgeOp_times<double>, evstar_div<double> >
                         (a,b,c);
-                break;
 
             default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                return nullptr;
         }
-        return DIV_cache.add( bop );
     }
 
     return nullptr;
 }
 
-void MEDDLY::DIVIDE_init()
-{
-    DIV_cache.reset("Divide");
-}
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
 
-void MEDDLY::DIVIDE_done()
+MEDDLY::binary_factory& MEDDLY::DIVIDE()
 {
-    MEDDLY_DCASSERT(DIV_cache.isEmpty());
+    static DIV_factory F;
+    return F;
 }
 

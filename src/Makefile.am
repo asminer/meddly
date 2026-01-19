@@ -29,7 +29,6 @@ libmeddly_la_SOURCES = \
     defines.h               \
     domain.h                domain.cc \
     edge_value.h            edge_value.cc \
-    enumerator.h            enumerator.cc \
     error.h                 error.cc \
     forest.h                forest.cc \
     forest_edgerules.h      \
@@ -102,6 +101,7 @@ libmeddly_la_SOURCES = \
     operations/arith_templ.h                                       \
     operations/arith_max.h              operations/arith_max.cc    \
     operations/arith_min.h              operations/arith_min.cc    \
+    operations/arith_distmin.h          operations/arith_distmin.cc \
     operations/arith_plus.h             operations/arith_plus.cc   \
     operations/arith_minus.h            operations/arith_minus.cc  \
     operations/arith_mult.h             operations/arith_mult.cc   \
@@ -115,11 +115,13 @@ libmeddly_la_SOURCES = \
     operations/cross.h                  operations/cross.cc        \
     operations/cycle.h                  operations/cycle.cc        \
     operations/difference.h             operations/difference.cc   \
+    operations/dist_inc.h               operations/dist_inc.cc     \
     operations/intersection.h           operations/intersection.cc \
     operations/maxmin_range.h           operations/maxmin_range.cc \
     operations/mdd2index.h              operations/mdd2index.cc    \
     operations/mm_mult.h                operations/mm_mult.cc      \
-    operations/prepostimage.h           operations/prepostimage.cc \
+    operations/prepost_rels.h           operations/prepost_rels.cc \
+    operations/prepost_sets.h           operations/prepost_sets.cc \
     operations/prepostplus.h            operations/prepostplus.cc  \
     operations/reach_bfs.h              operations/reach_bfs.cc    \
     operations/reach_dfs.h              operations/reach_dfs.cc    \
@@ -171,7 +173,6 @@ pkginclude_HEADERS = \
     defines.h \
     domain.h \
     edge_value.h \
-    enumerator.h \
     error.h \
     forest.h \
     forest_edgerules.h \

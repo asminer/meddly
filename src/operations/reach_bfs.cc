@@ -65,7 +65,7 @@ MEDDLY::reach_bfs::reach_bfs(binary_operation* Img,
     ImageOp = Img;
     UnionOp = Un;
 
-    CopyOp = COPY(arg1F, resF);
+    CopyOp = build(COPY, arg1F, resF);
 
     MEDDLY_DCASSERT(ImageOp);
     MEDDLY_DCASSERT(UnionOp);
@@ -131,14 +131,14 @@ MEDDLY::binary_operation* MEDDLY::REACHABLE_STATES_BFS(forest* a,
         return bop;
     }
 
-    binary_operation *img = POST_IMAGE(a, b, c);
+    binary_operation *img = build(POST_IMAGE, a, b, c);
     binary_operation *acc = nullptr;
 
     // if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         if (a->getRangeType() == range_type::BOOLEAN) {
-            acc = UNION(c, c, c);
+            acc = build(UNION, c, c, c);
         } else {
-            acc = MINIMUM(c, c, c);
+            acc = build(MINIMUM, c, c, c);
         }
 
         return FWD_BFS_cache.add( new reach_bfs(img, acc) );
@@ -168,14 +168,14 @@ MEDDLY::binary_operation* MEDDLY::REVERSE_REACHABLE_BFS(forest* a,
         return bop;
     }
 
-    binary_operation *img = PRE_IMAGE(a, b, c);
+    binary_operation *img = build(PRE_IMAGE, a, b, c);
     binary_operation *acc = nullptr;
 
     // if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
         if (a->getRangeType() == range_type::BOOLEAN) {
-            acc = UNION(c, c, c);
+            acc = build(UNION, c, c, c);
         } else {
-            acc = MINIMUM(c, c, c);
+            acc = build(MINIMUM, c, c, c);
         }
 
         return REV_BFS_cache.add( new reach_bfs(img, acc) );

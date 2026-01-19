@@ -31,6 +31,7 @@
 
 vectorgen SG(MEDDLY::SET, 5, 4);
 vectorgen RG(MEDDLY::RELATION, 5, 2);
+MEDDLY::domain *D = nullptr;
 
 const unsigned MIN_SET_CARD = 1;
 const unsigned MAX_SET_CARD = 256;
@@ -44,7 +45,7 @@ using namespace MEDDLY;
 
 // #define DEBUG_OPS
 
-unsigned set_cardinality(const std::vector <bool> &A)
+unsigned set_cardinality(const std::vector <MEDDLY::rangeval> &A)
 {
     unsigned card = 0;
     for (unsigned i=0; i<A.size(); i++) {
@@ -53,8 +54,9 @@ unsigned set_cardinality(const std::vector <bool> &A)
     return card;
 }
 
-void set_intersection(const std::vector <bool> &A,
-        const std::vector <bool> &B, std::vector <bool> &C)
+void set_intersection(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector <MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "set intersection size mismatch A,B";
@@ -64,12 +66,13 @@ void set_intersection(const std::vector <bool> &A,
     }
 
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = A[i] && B[i];
+        C[i] = bool(A[i]) && bool(B[i]);
     }
 }
 
-void set_union(const std::vector <bool> &A,
-        const std::vector <bool> &B, std::vector <bool> &C)
+void set_union(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector <MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "set union size mismatch A,B";
@@ -79,12 +82,13 @@ void set_union(const std::vector <bool> &A,
     }
 
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = A[i] || B[i];
+        C[i] = bool(A[i]) || bool(B[i]);
     }
 }
 
-void set_difference(const std::vector <bool> &A,
-        const std::vector <bool> &B, std::vector <bool> &C)
+void set_difference(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector <MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "set difference size mismatch A,B";
@@ -94,23 +98,24 @@ void set_difference(const std::vector <bool> &A,
     }
 
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = B[i] ? false : A[i];
+        C[i] = bool(B[i]) ? false : bool(A[i]);
     }
 }
 
-void set_complement(const std::vector <bool> &A, std::vector <bool> &C)
+void set_complement(const std::vector <MEDDLY::rangeval> &A,
+        std::vector <MEDDLY::rangeval> &C)
 {
     if (A.size() != C.size()) {
         throw "set difference size mismatch A,C";
     }
 
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = !A[i];
+        C[i] = !bool(A[i]);
     }
 }
 
 void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2,
-        const std::vector<bool> &set)
+        const std::vector<MEDDLY::rangeval> &set)
 {
     if (e1 == e2) return;
 
@@ -125,7 +130,8 @@ void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2,
     throw "mismatch";
 }
 
-void checkCardinality(const dd_edge &e, const std::vector<bool> &set)
+void checkCardinality(const dd_edge &e,
+        const std::vector<MEDDLY::rangeval> &set)
 {
     long ecard = -1;
     apply(CARDINALITY, e, ecard);
@@ -140,7 +146,6 @@ void checkCardinality(const dd_edge &e, const std::vector<bool> &set)
     out << "  Explicit set: " << scard << "\n";
     out << "DD cardinality: " << ecard << "\n";
 
-    // showMinterms(std::cout, set, e.getForest());
     e.showGraph(out);
 
     throw "mismatch";
@@ -176,15 +181,16 @@ void checkIndexing(const dd_edge &the_set, const dd_edge &the_indexes)
 }
 
 void compare(vectorgen &Gen,
-        const std::vector <bool> &Aset, const std::vector <bool> &Bset,
+        const std::vector <MEDDLY::rangeval> &Aset,
+        const std::vector <MEDDLY::rangeval> &Bset,
         forest* f1, forest* f2, forest* fres, forest* findex)
 {
     const unsigned POTENTIAL = Gen.potential();
 
-    std::vector <bool> AiBset(POTENTIAL);
-    std::vector <bool> AuBset(POTENTIAL);
-    std::vector <bool> AmBset(POTENTIAL);
-    std::vector <bool> cAset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AiBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AuBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AmBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> cAset(POTENTIAL);
 
     dd_edge Add(f1), Bdd(f2), AiBdd(fres), AuBdd(fres), AmBdd(fres),
                 cABdd(fres), ccABdd(fres);
@@ -194,13 +200,13 @@ void compare(vectorgen &Gen,
     set_difference(Aset, Bset, AmBset);
     set_complement(Aset, cAset);
 
-    Gen.explicit2edge(Aset, Add);
-    Gen.explicit2edge(Bset, Bdd);
-    Gen.explicit2edge(AiBset, AiBdd);
-    Gen.explicit2edge(AuBset, AuBdd);
-    Gen.explicit2edge(AmBset, AmBdd);
-    Gen.explicit2edge(cAset, cABdd);
-    Gen.explicit2edge(Aset, ccABdd);
+    Gen.explicit2edgeMax(Aset, Add, false);
+    Gen.explicit2edgeMax(Bset, Bdd, false);
+    Gen.explicit2edgeMax(AiBset, AiBdd, false);
+    Gen.explicit2edgeMax(AuBset, AuBdd, false);
+    Gen.explicit2edgeMax(AmBset, AmBdd, false);
+    Gen.explicit2edgeMax(cAset, cABdd, false);
+    Gen.explicit2edgeMax(Aset, ccABdd, false);
 
     checkCardinality(Add, Aset);
     checkCardinality(Bdd, Bset);
@@ -225,11 +231,11 @@ void compare(vectorgen &Gen,
     std::cout << "    A: ";
     Gen.showSet(std::cout, Aset);
     std::cout << "\n  = ";
-    Gen.showMinterms(std::cout, Aset);
+    Gen.showMinterms(std::cout, D, Aset);
     std::cout << "\n    B: ";
     Gen.showSet(std::cout, Bset);
     std::cout << "\n  = ";
-    Gen.showMinterms(std::cout, Bset);
+    Gen.showMinterms(std::cout, D, Bset);
     std::cout << "\nMDD/MXDs:\n";
     std::cout << "    A:\n";
     Add.showGraph(out);
@@ -264,11 +270,12 @@ void test_on_forests(unsigned scard, forest* f1, forest* f2, forest* fres,
               << " " << shortNameOf(f2->getReductionRule())
               << " : " << shortNameOf(fres->getReductionRule()) << ' ';
 
-    std::vector <bool> Aset(Gen.potential());
-    std::vector <bool> Bset(Gen.potential());
+    std::vector <MEDDLY::rangeval> Aset(Gen.potential());
+    std::vector <MEDDLY::rangeval> Bset(Gen.potential());
 
-    std::vector <bool> values(1);
-    values[0] = true;
+    std::vector <MEDDLY::rangeval> values(2);
+    values[0] = false;
+    values[1] = true;
 
     for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
@@ -456,14 +463,13 @@ int main(int argc, const char** argv)
     try {
         MEDDLY::initialize();
         if (sets) {
-            domain* SD = SG.makeDomain();
-            test_sets(SD);
-            domain::destroy(SD);
+            D = SG.makeDomain();
+            test_sets(D);
         } else {
-            domain* RD = RG.makeDomain();
-            test_rels(RD);
-            domain::destroy(RD);
+            D = RG.makeDomain();
+            test_rels(D);
         }
+        domain::destroy(D);
         MEDDLY::cleanup();
         return 0;
     }

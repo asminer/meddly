@@ -406,7 +406,7 @@ MEDDLY::mm_mult_opname::buildOperation(binary_list &c, forest* a1, forest* a2,
   )
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 
-  binary_operation* acc = PLUS(r, r, r);
+  binary_operation* acc = build(PLUS, r, r, r);
 
   switch (r->getRangeType()) {
     case range_type::INTEGER:
@@ -448,12 +448,12 @@ MEDDLY::binary_operation* MEDDLY::MM_MULTIPLY(forest* a, forest* b, forest* c)
     switch (c->getRangeType()) {
         case range_type::INTEGER:
             return MMMULT_cache.add(
-                new mm_mult_mt<int>(a, b, c, PLUS(c, c, c))
+                new mm_mult_mt<int>(a, b, c, build(PLUS, c, c, c))
             );
 
         case range_type::REAL:
             return MMMULT_cache.add(
-                new mm_mult_mt<float>(a, b, c, PLUS(c, c, c))
+                new mm_mult_mt<float>(a, b, c, build(PLUS, c, c, c))
             );
 
         default:

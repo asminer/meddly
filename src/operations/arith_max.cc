@@ -19,12 +19,6 @@
 #include "../defines.h"
 #include "arith_max.h"
 
-#include "../ops_builtin.h" // for COPY
-#include "../oper_binary.h"
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
-
 // #define TRACE
 
 #ifdef TRACE
@@ -33,11 +27,8 @@
 
 #include "arith_templ.h"
 
-//
-// Operation instance cache
-//
 namespace MEDDLY {
-    binary_list MAXIMUM_cache;
+    class MAXIMUM_factory;
 };
 
 
@@ -170,9 +161,7 @@ namespace MEDDLY {
                 //
                 a = c;
                 c = edge_value(EDGETYPE(0));
-                EDGETYPE av;
-                a.get(av);
-                e.subtract(av);
+                e.subtract( EDGETYPE(a) );
             }
         }
 
@@ -194,10 +183,7 @@ namespace MEDDLY {
                 // both finite
                 //
                 b = OMEGA_NORMAL;
-                EDGETYPE cv, ev;
-                c.get(cv);
-                e.get(ev);
-                a = edge_value(MAX(cv, ev));
+                a = edge_value(MAX(EDGETYPE(c), EDGETYPE(e)));
             }
         }
 
@@ -297,10 +283,7 @@ namespace MEDDLY {
                           const edge_value &e, node_handle f,
                           edge_value &a, node_handle &b)
         {
-            EDGETYPE av, cv, ev;
-            c.get(cv);
-            e.get(ev);
-            av = MAX(cv, ev);
+            EDGETYPE av = MAX(EDGETYPE(c), EDGETYPE(e));
             a = av;
             b = av ? OMEGA_NORMAL : OMEGA_ZERO;
         }
@@ -308,6 +291,72 @@ namespace MEDDLY {
     };
 };
 
+// ******************************************************************
+// *                                                                *
+// *                     MAXIMUM_factory  class                     *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::MAXIMUM_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::MAXIMUM_factory::setup()
+{
+    _setup(__FILE__, "MAXIMUM", "Maximum value. Forest ranges must be integer or real. Forests should be all MT, EV+, or EV*, over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::MAXIMUM_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (c->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new arith_compat<EdgeOp_none, mt_max<float> > (a,b,c);
+        } else {
+            return new arith_compat<EdgeOp_none, mt_max<long> > (a,b,c);
+        }
+    }
+
+    if (c->isEVPlus()) {
+        switch (c->getEdgeType()) {
+            case edge_type::INT:
+                return new arith_factor<EdgeOp_plus<int>, evplus_max<int> >
+                        (a,b,c);
+
+            case edge_type::LONG:
+                return new arith_factor<EdgeOp_plus<long>, evplus_max<long> >
+                        (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+
+    if (c->isEVTimes()) {
+        switch (c->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new arith_factor<EdgeOp_times<float>, evstar_max<float> >
+                        (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new arith_factor<EdgeOp_times<double>, evstar_max<double> >
+                        (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+
+    return nullptr;
+}
 
 // ******************************************************************
 // *                                                                *
@@ -315,72 +364,9 @@ namespace MEDDLY {
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_operation* MEDDLY::MAXIMUM(forest* a, forest* b, forest* c)
+MEDDLY::binary_factory& MEDDLY::MAXIMUM()
 {
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  MAXIMUM_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-    if (c->isMultiTerminal()) {
-        bool use_reals = (
-            a->getRangeType() == range_type::REAL ||
-            b->getRangeType() == range_type::REAL
-        );
-        if (use_reals) {
-            bop = new arith_compat<EdgeOp_none, mt_max<float> > (a,b,c);
-        } else {
-            bop = new arith_compat<EdgeOp_none, mt_max<long> > (a,b,c);
-        }
-        return MAXIMUM_cache.add( bop );
-    }
-
-    if (c->isEVPlus()) {
-        switch (c->getEdgeType()) {
-            case edge_type::INT:
-                bop = new arith_factor<EdgeOp_plus<int>, evplus_max<int> >
-                        (a,b,c);
-                break;
-
-            case edge_type::LONG:
-                bop = new arith_factor<EdgeOp_plus<long>, evplus_max<long> >
-                        (a,b,c);
-                break;
-
-            default:
-                return nullptr;
-        }
-        return MAXIMUM_cache.add( bop );
-    }
-
-    if (c->isEVTimes()) {
-        switch (c->getEdgeType()) {
-            case edge_type::FLOAT:
-                bop = new arith_factor<EdgeOp_times<float>, evstar_max<float> >
-                        (a,b,c);
-                break;
-
-            case edge_type::DOUBLE:
-                bop = new arith_factor<EdgeOp_times<double>, evstar_max<double> >
-                        (a,b,c);
-                break;
-
-            default:
-                return nullptr;
-        }
-        return MAXIMUM_cache.add( bop );
-    }
-
-    return nullptr;
-}
-
-void MEDDLY::MAXIMUM_init()
-{
-    MAXIMUM_cache.reset("Maximum");
-}
-
-void MEDDLY::MAXIMUM_done()
-{
-    MEDDLY_DCASSERT(MAXIMUM_cache.isEmpty());
+    static MAXIMUM_factory F;
+    return F;
 }
 

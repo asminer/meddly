@@ -64,6 +64,10 @@ namespace MEDDLY {
                     const edge_value &b)
             {
             }
+            /// Normalize edge value
+            static inline void normalize(edge_value &ev, node_handle p)
+            {
+            }
             static inline terminal buildTerm(
                             const edge_value &val, node_handle p)
             {
@@ -110,35 +114,33 @@ namespace MEDDLY {
             static inline edge_value applyOp(const edge_value &a,
                     const edge_value &b)
             {
-                TYPE av, bv;
-                a.get(av);
-                b.get(bv);
-                return edge_value(av+bv);
+                return edge_value(TYPE(a) + TYPE(b));
             }
             /// Accumulate one edge value into another: a += b
             static inline void accumulateOp(edge_value &a,
                     const edge_value &b)
             {
-                TYPE bv;
-                b.get(bv);
-                a.add(bv);
+                a.add( TYPE(b) );
             }
             /// Accumulate an inverse: a += -b
             static inline void accumulateInverse(edge_value &a,
                     const edge_value &b)
             {
-                TYPE bv;
-                b.get(bv);
-                a.subtract(bv);
+                a.subtract( TYPE(b) );
+            }
+            /// Normalize edge value
+            static inline void normalize(edge_value &ev, node_handle p)
+            {
+                if (OMEGA_INFINITY == p) {
+                    ev.set(TYPE(0));
+                }
             }
             /// Build terminal value for edge <val, p>
             static inline terminal buildTerm(
                             const edge_value &val, node_handle p)
             {
                 if (OMEGA_NORMAL == p) {
-                    TYPE v;
-                    val.get(v);
-                    return terminal(v);
+                    return terminal(TYPE(val));
                 }
                 return terminal(p, terminal_type::OMEGA);
             }
@@ -146,9 +148,7 @@ namespace MEDDLY {
                     node_handle p)
             {
                 if (p != OMEGA_NORMAL) return false;
-                TYPE bv;
-                val.get(bv);
-                return (0==bv);
+                return TYPE(val) == 0;
             }
     };
     template <>
@@ -198,35 +198,33 @@ namespace MEDDLY {
             static inline edge_value applyOp(const edge_value &a,
                     const edge_value &b)
             {
-                TYPE av, bv;
-                a.get(av);
-                b.get(bv);
-                return edge_value(av*bv);
+                return edge_value(TYPE(a) * TYPE(b));
             }
             /// Accumulate one edge value into another: a *= b
             static inline void accumulateOp(edge_value &a,
                     const edge_value &b)
             {
-                TYPE bv;
-                b.get(bv);
-                a.multiply(bv);
+                a.multiply(TYPE(b));
             }
             /// Accumulate an inverse: a *= 1/b
             static inline void accumulateInverse(edge_value &a,
                     const edge_value &b)
             {
-                TYPE bv;
-                b.get(bv);
-                a.divide(bv);
+                a.divide(TYPE(b));
+            }
+            /// Normalize edge value
+            static inline void normalize(edge_value &ev, node_handle p)
+            {
+                if (OMEGA_ZERO == p) {
+                    ev.set(TYPE(0));
+                }
             }
             /// Build terminal value for edge <val, p>
             static inline terminal buildTerm(
                             const edge_value &val, node_handle p)
             {
                 if (OMEGA_NORMAL == p) {
-                    TYPE v;
-                    val.get(v);
-                    return terminal(v);
+                    return terminal(TYPE(val));
                 }
                 return terminal(p, terminal_type::OMEGA);
             }

@@ -190,7 +190,7 @@ MEDDLY::transitive_closure_forwd_bfs
 {
   if (resF->getRangeType() == range_type::INTEGER && resF->isForRelations()) {
     plusOp = POST_PLUS(resF, arg1F, resF);
-    minOp = UNION(resF, resF, resF);
+    minOp = build(UNION, resF, resF, resF);
   } else {
     throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
   }
@@ -271,9 +271,9 @@ MEDDLY::transitive_closure_dfs::transitive_closure_dfs(ternary_list &c,
   forest* cons, forest* tc, forest* trans, forest* res)
   : ternary_operation(c, 1, cons, tc, trans, res)
 {
-  mxdIntersectionOp = INTERSECTION(arg3F, arg3F, arg3F);
-  mxdDifferenceOp = DIFFERENCE(arg3F, arg3F, arg3F);
-  minOp = UNION(resF, resF, resF);
+  mxdIntersectionOp = build(INTERSECTION, arg3F, arg3F, arg3F);
+  mxdDifferenceOp = build(DIFFERENCE, arg3F, arg3F, arg3F);
+  minOp = build(UNION, resF, resF, resF);
 
   splits = nullptr;
 
@@ -528,13 +528,13 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
     for (int jpz = 0; jpz < Rp->getSize(); jpz++) {
       const int jp = Rp->index(jpz);
       if (A->down(jp) == 0) {
-        MEDDLY_DCASSERT(A->edgeval(jp).getLong() == 0);
+        MEDDLY_DCASSERT(long(A->edgeval(jp)) == 0);
         continue;
       }
 
       long recev = 0;
       node_handle rec = 0;
-      recFire(aev + A->edgeval(jp).getLong(), A->down(jp), nb.edgeval(ip).getLong(), nb.down(ip), Rp->down(jpz), recev, rec);
+      recFire(aev + long(A->edgeval(jp)), A->down(jp), long(nb.edgeval(ip)), nb.down(ip), Rp->down(jpz), recev, rec);
       MEDDLY_DCASSERT(isLevelAbove(nb.getLevel(), resF->getNodeLevel(rec)));
 
       if (rec == 0) {
@@ -544,7 +544,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
 
       if (rec == nb.down(jp)) {
         // Compute the minimum
-        if (recev < nb.edgeval(jp).getLong()) {
+        if (recev < long(nb.edgeval(jp))) {
           nb.edgeval(jp) = recev;
         }
         resF->unlinkNode(rec);
@@ -554,13 +554,13 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
       bool updated = true;
 
       if (nb.down(jp) == 0) {
-        MEDDLY_DCASSERT(nb.edgeval(jp).getLong() == 0);
+        MEDDLY_DCASSERT(long(nb.edgeval(jp)) == 0);
         nb.setFull(jp, edge_value(recev), rec);
         // nb.setEdge(jp, recev);
         // nb.d_ref(jp) = rec;
       }
       else {
-        nbdj.set(nb.edgeval(jp).getLong(), nb.down(jp));
+        nbdj.set(nb.edgeval(jp), nb.down(jp));
         newst.set(recev, rec);
         minOp->computeTemp(nbdj, newst, nbdj);
         updated = (nbdj.getNode() != nb.down(jp));
@@ -675,7 +675,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
       for (int ip = 0; ip < size; ip++) {
         long tev = 0;
         node_handle t = 0;
-        recFire(aev + A->edgeval(ip).getLong(), A->down(ip), bev + B->edgeval(i).getLong() + D->edgeval(ip).getLong(), D->down(ip), r, tev, t);
+        recFire(aev + long(A->edgeval(ip)), A->down(ip), bev + long(B->edgeval(i)) + long(D->edgeval(ip)), D->down(ip), r, tev, t);
         Tp->setFull(ip, edge_value(tev), t);
         // Tp->setEdge(ip, tev);
         // Tp->d_ref(ip) = t;
@@ -720,7 +720,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
         for (int jpz = 0; jpz < Rp->getSize(); jpz++) {
           const int jp = Rp->index(jpz);
           if (A->down(jp) == 0) {
-            MEDDLY_DCASSERT(A->edgeval(jp).getLong() == 0);
+            MEDDLY_DCASSERT(long(A->edgeval(jp)) == 0);
             continue;
           }
 
@@ -729,7 +729,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
           // and add them
           long nev = 0;
           node_handle n = 0;
-          recFire(aev + A->edgeval(jp).getLong(), A->down(jp), bev + B->edgeval(i).getLong() + D->edgeval(ip).getLong(), D->down(ip), Rp->down(jpz), nev, n);
+          recFire(aev + long(A->edgeval(jp)), A->down(jp), bev + long(B->edgeval(i)) + long(D->edgeval(ip)), D->down(ip), Rp->down(jpz), nev, n);
 
           if (n == 0) {
             MEDDLY_DCASSERT(nev == 0);
@@ -737,7 +737,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
           }
 
           if (Tp->down(jp) == 0) {
-            MEDDLY_DCASSERT(Tp->edgeval(jp).getLong() == 0);
+            MEDDLY_DCASSERT(long(Tp->edgeval(jp)) == 0);
             Tp->setFull(jp, edge_value(nev), n);
             // Tp->setEdge(jp, nev);
             // Tp->d_ref(jp) = n;
@@ -758,7 +758,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
           */
 
           // there's new states and existing states; union them.
-          Tdj.set(Tp->edgeval(jp).getLong(), Tp->down(jp));
+          Tdj.set(Tp->edgeval(jp), Tp->down(jp));
           newst.set(nev, n);
           minOp->computeTemp(newst, Tdj, Tdj);
           Tp->setFull(jp, Tdj);
@@ -784,7 +784,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
 
   edge_value ev;
   resF->createReducedNode(T, ev, c);
-  cev = ev.getLong();
+  cev = long(ev);
   MEDDLY_DCASSERT(cev >= 0);
 
   saveResult(key, aev, a, bev, b, r, cev, c);
@@ -963,7 +963,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
         if (A->down(j) && D->down(j)) {
           long tpev = Inf<long>();
           node_handle tp = 0;
-          saturate(aev + A->edgeval(j).getLong(), A->down(j), bev + B->edgeval(i).getLong() + D->edgeval(j).getLong(), D->down(j), level - 1, tpev, tp);
+          saturate(aev + long(A->edgeval(j)), A->down(j), bev + long(B->edgeval(i)) + long(D->edgeval(j)), D->down(j), level - 1, tpev, tp);
           Tp->setFull(j, edge_value(tpev), tp);
           // Tp->setEdge(j, tpev);
           // Tp->d_ref(j) = tp;
@@ -986,7 +986,7 @@ void MEDDLY::transitive_closure_evplus::saturate(int aev, node_handle a, int bev
 
   edge_value ev;
   resF->createReducedNode(T, ev, c);
-  cev = ev.getLong();
+  cev = long(ev);
 
   // save in compute table
   saveResult(key, aev, a, bev, b, level, cev, c);

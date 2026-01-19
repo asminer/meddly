@@ -55,8 +55,6 @@ vectorgen::vectorgen(bool sr, unsigned v, unsigned d)
     }
 
     current_terminal = 0;
-
-    _D = nullptr;
 }
 
 void vectorgen::setSeed(long s, bool print)
@@ -96,7 +94,6 @@ MEDDLY::domain* vectorgen::makeDomain()
         bs[i] = dom();
     }
     MEDDLY::domain* d = MEDDLY::domain::createBottomUp(bs, vars());
-    _D = d;
     delete[] bs;
     return d;
 }
@@ -174,10 +171,26 @@ void vectorgen::index2minterm(unsigned x, MEDDLY::minterm &m) const
     }
 }
 
+void vectorgen::indexes2minterm(unsigned f, unsigned t, MEDDLY::minterm &m) const
+{
+    if (m.getNumVars() != vars()) {
+        throw "minterm mismatch in call to indexes2minterm";
+    }
+    if (m.isForSets()) {
+        throw "minterm should be for relations in call to indexes2minterm";
+    }
+    for (unsigned j=1; j<=m.getNumVars(); j++) {
+        m.setVars(j, f % dom(), t % dom());
+        f /= dom();
+        t /= dom();
+    }
+}
+
+
 unsigned vectorgen::minterm2index(const MEDDLY::minterm &m) const
 {
     if (m.getNumVars() != vars()) {
-        throw "minterm mismatch in call to index2minterm";
+        throw "minterm mismatch in call to minterm2index";
     }
     unsigned x = 0;
     unsigned base = 1;
@@ -197,6 +210,26 @@ unsigned vectorgen::minterm2index(const MEDDLY::minterm &m) const
         }
     }
     return x;
+}
+
+void vectorgen::minterm2indexes(const MEDDLY::minterm &m, unsigned &f, unsigned &t) const
+{
+    if (m.getNumVars() != vars()) {
+        throw "minterm mismatch in call to minterm2indexes";
+    }
+    if (m.isForSets()) {
+        throw "minterm should be for relations in call to minterm2indexes";
+    }
+    f = 0;
+    t = 0;
+    unsigned base = 1;
+    for (unsigned j=1; j<=m.getNumVars(); j++) {
+        int fv, tv;
+        m.getVars(j, fv, tv);
+        f += base * fv;
+        t += base * tv;
+        base *= dom();
+    }
 }
 
 void vectorgen::buildIdentityFromIndex(unsigned ndx,
@@ -319,3 +352,197 @@ void vectorgen::buildFullyFromIndex(unsigned ndx,
     }
 }
 
+
+
+void vectorgen::randomizeVector(std::vector <MEDDLY::rangeval> &elems,
+            unsigned card, const std::vector <MEDDLY::rangeval> &values)
+{
+    if (elems.size() != potential()) {
+        throw "vector size mismatch in randomizeVector";
+    }
+    unsigned v=1;
+    for (unsigned i=0; i<elems.size(); i++) {
+        if (i<card) {
+            elems[i] = values[v];
+            ++v;
+            if (v >= values.size()) {
+                v = 1;
+            }
+        } else {
+            elems[i] = values[0];
+        }
+    }
+    //
+    // Shuffle the array
+    //
+    for (unsigned i=0; i<elems.size()-1; i++) {
+        unsigned j = Equilikely_U(i, elems.size()-1);
+        if (elems[i] != elems[j]) {
+            MEDDLY::rangeval t = elems[i];
+            elems[i] = elems[j];
+            elems[j] = t;
+        }
+    }
+}
+
+
+void vectorgen::randomizeFully(std::vector <MEDDLY::rangeval> &elems,
+            unsigned card, const std::vector <MEDDLY::rangeval> &values)
+{
+    if (elems.size() != potential()) {
+        throw "vector size mismatch in randomizeFully";
+    }
+    for (unsigned i=0; i<elems.size(); i++) {
+        elems[i] = values[0];
+    }
+    unsigned v=1;
+    for (unsigned i=0; i<card; i++) {
+        unsigned x = Equilikely_U(0, elems.size()-1);
+        unsigned k1 = Equilikely_U(1, vars());
+        unsigned k2 = Equilikely_U(1, vars());
+
+        ilist.clear();
+        buildFullyFromIndex(x, k1, k2, ilist);
+        for (unsigned z=0; z<ilist.size(); z++) {
+            elems[ ilist[z] ] = values[v];
+        }
+        ++v;
+        if (v >= values.size()) {
+            v = 1;
+        }
+    }
+}
+
+
+void vectorgen::randomizeIdentity(std::vector <MEDDLY::rangeval> &elems,
+            unsigned card, const std::vector <MEDDLY::rangeval> &values)
+{
+    if (elems.size() != potential()) {
+        throw "vector size mismatch in randomizeIdentity";
+    }
+    for (unsigned i=0; i<elems.size(); i++) {
+        elems[i] = values[0];
+    }
+    unsigned v=1;
+    for (unsigned i=0; i<card; i++) {
+        unsigned x = Equilikely_U(0, elems.size()-1);
+        unsigned k1 = Equilikely_U(1, vars());
+        unsigned k2 = Equilikely_U(1, vars());
+
+        ilist.clear();
+        buildIdentityFromIndex(x, k1, k2, ilist);
+        for (unsigned z=0; z<ilist.size(); z++) {
+            elems[ ilist[z] ] = values[v];
+        }
+
+        ++v;
+        if (v >= values.size()) {
+            v = 1;
+        }
+    }
+}
+
+void vectorgen::explicit2edgeMax(const std::vector<MEDDLY::rangeval> &x,
+            MEDDLY::dd_edge &s, MEDDLY::rangeval deflt) const
+{
+    MEDDLY::forest* F = s.getForest();
+    if (!F) throw "null forest in explicit2edgeMax";
+    // Determine x 'cardinality'
+    unsigned card = 0;
+    for (unsigned i=0; i<x.size(); i++) {
+        if (x[i] != deflt) {
+            ++card;
+        }
+    }
+
+    if (0==card) {
+        F->createConstant(deflt, s);
+        return;
+    }
+
+    MEDDLY::minterm_coll mtlist(card, F);
+    for (unsigned i=0; i<x.size(); i++) {
+        if (deflt == x[i]) continue;
+        index2minterm(i, mtlist.unused());
+        mtlist.unused().setValue(x[i]);
+        mtlist.pushUnused();
+    }
+    mtlist.buildFunctionMax(deflt, s);
+}
+
+void vectorgen::explicit2edgeMin(const std::vector<MEDDLY::rangeval> &x,
+            MEDDLY::dd_edge &s, MEDDLY::rangeval deflt) const
+{
+    MEDDLY::forest* F = s.getForest();
+    if (!F) throw "null forest in explicit2edgeMax";
+    // Determine x 'cardinality'
+    unsigned card = 0;
+    for (unsigned i=0; i<x.size(); i++) {
+        if (x[i] != deflt) ++card;
+    }
+
+    if (0==card) {
+        F->createConstant(deflt, s);
+        return;
+    }
+
+    MEDDLY::minterm_coll mtlist(card, F);
+    for (unsigned i=0; i<x.size(); i++) {
+        if (deflt == x[i]) continue;
+        index2minterm(i, mtlist.unused());
+        mtlist.unused().setValue(x[i]);
+        mtlist.pushUnused();
+    }
+    mtlist.buildFunctionMin(deflt, s);
+}
+
+void vectorgen::showSet(std::ostream &out,
+        const std::vector <MEDDLY::rangeval> &elems) const
+{
+    out << "{ ";
+    bool printed = false;
+    for (unsigned i=0; i<elems.size(); i++) {
+        switch (elems[i].getType()) {
+            case MEDDLY::range_type::BOOLEAN:
+                if (!bool(elems[i])) continue;
+                if (printed) out << ", ";
+                out << i;
+                break;
+
+            case MEDDLY::range_type::INTEGER:
+                if (!long(elems[i])) continue;
+                if (printed) out << ", ";
+                out << i << ":" << long(elems[i]);
+                break;
+
+            default:
+                if (!double(elems[i])) continue;
+                if (printed) out << ", ";
+                out << i << ":" << double(elems[i]);
+        }
+        printed = true;
+    }
+    out << " }";
+}
+
+void vectorgen::showMinterms(std::ostream &out, const MEDDLY::domain* D,
+        const std::vector <MEDDLY::rangeval> &elems,
+        MEDDLY::rangeval deflt) const
+{
+    if (!D) throw "null domain, showMinterms";
+    MEDDLY::minterm mt(D, isForRelations());
+    MEDDLY::ostream_output mout(out);
+    mout << "{ ";
+    bool printed = false;
+    for (unsigned i=0; i<elems.size(); i++) {
+        if (deflt == elems[i]) continue;
+
+        if (printed) mout << ",\n      ";
+        printed = true;
+
+        index2minterm(i, mt);
+        mt.setValue(elems[i]);
+        mt.show(mout);
+    }
+    mout << " }";
+}

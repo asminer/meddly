@@ -19,15 +19,9 @@
 #ifndef MEDDLY_CARDINALITY_H
 #define MEDDLY_CARDINALITY_H
 
-#include "../oper.h"
-
 namespace MEDDLY {
-    class unary_operation;
-
-    /// Builder for 'cardinality' operations.
-    unary_operation* CARDINALITY(forest* arg, opnd_type res);
-    void CARDINALITY_init();
-    void CARDINALITY_done();
+    class unary_factory;
+    unary_factory& CARDINALITY();
 };
 
 #endif

@@ -31,11 +31,14 @@ nodestor
 nqueens
 ops_arith
 ops_comp
+ops_distmin
 ops_divmod
 ops_maxmin
-ops_plusminus
 ops_mult
+ops_prepost
+ops_plusminus
 ops_set
+ops_vmmult
 randtest
 refcount
 sat_test

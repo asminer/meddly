@@ -22,13 +22,8 @@
 #ifdef ALLOW_DEPRECATED_0_17_8
 
 namespace MEDDLY {
-    class forest;
-    class unary_operation;
-
-    /// Builder for 'select' operations.
-    unary_operation* SELECT(forest* arg, forest* res);
-    void SELECT_init();
-    void SELECT_done();
+    class unary_factory;
+    unary_factory& SELECT();
 };
 
 #endif

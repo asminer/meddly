@@ -19,12 +19,6 @@
 #include "../defines.h"
 #include "arith_plus.h"
 
-#include "../ops_builtin.h" // for COPY
-#include "../oper_binary.h"
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
-
 // #define TRACE
 
 #ifdef TRACE
@@ -33,11 +27,8 @@
 
 #include "arith_templ.h"
 
-//
-// Operation instance cache
-//
 namespace MEDDLY {
-    binary_list PLUS_cache;
+    class PLUS_factory;
 };
 
 
@@ -162,10 +153,7 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
-            EDGETYPE av, bv;
-            a.get(av);
-            b.get(bv);
-            c.set(av+bv);
+            c.set(EDGETYPE(a) + EDGETYPE(b));
         }
     };
 };
@@ -248,10 +236,7 @@ namespace MEDDLY {
                           const edge_value &e, node_handle f,
                           edge_value &a, node_handle &b)
         {
-            EDGETYPE av, cv, ev;
-            c.get(cv);
-            e.get(ev);
-            av = cv + ev;
+            EDGETYPE av = EDGETYPE(c) + EDGETYPE(e);
             a = av;
             b = av ? OMEGA_NORMAL : OMEGA_ZERO;
         }
@@ -261,76 +246,80 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                         PLUS front end                         *
+// *                       PLUS_factory class                       *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_operation* MEDDLY::PLUS(forest* a, forest* b, forest* c)
+class MEDDLY::PLUS_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::PLUS_factory::setup()
 {
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  PLUS_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
+    _setup(__FILE__, "PLUS", "Addition. Forest ranges must be integer or real. Forests should be all MT, EV+, or EV*, over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::PLUS_factory::build_new(forest* a, forest* b, forest* c)
+{
     if (c->isMultiTerminal()) {
         bool use_reals = (
             a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            bop = new arith_compat<EdgeOp_none, mt_plus<float> > (a,b,c);
+            return new arith_compat<EdgeOp_none, mt_plus<float> > (a,b,c);
         } else {
-            bop = new arith_compat<EdgeOp_none, mt_plus<long> > (a,b,c);
+            return new arith_compat<EdgeOp_none, mt_plus<long> > (a,b,c);
         }
-        return PLUS_cache.add( bop );
     }
 
     if (c->isEVPlus()) {
         switch (c->getEdgeType()) {
             case edge_type::INT:
-                bop = new arith_compat<EdgeOp_plus<int>, evplus_plus<int> >
+                return new arith_compat<EdgeOp_plus<int>, evplus_plus<int> >
                         (a,b,c);
-                break;
 
             case edge_type::LONG:
-                bop = new arith_compat<EdgeOp_plus<long>, evplus_plus<long> >
+                return new arith_compat<EdgeOp_plus<long>, evplus_plus<long> >
                         (a,b,c);
-                break;
 
             default:
                 return nullptr;
         }
-        return PLUS_cache.add( bop );
     }
 
     if (c->isEVTimes()) {
         switch (c->getEdgeType()) {
             case edge_type::FLOAT:
-                bop = new arith_factor<EdgeOp_times<float>, evstar_plus<float> >
+                return new arith_factor<EdgeOp_times<float>, evstar_plus<float> >
                         (a,b,c);
-                break;
 
             case edge_type::DOUBLE:
-                bop = new arith_factor<EdgeOp_times<double>, evstar_plus<double> >
+                return new arith_factor<EdgeOp_times<double>, evstar_plus<double> >
                         (a,b,c);
-                break;
 
             default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                return nullptr;
         }
-        return PLUS_cache.add( bop );
     }
 
     return nullptr;
 }
 
-void MEDDLY::PLUS_init()
-{
-    PLUS_cache.reset("Plus");
-}
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
 
-void MEDDLY::PLUS_done()
+MEDDLY::binary_factory& MEDDLY::PLUS()
 {
-    MEDDLY_DCASSERT(PLUS_cache.isEmpty());
+    static PLUS_factory F;
+    return F;
 }
 

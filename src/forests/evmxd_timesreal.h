@@ -42,79 +42,11 @@ class MEDDLY::evmxd_timesreal : public evmxd_forest {
     evmxd_timesreal(domain *d, const policies &p);
     ~evmxd_timesreal();
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
     virtual void createEdgeForVar(int vh, bool vp, const float* terms,
       dd_edge& a);
 #endif
-#ifdef ALLOW_DEPRECATED_0_17_7
-    virtual void createEdge(float val, dd_edge &e);
-    virtual void createEdge(double val, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, const int* const* vplist,
-      const float* terms, int N, dd_edge &e);
-    virtual void evaluate(const dd_edge &f, const int* vlist,
-      const int* vplist, float &term) const;
 
-    virtual enumerator::iterator* makeFullIter() const {
-      return new evtrmxd_iterator(this);
-    }
-
-    virtual enumerator::iterator* makeFixedRowIter() const
-    {
-      return new evtrmxd_fixedrow_iter(this);
-    }
-
-    virtual enumerator::iterator* makeFixedColumnIter() const
-    {
-      return new evtrmxd_fixedcol_iter(this);
-    }
-#endif
-
-#ifdef ALLOW_DEPRECATED_0_17_7
-  protected:
-    class evtrmxd_baseiter : public enumerator::iterator {
-      public:
-        evtrmxd_baseiter(const forest* F);
-        virtual ~evtrmxd_baseiter();
-        virtual void getValue(float &termVal) const;
-      protected:
-        double* acc_evs;  // for accumulating edge values
-      private:
-        double* raw_acc_evs;
-    };
-
-    class evtrmxd_iterator : public evtrmxd_baseiter {
-      public:
-        evtrmxd_iterator(const forest* F) : evtrmxd_baseiter(F) { }
-        virtual ~evtrmxd_iterator() { }
-
-        virtual bool start(const dd_edge &e);
-        virtual bool next();
-      private:
-        bool first(int k, node_handle p);
-    };
-
-    class evtrmxd_fixedrow_iter : public evtrmxd_baseiter {
-      public:
-        evtrmxd_fixedrow_iter(const forest* F) : evtrmxd_baseiter(F) {}
-        virtual ~evtrmxd_fixedrow_iter() { }
-
-        virtual bool start(const dd_edge &e, const int*);
-        virtual bool next();
-      private:
-        bool first(int k, node_handle p);
-    };
-
-    class evtrmxd_fixedcol_iter : public evtrmxd_baseiter {
-      public:
-        evtrmxd_fixedcol_iter(const forest* F) : evtrmxd_baseiter(F) {}
-        virtual ~evtrmxd_fixedcol_iter() { }
-
-        virtual bool start(const dd_edge &e, const int*);
-        virtual bool next();
-      private:
-        bool first(int k, node_handle p);
-    };
-#endif
 };
 
 #endif

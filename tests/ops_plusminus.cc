@@ -45,11 +45,10 @@ using namespace MEDDLY;
 
 bool check_minus;
 
-// #define DEBUG_MXDOPS
-
 template <typename T>
-void Plus(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<T> &C)
+void Plus(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector<MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "plus size mismatch A,B";
@@ -58,13 +57,18 @@ void Plus(const std::vector <T> &A, const std::vector <T> &B,
         throw "plus size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = A[i] + B[i];
+        if (A[i].isPlusInfinity()) {
+            C[i] = A[i];
+            continue;
+        }
+        C[i] = T(A[i]) + T(B[i]);
     }
 }
 
 template <typename T>
-void Minus(const std::vector <T> &A, const std::vector <T> &B,
-        std::vector<T> &C)
+void Minus(const std::vector <MEDDLY::rangeval> &A,
+        const std::vector <MEDDLY::rangeval> &B,
+        std::vector<MEDDLY::rangeval> &C)
 {
     if (A.size() != B.size()) {
         throw "minus size mismatch A,B";
@@ -73,7 +77,11 @@ void Minus(const std::vector <T> &A, const std::vector <T> &B,
         throw "minus size mismatch A,C";
     }
     for (unsigned i=0; i<C.size(); i++) {
-        C[i] = A[i] - B[i];
+        if (A[i].isPlusInfinity()) {
+            C[i] = A[i];
+            continue;
+        }
+        C[i] =T(A[i]) - T(B[i]);
     }
 }
 
@@ -84,9 +92,8 @@ inline const char* getReductionString(const dd_edge &e)
     return shortNameOf(f->getReductionRule());
 }
 
-template <typename T>
 void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
-        const dd_edge &e1, const dd_edge &e2, const std::vector<T> &set)
+        const dd_edge &e1, const dd_edge &e2)
 {
     if (e1 == e2) return;
 
@@ -108,32 +115,33 @@ void checkEqual(const char* what, const dd_edge &in1, const dd_edge &in2,
 
 template <typename T>
 void compare(vectorgen &Gen,
-        const std::vector <T> &Aset, const std::vector <T> &Bset,
+        const std::vector <MEDDLY::rangeval> &Aset,
+        const std::vector <MEDDLY::rangeval> &Bset,
         forest* f1, forest* f2, forest* fres)
 {
     const unsigned POTENTIAL = Gen.potential();
 
-    std::vector <T> AplusBset(POTENTIAL);
-    std::vector <T> AminusBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AplusBset(POTENTIAL);
+    std::vector <MEDDLY::rangeval> AminusBset(POTENTIAL);
 
     dd_edge Add(f1), Bdd(f2),
             AplusBdd(fres), AminusBdd(fres);
 
-    Gen.explicit2edge(Aset, Add);
-    Gen.explicit2edge(Bset, Bdd);
+    Gen.explicit2edgeMax(Aset, Add, T(0));
+    Gen.explicit2edgeMax(Bset, Bdd, T(0));
 
     dd_edge AplusBsym(fres), AminusBsym(fres);
 
-    Plus(Aset, Bset, AplusBset);
-    Gen.explicit2edge(AplusBset, AplusBdd);
+    Plus<T>(Aset, Bset, AplusBset);
+    Gen.explicit2edgeMax(AplusBset, AplusBdd, T(0));
     apply(PLUS, Add, Bdd, AplusBsym);
-    checkEqual("plus", Add, Bdd, AplusBsym, AplusBdd, AplusBset);
+    checkEqual("plus", Add, Bdd, AplusBsym, AplusBdd);
 
     if (check_minus) {
-        Minus(Aset, Bset, AminusBset);
-        Gen.explicit2edge(AminusBset, AminusBdd);
+        Minus<T>(Aset, Bset, AminusBset);
+        Gen.explicit2edgeMax(AminusBset, AminusBdd, T(0));
         apply(MINUS, Add, Bdd, AminusBsym);
-        checkEqual("minus", Add, Bdd, AminusBsym, AminusBdd, AminusBset);
+        checkEqual("minus", Add, Bdd, AminusBsym, AminusBdd);
     }
 }
 
@@ -150,36 +158,48 @@ void test_on_functions(unsigned scard, forest* f1, forest* f2, forest* fres)
               << ' ' << shortNameOf(f2->getReductionRule())
               << " : " << shortNameOf(fres->getReductionRule()) << ' ';
 
-    std::vector <TYPE> Aset(Gen.potential());
-    std::vector <TYPE> Bset(Gen.potential());
+    std::vector <MEDDLY::rangeval> Aset(Gen.potential());
+    std::vector <MEDDLY::rangeval> Bset(Gen.potential());
 
-    std::vector <TYPE> values(4);
-    values[0] =  6;
-    values[1] =  4;
-    values[2] =  2;
-    values[3] = -2;
+    std::vector <MEDDLY::rangeval> a_values(5), b_values(5);
+    a_values[0] =  TYPE(0);
+    if (f1->isEVPlus()) {
+        a_values[1] = MEDDLY::rangeval(MEDDLY::range_special::PLUS_INFINITY,
+                            MEDDLY::range_type::INTEGER);
+    } else {
+        a_values[1] =  TYPE(6);
+    }
+    a_values[2] =  TYPE(4);
+    a_values[3] =  TYPE(2);
+    a_values[4] =  TYPE(-2);
+
+    b_values[0] = TYPE(0);
+    b_values[1] =  TYPE(6);
+    b_values[2] =  TYPE(4);
+    b_values[3] =  TYPE(2);
+    b_values[4] =  TYPE(-2);
 
     for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
-        Gen.randomizeVector(Aset, scard, values);
-        Gen.randomizeVector(Bset, scard, values);
+        Gen.randomizeVector(Aset, scard, a_values);
+        Gen.randomizeVector(Bset, scard, b_values);
 
-        compare(Gen, Aset, Bset, f1, f2, fres);
+        compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
-        Gen.randomizeFully(Aset, scard, values);
-        Gen.randomizeFully(Bset, scard, values);
+        Gen.randomizeFully(Aset, scard, a_values);
+        Gen.randomizeFully(Bset, scard, b_values);
 
-        compare(Gen, Aset, Bset, f1, f2, fres);
+        compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
     }
     if (fres->isForRelations()) {
         for (unsigned i=0; i<10; i++) {
             std::cerr << "i";
-            Gen.randomizeIdentity(Aset, scard, values);
-            Gen.randomizeIdentity(Bset, scard, values);
+            Gen.randomizeIdentity(Aset, scard, a_values);
+            Gen.randomizeIdentity(Bset, scard, b_values);
 
-            compare(Gen, Aset, Bset, f1, f2, fres);
+            compare<TYPE>(Gen, Aset, Bset, f1, f2, fres);
         }
     }
     std::cerr << std::endl;

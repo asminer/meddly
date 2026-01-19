@@ -19,12 +19,6 @@
 #include "../defines.h"
 #include "arith_mult.h"
 
-#include "../ops_builtin.h" // for COPY
-#include "../oper_binary.h"
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
-
 // #define TRACE
 
 #ifdef TRACE
@@ -33,11 +27,8 @@
 
 #include "arith_templ.h"
 
-//
-// Operation instance cache
-//
 namespace MEDDLY {
-    binary_list MULT_cache;
+    class MULT_factory;
 };
 
 
@@ -136,14 +127,10 @@ namespace MEDDLY {
         {
             if (OMEGA_INFINITY == an) return (!f1->isIdentityReduced());
             if (OMEGA_NORMAL == an) {
-                EDGETYPE aev;
-                av.get(aev);
-                if (0 == aev) return true;
+                if (0 == EDGETYPE(av)) return true;
             }
             if (OMEGA_NORMAL == bn) {
-                EDGETYPE bev;
-                bv.get(bev);
-                if (1 == bev) return (!f2->isIdentityReduced());
+                if (1 == EDGETYPE(bv)) return (!f2->isIdentityReduced());
             }
             return false;
         }
@@ -153,14 +140,10 @@ namespace MEDDLY {
         {
             if (OMEGA_INFINITY == bn) return (!f2->isIdentityReduced());
             if (OMEGA_NORMAL == bn) {
-                EDGETYPE bev;
-                bv.get(bev);
-                if (0 == bev) return true;
+                if (0 == EDGETYPE(bv)) return true;
             }
             if (OMEGA_NORMAL == an) {
-                EDGETYPE aev;
-                av.get(aev);
-                if (1 == aev) return (!f1->isIdentityReduced());
+                if (1 == EDGETYPE(av)) return (!f1->isIdentityReduced());
             }
             return false;
         }
@@ -178,10 +161,7 @@ namespace MEDDLY {
             MEDDLY_DCASSERT(OMEGA_NORMAL == an);
             MEDDLY_DCASSERT(OMEGA_NORMAL == bn);
             cn = OMEGA_NORMAL;
-            EDGETYPE aev, bev;
-            av.get(aev);
-            bv.get(bev);
-            cv.set(aev * bev);
+            cv.set(EDGETYPE(av) * EDGETYPE(bv));
         }
 
     };
@@ -246,10 +226,7 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
-            EDGETYPE av, bv;
-            a.get(av);
-            b.get(bv);
-            c.set(av * bv);
+            c.set(EDGETYPE(a) * EDGETYPE(b));
         }
 
     };
@@ -257,76 +234,80 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                       MULTIPLY front end                       *
+// *                       MULT_factory class                       *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_operation* MEDDLY::MULTIPLY(forest* a, forest* b, forest* c)
+class MEDDLY::MULT_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::MULT_factory::setup()
 {
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  MULT_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
+    _setup(__FILE__, "MULTIPLY", "Multiplication. Forest ranges must be integer or real. Forests should be all MT, EV+, or EV*, over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::MULT_factory::build_new(forest* a, forest* b, forest* c)
+{
     if (c->isMultiTerminal()) {
         bool use_reals = (
             a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL
         );
         if (use_reals) {
-            bop = new arith_compat<EdgeOp_none, mt_mult<float> > (a,b,c);
+            return new arith_compat<EdgeOp_none, mt_mult<float> > (a,b,c);
         } else {
-            bop = new arith_compat<EdgeOp_none, mt_mult<long> > (a,b,c);
+            return new arith_compat<EdgeOp_none, mt_mult<long> > (a,b,c);
         }
-        return MULT_cache.add( bop );
     }
 
     if (c->isEVPlus()) {
         switch (c->getEdgeType()) {
             case edge_type::INT:
-                bop = new arith_pushdn<EdgeOp_plus<int>, evplus_mult<int> >
+                return new arith_pushdn<EdgeOp_plus<int>, evplus_mult<int> >
                         (a,b,c);
-                break;
 
             case edge_type::LONG:
-                bop = new arith_pushdn<EdgeOp_plus<long>, evplus_mult<long> >
+                return new arith_pushdn<EdgeOp_plus<long>, evplus_mult<long> >
                         (a,b,c);
-                break;
 
             default:
                 return nullptr;
         }
-        return MULT_cache.add( bop );
     }
 
     if (c->isEVTimes()) {
         switch (c->getEdgeType()) {
             case edge_type::FLOAT:
-                bop = new arith_compat<EdgeOp_times<float>, evstar_mult<float> >
+                return new arith_compat<EdgeOp_times<float>, evstar_mult<float> >
                         (a,b,c);
-                break;
 
             case edge_type::DOUBLE:
-                bop = new arith_compat<EdgeOp_times<double>, evstar_mult<double> >
+                return new arith_compat<EdgeOp_times<double>, evstar_mult<double> >
                         (a,b,c);
-                break;
 
             default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+                return nullptr;
         }
-        return MULT_cache.add( bop );
     }
 
     return nullptr;
 }
 
-void MEDDLY::MULTIPLY_init()
-{
-    MULT_cache.reset("Multiply");
-}
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
 
-void MEDDLY::MULTIPLY_done()
+MEDDLY::binary_factory& MEDDLY::MULTIPLY()
 {
-    MEDDLY_DCASSERT(MULT_cache.isEmpty());
+    static MULT_factory F;
+    return F;
 }
 

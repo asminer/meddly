@@ -20,7 +20,7 @@
 #define MEDDLY_OPS_BUILTIN_H
 
 #include "oper.h"
-
+#include "initializer.h"
 
 namespace MEDDLY {
 
@@ -30,33 +30,36 @@ namespace MEDDLY {
     // *                                                                *
     // ******************************************************************
 
-    class unary_operation;
+    class unary_factory;
 
     /// Return the number of variable assignments
     /// so that the function evaluates to non-zero.
-    unary_operation* CARDINALITY(forest* arg, opnd_type res);
+    unary_factory& CARDINALITY();
 
     /// For BOOLEAN forests, flip the return values.
-    unary_operation* COMPLEMENT(forest* arg, forest* res);
+    unary_factory& COMPLEMENT();
 
     /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
-    unary_operation* CONVERT_TO_INDEX_SET(forest* arg, forest* res);
+    unary_factory& CONVERT_TO_INDEX_SET();
 
     /// Copy a function across forests, with the same domain.
-    unary_operation* COPY(forest* arg, forest* res);
+    unary_factory& COPY();
 
     /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
-    unary_operation* CYCLE(forest* arg, forest* res);
+    unary_factory& CYCLE();
+
+    /// Increment a multi-terminal distance function.
+    unary_factory& DIST_INC();
 
     /// Find the largest value returned by the function.
-    unary_operation* MAX_RANGE(forest* arg, opnd_type res);
+    unary_factory& MAX_RANGE();
 
     /// Find the smallest value returned by the function.
-    unary_operation* MIN_RANGE(forest* arg, opnd_type res);
+    unary_factory& MIN_RANGE();
 
 #ifdef ALLOW_DEPRECATED_0_17_8
     /// Randomly select one state from a set of states
-    unary_operation* SELECT(forest* arg, forest* res);
+    unary_factory& SELECT();
 #endif
 
     // ******************************************************************
@@ -65,62 +68,76 @@ namespace MEDDLY {
     // *                                                                *
     // ******************************************************************
 
-    class binary_operation;
+    class binary_operation; // to be removed
+    class binary_factory;
 
-    /// Set union operation for forests with range_type of BOOLEAN
-    binary_operation* UNION(forest* a, forest* b, forest* c);
+    /// Set difference
+    binary_factory& DIFFERENCE();
 
-    /// Set intersection operation for forests with range_type of BOOLEAN
-    binary_operation* INTERSECTION(forest* a, forest* b, forest* c);
+    /// Set intersection
+    binary_factory& INTERSECTION();
 
-    /// Set difference operation for forests with range_type of BOOLEAN
-    binary_operation* DIFFERENCE(forest* a, forest* b, forest* c);
+    /// Set union
+    binary_factory& UNION();
 
-    /// Combine two functions into a single one, where the operands are MDDs
-    /// and the result is an MXD.  Specifically, for MDD operands f and g,
-    /// produces MXD h where
-    ///     h(xn, x'n, ..., x1, x'1) = f(xn, ..., x1) * g(x'n, ..., x'1).
-    /// Works for BOOLEAN forests.
-    binary_operation* CROSS(forest* a, forest* b, forest* c);
-
-    /// The minimum of two functions, with range_type INTEGER or REAL
-    binary_operation* MINIMUM(forest* a, forest* b, forest* c);
+    /// Cross product: operands are sets, result is a relation.
+    binary_factory& CROSS();
 
     /// The maximum of two functions, with range_type INTEGER or REAL
-    binary_operation* MAXIMUM(forest* a, forest* b, forest* c);
+    binary_factory& MAXIMUM();
+
+    /// The minimum of two functions, with range_type INTEGER or REAL
+    binary_factory& MINIMUM();
+
+    /// Like minimum, except negatives mean infinity
+    binary_factory& DIST_MIN();
 
     /// Add two functions, with range type INTEGER and REAL
-    binary_operation* PLUS(forest* a, forest* b, forest* c);
+    binary_factory& PLUS();
 
     /// Subtract two functions, with range type INTEGER and REAL
-    binary_operation* MINUS(forest* a, forest* b, forest* c);
+    binary_factory& MINUS();
 
     /// Multiply two functions, with range type INTEGER and REAL
-    binary_operation* MULTIPLY(forest* a, forest* b, forest* c);
+    binary_factory& MULTIPLY();
 
     /// Divide two functions, with range type INTEGER and REAL
-    binary_operation* DIVIDE(forest* a, forest* b, forest* c);
+    binary_factory& DIVIDE();
 
     /// Take the remainder of two functions, with range type INTEGER
-    binary_operation* MODULO(forest* a, forest* b, forest* c);
+    binary_factory& MODULO();
 
     /// Compare for equality, two functions with range type INTEGER or REAL
-    binary_operation* EQUAL(forest* a, forest* b, forest* c);
+    binary_factory& EQUAL();
 
     /// Compare for inequality, two functions with range type INTEGER or REAL
-    binary_operation* NOT_EQUAL(forest* a, forest* b, forest* c);
+    binary_factory& NOT_EQUAL();
 
     /// Compare for <, two functions with range type INTEGER or REAL
-    binary_operation* LESS_THAN(forest* a, forest* b, forest* c);
+    binary_factory& LESS_THAN();
 
     /// Compare for <=, two functions with range type INTEGER or REAL
-    binary_operation* LESS_THAN_EQUAL(forest* a, forest* b, forest* c);
+    binary_factory& LESS_THAN_EQUAL();
 
     /// Compare for >, two functions with range type INTEGER or REAL
-    binary_operation* GREATER_THAN(forest* a, forest* b, forest* c);
+    binary_factory& GREATER_THAN();
 
     /// Compare for >=, two functions with range type INTEGER or REAL
-    binary_operation* GREATER_THAN_EQUAL(forest* a, forest* b, forest* c);
+    binary_factory& GREATER_THAN_EQUAL();
+
+    /// Follow a transition relation, backwards.
+    binary_factory& PRE_IMAGE();
+
+    /// Follow a transition relation, forwards.
+    binary_factory& POST_IMAGE();
+
+    /// Vector-matrix multiplication.
+    binary_factory& VM_MULTIPLY();
+
+    /// Matrix-vector multiplication.
+    binary_factory& MV_MULTIPLY();
+
+    // ======================================================================
 
     /** Plus operation used to compute transitive closure and further
         minimum witness. The first operand must be an EV+MxD and the second
@@ -140,25 +157,11 @@ namespace MEDDLY {
         REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
         REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
     */
-    binary_operation* PRE_IMAGE(forest* a, forest* b, forest* c);
-    binary_operation* POST_IMAGE(forest* a, forest* b, forest* c);
     binary_operation* TC_POST_IMAGE(forest* a, forest* b, forest* c);
     binary_operation* REACHABLE_STATES_DFS(forest* a, forest* b, forest* c);
     binary_operation* REACHABLE_STATES_BFS(forest* a, forest* b, forest* c);
     binary_operation* REVERSE_REACHABLE_DFS(forest* a, forest* b, forest* c);
     binary_operation* REVERSE_REACHABLE_BFS(forest* a, forest* b, forest* c);
-
-    /** Vector matrix multiply, where the first argument is vector (MDD),
-        the second argument is a matrix (MXD),
-        and the result is a vector (MDD).
-    */
-    binary_operation* VM_MULTIPLY(forest* a, forest* b, forest* c);
-
-    /** Matrix vector multiply, where the first argument is a matrix (MXD),
-        the second argument is a vector (MDD),
-        and the result is a vector (MDD).
-    */
-    binary_operation* MV_MULTIPLY(forest* a, forest* b, forest* c);
 
     /** Matrix multiplication, where the first argument is a matrix (MXD),
         the second argument is a matrix (MXD),
@@ -237,10 +240,33 @@ namespace MEDDLY {
     // *                                                                *
     // ******************************************************************
 
-    class initializer_list;
+    class builtin_init : public initializer_list {
+            std::vector <unary_factory*> all_unary;
+            std::vector <binary_factory*> all_binary;
+        public:
+            builtin_init(initializer_list* p);
 
-    /// Build the initializer for builtins.
-    initializer_list* makeBuiltinInitializer(initializer_list* prev);
+            virtual void setup();
+            virtual void cleanup();
+
+            inline unsigned numUnary() const {
+                return all_unary.size();
+            }
+            inline const unary_factory* getUnary(unsigned i) const {
+                MEDDLY_CHECK_RANGE(0, i, all_unary.size());
+                return all_unary[i];
+            }
+
+            inline unsigned numBinary() const {
+                return all_binary.size();
+            }
+            inline const binary_factory* getBinary(unsigned i) const {
+                MEDDLY_CHECK_RANGE(0, i, all_binary.size());
+                return all_binary[i];
+            }
+
+    };
+
 };
 
 #endif // #include guard

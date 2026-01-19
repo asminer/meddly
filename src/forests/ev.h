@@ -48,7 +48,7 @@ class MEDDLY::ev_forest : public forest
   // ------------------------------------------------------------
   // Helpers for this and derived classes
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
     /** Add redundant nodes from level k to the given node.
           @param  k   Top level we want
           @param  ev  In/Out: Edge value
@@ -59,7 +59,7 @@ class MEDDLY::ev_forest : public forest
 #endif
 
   protected:
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
     /// make a node at the top level
     template <class OPERATION, typename TYPE>
     inline void makeNodeAtTop(TYPE &ev, node_handle &ed) {
@@ -67,26 +67,7 @@ class MEDDLY::ev_forest : public forest
     }
 #endif
 
-#ifdef ALLOW_DEPRECATED_0_17_7
-    /**
-        Enlarge variables to include all given minterms.
-    */
-    inline void enlargeVariables(const int* const* vlist, int N, bool primed) {
-      for (unsigned k=1; k<=getDomain()->getNumVariables(); k++) {
-        int maxv = vlist[0][k];
-        for (int i=1; i<N; i++) {
-          maxv = MAX(maxv, vlist[i][k]);
-        }
-        if (maxv < 1) continue;
-        if (maxv >= getDomain()->getVariableBound(k, primed)) {
-          variable* vh = getDomain()->getVar(k);
-          vh->enlargeBound(primed, (maxv+1));
-        }
-      }
-    }
-#endif
-
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
 
     template <class OPERATION, typename T>
     inline
@@ -152,20 +133,6 @@ class MEDDLY::ev_forest : public forest
     }
 #endif
 
-
-  // statics
-
-#ifdef ALLOW_DEPRECATED_0_17_7
-  public:
-    static void initStatics();
-    static void enlargeStatics(int n);
-    static void clearStatics();
-
-  protected:
-    static int* order;
-    static int order_size;
-
-#endif
 };
 
 
@@ -173,7 +140,7 @@ class MEDDLY::ev_forest : public forest
 
 
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
 
 namespace MEDDLY {
 

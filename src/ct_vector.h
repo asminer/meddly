@@ -79,10 +79,10 @@ class MEDDLY::ct_item {
         /// Set item from an edge value
         inline void set(const edge_value &ev) {
             switch (ev.getType()) {
-                case edge_type::INT:    setI(ev.getInt());      return;
-                case edge_type::LONG:   setL(ev.getLong());     return;
-                case edge_type::FLOAT:  setF(ev.getFloat());    return;
-                case edge_type::DOUBLE: setD(ev.getDouble());   return;
+                case edge_type::INT:    setI(ev);           return;
+                case edge_type::LONG:   setL(ev);           return;
+                case edge_type::FLOAT:  setF(ev);           return;
+                case edge_type::DOUBLE: setD(ev);           return;
                 default:                setNext(nullptr);
             }
         }

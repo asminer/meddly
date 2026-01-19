@@ -19,20 +19,9 @@
 #ifndef MEDDLY_ARITH_DIV_H
 #define MEDDLY_ARITH_DIV_H
 
-#include "../oper.h"
-
-/*
- * Code for element-wise arithmetic and like operations.
- */
-
 namespace MEDDLY {
-    class forest;
-    class binary_operation;
-
-    /// The 'divide' operation builder.
-    binary_operation* DIVIDE(forest* a, forest* b, forest* c);
-    void DIVIDE_init();
-    void DIVIDE_done();
+    class binary_factory;
+    binary_factory& DIVIDE();
 }
 
 #endif

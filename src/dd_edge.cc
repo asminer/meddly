@@ -1588,7 +1588,7 @@ bool MEDDLY::dd_edge::getElemInt(long index, minterm &m) const
         //
         unsigned zmax = U->getSize()-1;
         while (zmax) {
-            if (U->edgeval(zmax).getInt() <= index) break;
+            if (int(U->edgeval(zmax)) <= index) break;
             --zmax;
         }
 
@@ -1596,7 +1596,7 @@ bool MEDDLY::dd_edge::getElemInt(long index, minterm &m) const
         // go down
         //
         m.from(k) = U->index(zmax);
-        index -= U->edgeval(zmax).getInt();
+        index -= int(U->edgeval(zmax));
         p = U->down(zmax);
     } // for k
     unpacked_node::Recycle(U);
@@ -1645,7 +1645,7 @@ bool MEDDLY::dd_edge::getElemLong(long index, minterm &m) const
         //
         unsigned zmax = U->getSize()-1;
         while (zmax) {
-            if (U->edgeval(zmax).getLong() <= index) break;
+            if (long(U->edgeval(zmax)) <= index) break;
             --zmax;
         }
 
@@ -1653,7 +1653,7 @@ bool MEDDLY::dd_edge::getElemLong(long index, minterm &m) const
         // go down
         //
         m.from(k) = U->index(zmax);
-        index -= U->edgeval(zmax).getLong();
+        index -= long(U->edgeval(zmax));
         p = U->down(zmax);
     } // for k
     unpacked_node::Recycle(U);

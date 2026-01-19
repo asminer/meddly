@@ -19,6 +19,7 @@
 
 #include "../src/meddly.h"
 #include "simple_model.h"
+#include "../timing/timer.h"
 
 #define VERBOSE
 #define NOT_KNOWN     -2
@@ -295,8 +296,129 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 #endif
 }
 
+inline void showResult(MEDDLY::output *fout, const char* what,
+        const MEDDLY::dd_edge &S, const timer &watch)
+{
+    if (fout) {
+            *fout << "    " << what << ": ";
+            // fout->put(S.getNodeCount(), 9);
+            // *fout << " nodes ";
+            fout->put(watch.get_last_seconds());
+            *fout << " seconds\n";
+            fout->flush();
+    }
+}
 
+// **********************************************************************
+// Traditional BFS iteration with a frontier set
+// **********************************************************************
+void buildReachsetFrontier(MEDDLY::output *fout, const MEDDLY::dd_edge &nsf,
+        const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reach)
+{
+    using namespace MEDDLY;
 
+    apply(COPY, initial, reach);
+
+    long iters = 0;
+    timer watch;
+
+    if (fout) {
+        *fout << "Building reachability set using frontier iteration:\n";
+        *fout << "    S = init\n";
+        *fout << "    F = init\n";
+        *fout << "    do {\n";
+        *fout << "        N = post_image(F, R);\n";
+        *fout << "        F = N \\ S;\n";
+        *fout << "        if (0==F) break;\n";
+        *fout << "        S = S u F\n";
+        *fout << "    }\n";
+    }
+
+    dd_edge nxt(reach), frnt(reach);
+    do {
+        ++iters;
+        if (fout) {
+            *fout << "==============================\n";
+            *fout << "Iteration " << iters << "\n";
+            fout->flush();
+        }
+
+        watch.note_time();
+        apply(POST_IMAGE, frnt, nsf, nxt);
+        watch.note_time();
+        showResult(fout, "N", nxt, watch);
+
+        watch.note_time();
+        apply(DIFFERENCE, nxt, reach, frnt);
+        watch.note_time();
+        showResult(fout, "F", frnt, watch);
+
+        if (0==frnt.getNode()) break;
+
+        watch.note_time();
+        apply(UNION, reach, frnt, reach);
+        watch.note_time();
+        showResult(fout, "S", reach, watch);
+    } while (true);
+
+    if (fout) {
+        *fout << "==============================\n";
+    }
+
+}
+
+// **********************************************************************
+// Traditional BFS iteration without a frontier set
+// **********************************************************************
+void buildReachsetBFS(MEDDLY::output *fout, const MEDDLY::dd_edge &nsf,
+        const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reach)
+{
+    using namespace MEDDLY;
+
+    apply(COPY, initial, reach);
+
+    long iters = 0;
+    timer watch;
+
+    if (fout) {
+        *fout << "Building reachability set using bfs iteration:\n";
+        *fout << "    O = {}\n";
+        *fout << "    S = init\n";
+        *fout << "    while (S != O) {\n";
+        *fout << "        O = S;\n";
+        *fout << "        N = post_image(S, R);\n";
+        *fout << "        S = S u N\n";
+        *fout << "    }\n";
+    }
+
+    dd_edge old(reach), nxt(reach);
+    old.getForest()->createConstant(false, old);
+    while (old != reach) {
+        ++iters;
+        if (fout) {
+            *fout << "==============================\n";
+            *fout << "Iteration " << iters << "\n";
+            fout->flush();
+        }
+
+        old = reach;
+
+        watch.note_time();
+        apply(POST_IMAGE, reach, nsf, nxt);
+        watch.note_time();
+        showResult(fout, "N", nxt, watch);
+
+        watch.note_time();
+        apply(UNION, reach, nxt, reach);
+        watch.note_time();
+        showResult(fout, "S", reach, watch);
+    };
+
+    if (fout) {
+        *fout << "==============================\n";
+    }
+
+}
 
 //
 //  Explicit RS construction

@@ -27,8 +27,7 @@
 
 namespace MEDDLY {
     class inter_mt;
-
-    binary_list INTER_cache;
+    class INTER_factory;
 };
 
 // #define TRACE
@@ -127,8 +126,8 @@ MEDDLY::inter_mt::inter_mt(forest* arg1, forest* arg2, forest* res)
     //
     // Quick copying, even across forests, for terminal cases :)
     //
-    copy_arg1res = COPY(arg1, res);
-    copy_arg2res = COPY(arg2, res);
+    copy_arg1res = build(COPY, arg1, res);
+    copy_arg2res = build(COPY, arg2, res);
 
     //
     // How to handle different reductions
@@ -530,32 +529,38 @@ void MEDDLY::inter_mt::_compute(int L, unsigned in,
 
 // ******************************************************************
 // *                                                                *
+// *                      INTER_factory  class                      *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::INTER_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::INTER_factory::setup()
+{
+    _setup(__FILE__, "INTERSECTION", "Set intersection, meaning logical AND of the inputs. Operands and the result may be within the same forest or across forests, but all forests must be over the same domain. Forests must be multi-terminal.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::INTER_factory::build_new(forest* a, forest* b, forest* c)
+{
+    return new inter_mt(a, b, c);
+}
+
+// ******************************************************************
+// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_operation*
-MEDDLY::INTERSECTION(forest* a, forest* b, forest* c)
+MEDDLY::binary_factory& MEDDLY::INTERSECTION()
 {
-    if (!a || !b || !c) {
-        return nullptr;
-    }
-
-    binary_operation* bop =  INTER_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-
-    return INTER_cache.add(new inter_mt(a, b, c));
-}
-
-void MEDDLY::INTERSECTION_init()
-{
-    INTER_cache.reset("Intersection");
-}
-
-void MEDDLY::INTERSECTION_done()
-{
-    MEDDLY_DCASSERT(INTER_cache.isEmpty());
+    static INTER_factory F;
+    return F;
 }
 

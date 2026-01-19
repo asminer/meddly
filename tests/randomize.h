@@ -126,6 +126,23 @@ class vectorgen {
         void index2minterm(unsigned x, MEDDLY::minterm &m) const;
 
         ///
+        /// Converts a pair of indexes (from, to) to a relation minterm.
+        ///
+        ///     @param  fr  Index of source state.
+        ///                 Only fr % POTENTIAL is significant;
+        ///                 any excess is ignored.
+        ///
+        ///     @param  to  Index of destination state.
+        ///                 Only to % POTENTIAL is significant;
+        ///                 any excess is ignored.
+        ///
+        ///     @param  m   Minterm to fill.
+        ///                 Should have VARS variables and be for relations.
+        ///
+        void indexes2minterm(unsigned fr, unsigned to, MEDDLY::minterm &m) const;
+
+
+        ///
         /// Calculates the index of a minterm.
         /// Essentially, the reverse of index2minterm().
         ///
@@ -133,6 +150,19 @@ class vectorgen {
         ///                 Should have VARS variables.
         ///
         unsigned minterm2index(const MEDDLY::minterm &m) const;
+
+        ///
+        /// Calculates a pair of indexes (from, to) from a minterm.
+        /// Essentially, the reverse of indexes2minterm().
+        ///
+        ///     @param  m   Minterm in question.
+        ///                 Should have VARS variables.
+        ///
+        ///     @param  fr  On return: Index of source state.
+        ///
+        ///     @param  to  On return: Index of destination state.
+        ///
+        void minterm2indexes(const MEDDLY::minterm &m, unsigned &fr, unsigned &to) const;
 
         ///
         /// Converts ndx into an array of digits, and then loops
@@ -166,194 +196,70 @@ class vectorgen {
         void buildFullyFromIndex(unsigned ndx, unsigned k1, unsigned k2,
                 std::vector <unsigned> &ilist) const;
 
-    public:
-        // template member functions
-
         ///
         /// Randomly generate an explicit vector.
         ///     @param  elems   Vector of elements; will be cleared.
-        ///     @param  card    Number of non-zero elements
-        ///     @param  values  Values to sample from
+        ///     @param  card    Number of non-default elements
+        ///     @param  values  Values to sample from. Element 0 is the
+        ///                     default value; all others are for non-default.
         ///
-        template <typename TYPE>
-        void randomizeVector(std::vector <TYPE> &elems, unsigned card,
-                const std::vector <TYPE> &values)
-        {
-            if (elems.size() != potential()) {
-                throw "vector size mismatch in randomizeVector";
-            }
-            unsigned v=0;
-            for (unsigned i=0; i<elems.size(); i++) {
-                if (i<card) {
-                    elems[i] = values[v];
-                    v = (v+1) % values.size();
-                } else {
-                    elems[i] = 0;
-                }
-            }
-            //
-            // Shuffle the array
-            //
-            for (unsigned i=0; i<elems.size()-1; i++) {
-                unsigned j = Equilikely_U(i, elems.size()-1);
-                if (elems[i] != elems[j]) {
-                    TYPE t = elems[i];
-                    elems[i] = elems[j];
-                    elems[j] = t;
-                }
-            }
-        }
+        void randomizeVector(std::vector <MEDDLY::rangeval> &elems,
+                unsigned card, const std::vector <MEDDLY::rangeval> &values);
 
         ///
         /// Randomly generate an explicit vector, with fully patterns.
         ///     @param  elems   Vector of elements; will be cleared.
-        ///     @param  card    Number of non-zero fully patterns.
+        ///     @param  card    Number of non-default fully patterns.
         ///                     Because patterns might overlap,
         ///                     and the size of each pattern is more
         ///                     than one, this will not be the
         ///                     cardinality of the final set/vector.
-        ///     @param  values  Values to sample from
+        ///     @param  values  Values to sample from. Element 0 is the
+        ///                     default value; all others are for non-default.
         ///
-        template <typename TYPE>
-        void randomizeFully(std::vector <TYPE> &elems, unsigned card,
-                const std::vector <TYPE> &values)
-        {
-            if (elems.size() != potential()) {
-                throw "vector size mismatch in randomizeFully";
-            }
-            for (unsigned i=0; i<elems.size(); i++) {
-                elems[i] = 0;
-            }
-            unsigned v=0;
-            for (unsigned i=0; i<card; i++) {
-                unsigned x = Equilikely_U(0, elems.size()-1);
-                unsigned k1 = Equilikely_U(1, vars());
-                unsigned k2 = Equilikely_U(1, vars());
-
-                ilist.clear();
-                buildFullyFromIndex(x, k1, k2, ilist);
-                for (unsigned z=0; z<ilist.size(); z++) {
-                    elems[ ilist[z] ] = values[v];
-                }
-                v = (v+1) % values.size();
-            }
-        }
+        void randomizeFully(std::vector <MEDDLY::rangeval> &elems,
+                unsigned card, const std::vector <MEDDLY::rangeval> &values);
 
         ///
         /// Randomly generate an explicit vector, with identity patterns.
         ///     @param  elems   Vector of elements; will be cleared.
-        ///     @param  card    Number of non-zero identity patterns.
+        ///     @param  card    Number of non-default identity patterns.
         ///                     Because patterns might overlap,
         ///                     and the size of each pattern is more
         ///                     than one, this will not be the
         ///                     cardinality of the final set/vector.
-        ///     @param  values  Values to sample from
+        ///     @param  values  Values to sample from. Element 0 is the
+        ///                     default value; all others are for non-default.
         ///
-        template <typename TYPE>
-        void randomizeIdentity(std::vector <TYPE> &elems, unsigned card,
-                const std::vector <TYPE> &values)
-        {
-            if (elems.size() != potential()) {
-                throw "vector size mismatch in randomizeIdentity";
-            }
-            for (unsigned i=0; i<elems.size(); i++) {
-                elems[i] = 0;
-            }
-            unsigned v=0;
-            for (unsigned i=0; i<card; i++) {
-                unsigned x = Equilikely_U(0, elems.size()-1);
-                unsigned k1 = Equilikely_U(1, vars());
-                unsigned k2 = Equilikely_U(1, vars());
-
-                ilist.clear();
-                buildIdentityFromIndex(x, k1, k2, ilist);
-                for (unsigned z=0; z<ilist.size(); z++) {
-                    elems[ ilist[z] ] = values[v];
-                }
-
-                v = (1+v) % values.size();
-            }
-        }
+        void randomizeIdentity(std::vector <MEDDLY::rangeval> &elems,
+                unsigned card, const std::vector <MEDDLY::rangeval> &values);
 
         //
-        // Build a dd_edge from an explicit vector
+        // Build a dd_edge from an explicit vector, using MAXIMUM
+        // (use deflt as the smallest element in x).
         //
-        template <typename TYPE>
-        void explicit2edge(const std::vector<TYPE> &x, MEDDLY::dd_edge &s)
-            const
-        {
-            MEDDLY::forest* F = s.getForest();
-            if (!F) throw "null forest in explicit2edge";
-            // Determine x 'cardinality'
-            unsigned card = 0;
-            for (unsigned i=0; i<x.size(); i++) {
-                if (x[i]) ++card;
-            }
-
-            if (0==card) {
-                TYPE zero = 0;
-                F->createConstant(zero, s);
-                return;
-            }
-
-            MEDDLY::minterm_coll mtlist(card, F);
-            for (unsigned i=0; i<x.size(); i++) {
-                if (!x[i]) continue;
-                index2minterm(i, mtlist.unused());
-                TYPE val = x[i];
-                mtlist.unused().setValue(val);
-                mtlist.pushUnused();
-            }
-            mtlist.buildFunctionMax(TYPE(0), s);
-        }
+        void explicit2edgeMax(const std::vector<MEDDLY::rangeval> &x,
+            MEDDLY::dd_edge &s, MEDDLY::rangeval deflt) const;
 
         //
-        // Display an explicit vector
+        // Build a dd_edge from an explicit vector, using MINIMUM
+        // (use deflt as the largest element in x).
         //
-        template <typename TYPE>
-        void showSet(std::ostream &out, const std::vector <TYPE> &elems)
-            const
-        {
-            out << "{ ";
-            bool printed = false;
-            for (unsigned i=0; i<elems.size(); i++) {
-                if (!elems[i]) continue;
-                if (printed) out << ", ";
-                out << i;
-                showElem(out, elems[i]);
-                printed = true;
-            }
-            out << " }";
-        }
+        void explicit2edgeMin(const std::vector<MEDDLY::rangeval> &x,
+            MEDDLY::dd_edge &s, MEDDLY::rangeval deflt) const;
+
+        //
+        // Display an explicit vector, as a set
+        //
+        void showSet(std::ostream &out,
+                const std::vector <MEDDLY::rangeval> &elems) const;
 
         //
         // Display minterms corresponding to an explicit vector
         //
-        template <typename TYPE>
-        void showMinterms(std::ostream &out, const std::vector <TYPE> &elems)
-            const
-        {
-            if (!_D) throw "null domain, showMinterms";
-            MEDDLY::minterm mt(_D, isForRelations());
-            MEDDLY::ostream_output mout(out);
-            mout << "{ ";
-            bool printed = false;
-            for (unsigned i=0; i<elems.size(); i++) {
-                if (!elems[i]) continue;
-
-                if (printed) mout << ",\n      ";
-                printed = true;
-
-                index2minterm(i, mt);
-                mt.show(mout);
-            }
-            mout << " }";
-
-        }
-
-    protected:
-        template <typename TYPE>
-        static void showElem(std::ostream &out, TYPE elem);
+        void showMinterms(std::ostream &out, const MEDDLY::domain* D,
+                const std::vector <MEDDLY::rangeval> &elems,
+                MEDDLY::rangeval deflt) const;
 
     private:
         const bool is_for_relations;
@@ -361,22 +267,10 @@ class vectorgen {
         const unsigned DOM;
         unsigned POTENTIAL;
         std::vector <unsigned> ilist;
-        const MEDDLY::domain* _D;
 
         static long seed;
 
         unsigned current_terminal;
 };
-
-template <>
-inline void vectorgen::showElem(std::ostream &out, bool elem)
-{
-}
-
-template <typename TYPE>
-inline void vectorgen::showElem(std::ostream &out, TYPE elem)
-{
-    out << ":" << elem;
-}
 
 #endif

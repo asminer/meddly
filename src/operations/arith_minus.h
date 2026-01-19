@@ -19,20 +19,9 @@
 #ifndef MEDDLY_ARITH_MINUS_H
 #define MEDDLY_ARITH_MINUS_H
 
-#include "../oper.h"
-
-/*
- * Code for element-wise arithmetic and like operations.
- */
-
 namespace MEDDLY {
-    class forest;
-    class binary_operation;
-
-    /// The 'minus' operation builder.
-    binary_operation* MINUS(forest* a, forest* b, forest* c);
-    void MINUS_init();
-    void MINUS_done();
+    class binary_factory;
+    binary_factory& MINUS();
 }
 
 #endif

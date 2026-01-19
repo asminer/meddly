@@ -1,0 +1,5 @@
+
+Fun things to add
+
+    * 16 puzzle (tiles)
+    * distance computation added to all state space examples

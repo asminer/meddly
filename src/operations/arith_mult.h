@@ -19,20 +19,9 @@
 #ifndef MEDDLY_ARITH_MULT_H
 #define MEDDLY_ARITH_MULT_H
 
-#include "../oper.h"
-
-/*
- * Code for element-wise arithmetic and like operations.
- */
-
 namespace MEDDLY {
-    class forest;
-    class binary_operation;
-
-    /// The 'multiply' operation builder.
-    binary_operation* MULTIPLY(forest* a, forest* b, forest* c);
-    void MULTIPLY_init();
-    void MULTIPLY_done();
+    class binary_factory;
+    binary_factory& MULTIPLY();
 }
 
 #endif

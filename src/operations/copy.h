@@ -20,13 +20,8 @@
 #define MEDDLY_COPY_H
 
 namespace MEDDLY {
-    class forest;
-    class unary_operation;
-
-    /// Builder for 'copy' operations.
-    unary_operation* COPY(forest* arg, forest* res);
-    void COPY_init();
-    void COPY_done();
+    class unary_factory;
+    unary_factory& COPY();
 };
 
 #endif

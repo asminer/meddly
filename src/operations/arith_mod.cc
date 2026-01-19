@@ -19,12 +19,6 @@
 #include "../defines.h"
 #include "arith_mod.h"
 
-#include "../ops_builtin.h" // for COPY
-#include "../oper_binary.h"
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
-
 // #define TRACE
 
 #ifdef TRACE
@@ -33,11 +27,8 @@
 
 #include "arith_templ.h"
 
-//
-// Operation instance cache
-//
 namespace MEDDLY {
-    binary_list MOD_cache;
+    class MOD_factory;
 };
 
 
@@ -144,9 +135,7 @@ namespace MEDDLY {
                 const forest* f2, const edge_value &bv, node_handle bn)
         {
             if (OMEGA_NORMAL == an) {
-                EDGETYPE aev;
-                av.get(aev);
-                if (0 == aev) return true;
+                if (0 == EDGETYPE(av)) return true;
             }
             if (OMEGA_INFINITY == bn) {
                 return true;
@@ -181,9 +170,7 @@ namespace MEDDLY {
             // Special case: modding by zero
             //
             MEDDLY_DCASSERT(OMEGA_NORMAL == bn);
-            EDGETYPE bev;
-            bv.get(bev);
-            if (0 == bev) {
+            if (0 == EDGETYPE(bv)) {
                 throw error(error::DIVIDE_BY_ZERO, __FILE__, __LINE__);
             }
 
@@ -199,80 +186,72 @@ namespace MEDDLY {
             }
 
             MEDDLY_DCASSERT(OMEGA_NORMAL == an);
-            EDGETYPE aev;
-            av.get(aev);
 
             cn = OMEGA_NORMAL;
-            cv.set(aev % bev);
+            cv.set(EDGETYPE(av) % EDGETYPE(bv));
         }
 
     };
 };
 
-
 // ******************************************************************
 // *                                                                *
-// *                        MODULO front end                        *
+// *                       MOD_factory  class                       *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_operation* MEDDLY::MODULO(forest* a, forest* b, forest* c)
+class MEDDLY::MOD_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::MOD_factory::setup()
 {
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  MOD_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
+    _setup(__FILE__, "MODULO", "Integer modulo. Behavior is undefined for division by zero. Forest ranges must be integer. Forests should be all MT, EV+, or EV*, over the same domain.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::MOD_factory::build_new(forest* a, forest* b, forest* c)
+{
     if (c->isMultiTerminal()) {
         if (a->getRangeType() == range_type::REAL ||
             b->getRangeType() == range_type::REAL )
         {
             return nullptr;
         }
-        bop = new arith_compat<EdgeOp_none, mt_mod<long> > (a,b,c);
-        return MOD_cache.add( bop );
+        return new arith_compat<EdgeOp_none, mt_mod<long> > (a,b,c);
     }
 
     if (c->isEVPlus()) {
         switch (c->getEdgeType()) {
             case edge_type::INT:
-                bop = new arith_pushdn<EdgeOp_plus<int>, evplus_mod<int> >
+                return new arith_pushdn<EdgeOp_plus<int>, evplus_mod<int> >
                         (a,b,c);
-                break;
 
             case edge_type::LONG:
-                bop = new arith_pushdn<EdgeOp_plus<long>, evplus_mod<long> >
+                return new arith_pushdn<EdgeOp_plus<long>, evplus_mod<long> >
                         (a,b,c);
-                break;
 
             default:
                 return nullptr;
         }
-        return MOD_cache.add( bop );
-    }
-
-    if (c->isEVTimes()) {
-        switch (c->getEdgeType()) {
-            case edge_type::FLOAT:
-            case edge_type::DOUBLE:
-                return nullptr;
-
-            default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        }
-        return MOD_cache.add( bop );
     }
 
     return nullptr;
 }
 
-void MEDDLY::MODULO_init()
-{
-    MOD_cache.reset("Modulo");
-}
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
 
-void MEDDLY::MODULO_done()
+MEDDLY::binary_factory& MEDDLY::MODULO()
 {
-    MEDDLY_DCASSERT(MOD_cache.isEmpty());
+    static MOD_factory F;
+    return F;
 }
 

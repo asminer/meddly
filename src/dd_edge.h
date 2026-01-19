@@ -222,10 +222,10 @@ class MEDDLY::dd_edge {
             h = node; node = 0;
         }
         inline const edge_value& getEdgeValue() const { return edgeval; }
-        inline int getEdgeInt() const { return edgeval.getInt(); }
-        inline long getEdgeLong() const { return edgeval.getLong(); }
-        inline float getEdgeFloat() const { return edgeval.getFloat(); }
-        inline double getEdgeDouble() const { return edgeval.getDouble(); }
+        inline int getEdgeInt() const { return int(edgeval); }
+        inline long getEdgeLong() const { return long(edgeval); }
+        inline float getEdgeFloat() const { return float(edgeval); }
+        inline double getEdgeDouble() const { return double(edgeval); }
 
         inline void getEdgeValue(int &v) const { edgeval.get(v); }
         inline void getEdgeValue(long &v) const { edgeval.get(v); }

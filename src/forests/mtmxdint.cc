@@ -27,76 +27,7 @@ MEDDLY::mt_mxd_int::mt_mxd_int(domain *d, const policies &p)
 MEDDLY::mt_mxd_int::~mt_mxd_int()
 { }
 
-#ifdef ALLOW_DEPRECATED_0_17_7
-
-void MEDDLY::mt_mxd_int::createEdge(long term, dd_edge& e)
-{
-    // createEdgeTempl<int_Tencoder, long>(term, e);
-    createEdgeTempl<long>(term, e);
-#ifdef DEVELOPMENT_CODE
-    validateIncounts(true, __FILE__, __LINE__);
-#endif
-}
-
-void MEDDLY::mt_mxd_int
-::createEdge(const int* const* vlist, const int* const* vplist, const long* terms, int N, dd_edge &e)
-{
-  binary_operation* unionOp = PLUS(this, this, this);
-  enlargeStatics(N);
-  enlargeVariables(vlist, N, false);
-  enlargeVariables(vplist, N, true);
-
-  int num_vars=getNumVariables();
-
-  // Create vlist and vplist following the mapping between variable and level
-  int** ordered_vlist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
-  if(ordered_vlist==0){
-	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  }
-  int** ordered_vplist=static_cast<int**>(malloc(N*sizeof(int*)+(num_vars+1)*N*sizeof(int)));
-  if(ordered_vplist==0){
-	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  }
-
-  ordered_vlist[0]=reinterpret_cast<int*>(&ordered_vlist[N]);
-  ordered_vplist[0]=reinterpret_cast<int*>(&ordered_vplist[N]);
-  for(int i=1; i<N; i++) {
-	  ordered_vlist[i]=(ordered_vlist[i-1]+num_vars+1);
-	  ordered_vplist[i]=(ordered_vplist[i-1]+num_vars+1);
-  }
-  for(int i=0; i<=num_vars; i++) {
-	  int level=getLevelByVar(i);
-	  for(int j=0; j<N; j++) {
-		  ordered_vlist[j][level]=vlist[j][i];
-		  ordered_vplist[j][level]=vplist[j][i];
-	  }
-  }
-
-  // mtmxd_edgemaker<int_Tencoder, long>
-  mtmxd_edgemaker<long>
-  EM(this, ordered_vlist, ordered_vplist, terms, order, N, num_vars, unionOp);
-
-  e.set(EM.createEdge());
-
-  free(ordered_vlist);
-  free(ordered_vplist);
-
-#ifdef DEVELOPMENT_CODE
-    validateIncounts(true, __FILE__, __LINE__);
-#endif
-}
-
-void MEDDLY::mt_mxd_int::evaluate(const dd_edge &f, const int* vlist,
-  const int* vplist, long &term) const
-{
-    terminal t(terminal_type::INTEGER, evaluateRaw(f, vlist, vplist));
-    term = t.getInteger();
-    // term = int_Tencoder::handle2value(evaluateRaw(f, vlist, vplist));
-}
-
-#endif
-
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
 
 void MEDDLY::mt_mxd_int::
 createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)

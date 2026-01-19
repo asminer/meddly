@@ -26,11 +26,7 @@
 
 namespace MEDDLY {
     class compl_mt;
-
-    class compl_mdd;
-    class compl_mxd;
-
-    unary_list COMPL_cache;
+    class COMPL_factory;
 };
 
 // #define TRACE
@@ -122,7 +118,7 @@ MEDDLY::compl_mt::compl_mt(forest* arg, forest* res)
     checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
     checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 
-    ct = new ct_entry_type("mdd_complement");
+    ct = new ct_entry_type("complement");
     ct->setFixed(arg);
     ct->setResult(res);
     ct->doneBuilding();
@@ -449,6 +445,30 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
     return p;
 }
 
+// ******************************************************************
+// *                                                                *
+// *                      COMPL_factory  class                      *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::COMPL_factory : public unary_factory {
+    public:
+        virtual void setup();
+        virtual unary_operation* build_new(forest* arg, forest* res);
+};
+
+// ******************************************************************
+
+void MEDDLY::COMPL_factory::setup()
+{
+    _setup(__FILE__, "COMPLEMENT", "Complement, for functions with boolean range. Inverts the output (false becomes true, true becomes false). The input and output forests may be different, but must have the same domain.");
+}
+
+MEDDLY::unary_operation*
+MEDDLY::COMPL_factory::build_new(forest* arg, forest* res)
+{
+    return new compl_mt(arg, res);
+}
 
 // ******************************************************************
 // *                                                                *
@@ -456,24 +476,9 @@ MEDDLY::node_handle MEDDLY::compl_mt::_identity_complement(node_handle p,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_operation* MEDDLY::COMPLEMENT(forest* arg, forest* res)
+MEDDLY::unary_factory& MEDDLY::COMPLEMENT()
 {
-    if (!arg || !res) return nullptr;
-
-    unary_operation* uop = COMPL_cache.find(arg, res);
-    if (uop) {
-        return uop;
-    }
-    return COMPL_cache.add(new compl_mt(arg, res));
-}
-
-void MEDDLY::COMPLEMENT_init()
-{
-    COMPL_cache.reset("Complement");
-}
-
-void MEDDLY::COMPLEMENT_done()
-{
-    MEDDLY_DCASSERT( COMPL_cache.isEmpty() );
+    static COMPL_factory F;
+    return F;
 }
 

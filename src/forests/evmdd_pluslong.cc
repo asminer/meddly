@@ -39,65 +39,7 @@ MEDDLY::evmdd_pluslong
 MEDDLY::evmdd_pluslong::~evmdd_pluslong()
 { }
 
-#ifdef ALLOW_DEPRECATED_0_17_7
-
-void MEDDLY::evmdd_pluslong::createEdge(long val, dd_edge &e)
-{
-  createEdgeTempl<OP, long>(val, e);
-}
-
-void MEDDLY::evmdd_pluslong
-::createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e)
-{
-  binary_operation* unionOp = 0;  // for now
-  // enlargeStatics(N);
-  enlargeVariables(vlist, N, false);
-
-  int num_vars = getNumVariables();
-
-  // Create vlist following the mapping between variable and level
-  int** ordered_vlist = static_cast<int**>(malloc(N * sizeof(int*) + (num_vars + 1) * N * sizeof(int)));
-  if (ordered_vlist == nullptr) {
-	  throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-  }
-
-  ordered_vlist[0] = reinterpret_cast<int*>(&ordered_vlist[N]);
-  for (int i = 1; i < N; i++) {
-	  ordered_vlist[i] = (ordered_vlist[i - 1] + num_vars + 1);
-  }
-  for (int i = 0; i <= num_vars; i++) {
-	  int level = getLevelByVar(i);
-	  for (int j = 0; j < N; j++) {
-		  ordered_vlist[j][level] = vlist[j][i];
-	  }
-  }
-
-  long* terms_long = static_cast<long*>(malloc(N * sizeof(long)));
-  for (int i = 0; i < N; i++) {
-    terms_long[i] = terms[i];
-  }
-
-  evmdd_edgemaker<OP, long>
-  EM(this, ordered_vlist, terms_long, order, N, num_vars, unionOp);
-
-  long ev = Inf<long>();
-  node_handle ep = 0;
-  EM.createEdge(ev, ep);
-  e.set(ev, ep);
-
-  free(ordered_vlist);
-  free(terms_long);
-}
-
-void MEDDLY::evmdd_pluslong
-::evaluate(const dd_edge &f, const int* vlist, long &term) const
-{
-  evaluateT<OP, long>(f, vlist, term);
-}
-
-#endif
-
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
 void MEDDLY::evmdd_pluslong
 ::createEdgeForVar(int vh, bool vp, const long* terms, dd_edge& a)
 {
@@ -190,7 +132,7 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
     unpacked_node* high_nb =
         unpacked_node::newWritable(this, level + 1, lsize, FULL_ONLY);
     for (int j = 0; j < hsize; j++) {
-      long ev1 = high_nr->edgeval(j).getLong();
+      long ev1 = long(high_nr->edgeval(j));
       MEDDLY_DCASSERT(ev1 >= 0);
 
       if (isLevelAbove(level, getNodeLevel(high_nr->down(j)))) {
@@ -208,7 +150,7 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
         for (int k = 0; k < lsize; k++) {
           children[j][k] = nr->down(k);
 
-          long ev2 = nr->edgeval(k).getLong();
+          long ev2 = long(nr->edgeval(k));
           MEDDLY_DCASSERT(ev2 >= 0);
 
           sum_evs[j][k] = ev1 + ev2;
@@ -263,116 +205,6 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
 // ******************************************************************
 // *                                                                *
 // *                                                                *
-// *            evmdd_pluslong::evpimdd_iterator  methods            *
-// *                                                                *
-// *                                                                *
-// ******************************************************************
-
-#ifdef ALLOW_DEPRECATED_0_17_7
-
-MEDDLY::evmdd_pluslong::evpimdd_iterator::evpimdd_iterator(const forest *F)
-: iterator(F)
-{
-  int N = F->getNumVariables();
-  acc_evs = new long[N+1];
-}
-
-MEDDLY::evmdd_pluslong::evpimdd_iterator::~evpimdd_iterator()
-{
-  delete[] acc_evs;
-}
-
-void MEDDLY::evmdd_pluslong::evpimdd_iterator::getValue(long &tv) const
-{
-  MEDDLY_DCASSERT(acc_evs);
-  tv = acc_evs[0];
-}
-
-bool MEDDLY::evmdd_pluslong::evpimdd_iterator::start(const dd_edge &e)
-{
-  if (F != e.getForest()) {
-    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
-  }
-
-  long ev = Inf<long>();
-  e.getEdgeValue(ev);
-  acc_evs[maxLevel] = ev;
-
-  return first(maxLevel, e.getNode());
-}
-
-bool MEDDLY::evmdd_pluslong::evpimdd_iterator::next()
-{
-  MEDDLY_DCASSERT(F);
-  MEDDLY_DCASSERT(!F->isForRelations());
-  MEDDLY_DCASSERT(index);
-  MEDDLY_DCASSERT(nzp);
-  MEDDLY_DCASSERT(path);
-  MEDDLY_DCASSERT(acc_evs);
-
-  int k;
-  node_handle down = 0;
-  for (k=1; k<=maxLevel; k++) {
-    nzp[k]++;
-    if (nzp[k] < path[k].getSize()) {
-      index[k] = path[k].index(nzp[k]);
-      down = path[k].down(nzp[k]);
-      MEDDLY_DCASSERT(down);
-      const long ev = path[k].edgeval(nzp[k]).getLong();
-      // long ev = Inf<long>();
-      // path[k].getEdge(nzp[k], ev);
-      acc_evs[k-1] = acc_evs[k] + ev;
-      break;
-    }
-  }
-  level_change = k;
-  if (k>maxLevel) {
-    return false;
-  }
-
-  return first(k-1, down);
-}
-
-bool MEDDLY::evmdd_pluslong::evpimdd_iterator::first(int k, node_handle down)
-{
-  MEDDLY_DCASSERT(F);
-  MEDDLY_DCASSERT(!F->isForRelations());
-  MEDDLY_DCASSERT(index);
-  MEDDLY_DCASSERT(nzp);
-  MEDDLY_DCASSERT(path);
-  MEDDLY_DCASSERT(acc_evs);
-
-  if (0==down) return false;
-
-  for ( ; k; k--) {
-    MEDDLY_DCASSERT(down);
-    int kdn = F->getNodeLevel(down);
-    MEDDLY_DCASSERT(kdn <= k);
-    if (kdn < k)  {
-        edge_value ev(0L);
-        path[k].initRedundant(F, k, ev, down, SPARSE_ONLY);
-    }
-    else {
-        F->unpackNode(path+k, down, SPARSE_ONLY);
-    }
-    nzp[k] = 0;
-    index[k] = path[k].index(0);
-    down = path[k].down(0);
-    // long ev = Inf<long>();
-    // path[k].getEdge(0, ev);
-    const long ev = path[k].edgeval(0).getLong();
-    acc_evs[k-1] = acc_evs[k] + ev;
-  }
-  // save the terminal value
-  index[0] = down;
-  return true;
-}
-
-#endif
-
-// ******************************************************************
-// *                                                                *
-// *                                                                *
 // *                    evmdd_index_set  methods                    *
 // *                                                                *
 // *                                                                *
@@ -384,57 +216,4 @@ MEDDLY::evmdd_index_set_long::evmdd_index_set_long(domain *_d, const policies &p
 
 MEDDLY::evmdd_index_set_long::~evmdd_index_set_long()
 { }
-
-#ifdef ALLOW_DEPRECATED_0_17_7
-
-void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, int index, int* e)
-{
-  // TODO: Redesign interface
-  getElement(a, (long)index, e);
-}
-
-void MEDDLY::evmdd_index_set_long::getElement(const dd_edge &a, long index, int* e)
-{
-  if (e == nullptr) {
-    throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
-  }
-  if (index < 0) {
-    e[0] = 0;
-    return;
-  }
-  int p = a.getNode();
-  unpacked_node* R = unpacked_node::New(this, SPARSE_ONLY);
-  for (int k = getNumVariables(); k > 0; k--) {
-	int var = getVarByLevel(k);
-
-    MEDDLY_DCASSERT(index >= 0);
-    if (p <= 0) {
-      e[var] = 0;
-      continue;
-    }
-    unpackNode(R, p, SPARSE_ONLY);
-    MEDDLY_DCASSERT(R->getLevel() <= k);
-    if (R->getLevel() < k) {
-      e[var] = 0;
-      continue;
-    }
-    // Find largest i such that edge value i is not greater than index
-    e[var] = 0;
-    p = 0;
-    for (int z = R->getSize() - 1; z >= 0; z--) {
-      if (index < R->edgeval(z).getLong()) {
-        continue;
-      }
-      e[var] = R->index(z);
-      p = R->down(z);
-      index -= R->edgeval(z).getLong();
-      break;
-    } // for z
-  } // for k
-  e[0] = (index > 0 ? 0 : -p);
-  unpacked_node::Recycle(R);
-}
-
-#endif
-
 

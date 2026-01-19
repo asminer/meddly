@@ -1,7 +1,207 @@
-Implement next:
+
+TO DO list
+
+    * user-defined unary operations (maybe in oper_unary?)
+
+        typedef void (*user_unary)(const rangeval &input, rangeval &output);
+
+        // works for MT only? Or we can push values down for EV+, EV*
+        //
+        class generic_unary_op : public unary_operation {
+
+            // not sure if we need the name
+            generic_unary_op(const char* name, forest* arg, forest* res, user_unary F);
+
+            inline bool preserves_zero() const;
+            // ^ this can be automatically determined by
+            // checking that F(0) == 0
+            // well, akshually, F(arg->transparent) == res->transparent
+            //
+            // if true we can use sparse nodes in apply()
+            // also might allow us to skip identities
+
+        };
+
+        stuff to try
+            ABS(x)      // preserves zero
+            NEG(x)      // preserves zero
+            INCNNEG(x) = { x+1, if x>=0; -1 otherwise }
+
+
+    * Allow binary operations to attach a progress callback
+      function of the form
+
+            void progress(unsigned itnum, char status);
+                // itnum: iteration number
+                // status: ' ' for start of iteration
+                //         ';' for end of iteration
+                //         others are operation dependent
+
+      this can be ignored by most operations.
+
+    * bfs with frontier sets.
+
+    * bfs without frontier sets.
+
+========= (release?)
+
+    * saturation 1 monolithic relation
+        states only
+        distances
+
+========= (release?)
+
+    * saturation 2 monolithic relation
+        'saturate after' but on diagonal
+        states only
+        distances
+
+    * saturation 3 monolithic relation
+        'saturate before'
+        states only
+        distances
+
+========= (release?)
+
+    * ability to store other relation nodes inside a forest
+        (ugly implementation internally is fine)
+
+    * AND/OR nodes
+
+    * constraint nodes - for 'constrained saturation'
+
+    * implicit nodes
+        + enabled if low <= i < high
+             (0==high for high = infinity?)
+
+        + add a constant delta (could be negative)
+
+
+    * user-defined implicit nodes
+        + provide a function, f(i) gives j and down pointer?
+        + need level, and hash
+        + should work fine for OTF saturation
+
+    * user-defined multi-level implicit nodes
+        + interface ?
+            - set of levels k1, ..., kn, as inputs
+            - single level k0, as output
+            - provide a function, f(i_k1, i_k2, ..., i_kn) = j_k0
+            - enlarge one of the kc levels
+
+        + how to efficiently use this?
+            - automatically build MxD underneath?
+
+========= (release?)
 
     * pre/post image on relations (e.g. transitive closure)
         and test programs
+        states only
+        distances
+
+    * saturation 1, 2, 3 on relations
+        states only
+        distances
+
+
+========= (release?)
+
+    * updated mark and sweep with counters
+
+    * try to eliminate reference counting altogether
+
+    * simplify node headers and release
+
+    * Protected nodes
+        very light dd_edge for mark and sweep registry
+
+        constructor:    register itself
+        destructor:     unregister itself
+        override = and such
+        keep track of index for fast unregister
+
+        forest: vector of pointers to protected nodes
+
+========= (release?)
+
+    * new byte-based node storage
+        first and last byte: storage type
+            0: small hole (less than 256 bytes)
+            1: large hole (more than 256 bytes)
+
+            2..: specifies which codec to use for node storage
+
+            codecs are registered but otherwise agnostic to node storage.
+            codec table keeps track of
+                constants a and b, the number of bytes for a node
+                is a * size + b. If a==0 then we don't need to store a size.
+
+
+            examples:
+            BDD, d-byte down, e-byte EV
+                a = 0, b = 2*d + e  (assuming normalized)
+
+                use d in { 2, 4, 6 } and e in { 1, 2, 4, 8 }.
+                (e = 1 for REXBDDs)
+
+            12 combos
+
+
+            truncated full storage, s-byte size, d-byte down, e-byte EV
+                a = d+e, b = s
+
+                use s in { 1, 2, 3 },
+                    d in { 2, 4, 6 },
+                    e in { 2, 4, 8 }.
+
+            27 combos
+
+            sparse storage, s-byte size and index, d-byte down, e-byte EV
+                a = s+d+e, b = s
+
+                use s in { 1, 2, 3 },
+                    d in { 2, 4, 6 },
+                    e in { 2, 4, 8 }.
+
+            27 combos
+
+
+            AND/OR nodes, b-byte size, a-byte down
+
+                use b in { 1, 2 },
+                    a in { 2, 4, 6 }
+
+            6 combos
+
+
+            implicit nodes, d-byte low, high, delta (signed)
+                a = 0, b = 3d
+
+                use d in { 1, 2, 4 }
+
+            3 combos
+
+
+
+
+
+=====================================================================
+    How to integrate relation nodes into forests?
+
+        reading: node handle to rel_node
+
+        writing: ?
+            develop interface for node_manager
+            possibilities are:
+                * stored as nodes at 2 levels as usual
+                * compacted into 1 level
+                * stored externally
+
+        mark and sweep and whatnot:
+            fill in a vector of downward pointers
+
+
+=====================================================================
 
 
     * Add 'relation node' construction from forests
@@ -83,16 +283,6 @@ Implement next:
     * Saturation operations, using new interface
 
         - check timing: overhead for rel_node objects
-
-    * Protected nodes
-        very light dd_edge for mark and sweep registry
-
-        constructor:    register itself
-        destructor:     unregister itself
-        override = and such
-        keep track of index for fast unregister
-
-        forest: vector of pointers to protected nodes
 
 ===========
     release here?

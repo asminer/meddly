@@ -16,30 +16,18 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEDDLY_ARITH_H
-#define MEDDLY_ARITH_H
-
-#include "../oper.h"
-
-/*
- * Code for element-wise arithmetic and like operations.
- */
+#ifndef MEDDLY_PREPOST_RELS_H
+#define MEDDLY_PREPOST_RELS_H
 
 namespace MEDDLY {
     class forest;
     class binary_operation;
 
-    /// The 'maximum' operation builder.
-    binary_operation* MAXIMUM(forest* a, forest* b, forest* c);
-    void MAXIMUM_init();
-    void MAXIMUM_done();
-
-    /// The 'minimum' operation builder.
-    binary_operation* MINIMUM(forest* a, forest* b, forest* c);
-    void MINIMUM_init();
-    void MINIMUM_done();
+    /// The 'transitive closure postimage' operation builder.
+    binary_operation* TC_POST_IMAGE(forest* a, forest* b, forest* c);
+    void TC_POST_IMAGE_init();
+    void TC_POST_IMAGE_done();
 }
 
 #endif
-
 

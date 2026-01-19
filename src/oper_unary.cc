@@ -31,6 +31,7 @@ MEDDLY::unary_operation::unary_operation(unary_list& owner,
     unsigned et_slots, forest* arg, forest* res)
     : operation(owner.getName(), et_slots)
 {
+    factory = nullptr;
     parent = &owner;
 
     argF = arg;
@@ -46,6 +47,7 @@ MEDDLY::unary_operation::unary_operation(unary_list& owner,
     unsigned et_slots, forest* arg, opnd_type res)
     : operation(owner.getName(), et_slots)
 {
+    factory = nullptr;
     parent = &owner;
     argF = arg;
     resultType = res;
@@ -60,7 +62,10 @@ MEDDLY::unary_operation::unary_operation(unary_list& owner,
 MEDDLY::unary_operation::unary_operation(forest* arg, forest* res)
     : operation()
 {
+    factory = nullptr;
+#ifdef ALLOW_DEPRECATED_0_17_6
     parent = nullptr;
+#endif
 
     argF = arg;
     resultType = opnd_type::FOREST;
@@ -77,7 +82,10 @@ MEDDLY::unary_operation::unary_operation(forest* arg, forest* res)
 MEDDLY::unary_operation::unary_operation(forest* arg, opnd_type res)
     : operation()
 {
+    factory = nullptr;
+#ifdef ALLOW_DEPRECATED_0_17_6
     parent = nullptr;
+#endif
 
     argF = arg;
     resultType = res;
@@ -94,7 +102,10 @@ MEDDLY::unary_operation::~unary_operation()
 {
     unregisterInForest(argF);
     unregisterInForest(resF);
+    if (factory) factory->remove(this);
+#ifdef ALLOW_DEPRECATED_0_17_6
     if (parent) parent->remove(this);
+#endif
 }
 
 void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
@@ -163,8 +174,100 @@ void MEDDLY::unary_operation::compute(int L, unsigned in,
 
 
 // ******************************************************************
+// *                     unary_factory  methods                     *
+// ******************************************************************
+
+void MEDDLY::unary_factory::cleanup()
+{
+    _cleanup();
+}
+
+MEDDLY::unary_operation*
+MEDDLY::unary_factory::build_new(forest* arg, forest* res)
+{
+    return nullptr;
+}
+
+MEDDLY::unary_operation*
+MEDDLY::unary_factory::build_new(forest* arg, opnd_type res)
+{
+    return nullptr;
+}
+
+void MEDDLY::unary_factory::_setup(const char* file, const char* name,
+        const char* doc)
+{
+    _file = file;
+    _name = name;
+    _doc = doc;
+    front = nullptr;
+}
+
+void MEDDLY::unary_factory::_cleanup()
+{
+    MEDDLY_DCASSERT(nullptr == front);
+}
+
+bool
+MEDDLY::unary_factory::mtfUnary(const forest* argF, const forest* resF)
+{
+    unary_operation* prev = front;
+    unary_operation* curr = front->next;
+    while (curr) {
+        if ((curr->argF == argF) && (curr->resF == resF)) {
+            // Move to front
+            prev->next = curr->next;
+            curr->next = front;
+            front = curr;
+            return true;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+    return false;
+}
+
+bool
+MEDDLY::unary_factory::mtfUnary(const forest* argF, opnd_type resType)
+{
+    unary_operation* prev = front;
+    unary_operation* curr = front->next;
+    while (curr) {
+        if ((curr->argF == argF) && (curr->resultType == resType)) {
+            // Move to front
+            prev->next = curr->next;
+            curr->next = front;
+            front = curr;
+            return true;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+    return false;
+}
+
+
+void MEDDLY::unary_factory::searchRemove(unary_operation* uop)
+{
+    if (!front) return;
+    unary_operation* prev = front;
+    unary_operation* curr = front->next;
+    while (curr) {
+        if (curr == uop) {
+            prev->next = curr->next;
+            return;
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+}
+
+
+// ******************************************************************
 // *                       unary_list methods                       *
 // ******************************************************************
+
+#ifdef ALLOW_DEPRECATED_0_17_6
 
 MEDDLY::unary_list::unary_list(const char* n)
 {
@@ -231,3 +334,4 @@ void MEDDLY::unary_list::searchRemove(unary_operation* uop)
     }
 }
 
+#endif

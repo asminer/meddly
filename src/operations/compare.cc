@@ -34,14 +34,17 @@
 // Operation instance caches
 //
 namespace MEDDLY {
-    binary_list EQUAL_cache;
-    binary_list NEQ_cache;
+    // for consistent documentation:
+    class base_compare_factory;
 
-    binary_list GT_cache;
-    binary_list GE_cache;
+    class EQUAL_factory;
+    class NEQ_factory;
 
-    binary_list LT_cache;
-    binary_list LE_cache;
+    class GT_factory;
+    class GE_factory;
+
+    class LT_factory;
+    class LE_factory;
 };
 
 // ******************************************************************
@@ -516,6 +519,7 @@ namespace MEDDLY {
             unsigned top_count;
 #endif
             bool forced_by_levels;
+            bool zero_check_is_valid;
     };
 };
 
@@ -540,6 +544,9 @@ MEDDLY::compare_ev<EOP, FACTOR, CTYPE>::compare_ev(forest* arg1,
     if (arg1->getEdgeLabeling() != arg2->getEdgeLabeling()) {
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
+    if (res->getEdgeLabeling() != edge_labeling::MULTI_TERMINAL) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
     if (arg1->getEdgeType() != arg2->getEdgeType()) {
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
@@ -551,6 +558,20 @@ MEDDLY::compare_ev<EOP, FACTOR, CTYPE>::compare_ev(forest* arg1,
     //       still jump to terminal 0)
     //
     forced_by_levels = arg1->isIdentityReduced() || arg2->isIdentityReduced();
+
+    //
+    // Can we conclude something on zero-edge functions?
+    // The only issue arises for EV+ with identity reduction,
+    // because the off-diagonals for that are infinity, not zero.
+    // In other words, EV+ with identity reduction is the only
+    // forest type (so far, anyway) where the zero function
+    // is NOT represented by an edge to a terminal node.
+    //
+    zero_check_is_valid =
+        ( !arg1->isIdentityReduced() || !arg1->isEVPlus() )
+        &&
+        ( !arg2->isIdentityReduced() || !arg2->isEVPlus() )
+    ;
 
     // Build compute table key and result types.
     // If we recurse by levels, then we need the level as part of the key.
@@ -612,7 +633,8 @@ void MEDDLY::compare_ev<EOP, FACTOR, CTYPE>::_compute(int L, unsigned in,
     //
     // Both are the zero function.
     //
-    if (EOP::isZeroFunction(av, A) && EOP::isZeroFunction(bv, B))
+    if (zero_check_is_valid &&
+            EOP::isZeroFunction(av, A) && EOP::isZeroFunction(bv, B))
     {
         terminal tt(CTYPE::isReflexive(), resF->getTerminalType());
         C = resF->makeRedundantsTo(tt.getHandle(), 0, L);
@@ -643,7 +665,7 @@ void MEDDLY::compare_ev<EOP, FACTOR, CTYPE>::_compute(int L, unsigned in,
     // Other special cases, like everything is less than infinity
     //
     bool answer;
-    if (CTYPE::isSpecialCase(av, A, bv, B, answer)) {
+    if (!forced_by_levels && CTYPE::isSpecialCase(av, A, bv, B, answer)) {
         terminal tt(answer, resF->getTerminalType());
         C = resF->makeRedundantsTo(tt.getHandle(), 0, L);
         return;
@@ -894,9 +916,7 @@ namespace MEDDLY {
                     //
                     a = c;
                     c = edge_value(EDGETYPE(0));
-                    EDGETYPE av;
-                    a.get(av);
-                    e.subtract(av);
+                    e.subtract(EDGETYPE(a));
                 }
             }
             static bool alwaysFactorsToIdentity()
@@ -1010,10 +1030,7 @@ namespace MEDDLY {
             }
             if ((OMEGA_NORMAL == ap) && (OMEGA_NORMAL == bp))
             {
-                EDGETYPE avv, bvv;
-                av.get(avv);
-                bv.get(bvv);
-                return avv == bvv;
+                return EDGETYPE(av) == EDGETYPE(bv);
             }
             return false;
         }
@@ -1036,10 +1053,7 @@ namespace MEDDLY {
             }
             if ((OMEGA_NORMAL == ap) && (OMEGA_NORMAL == bp))
             {
-                EDGETYPE avv, bvv;
-                av.get(avv);
-                bv.get(bvv);
-                return avv == bvv;
+                return EDGETYPE(av) == EDGETYPE(bv);
             }
             return false;
         }
@@ -1093,10 +1107,7 @@ namespace MEDDLY {
             }
             if ((OMEGA_NORMAL == ap) && (OMEGA_NORMAL == bp))
             {
-                EDGETYPE avv, bvv;
-                av.get(avv);
-                bv.get(bvv);
-                return avv != bvv;
+                return EDGETYPE(av) != EDGETYPE(bv);
             }
             return true;
         }
@@ -1119,10 +1130,7 @@ namespace MEDDLY {
             }
             if ((OMEGA_NORMAL == ap) && (OMEGA_NORMAL == bp))
             {
-                EDGETYPE avv, bvv;
-                av.get(avv);
-                bv.get(bvv);
-                return avv != bvv;
+                return EDGETYPE(av) != EDGETYPE(bv);
             }
             return true;
         }
@@ -1167,17 +1175,22 @@ namespace MEDDLY {
         {
             // We can assume <av, ap> and <bv, bp>
             // are not both infinity, as that case
-            // would have been handled already
+            // would have been handled already.
+            // But as a sanity check:
+            MEDDLY_DCASSERT((OMEGA_INFINITY != ap) || (OMEGA_INFINITY != bp));
+
+            //
+            // A(...) > infinity  is false regardless of A()
+            //
             if (OMEGA_INFINITY == bp)
             {
                 answer = false;
                 return true;
             }
-            if (OMEGA_INFINITY == ap)
-            {
-                answer = true;
-                return true;
-            }
+            //
+            // Note: infinity > B(...) could be true or false,
+            // depending on if B() contains infinities or not.
+            //
             return false;
         }
         static bool compare(const edge_value& av, node_handle ap,
@@ -1191,10 +1204,7 @@ namespace MEDDLY {
             {
                 return true;
             }
-            EDGETYPE avv, bvv;
-            av.get(avv);
-            bv.get(bvv);
-            return avv > bvv;
+            return EDGETYPE(av) > EDGETYPE(bv);
         }
     };
     template <class EDGETYPE>
@@ -1263,17 +1273,22 @@ namespace MEDDLY {
         {
             // We can assume <av, ap> and <bv, bp>
             // are not both infinity, as that case
-            // would have been handled already
+            // would have been handled already.
+            // But as a sanity check:
+            MEDDLY_DCASSERT((OMEGA_INFINITY != ap) || (OMEGA_INFINITY != bp));
+
+            //
+            // infinity >= B(...)  is true regardless of B()
+            //
             if (OMEGA_INFINITY == ap)
             {
                 answer = true;
                 return true;
             }
-            if (OMEGA_INFINITY == bp)
-            {
-                answer = false;
-                return true;
-            }
+            //
+            // Note: A(...) >= infinity  could be true or false,
+            // depending on if A() contains infinities or not.
+            //
             return false;
         }
         static bool compare(const edge_value& av, node_handle ap,
@@ -1287,10 +1302,7 @@ namespace MEDDLY {
             {
                 return false;
             }
-            EDGETYPE avv, bvv;
-            av.get(avv);
-            bv.get(bvv);
-            return avv >= bvv;
+            return EDGETYPE(av) >= EDGETYPE(bv);
         }
     };
     template <class EDGETYPE>
@@ -1359,17 +1371,22 @@ namespace MEDDLY {
         {
             // We can assume <av, ap> and <bv, bp>
             // are not both infinity, as that case
-            // would have been handled already
+            // would have been handled already.
+            // But as a sanity check:
+            MEDDLY_DCASSERT((OMEGA_INFINITY != ap) || (OMEGA_INFINITY != bp));
+
+            //
+            // infinity <  B(...)  is false regardless of B()
+            //
             if (OMEGA_INFINITY == ap)
             {
                 answer = false;
                 return true;
             }
-            if (OMEGA_INFINITY == bp)
-            {
-                answer = true;
-                return true;
-            }
+            //
+            // Note: A(...) < infinity  could be true or false,
+            // depending on if A() contains infinities or not.
+            //
             return false;
         }
         static bool compare(const edge_value& av, node_handle ap,
@@ -1383,10 +1400,7 @@ namespace MEDDLY {
             {
                 return true;
             }
-            EDGETYPE avv, bvv;
-            av.get(avv);
-            bv.get(bvv);
-            return avv < bvv;
+            return EDGETYPE(av) < EDGETYPE(bv);
         }
     };
     template <class EDGETYPE>
@@ -1455,17 +1469,22 @@ namespace MEDDLY {
         {
             // We can assume <av, ap> and <bv, bp>
             // are not both infinity, as that case
-            // would have been handled already
-            if (OMEGA_INFINITY == ap)
-            {
-                answer = false;
-                return true;
-            }
+            // would have been handled already.
+            // But as a sanity check:
+            MEDDLY_DCASSERT((OMEGA_INFINITY != ap) || (OMEGA_INFINITY != bp));
+
+            //
+            // A(...) <= infinity  is true regardless of A()
+            //
             if (OMEGA_INFINITY == bp)
             {
                 answer = true;
                 return true;
             }
+            //
+            // Note: infinity <= B(...) could be true or false,
+            // depending on if B() contains infinities or not.
+            //
             return false;
         }
         static bool compare(const edge_value& av, node_handle ap,
@@ -1479,10 +1498,7 @@ namespace MEDDLY {
             {
                 return false;
             }
-            EDGETYPE avv, bvv;
-            av.get(avv);
-            bv.get(bvv);
-            return avv <= bvv;
+            return EDGETYPE(av) <= EDGETYPE(bv);
         }
     };
     template <class EDGETYPE>
@@ -1516,417 +1532,457 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
+// *                   base_compare_factory class                   *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::base_compare_factory : public binary_factory {
+    protected:
+        void comp_setup(const char* name, const char* symbol);
+        char docs[300];
+};
+
+// ******************************************************************
+
+void MEDDLY::base_compare_factory::comp_setup(const char* name,
+        const char* symbol)
+{
+    snprintf(docs, 300, "Element-wise %s. Input forests should both be MT, EV+, or EV*. The output forest should be MT. All forests should be over the same domain. The output values of true, false will be converted as necessary (e.g,, to 1 and 0) to the appropriate type for the output forest.", symbol);
+
+    _setup(__FILE__, name, docs);
+}
+
+// ******************************************************************
+// *                                                                *
+// *                      EQUAL_factory  class                      *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::EQUAL_factory : public base_compare_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::EQUAL_factory::setup()
+{
+    comp_setup("EQUAL", "==");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::EQUAL_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (a->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new compare_mt<eq_mt<float> > (a,b,c);
+        } else {
+            return new compare_mt<eq_mt<long> > (a,b,c);
+        }
+    }
+
+    if (a->isEVTimes()) {
+        switch (a->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new compare_ev<EdgeOp_times<float>,
+                    evstar_factor<float>, eq_evstar<float> > (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new compare_ev<EdgeOp_times<double>,
+                    evstar_factor<double>, eq_evstar<double> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    } else {
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
+                    eq_evplus<int> > (a,b,c);
+
+            case edge_type::LONG:
+                return new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
+                    eq_evplus<long> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+    // shouldn't get here
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                       NEQ_factory  class                       *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::NEQ_factory : public base_compare_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::NEQ_factory::setup()
+{
+    comp_setup("NOT_EQUAL", "!=");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::NEQ_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (a->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new compare_mt<ne_mt<float> > (a,b,c);
+        } else {
+            return new compare_mt<ne_mt<long> > (a,b,c);
+        }
+    }
+
+    if (a->isEVTimes()) {
+        switch (a->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new compare_ev<EdgeOp_times<float>,
+                    evstar_factor<float>, ne_evstar<float> > (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new compare_ev<EdgeOp_times<double>,
+                    evstar_factor<double>, ne_evstar<double> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    } else {
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
+                    ne_evplus<int> > (a,b,c);
+
+            case edge_type::LONG:
+                return new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
+                    ne_evplus<long> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+    // shouldn't get here
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                        GT_factory class                        *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::GT_factory : public base_compare_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::GT_factory::setup()
+{
+    comp_setup("GREATER_THAN", ">");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::GT_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (a->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new compare_mt<gt_mt<float> > (a,b,c);
+        } else {
+            return new compare_mt<gt_mt<long> > (a,b,c);
+        }
+    }
+
+    if (a->isEVTimes()) {
+        switch (a->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new compare_ev<EdgeOp_times<float>,
+                    evstar_factor<float>, gt_evstar<float> > (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new compare_ev<EdgeOp_times<double>,
+                    evstar_factor<double>, gt_evstar<double> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    } else {
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
+                    gt_evplus<int> > (a,b,c);
+
+            case edge_type::LONG:
+                return new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
+                    gt_evplus<long> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+    // shouldn't get here
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                        GE_factory class                        *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::GE_factory : public base_compare_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::GE_factory::setup()
+{
+    comp_setup("GREATER_THAN_EQUAL", ">=");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::GE_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (a->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new compare_mt<ge_mt<float> > (a,b,c);
+        } else {
+            return new compare_mt<ge_mt<long> > (a,b,c);
+        }
+    }
+
+    if (a->isEVTimes()) {
+        switch (a->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new compare_ev<EdgeOp_times<float>,
+                    evstar_factor<float>, ge_evstar<float> > (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new compare_ev<EdgeOp_times<double>,
+                    evstar_factor<double>, ge_evstar<double> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    } else {
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
+                    ge_evplus<int> > (a,b,c);
+
+            case edge_type::LONG:
+                return new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
+                    ge_evplus<long> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+    // shouldn't get here
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                        LT_factory class                        *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::LT_factory : public base_compare_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::LT_factory::setup()
+{
+    comp_setup("LESS_THAN", "<");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::LT_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (a->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new compare_mt<lt_mt<float> > (a,b,c);
+        } else {
+            return new compare_mt<lt_mt<long> > (a,b,c);
+        }
+    }
+
+    if (a->isEVTimes()) {
+        switch (a->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new compare_ev<EdgeOp_times<float>,
+                    evstar_factor<float>, lt_evstar<float> > (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new compare_ev<EdgeOp_times<double>,
+                    evstar_factor<double>, lt_evstar<double> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    } else {
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
+                    lt_evplus<int> > (a,b,c);
+
+            case edge_type::LONG:
+                return new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
+                    lt_evplus<long> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+    // shouldn't get here
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                        LE_factory class                        *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::LE_factory : public base_compare_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::LE_factory::setup()
+{
+    comp_setup("LESS_THAN_EQUAL", "<=");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::LE_factory::build_new(forest* a, forest* b, forest* c)
+{
+    if (a->isMultiTerminal()) {
+        bool use_reals = (
+            a->getRangeType() == range_type::REAL ||
+            b->getRangeType() == range_type::REAL
+        );
+        if (use_reals) {
+            return new compare_mt<le_mt<float> > (a,b,c);
+        } else {
+            return new compare_mt<le_mt<long> > (a,b,c);
+        }
+    }
+
+    if (a->isEVTimes()) {
+        switch (a->getEdgeType()) {
+            case edge_type::FLOAT:
+                return new compare_ev<EdgeOp_times<float>,
+                    evstar_factor<float>, le_evstar<float> > (a,b,c);
+
+            case edge_type::DOUBLE:
+                return new compare_ev<EdgeOp_times<double>,
+                    evstar_factor<double>, le_evstar<double> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    } else {
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
+                    le_evplus<int> > (a,b,c);
+
+            case edge_type::LONG:
+                return new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
+                    le_evplus<long> > (a,b,c);
+
+            default:
+                return nullptr;
+        }
+    }
+    // shouldn't get here
+    return nullptr;
+}
+
+// ******************************************************************
+// *                                                                *
 // *                                                                *
 // *                           Front ends                           *
 // *                                                                *
 // *                                                                *
 // ******************************************************************
 
-// ******************************************************************
-// *                             EQUAL                              *
-// ******************************************************************
-
-MEDDLY::binary_operation* MEDDLY::EQUAL(forest* a, forest* b, forest* c)
+MEDDLY::binary_factory& MEDDLY::EQUAL()
 {
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  EQUAL_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-    if (a->isMultiTerminal()) {
-        bool use_reals = (
-            a->getRangeType() == range_type::REAL ||
-            b->getRangeType() == range_type::REAL
-        );
-        if (use_reals) {
-            bop = new compare_mt<eq_mt<float> > (a,b,c);
-        } else {
-            bop = new compare_mt<eq_mt<long> > (a,b,c);
-        }
-        return EQUAL_cache.add(bop);
-    }
-
-    if (a->isEVTimes()) {
-        switch (a->getEdgeType()) {
-            case edge_type::FLOAT:
-                bop = new compare_ev<EdgeOp_times<float>,
-                    evstar_factor<float>, eq_evstar<float> > (a,b,c);
-                break;
-
-            case edge_type::DOUBLE:
-                bop = new compare_ev<EdgeOp_times<double>,
-                    evstar_factor<double>, eq_evstar<double> > (a,b,c);
-                break;
-
-            default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        }
-    } else {
-        switch (a->getEdgeType()) {
-            case edge_type::INT:
-                bop = new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
-                    eq_evplus<int> > (a,b,c);
-                break;
-
-            case edge_type::LONG:
-                bop = new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
-                    eq_evplus<long> > (a,b,c);
-                break;
-
-            default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        }
-    }
-    return EQUAL_cache.add( bop );
+    static EQUAL_factory F;
+    return F;
 }
 
-void MEDDLY::EQUAL_init()
+MEDDLY::binary_factory& MEDDLY::NOT_EQUAL()
 {
-    EQUAL_cache.reset("Equal");
+    static NEQ_factory F;
+    return F;
 }
 
-void MEDDLY::EQUAL_done()
+MEDDLY::binary_factory& MEDDLY::GREATER_THAN()
 {
-    MEDDLY_DCASSERT(EQUAL_cache.isEmpty());
+    static GT_factory F;
+    return F;
 }
 
-// ******************************************************************
-// *                            NOT_EQUAL                           *
-// ******************************************************************
-
-MEDDLY::binary_operation* MEDDLY::NOT_EQUAL(forest* a, forest* b, forest* c)
+MEDDLY::binary_factory& MEDDLY::GREATER_THAN_EQUAL()
 {
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  NEQ_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-    if (a->isMultiTerminal()) {
-        bool use_reals = (
-            a->getRangeType() == range_type::REAL ||
-            b->getRangeType() == range_type::REAL
-        );
-        if (use_reals) {
-            bop = new compare_mt<ne_mt<float> > (a,b,c);
-        } else {
-            bop = new compare_mt<ne_mt<long> > (a,b,c);
-        }
-        return NEQ_cache.add(bop);
-    }
-
-    if (a->isEVTimes()) {
-        switch (a->getEdgeType()) {
-            case edge_type::FLOAT:
-                bop = new compare_ev<EdgeOp_times<float>,
-                    evstar_factor<float>, ne_evstar<float> > (a,b,c);
-                break;
-
-            case edge_type::DOUBLE:
-                bop = new compare_ev<EdgeOp_times<double>,
-                    evstar_factor<double>, ne_evstar<double> > (a,b,c);
-                break;
-
-            default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        }
-    } else {
-        switch (a->getEdgeType()) {
-            case edge_type::INT:
-                bop = new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
-                    ne_evplus<int> > (a,b,c);
-                break;
-
-            case edge_type::LONG:
-                bop = new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
-                    ne_evplus<long> > (a,b,c);
-                break;
-
-            default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        }
-    }
-    return NEQ_cache.add( bop );
+    static GE_factory F;
+    return F;
 }
 
-void MEDDLY::NOT_EQUAL_init()
+MEDDLY::binary_factory& MEDDLY::LESS_THAN()
 {
-    NEQ_cache.reset("Unequal");
+    static LT_factory F;
+    return F;
 }
 
-void MEDDLY::NOT_EQUAL_done()
+MEDDLY::binary_factory& MEDDLY::LESS_THAN_EQUAL()
 {
-    MEDDLY_DCASSERT(NEQ_cache.isEmpty());
-}
-
-// ******************************************************************
-// *                         GREATER  THAN                          *
-// ******************************************************************
-
-MEDDLY::binary_operation* MEDDLY::GREATER_THAN(forest* a, forest* b, forest* c)
-{
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  GT_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-    if (a->isMultiTerminal()) {
-        bool use_reals = (
-            a->getRangeType() == range_type::REAL ||
-            b->getRangeType() == range_type::REAL
-        );
-        if (use_reals) {
-            bop = new compare_mt<gt_mt<float> > (a,b,c);
-        } else {
-            bop = new compare_mt<gt_mt<long> > (a,b,c);
-        }
-        return GT_cache.add(bop);
-    }
-
-    if (a->isEVTimes()) {
-        switch (a->getEdgeType()) {
-            case edge_type::FLOAT:
-                bop = new compare_ev<EdgeOp_times<float>,
-                    evstar_factor<float>, gt_evstar<float> > (a,b,c);
-                break;
-
-            case edge_type::DOUBLE:
-                bop = new compare_ev<EdgeOp_times<double>,
-                    evstar_factor<double>, gt_evstar<double> > (a,b,c);
-                break;
-
-            default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        }
-    } else {
-        switch (a->getEdgeType()) {
-            case edge_type::INT:
-                bop = new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
-                    gt_evplus<int> > (a,b,c);
-                break;
-
-            case edge_type::LONG:
-                bop = new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
-                    gt_evplus<long> > (a,b,c);
-                break;
-
-            default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        }
-    }
-    return GT_cache.add( bop );
-}
-
-void MEDDLY::GREATER_THAN_init()
-{
-    GT_cache.reset("MoreThan");
-}
-
-void MEDDLY::GREATER_THAN_done()
-{
-    MEDDLY_DCASSERT(GT_cache.isEmpty());
-}
-
-// ******************************************************************
-// *                       GREATER  OR EQUAL                        *
-// ******************************************************************
-
-MEDDLY::binary_operation* MEDDLY::GREATER_THAN_EQUAL(forest* a, forest* b, forest* c)
-{
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  GE_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-    if (a->isMultiTerminal()) {
-        bool use_reals = (
-            a->getRangeType() == range_type::REAL ||
-            b->getRangeType() == range_type::REAL
-        );
-        if (use_reals) {
-            bop = new compare_mt<ge_mt<float> > (a,b,c);
-        } else {
-            bop = new compare_mt<ge_mt<long> > (a,b,c);
-        }
-        return GE_cache.add(bop);
-    }
-
-    if (a->isEVTimes()) {
-        switch (a->getEdgeType()) {
-            case edge_type::FLOAT:
-                bop = new compare_ev<EdgeOp_times<float>,
-                    evstar_factor<float>, ge_evstar<float> > (a,b,c);
-                break;
-
-            case edge_type::DOUBLE:
-                bop = new compare_ev<EdgeOp_times<double>,
-                    evstar_factor<double>, ge_evstar<double> > (a,b,c);
-                break;
-
-            default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        }
-    } else {
-        switch (a->getEdgeType()) {
-            case edge_type::INT:
-                bop = new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
-                    ge_evplus<int> > (a,b,c);
-                break;
-
-            case edge_type::LONG:
-                bop = new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
-                    ge_evplus<long> > (a,b,c);
-                break;
-
-            default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        }
-    }
-    return GE_cache.add( bop );
-}
-
-void MEDDLY::GREATER_THAN_EQUAL_init()
-{
-    GE_cache.reset("MoreEqual");
-}
-
-void MEDDLY::GREATER_THAN_EQUAL_done()
-{
-    MEDDLY_DCASSERT(GE_cache.isEmpty());
-}
-
-// ******************************************************************
-// *                           LESS THAN                            *
-// ******************************************************************
-
-MEDDLY::binary_operation* MEDDLY::LESS_THAN(forest* a, forest* b, forest* c)
-{
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  LT_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-    if (a->isMultiTerminal()) {
-        bool use_reals = (
-            a->getRangeType() == range_type::REAL ||
-            b->getRangeType() == range_type::REAL
-        );
-        if (use_reals) {
-            bop = new compare_mt<lt_mt<float> > (a,b,c);
-        } else {
-            bop = new compare_mt<lt_mt<long> > (a,b,c);
-        }
-        return LT_cache.add(bop);
-    }
-
-    if (a->isEVTimes()) {
-        switch (a->getEdgeType()) {
-            case edge_type::FLOAT:
-                bop = new compare_ev<EdgeOp_times<float>,
-                    evstar_factor<float>, lt_evstar<float> > (a,b,c);
-                break;
-
-            case edge_type::DOUBLE:
-                bop = new compare_ev<EdgeOp_times<double>,
-                    evstar_factor<double>, lt_evstar<double> > (a,b,c);
-                break;
-
-            default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        }
-    } else {
-        switch (a->getEdgeType()) {
-            case edge_type::INT:
-                bop = new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
-                    lt_evplus<int> > (a,b,c);
-                break;
-
-            case edge_type::LONG:
-                bop = new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
-                    lt_evplus<long> > (a,b,c);
-                break;
-
-            default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        }
-    }
-    return LT_cache.add( bop );
-}
-
-void MEDDLY::LESS_THAN_init()
-{
-    LT_cache.reset("LessThan");
-}
-
-void MEDDLY::LESS_THAN_done()
-{
-    MEDDLY_DCASSERT(LT_cache.isEmpty());
-}
-
-// ******************************************************************
-// *                         LESS OR EQUAL                          *
-// ******************************************************************
-
-MEDDLY::binary_operation* MEDDLY::LESS_THAN_EQUAL(forest* a, forest* b, forest* c)
-{
-    if (!a || !b || !c) return nullptr;
-    binary_operation* bop =  LE_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-    if (a->isMultiTerminal()) {
-        bool use_reals = (
-            a->getRangeType() == range_type::REAL ||
-            b->getRangeType() == range_type::REAL
-        );
-        if (use_reals) {
-            bop = new compare_mt<le_mt<float> > (a,b,c);
-        } else {
-            bop = new compare_mt<le_mt<long> > (a,b,c);
-        }
-        return LE_cache.add(bop);
-    }
-
-    if (a->isEVTimes()) {
-        switch (a->getEdgeType()) {
-            case edge_type::FLOAT:
-                bop = new compare_ev<EdgeOp_times<float>,
-                    evstar_factor<float>, le_evstar<float> > (a,b,c);
-                break;
-
-            case edge_type::DOUBLE:
-                bop = new compare_ev<EdgeOp_times<double>,
-                    evstar_factor<double>, le_evstar<double> > (a,b,c);
-                break;
-
-            default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        }
-    } else {
-        switch (a->getEdgeType()) {
-            case edge_type::INT:
-                bop = new compare_ev<EdgeOp_plus<int>, evplus_factor<int>,
-                    le_evplus<int> > (a,b,c);
-                break;
-
-            case edge_type::LONG:
-                bop = new compare_ev<EdgeOp_plus<long>, evplus_factor<long>,
-                    le_evplus<long> > (a,b,c);
-                break;
-
-            default:
-                throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-        }
-    }
-    return LE_cache.add( bop );
-}
-
-void MEDDLY::LESS_THAN_EQUAL_init()
-{
-    LE_cache.reset("LessEqual");
-}
-
-void MEDDLY::LESS_THAN_EQUAL_done()
-{
-    MEDDLY_DCASSERT(LE_cache.isEmpty());
+    static LE_factory F;
+    return F;
 }
 

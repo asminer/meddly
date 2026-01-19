@@ -19,20 +19,9 @@
 #ifndef MEDDLY_ARITH_MIN_H
 #define MEDDLY_ARITH_MIN_H
 
-#include "../oper.h"
-
-/*
- * Code for element-wise arithmetic and like operations.
- */
-
 namespace MEDDLY {
-    class forest;
-    class binary_operation;
-
-    /// The 'minimum' operation builder.
-    binary_operation* MINIMUM(forest* a, forest* b, forest* c);
-    void MINIMUM_init();
-    void MINIMUM_done();
+    class binary_factory;
+    binary_factory& MINIMUM();
 }
 
 #endif

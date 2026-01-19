@@ -16,18 +16,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEDDLY_MULTIPLY_H
-#define MEDDLY_MULTIPLY_H
+#ifndef MEDDLY_ARITH_DISTMIN_H
+#define MEDDLY_ARITH_DISTMIN_H
 
 namespace MEDDLY {
-    class forest;
-    class binary_operation;
-
-    /// The 'multiply' operation builder.
-    binary_operation* MULTIPLY(forest* a, forest* b, forest* c);
-    void MULTIPLY_init();
-    void MULTIPLY_done();
+    class binary_factory;
+    binary_factory& DIST_MIN();
 }
 
 #endif
+
 

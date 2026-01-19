@@ -48,7 +48,7 @@ void createOperations(const std::vector <forest*> &F,
     for (unsigned i=0; i<F.size(); i++) {
         for (unsigned j=0; j<F.size(); j++) {
             for (unsigned k=0; k<F.size(); k++) {
-                ops[u++] = INTERSECTION(F[i], F[j], F[k]);
+                ops[u++] = build(INTERSECTION, F[i], F[j], F[k]);
             } // for k
         } // for j
     } // for i
@@ -71,7 +71,7 @@ void searchFast(const std::vector <forest*> &F)
         for (unsigned j=0; j<F.size(); j++) {
             for (unsigned k=0; k<F.size(); k++) {
                 for (unsigned s=0; s<FASTSRCH; s++) {
-                    INTERSECTION(F[i], F[j], F[k]);
+                    build(INTERSECTION, F[i], F[j], F[k]);
                 }
             } // for k
         } // for j
@@ -89,7 +89,7 @@ void searchSlow(const std::vector <forest*> &F)
         for (unsigned i=0; i<F.size(); i++) {
             for (unsigned j=0; j<F.size(); j++) {
                 for (unsigned k=0; k<F.size(); k++) {
-                    INTERSECTION(F[i], F[j], F[k]);
+                    build(INTERSECTION, F[i], F[j], F[k]);
                 } // for k
             } // for j
         } // for i

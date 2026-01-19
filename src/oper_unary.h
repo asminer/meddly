@@ -24,11 +24,13 @@
 #include "forest.h"
 
 namespace MEDDLY {
-    class ct_object;    // TBD: remove
     class oper_item;
     class unary_operation;
+    class unary_factory;
+
+#ifdef ALLOW_DEPRECATED_0_17_6
     class unary_list;
-    class forest;
+#endif
 };
 
 // ******************************************************************
@@ -258,14 +260,241 @@ class MEDDLY::unary_operation : public operation {
         opnd_type resultType;
 
     private:
-        unary_list* parent;
+        /// Who built us
+        unary_factory* factory;
         unary_operation* next;
+        friend class unary_factory;
+
 #ifdef ALLOW_DEPRECATED_0_17_6
+        unary_list* parent;
         bool new_style;
+        friend class unary_list;
 #endif
 
-        friend class unary_list;
 };
+
+// ******************************************************************
+// *                                                                *
+// *                      unary_factory  class                      *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Mechanism to create specific unary operations.
+    Derive a subclass from this, and override methods setup(),
+        one of the build_new() methods, and optionally cleanup().
+ */
+class MEDDLY::unary_factory {
+    public:
+        // EMPTY constructor, always
+        unary_factory() { }
+
+        // EMPTY destructor, always
+        ~unary_factory() { }
+
+        /**
+            Must be overridden.
+            Essentially, the constructor, but called explicitly
+            during library initialization.
+        */
+        virtual void setup() = 0;
+
+        /**
+            Build a specific operation instance.
+            If there's one built already, use it.
+        */
+        inline unary_operation* build(forest* arg, forest* res)
+        {
+            // Bail if either forest is null
+            if (!arg || !res) {
+                return nullptr;
+            }
+            // check cache
+            if (front) {
+                if ((front->argF == arg) && (front->resF == res)) {
+                    return front;
+                }
+                if (mtfUnary(arg, res)) {
+                    return front;
+                }
+            }
+            // Not in cache. Build, and add to cache.
+            return cache_add( build_new(arg, res) );
+        }
+
+        /**
+            Build a specific operation instance.
+            If there's one built already, use it.
+        */
+        inline unary_operation* build(forest* arg, opnd_type res)
+        {
+            // Bail if the forest is null
+            if (!arg) return nullptr;
+            // check cache
+            if (front) {
+                if ((front->argF == arg) && (front->resultType == res)) {
+                    return front;
+                }
+                if (mtfUnary(arg, res)) {
+                    return front;
+                }
+            }
+            // Not in cache. Build, and add to cache.
+            return cache_add( build_new(arg, res) );
+        }
+
+        /**
+            Build a specific operation instance.
+            For this version, the result is a value.
+            The default behavior returns NULL.
+        */
+
+        /// Default: just calls _cleanup()
+        virtual void cleanup();
+
+        inline const char* getFile() const { return _file; }
+        inline const char* getName() const { return _name; }
+        inline const char* getDocs() const { return _doc; }
+
+        /// Should ONLY be called in unary_operation destructor
+        inline void remove(unary_operation* uop)
+        {
+            if (front == uop) {
+                front = front->next;
+                return;
+            }
+            searchRemove(uop);
+        }
+
+
+        /** Apply a unary operator.
+            The operand and the result are not necessarily in the same forest,
+            but they must belong to forests that share the same domain.
+            This is useful, for instance, for copying a function
+            from one forest to another.
+                @param  a   Operand.
+                @param  c   Output parameter: the result,
+                            where \a c = \a op \a a.
+        */
+        inline void apply(const dd_edge &a, dd_edge &c)
+        {
+            unary_operation* uop = build(a.getForest(), c.getForest());
+            if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            uop->compute(a, c);
+        }
+
+        /** Apply a unary operator.
+            For operators whose result is an integer.
+                @param  a   Operand.
+                @param  c   Output parameter: the result,
+                            where \a c = \a op \a a.
+        */
+        inline void apply(const dd_edge &a, long &c)
+        {
+            unary_operation* uop = build(a.getForest(), opnd_type::INTEGER);
+            if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            uop->compute(a, c);
+        }
+
+        /** Apply a unary operator.
+            For operators whose result is a real.
+                @param  a   Operand.
+                @param  c   Output parameter: the result,
+            where \a c = \a op \a a.
+        */
+        inline void apply(const dd_edge &a, double &c)
+        {
+            unary_operation* uop = build(a.getForest(), opnd_type::REAL);
+            if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            uop->compute(a, c);
+        }
+
+        /** Apply a unary operator.
+            For operators whose result is a real.
+                @param  a   Operand.
+                @param  c   Output parameter: the result,
+                            where \a c = \a op \a a.
+        */
+        inline void apply(const dd_edge &a, oper_item &c)
+        {
+            unary_operation* uop = build(a.getForest(), c.getType());
+            if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            uop->compute(a, c);
+        }
+
+#ifdef HAVE_LIBGMP
+        /** Apply a unary operator.
+            For operators whose result is an arbitrary-precision integer
+            (as supplied by the GNU MP library).
+                @param  a   Operand.
+                @param  c   Input: an initialized MP integer.
+                            Output: the result, where \a c = \a op \a a.
+        */
+        inline void apply(const dd_edge &a, mpz_ptr c)
+        {
+            unary_operation* uop = build(a.getForest(), opnd_type::HUGEINT);
+            if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            uop->compute(a, c);
+        }
+#endif
+
+
+    protected:
+        /**
+            Build a new operation instance.
+            For this version, the result is another DD.
+            The default behavior returns NULL.
+        */
+        virtual unary_operation* build_new(forest* arg, forest* res);
+
+        /**
+            Build a new operation instance.
+            For this version, the result is a value.
+            The default behavior returns NULL.
+        */
+        virtual unary_operation* build_new(forest* arg, opnd_type res);
+
+        /** Initialize base class.
+            Should be called by method setup().
+            Called during library initialization.
+                @param  file    Source file of implementation.
+                @param  name    Name of operator.
+                @param  doc     Documentation.
+        */
+        void _setup(const char* file, const char* name, const char* doc);
+
+        /** Clean up base class.
+            Called during library cleanup.
+        */
+        void _cleanup();
+
+    private:
+        bool mtfUnary(const forest* argF, const forest* resF);
+        bool mtfUnary(const forest* argF, opnd_type resType);
+        void searchRemove(unary_operation* uop);
+
+        /// Add an operation to the list.
+        inline unary_operation* cache_add(unary_operation* uop) {
+            if (uop) {
+                MEDDLY_DCASSERT(nullptr == uop->factory);
+                uop->factory = this;
+                uop->setName(_name);
+                uop->next = front;
+                front = uop;
+            }
+            return uop;
+        }
+
+
+    private:
+        const char* _file;
+        const char* _name;
+        const char* _doc;
+        unary_operation* front;
+
+};
+
+#ifdef ALLOW_DEPRECATED_0_17_6
 
 // ******************************************************************
 // *                                                                *
@@ -332,6 +561,8 @@ class MEDDLY::unary_list {
         void searchRemove(unary_operation* uop);
 };
 
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                          Unary  apply                          *
@@ -340,12 +571,37 @@ class MEDDLY::unary_list {
 
 namespace MEDDLY {
 
-    typedef unary_operation* (*unary_builtin1)(forest* arg, forest* res);
-    typedef unary_operation* (*unary_builtin2)(forest* arg, opnd_type res);
-
     // ******************************************************************
     // *                          Unary  apply                          *
     // ******************************************************************
+    typedef unary_factory&  (*unary_builtin0)();
+
+    template <class RES_T>
+    inline void apply(unary_builtin0 bu, const dd_edge &a, RES_T &c)
+    {
+        bu().apply(a, c);
+    }
+
+#ifdef HAVE_LIBGMP
+    inline void apply(unary_builtin0 bu, const dd_edge &a, mpz_ptr c)
+    {
+        bu().apply(a, c);
+    }
+#endif
+
+    inline unary_operation* build(unary_builtin0 bu, forest* arg, forest* res)
+    {
+        return bu().build(arg, res);
+    }
+
+    inline unary_operation* build(unary_builtin0 bu, forest* arg, opnd_type res)
+    {
+        return bu().build(arg, res);
+    }
+
+#ifdef ALLOW_DEPRECATED_0_17_6
+    typedef unary_operation* (*unary_builtin1)(forest* arg, forest* res);
+    typedef unary_operation* (*unary_builtin2)(forest* arg, opnd_type res);
 
     /** Apply a unary operator.
         The operand and the result are not necessarily in the same forest,
@@ -420,6 +676,8 @@ namespace MEDDLY {
         if (!uop) throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         uop->compute(a, c);
     }
+#endif
+
 #endif
 
 };

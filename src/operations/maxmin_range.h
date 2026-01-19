@@ -22,17 +22,9 @@
 #include "../oper.h"
 
 namespace MEDDLY {
-    class unary_operation;
-
-    /// Builder for 'maximum range' operations.
-    unary_operation* MAX_RANGE(forest* arg, opnd_type res);
-    void MAX_RANGE_init();
-    void MAX_RANGE_done();
-    ///
-    /// Builder for 'minimum range' operations.
-    unary_operation* MIN_RANGE(forest* arg, opnd_type res);
-    void MIN_RANGE_init();
-    void MIN_RANGE_done();
+    class unary_factory;
+    unary_factory& MAX_RANGE();
+    unary_factory& MIN_RANGE();
 }
 
 #endif

@@ -173,7 +173,7 @@ bool MEDDLY::rel_node_from_dd::outgoing(unsigned i, unpacked_node &u)
     */
 
     node_handle dn = unp->down(i);
-    const int next_level = -unp->getLevel();
+    const int next_level = MXD_levels::downLevel(unp->getLevel());
 
     if (getParent()->getNodeLevel(dn) == next_level) {
         u.initFromNode(dn);
@@ -214,9 +214,17 @@ bool MEDDLY::rel_node_from_dd::outgoing(unsigned i, unpacked_node &u)
         }
     } else {
         if (unp->hasEdges()) {
-            u.initIdentity(next_level, i, unp->edgeval(i), dn);
+            if (getParent()->isIdentityReduced()) {
+                u.initIdentity(next_level, i, unp->edgeval(i), dn);
+            } else {
+                u.initRedundant(next_level, unp->edgeval(i), dn);
+            }
         } else {
-            u.initIdentity(next_level, i, dn);
+            if (getParent()->isIdentityReduced()) {
+                u.initIdentity(next_level, i, dn);
+            } else {
+                u.initRedundant(next_level, dn);
+            }
         }
     }
     return true;
@@ -224,7 +232,6 @@ bool MEDDLY::rel_node_from_dd::outgoing(unsigned i, unpacked_node &u)
 
 void MEDDLY::rel_node_from_dd::show(output &out) const
 {
-
     if (unp->getLevel() < 0) {
         out.put("redundant node\n");
         for (unsigned i=0; i<unp->getSize(); i++) {
@@ -235,20 +242,48 @@ void MEDDLY::rel_node_from_dd::show(output &out) const
             out.put('\n');
         }
     } else {
+        const int next_level = MXD_levels::downLevel(unp->getLevel());
         unp->show(out, true);
         out.put('\n');
+        edge_value none;
         for (unsigned i=0; i<unp->getSize(); i++) {
+            const node_handle dn = unp->down(i);
             out.put("    ");
             out.put(i);
             out.put(": ");
             if (unp->hasEdges()) {
-                getParent()->showEdge(out, unp->edgeval(i), unp->down(i));
+                getParent()->showEdge(out, unp->edgeval(i), dn);
             } else {
-                edge_value none;
-                getParent()->showEdge(out, none, unp->down(i));
+                getParent()->showEdge(out, none, dn);
             }
             out.put(": ");
-            getParent()->showNode(out, unp->down(i), SHOW_DETAILS);
+            if (getParent()->getNodeLevel(dn) == next_level) {
+                getParent()->showNode(out, dn, SHOW_DETAILS);
+            } else {
+                if (getParent()->isIdentityReduced()) {
+                    out.put("identity: (");
+                    out.put(i);
+                    out.put(':');
+                    if (unp->hasEdges()) {
+                        getParent()->showEdge(out, unp->edgeval(i), dn);
+                    } else {
+                        getParent()->showEdge(out, none, dn);
+                    }
+                    out.put(')');
+                } else {
+                    out.put("redundant: [");
+                    for (unsigned j=0; j<unp->getSize(); j++) {
+                        if (j) out.put('|');
+                        if (unp->hasEdges()) {
+                            getParent()->showEdge(out, unp->edgeval(i), dn);
+                        } else {
+                            getParent()->showEdge(out, none, dn);
+                        }
+                    }
+                    out.put(']');
+
+                }
+            }
             out.put('\n');
         }
     }
@@ -595,6 +630,12 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
         default:
                 FAIL(__FILE__, __LINE__, "Unknown edge labeling");
     }
+
+#ifdef DEBUG_CREATE_REDUCED
+    out << "After normalization: ";
+    un->show(out, true);
+    out << "\n";
+#endif
 
     //
     // Is this a transparent node?
@@ -1163,12 +1204,12 @@ void MEDDLY::forest::getEdgeForValue(rangeval T, edge_value &v, node_handle &p)
                 switch (the_edge_type) {
                     case edge_type::FLOAT:
                         v.set(float(T));
-                        p = (0.0 == v.getFloat()) ? OMEGA_ZERO : OMEGA_NORMAL;
+                        p = (0.0 == float(v)) ? OMEGA_ZERO : OMEGA_NORMAL;
                         return;
 
                     case edge_type::DOUBLE:
                         v.set(double(T));
-                        p = (0.0 == v.getDouble()) ? OMEGA_ZERO : OMEGA_NORMAL;
+                        p = (0.0 == double(v)) ? OMEGA_ZERO : OMEGA_NORMAL;
                         return;
 
                     default:
@@ -1240,11 +1281,11 @@ void MEDDLY::forest::getValueForEdge(const edge_value &v, node_handle p,
                 MEDDLY_DCASSERT(OMEGA_NORMAL == p);
                 switch (the_edge_type) {
                     case edge_type::INT:
-                        T = rangeval(v.getInt());
+                        T = rangeval(int(v));
                         return;
 
                     case edge_type::LONG:
-                        T = rangeval(v.getLong());
+                        T = rangeval(long(v));
                         return;
 
                     default:
@@ -1265,11 +1306,11 @@ void MEDDLY::forest::getValueForEdge(const edge_value &v, node_handle p,
 
                 switch (the_edge_type) {
                     case edge_type::FLOAT:
-                        T = rangeval(v.getFloat());
+                        T = rangeval(float(v));
                         return;
 
                     case edge_type::DOUBLE:
-                        T = rangeval(v.getDouble());
+                        T = rangeval(double(v));
                         return;
 
                     default:
@@ -1929,6 +1970,11 @@ MEDDLY::policies MEDDLY::forest::mxdDefaults;
 MEDDLY::forest::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
   const policies &p) : nodeHeaders(*this, mstats, stats), deflt(p)
 {
+    // Fix any policy inconsistencies
+    if (deflt.isIdentityReduced() && !rel) {
+        deflt.setFullyReduced();
+    }
+
     // Set up domain
     d = _d;
 
@@ -2000,20 +2046,20 @@ MEDDLY::forest::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
         case edge_labeling::EVPLUS:
             // TBD: what about integer edges
             setLongEdges();
-            setTransparentEdge(0, long(0));
+            setTransparentEdge(OMEGA_INFINITY, long(0));
             break;
 
         case edge_labeling::INDEX_SET:
             // TBD: what about integer edges
             setLongEdges();
-            setTransparentEdge(0, long(0));
+            setTransparentEdge(OMEGA_INFINITY, long(0));
             unhashed_bytes = sizeof(long);
             break;
 
         case edge_labeling::EVTIMES:
             // TBD: what about double edges
             setFloatEdges();
-            setTransparentEdge(0, float(0));
+            setTransparentEdge(OMEGA_ZERO, float(0));
 
     };  // switch edgeLabel
 
@@ -2065,7 +2111,7 @@ void MEDDLY::forest::markForDeletion()
     unregisterDDEdges();
 }
 
-#ifdef ALLOW_DEPRECATED_0_17_9
+#ifdef ALLOW_DEPRECATED_0_18_0
 
 void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a)
 {
@@ -2154,131 +2200,4 @@ void MEDDLY::forest::createEdgeForVar(int vh, bool pr,
     node = makeRedundantsTo(node, k, getNumVariables());
     result.set(ev, node);
 }
-
-
-// ===================================================================
-//
-// Deprecated as of version 0.17.7
-//
-// ===================================================================
-
-#ifdef ALLOW_DEPRECATED_0_17_7
-
-void MEDDLY::forest::createEdge(const int* const* vlist, int N, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest
-::createEdge(const int* const* vlist, const long* terms, int N, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest
-::createEdge(const int* const* vlist, const float* terms, int N, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest
-::createEdge(const int* const* vl, const int* const* vpl, int N, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest
-::createEdge(const int* const* vlist, const int* const* vplist, const long* terms, int N, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest
-::createEdge(const int* const* vlist, const int* const* vplist, const float* terms, int N, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-
-void MEDDLY::forest::createEdge(bool val, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::createEdge(long val, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::createEdge(float val, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::createEdge(double val, dd_edge &e)
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-
-
-void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, bool &t) const
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, long &t) const
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::evaluate(const dd_edge &f, const int* vl, float &t) const
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest
-::evaluate(const dd_edge& f, const int* vl, const int* vpl, bool &t) const
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest
-::evaluate(const dd_edge& f, const int* vl, const int* vpl, long &t) const
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest
-::evaluate(const dd_edge& f, const int* vl, const int* vpl, float &t) const
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::getElement(const dd_edge& a, int index, int* e)
-{
-    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-}
-
-void MEDDLY::forest::getElement(const dd_edge& a, long index, int* e)
-{
-    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-}
-
-//
-
-MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedRowIter() const
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-MEDDLY::enumerator::iterator* MEDDLY::forest::makeFixedColumnIter() const
-{
-    throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
-}
-
-
-//
-
-#endif
 

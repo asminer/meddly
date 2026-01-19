@@ -20,13 +20,8 @@
 #define MEDDLY_COMPLEMENT_H
 
 namespace MEDDLY {
-    class forest;
-    class unary_operation;
-
-    /// Builder for 'complement' operations.
-    unary_operation* COMPLEMENT(forest* arg, forest* res);
-    void COMPLEMENT_init();
-    void COMPLEMENT_done();
+    class unary_factory;
+    unary_factory& COMPLEMENT();
 };
 
 #endif

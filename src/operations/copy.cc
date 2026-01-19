@@ -29,7 +29,7 @@ namespace MEDDLY {
     class copy_MT;
     class copy_EV_fast;
 
-    unary_list COPY_cache;
+    class COPY_factory;
 };
 
 // #define TRACE
@@ -932,24 +932,28 @@ void MEDDLY::copy_EV<EdgeOp>::_compute(int L, unsigned in,
     }
 }
 
-
 // ******************************************************************
 // *                                                                *
-// *                           Front  end                           *
+// *                       COPY_factory class                       *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
+class MEDDLY::COPY_factory : public unary_factory {
+    public:
+        virtual void setup();
+        virtual unary_operation* build_new(forest* arg, forest* res);
+};
+
+// ******************************************************************
+
+void MEDDLY::COPY_factory::setup()
 {
-    if (!arg || !res) {
-        return nullptr;
-    }
+    _setup(__FILE__, "COPY", "Copy functions, within the same forest or across forests. The argument and result forests must have the same domain, and must both be sets or both be relations. The function ranges may be different.");
+}
 
-    unary_operation* uop =  COPY_cache.find(arg, res);
-    if (uop) {
-        return uop;
-    }
-
+MEDDLY::unary_operation*
+MEDDLY::COPY_factory::build_new(forest* arg, forest* res)
+{
     if (arg->isForRelations() != res->isForRelations()) {
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
@@ -958,7 +962,7 @@ MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
     // Super fast case: same forests
     //
     if (arg == res) {
-        return COPY_cache.add(new copy_inforest(res));
+        return new copy_inforest(res);
     }
 
     //
@@ -966,7 +970,7 @@ MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
     //
     if (arg->isMultiTerminal())
     {
-        return COPY_cache.add(new copy_MT(arg, res));
+        return new copy_MT(arg, res);
     }
 
 
@@ -978,11 +982,11 @@ MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
     {
         switch (arg->getRangeType()) {
             case range_type::INTEGER:
-                return COPY_cache.add( new copy_EV_fast(arg, res) );
+                return new copy_EV_fast(arg, res);
 
             case range_type::REAL:
                 if (res->getRangeType() == range_type::REAL) {
-                    return COPY_cache.add( new copy_EV_fast(arg, res) );
+                    return new copy_EV_fast(arg, res);
                 }
 
             default:
@@ -997,14 +1001,10 @@ MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
     if (arg->isEVPlus() || arg->isIndexSet()) {
         switch (arg->getRangeType()) {
             case range_type::INTEGER:
-                return COPY_cache.add(
-                    new copy_EV< EdgeOp_plus<long> >(arg, res)
-                );
+                return new copy_EV< EdgeOp_plus<long> >(arg, res);
 
             case range_type::REAL:
-                return COPY_cache.add(
-                    new copy_EV< EdgeOp_plus<float> >(arg, res)
-                );
+                return new copy_EV< EdgeOp_plus<float> >(arg, res);
 
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -1014,34 +1014,32 @@ MEDDLY::unary_operation* MEDDLY::COPY(forest* arg, forest* res)
     if (arg->isEVTimes()) {
         switch (arg->getRangeType()) {
             case range_type::INTEGER:
-                return COPY_cache.add(
-                    new copy_EV< EdgeOp_times<long> >(arg, res)
-                );
+                return new copy_EV< EdgeOp_times<long> >(arg, res);
 
             case range_type::REAL:
-                return COPY_cache.add(
-                    new copy_EV< EdgeOp_times<float> >(arg, res)
-                );
+                return new copy_EV< EdgeOp_times<float> >(arg, res);
 
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
         };
     }
 
-
     //
     // Catch all for any other cases
     //
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    return nullptr;
 }
 
-void MEDDLY::COPY_init()
-{
-    COPY_cache.reset("Copy");
-}
 
-void MEDDLY::COPY_done()
+// ******************************************************************
+// *                                                                *
+// *                           Front  end                           *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::unary_factory& MEDDLY::COPY()
 {
-    MEDDLY_DCASSERT(COPY_cache.isEmpty());
+    static COPY_factory F;
+    return F;
 }
 

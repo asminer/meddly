@@ -16,19 +16,13 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEDDLY_COMP_GE_H
-#define MEDDLY_COMP_GE_H
+#ifndef MEDDLY_DIST_INC_H
+#define MEDDLY_DIST_INC_H
 
 namespace MEDDLY {
-    class forest;
-    class binary_operation;
-
-    /// The 'greater or equal' operation builder.
-    binary_operation* GREATER_THAN_EQUAL(forest* a, forest* b, forest* c);
-    void GREATER_THAN_EQUAL_init();
-    void GREATER_THAN_EQUAL_done();
-}
+    class unary_factory;
+    unary_factory& DIST_INC();
+};
 
 #endif
-
 

@@ -807,7 +807,7 @@ void MEDDLY::common_hyb_dfs_by_events_mt
 ::compute(const dd_edge &a, dd_edge &c)
 {
   // Initialize operations
-  mddUnion = UNION(resF, resF, resF);
+  mddUnion = build(UNION, resF, resF, resF);
   MEDDLY_DCASSERT(mddUnion);
 
 

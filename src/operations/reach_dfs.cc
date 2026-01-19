@@ -513,7 +513,7 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
     long cev = Inf<long>();
     node_handle c = 0;
     if (evmddDptrs->down(i) != 0) {
-      saturate(evmddDptrs->edgeval(i).getLong(), evmddDptrs->down(i), k-1, cev, c);
+      saturate(evmddDptrs->edgeval(i), evmddDptrs->down(i), k-1, cev, c);
     }
     C->setFull(i, edge_value(cev), c);
     // C->setEdge(i, cev);
@@ -526,7 +526,7 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
   parent->saturateHelper(*C);
   edge_value Cev;
   resF->createReducedNode(C, Cev, resEvmdd);
-  resEv = Cev.getLong() + ev;
+  resEv = long(Cev) + ev;
 
   // save in compute table
   saveSaturateResult(Key, ev, evmdd, resEv, resEvmdd);
@@ -726,13 +726,13 @@ void MEDDLY::common_dfs_mt
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
   // Initialize operations
-  mddUnion = UNION(resF, resF, resF);
+  mddUnion = build(UNION, resF, resF, resF);
   MEDDLY_DCASSERT(mddUnion);
 
-  mxdIntersection = INTERSECTION(arg2F, arg2F, arg2F);
+  mxdIntersection = build(INTERSECTION, arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdIntersection);
 
-  mxdDifference = DIFFERENCE(arg2F, arg2F, arg2F);
+  mxdDifference = build(DIFFERENCE, arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdDifference);
 
 #ifdef DEBUG_INITIAL
@@ -1231,13 +1231,13 @@ void MEDDLY::common_dfs_evplus
 ::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
 {
   // Initialize operations
-  mddUnion = MINIMUM(resF, resF, resF);
+  mddUnion = build(MINIMUM, resF, resF, resF);
   MEDDLY_DCASSERT(mddUnion);
 
-  mxdIntersection = INTERSECTION(arg2F, arg2F, arg2F);
+  mxdIntersection = build(INTERSECTION, arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdIntersection);
 
-  mxdDifference = DIFFERENCE(arg2F, arg2F, arg2F);
+  mxdDifference = build(DIFFERENCE, arg2F, arg2F, arg2F);
   MEDDLY_DCASSERT(mxdDifference);
 
 #ifdef DEBUG_INITIAL
@@ -1332,7 +1332,7 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
 
       long recev = Inf<long>();
       node_handle rec = 0;
-      recFire(nb.edgeval(i).getLong(), nb.down(i), Rp->down(unsigned(jz)), recev, rec);
+      recFire(nb.edgeval(i), nb.down(i), Rp->down(unsigned(jz)), recev, rec);
 
       if (rec == 0) continue;
 
@@ -1340,7 +1340,7 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
       recev++;
 
       if (rec == nb.down(j)) {
-        if (recev < nb.edgeval(j).getLong()) {
+        if (recev < long(nb.edgeval(j))) {
           nb.edgeval(j) = recev;
         }
         resF->unlinkNode(rec);
@@ -1359,7 +1359,7 @@ void MEDDLY::forwd_dfs_evplus::saturateHelper(unpacked_node &nb)
 //        nb.d_ref(j) = -1;
 //      }
       else {
-        nbdj.set(nb.edgeval(j).getLong(), nb.down(j));
+        nbdj.set(nb.edgeval(j), nb.down(j));
         temp.set(recev, rec);  // clobbers rec; that's what we want
         mddUnion->computeTemp(nbdj, temp, nbdj);
         updated = (nbdj.getNode() != nb.down(j));
@@ -1443,7 +1443,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
     for (unsigned i=0; i<rSize; i++) {
       long nev = Inf<long>();
       node_handle n = 0;
-      recFire(A->edgeval(i).getLong() + ev, A->down(i), mxd, nev, n);
+      recFire(long(A->edgeval(i)) + ev, A->down(i), mxd, nev, n);
       nb->setFull(i, edge_value(nev), n);
       // nb->setEdge(i, nev);
       // nb->d_ref(i) = n;
@@ -1483,7 +1483,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
         // and add them
         long nev = Inf<long>();
         node_handle n = 0;
-        recFire(A->edgeval(i).getLong() + ev, A->down(i), Rp->down(jz), nev, n);
+        recFire(long(A->edgeval(i)) + ev, A->down(i), Rp->down(jz), nev, n);
 
         if (0==n) continue;
         if (0==nb->down(j)) {
@@ -1495,7 +1495,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
 
         // there's new states and existing states; union them.
         newst.set(nev, n); // clobber when done
-        nbdj.set(nb->edgeval(j).getLong(), nb->down(j));   // also clobber when done
+        nbdj.set(nb->edgeval(j), nb->down(j));   // also clobber when done
         mddUnion->computeTemp(newst, nbdj, nbdj);
         nb->setFull(j, nbdj);
       } // for j
@@ -1512,7 +1512,7 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
   saturateHelper(*nb);
   edge_value rev;
   resF->createReducedNode(nb, rev, resEvmdd);
-  resEv = rev.getLong();
+  resEv = long(rev);
 #ifdef TRACE_ALL_OPS
   printf("computed recfire(<%d, %d>, %d) = <%d, %d>\n", ev, evmdd, mxd, resEv, resEvmdd);
 #endif

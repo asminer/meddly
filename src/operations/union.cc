@@ -27,8 +27,7 @@
 
 namespace MEDDLY {
     class union_mt;
-
-    binary_list UNION_cache;
+    class UNION_factory;
 };
 
 // #define TRACE
@@ -134,8 +133,8 @@ MEDDLY::union_mt::union_mt(forest* arg1, forest* arg2, forest* res)
     //
     // Quick copying, even across forests, for terminal cases :)
     //
-    copy_arg1res = COPY(arg1, res);
-    copy_arg2res = COPY(arg2, res);
+    copy_arg1res = build(COPY, arg1, res);
+    copy_arg2res = build(COPY, arg2, res);
 
     //
     // How to handle different reductions
@@ -536,31 +535,38 @@ void MEDDLY::union_mt::_compute(int L, unsigned in,
 
 // ******************************************************************
 // *                                                                *
+// *                      UNION_factory  class                      *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::UNION_factory : public binary_factory {
+    public:
+        virtual void setup();
+        virtual binary_operation* build_new(forest* a, forest* b, forest* c);
+};
+
+// ******************************************************************
+
+void MEDDLY::UNION_factory::setup()
+{
+    _setup(__FILE__, "UNION", "Set union, meaning logical OR of the inputs. Operands and the result may be within the same forest or across forests, but all forests must be over the same domain. Forests must be multi-terminal.");
+}
+
+MEDDLY::binary_operation*
+MEDDLY::UNION_factory::build_new(forest* a, forest* b, forest* c)
+{
+    return new union_mt(a, b, c);
+}
+
+// ******************************************************************
+// *                                                                *
 // *                           Front  end                           *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_operation*
-MEDDLY::UNION(forest* a, forest* b, forest* c)
+MEDDLY::binary_factory& MEDDLY::UNION()
 {
-    if (!a || !b || !c) {
-        return nullptr;
-    }
-    binary_operation* bop =  UNION_cache.find(a, b, c);
-    if (bop) {
-        return bop;
-    }
-
-    return UNION_cache.add(new union_mt(a, b, c));
-}
-
-void MEDDLY::UNION_init()
-{
-    UNION_cache.reset("Union");
-}
-
-void MEDDLY::UNION_done()
-{
-    MEDDLY_DCASSERT(UNION_cache.isEmpty());
+    static UNION_factory F;
+    return F;
 }
 
