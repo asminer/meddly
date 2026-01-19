@@ -18,6 +18,11 @@ layout: single
 
 * Added tests for pre/post image operations.
 
+* Pre- and post-image operations work for both sets of states,
+  and distance functions. Distance functions may be stored using
+  EV+MDDs, with infinity for unreachable states, or using multi-terminal,
+  integer range MDDs, with negative values for unreachable states.
+
 
 ### Interface Changes
 
