@@ -21,11 +21,6 @@
 #include "initializer.h"
 #include "init_forests.h"
 
-#ifdef ALLOW_DEPRECATED_0_17_7
-#include "forests/mt.h"
-#include "forests/ev.h"
-#endif
-
 MEDDLY::forest_initializer::forest_initializer(initializer_list *p)
     : initializer_list(p)
 {
@@ -33,21 +28,11 @@ MEDDLY::forest_initializer::forest_initializer(initializer_list *p)
 
 void MEDDLY::forest_initializer::setup()
 {
-#ifdef ALLOW_DEPRECATED_0_17_7
-    mt_forest::initStatics();
-    ev_forest::initStatics();
-#endif
-
     forest::initStatics();
 }
 
 void MEDDLY::forest_initializer::cleanup()
 {
-#ifdef ALLOW_DEPRECATED_0_17_7
-    mt_forest::clearStatics();
-    ev_forest::clearStatics();
-#endif
-
     forest::freeStatics();
 }
 

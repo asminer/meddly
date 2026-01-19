@@ -26,13 +26,6 @@
 // *                                                                *
 // ******************************************************************
 
-#ifdef ALLOW_DEPRECATED_0_17_7
-
-int* MEDDLY::ev_forest::order;
-int  MEDDLY::ev_forest::order_size;
-
-#endif
-
 MEDDLY::ev_forest::ev_forest(domain *d, bool rel,
   range_type t, edge_labeling ev, const policies &p)
 : forest(d, rel, t, ev, p)
@@ -40,36 +33,3 @@ MEDDLY::ev_forest::ev_forest(domain *d, bool rel,
   MEDDLY_DCASSERT(ev != edge_labeling::MULTI_TERMINAL);
 }
 
-// statics
-
-#ifdef ALLOW_DEPRECATED_0_17_7
-
-void MEDDLY::ev_forest::initStatics()
-{
-  order = 0;
-  order_size = 0;
-}
-
-void MEDDLY::ev_forest::enlargeStatics(int n)
-{
-  MEDDLY_DCASSERT(n>0);
-  if (n>order_size) {
-    order = (int*) realloc(order, unsigned(n)*sizeof(int));
-    //terminals = (node_handle*) realloc(terminals, n*sizeof(node_handle));
-    //if (0==order || 0==terminals) {
-    if (0==order) {
-      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    }
-    order_size = n;
-  }
-  for (int i=0; i<n; i++) order[i] = i;
-}
-
-void MEDDLY::ev_forest::clearStatics()
-{
-  free(order);
-  order = 0;
-  order_size = 0;
-}
-
-#endif

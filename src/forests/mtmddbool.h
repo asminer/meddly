@@ -39,12 +39,6 @@ class MEDDLY::mt_mdd_bool : public mtmdd_forest {
 #ifdef ALLOW_DEPRECATED_0_18_0
     virtual void createEdgeForVar(int vh, bool vp, const bool* terms, dd_edge& a);
 #endif
-#ifdef ALLOW_DEPRECATED_0_17_7
-    virtual void createEdge(bool val, dd_edge &e);
-    virtual void createEdge(const int* const* vlist, int N, dd_edge &e);
-    virtual void evaluate(const dd_edge &f, const int* vlist, bool &term)
-      const;
-#endif
 
 };
 

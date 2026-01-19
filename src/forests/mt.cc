@@ -30,11 +30,6 @@
 // *                                                                *
 // ******************************************************************
 
-#ifdef ALLOW_DEPRECATED_0_17_7
-int* MEDDLY::mt_forest::order;
-int  MEDDLY::mt_forest::order_size;
-#endif
-
 MEDDLY::mt_forest::mt_forest(domain *d, bool rel,
   range_type t, const policies &p)
 : forest(d, rel, t, edge_labeling::MULTI_TERMINAL, p)
@@ -113,68 +108,3 @@ MEDDLY::node_handle MEDDLY::mt_forest::_makeNodeAtLevel(int k, node_handle d)
 
 #endif
 
-#ifdef ALLOW_DEPRECATED_0_17_7
-
-void MEDDLY::mt_forest::initStatics()
-{
-  order = 0;
-  order_size = 0;
-}
-
-void MEDDLY::mt_forest::enlargeStatics(int n)
-{
-  MEDDLY_DCASSERT(n>=0);
-  if (n>order_size) {
-    order = (int*) realloc(order, n*sizeof(int));
-    //terminals = (node_handle*) realloc(terminals, n*sizeof(node_handle));
-    //if (0==order || 0==terminals) {
-    if (0==order) {
-      throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-    }
-    order_size = n;
-  }
-  for (int i=0; i<n; i++) order[i] = i;
-}
-
-void MEDDLY::mt_forest::clearStatics()
-{
-  free(order);
-  order = 0;
-  order_size = 0;
-}
-
-#endif
-
-// ******************************************************************
-// *                                                                *
-// *                 mt_forest::mt_iterator methods                 *
-// *                                                                *
-// ******************************************************************
-
-#ifdef ALLOW_DEPRECATED_0_17_7
-
-MEDDLY::mt_forest::mt_iterator::mt_iterator(const forest *F)
- : iterator(F)
-{
-}
-
-MEDDLY::mt_forest::mt_iterator::~mt_iterator()
-{
-}
-
-void MEDDLY::mt_forest::mt_iterator::getValue(int &termVal) const
-{
-  MEDDLY_DCASSERT(index);
-  terminal t(terminal_type::INTEGER, index[0]);
-  termVal = t.getInteger();
-  // termVal = int_Tencoder::handle2value(index[0]);
-}
-
-void MEDDLY::mt_forest::mt_iterator::getValue(float &termVal) const
-{
-  MEDDLY_DCASSERT(index);
-  terminal t(terminal_type::REAL, index[0]);
-  termVal = t.getReal();
-}
-
-#endif
