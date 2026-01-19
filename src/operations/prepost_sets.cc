@@ -673,13 +673,9 @@ namespace MEDDLY {
                           forest* fc, edge_value &cv, node_handle &c)
         {
             MEDDLY_DCASSERT(b<0);
-            unary_operation* copy = build(COPY, fa, fc);
-            MEDDLY_DCASSERT(copy);
-            copy->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
-
-            // TBD: instead of copy, use an 'increment distance'
-            // element-wise unary operation, which does nothing
-            // for negative elements, and adds one to non-negative elements.
+            unary_operation* increment = build(DIST_INC, fa, fc);
+            MEDDLY_DCASSERT(increment);
+            increment->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
         }
 
     };

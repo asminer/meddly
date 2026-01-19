@@ -284,7 +284,7 @@ class MEDDLY::DIST_INC_factory : public unary_factory {
 
 void MEDDLY::DIST_INC_factory::setup()
 {
-    _setup(__FILE__, "DIST_INC", "Distance increment. Builds a new function g(x) from input function f(x) such that g(x) = { f(x)+1, if f(x) >= 0; g(x), otherwise. Used for adding one to a distance function, encoded as a multi-terminal MDD/MXD. The input and output forests must be over the same domain, and must have integer range.");
+    _setup(__FILE__, "DIST_INC", "Distance increment. Builds a new function g(x) from input function f(x) such that g(x) = { f(x)+1, if f(x) >= 0; g(x), otherwise. Used for adding one to a distance function, encoded as a multi-terminal MDD/MXD where negative values indicate unreachable or infinite distance. The input and output forests must be over the same domain, and must have integer range.");
 }
 
 MEDDLY::unary_operation*

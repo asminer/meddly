@@ -135,6 +135,13 @@ TESTS = \
     ops_prepost.--set.--MTb.--inQ.--relQ._sh \
     ops_prepost.--set.--MTb.--inQ.--relF._sh \
     \
+    ops_prepost.--set.--MTi.--inF.--relI._sh \
+    ops_prepost.--set.--MTi.--inF.--relQ._sh \
+    ops_prepost.--set.--MTi.--inF.--relF._sh \
+    ops_prepost.--set.--MTi.--inQ.--relI._sh \
+    ops_prepost.--set.--MTi.--inQ.--relQ._sh \
+    ops_prepost.--set.--MTi.--inQ.--relF._sh \
+    \
     ops_prepost.--set.--EVp.--inF.--relI._sh \
     ops_prepost.--set.--EVp.--inF.--relQ._sh \
     ops_prepost.--set.--EVp.--inF.--relF._sh \
