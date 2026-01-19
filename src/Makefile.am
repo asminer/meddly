@@ -116,6 +116,7 @@ libmeddly_la_SOURCES = \
     operations/cross.h                  operations/cross.cc        \
     operations/cycle.h                  operations/cycle.cc        \
     operations/difference.h             operations/difference.cc   \
+    operations/dist_inc.h               operations/dist_inc.cc     \
     operations/intersection.h           operations/intersection.cc \
     operations/maxmin_range.h           operations/maxmin_range.cc \
     operations/mdd2index.h              operations/mdd2index.cc    \

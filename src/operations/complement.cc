@@ -26,10 +26,6 @@
 
 namespace MEDDLY {
     class compl_mt;
-
-    class compl_mdd;
-    class compl_mxd;
-
     class COMPL_factory;
 };
 
@@ -122,7 +118,7 @@ MEDDLY::compl_mt::compl_mt(forest* arg, forest* res)
     checkAllRanges(__FILE__, __LINE__, range_type::BOOLEAN);
     checkAllLabelings(__FILE__, __LINE__, edge_labeling::MULTI_TERMINAL);
 
-    ct = new ct_entry_type("mdd_complement");
+    ct = new ct_entry_type("complement");
     ct->setFixed(arg);
     ct->setResult(res);
     ct->doneBuilding();

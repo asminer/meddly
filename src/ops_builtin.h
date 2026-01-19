@@ -48,6 +48,9 @@ namespace MEDDLY {
     /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
     unary_factory& CYCLE();
 
+    /// Increment a multi-terminal distance function.
+    unary_factory& DIST_INC();
+
     /// Find the largest value returned by the function.
     unary_factory& MAX_RANGE();
 
