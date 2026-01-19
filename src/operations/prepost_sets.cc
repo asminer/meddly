@@ -247,12 +247,23 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
 {
     // **************************************************************
     //
+    // Determine level information
+    //
+    // **************************************************************
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = ABS(arg2F->getNodeLevel(B));
+    const int Clevel = forced_by_levels ? L : MAX(Alevel, Blevel);
+    const int nextL = MDD_levels::downLevel(Clevel);
+
+    // **************************************************************
+    //
     // Check terminal cases
     //
     // **************************************************************
     if (0==B || ATYPE::isUnreachable(av, A)) {
         ATYPE::setUnreachable(cv, C);
         EOP::accumulateOp(cv, av);
+        C = resF->makeRedundantsTo(C, Clevel, L);
         return;
     }
 
@@ -265,16 +276,6 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
         ATYPE::apply(arg1F, av, A, arg2F, B, resF, cv, C);
         return;
     }
-
-    // **************************************************************
-    //
-    // Determine level information
-    //
-    // **************************************************************
-    const int Alevel = arg1F->getNodeLevel(A);
-    const int Blevel = ABS(arg2F->getNodeLevel(B));
-    const int Clevel = forced_by_levels ? L : MAX(Alevel, Blevel);
-    const int nextL = MDD_levels::downLevel(Clevel);
 
 #ifdef TRACE
     out << ATYPE::name(FORWD) << " prepost_set_mtrel::compute(" << L << ", ";
@@ -651,7 +652,6 @@ namespace MEDDLY {
         inline static void setUnreachable(edge_value &v, node_handle &p)
         {
             v.set();
-            // TBD: quasi-reduced
             terminal t = -1;
             p = t.getIntegerHandle();
         }
@@ -661,7 +661,6 @@ namespace MEDDLY {
         {
             terminal t = -1;
             node_handle neg1 = t.getIntegerHandle();
-            // TBD: quasi-reduced
             for (unsigned i=0; i<U->getSize(); i++) {
                 U->setFull(i, neg1);
             }
@@ -819,7 +818,7 @@ namespace MEDDLY {
 template <bool FWD>
 void MEDDLY::_IMAGE_factory <FWD>::setup()
 {
-    snprintf(docs, 1024, "Follow edges %s in a transition relation. The first operand should be a set/vector. The second operand should be a relation/matrix. The result should be a set/vector, and should have the same range and edge labeling type as the first operand. All forests should be over the same domain.\nIf the output function has type BOOLEAN, then the output value is true if and only if one of the input states has an %s the output state.\nIf the output function has type INTEGER, then the first operand is assumed to be a distance function over states, and the output value is one plus the minimum over all input states that have an %s the output state. For multi-terminal forests, a negative value is used to indicate unreachable or undefined distances. For EV+ forests, positive infinity is used to indicate unreachable or undefined distances.",
+    snprintf(docs, 1024, "Follow edges %s in a transition relation. The first operand should be a set/vector. The second operand should be a relation/matrix. The result should be a set/vector, and should have the same range and edge labeling type as the first operand. All forests should be over the same domain.\nIf the output function has type BOOLEAN, then the output value is true if and only if one of the input states has an %s the output state.\nIf the output function has type INTEGER, then the first operand is assumed to be a distance function over states, and the output value is one plus the minimum over all input states that have an %s the output state. For multi-terminal forests, a negative value is used to indicate unreachable or undefined distances, and the result forest should be fully reduced. For EV+ forests, positive infinity is used to indicate unreachable or undefined distances.",
             FWD ? "forward" : "backward",
             FWD ? "outgoing edge to" : "incoming edge from",
             FWD ? "outgoing edge to" : "incoming edge from");
@@ -839,8 +838,10 @@ MEDDLY::_IMAGE_factory <FWD>::build_new(forest* a, forest* b, forest* c)
                             mt_prepost>(a, b, c);
 
             case range_type::INTEGER:
-                return new prepost_set_mtrel<EdgeOp_none, FWD,
+                if (c->isFullyReduced())  {
+                    return new prepost_set_mtrel<EdgeOp_none, FWD,
                             mt_distance>(a, b, c);
+                }
 
             default:
                 return nullptr;
