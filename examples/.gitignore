@@ -22,8 +22,6 @@ test_implicit_kanban
 test_implicit_pool
 test_implicit_smallos
 test_memory
-test_mtmdd
-test_mtmxd
 test_otf_sat
 test_reorder_evmdd
 test_reorder_mtmxd
@@ -33,4 +31,3 @@ test_union_mdd
 test_union_mxd
 test_user_operation
 test_xdds
-testmddlib

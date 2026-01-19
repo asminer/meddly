@@ -25,8 +25,7 @@ test_memory \
 test_implicit_kanban \
 test_implicit_pool \
 test_implicit_smallos \
-test_sccs \
-testmddlib
+test_sccs
 
 
 # test_user_operation
@@ -98,10 +97,6 @@ test_memory_LDADD = ../src/libmeddly.la
 
 test_sccs_SOURCES = test_sccs.cc
 test_sccs_LDADD = ../src/libmeddly.la
-
-## testmddlib_SOURCES = `$(CXX) testmddlib.cc -MM`
-testmddlib_SOURCES = testmddlib.cc
-testmddlib_LDADD = ../src/libmeddly.la
 
 test_otf_sat_SOURCES = test_otf_sat.cc
 test_otf_sat_LDADD = ../src/libmeddly.la

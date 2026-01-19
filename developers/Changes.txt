@@ -1,12 +1,5 @@
 
-Implement next, using new rel_node interface:
-
-   * need unary 'add one to non-negatives' operator, maybe
-        DIST_INCR
-
-   * pre/post image on MT with -1 for unreachable
-
-========= (release?)
+TO DO list
 
     * user-defined unary operations (maybe in oper_unary?)
 
@@ -35,35 +28,20 @@ Implement next, using new rel_node interface:
             INCNNEG(x) = { x+1, if x>=0; -1 otherwise }
 
 
-    * build a "binary_fixpoint" class
-        - or should it be "binary_algorithm"?
+    * Allow binary operations to attach a progress callback
+      function of the form
 
-        - properties:
-            . no cache for itself
-            . does a sequence (or iteration) using other operations
-            . binary though, so takes two operands, produces one result
-
-        - derived from binary_operation? or stand-alone?
-
-        - allow a callback function of the form
             void progress(unsigned itnum, char status);
                 // itnum: iteration number
                 // status: ' ' for start of iteration
                 //         ';' for end of iteration
                 //         others are operation dependent
 
-    * use a specialized factory for binary_fixpoint objects?
-      or, make some easy to use 'conversion' methods in binary_object?
-
+      this can be ignored by most operations.
 
     * bfs with frontier sets.
-        (instance of binary_fixpoint)
 
     * bfs without frontier sets.
-        (instance of binary_fixpoint)
-
-    * should saturation be a binary_fixpoint, or just a binary_operation?
-
 
 ========= (release?)
 
