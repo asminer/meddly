@@ -28,6 +28,9 @@ namespace MEDDLY {
     class unary_operation;
     class unary_factory;
 
+    typedef void (*user_defined_unary)(const rangeval &arg, rangeval &res);
+    class user_unary_factory;
+
 #ifdef ALLOW_DEPRECATED_0_17_6
     class unary_list;
 #endif
@@ -562,6 +565,27 @@ class MEDDLY::unary_list {
 };
 
 #endif
+
+// ******************************************************************
+// *                                                                *
+// *                    user_unary_factory class                    *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::user_unary_factory : public unary_factory {
+    public:
+        /// Build a new unary operation, based on function F.
+        user_unary_factory(user_defined_unary F);
+        ~user_unary_factory() {
+            _cleanup();
+        }
+
+    protected:
+        virtual unary_operation* build_new(forest* arg, forest* res);
+
+    private:
+        user_defined_unary F;
+};
 
 // ******************************************************************
 // *                                                                *

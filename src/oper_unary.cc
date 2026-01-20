@@ -21,6 +21,8 @@
 #include "forest.h"
 #include "dd_edge.h"
 
+#include "operations/user_unary.h"
+
 // ******************************************************************
 // *                    unary_operation  methods                    *
 // ******************************************************************
@@ -335,3 +337,20 @@ void MEDDLY::unary_list::searchRemove(unary_operation* uop)
 }
 
 #endif
+
+// ******************************************************************
+// *                   user_unary_factory methods                   *
+// ******************************************************************
+
+MEDDLY::user_unary_factory::user_unary_factory(user_defined_unary _F)
+{
+    F = _F;
+    _setup(__FILE__, "user-defined", "User-defined unary operation");
+}
+
+MEDDLY::unary_operation*
+MEDDLY::user_unary_factory::build_new(forest* arg, forest* res)
+{
+    return new user_unary_operation(arg, res, F);
+}
+

@@ -133,6 +133,7 @@ libmeddly_la_SOURCES = \
     operations/select.h                 operations/select.cc       \
     operations/transitive_closure.h     operations/transitive_closure.cc \
     operations/union.h                  operations/union.cc        \
+    operations/user_unary.h             operations/user_unary.cc   \
     operations/vect_matr.h              operations/vect_matr.cc    \
     \
     reordering/bring_up_reordering.h            \
