@@ -202,6 +202,7 @@ pkginclude_HEADERS = \
     ops_builtin.h \
     policies.h \
     rangeval.h \
+    rel_node.h \
     relation_node.h \
     sat_relations.h \
     revision.h \
