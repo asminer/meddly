@@ -613,6 +613,11 @@ namespace MEDDLY {
     }
 #endif
 
+    inline void apply(unary_factory& bu, const dd_edge &a, dd_edge &c)
+    {
+        bu.apply(a, c);
+    }
+
     inline unary_operation* build(unary_builtin0 bu, forest* arg, forest* res)
     {
         return bu().build(arg, res);
@@ -621,6 +626,11 @@ namespace MEDDLY {
     inline unary_operation* build(unary_builtin0 bu, forest* arg, opnd_type res)
     {
         return bu().build(arg, res);
+    }
+
+    inline unary_operation* build(unary_factory& bu, forest* arg, forest* res)
+    {
+        return bu.build(arg, res);
     }
 
 #ifdef ALLOW_DEPRECATED_0_17_6
