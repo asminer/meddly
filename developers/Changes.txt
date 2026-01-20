@@ -22,10 +22,16 @@ TO DO list
 
         };
 
-        stuff to try
-            ABS(x)      // preserves zero
-            NEG(x)      // preserves zero
-            INCNNEG(x) = { x+1, if x>=0; -1 otherwise }
+        stuff to try, for MT integer, MT real, EV+ integer, EV* real:
+
+            ABS(x)          // preserves zero
+            NEG(x)          // preserves zero
+            ODD(x)          // preserves zero, changes type :)
+            EVEN(x)         // does not preserve zero, changes type :)
+
+            for reals, define EVEN(x) = true iff x/2 is an integer,
+            and ODD(x) = !EVEN(x).
+
 
 
     * Allow binary operations to attach a progress callback
