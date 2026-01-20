@@ -5,7 +5,10 @@ Preferred mechanism to "release" the library:
 
 (1) Finalize any release notes in docs/_releases/unreleased.md
 
-(2) Run ./Release.sh script, which automatically
+(2) Run make install, and make in this directory, to check that we can
+    build applications from the "installed" headers and library.
+
+(3) Run ./Release.sh script, which automatically
     (a) updates version number in configure.ac
     (b) updates release documentation in docs/_releases,
         and docs/_data/navigation.yml
@@ -13,6 +16,6 @@ Preferred mechanism to "release" the library:
 
     Probably good to double-check these files.
 
-(3) upload tarball sourceforge (under "Files")
+(4) upload tarball sourceforge (under "Files")
 
-(4) bask in the glory of a job well-done
+(5) bask in the glory of a job well-done
