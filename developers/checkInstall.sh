@@ -17,9 +17,13 @@ fi
 cd developers
 rm -f nqueens
 printf "Rebuilding nqueens\n"
-if g++ -I../include/meddly -L../lib nqueens.cc -lmeddly -o nqueens
+if g++ -I../include/meddly nqueens.cc -L../lib -lmeddly -o nqueens
 then
     printf "Build succeeded\n"
 else
     printf "Build failed?\n"
+    exit 1
 fi
+
+printf "Running, just to test library\n\n"
+env LD_LIBRARY_PATH=../lib ./nqueens

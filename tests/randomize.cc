@@ -17,7 +17,6 @@
 */
 
 #include "randomize.h"
-#include <time.h>
 #include <iostream>
 
 long vectorgen::seed;

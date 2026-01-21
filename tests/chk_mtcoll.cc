@@ -17,7 +17,6 @@
 */
 
 #include "../src/meddly.h"
-#include <time.h>
 #include <iostream>
 
 #define TEST_SETS

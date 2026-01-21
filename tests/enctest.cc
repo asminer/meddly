@@ -19,7 +19,6 @@
 
 #include <cstdio>
 #include <cstdlib>
-
 #include "../timing/timer.h"
 
 // super hack

@@ -12,6 +12,11 @@
 lib_LTLIBRARIES = libmeddly.la
 
 ##
+## Get library version number from autoconf
+##
+libmeddly_la_LDFLAGS = -version-info @version_info@
+
+##
 ## This list should include any source file that should be part of
 ## the library's tarball
 ##

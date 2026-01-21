@@ -45,14 +45,6 @@
 #include "forest_levels.h"
 #include "forest_edgerules.h"
 
-// for timestamps.
-// to do - check during configuration that these are present,
-// and act accordingly here
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
 //
 // For constructing forests.
 //

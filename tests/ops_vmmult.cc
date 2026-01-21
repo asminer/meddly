@@ -22,7 +22,6 @@
 
 
 #include <cstdlib>
-#include <time.h>
 #include <cassert>
 #include <iostream>
 #include <iomanip>
