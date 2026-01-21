@@ -1,9 +1,19 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-## AC_PREREQ(2.60)
-AC_PREREQ(2.59)
-AC_INIT(MEDDLY, 0.18.1, [asminer@iastate.edu], meddly, [https://asminer.github.io/meddly/])
+AC_PREREQ([2.72])
+
+#
+# Set version number
+#
+AC_INIT([MEDDLY],[0.18.1],[asminer@iastate.edu],[meddly],[https://asminer.github.io/meddly/])
+
+#
+# Library version number used by libtool
+#
+version_info="0:0:0"
+AC_SUBST([version_info])
+
 AM_INIT_AUTOMAKE([-Wall foreign parallel-tests color-tests subdir-objects])
 # Allow silent builds, and make it the default, if we can:
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -18,7 +28,7 @@ AX_CXX_COMPILE_STDCXX(11)
 AC_PROG_CC
 # Add AM_PROG_AR, if we can...
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
-AM_PROG_LIBTOOL
+LT_INIT
 
 # Checks for libraries.
 
@@ -38,21 +48,14 @@ AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS([sys/time.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
-AC_HEADER_STDBOOL
-AC_C_CONST
-AC_C_INLINE
-AC_TYPE_PID_T
 AC_TYPE_SIZE_T
-AC_HEADER_TIME
-## AC_TYPE_UINT32_T
+AC_CHECK_HEADERS_ONCE([sys/time.h])
 
 # Checks for library functions.
-AC_FUNC_FORK
-AC_HEADER_STDC
 AC_FUNC_MALLOC
 AC_FUNC_MEMCMP
 AC_FUNC_REALLOC
-AC_TYPE_SIGNAL
+
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([getrusage gettimeofday memmove memset strtol malloc_size malloc_good_size malloc_usable_size])
 

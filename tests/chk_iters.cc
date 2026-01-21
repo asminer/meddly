@@ -17,7 +17,6 @@
 */
 
 #include "../src/meddly.h"
-#include <time.h>
 #include <iostream>
 
 #include "randomize.h"
