@@ -19,27 +19,7 @@
 #ifndef MEDDLY_USER_UNARY_H
 #define MEDDLY_USER_UNARY_H
 
-#include "../oper_unary.h"
-
-#define TRACE_USER
-
-namespace MEDDLY {
-    class user_unary_operation : public unary_operation {
-        public:
-            user_unary_operation(forest* arg, forest* res,
-                    user_defined_unary F);
-
-            virtual ~user_unary_operation();
-
-        private:
-            user_defined_unary F;
-            ct_entry_type* ct;
-#ifdef TRACE_USER
-            ostream_output out;
-            unsigned top_count;
-#endif
-    };
-};
+// factory is in ../oper_unary.h
 
 #endif
 

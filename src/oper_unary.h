@@ -572,6 +572,10 @@ class MEDDLY::unary_list {
 // *                                                                *
 // ******************************************************************
 
+/**
+    Special factory for user-defined unary operations.
+    Implementation is in operations/user_unary.cc
+ */
 class MEDDLY::user_unary_factory : public unary_factory {
     public:
         /// Build a new unary operation, based on function F.
