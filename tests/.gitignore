@@ -38,6 +38,7 @@ ops_mult
 ops_prepost
 ops_plusminus
 ops_set
+ops_user_un
 ops_vmmult
 randtest
 refcount

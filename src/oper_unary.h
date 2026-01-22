@@ -579,16 +579,25 @@ class MEDDLY::unary_list {
 class MEDDLY::user_unary_factory : public unary_factory {
     public:
         /// Build a new unary operation, based on function F.
-        user_unary_factory(user_defined_unary F);
+        user_unary_factory(const char* name, user_defined_unary F);
         ~user_unary_factory() {
             _cleanup();
         }
+        const char* getName() const {
+            return name;
+        }
+        user_defined_unary getFunc() const {
+            return F;
+        }
+
+        virtual void setup();
 
     protected:
         virtual unary_operation* build_new(forest* arg, forest* res);
 
     private:
         user_defined_unary F;
+        const char* name;
 };
 
 // ******************************************************************

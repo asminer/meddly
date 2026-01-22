@@ -37,6 +37,7 @@ noinst_PROGRAMS = \
     ops_plusminus \
     ops_prepost \
     ops_set \
+    ops_user_un \
     ops_vmmult \
     refcount \
     sat_test \
@@ -288,6 +289,9 @@ ops_plusminus_LDADD = ../src/libmeddly.la
 
 ops_set_SOURCES = ops_set.cc randomize.h randomize.cc
 ops_set_LDADD = ../src/libmeddly.la
+
+ops_user_un_SOURCES = ops_user_un.cc randomize.h randomize.cc
+ops_user_un_LDADD = ../src/libmeddly.la
 
 ops_vmmult_SOURCES = ops_vmmult.cc randomize.h randomize.cc
 ops_vmmult_LDADD = ../src/libmeddly.la

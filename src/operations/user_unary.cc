@@ -339,9 +339,16 @@ void MEDDLY::user_unary_op<EdgeOp>::_compute(int L, unsigned in,
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::user_unary_factory::user_unary_factory(user_defined_unary _F)
+MEDDLY::user_unary_factory::user_unary_factory(const char* n,
+        user_defined_unary _F)
 {
+    name = n;
     F = _F;
+    setup();
+}
+
+void MEDDLY::user_unary_factory::setup()
+{
     _setup(__FILE__, "user-defined", "User-defined unary operation");
 }
 
