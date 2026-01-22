@@ -53,12 +53,23 @@ namespace MEDDLY {
                 edge_value &cv, node_handle &cp);
 
         private:
+            inline const edge_value &edgeval(unpacked_node *U, unsigned i) const
+            {
+                if (EdgeOp::hasEdgeValues()) {
+                    return U->edgeval(i);
+                } else {
+                    return nothing;
+                }
+            }
+
+        private:
             user_defined_unary F;
             ct_entry_type* ct;
 #ifdef TRACE_USER
             ostream_output out;
             unsigned top_count;
 #endif
+            edge_value nothing;
             bool preserves_sparse;
     };
 };
@@ -218,13 +229,16 @@ void MEDDLY::user_unary_op<EdgeOp>::_compute(int L, unsigned in,
             : MDD_levels::downLevel(Alevel);
 
         if (preserves_sparse) {
+            //
+            // Nodes are sparse; visit children
+            //
             unsigned cz = 0;
             for (unsigned z=0; z<Au->getSize(); z++) {
                 const unsigned i = Au->index(z);
                 edge_value v;
                 node_handle d;
                 _compute(Cnextlevel, i,
-                        EdgeOp::applyOp(av, Au->edgeval(i)), Au->down(i),
+                        EdgeOp::applyOp(av, edgeval(Au, z)), Au->down(z),
                         v, d);
 
                 if (resF->isTransparentEdge(v, d)) continue;
@@ -238,11 +252,14 @@ void MEDDLY::user_unary_op<EdgeOp>::_compute(int L, unsigned in,
             } // for z
             Cu->shrink(cz);
         } else {
+            //
+            // Nodes are full; visit children
+            //
             for (unsigned i=0; i<Au->getSize(); i++) {
                 edge_value v;
                 node_handle d;
                 _compute(Cnextlevel, i,
-                        EdgeOp::applyOp(av, Au->edgeval(i)), Au->down(i),
+                        EdgeOp::applyOp(av, edgeval(Au, i)), Au->down(i),
                         v, d);
 
                 if (resF->isTransparentEdge(v, d)) continue;
@@ -259,7 +276,6 @@ void MEDDLY::user_unary_op<EdgeOp>::_compute(int L, unsigned in,
         //
         // Recurse over child (sparse) edges, pushing values down
         //
-        // TBD
 
 #ifdef TRACE_USER
         out.indent_less();
