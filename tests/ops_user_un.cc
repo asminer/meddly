@@ -61,45 +61,69 @@ void MyAbs(const rangeval &x, rangeval &y)
 
 user_unary_factory MyAbsFact("MyAbs", MyAbs);
 
-void applyFunc(user_defined_unary f, const std::vector <rangeval> &A,
-        std::vector <rangeval> &C)
+void MyNeg(const rangeval &x, rangeval &y)
 {
-    if (A.size() != C.size()) {
-        throw "Max size mismatch A,C";
+    if (x.isPlusInfinity()) {
+        y = x;
+        return;
     }
-    for (unsigned i=0; i<C.size(); i++) {
-        f(A[i], C[i]);
+    if (x.isInteger()) {
+        y = -long(x);
+    } else {
+        y = -double(x);
     }
 }
+
+user_unary_factory MyNegFact("MyNeg", MyNeg);
+
+void MyEven(const rangeval &x, rangeval &y)
+{
+    if (x.isPlusInfinity()) {
+        y = false;
+        return;
+    }
+    if (x.isInteger()) {
+        y = ( long(x) % 2 == 0 );
+    } else {
+        double hx = double(x) / 2.0;
+        y = ( double(long(hx)) == hx );
+    }
+}
+
+user_unary_factory MyEvenFact("MyEven", MyEven);
+
 
 
 void compare(vectorgen &Gen, const std::vector <MEDDLY::rangeval> &A,
         rangeval deflt, user_unary_factory &UUF, forest* fin, forest* fout)
 {
+    ostream_output out(std::cout);
+
     const unsigned POTENTIAL = Gen.potential();
     std::vector <rangeval> FA(POTENTIAL);
+    if (FA.size() != A.size()) {
+        throw "size mismatch";
+    }
     dd_edge Add(fin), FAdd(fout), FAsym(fout);
 
-    // Input vector -> MDD
-    // if (deflt.isPlusInfinity()) {
-        Gen.explicit2edgeMin(A, Add, deflt);
-    // } else {
-        //Gen.explicit2edgeMax(A, Add, deflt);
-    // }
+    Gen.explicit2edgeMin(A, Add, deflt);
 
     // Build output vector explicitly
-    applyFunc(UUF.getFunc(), A, FA);
+    user_defined_unary f = UUF.getFunc();
+    for (unsigned i=0; i<POTENTIAL; i++) {
+        f(A[i], FA[i]);
+    }
 
     // Output vector -> MDD
-    Gen.explicit2edgeMin(FA, FAdd, deflt);
+    rangeval fdeflt;
+    f(deflt, fdeflt);
+    Gen.explicit2edgeMin(FA, FAdd, fdeflt);
 
     // Build output vector "symbolically"
     apply(UUF, Add, FAsym);
 
     // compare outputs
     if (FAsym == FAdd) return;
-
-    ostream_output out(std::cout);
 
     out << "\nMismatch on " << UUF.getName() << "\n";
 
@@ -124,7 +148,7 @@ void compare(vectorgen &Gen, const std::vector <MEDDLY::rangeval> &A,
 }
 
 template <typename TYPE>
-void test_on_functions(unsigned scard, forest* fin, forest* fout)
+void test_on_functions(unsigned scard, forest* fin, forest* fout, forest* fbool)
 {
     if (!fin) throw "null fin";
     if (!fout) throw "null fout";
@@ -138,29 +162,35 @@ void test_on_functions(unsigned scard, forest* fin, forest* fout)
 
     std::vector <MEDDLY::rangeval> values(7);
     if (fin->isEVPlus()) {
-        values[1] = MEDDLY::rangeval(MEDDLY::range_special::PLUS_INFINITY,
+        values[0] = MEDDLY::rangeval(MEDDLY::range_special::PLUS_INFINITY,
                             MEDDLY::range_type::INTEGER);
+    } else if (fin->isEVTimes()) {
+        values[0] =  TYPE(1);
     } else {
         values[0] =  TYPE(0);
     }
-    values[1] =  TYPE(3);
-    values[2] =  TYPE(2);
-    values[3] =  TYPE(1);
-    values[4] =  TYPE(-1);
-    values[5] =  TYPE(-2);
-    values[6] =  TYPE(-3);
+    values[1] =  TYPE(4);
+    values[2] =  TYPE(3);
+    values[3] =  TYPE(2);
+    values[4] =  TYPE(-2);
+    values[5] =  TYPE(-3);
+    values[6] =  TYPE(-4);
 
     for (unsigned i=0; i<10; i++) {
         std::cerr << '.';
         Gen.randomizeVector(Aset, scard, values);
 
         compare(Gen, Aset, values[0], MyAbsFact, fin, fout);
+        compare(Gen, Aset, values[0], MyNegFact, fin, fout);
+        compare(Gen, Aset, values[0], MyEvenFact, fin, fbool);
     }
     for (unsigned i=0; i<10; i++) {
         std::cerr << "x";
         Gen.randomizeFully(Aset, scard, values);
 
         compare(Gen, Aset, values[0], MyAbsFact, fin, fout);
+        compare(Gen, Aset, values[0], MyNegFact, fin, fout);
+        compare(Gen, Aset, values[0], MyEvenFact, fin, fbool);
     }
     if (fout->isForRelations()) {
         for (unsigned i=0; i<10; i++) {
@@ -168,6 +198,8 @@ void test_on_functions(unsigned scard, forest* fin, forest* fout)
             Gen.randomizeIdentity(Aset, scard, values);
 
             compare(Gen, Aset, values[0], MyAbsFact, fin, fout);
+            compare(Gen, Aset, values[0], MyNegFact, fin, fout);
+            compare(Gen, Aset, values[0], MyEvenFact, fin, fbool);
         }
     }
     std::cerr << std::endl;
@@ -182,10 +214,14 @@ void test_sets(domain* D, edge_labeling el, range_type rt)
     p.setFullyReduced();
 
     forest* fully = forest::create(D, SET, rt, el, p);
+    forest* fbool = forest::create(D, SET, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
 
     p.setQuasiReduced();
 
     forest* quasi = forest::create(D, SET, rt, el, p);
+    forest* qbool = forest::create(D, SET, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
 
 
     for (unsigned i=MIN_SET_CARD; i<=MAX_SET_CARD; i*=MULT_SET_CARD) {
@@ -193,10 +229,10 @@ void test_sets(domain* D, edge_labeling el, range_type rt)
                   << nameOf(el) << " " << nameOf(rt) << " vectors; "
                   << i << " / " << SG.potential() << " nonzeroes\n";
 
-        test_on_functions<TYPE>(i, fully, fully);
-        test_on_functions<TYPE>(i, fully, quasi);
-        test_on_functions<TYPE>(i, quasi, fully);
-        test_on_functions<TYPE>(i, quasi, quasi);
+        test_on_functions<TYPE>(i, fully, fully, fbool);
+        test_on_functions<TYPE>(i, fully, quasi, qbool);
+        test_on_functions<TYPE>(i, quasi, fully, fbool);
+        test_on_functions<TYPE>(i, quasi, quasi, qbool);
     }
 }
 
@@ -209,14 +245,20 @@ void test_rels(domain* D, edge_labeling el, range_type rt)
     p.setFullyReduced();
 
     forest* fully = forest::create(D, RELATION, rt, el, p);
+    forest* fbool = forest::create(D, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
 
     p.setQuasiReduced();
 
     forest* quasi = forest::create(D, RELATION, rt, el, p);
+    forest* qbool = forest::create(D, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
 
     p.setIdentityReduced();
 
     forest* ident = forest::create(D, RELATION, rt, el, p);
+    forest* ibool = forest::create(D, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL, p);
 
 
     for (unsigned i=MIN_REL_CARD; i<=MAX_REL_CARD; i*=MULT_REL_CARD) {
@@ -224,21 +266,21 @@ void test_rels(domain* D, edge_labeling el, range_type rt)
                   << nameOf(el) << " " << nameOf(rt) << " matrices; "
                   << i << " / " << RG.potential() << " nonzeroes\n";
 
-        test_on_functions<TYPE>(i, fully, fully);
-        test_on_functions<TYPE>(i, fully, quasi);
-        test_on_functions<TYPE>(i, fully, ident);
+        test_on_functions<TYPE>(i, fully, fully, fbool);
+        test_on_functions<TYPE>(i, fully, quasi, qbool);
+        test_on_functions<TYPE>(i, fully, ident, ibool);
 
     //
 
-        test_on_functions<TYPE>(i, ident, fully);
-        test_on_functions<TYPE>(i, ident, quasi);
-        test_on_functions<TYPE>(i, ident, ident);
+        test_on_functions<TYPE>(i, ident, fully, fbool);
+        test_on_functions<TYPE>(i, ident, quasi, qbool);
+        test_on_functions<TYPE>(i, ident, ident, ibool);
 
     //
 
-        test_on_functions<TYPE>(i, quasi, fully);
-        test_on_functions<TYPE>(i, quasi, quasi);
-        test_on_functions<TYPE>(i, quasi, ident);
+        test_on_functions<TYPE>(i, quasi, fully, fbool);
+        test_on_functions<TYPE>(i, quasi, quasi, qbool);
+        test_on_functions<TYPE>(i, quasi, ident, ibool);
     }
 }
 

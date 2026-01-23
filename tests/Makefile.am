@@ -150,6 +150,14 @@ TESTS = \
     ops_set.--set._sh \
     ops_set.--rel._sh \
     \
+    ops_user_un.--set.--MT.--int._sh    \
+    ops_user_un.--set.--MT.--float._sh  \
+    ops_user_un.--set.--EVp.--long._sh  \
+    ops_user_un.--rel.--MT.--int._sh    \
+    ops_user_un.--rel.--MT.--float._sh  \
+    ops_user_un.--rel.--EVp.--long._sh  \
+    ops_user_un.--rel.--EVs.--float._sh \
+    \
     ops_vmmult.--int.--vF.--mF._sh \
     ops_vmmult.--int.--vF.--mI._sh \
     ops_vmmult.--int.--vF.--mQ._sh \
