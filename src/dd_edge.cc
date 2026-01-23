@@ -1682,17 +1682,15 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
 
 void MEDDLY::dd_edge::set(node_handle n)
 {
-    if (node != n) {
-        forest* efp = forest::getForestWithID(parentFID);
-        if (efp) {
+    forest* efp = forest::getForestWithID(parentFID);
+    if (efp) {
 #ifdef DEBUG_CLEANUP
-            std::cout << "unlinking " << node << " in dd_edge::set" << std::endl;
+        std::cout << "unlinking " << node << " in dd_edge::set" << std::endl;
 #endif
-            efp->unlinkNode(node);
-            node = n;
-        } else {
-            node = 0;
-        }
+        efp->unlinkNode(node);
+        node = n;
+    } else {
+        node = 0;
     }
 }
 

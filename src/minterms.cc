@@ -600,7 +600,7 @@ void MEDDLY::minterm::buildFunction(rangeval def, dd_edge &e) const
     }
     e.set(cv, cp);
 #ifdef DEVELOPMENT_CODE
-    F->validateIncounts(true, __FILE__, __LINE__);
+    F->validateIncounts(true, __FILE__, __LINE__, "minterm::buildFunction");
 #endif
 }
 
@@ -793,7 +793,7 @@ void MEDDLY::minterm_coll::buildFunctionMin(rangeval def, dd_edge &e)
     e.set(ev, en);
 #ifdef DEVELOPMENT_CODE
     F->validateIncounts(true, __FILE__, __LINE__,
-            "minterm_coll::buildFunctionMax");
+            "minterm_coll::buildFunctionMin");
 #endif
 }
 

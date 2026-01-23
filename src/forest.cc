@@ -1651,12 +1651,18 @@ void MEDDLY::forest
 
 void MEDDLY::forest::dump(output &s, display_flags flags) const
 {
-  for (long p=0; p<=nodeHeaders.lastUsedHandle(); p++) {
-    if (showNode(s, p, flags | SHOW_INDEX)) {
-      s.put('\n');
-      s.flush();
+    for (long p=0; p<=nodeHeaders.lastUsedHandle(); p++) {
+        if (showNode(s, p, flags | SHOW_INDEX)) {
+            s.put('\n');
+            s.flush();
+        }
     }
-  }
+    s << "Root edges:\n";
+    for (const dd_edge* r = roots; r; r=r->next) {
+        s << "    ";
+        r->show(s);
+        s << "\n";
+    }
 }
 
 void MEDDLY::forest::dumpInternal(output &s) const
@@ -1677,7 +1683,7 @@ void MEDDLY::forest::dumpUniqueTable(output &s) const
 }
 
 void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN,
-        const char* opname) const
+        const char* opname, const char* notes) const
 {
 #ifndef ACTUALLY_VALIDATE_INCOUNTS
     return;
@@ -1737,6 +1743,7 @@ void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN,
             dump(fout, SHOW_DETAILS);
             fout << "Requested from " << FN << " line " << LN;
             if (opname) fout << " operation " << opname;
+            if (notes)  fout << " " << notes;
             fout << '\n';
             fout.flush();
             throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
