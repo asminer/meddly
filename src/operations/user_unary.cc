@@ -486,8 +486,9 @@ void MEDDLY::user_unary_op<EdgeOp>::_F_identity(edge_value &ev, node_handle &p,
 
         resF->unlinkNode(p);
 #ifdef TRACE_FI
-        trout << "      p " << p << " ";
+        showCount(trout, "p", p);
         resF->showNode(trout, p, SHOW_DETAILS);
+        trout << "\n";
         trout << "\n      p := reduce ";
         Uun->show(trout, true);
         trout << "\n";
@@ -505,7 +506,8 @@ void MEDDLY::user_unary_op<EdgeOp>::_F_identity(edge_value &ev, node_handle &p,
         trout << "Before next\n";
         trout << "    F(0) node " << Fzero_p << " ";
         resF->showNode(trout, Fzero_p, SHOW_DETAILS);
-        trout << "\n      p " << p << " ";
+        trout << "\n";
+        showCount(trout, "p", p);
         resF->showNode(trout, p, SHOW_DETAILS);
         trout << "\n";
 #endif
@@ -521,7 +523,7 @@ void MEDDLY::user_unary_op<EdgeOp>::_F_identity(edge_value &ev, node_handle &p,
             if (j == in) {
                 Upr->setFull(j, ev, p);
             } else {
-                Upr->setFull(j, Fzero_ev, Fzero_p);
+                Upr->setFull(j, Fzero_ev, resF->linkNode(Fzero_p));
             }
         }
         resF->createReducedNode(Upr, ev, p);
