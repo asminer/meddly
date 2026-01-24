@@ -215,7 +215,8 @@ void MEDDLY::reachset_no_frontier::compute(int L, unsigned in,
     //
     // Previous reachable states
     //
-    dd_edge prevReachable(resF);
+    edge_value  oldv;
+    node_handle oldp;
 
     //
     // Set reachable to initial states
@@ -233,7 +234,8 @@ void MEDDLY::reachset_no_frontier::compute(int L, unsigned in,
         ++iters;
         notifyProgress(iters, ' ');
 
-        prevReachable.set(cv, cp);
+        oldv = cv;
+        oldp = cp;
 
         edge_value nv;
         node_handle np;
@@ -253,7 +255,7 @@ void MEDDLY::reachset_no_frontier::compute(int L, unsigned in,
         saveC.set(cv, cp);
         notifyProgress(iters, ';');
 
-    } while ((cp != prevReachable.getNode()) || (cv != prevReachable.getEdgeValue()));
+    } while ((cp != oldp) || (cv != oldv));
 
     //
     // saveC will unlink cp, so "make a copy"
@@ -305,8 +307,8 @@ MEDDLY::reachset_tradf_factory <FWD>::build_new(forest* a, forest* b, forest* c)
                 imageOp = FWD ? MEDDLY::build(POST_IMAGE, a, b, c)
                               : MEDDLY::build(PRE_IMAGE,  a, b, c);
 
-                unionOp = MEDDLY::build(UNION, a, b, c);
-                diffrOp = MEDDLY::build(DIFFERENCE, a, b, c);
+                unionOp = MEDDLY::build(UNION, c, c, c);
+                diffrOp = MEDDLY::build(DIFFERENCE, c, c, c);
 
                 return new reachset_frontier(imageOp, unionOp, diffrOp);
 
@@ -362,7 +364,7 @@ MEDDLY::reachset_tradnof_factory <FWD>::build_new(forest* a, forest* b, forest* 
                 imageOp = FWD ? MEDDLY::build(POST_IMAGE, a, b, c)
                               : MEDDLY::build(PRE_IMAGE,  a, b, c);
 
-                unionOp = MEDDLY::build(UNION, a, b, c);
+                unionOp = MEDDLY::build(UNION, c, c, c);
 
                 return new reachset_no_frontier(imageOp, unionOp);
 

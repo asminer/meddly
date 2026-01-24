@@ -35,6 +35,19 @@ bool approx_count;
 // Verbose output: show iteration details
 bool verbose;
 
+void my_progress(unsigned iter, char st)
+{
+    if (' ' == st) {
+        std::cerr << "    Iteration " << iter << ": ";
+        return;
+    }
+    if (';' == st) {
+        std::cerr << std::endl;
+        return;
+    }
+    std::cerr << st << " ";
+}
+
 // **********************************************************************
 // build an event to move a ring
 //    @param ring2level     Mapping from rings to level
@@ -178,13 +191,18 @@ void buildReachable(char method, MEDDLY::pregen_relation* prel,
     watch.note_time();
 
     saturation_operation* sat = nullptr;
+    binary_operation* bfs = nullptr;
     ostream_output merr(std::cerr);
     merr.indent_more();
+
+    forest* arg1F = initial.getForest();
+    forest* arg2F = prel->getRelForest();
+    forest* resF  = reachable.getForest();
 
     switch (method) {
         case 'k':
                     std::cout << "Building " << what << " using saturation..." << std::endl;
-                    sat = SATURATION_FORWARD(initial.getForest(), prel, reachable.getForest());
+                    sat = SATURATION_FORWARD(arg1F, prel, resF);
                     if (!sat) {
                         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
                     }
@@ -198,22 +216,39 @@ void buildReachable(char method, MEDDLY::pregen_relation* prel,
                     break;
 
         case 'f':
+                    std::cout << "Building " << what << " using traditional with frontier..." << std::endl;
                     if (verbose) {
                         buildReachsetFrontier(&merr, monolithic, initial, reachable);
                     } else {
-                        std::cout << "Building " << what << " using traditional with frontier..." << std::endl;
                         buildReachsetFrontier(nullptr, monolithic, initial, reachable);
                     }
                     break;
 
         case 'b':
+                    std::cout << "Building " << what << " using traditional without frontier..." << std::endl;
                     if (verbose) {
                         buildReachsetBFS(&merr, monolithic, initial, reachable);
                     } else {
-                        std::cout << "Building " << what << " using traditional without frontier..." << std::endl;
                         buildReachsetBFS(nullptr, monolithic, initial, reachable);
                     }
                     break;
+
+        case 't':
+                    std::cout << "Building " << what << " using (new) traditional without frontier..." << std::endl;
+                    bfs = build(REACHABLE_TRAD_NOFS(true), arg1F, arg2F, resF);
+                    if (!bfs) throw "null bfs";
+                    if (verbose) bfs->setProgressNotifier(my_progress);
+                    bfs->compute(initial, monolithic, reachable);
+                    break;
+
+        case 'F':
+                    std::cout << "Building " << what << " using (new) traditional with frontier..." << std::endl;
+                    bfs = build(REACHABLE_TRAD_FS(true), arg1F, arg2F, resF);
+                    if (!bfs) throw "null bfs";
+                    if (verbose) bfs->setProgressNotifier(my_progress);
+                    bfs->compute(initial, monolithic, reachable);
+                    break;
+
 
         default:
                     throw "unknown method";
@@ -355,6 +390,10 @@ int usage(const char* exe)
     cerr << "    --bfs      BFS without frontier set\n";
     cerr << "    --fbfs     BFS with frontier set\n";
     cerr << "\n";
+
+    cerr << "    --trad     Traditional BFS without frontier set\n";
+    cerr << "    --front    Traditional BFS with frontier set\n";
+    cerr << "\n";
     return 1;
 }
 
@@ -441,6 +480,15 @@ int main(int argc, const char** argv)
                 }
                 if (0==strcmp("--fbfs", arg)) {
                     satmethod = 'f';
+                    continue;
+                }
+
+                if (0==strcmp("--trad", arg)) {
+                    satmethod = 't';
+                    continue;
+                }
+                if (0==strcmp("--front", arg)) {
+                    satmethod = 'F';
                     continue;
                 }
             }
