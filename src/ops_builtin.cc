@@ -61,6 +61,7 @@ namespace MEDDLY {
 #include "operations/prepostplus.h"
 #include "operations/prepost_sets.h"
 #include "operations/prepost_rels.h"
+#include "operations/reach_trad.h"
 #include "operations/vect_matr.h"
 #include "operations/mm_mult.h"
 //
@@ -128,6 +129,10 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     all_binary.push_back( &PLUS()                   );
     all_binary.push_back( &POST_IMAGE()             );
     all_binary.push_back( &PRE_IMAGE()              );
+    all_binary.push_back( &REACHABLE_TRAD_FS(true)      );
+    all_binary.push_back( &REACHABLE_TRAD_FS(false)     );
+    all_binary.push_back( &REACHABLE_TRAD_NOFS(true)    );
+    all_binary.push_back( &REACHABLE_TRAD_NOFS(false)   );
     all_binary.push_back( &UNION()                  );
     all_binary.push_back( &VM_MULTIPLY()            );
 }

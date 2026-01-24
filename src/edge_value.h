@@ -473,6 +473,27 @@ class MEDDLY::edge_value {
                     throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
             }
         }
+        inline bool operator!=(const edge_value &v) const {
+            switch (mytype) {
+                case edge_type::VOID:
+                    return !v.isVoid();
+
+                case edge_type::INT:
+                    return !v.equals(ev_int);
+
+                case edge_type::LONG:
+                    return !v.equals(ev_long);
+
+                case edge_type::FLOAT:
+                    return !v.equals(ev_float);
+
+                case edge_type::DOUBLE:
+                    return !v.equals(ev_double);
+
+                default:
+                    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+            }
+        }
 
 
         //

@@ -499,6 +499,18 @@ namespace MEDDLY {
         return bb().build(a, b, c);
     }
 
+    inline void apply(binary_factory &bf, const dd_edge &a,
+            const dd_edge &b, dd_edge &c)
+    {
+        bf.apply(a, b, c);
+    }
+
+    inline binary_operation* build(binary_factory &bf,
+            forest* a, forest* b, forest* c)
+    {
+        return bf.build(a, b, c);
+    }
+
 
 #ifdef ALLOW_DEPRECATED_0_17_6
     typedef binary_operation* (*binary_builtin2)(forest* arg1,

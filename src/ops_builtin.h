@@ -137,6 +137,27 @@ namespace MEDDLY {
     /// Matrix-vector multiplication.
     binary_factory& MV_MULTIPLY();
 
+    /*
+        Forward and backward reachability.
+        Repeated application of PRE_IMAGE or POST_IMAGE, until fixed point.
+
+        These should all take a boolean parameter, for forward (true)
+        or backward (false).
+
+        Names should be REACHABLE_(algorithm description)
+
+    */
+
+    /// Reachability using traditional algorithm, with frontier set.
+    binary_factory& REACHABLE_TRAD_FS(bool fwd);
+
+    /// Reachability using traditional algorithm, without frontier set.
+    binary_factory& REACHABLE_TRAD_NOFS(bool fwd);
+
+    /// Forward reachability using saturation (original), TBD
+    /// binary_factory& REACHABLE_SATURATE(bool fwd);
+
+
     // ======================================================================
 
     /** Plus operation used to compute transitive closure and further
