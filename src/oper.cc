@@ -79,6 +79,9 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     // Initialize list of forests
     //
     FList.clear();
+
+    np_func = nullptr;
+    usesProgress(false);
 }
 
 MEDDLY::operation::operation()
@@ -93,6 +96,9 @@ MEDDLY::operation::operation()
     CTresult = nullptr;
     num_etids = 0;
 #endif
+
+    np_func = nullptr;
+    usesProgress(false);
 }
 
 

@@ -125,10 +125,10 @@ namespace MEDDLY {
     /// Compare for >=, two functions with range type INTEGER or REAL
     binary_factory& GREATER_THAN_EQUAL();
 
-    /// Follow a transition relation, backwards.
+    /// Follow a transition relation, backwards, for one step.
     binary_factory& PRE_IMAGE();
 
-    /// Follow a transition relation, forwards.
+    /// Follow a transition relation, forwards, for one step.
     binary_factory& POST_IMAGE();
 
     /// Vector-matrix multiplication.

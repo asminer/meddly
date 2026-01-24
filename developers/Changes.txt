@@ -1,38 +1,6 @@
 
 TO DO list
 
-    * user-defined unary operations (maybe in oper_unary?)
-
-        typedef void (*user_unary)(const rangeval &input, rangeval &output);
-
-        // works for MT only? Or we can push values down for EV+, EV*
-        //
-        class generic_unary_op : public unary_operation {
-
-            // not sure if we need the name
-            generic_unary_op(const char* name, forest* arg, forest* res, user_unary F);
-
-            inline bool preserves_zero() const;
-            // ^ this can be automatically determined by
-            // checking that F(0) == 0
-            // well, akshually, F(arg->transparent) == res->transparent
-            //
-            // if true we can use sparse nodes in apply()
-            // also might allow us to skip identities
-
-        };
-
-        stuff to try, for MT integer, MT real, EV+ integer, EV* real:
-
-            ABS(x)          // preserves zero
-            NEG(x)          // preserves zero
-            ODD(x)          // preserves zero, changes type :)
-            EVEN(x)         // does not preserve zero, changes type :)
-
-            for reals, define EVEN(x) = true iff x/2 is an integer,
-            and ODD(x) = !EVEN(x).
-
-
 
     * Allow binary operations to attach a progress callback
       function of the form

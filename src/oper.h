@@ -42,6 +42,9 @@ namespace MEDDLY {
         REAL        = 3,
         HUGEINT     = 4
     };
+
+    /// Progress callback functions, used by operation class.
+    typedef void (*operation_progress)(unsigned itno, char status);
 };
 
 // ******************************************************************
@@ -89,12 +92,50 @@ class MEDDLY::operation {
         /// Get the name of this operation; for display / debugging
         inline const char* getName() const { return name; }
 
+
+        /// Set the function to call for progress updates.
+        /// Only used by some operations, like traditional
+        /// reachability set construction.
+        inline void setProgressNotifier(operation_progress p) {
+            np_func = p;
+        }
+
+        /// Does the operation use the progress notifier?
+        inline bool usesProgressNotifier() const {
+            return uses_progress;
+        }
+
     protected:
         /// Set the name after constructing.
         inline void setName(const char* n) {
             if (!n) return;
             MEDDLY_DCASSERT(!name);
             name = n;
+        }
+
+        /// Indicate that the progress notifier might be used.
+        /// (Default: it's never used.)
+        inline void usesProgress(bool up = true) {
+            uses_progress = up;
+        }
+
+        /// Call the progress function, if there is one.
+        /// Convention:
+        ///     @param  it      Iteration number if that makes sense;
+        ///                     otherwise, operation dependent.
+        ///
+        ///     @param  status  Where are we in the iteration:
+        ///                         ' ': just starting
+        ///                         ';': just finishing
+        ///                     all others are operation dependent.
+        ///
+        /// Most operations will never call this.
+        ///
+        inline void notifyProgress(unsigned it, char status) const
+        {
+            if (np_func) {
+                np_func(it, status);
+            }
         }
 
         void registerInForest(forest* f);
@@ -183,6 +224,10 @@ class MEDDLY::operation {
         const char* name;
         /// List of forest IDs associated with this operation.
         std::vector <unsigned> FList;
+
+        operation_progress np_func;
+
+        bool uses_progress;
 };
 
 #endif // #include guard
