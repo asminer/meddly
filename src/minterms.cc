@@ -50,6 +50,9 @@ namespace MEDDLY {
             fbuilder_forest(forest* f, const rangeval &def);
             ~fbuilder_forest();
 
+            /// unlink any edges
+            void destroy();
+
             /// Build a chain of nodes for a single "set" minterm.
             ///     @param L    Last level to build a node.
             ///     @param m    Minterm to build from
@@ -598,8 +601,10 @@ void MEDDLY::minterm::buildFunction(rangeval def, dd_edge &e) const
     } else {
         fb.setPathToBottom(num_vars, *this, cv, cp);
     }
+
     e.set(cv, cp);
 #ifdef DEVELOPMENT_CODE
+    fb.destroy();   // destroy early, for counts
     F->validateIncounts(true, __FILE__, __LINE__, "minterm::buildFunction");
 #endif
 }
@@ -877,11 +882,21 @@ MEDDLY::fbuilder_forest::fbuilder_forest(forest* f, const rangeval &def)
 
 MEDDLY::fbuilder_forest::~fbuilder_forest()
 {
-    if (!default_is_zero) {
+    destroy();
+    if (dp_unp) {
+        delete[] dp_unp;
+    }
+    if (dp_pri) {
+        delete[] dp_pri;
+    }
+}
+
+void MEDDLY::fbuilder_forest::destroy()
+{
+    if (dp_unp) {
         const unsigned L = F->getNumVariables();
         F->unlinkNode(dp_unp[L]);
-        delete[] dp_unp;
-        delete[] dp_pri;
+        dp_unp[L] = 0;
     }
 }
 
