@@ -309,7 +309,6 @@ MEDDLY::reachset_tradf_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 
                 unionOp = MEDDLY::build(UNION, c, c, c);
                 diffrOp = MEDDLY::build(DIFFERENCE, c, c, c);
-
                 return new reachset_frontier(imageOp, unionOp, diffrOp);
 
             default:
@@ -357,7 +356,7 @@ MEDDLY::reachset_tradnof_factory <FWD>::build_new(forest* a, forest* b, forest* 
     binary_operation* imageOp = nullptr;
     binary_operation* unionOp = nullptr;
 
-    if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
 
         switch (c->getRangeType()) {
             case range_type::BOOLEAN:
@@ -365,11 +364,27 @@ MEDDLY::reachset_tradnof_factory <FWD>::build_new(forest* a, forest* b, forest* 
                               : MEDDLY::build(PRE_IMAGE,  a, b, c);
 
                 unionOp = MEDDLY::build(UNION, c, c, c);
+                return new reachset_no_frontier(imageOp, unionOp);
 
+            case range_type::INTEGER:
+                imageOp = FWD ? MEDDLY::build(POST_IMAGE, a, b, c)
+                              : MEDDLY::build(PRE_IMAGE,  a, b, c);
+
+                unionOp = MEDDLY::build(DIST_MIN, c, c, c);
                 return new reachset_no_frontier(imageOp, unionOp);
 
             default:
                 return nullptr;
+        }
+    }
+
+    if (c->getEdgeLabeling() == edge_labeling::EVPLUS) {
+        if (c->getRangeType() == range_type::INTEGER) {
+            imageOp = FWD ? MEDDLY::build(POST_IMAGE, a, b, c)
+                          : MEDDLY::build(PRE_IMAGE,  a, b, c);
+
+            unionOp = MEDDLY::build(MINIMUM, c, c, c);
+            return new reachset_no_frontier(imageOp, unionOp);
         }
     }
 
@@ -402,3 +417,14 @@ MEDDLY::binary_factory& MEDDLY::REACHABLE_TRAD_NOFS(bool fwd)
     else     return bckwd;
 }
 
+#ifdef ALLOW_DEPRECATED_0_18_1
+MEDDLY::binary_factory& MEDDLY::REACHABLE_STATES_BFS()
+{
+    return REACHABLE_TRAD_NOFS(true);
+}
+
+MEDDLY::binary_factory& MEDDLY::REVERSE_REACHABLE_BFS()
+{
+    return REACHABLE_TRAD_NOFS(false);
+}
+#endif

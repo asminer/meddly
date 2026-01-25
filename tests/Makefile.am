@@ -71,8 +71,10 @@ TESTS = \
     domain_list \
     kan_batch \
     \
-    kan_chkrs.--mt.--trad._sh \
-    kan_chkrs.--mt.--sat._sh \
+    kan_chkrs.--mtb.--front._sh \
+    kan_chkrs.--mtb.--trad._sh \
+    kan_chkrs.--mtb.--sat._sh \
+    kan_chkrs.--mti.--trad._sh \
     kan_chkrs.--ev.--trad._sh \
     kan_chkrs.--ev.--sat._sh \
     \

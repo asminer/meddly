@@ -128,7 +128,6 @@ libmeddly_la_SOURCES = \
     operations/prepost_rels.h           operations/prepost_rels.cc \
     operations/prepost_sets.h           operations/prepost_sets.cc \
     operations/prepostplus.h            operations/prepostplus.cc  \
-    operations/reach_bfs.h              operations/reach_bfs.cc    \
     operations/reach_dfs.h              operations/reach_dfs.cc    \
     operations/reach_trad.h             operations/reach_trad.cc   \
     operations/sat_hyb.h                operations/sat_hyb.cc      \

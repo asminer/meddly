@@ -55,6 +55,22 @@ using namespace std;
 
 ostream_output meddlyout(cout);
 
+bool verbose;
+
+void my_progress(unsigned iter, char st)
+{
+    if (' ' == st) {
+        std::cerr << "    Iteration " << iter << ": ";
+        return;
+    }
+    if (';' == st) {
+        std::cerr << std::endl;
+        return;
+    }
+    std::cerr << st << " ";
+}
+
+
 int usage(const char* who)
 {
     /* Strip leading directory, if any: */
@@ -63,14 +79,13 @@ int usage(const char* who)
         if ('/' == *ptr) name = ptr+1;
     }
     cout << "\nUsage: " << name << " [options] nnnn\n\n";
-    cout << "\tnnnn: number of parts\n";
-    cout << "\t-bfs:  use traditional iterations\n";
-    cout << "\t-bbfs: use and show traditional iterations\n";
-    cout << "\t-fbfs: use and show traditional with frontier iterations\n";
-    cout << "\t-dfs:  use saturation\n";
-    cout << "\t-esat: use saturation by events\n";
-    cout << "\t-ksat: use saturation by levels\n";
-    cout << "\t-msat: use monolithic saturation (default)\n\n";
+    cout << "\tnnnn  : number of parts\n";
+    cout << "\t-trad : use traditional iterations, without frontier\n";
+    cout << "\t-front: use traditional iterations, with frontier\n";
+    cout << "\t-dfs  : use saturation\n";
+    cout << "\t-esat : use saturation by events\n";
+    cout << "\t-ksat : use saturation by levels\n";
+    cout << "\t-msat : use monolithic saturation (default)\n\n";
 
     cout << "\t-edges:  count number of (actual) edges in reachability graph\n\n";
     cout << "\t-approx: approximate the number of states (default)\n";
@@ -81,7 +96,9 @@ int usage(const char* who)
     cout << "\t-pdf: write the MDD representing the reachable states to Kanban.pdf\n\n";
     cout << "\t-ms: mark and sweep\n";
     cout << "\t-opt: optimistic reference counts\n";
-    cout << "\t-pess: pessimistic reference counts\n";
+    cout << "\t-pess: pessimistic reference counts\n\n";
+
+    cout << "\t-v   : verbose\n";
     return 1;
 }
 
@@ -124,21 +141,18 @@ int main(int argc, const char** argv)
     bool approx_count = true;
     bool count_edges = false;
     char node_del = 'o';
+    verbose = false;
 
     //
     // Process command line
     //
     for (int i=1; i<argc; i++) {
-        if (strcmp("-bfs", argv[i])==0) {
-            method = 'b';
+        if (strcmp("-trad", argv[i])==0) {
+            method = 't';
             continue;
         }
-        if (strcmp("-bbfs", argv[i])==0) {
-            method = 'B';
-            continue;
-        }
-        if (strcmp("-fbfs", argv[i])==0) {
-            method = 'F';
+        if (strcmp("-front", argv[i])==0) {
+            method = 'f';
             continue;
         }
         if (strcmp("-dfs", argv[i])==0) {
@@ -202,6 +216,15 @@ int main(int argc, const char** argv)
             node_del='p';
             continue;
         }
+        if (strcmp("-v", argv[i]) == 0) {
+            verbose = true;
+            continue;
+        }
+
+        if (argv[i][0] == '-') {
+            return usage(argv[0]);
+        }
+
         N = atoi(argv[i]);
     }
 
@@ -324,23 +347,20 @@ int main(int argc, const char** argv)
         if (LOG) LOG->newPhase(mdd, "Building reachability set");
         dd_edge reachable(mdd);
         start.note_time();
+        binary_operation* rsgen = nullptr;
         switch (method) {
-            case 'B':
-                meddlyout.indent_more();
-                buildReachsetBFS(&meddlyout, nsf, init_state, reachable);
-                meddlyout.indent_less();
+            case 't':
+                cout << "Building reachability set using traditional algorithm (no frontier)" << endl;
+                rsgen = build(REACHABLE_TRAD_NOFS(true), mdd, mxd, mdd);
+                if (verbose) rsgen->setProgressNotifier(my_progress);
+                rsgen->compute(init_state, nsf, reachable);
                 break;
 
-            case 'F':
-                meddlyout.indent_more();
-                buildReachsetFrontier(&meddlyout, nsf, init_state, reachable);
-                meddlyout.indent_less();
-                break;
-
-            case 'b':
-                cout << "Building reachability set using traditional algorithm"
-                     << endl;
-                apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+            case 'f':
+                cout << "Building reachability set using traditional algorithm (with frontier)" << endl;
+                rsgen = build(REACHABLE_TRAD_FS(true), mdd, mxd, mdd);
+                if (verbose) rsgen->setProgressNotifier(my_progress);
+                rsgen->compute(init_state, nsf, reachable);
                 break;
 
             case 'm':

@@ -76,20 +76,37 @@ domain* buildDomain(int N)
 
 // ============================================
 
-dd_edge buildReachset(domain* d, int N, edge_labeling E, bool use_sat)
+// Adjust multi-terminal, integer distance function
+// to be distance plus one, for reachable states,
+// zero for unreachable states.
+
+void distance_adjust(const rangeval &in, rangeval &out)
+{
+    long x = long(in);
+    if (x<0) {
+        out = 0;
+    } else {
+        out = x+1;
+    }
+}
+
+// ============================================
+
+dd_edge buildReachset(domain* d, int N, range_type R, edge_labeling E,
+        char method)
 {
     //
     // Build forests
     //
-    forest* mdd = nullptr;
-    if (edge_labeling::EVPLUS == E) {
-        std::cout << "\tusing EV+MDD for distance\n";
-        mdd = forest::create(d, SET, range_type::INTEGER,
-                edge_labeling::EVPLUS);
-    } else {
+    forest* mdd = forest::create(d, SET, R, E);
+    if (range_type::BOOLEAN == R) {
         std::cout << "\tusing MTMDD for reachable states\n";
-        mdd = forest::create(d, SET, range_type::BOOLEAN,
-                edge_labeling::MULTI_TERMINAL);
+    } else {
+        if (edge_labeling::EVPLUS == E) {
+            std::cout << "\tusing EV+MDD for distance\n";
+        } else {
+            std::cout << "\tusing MTMDD for distance\n";
+        }
     }
     forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL);
@@ -105,12 +122,18 @@ dd_edge buildReachset(domain* d, int N, edge_labeling E, bool use_sat)
     initial.setVar(9, N);
     initial.setVar(13, N);
 
-    if (edge_labeling::EVPLUS == E) {
-        initial.setValue(0);
-        rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
-        initial.buildFunction(infty, init_state);
-    } else {
+
+    if (range_type::BOOLEAN == R) {
+        initial.setValue(true);
         initial.buildFunction(false, init_state);
+    } else {
+        initial.setValue(0);
+        if (edge_labeling::EVPLUS == E) {
+            rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
+            initial.buildFunction(infty, init_state);
+        } else {
+            initial.buildFunction(-1, init_state);
+        }
     }
 
     std::cout << "\t\tbuilt initial state\n";
@@ -128,12 +151,32 @@ dd_edge buildReachset(domain* d, int N, edge_labeling E, bool use_sat)
     // Build reachable states
     //
     dd_edge reachable(mdd);
-    if (use_sat) {
-        std::cout << "\t\tusing saturation\n";
-        apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-    } else {
-        std::cout << "\t\tusing traditional iteration\n";
-        apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+    switch (method) {
+        case 'F':
+            std::cout << "\t\tUsing traditional generation, with frontier\n";
+            apply(REACHABLE_TRAD_FS(true), init_state, nsf, reachable);
+            break;
+
+        case 'T':
+            std::cout << "\t\tUsing traditional generation, without frontier\n";
+            apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
+            break;
+
+        case 'B':
+            std::cout << "\t\tusing old traditional iteration\n";
+            apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+            break;
+
+        default:
+            std::cout << "\t\tusing saturation\n";
+            apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    };
+
+    if ( (range_type::INTEGER == R) && (edge_labeling::EVPLUS != E) )
+    {
+        // Adjust distances if needed
+        user_unary_factory adjust("distadjust", distance_adjust);
+        apply(adjust, reachable, reachable);
     }
 
     return reachable;
@@ -141,7 +184,7 @@ dd_edge buildReachset(domain* d, int N, edge_labeling E, bool use_sat)
 
 // ============================================
 
-bool matches(const statedist &sd, const minterm &m)
+bool matches(const long adjust, const statedist &sd, const minterm &m)
 {
     if (!sd.state) {
         throw "not enough reachable markings";
@@ -155,7 +198,7 @@ bool matches(const statedist &sd, const minterm &m)
     if (oracle.isBoolean()) return true;
 
     if (oracle.isInteger()) {
-        return long(oracle) == sd.distance;
+        return long(oracle) == sd.distance + adjust;
     }
 
     throw "Unexpected state value type";
@@ -163,12 +206,12 @@ bool matches(const statedist &sd, const minterm &m)
 
 // ============================================
 
-void checkRS(int N, edge_labeling E, bool use_sat)
+void checkRS(int N, range_type R, edge_labeling E, char method)
 {
     std::cout << "Checking Kanban reachability set, N=" << N << "\n";
 
     domain* d = buildDomain(N);
-    dd_edge reachable = buildReachset(d, N, E, use_sat);
+    dd_edge reachable = buildReachset(d, N, R, E, method);
 
     const statedist* krs = nullptr;
 #ifdef HAVE_ORACLE
@@ -196,10 +239,21 @@ void checkRS(int N, edge_labeling E, bool use_sat)
         // enumerate states
         long c = 0;
 
+        const long adjust =
+            (range_type::INTEGER == R) && (edge_labeling::MULTI_TERMINAL == E)
+            ? 1
+            : 0;
+
         for (dd_edge::iterator i = reachable.begin(); i; ++i)
         {
-            if (!matches( krs[c], *i) ) {
+            if (!matches( adjust, krs[c], *i) ) {
                 std::cerr << "Marking " << c << " mismatched\n";
+
+                ostream_output merr(std::cerr);
+                merr << "Marking was ";
+                (*i).show(merr);
+                merr << "\n";
+
                 throw "mismatch";
             }
             c++;
@@ -221,7 +275,8 @@ void genRS(int N)
     using namespace std;
 
     domain* d = buildDomain(N);
-    dd_edge reachable = buildReachset(d, N, edge_labeling::EVPLUS, true);
+    dd_edge reachable = buildReachset(d, N, range_type::INTEGER,
+                            edge_labeling::EVPLUS, 'S');
 
     cout << "//\n";
     cout << "// Finite distance function for Kanban N=" << N << "\n";
@@ -262,11 +317,14 @@ int Usage(const char* exe)
     cerr << "    -g n   : generate header for N=n instance. Use n>0. Does not\n";
     cerr << "             perform any checking. Ignores all other switches.\n";
     cerr << "\n";
-    cerr << "    --mt   : use MTMDDs (default)\n";
-    cerr << "    --ev   : use EV+MDDs\n";
+    cerr << "    --mtb  : use boolean MTMDDs (reachable states)\n";
+    cerr << "    --mti  : use integer MTMDDs (distances)\n";
+    cerr << "    --ev   : use EV+MDDs (distances)\n";
     cerr << "\n";
     cerr << "    --sat  : use saturation (default)\n";
-    cerr << "    --trad : use traditional iteration\n";
+    cerr << "    --front: use traditional iteration, with frontier set\n";
+    cerr << "    --trad : use traditional iteration, without frontier set\n";
+    cerr << "    --bfs  : use old traditional iteration\n";
 
     return 1;
 }
@@ -278,8 +336,9 @@ int Usage(const char* exe)
 int main(int argc, const char** argv)
 {
     long geninstance = 0;
+    range_type rtype = range_type::BOOLEAN;
     edge_labeling elmdd = edge_labeling::MULTI_TERMINAL;
-    bool use_sat = true;
+    char method = 'S';
 
     //
     // Process switches
@@ -305,12 +364,18 @@ int main(int argc, const char** argv)
         // mt vs ev
         //
 
-        if (0==strcmp("--mt", argv[i])) {
+        if (0==strcmp("--mtb", argv[i])) {
+            rtype = range_type::BOOLEAN;
             elmdd = edge_labeling::MULTI_TERMINAL;
             continue;
         }
-
+        if (0==strcmp("--mti", argv[i])) {
+            rtype = range_type::INTEGER;
+            elmdd = edge_labeling::MULTI_TERMINAL;
+            continue;
+        }
         if (0==strcmp("--ev", argv[i])) {
+            rtype = range_type::INTEGER;
             elmdd = edge_labeling::EVPLUS;
             continue;
         }
@@ -320,12 +385,19 @@ int main(int argc, const char** argv)
         //
 
         if (0==strcmp("--sat", argv[i])) {
-            use_sat = true;
+            method = 'S';
             continue;
         }
-
         if (0==strcmp("--trad", argv[i])) {
-            use_sat = false;
+            method = 'T';
+            continue;
+        }
+        if (0==strcmp("--front", argv[i])) {
+            method = 'F';
+            continue;
+        }
+        if (0==strcmp("--bfs", argv[i])) {
+            method = 'B';
             continue;
         }
 
@@ -345,9 +417,9 @@ int main(int argc, const char** argv)
             return 0;
         }
 
-        checkRS(1, elmdd, use_sat);
-        checkRS(2, elmdd, use_sat);
-        checkRS(3, elmdd, use_sat);
+        checkRS(1, rtype, elmdd, method);
+        checkRS(2, rtype, elmdd, method);
+        checkRS(3, rtype, elmdd, method);
 
         MEDDLY::cleanup();
         std::cout << "Done\n";

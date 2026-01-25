@@ -312,6 +312,7 @@ inline void showResult(MEDDLY::output *fout, const char* what,
 // **********************************************************************
 // Traditional BFS iteration with a frontier set
 // **********************************************************************
+#if 0
 void buildReachsetFrontier(MEDDLY::output *fout, const MEDDLY::dd_edge &nsf,
         const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reach)
 {
@@ -366,10 +367,12 @@ void buildReachsetFrontier(MEDDLY::output *fout, const MEDDLY::dd_edge &nsf,
     }
 
 }
+#endif
 
 // **********************************************************************
 // Traditional BFS iteration without a frontier set
 // **********************************************************************
+#if 0
 void buildReachsetBFS(MEDDLY::output *fout, const MEDDLY::dd_edge &nsf,
         const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reach)
 {
@@ -419,6 +422,7 @@ void buildReachsetBFS(MEDDLY::output *fout, const MEDDLY::dd_edge &nsf,
     }
 
 }
+#endif
 
 //
 //  Explicit RS construction

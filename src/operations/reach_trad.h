@@ -24,6 +24,11 @@ namespace MEDDLY {
 
     binary_factory& REACHABLE_TRAD_FS(bool fwd);
     binary_factory& REACHABLE_TRAD_NOFS(bool fwd);
+
+#ifdef ALLOW_DEPRECATED_0_18_1
+    binary_factory& REACHABLE_STATES_BFS();
+    binary_factory& REVERSE_REACHABLE_BFS();
+#endif
 }
 
 #endif

@@ -71,7 +71,6 @@ namespace MEDDLY {
 //
 // For initializing saturation-line operations
 //
-#include "operations/reach_bfs.h"
 #include "operations/reach_dfs.h"
 #include "operations/sat_pregen.h"
 #include "operations/sat_otf.h"
@@ -165,9 +164,7 @@ void MEDDLY::builtin_init::setup()
     PRE_PLUS_init();
     POST_PLUS_init();
     TC_POST_IMAGE_init();
-    REACHABLE_STATES_BFS_init();
     REACHABLE_STATES_DFS_init();
-    REVERSE_REACHABLE_BFS_init();
     REVERSE_REACHABLE_DFS_init();
 
     MM_MULTIPLY_init();
@@ -205,9 +202,7 @@ void MEDDLY::builtin_init::cleanup()
     PRE_PLUS_done();
     POST_PLUS_done();
     TC_POST_IMAGE_done();
-    REACHABLE_STATES_BFS_done();
     REACHABLE_STATES_DFS_done();
-    REVERSE_REACHABLE_BFS_done();
     REVERSE_REACHABLE_DFS_done();
 
     MM_MULTIPLY_done();

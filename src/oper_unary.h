@@ -346,11 +346,6 @@ class MEDDLY::unary_factory {
             return cache_add( build_new(arg, res) );
         }
 
-        /**
-            Build a specific operation instance.
-            For this version, the result is a value.
-            The default behavior returns NULL.
-        */
 
         /// Default: just calls _cleanup()
         virtual void cleanup();

@@ -157,6 +157,10 @@ namespace MEDDLY {
     /// Forward reachability using saturation (original), TBD
     /// binary_factory& REACHABLE_SATURATE(bool fwd);
 
+#ifdef ALLOW_DEPRECATED_0_18_1
+    binary_factory& REACHABLE_STATES_BFS();
+    binary_factory& REVERSE_REACHABLE_BFS();
+#endif
 
     // ======================================================================
 
@@ -180,9 +184,7 @@ namespace MEDDLY {
     */
     binary_operation* TC_POST_IMAGE(forest* a, forest* b, forest* c);
     binary_operation* REACHABLE_STATES_DFS(forest* a, forest* b, forest* c);
-    binary_operation* REACHABLE_STATES_BFS(forest* a, forest* b, forest* c);
     binary_operation* REVERSE_REACHABLE_DFS(forest* a, forest* b, forest* c);
-    binary_operation* REVERSE_REACHABLE_BFS(forest* a, forest* b, forest* c);
 
     /** Matrix multiplication, where the first argument is a matrix (MXD),
         the second argument is a matrix (MXD),

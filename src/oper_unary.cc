@@ -207,7 +207,17 @@ void MEDDLY::unary_factory::_setup(const char* file, const char* name,
 
 void MEDDLY::unary_factory::_cleanup()
 {
-    MEDDLY_DCASSERT(nullptr == front);
+    //
+    // Go through list of operations, and set the factory to null,
+    // otherwise the operation will try to notify us on deletion.
+    //
+
+    unary_operation* curr = front;
+    while (curr) {
+        MEDDLY_DCASSERT(curr->factory == this);
+        curr->factory = nullptr;
+        curr = curr->next;
+    }
 }
 
 bool

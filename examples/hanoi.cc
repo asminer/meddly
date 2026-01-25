@@ -215,24 +215,6 @@ void buildReachable(char method, MEDDLY::pregen_relation* prel,
                     apply(REACHABLE_STATES_DFS, initial, monolithic, reachable);
                     break;
 
-        case 'f':
-                    std::cout << "Building " << what << " using traditional with frontier..." << std::endl;
-                    if (verbose) {
-                        buildReachsetFrontier(&merr, monolithic, initial, reachable);
-                    } else {
-                        buildReachsetFrontier(nullptr, monolithic, initial, reachable);
-                    }
-                    break;
-
-        case 'b':
-                    std::cout << "Building " << what << " using traditional without frontier..." << std::endl;
-                    if (verbose) {
-                        buildReachsetBFS(&merr, monolithic, initial, reachable);
-                    } else {
-                        buildReachsetBFS(nullptr, monolithic, initial, reachable);
-                    }
-                    break;
-
         case 't':
                     std::cout << "Building " << what << " using (new) traditional without frontier..." << std::endl;
                     bfs = build(REACHABLE_TRAD_NOFS(true), arg1F, arg2F, resF);
@@ -387,10 +369,6 @@ int usage(const char* exe)
     cerr << "    --msat     Saturation, monolithic relation\n";
     cerr << "\n";
 
-    cerr << "    --bfs      BFS without frontier set\n";
-    cerr << "    --fbfs     BFS with frontier set\n";
-    cerr << "\n";
-
     cerr << "    --trad     Traditional BFS without frontier set\n";
     cerr << "    --front    Traditional BFS with frontier set\n";
     cerr << "\n";
@@ -471,15 +449,6 @@ int main(int argc, const char** argv)
                 }
                 if (0==strcmp("--msat", arg)) {
                     satmethod = 'm';
-                    continue;
-                }
-
-                if (0==strcmp("--bfs", arg)) {
-                    satmethod = 'b';
-                    continue;
-                }
-                if (0==strcmp("--fbfs", arg)) {
-                    satmethod = 'f';
                     continue;
                 }
 
