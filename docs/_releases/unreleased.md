@@ -15,5 +15,11 @@ layout: single
 
 ### Interface Changes
 
+* Built-in operations ```REACHABLE_STATES_BFS```
+    and ```REVERSE_REACHABLE_BFS```
+    are deprecated;
+    use instead ```REACHABLE_TRAD_NOFS(true)```
+    and ```REACHABLE_TRAD_NOFS(false)```, respectively.
+
 ### Implementation
 

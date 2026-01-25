@@ -158,7 +158,11 @@ namespace MEDDLY {
     /// binary_factory& REACHABLE_SATURATE(bool fwd);
 
 #ifdef ALLOW_DEPRECATED_0_18_1
+
+    /// Deprecated; use REACHABLE_TRAD_NOFS(true)
     binary_factory& REACHABLE_STATES_BFS();
+
+    /// Deprecated; use REACHABLE_TRAD_NOFS(false)
     binary_factory& REVERSE_REACHABLE_BFS();
 #endif
 

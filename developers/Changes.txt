@@ -1,21 +1,7 @@
 
 TO DO list
 
-
-    * Allow binary operations to attach a progress callback
-      function of the form
-
-            void progress(unsigned itnum, char status);
-                // itnum: iteration number
-                // status: ' ' for start of iteration
-                //         ';' for end of iteration
-                //         others are operation dependent
-
-      this can be ignored by most operations.
-
-    * bfs with frontier sets.
-
-    * bfs without frontier sets.
+    * Are we done with old-style unary operators?
 
 ========= (release?)
 
