@@ -67,8 +67,8 @@ benchCmd=(
     "#e/queen_cover 12"
     #
     "#e/dining_phils -n800"
-    "#e/kanban 75 -bfs"
-    "#e/slot 20 -bfs"
+    "#e/kanban 75 -trad"
+    "#e/slot 20 -trad"
     #
     "#e/dining_phils -n10000 -dfs"
     "#e/kanban 200 -dfs"

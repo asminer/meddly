@@ -27,9 +27,9 @@ summarize()
   echo "==============================================================="
   print_status "nqueens" "$s_nqueens"
   print_status "queen_cover" "$s_qcover"
-  print_status "phils-bfs" "$s_philsbfs"
-  print_status "kanban-bfs" "$s_kanbanbfs"
-  print_status "slot-bfs" "$s_slotbfs"
+  print_status "phils-trad" "$s_philstrad"
+  print_status "kanban-trad" "$s_kanbantrad"
+  print_status "slot-trad" "$s_slottrad"
   print_status "phils-dfs" "$s_philsdfs"
   print_status "kanban-dfs" "$s_kanbandfs"
   print_status "slot-dfs" "$s_slotdfs"
@@ -68,19 +68,19 @@ done
 
 for i in 2 4 6 8 10 15 20; do
   run_or_exit $EXDIR/dining_phils -n$i
-  s_philsbfs="..$i "
+  s_philstrad="..$i "
   summarize
 done
 
 for i in 1 2 3 4 5 6; do
-  run_or_exit $EXDIR/kanban $i -bfs
-  s_kanbanbfs="..$i "
+  run_or_exit $EXDIR/kanban $i -trad
+  s_kanbantrad="..$i "
   summarize
 done
 
 for i in 2 3 4 5 6 7 8 9; do
-  run_or_exit $EXDIR/slot $i -bfs
-  s_slotbfs="2..$i "
+  run_or_exit $EXDIR/slot $i -trad
+  s_slottrad="2..$i "
   summarize
 done
 
@@ -134,23 +134,23 @@ done
 
 for i in 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 200; do
   run_or_exit $EXDIR/dining_phils -n$i
-  s_philsbfs="..$i+"
+  s_philstrad="..$i+"
   summarize
-  s_philsbfs="..$i "
+  s_philstrad="..$i "
 done
 
 for i in 7 8 9 10 15 20 25 30 35 40 45 50 55 60; do
-  run_or_exit $EXDIR/kanban $i -bfs
-  s_kanbanbfs="..$i+"
+  run_or_exit $EXDIR/kanban $i -trad
+  s_kanbantrad="..$i+"
   summarize
-  s_kanbanbfs="..$i "
+  s_kanbantrad="..$i "
 done
 
 for i in 10 11 12 13 14 15 16 17; do
-  run_or_exit $EXDIR/slot $i -bfs
-  s_slotbfs="2..$i+"
+  run_or_exit $EXDIR/slot $i -trad
+  s_slottrad="2..$i+"
   summarize
-  s_slotbfs="2..$i "
+  s_slottrad="2..$i "
 done
 
 for i in 25 50 75 100 250 500 750 1000 1250 2500 5000; do
@@ -208,23 +208,23 @@ done
 
 for i in 300 400 500; do
   run_or_exit $EXDIR/dining_phils -n$i
-  s_philsbfs="..$i+"
+  s_philstrad="..$i+"
   summarize
-  s_philsbfs="..$i "
+  s_philstrad="..$i "
 done
 
 for i in 65 70 75; do
-  run_or_exit $EXDIR/kanban $i -bfs
-  s_kanbanbfs="..$i+"
+  run_or_exit $EXDIR/kanban $i -trad
+  s_kanbantrad="..$i+"
   summarize
-  s_kanbanbfs="..$i "
+  s_kanbantrad="..$i "
 done
 
 for i in 18 19 20; do
-  run_or_exit $EXDIR/slot $i -bfs
-  s_slotbfs="2..$i+"
+  run_or_exit $EXDIR/slot $i -trad
+  s_slottrad="2..$i+"
   summarize
-  s_slotbfs="2..$i "
+  s_slottrad="2..$i "
 done
 
 for i in 6000 7000 8000; do
