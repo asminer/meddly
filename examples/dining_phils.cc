@@ -127,7 +127,7 @@ struct switches {
             mark_sweep = false;
             pessimistic = false;
             exact = false;
-            method = 'b';
+            method = 't';
             // chaining = true;
             printReachableStates = false;
             vord = fpfp;
@@ -335,6 +335,24 @@ void philsModel::eventsForPhil(int phil, dd_edge &e)
 // **********************************************************************
 // Helper functions
 // **********************************************************************
+
+// Verbose output: show iteration details
+bool verbose;
+
+void my_progress(unsigned iter, char st)
+{
+    if (' ' == st) {
+        fprintf(stderr, "    Iteration %u: ", iter);
+        return;
+    }
+    if (';' == st) {
+        fputc('\n', stderr);
+        return;
+    }
+    fputc(st, stderr);
+    fputc(' ', stderr);
+}
+
 
 void printStats(const char* who, const forest* f)
 {
@@ -566,11 +584,23 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
     dd_edge reachableStates(initialStates);
     start.note_time();
 
+    binary_operation* rsgen = nullptr;
+
     switch (sw.method) {
-        case 'b':
-            printf("Building reachability set using traditional algorithm\n");
+        case 'f':
+            printf("Building reachability set using traditional algorithm with frontier\n");
             fflush(stdout);
-            apply(REACHABLE_STATES_BFS, initialStates, nsf, reachableStates);
+            rsgen = build(REACHABLE_TRAD_FS(true), mdd, mxd, mdd);
+            if (verbose) rsgen->setProgressNotifier(my_progress);
+            rsgen->compute(initialStates, nsf, reachableStates);
+            break;
+
+        case 't':
+            printf("Building reachability set using traditional algorithm (no frontier)\n");
+            fflush(stdout);
+            rsgen = build(REACHABLE_TRAD_NOFS(true), mdd, mxd, mdd);
+            if (verbose) rsgen->setProgressNotifier(my_progress);
+            rsgen->compute(initialStates, nsf, reachableStates);
             break;
 
         case 'm':
@@ -692,7 +722,9 @@ int usage(const char* who)
     printf("\t-pess:      use pessimistic node deletion (lower mem usage)\n");
     printf("\n");
 
-    printf("\t-bfs:       use traditional iterations (default)\n\n");
+    printf("\t-trad:      use traditional iterations without frontier (default)\n");
+    printf("\t-front:     use traditional iterations with frontier\n\n");
+
     printf("\t-dfs:       use fastest saturation (currently, -msat)\n");
     printf("\t-esat:      use saturation by events\n");
     printf("\t-ksat:      use saturation by levels\n");
@@ -710,6 +742,7 @@ int usage(const char* who)
     printf("\n");
 
     printf("\t-print:     Print the reachable states\n");
+    printf("\t-v    :     Verbose (show iterations)\n");
     printf("\n");
     return 0;
 }
@@ -721,6 +754,7 @@ int main(int argc, char *argv[])
     switches sw;
     int cacheSize = 0;
     const char* lfile = 0;
+    verbose = false;
 
     for (int i=1; i<argc; i++) {
         const char* cmd = argv[i];
@@ -761,8 +795,12 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        if (strcmp(cmd, "-bfs") == 0) {
-            sw.method = 'b';
+        if (strcmp(cmd, "-trad") == 0) {
+            sw.method = 't';
+            continue;
+        }
+        if (strcmp(cmd, "-front") == 0) {
+            sw.method = 'f';
             continue;
         }
 
@@ -807,6 +845,10 @@ int main(int argc, char *argv[])
         }
         if (strcmp(cmd, "-offpp") == 0) {
             sw.vord = ffpp;
+            continue;
+        }
+        if (strcmp(cmd, "-v") == 0) {
+            verbose = true;
             continue;
         }
 

@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     dd_edge reachBFS(initialStates);
     dd_edge reachDFS(initialStates);
 
-    apply(REACHABLE_STATES_BFS, reachBFS, nsf, reachBFS);
+    apply(REACHABLE_TRAD_NOFS(true), reachBFS, nsf, reachBFS);
     apply(REACHABLE_STATES_DFS, reachDFS, nsf, reachDFS);
 
     int retval = (reachBFS == reachDFS)? 0: 1;

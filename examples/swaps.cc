@@ -43,6 +43,25 @@ inline double factorial(int n)
     return f;
 }
 
+// Verbose output: show iteration details
+bool verbose;
+
+void my_progress(unsigned iter, char st)
+{
+    if (' ' == st) {
+        fprintf(stderr, "    Iteration %u: ", iter);
+        return;
+    }
+    if (';' == st) {
+        fputc('\n', stderr);
+        return;
+    }
+    fputc(st, stderr);
+    fputc(' ', stderr);
+}
+
+
+
 //
 //
 // Encoding based on the obvious: each state variable is
@@ -215,12 +234,14 @@ int usage(const char* who)
     }
     printf("\nUsage: %s nnnn [options]\n\n", name);
     printf("\tnnnn: array size\n\n");
-    printf("\t-bfs: use traditional iterations\n\n");
+    printf("\t-front: use traditional iterations with frontier\n");
+    printf("\t-trad:  use traditional iterations, no frontier\n\n");
     printf("\t-dfs: use fastest saturation (currently, -msat)\n");
     //  printf("\t-esat: use saturation by events\n");
     //  printf("\t-ksat: use saturation by levels\n");
     printf("\t-msat: use monolithic saturation (default)\n\n");
-    printf("\t-alt: use alternate description\n");
+    printf("\t-alt: use alternate description\n\n");
+    printf("\t-v: verbose, show iterations\n");
     return 1;
 }
 
@@ -305,12 +326,24 @@ void runWithArgs(int N, char method, bool alternate)
        */
     watch.note_time();
     dd_edge reachable(mdd);
+    binary_operation* rsgen = nullptr;
     switch (method) {
-        case 'b':
-            printf("Building reachability set using traditional algorithm\n");
+        case 'f':
+            printf("Building reachability set using traditional algorithm with frontier\n");
             fflush(stdout);
-            apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+            rsgen = build(REACHABLE_TRAD_FS(true), mdd, mxd, mdd);
+            if (verbose) rsgen->setProgressNotifier(my_progress);
+            rsgen->compute(init_state, nsf, reachable);
             break;
+
+        case 't':
+            printf("Building reachability set using traditional algorithm (no frontier)\n");
+            fflush(stdout);
+            rsgen = build(REACHABLE_TRAD_NOFS(true), mdd, mxd, mdd);
+            if (verbose) rsgen->setProgressNotifier(my_progress);
+            rsgen->compute(init_state, nsf, reachable);
+            break;
+
 
         case 'm':
             printf("Building reachability set using saturation\n");
@@ -366,10 +399,15 @@ int main(int argc, const char** argv)
     int N = -1;
     char method = 'm';
     bool alt = false;
+    verbose = false;
 
     for (int i=1; i<argc; i++) {
-        if (strcmp("-bfs", argv[i])==0) {
-            method = 'b';
+        if (strcmp("-front", argv[i])==0) {
+            method = 'f';
+            continue;
+        }
+        if (strcmp("-trad", argv[i])==0) {
+            method = 't';
             continue;
         }
         if (strcmp("-dfs", argv[i])==0) {
@@ -391,6 +429,13 @@ int main(int argc, const char** argv)
         if (strcmp("-alt", argv[i])==0) {
             alt = true;
             continue;
+        }
+        if (strcmp("-v", argv[i])==0) {
+            verbose = true;
+            continue;
+        }
+        if ('-' == argv[i][0]) {
+            return usage(argv[0]);
         }
         N = atoi(argv[i]);
     }

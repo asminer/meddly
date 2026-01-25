@@ -162,11 +162,6 @@ dd_edge buildReachset(domain* d, int N, range_type R, edge_labeling E,
             apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
             break;
 
-        case 'B':
-            std::cout << "\t\tusing old traditional iteration\n";
-            apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
-            break;
-
         default:
             std::cout << "\t\tusing saturation\n";
             apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
@@ -394,10 +389,6 @@ int main(int argc, const char** argv)
         }
         if (0==strcmp("--front", argv[i])) {
             method = 'F';
-            continue;
-        }
-        if (0==strcmp("--bfs", argv[i])) {
-            method = 'B';
             continue;
         }
 

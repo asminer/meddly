@@ -50,7 +50,7 @@ int main()
         dd_edge reachable1(mdd);
         dd_edge reachable2(mdd);
         apply(REACHABLE_STATES_DFS, init_state, nsf, reachable1);
-        apply(REACHABLE_STATES_BFS, init_state, nsf, reachable2);
+        apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable2);
 
         // Display everything
 #ifdef VERBOSE

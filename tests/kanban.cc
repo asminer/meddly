@@ -54,7 +54,7 @@ const int nstop = 10;
 
 using namespace MEDDLY;
 
-long buildReachset(int N, bool useSat)
+long buildReachset(int N, char method)
 {
     int sizes[16];
 
@@ -90,10 +90,21 @@ long buildReachset(int N, bool useSat)
 #endif
 
     dd_edge reachable(mdd);
-    if (useSat) {
-        apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-    } else {
-        apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+    switch (method) {
+        case 'S':
+            apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+            break;
+
+        case 'T':
+            apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
+            break;
+
+        case 'F':
+            apply(REACHABLE_TRAD_FS(true), init_state, nsf, reachable);
+            break;
+
+        default:
+            throw "unknown method";
     }
 
 #ifdef PROGRESS
@@ -120,32 +131,27 @@ long buildReachset(int N, bool useSat)
 
 int main()
 {
+    const char* methods = "STF";
+    const char* methnames[] = { "saturation", "traditional iteration (no frontier)", "traditional iteration with frontier" };
+
+
+
     try {
         MEDDLY::initialize();
 
-        printf("Building Kanban reachability sets, using saturation\n");
-        for (int n=nstart; n<=nstop; n++) {
-            printf("N=%2d:  ", n);
-            fflush(stdout);
-            long c = buildReachset(n, true);
-            printf("%12ld states\n", c);
-            if (c != expected[n]) {
-                printf("Wrong number of states!\n");
-                return 1;
-            }
-        }
-
-        printf("Building Kanban reachability sets, using traditional iteration\n");
-        for (int n=nstart; n<=nstop; n++) {
-            printf("N=%2d:  ", n);
-            fflush(stdout);
-            long c = buildReachset(n, false);
-            printf("%12ld states\n", c);
-            if (c != expected[n]) {
-                printf("Wrong number of states!\n");
-                return 1;
-            }
-        }
+        for (unsigned m=0; methods[m]; m++) {
+            printf("Building Kanban reachability sets, using %s\n", methnames[m]);
+            for (int n=nstart; n<=nstop; n++) {
+                printf("N=%2d:  ", n);
+                fflush(stdout);
+                long c = buildReachset(n, methods[m]);
+                printf("%12ld states\n", c);
+                if (c != expected[n]) {
+                    printf("Wrong number of states!\n");
+                    return 1;
+                }
+            } // for n
+        } // for m
 
         MEDDLY::cleanup();
         printf("Done\n");
