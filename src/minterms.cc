@@ -232,7 +232,7 @@ namespace MEDDLY {
                 union_op = build(Union, f, f, f);
             }
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
             fbuilder_common(forest* f, const rangeval &def,
                     minterm_coll &mtl, binary_builtin2 Union)
                     : fbuilder_forest(f, def), mtc(mtl)
@@ -416,7 +416,7 @@ namespace MEDDLY {
                     minterm_coll &mtl, binary_builtin0 Union)
                     : fbuilder_common(f, def, mtl, Union) { }
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
             fbuilder(forest* f, const rangeval &def,
                     minterm_coll &mtl, binary_builtin2 Union)
                     : fbuilder_common(f, def, mtl, Union) { }

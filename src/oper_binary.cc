@@ -27,7 +27,7 @@
 // *                    binary_operation methods                    *
 // ******************************************************************
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
 
 MEDDLY::binary_operation::binary_operation(binary_list& owner,
     unsigned et_slots, forest* arg1, forest* arg2,
@@ -53,7 +53,7 @@ MEDDLY::binary_operation::binary_operation(forest* arg1, forest* arg2,
         forest* res): operation()
 {
     factory = nullptr;
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
     parent = nullptr;
 #endif
 
@@ -65,7 +65,7 @@ MEDDLY::binary_operation::binary_operation(forest* arg1, forest* arg2,
     registerInForest(arg2F);
     registerInForest(resF);
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
     can_commute = false;
     new_style = true;
 #endif
@@ -79,7 +79,7 @@ MEDDLY::binary_operation::~binary_operation()
     unregisterInForest(resF);
 
     if (factory) factory->remove(this);
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
     if (parent) parent->remove(this);
 #endif
 }
@@ -91,7 +91,7 @@ void MEDDLY::binary_operation::compute(const dd_edge &ar1,
     if (!checkForestCompatibility()) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     }
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
     if (new_style) {
         node_handle resp;
         compute(resF->getMaxLevelIndex(), ~0,
@@ -115,7 +115,7 @@ void MEDDLY::binary_operation::compute(const dd_edge &ar1,
 #endif
 }
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
 
 void MEDDLY::binary_operation::computeTemp(const dd_edge &ar1,
         const dd_edge &ar2, dd_edge &res)
@@ -237,7 +237,7 @@ void MEDDLY::binary_factory::searchRemove(binary_operation* bop)
 // *                      binary_list  methods                      *
 // ******************************************************************
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
 
 MEDDLY::binary_list::binary_list(const char* n)
 {

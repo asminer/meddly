@@ -142,7 +142,7 @@ class MEDDLY::ternary_operation : public operation {
         void compute(const dd_edge &ar1, const dd_edge &ar2,
                 const dd_edge &ar3, dd_edge &res);
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_TERNARY_0_17_6
         void computeTemp(const dd_edge &ar1, const dd_edge &ar2,
                 const dd_edge &ar3, dd_edge &res);
 

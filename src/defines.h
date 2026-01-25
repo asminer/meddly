@@ -23,7 +23,11 @@
 #include "config.h"
 #endif
 
-#define ALLOW_DEPRECATED_0_17_6  "11/11/2024"
+#define ALLOW_DEPRECATED_0_17_6     "11/11/2024"
+#define ALLOW_OLD_UNARY_0_17_6      "11/11/2024"
+#define ALLOW_OLD_BINARY_0_17_6     "11/11/2024"
+#define ALLOW_OLD_TERNARY_0_17_6    "11/11/2024"
+//
 // #define ALLOW_DEPRECATED_0_17_8  "05/25/2025"
 // #define ALLOW_DEPRECATED_0_18_0  "01/18/2025"
 // #define ALLOW_DEPRECATED_0_18_1

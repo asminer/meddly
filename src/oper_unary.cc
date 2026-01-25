@@ -27,7 +27,7 @@
 // *                    unary_operation  methods                    *
 // ******************************************************************
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
 
 MEDDLY::unary_operation::unary_operation(unary_list& owner,
     unsigned et_slots, forest* arg, forest* res)
@@ -65,7 +65,7 @@ MEDDLY::unary_operation::unary_operation(forest* arg, forest* res)
     : operation()
 {
     factory = nullptr;
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
     parent = nullptr;
 #endif
 
@@ -76,7 +76,7 @@ MEDDLY::unary_operation::unary_operation(forest* arg, forest* res)
     registerInForest(argF);
     registerInForest(resF);
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
     new_style = true;
 #endif
 }
@@ -85,7 +85,7 @@ MEDDLY::unary_operation::unary_operation(forest* arg, opnd_type res)
     : operation()
 {
     factory = nullptr;
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
     parent = nullptr;
 #endif
 
@@ -95,7 +95,7 @@ MEDDLY::unary_operation::unary_operation(forest* arg, opnd_type res)
 
     registerInForest(argF);
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
     new_style = true;
 #endif
 }
@@ -105,7 +105,7 @@ MEDDLY::unary_operation::~unary_operation()
     unregisterInForest(argF);
     unregisterInForest(resF);
     if (factory) factory->remove(this);
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
     if (parent) parent->remove(this);
 #endif
 }
@@ -115,7 +115,7 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
     if (!checkForestCompatibility()) {
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
     }
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
     if (new_style) {
         node_handle resp;
         compute(resF->getMaxLevelIndex(), ~0,
@@ -136,7 +136,7 @@ void MEDDLY::unary_operation::compute(const dd_edge &arg, dd_edge &res)
 #endif
 }
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
 void MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
 {
     if (!checkForestCompatibility()) {
@@ -279,7 +279,7 @@ void MEDDLY::unary_factory::searchRemove(unary_operation* uop)
 // *                       unary_list methods                       *
 // ******************************************************************
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
 
 MEDDLY::unary_list::unary_list(const char* n)
 {

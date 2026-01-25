@@ -31,7 +31,7 @@ namespace MEDDLY {
     typedef void (*user_defined_unary)(const rangeval &arg, rangeval &res);
     class user_unary_factory;
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
     class unary_list;
 #endif
 };
@@ -47,7 +47,7 @@ namespace MEDDLY {
 */
 class MEDDLY::unary_operation : public operation {
     public:
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
         /// Old constructor, returns DD
         unary_operation(unary_list& owner, unsigned et_slots,
             forest* arg, forest* res);
@@ -174,7 +174,7 @@ class MEDDLY::unary_operation : public operation {
         */
         void compute(const dd_edge &arg, dd_edge &res);
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
         void computeTemp(const dd_edge &arg, dd_edge &res);
         virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 #endif
@@ -268,7 +268,7 @@ class MEDDLY::unary_operation : public operation {
         unary_operation* next;
         friend class unary_factory;
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
         unary_list* parent;
         bool new_style;
         friend class unary_list;
@@ -492,7 +492,7 @@ class MEDDLY::unary_factory {
 
 };
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
 
 // ******************************************************************
 // *                                                                *
@@ -641,7 +641,7 @@ namespace MEDDLY {
         return bu.build(arg, res);
     }
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
     typedef unary_operation* (*unary_builtin1)(forest* arg, forest* res);
     typedef unary_operation* (*unary_builtin2)(forest* arg, opnd_type res);
 

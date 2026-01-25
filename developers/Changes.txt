@@ -1,7 +1,7 @@
 
 TO DO list
 
-    * Are we done with old-style unary operators?
+    * Is prepostplus deprecated?
 
 ========= (release?)
 
