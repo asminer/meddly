@@ -261,6 +261,10 @@ void showCardinality(const MEDDLY::dd_edge &reachable)
     using namespace std;
     using namespace MEDDLY;
 
+#ifdef HAVE_LIBGMP
+    mpz_t ns_mpz;
+#endif
+
     cout << "Counting states..." << endl;
 
     oper_item numstates;
@@ -268,7 +272,6 @@ void showCardinality(const MEDDLY::dd_edge &reachable)
         numstates.init(0.0);
     } else {
 #ifdef HAVE_LIBGMP
-        mpz_t ns_mpz;
         mpz_init(ns_mpz);
         numstates.init(ns_mpz);
 #endif
