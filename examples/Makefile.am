@@ -26,7 +26,8 @@ test_implicit_kanban \
 test_implicit_pool \
 test_implicit_smallos \
 test_sccs \
-testmddlib
+testmddlib \
+tiles
 
 
 # test_user_operation
@@ -105,4 +106,7 @@ testmddlib_LDADD = ../src/libmeddly.la
 
 test_otf_sat_SOURCES = test_otf_sat.cc
 test_otf_sat_LDADD = ../src/libmeddly.la
+
+tiles_SOURCES = tiles.cc simple_model.h simple_model.cc
+tiles_LDADD = ../src/libmeddly.la
 
