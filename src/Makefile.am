@@ -29,7 +29,6 @@ libmeddly_la_SOURCES = \
     defines.h               \
     domain.h                domain.cc \
     edge_value.h            edge_value.cc \
-    enumerator.h            enumerator.cc \
     error.h                 error.cc \
     forest.h                forest.cc \
     forest_edgerules.h      \
@@ -169,11 +168,11 @@ pkginclude_HEADERS = \
     ct_entry_result.h \
     ct_entry_type.h \
     ct_initializer.h \
+    ct_vector.h \
     dd_edge.h \
     defines.h \
     domain.h \
     edge_value.h \
-    enumerator.h \
     error.h \
     forest.h \
     forest_edgerules.h \
@@ -194,12 +193,16 @@ pkginclude_HEADERS = \
     node_storage.h \
     oper.h  \
     oper_binary.h  \
+    oper_item.h \
     oper_numer.h \
+    oper_satur.h \
     oper_ternary.h  \
     oper_unary.h  \
     operators.h \
     ops_builtin.h \
     policies.h \
+    rangeval.h \
+    rel_node.h \
     relation_node.h \
     sat_relations.h \
     revision.h \

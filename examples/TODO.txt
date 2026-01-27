@@ -1,6 +1,5 @@
 
 Fun things to add
 
-    * tower of hanoi
     * 16 puzzle (tiles)
     * distance computation added to all state space examples
