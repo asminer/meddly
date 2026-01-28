@@ -1,7 +1,9 @@
 
 TO DO list
 
-    * Is prepostplus deprecated?
+    * prepostplus testing (copy from prepost)
+
+    * update prepostplus
 
 ========= (release?)
 
