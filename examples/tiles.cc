@@ -202,15 +202,24 @@ void buildRelation(MEDDLY::dd_edge& trel)
 //    @param reachable      (output) reachable states
 // **********************************************************************
 
-void buildReachable(char method, const MEDDLY::dd_edge &relation,
+void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
         const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable)
 {
     using namespace MEDDLY;
     timer watch;
 
+    ostream_output merr(std::cerr);
+    merr.indent_more();
+
+    output* perr = verbose ? &merr : nullptr;
+
     watch.note_time();
 
-    std::cout << "Building reachable states using ";
+    if (dist) {
+        std::cout << "Building distance function using ";
+    } else {
+        std::cout << "Building reachable states using ";
+    }
 
     switch (method) {
         case 'm':
@@ -220,12 +229,12 @@ void buildReachable(char method, const MEDDLY::dd_edge &relation,
 
         case 'f':
                     std::cout << "traditional with frontier..." << std::endl;
-                    buildReachsetFrontier(nullptr, relation, initial, reachable);
+                    buildReachsetFrontier(perr, relation, initial, reachable);
                     break;
 
         case 'b':
                     std::cout << "traditional without frontier..." << std::endl;
-                    buildReachsetBFS(nullptr, relation, initial, reachable);
+                    buildReachsetBFS(perr, relation, initial, reachable);
                     break;
 
         default:
@@ -236,8 +245,12 @@ void buildReachable(char method, const MEDDLY::dd_edge &relation,
     std::cout << "    reachable states construction took "
               << watch.get_last_seconds() << " seconds" << std::endl;
 
-    std::cout << "MDD for reachable states requires "
-              << reachable.getNodeCount() << " nodes" << std::endl;
+    if (dist) {
+        std::cout << "EV+MDD for distance function requires ";
+    } else {
+        std::cout << "MDD for reachable states requires ";
+    }
+    std::cout << reachable.getNodeCount() << " nodes" << std::endl;
 }
 
 // **********************************************************************
@@ -360,12 +373,19 @@ int usage(const char* exe)
     cerr << "    -v:    Verbose. Show BFS iteration details.\n";
     cerr << "\n";
 
-    // cerr << "    --dsat     Saturation for distance\n";
-    cerr << "    --msat     Saturation, monolithic relation\n";
+    cerr << "    --pos:     Use a position-based encoding: for each position,\n";
+    cerr << "               which tile is there.\n";
+    cerr << "    --tile:    Use a tile-based encoding: for each tile,\n";
+    cerr << "               where is it (default)\n";
     cerr << "\n";
 
+    cerr << "    --reach:   Build the reachability set (default).\n";
+    cerr << "    --dist:    Build the distance function.\n";
+    cerr << "\n";
+
+    cerr << "    --msat     Saturation, monolithic relation\n";
     cerr << "    --bfs      BFS without frontier set\n";
-    cerr << "    --fbfs     BFS with frontier set\n";
+    cerr << "    --fbfs     BFS with frontier set (RS only)\n";
     cerr << "\n";
     return 1;
 }
@@ -390,6 +410,9 @@ int main(int argc, const char** argv)
     approx_count = true;
     verbose = false;
     char satmethod = 'm';
+    for_each_position_which_tile = false;
+    bool distances = false;
+
     //
     // Process command line
     //
@@ -427,10 +450,24 @@ int main(int argc, const char** argv)
             }
             // double dash switches
             if ('-' == arg[1]) {
-                if (0==strcmp("--dsat", arg)) {
-                    satmethod = 'd';
+                if (0==strcmp("--pos", arg)) {
+                    for_each_position_which_tile = true;
                     continue;
                 }
+                if (0==strcmp("--tile", arg)) {
+                    for_each_position_which_tile = false;
+                    continue;
+                }
+
+                if (0==strcmp("--reach", arg)) {
+                    distances = false;
+                    continue;
+                }
+                if (0==strcmp("--dist", arg)) {
+                    distances = true;
+                    continue;
+                }
+
                 if (0==strcmp("--msat", arg)) {
                     satmethod = 'm';
                     continue;
@@ -483,9 +520,21 @@ int main(int argc, const char** argv)
         // any policy changes?
         forest* mdd = nullptr;
 
-        mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
+        if (distances) {
+            mdd = forest::create(d, false, range_type::INTEGER, edge_labeling::EVPLUS, pmdd);
+        } else {
+            mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
+        }
+
         forest* mxd = forest::create(d, true,  range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
 
+        cout << "Sliding tile puzzle, board has " << R << " rows and "
+             << C << " columns.\n";
+        if (for_each_position_which_tile) {
+            cout << "Encoding using 'for each position, which tile is there'\n";
+        } else {
+            cout << "Encoding using 'for each tile, where is it'\n";
+        }
 
         //
         // Build initial state
@@ -494,8 +543,14 @@ int main(int argc, const char** argv)
         minterm init_minterm(mdd);
         buildInitial(init_minterm);
 
-        init_minterm.setValue(true);
-        init_minterm.buildFunction(false, initial);
+        if (distances) {
+            init_minterm.setValue(0);
+            rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
+            init_minterm.buildFunction(infty, initial);
+        } else {
+            init_minterm.setValue(true);
+            init_minterm.buildFunction(false, initial);
+        }
 
         //
         // Build transition relation
@@ -507,7 +562,7 @@ int main(int argc, const char** argv)
         // Build reachable states
         //
         dd_edge reachable(mdd);
-        buildReachable(satmethod, rel, initial, reachable);
+        buildReachable(distances, satmethod, rel, initial, reachable);
         showCardinality(reachable);
 
         //
@@ -519,7 +574,7 @@ int main(int argc, const char** argv)
         mxd->reportStats(meddlyout, "    ",
                 HUMAN_READABLE_MEMORY | BASIC_STATS
         );
-        if ('d' == satmethod) {
+        if (distances) {
             meddlyout << "EV+MDD stats:\n";
         } else {
             meddlyout << "MDD stats:\n";
