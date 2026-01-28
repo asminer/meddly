@@ -26,8 +26,11 @@
 
 // #define SHOW_EVENTS
 
-// Number of rings.
-int N;
+// Number of rows.
+int R;
+
+// Number of columns.
+int C;
 
 // Approximate cardinality.
 bool approx_count;
@@ -35,119 +38,160 @@ bool approx_count;
 // Verbose output: show iteration details
 bool verbose;
 
-void my_progress(unsigned iter, char st)
-{
-    if (' ' == st) {
-        std::cerr << "    Iteration " << iter << ": ";
-        return;
-    }
-    if (';' == st) {
-        std::cerr << std::endl;
-        return;
-    }
-    std::cerr << st << " ";
-}
+// #define DEBUG_EVENTS
 
-// **********************************************************************
-// build an event to move a ring
-//    @param ring2level     Mapping from rings to level
-//    @param ring           Which ring to move
-//    @param src            Source peg (0, 1, 2)
-//    @param dest           Destination peg (0, 1, 2)
-//    @param aux            Unused peg (0, 1, 2)
+// There are two encodings.
+// If this variable is true, then the state encoding is,
+//     "for each position, which tile is currently there."
+// Otherwise, the state encoding is,
+//     "for each tile, where is it."
 //
-//    @param E              in:  blank dd_edge attached to relation forest
-//                          out: dd_edge holding the event
+bool for_each_position_which_tile;
+
+// **********************************************************************
+// build the initial state, as a minterm
 // **********************************************************************
 
-void moveRing(std::vector <int> &ring2level, int ring,
-        int src, int dest, int aux, MEDDLY::dd_edge &E)
+void buildInitial(MEDDLY::minterm &init)
 {
-    assert(src != dest);
-    assert(src != aux);
-    assert(dest != aux);
+    //
+    // The initial state:
+    //      starting from the upper left, reading from left to right,
+    //      the tiles are 1, 2, 3, ...
+    //      and the bottom right corner is empty.
+    //
 
-    MEDDLY::minterm delta(E.getForest());
+    if (for_each_position_which_tile) {
+        // p0: 1, p1: 2, ..., plast-1: R*C-1, plast: 0
+        for (int p=0; p<R*C-1; p++) {
+            init.setVar(p+1, p+1);
+        }
+        init.setVar(R*C, 0);
+    } else {
+        // t0: R*C-1, t1: 0, t2: 1, ...
+        for (int t=1; t<R*C; t++) {
+            init.setVar(t+1, t-1);
+        }
+        init.setVar(1, R*C-1);
+    }
+}
 
-    for (int i=N; i>0; i--) {
-        const int k = ring2level[i];
-        if (i > ring) {
-            delta.setVars(k, MEDDLY::DONT_CARE, MEDDLY::DONT_CHANGE);
-            continue;
-        }
-        if (i < ring) {
-            delta.setVars(k, aux, aux);
-            continue;
-        }
-        delta.setVars(k, src, dest);
+
+// **********************************************************************
+// build a minterm to move a tile
+//
+//    @param T              Tile number, from 1 to R*C-1.
+//    @param p              Position currently containing tile T,
+//                              from 0 to R*C-1.
+//    @param q              Neighboring position containing nothing (0),
+//                              from 0 to R*C-1.
+//    @param m              Minterm to fill
+//
+//    @return true, iff this is a valid move
+//
+// **********************************************************************
+
+bool moveTile(const int T, const int p, const int q, MEDDLY::minterm &m)
+{
+    if (p == q)     return false;
+    if (T<=0)       return false;
+    if (T>= R*C)    return false;
+    if (p<0)        return false;
+    if (p>= R*C)    return false;
+    if (q<0)        return false;
+    if (q>= R*C)    return false;
+
+    m.setAllVars(MEDDLY::DONT_CARE, MEDDLY::DONT_CHANGE);
+
+    if (for_each_position_which_tile) {
+
+        // x_p: T -> 0
+        //
+        m.setVars(p+1, T, 0);
+
+        // x_q: 0 -> T
+        //
+        m.setVars(q+1, 0, T);
+
+    } else {
+
+        // x_T: p -> q
+        //
+        m.setVars(T+1, p, q);
+
+        // x_0: q -> p
+        //
+        m.setVars(1, q, p);
     }
 
-    delta.setValue(true);
-    /*
-    MEDDLY::ostream_output merr(std::cerr);
-    delta.show(merr);
-    */
-    delta.buildFunction(false, E);
+    m.setValue(true);
+#ifdef DEBUG_EVENTS
+    std::cerr << "   move tile " << T << " from " << p << " to " << q << "\n";
+#endif
+    return true;
 }
 
 // **********************************************************************
-// build overall (partitioned) transition relation
-//    @param ring2level     Mapping from rings to level
-//    @param prel           Partitioned pre-generated transition relation
+// build overall, monolithic, transition relation
+//    @param trel           Transition relation, on output
 // **********************************************************************
 
-void buildRelation(std::vector <int> &ring2level, MEDDLY::pregen_relation& prel)
+void buildRelation(MEDDLY::dd_edge& trel)
 {
     using namespace MEDDLY;
 
     timer stopwatch;
-    std::cout << "Building transition relation (events grouped by top level)..." << std::endl;
+    std::cout << "Building minterm collection..." << std::endl;
     stopwatch.note_time();
-    dd_edge event(prel.getRelForest());
 
-    for (int ring=1; ring<=N; ring++) {
-        moveRing(ring2level, ring, 0, 1, 2, event);
-        prel.addToRelation(event);
-        moveRing(ring2level, ring, 0, 2, 1, event);
-        prel.addToRelation(event);
-        moveRing(ring2level, ring, 1, 0, 2, event);
-        prel.addToRelation(event);
-        moveRing(ring2level, ring, 1, 2, 0, event);
-        prel.addToRelation(event);
-        moveRing(ring2level, ring, 2, 0, 1, event);
-        prel.addToRelation(event);
-        moveRing(ring2level, ring, 2, 1, 0, event);
-        prel.addToRelation(event);
-    } // for ring
-    prel.finalize();
+    // Lazy bound: number of tiles, squared, times 4 events
+    minterm_coll mtc(R*C*R*C*4, trel.getForest());
+
+    for (int p=0; p<R*C; p++) {
+        for (int t=1; t<R*C; t++) {
+            // Move to the left, if we can
+            if (0 != p%C) {
+                if (moveTile(t, p, p-1, mtc.unused())) {
+                    mtc.pushUnused();
+                }
+            }
+            // Move to the right, if we can
+            if (C-1 != p%C) {
+                if (moveTile(t, p, p+1, mtc.unused())) {
+                    mtc.pushUnused();
+                }
+            }
+            // Move up
+            if (moveTile(t, p, p-C, mtc.unused())) {
+                mtc.pushUnused();
+            }
+
+            // Move down
+            if (moveTile(t, p, p+C, mtc.unused())) {
+                mtc.pushUnused();
+            }
+        }
+    }
 
     stopwatch.note_time();
-    std::cout << "    transition relation construction took "
+    std::cout << "    minterm collection construction took "
               << stopwatch.get_last_seconds() << " seconds" << std::endl;
 
-#ifdef SHOW_EVENTS
-    ostream_output merr(std::cerr);
+    std::cout << "    there are " << mtc.size() << " events\n";
 
-    for (int k=1; k<=N; k++) {
-        merr.indent_more();
-        merr << "Events with top level=" << k << ":\n";
-        for (unsigned i=0; i<prel.lengthForLevel(k); i++) {
-            merr.indent_more();
-            merr << "event " << i << ":\n";
-            prel.arrayForLevel(k)[i].showGraph(merr);
-            merr.indent_less();
-        }
-        merr.indent_less();
-        merr << "\n";
-    }
-#endif
+    std::cout << "Building relation from minterms..." << std::endl;
+    stopwatch.note_time();
+
+    mtc.buildFunctionMax(false, trel);
+
+    stopwatch.note_time();
+    std::cout << "    relation construction took "
+              << stopwatch.get_last_seconds() << " seconds" << std::endl;
 }
 
 // **********************************************************************
 // build reachable states or whatever was asked for
 //    @param method         What to do:
-//                              'd': saturation for distances
-//                              'k': saturation, partitioned by level
 //                              'm': saturation, monolithic
 //
 //                              'f': BFS with frontier
@@ -158,91 +202,55 @@ void buildRelation(std::vector <int> &ring2level, MEDDLY::pregen_relation& prel)
 //    @param reachable      (output) reachable states
 // **********************************************************************
 
-void buildReachable(char method, MEDDLY::pregen_relation* prel,
-        MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable)
+void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
+        const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable)
 {
     using namespace MEDDLY;
     timer watch;
 
-    dd_edge monolithic(prel->getRelForest());
-    prel->getRelForest()->createConstant(false, monolithic);
-
-    if ('k' != method) {
-        std::cout << "Building monolithic relation..." << std::endl;
-        watch.note_time();
-
-        for (int k=1; k<=N; k++) {
-            for (unsigned i=0; i<prel->lengthForLevel(k); i++) {
-                apply(UNION, monolithic, prel->arrayForLevel(k)[i], monolithic);
-            }
-        }
-
-        watch.note_time();
-        std::cout << "    monolithic relation construction took "
-                  << watch.get_last_seconds() << " seconds" << std::endl;
-    }
-
-    //
-    // TBD: do different things based on command line switches
-    //
-
-    const char* what = ('d' == method) ? "state distances" : "reachability set";
-
-    watch.note_time();
-
-    saturation_operation* sat = nullptr;
-    binary_operation* bfs = nullptr;
     ostream_output merr(std::cerr);
     merr.indent_more();
 
-    forest* arg1F = initial.getForest();
-    forest* arg2F = prel->getRelForest();
-    forest* resF  = reachable.getForest();
+    output* perr = verbose ? &merr : nullptr;
+
+    watch.note_time();
+
+    if (dist) {
+        std::cout << "Building distance function using ";
+    } else {
+        std::cout << "Building reachable states using ";
+    }
 
     switch (method) {
-        case 'k':
-                    std::cout << "Building " << what << " using saturation..." << std::endl;
-                    sat = SATURATION_FORWARD(arg1F, prel, resF);
-                    if (!sat) {
-                        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-                    }
-                    sat->compute(initial, reachable);
-                    break;
-
         case 'm':
-        case 'd':
-                    std::cout << "Building " << what << " using saturation..." << std::endl;
-                    apply(REACHABLE_STATES_DFS, initial, monolithic, reachable);
+                    std::cout << "saturation..." << std::endl;
+                    apply(REACHABLE_STATES_DFS, initial, relation, reachable);
                     break;
 
-        case 't':
-                    std::cout << "Building " << what << " using (new) traditional without frontier..." << std::endl;
-                    bfs = build(REACHABLE_TRAD_NOFS(true), arg1F, arg2F, resF);
-                    if (!bfs) throw "null bfs";
-                    if (verbose) bfs->setProgressNotifier(my_progress);
-                    bfs->compute(initial, monolithic, reachable);
+        case 'f':
+                    std::cout << "traditional with frontier..." << std::endl;
+                    buildReachsetFrontier(perr, relation, initial, reachable);
                     break;
 
-        case 'F':
-                    std::cout << "Building " << what << " using (new) traditional with frontier..." << std::endl;
-                    bfs = build(REACHABLE_TRAD_FS(true), arg1F, arg2F, resF);
-                    if (!bfs) throw "null bfs";
-                    if (verbose) bfs->setProgressNotifier(my_progress);
-                    bfs->compute(initial, monolithic, reachable);
+        case 'b':
+                    std::cout << "traditional without frontier..." << std::endl;
+                    buildReachsetBFS(perr, relation, initial, reachable);
                     break;
-
 
         default:
                     throw "unknown method";
     }
 
     watch.note_time();
-    std::cout << "    " << what << " construction took "
+    std::cout << "    reachable states construction took "
               << watch.get_last_seconds() << " seconds" << std::endl;
 
-
-    std::cout << "MDD for " << what << " requires "
-              << reachable.getNodeCount() << " nodes" << std::endl;
+    if (dist) {
+        std::cout << "EV+MDD for distance function requires ";
+    } else {
+        std::cout << "MDD for reachable states requires ";
+    }
+    std::cout << reachable.getNodeCount() << " nodes" << std::endl;
 }
 
 // **********************************************************************
@@ -305,9 +313,10 @@ void showCardinality(const MEDDLY::dd_edge &reachable)
              << " reachable states" << endl;
 
         double theory = 1.0;
-        for (unsigned i=0; i<N; i++) {
-            theory *= 3.0;
+        for (unsigned i=2; i<=R*C; i++) {
+            theory *= i;
         }
+        theory /= 2.0;
         cout << "Theory: " << theory << " reachable states" << endl;
     } else {
 #ifdef HAVE_LIBGMP
@@ -317,9 +326,10 @@ void showCardinality(const MEDDLY::dd_edge &reachable)
 
         mpz_t theory;
         mpz_init_set_ui(theory, 1);
-        for (unsigned i=0; i<N; i++) {
-            mpz_mul_ui(theory, theory, 3);
+        for (unsigned i=2; i<=R*C; i++) {
+            mpz_mul_ui(theory, theory, i);
         }
+        mpz_div_ui(theory, theory, 2);
         cout << "Theory: ";
         showNumber(theory);
         cout << " reachable states" << endl;
@@ -345,10 +355,11 @@ int usage(const char* exe)
     }
 
     cerr << "\n";
-    cerr << "Usage: " << base << " [switches] #rings\n";
+    cerr << "Usage: " << base << " [switches] #rows #cols\n";
     cerr << "\n";
-    cerr << "Generate reachable states for the Towers of Hanoi puzzle.\n";
-    cerr << "The number of rings given should be a natural number.\n";
+    cerr << "Generate reachable states for a 2-d sliding puzzle.\n";
+    cerr << "The number of rows and columns given should be natural numbers.\n";
+    cerr << "The standard \"16 puzzle\" uses 4 rows and 4 columns.\n";
     cerr << "\n";
     cerr << "Switches:\n";
     cerr << "    -h:    This help\n\n";
@@ -358,22 +369,23 @@ int usage(const char* exe)
     cerr << "    -e:    Exact count for number of states.\n\n";
 #endif
 
-    cerr << "    -o:    Order the variables so that the smallest ring is the bottom-most\n";
-    cerr << "           variable in the MDD. (Default)\n";
-    cerr << "    -O:    Order the variables so that the largest ring is the bottom-most\n";
-    cerr << "           variable in the MDD.\n";
-    cerr << "\n";
     cerr << "    -q:    Quiet. Do not show BFS iteration details (default).\n";
     cerr << "    -v:    Verbose. Show BFS iteration details.\n";
     cerr << "\n";
 
-    cerr << "    --dsat     Saturation for distance\n";
-    cerr << "    --ksat     Saturation, relation partitioned by levels (default)\n";
-    cerr << "    --msat     Saturation, monolithic relation\n";
+    cerr << "    --pos:     Use a position-based encoding: for each position,\n";
+    cerr << "               which tile is there.\n";
+    cerr << "    --tile:    Use a tile-based encoding: for each tile,\n";
+    cerr << "               where is it (default)\n";
     cerr << "\n";
 
-    cerr << "    --trad     Traditional BFS without frontier set\n";
-    cerr << "    --front    Traditional BFS with frontier set\n";
+    cerr << "    --reach:   Build the reachability set (default).\n";
+    cerr << "    --dist:    Build the distance function.\n";
+    cerr << "\n";
+
+    cerr << "    --msat     Saturation, monolithic relation\n";
+    cerr << "    --bfs      BFS without frontier set\n";
+    cerr << "    --fbfs     BFS with frontier set (RS only)\n";
     cerr << "\n";
     return 1;
 }
@@ -393,15 +405,19 @@ int main(int argc, const char** argv)
     using namespace std;
     using namespace MEDDLY;
 
-    N = -1;
+    R = -1;
+    C = -1;
     approx_count = true;
     verbose = false;
-    bool reverse_order = false;
-    char satmethod = 'k';
+    char satmethod = 'm';
+    for_each_position_which_tile = false;
+    bool distances = false;
+
     //
     // Process command line
     //
-    for (unsigned i=1; i<argc; i++)
+    unsigned i;
+    for (i=1; i<argc; i++)
     {
         const char *arg = argv[i];
         if ('-' == arg[0])
@@ -417,14 +433,6 @@ int main(int argc, const char** argv)
                     case 'e':   approx_count = false;
                                 continue;
 #endif
-                    case 'o':
-                                reverse_order = false;
-                                continue;
-
-                    case 'O':
-                                reverse_order = true;
-                                continue;
-
                     case 'q':
                                 verbose = false;
                                 continue;
@@ -442,76 +450,57 @@ int main(int argc, const char** argv)
             }
             // double dash switches
             if ('-' == arg[1]) {
-                if (0==strcmp("--dsat", arg)) {
-                    satmethod = 'd';
+                if (0==strcmp("--pos", arg)) {
+                    for_each_position_which_tile = true;
                     continue;
                 }
-                if (0==strcmp("--ksat", arg)) {
-                    satmethod = 'k';
+                if (0==strcmp("--tile", arg)) {
+                    for_each_position_which_tile = false;
                     continue;
                 }
+
+                if (0==strcmp("--reach", arg)) {
+                    distances = false;
+                    continue;
+                }
+                if (0==strcmp("--dist", arg)) {
+                    distances = true;
+                    continue;
+                }
+
                 if (0==strcmp("--msat", arg)) {
                     satmethod = 'm';
                     continue;
                 }
 
-                if (0==strcmp("--trad", arg)) {
-                    satmethod = 't';
+                if (0==strcmp("--bfs", arg)) {
+                    satmethod = 'b';
                     continue;
                 }
-                if (0==strcmp("--front", arg)) {
-                    satmethod = 'F';
+                if (0==strcmp("--fbfs", arg)) {
+                    satmethod = 'f';
                     continue;
                 }
             }
             cerr << "Unknown switch \"" << arg << "\"\n";
             return usage(argv[0]);
         }
-        if (N>=0) {
-            cerr << "More than one #rings specified?\n";
-            return usage(argv[0]);
-        }
-        N = naturalArg(arg);
-        if (N<0) {
-            return usage(argv[0]);
-        }
+        break;
     }
-    if (N<0) {
-        cerr << "#rings not specified\n";
+    if (i < argc) {
+        R = naturalArg(argv[i]);
+        i++;
+    }
+    if (i < argc) {
+        C = naturalArg(argv[i]);
+        i++;
+    }
+    if ((i != argc) || (R<0) || (C<0)) {
         return usage(argv[0]);
     }
 
-    //
-    // Build ring to level mappings
-    //
-    cout << "Towers of Hanoi with " << N << " rings.\n";
-    if (0==N) return 0;
-
-    vector <int> ring2level(N+1);
-    vector <int> level2ring(N+1);
-    ring2level[0] = 0;
-    level2ring[0] = 0;
-    if (reverse_order) {
-        for (unsigned i=N; i>0; i--) {
-            ring2level[i] = N-i+1;
-            level2ring[N-i+1] = i;
-        }
-    } else {
-        for (unsigned i=N; i>0; i--) {
-            ring2level[i] =i;
-            level2ring[i] = i;
-        }
-    }
-
-    cout << "Variable order is TOP, ";
-    for (unsigned i=N; i>0; i--) {
-        cout << "ring " << level2ring[i] << ", ";
-        if (i>3) {
-            cout << "..., ";
-            i = 3;
-        }
-    }
-    cout << "BOTTOM\n";
+    if (0==R) return 0;
+    if (0==C) return 0;
 
     try {
         //
@@ -522,49 +511,58 @@ int main(int argc, const char** argv)
         //
         // Build domain, forests
         //
-        int* sizes = new int[N];
-        for (int i=N-1; i>=0; i--) sizes[i] = 3;
-        domain* d = domain::createBottomUp(sizes, N);
+        int* sizes = new int[R*C];
+        for (int i=R*C-1; i>=0; i--) sizes[i] = R*C;
+        domain* d = domain::createBottomUp(sizes, R*C);
         delete[] sizes;
 
         policies pmdd(false), pmxd(true);
         // any policy changes?
         forest* mdd = nullptr;
 
-        if ('d' == satmethod) {
+        if (distances) {
             mdd = forest::create(d, false, range_type::INTEGER, edge_labeling::EVPLUS, pmdd);
         } else {
             mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
         }
+
         forest* mxd = forest::create(d, true,  range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
 
+        cout << "Sliding tile puzzle, board has " << R << " rows and "
+             << C << " columns.\n";
+        if (for_each_position_which_tile) {
+            cout << "Encoding using 'for each position, which tile is there'\n";
+        } else {
+            cout << "Encoding using 'for each tile, where is it'\n";
+        }
 
         //
         // Build initial state
         //
-        minterm init_minterm(mdd);
-        init_minterm.setAllVars(0);
         dd_edge initial(mdd);
-        if ('d' == satmethod) {
+        minterm init_minterm(mdd);
+        buildInitial(init_minterm);
+
+        if (distances) {
             init_minterm.setValue(0);
-            init_minterm.buildFunction(rangeval(range_special::PLUS_INFINITY, range_type::INTEGER), initial);
+            rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
+            init_minterm.buildFunction(infty, initial);
         } else {
             init_minterm.setValue(true);
             init_minterm.buildFunction(false, initial);
         }
 
-
         //
         // Build transition relation
         //
-        pregen_relation* lnsf = new pregen_relation(mxd);
-        buildRelation(ring2level, *lnsf);
+        dd_edge rel(mxd);
+        buildRelation(rel);
 
         //
         // Build reachable states
         //
         dd_edge reachable(mdd);
-        buildReachable(satmethod, lnsf, initial, reachable);
+        buildReachable(distances, satmethod, rel, initial, reachable);
         showCardinality(reachable);
 
         //
@@ -576,7 +574,7 @@ int main(int argc, const char** argv)
         mxd->reportStats(meddlyout, "    ",
                 HUMAN_READABLE_MEMORY | BASIC_STATS
         );
-        if ('d' == satmethod) {
+        if (distances) {
             meddlyout << "EV+MDD stats:\n";
         } else {
             meddlyout << "MDD stats:\n";
