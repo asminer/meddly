@@ -48,6 +48,21 @@ bool verbose;
 //
 bool for_each_position_which_tile;
 
+
+void my_progress(unsigned iter, char st)
+{
+    if (' ' == st) {
+        std::cerr << "    Iteration " << iter << ": ";
+        return;
+    }
+    if (';' == st) {
+        std::cerr << std::endl;
+        return;
+    }
+    std::cerr << st << " ";
+}
+
+
 // **********************************************************************
 // build the initial state, as a minterm
 // **********************************************************************
@@ -208,11 +223,6 @@ void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
     using namespace MEDDLY;
     timer watch;
 
-    ostream_output merr(std::cerr);
-    merr.indent_more();
-
-    output* perr = verbose ? &merr : nullptr;
-
     watch.note_time();
 
     if (dist) {
@@ -220,6 +230,10 @@ void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
     } else {
         std::cout << "Building reachable states using ";
     }
+
+    binary_operation* bfs = nullptr;
+    forest* initF = initial.getForest();
+    forest* relF = relation.getForest();
 
     switch (method) {
         case 'm':
@@ -229,12 +243,18 @@ void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
 
         case 'f':
                     std::cout << "traditional with frontier..." << std::endl;
-                    buildReachsetFrontier(perr, relation, initial, reachable);
+                    bfs = build(REACHABLE_TRAD_FS(true), initF, relF, initF);
+                    if (!bfs) throw "null bfs";
+                    if (verbose) bfs->setProgressNotifier(my_progress);
+                    bfs->compute(initial, relation, reachable);
                     break;
 
-        case 'b':
+        case 't':
                     std::cout << "traditional without frontier..." << std::endl;
-                    buildReachsetBFS(perr, relation, initial, reachable);
+                    bfs = build(REACHABLE_TRAD_NOFS(true), initF, relF, initF);
+                    if (!bfs) throw "null bfs";
+                    if (verbose) bfs->setProgressNotifier(my_progress);
+                    bfs->compute(initial, relation, reachable);
                     break;
 
         default:
@@ -384,8 +404,8 @@ int usage(const char* exe)
     cerr << "\n";
 
     cerr << "    --msat     Saturation, monolithic relation\n";
-    cerr << "    --bfs      BFS without frontier set\n";
-    cerr << "    --fbfs     BFS with frontier set (RS only)\n";
+    cerr << "    --trad     Traditional BFS without frontier set\n";
+    cerr << "    --front    Traditional BFS with frontier set (RS only)\n";
     cerr << "\n";
     return 1;
 }
@@ -473,11 +493,11 @@ int main(int argc, const char** argv)
                     continue;
                 }
 
-                if (0==strcmp("--bfs", arg)) {
-                    satmethod = 'b';
+                if (0==strcmp("--trad", arg)) {
+                    satmethod = 't';
                     continue;
                 }
-                if (0==strcmp("--fbfs", arg)) {
+                if (0==strcmp("--front", arg)) {
                     satmethod = 'f';
                     continue;
                 }
