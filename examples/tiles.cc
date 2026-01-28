@@ -22,7 +22,6 @@
 
 #include "../src/meddly.h"
 #include "../timing/timer.h"
-#include "simple_model.h"
 
 // #define SHOW_EVENTS
 
