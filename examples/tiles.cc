@@ -51,7 +51,7 @@ bool for_each_position_which_tile;
 void my_progress(unsigned iter, char st)
 {
     if (' ' == st) {
-        std::cerr << "    Iteration " << iter << ": ";
+        std::cerr << "    Iteration " << std::setw(5) << iter << ": ";
         return;
     }
     if (';' == st) {
@@ -602,6 +602,7 @@ int main(int argc, const char** argv)
             HUMAN_READABLE_MEMORY | BASIC_STATS | EXTRA_STATS
         );
 
+        compute_table::showAll(meddlyout, 2);
 
         cout << "Done!\n";
         return 0;
