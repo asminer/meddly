@@ -471,6 +471,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                     } // for zj
                 } // if brn[i]
             } // for zi
+            unpacked_node::Recycle(Bu);
         } else {
             /*
              * Go backward one step.
@@ -508,6 +509,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                     } // for zj
                 } // if brn[i]
             } // for i
+            unpacked_node::Recycle(Bu);
         }
     }
 
