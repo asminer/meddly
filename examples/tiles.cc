@@ -51,11 +51,20 @@ bool for_each_position_which_tile;
 
 void my_progress(unsigned iter, char st)
 {
+    static timer watch;
     if (' ' == st) {
+        watch.note_time();
         std::cerr << "    Iteration " << std::setw(5) << iter << ": ";
         return;
     }
     if (';' == st) {
+        watch.note_time();
+        std::cerr   << "       "
+                    << std::fixed
+                    << std::setprecision(4)
+                    << std::setw(14)
+                    << watch.get_last_seconds()
+                    << " sec. this iteration";
         std::cerr << std::endl;
         return;
     }
