@@ -28,7 +28,7 @@ AX_CXX_COMPILE_STDCXX(11)
 AC_PROG_CC
 # Add AM_PROG_AR, if we can...
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
-LT_INIT
+LT_INIT()
 
 # Checks for libraries.
 
