@@ -108,11 +108,12 @@ namespace MEDDLY {
         This also specifies the incoming count range for each node.
     */
     typedef int  node_handle;
+    // typedef long node_handle;
 
     /** Handles for relation nodes.
         TBD: can we just use node_handle everywhere?
      */
-    typedef int  rel_node_handle;
+    typedef node_handle rel_node_handle;
 
     /** Node addresses.
         This is used for internal storage of a node,

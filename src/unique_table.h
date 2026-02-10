@@ -207,7 +207,7 @@ class MEDDLY::unique_table {
                     I.e., the exact key.
                     Otherwise, return 0.
                 */
-                int remove(unsigned hash, node_handle item);
+                node_handle remove(unsigned hash, node_handle item);
 
                 /**
                     Remove all the items in the table and reset the state.
