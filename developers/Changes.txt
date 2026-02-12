@@ -5,6 +5,10 @@ TO DO list
 
     * update prepostplus
 
+    * update COPY operation for relations to read from relation nodes,
+      this will enable us (down the road) to copy from any implicit relation
+      representation into 2L-level MxD representation.
+
 ========= (release?)
 
     * saturation 1 monolithic relation
@@ -85,6 +89,8 @@ TO DO list
         forest: vector of pointers to protected nodes
 
 ========= (release?)
+
+    * updated node, CT storage using long instead of int for node handles.
 
     * new byte-based node storage
         first and last byte: storage type
