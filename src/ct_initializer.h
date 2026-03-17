@@ -19,6 +19,7 @@
 #ifndef MEDDLY_CT_INITIALIZER_H
 #define MEDDLY_CT_INITIALIZER_H
 
+#include "defines.h"
 #include "initializer.h"
 #include <cstddef>
 
@@ -72,7 +73,8 @@ struct MEDDLY::ct_settings {
     public:
         ct_settings() {
             MMS = nullptr;
-            allowHugeTables = false;
+            // allowHugeTables = false;
+            allowHugeTables = (sizeof(node_handle) > sizeof(int));
         }
 };
 

@@ -66,7 +66,7 @@ namespace MEDDLY {
                                     and each entry needs a next pointer.
 
             @param  INTSLOTS        If true, we use unsigned integer slots
-                                    instead of unsigned long slots for
+                                    instead of ct_entry_item slots for
                                     entries, and some items will require
                                     two slots instead of one.
 
@@ -2081,13 +2081,8 @@ void MEDDLY::ct_tmpl<T,M,C,I>
         const ct_itemtype &it = et->getResultType(i);
         switch (it.getType())
         {
-            case ct_typeID::NODE:
-                    it.cacheNode(data[i].N);
-                    // FALL THROUGH
-
             case ct_typeID::INTEGER:
             case ct_typeID::FLOAT:
-                    MEDDLY_DCASSERT(sizeof(data[i].N) == sizeof(data[i].U));
                     MEDDLY_DCASSERT(sizeof(data[i].I) == sizeof(data[i].U));
                     MEDDLY_DCASSERT(sizeof(data[i].F) == sizeof(data[i].U));
                     if (I) {
@@ -2110,6 +2105,28 @@ void MEDDLY::ct_tmpl<T,M,C,I>
                         ue+=2;
                     } else {
                         cte->UL = data[i].UL;
+                        cte++;
+                    }
+                    continue;
+
+            case ct_typeID::NODE:
+                    it.cacheNode(data[i].N);
+
+                    if (I) {
+                        //
+                        // Copy into one or two integer slots
+                        //
+                        if (sizeof(data[i].N) == sizeof(data[i].U)) {
+                            *ue = data[i].U;
+                            ue++;
+                        } else {
+                            ue[0] = data[i].raw[0];
+                            ue[1] = data[i].raw[1];
+                            ue+=2;
+                        }
+
+                    } else {
+                        cte->N = data[i].N;
                         cte++;
                     }
                     continue;
@@ -2246,6 +2263,7 @@ void MEDDLY::ct_tmpl<T,M,C,I>
     for (unsigned i=0; i<res.size(); i++) {
         const ct_itemtype &it = ET.getResultType(i);
         MEDDLY_DCASSERT(it.hasType(res[i].getType()));
+        /*
         if (it.hasNodeType()) {
             MEDDLY_DCASSERT(!it.requiresTwoSlots());
             it.cacheNode(res[i].getN());
@@ -2257,6 +2275,10 @@ void MEDDLY::ct_tmpl<T,M,C,I>
                 ++cte;
             }
             continue;
+        }
+        */
+        if (it.hasNodeType()) {
+            it.cacheNode(res[i].getN());
         }
 
         if (it.requiresTwoSlots()) {
