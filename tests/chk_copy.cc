@@ -247,6 +247,7 @@ void testCopy(forest* srcF, forest* destF)
     }
     catch (MEDDLY::error e) {
         printf("%s\n", e.getName());
+        exit(1);
     }
 
 }
