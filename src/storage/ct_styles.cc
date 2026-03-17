@@ -416,11 +416,16 @@ namespace MEDDLY {
                 s << "\n";
             }
 
+            /*
             /// Convert unsigned pointer to node
             static inline node_handle u2n(const unsigned* ptr)
             {
+                //
+                // TBD: if node_handle is larger than unsigned?
+                //
                 return *((const node_handle*)ptr);
             }
+            */
 
             /// Multiply and check for overflow
             static inline TTYPE safemult(TTYPE sz, TTYPE a)
@@ -2455,10 +2460,11 @@ bool MEDDLY::ct_tmpl<T,M,C,I>::isStale(const void* entry, bool mark) const
             // Check the node
             //
             if (I) {
-                if (item.isStaleEntry(u2n(uptr), mark)) {
+                ct_item x;
+                uptr = x.set(ct_typeID::NODE, uptr);
+                if (item.isStaleEntry(x.getN(), mark)) {
                     return true;
                 }
-                uptr++;
             } else {
                 if (item.isStaleEntry(ctptr->N, mark)) {
                     return true;
@@ -2487,10 +2493,11 @@ bool MEDDLY::ct_tmpl<T,M,C,I>::isStale(const void* entry, bool mark) const
             // Check the node
             //
             if (I) {
-                if (item.isStaleEntry(u2n(uptr), mark)) {
+                ct_item x;
+                uptr = x.set(ct_typeID::NODE, uptr);
+                if (item.isStaleEntry(x.getN(), mark)) {
                     return true;
                 }
-                uptr++;
             } else {
                 if (item.isStaleEntry(ctptr->N, mark)) {
                     return true;
@@ -2576,8 +2583,12 @@ void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
         const ct_itemtype &item = et->getKeyType(i);
         if (item.hasNodeType()) {
             if (I) {
-                item.uncacheNode(u2n(uptr));
-                uptr += item.intslots();
+                ct_item x;
+                uptr = x.set(ct_typeID::NODE, uptr);
+                item.uncacheNode(x.getN());
+
+                // item.uncacheNode(u2n(uptr));
+                // uptr += item.intslots();
             } else {
                 item.uncacheNode( ctptr->N );
                 ++ctptr;
@@ -2587,11 +2598,13 @@ void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
         if (item.hasType(ct_typeID::GENERIC)) {
             if (I) {
                 ct_item x;
-                x.set(ct_typeID::GENERIC, uptr);
+                uptr = x.set(ct_typeID::GENERIC, uptr);
                 delete x.getG();
             } else {
                 delete ctptr->G;
+                ++ctptr;
             }
+            continue;
         }
         if (I) {
             uptr += item.intslots();
@@ -2607,8 +2620,11 @@ void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
         const ct_itemtype &item = et->getResultType(i);
         if (item.hasNodeType()) {
             if (I) {
-                item.uncacheNode(u2n(uptr));
-                uptr += item.intslots();
+                ct_item x;
+                uptr = x.set(ct_typeID::NODE, uptr);
+                item.uncacheNode(x.getN());
+                // item.uncacheNode(u2n(uptr));
+                // uptr += item.intslots();
             } else {
                 item.uncacheNode( ctptr->N );
                 ++ctptr;
@@ -2618,11 +2634,13 @@ void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
         if (item.hasType(ct_typeID::GENERIC)) {
             if (I) {
                 ct_item x;
-                x.set(ct_typeID::GENERIC, uptr);
+                uptr = x.set(ct_typeID::GENERIC, uptr);
                 delete x.getG();
             } else {
                 delete ctptr->G;
+                ++ctptr;
             }
+            continue;
         }
         if (I) {
             uptr += item.intslots();

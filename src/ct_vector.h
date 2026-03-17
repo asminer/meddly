@@ -105,7 +105,6 @@ class MEDDLY::ct_item {
         /// Set item from a compacted CT entry, and advance the pointer.
         inline const unsigned* set(ct_typeID t, const unsigned* ptr)
         {
-            MEDDLY_DCASSERT(sizeof(the_node) == sizeof(unsigned));
             MEDDLY_DCASSERT(sizeof(the_int) == sizeof(unsigned));
             MEDDLY_DCASSERT(sizeof(the_float) == sizeof(unsigned));
 
@@ -119,7 +118,6 @@ class MEDDLY::ct_item {
                         setNext(nullptr);
                         return ptr;
 
-                case ct_typeID::NODE:
                 case ct_typeID::INTEGER:
                 case ct_typeID::FLOAT:
                         raw[0] = ptr[0];
@@ -133,6 +131,18 @@ class MEDDLY::ct_item {
                         raw[1] = ptr[1];
                         // slots = 2;
                         return ptr+2;
+
+                case ct_typeID::NODE:
+                        if (sizeof(the_node) == sizeof(unsigned)) {
+                            raw[0] = ptr[0];
+                            // slots = 1;
+                            return ptr+1;
+                        } else {
+                            raw[0] = ptr[0];
+                            raw[1] = ptr[1];
+                            // slots = 2;
+                            return ptr+2;
+                        }
 
                 default:
                         FAIL(__FILE__, __LINE__);
