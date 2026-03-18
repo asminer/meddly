@@ -17,6 +17,7 @@
 */
 
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <vector>
 #include <cassert>
@@ -416,6 +417,9 @@ int usage(const char* exe)
     cerr << "    --trad     Traditional BFS without frontier set\n";
     cerr << "    --front    Traditional BFS with frontier set (RS only)\n";
     cerr << "\n";
+    cerr << "    -o file    Write the MDD to the specified file, in an exchange format\n";
+    cerr << "\n";
+
     return 1;
 }
 
@@ -441,6 +445,7 @@ int main(int argc, const char** argv)
     char satmethod = 'm';
     for_each_position_which_tile = false;
     bool distances = false;
+    const char* outfile = nullptr;
 
     //
     // Process command line
@@ -462,6 +467,11 @@ int main(int argc, const char** argv)
                     case 'e':   approx_count = false;
                                 continue;
 #endif
+                    case 'o':
+                                outfile = argv[i+1];
+                                ++i;
+                                continue;
+
                     case 'q':
                                 verbose = false;
                                 continue;
@@ -593,6 +603,18 @@ int main(int argc, const char** argv)
         dd_edge reachable(mdd);
         buildReachable(distances, satmethod, rel, initial, reachable);
         showCardinality(reachable);
+
+        //
+        // Write to file
+        //
+        if (outfile) {
+            cout << "Writing to " << outfile << "\n";
+            ofstream fout(outfile);
+            ostream_output mfout(fout);
+            mdd_writer mywriter(mfout, mdd);
+            mywriter.writeRootEdge(reachable);
+            mywriter.finish();
+        }
 
         //
         // Reporting
