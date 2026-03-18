@@ -191,17 +191,17 @@ class MEDDLY::terminal {
         //
         static inline node_handle intMin() {
             if (sizeof(node_handle) == 4) {
-                return -1073741824L;
+                return node_handle(-1073741824L);
             } else {
-                return -4611686018427387904L;
+                return node_handle(-4611686018427387904L);
             }
         }
 
         static inline node_handle intMax() {
             if (sizeof(node_handle) == 4) {
-                return 1073741823L;
+                return node_handle(1073741823L);
             } else {
-                return 4611686018427387903L;
+                return node_handle(4611686018427387903L);
             }
         }
 
