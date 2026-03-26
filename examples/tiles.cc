@@ -48,23 +48,75 @@ bool verbose;
 //
 bool for_each_position_which_tile;
 
+//
+// Forest for progress reports
+//
+MEDDLY::forest* fprog = nullptr;
+
+inline void show_node_count(long x)
+{
+    if (x<0) {
+        std::cerr << "-";
+        x = -x;
+    } else {
+        std::cerr << " ";
+    }
+    long grouping = 1000000000000L;
+    char filler = ' ';
+    while (grouping) {
+        if (filler != ' ') {
+            std::cerr << ",";
+        } else {
+            std::cerr << " ";
+        }
+        const long d = x / grouping;
+        if (d) {
+            if (d < 100) {
+                std::cerr << filler;
+            }
+            if (d < 10) {
+                std::cerr << filler;
+            }
+            std::cerr << d;
+            x %= grouping;
+            filler = '0';
+        } else {
+            std::cerr << filler << filler << filler;
+        }
+        grouping /= 1000;
+    }
+}
 
 void my_progress(unsigned iter, char st)
 {
     static timer watch;
     if (' ' == st) {
         watch.note_time();
-        std::cerr << "    Iteration " << std::setw(5) << iter << ": ";
+        std::cerr << "    Iter" << std::setw(5) << iter << ": ";
         return;
     }
     if (';' == st) {
         watch.note_time();
-        std::cerr   << "       "
-                    << std::fixed
+        std::cerr   << std::fixed
                     << std::setprecision(4)
-                    << std::setw(14)
+                    << std::setw(12)
                     << watch.get_last_seconds()
-                    << " sec. this iteration";
+                    << " sec";
+
+        if (fprog) {
+            show_node_count(fprog->getCurrentNumNodes());
+            std::cerr << " nodes";
+
+            unsigned long mem = fprog->getCurrentMemoryUsed();
+            unsigned units = 0;
+            while (mem >= 1024) {
+                mem /= 1024;
+                ++units;
+            }
+            const char* uletters = " KMGTPEZYabcdefgh";
+            std::cerr << std::setw(5) << mem << " " << uletters[units] << "bytes";
+        }
+
         std::cerr << std::endl;
         return;
     }
@@ -554,6 +606,7 @@ int main(int argc, const char** argv)
         } else {
             mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
         }
+        fprog = mdd;
 
         forest* mxd = forest::create(d, true,  range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
 
