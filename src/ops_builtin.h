@@ -155,7 +155,8 @@ namespace MEDDLY {
     binary_factory& REACHABLE_TRAD_NOFS(bool fwd);
 
     /// Forward reachability using saturation (original), TBD
-    /// binary_factory& REACHABLE_SATURATE(bool fwd);
+    // binary_factory& REACHABLE_SAT1(bool fwd);
+    // binary_factory& REACHABLE_SAT2(bool fwd);
 
 #ifdef ALLOW_DEPRECATED_0_18_1
 

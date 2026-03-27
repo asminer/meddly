@@ -92,6 +92,16 @@ class MEDDLY::MXD_levels {
         static inline int topUnprimed(int k1, int k2) {
             return MAX(ABS(k1), ABS(k2));
         }
+
+        /// Get unprimed level corresponding to a level
+        static inline int unprimedOfLevel(int k) {
+            return ABS(k);
+        }
+
+        /// Get primed level corresponding to a level
+        static inline int primedOfLevel(int k) {
+            return (k<0) ? k : -k;
+        }
 };
 
 #endif // include guard

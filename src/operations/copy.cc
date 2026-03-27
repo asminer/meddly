@@ -33,6 +33,7 @@ namespace MEDDLY {
 };
 
 // #define TRACE
+#define USE_RELNODES
 
 #ifdef TRACE
 #include "../operators.h"
@@ -236,7 +237,13 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
     //
     // Determine level information
     //
+#ifdef USE_RELNODES
+    const int Alevel = argF->isForRelations()
+        ? MXD_levels::unprimedOfLevel(argF->getNodeLevel(A))
+        : argF->getNodeLevel(A);
+#else
     const int Alevel = argF->getNodeLevel(A);
+#endif
 #ifdef TRACE
     out << "copy_MT::_compute(" << A << ")\n";
 #endif
@@ -272,46 +279,136 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
         // compute table 'miss'; do computation
         //
 
-        //
-        // Initialize unpacked nodes
-        //
-        unpacked_node* Au = unpacked_node::newFromNode(argF, A, FULL_ONLY);
-        unpacked_node* Cu = unpacked_node::newWritable(resF, Alevel, FULL_ONLY);
-        MEDDLY_DCASSERT(Au->getSize() == Cu->getSize());
+        unpacked_node* Cu = nullptr;
+#ifdef USE_RELNODES
+        if (argF->isForRelations()) {
+            //
+            // Use relation nodes for relations, so we can copy
+            // any implicit representation to MxDs
+            //
+            rel_node* Arn = argF->buildRelNode(A);
+
+            const int Aprimed = MXD_levels::primedOfLevel(Alevel);
+
+            Cu = unpacked_node::newWritable(resF, Alevel, FULL_ONLY);
+
+            unpacked_node* Ap
+                = unpacked_node::newWritable(argF, Aprimed, FULL_ONLY);
+
+            const int Cnextlevel = Alevel - 1;
+
 #ifdef TRACE
-        out << "A: ";
-        Au->show(out, true);
-        out.indent_more();
-        out.put('\n');
+            out << "A: ";
+            Arn->show(out);
+            out.indent_more();
+            out.put('\n');
 #endif
-        const int Cnextlevel = resF->isForRelations()
-            ? MXD_levels::downLevel(Alevel)
-            : MDD_levels::downLevel(Alevel);
 
-        //
-        // Recurse over child edges
-        //
-        for (unsigned i=0; i<Cu->getSize(); i++) {
-            edge_value v;
-            node_handle d;
-            _compute(Cnextlevel, i, Au->down(i), v, d);
-            if (resF->isMultiTerminal()) {
-                MEDDLY_DCASSERT(v.isVoid());
-                Cu->setFull(i, d);
-            } else {
-                Cu->setFull(i, v, d);
-            }
-        }
+            //
+            // Recurse over matrix rows
+            //
+            for (unsigned i=0; i<Cu->getSize(); i++) {
+                edge_value uv;
+                node_handle ud;
+                if (Arn->outgoing(i, *Ap)) {
+                    unpacked_node* Cp
+                        = unpacked_node::newWritable(resF, Aprimed, FULL_ONLY);
+
+                    for (unsigned j=0; j<Cp->getSize(); j++) {
+                        edge_value v;
+                        node_handle d;
+                        _compute(Cnextlevel, j, Ap->down(j), v, d);
+                        if (resF->isMultiTerminal()) {
+                            MEDDLY_DCASSERT(v.isVoid());
+                            Cp->setFull(j, d);
+                        } else {
+                            Cp->setFull(j, v, d);
+                        }
+                    }
+                    resF->createReducedNode(Cp, uv, ud);
+#ifdef TRACE
+                    out << "row " << i << " copied\n";
+                    out << "A's row: ";
+                    Ap->show(out, true);
+                    out << "\nC's row: ";
+                    Cp->show(out, true);
+                    out << "\nreduced to ";
+                    traceout(uv, ud);
+                    out << ": ";
+                    resF->showNode(out, ud, SHOW_DETAILS);
+                    out << "\n";
+#endif
+                } else {
+                    _compute(Aprimed, i, 0, uv, ud);
+                }
+
+                if (resF->isMultiTerminal()) {
+                    MEDDLY_DCASSERT(uv.isVoid());
+                    Cu->setFull(i, resF->redirectSingleton(i, ud));
+                } else {
+                    Cu->setFull(i, uv, resF->redirectSingleton(i, ud));
+                }
+
+            } // for i
 
 #ifdef TRACE
-        out.indent_less();
-        out.put('\n');
-        out << "copy_MT::_compute(" << A << ") done\n";
-        out << "A: ";
-        Au->show(out, true);
-        out << "\nC: ";
-        Cu->show(out, true);
-        out << "\n";
+            out.indent_less();
+            out.put('\n');
+            out << "copy_MT::_compute(" << A << ") done\n";
+            out << "A: ";
+            Arn->show(out);
+            out << "\nC: ";
+            Cu->show(out, true);
+            out << "\n";
+#endif
+            unpacked_node::Recycle(Ap);
+            argF->doneRelNode(Arn);
+        } else {
+#endif
+            //
+            // Initialize unpacked nodes
+            //
+            unpacked_node* Au = unpacked_node::newFromNode(argF, A, FULL_ONLY);
+            Cu = unpacked_node::newWritable(resF, Alevel, FULL_ONLY);
+            MEDDLY_DCASSERT(Au->getSize() == Cu->getSize());
+#ifdef TRACE
+            out << "A: ";
+            Au->show(out, true);
+            out.indent_more();
+            out.put('\n');
+#endif
+            const int Cnextlevel = resF->isForRelations()
+                ? MXD_levels::downLevel(Alevel)
+                : MDD_levels::downLevel(Alevel);
+
+            //
+            // Recurse over child edges
+            //
+            for (unsigned i=0; i<Cu->getSize(); i++) {
+                edge_value v;
+                node_handle d;
+                _compute(Cnextlevel, i, Au->down(i), v, d);
+                if (resF->isMultiTerminal()) {
+                    MEDDLY_DCASSERT(v.isVoid());
+                    Cu->setFull(i, d);
+                } else {
+                    Cu->setFull(i, v, d);
+                }
+            }
+
+#ifdef TRACE
+            out.indent_less();
+            out.put('\n');
+            out << "copy_MT::_compute(" << A << ") done\n";
+            out << "A: ";
+            Au->show(out, true);
+            out << "\nC: ";
+            Cu->show(out, true);
+            out << "\n";
+#endif
+            unpacked_node::Recycle(Au);
+#ifdef USE_RELNODES
+        } // if relation
 #endif
 
         //
@@ -338,11 +435,6 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
         }
         ct->addCT(key, res);
 
-        //
-        // Cleanup
-        //
-        unpacked_node::Recycle(Au);
-        // Cu is recycled when we reduce it :)
 
         //
         // done: compute table 'miss'
@@ -369,8 +461,16 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
     // in the result forest.
     //
     if (argF->isIdentityReduced()) {
+#ifdef TRACE
+        out << "calling makeIdentitiesTo(" << cp << ", " << Alevel
+            << ", " << L << ", " << in << ")\n";
+#endif
         cp = resF->makeIdentitiesTo(cp, Alevel, L, in);
     } else {
+#ifdef TRACE
+        out << "calling makeRedundantsTo(" << cp << ", " << Alevel
+            << ", " << L << ")\n";
+#endif
         cp = resF->makeRedundantsTo(cp, Alevel, L);
     }
 }

@@ -1,10 +1,6 @@
 
 TO DO list
 
-    * prepostplus testing (copy from prepost)
-
-    * update prepostplus
-
     * update COPY operation for relations to read from relation nodes,
       this will enable us (down the road) to copy from any implicit relation
       representation into 2L-level MxD representation.
@@ -64,6 +60,11 @@ TO DO list
         and test programs
         states only
         distances
+
+    * prepostplus testing (copy from prepost)
+
+    * update prepostplus
+
 
     * saturation 1, 2, 3 on relations
         states only
