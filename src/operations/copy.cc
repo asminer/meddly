@@ -117,6 +117,7 @@ class MEDDLY::copy_MT : public unary_operation {
 
     private:
         ct_entry_type* ct;
+        bool can_use_relation_nodes;
 
 #ifdef TRACE
         ostream_output out;
@@ -145,6 +146,15 @@ MEDDLY::copy_MT::copy_MT(forest* arg, forest* res)
         ct->setResult(res->getEdgeType(), res);
     }
     ct->doneBuilding();
+
+#ifdef USE_RELNODES
+    can_use_relation_nodes =
+        arg->isForRelations() &&
+        (arg->getReductionRule() == res->getReductionRule());
+#else
+    can_use_relation_nodes = false;
+#endif
+
 }
 
 MEDDLY::copy_MT::~copy_MT()
@@ -237,13 +247,10 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
     //
     // Determine level information
     //
-#ifdef USE_RELNODES
-    const int Alevel = argF->isForRelations()
+    const int Alevel = L>0 && can_use_relation_nodes
         ? MXD_levels::unprimedOfLevel(argF->getNodeLevel(A))
         : argF->getNodeLevel(A);
-#else
-    const int Alevel = argF->getNodeLevel(A);
-#endif
+
 #ifdef TRACE
     out << "copy_MT::_compute(" << A << ")\n";
 #endif
@@ -280,8 +287,7 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
         //
 
         unpacked_node* Cu = nullptr;
-#ifdef USE_RELNODES
-        if (argF->isForRelations()) {
+        if (can_use_relation_nodes) {
             //
             // Use relation nodes for relations, so we can copy
             // any implicit representation to MxDs
@@ -364,7 +370,7 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
             unpacked_node::Recycle(Ap);
             argF->doneRelNode(Arn);
         } else {
-#endif
+
             //
             // Initialize unpacked nodes
             //
@@ -407,9 +413,7 @@ void MEDDLY::copy_MT::_compute(int L, unsigned in,
             out << "\n";
 #endif
             unpacked_node::Recycle(Au);
-#ifdef USE_RELNODES
         } // if relation
-#endif
 
         //
         // Reduce
