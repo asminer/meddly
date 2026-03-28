@@ -1,11 +1,6 @@
 
 TO DO list
 
-    * update COPY operation for relations to read from relation nodes,
-      this will enable us (down the road) to copy from any implicit relation
-      representation into 2L-level MxD representation.
-
-========= (release?)
 
     * saturation 1 monolithic relation
         states only

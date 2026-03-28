@@ -33,7 +33,7 @@ namespace MEDDLY {
 };
 
 // #define TRACE
-#define USE_RELNODES
+// #define NEVER_USE_RELNODES
 
 #ifdef TRACE
 #include "../operators.h"
@@ -147,12 +147,12 @@ MEDDLY::copy_MT::copy_MT(forest* arg, forest* res)
     }
     ct->doneBuilding();
 
-#ifdef USE_RELNODES
+#ifdef NEVER_USE_RELNODES
+    can_use_relation_nodes = false;
+#else
     can_use_relation_nodes =
         arg->isForRelations() &&
         (arg->getReductionRule() == res->getReductionRule());
-#else
-    can_use_relation_nodes = false;
 #endif
 
 }

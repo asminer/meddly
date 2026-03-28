@@ -23,3 +23,6 @@ layout: single
 
 ### Implementation
 
+* The ```COPY``` operation will use relation nodes in some cases.
+  This will allow conversions from implicit representations
+  once those implementations are migrated over.
