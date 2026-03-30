@@ -339,6 +339,7 @@ void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
 // Add comma separators to a large integer
 // **********************************************************************
 #ifdef HAVE_LIBGMP
+#include <gmp.h>
 void showNumber(mpz_t x)
 {
     unsigned digits = mpz_sizeinbase(x, 10)+2;

@@ -320,8 +320,8 @@ void MEDDLY::pregen_relation::unionLevels()
 {
   if (K < 1) return;
 
-  binary_operation* mxdUnion = build(UNION, mxdF, mxdF, mxdF);
-  MEDDLY_DCASSERT(mxdUnion);
+  // binary_operation* mxdUnion = build(UNION, mxdF, mxdF, mxdF);
+  // MEDDLY_DCASSERT(mxdUnion);
 
   dd_edge u(mxdF);
   for (unsigned k=1; k<=K; k++) {
@@ -1255,7 +1255,7 @@ double MEDDLY::otf_relation::getArcCount(
         // start with (num_level-1) to correctly count edges in skipped levels
         dd_edge rg_ei = events_by_top_level[k][ei]->getRoot();
         apply(INTERSECTION, rg_ei, mxd_mask, rg_ei);
-        double c;
+        double c = 0;
         apply(CARDINALITY, rg_ei, c);
         arc_count += c;
       }
