@@ -171,6 +171,7 @@ libmeddly_la_SOURCES = \
 pkginclude_HEADERS = \
     arrays.h \
     compute_table.h \
+    ../config.h \
     ct_entry_key.h \
     ct_entry_result.h \
     ct_entry_type.h \
