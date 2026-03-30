@@ -320,8 +320,8 @@ void MEDDLY::pregen_relation::unionLevels()
 {
   if (K < 1) return;
 
-  binary_operation* mxdUnion = build(UNION, mxdF, mxdF, mxdF);
-  MEDDLY_DCASSERT(mxdUnion);
+  // binary_operation* mxdUnion = build(UNION, mxdF, mxdF, mxdF);
+  // MEDDLY_DCASSERT(mxdUnion);
 
   dd_edge u(mxdF);
   for (unsigned k=1; k<=K; k++) {

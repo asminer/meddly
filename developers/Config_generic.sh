@@ -83,8 +83,8 @@ for args; do
         cxxwarn="-Wall -Wsign-conversion -Wsign-compare -Wshadow"
         continue
     fi
-    if [ "--without_gmp" == "$args" ]; then
-        gmpargs="--without_gmp"
+    if [ "--without-gmp" == "$args" ]; then
+        gmpargs="--without-gmp"
         continue
     fi
     if try_prefix "$args"; then

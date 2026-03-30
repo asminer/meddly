@@ -19,9 +19,9 @@
 #ifndef MEDDLY_DEFINES_H
 #define MEDDLY_DEFINES_H
 
-#ifdef HAVE_CONFIG_H
+// #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
+// #endif
 
 #define ALLOW_DEPRECATED_0_17_6     "11/11/2024"
 #define ALLOW_OLD_UNARY_0_17_6      "11/11/2024"
@@ -107,8 +107,8 @@ namespace MEDDLY {
         per forest, at the expense of nearly doubling the memory used.
         This also specifies the incoming count range for each node.
     */
-    typedef int  node_handle;
-    // typedef long node_handle;
+    // typedef int  node_handle;
+    typedef long node_handle;
 
     /** Handles for relation nodes.
         TBD: can we just use node_handle everywhere?
