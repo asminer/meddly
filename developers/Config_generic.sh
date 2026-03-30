@@ -65,6 +65,7 @@ usage()
     printf "\t--strict          Extra compiler warnings\n"
     printf "\t--without-gmp     Turn off gmp support\n"
     printf "\t--prefix=...      Pass prefix option through to configure\n"
+    printf "\t--static          Only use static linking\n"
     printf "\n"
     exit 1
 }
@@ -73,6 +74,7 @@ gmpargs=""
 cxxdebug="-O3"
 cxxwarn="-Wall -Wno-sign-conversion -Wno-sign-compare -Wno-shadow"
 prefix=""
+stopt=""
 
 for args; do
     if [ "--debug" == "$args" ]; then
@@ -85,6 +87,10 @@ for args; do
     fi
     if [ "--without-gmp" == "$args" ]; then
         gmpargs="--without-gmp"
+        continue
+    fi
+    if [ "--static" == "$args" ]; then
+        stopt="--disable-shared --enable-static"
         continue
     fi
     if try_prefix "$args"; then
@@ -104,11 +110,11 @@ fi
 if [ ! -f configure ]; then
     ./autogen.sh
 fi
-./configure CXXFLAGS="$cxxwarn $cxxdebug" $gmpargs $prefix ||  exit 1
+./configure CXXFLAGS="$cxxwarn $cxxdebug" $gmpargs $prefix $stopt ||  exit 1
 
 printf "\n"
 printf "Configuration complete\n"
-printf "    CXXFLAGS: %s\n" "$cxxdebug $cxxwarn"
-printf "    GMP     : %s\n" "$gmpargs"
-printf "    %s\n" "$prefix"
+printf "  CXXFLAGS: %s\n" "$cxxdebug $cxxwarn"
+printf "  GMP     : %s\n" "$gmpargs"
+printf "  options : %s\n" "$prefix $stopt"
 printf "\n"
