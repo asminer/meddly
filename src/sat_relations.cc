@@ -1255,7 +1255,7 @@ double MEDDLY::otf_relation::getArcCount(
         // start with (num_level-1) to correctly count edges in skipped levels
         dd_edge rg_ei = events_by_top_level[k][ei]->getRoot();
         apply(INTERSECTION, rg_ei, mxd_mask, rg_ei);
-        double c;
+        double c = 0;
         apply(CARDINALITY, rg_ei, c);
         arc_count += c;
       }
