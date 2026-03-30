@@ -21,7 +21,6 @@
 #include <iostream>
 #include <iomanip>
 #include <string.h>
-#include <gmp.h>
 
 #include "../src/meddly.h"
 #include "simple_model.h"
@@ -88,8 +87,10 @@ int usage(const char* who)
     cout << "\t-msat : use monolithic saturation (default)\n\n";
 
     cout << "\t-edges:  count number of (actual) edges in reachability graph\n\n";
+#ifdef HAVE_LIBGMP
     cout << "\t-approx: approximate the number of states (default)\n";
     cout << "\t-exact:  determine the exact number of states (requires gmp)\n\n";
+#endif
     cout << "\t-exp: use explicit (very slow)\n\n";
     cout << "\t--batch b: specify explicit batch size\n\n";
     cout << "\t -l lfile: Write logging information to specified file\n\n";
@@ -138,7 +139,9 @@ int main(int argc, const char** argv)
     unsigned batchsize = 256;
     const char* lfile = 0;
     bool build_pdf = false;
+#ifdef HAVE_LIBGMP
     bool approx_count = true;
+#endif
     bool count_edges = false;
     char node_del = 'o';
     verbose = false;
@@ -179,6 +182,7 @@ int main(int argc, const char** argv)
             count_edges = true;
             continue;
         }
+#ifdef HAVE_LIBGMP
         if (strcmp("-approx", argv[i])==0) {
             approx_count = true;
             continue;
@@ -187,6 +191,7 @@ int main(int argc, const char** argv)
             approx_count = false;
             continue;
         }
+#endif
         if (strcmp("-l", argv[i])==0) {
             lfile = argv[i+1];
             i++;
