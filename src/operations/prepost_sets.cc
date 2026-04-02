@@ -79,7 +79,6 @@ namespace MEDDLY {
             );
 
 */
-
 namespace MEDDLY {
 
     template <class EOP, bool FORWD, class ATYPE>
@@ -143,7 +142,7 @@ namespace MEDDLY {
             edge_value nothing;
             bool forced_by_levels;
 
-    }; // class prepost_op
+    }; // class prepost_set_mtrel
 }; // namespace MEDDLY
 
 // ************************************************************************

@@ -23,11 +23,110 @@
 #include "../ops_builtin.h"
 #include "reach_sat1.h"
 
+// ************************************************************************
+// ************************************************************************
+
 /*
+    Template class for saturation (version 1) operations,
+    when the relation is MT-based.
+
+    Template parameters:
+
+        EOP: one of the EdgeOp classes in forests_edgerules.h.
+
+        FORWD: if true, do forward reachability, otherwise
+                        do backward reachability.
+
+        ATYPE: arithmetic type class, must provide the following methods.
+
+            /// Get the operation name, for display purposes
+            static const char* name(bool forwd);
+
+            /// Return true if the given edge is unreachable
+            static bool isUnreachable(const edge_value &cv, node_handle c);
+
+            /// Set an edge to be unreachable
+            static void setUnreachable(edge_value &cv, node_handle &c);
+
+            /// Set all edges of an unpacked node to unreachable
+            static void setAllUnreachable(unpacked_node *u);
+
+            /// Get the accumulate operation for result nodes.
+            static binary_operation* accumulateOp(const forest* resF);
+
+            /// Apply the operation when b is a terminal node.
+            static void apply(
+                const forest* fa, const edge_value &av, node_handle a,
+                const forest* fb, node_handle b,
+                const forest* fc, edge_value &cv, node_handle &c
+            );
+
+*/
 namespace MEDDLY {
 
-};
-*/
+    template <class EOP, bool FORWD, class ATYPE>
+    class saturation1_set_mtrel : public binary_operation {
+        public:
+            saturation1_set_mtrel(forest* arg1, forest* arg2,
+                    forest* res);
+
+            virtual ~saturation1_set_mtrel();
+
+            virtual void compute(int L, unsigned in,
+                    const edge_value &av, node_handle ap,
+                    const edge_value &bv, node_handle bp,
+                    edge_value &cv, node_handle &cp);
+
+        protected:
+            void _compute(int L, const edge_value &av, node_handle A,
+                    node_handle B, edge_value &cv, node_handle &C);
+
+        private:
+            inline const edge_value &edgeval(unpacked_node *U, unsigned i) const
+            {
+                if (EOP::hasEdgeValues()) {
+                    return U->edgeval(i);
+                } else {
+                    return nothing;
+                }
+            }
+
+            //
+            // Correctly do C[i] = C[i] + <v, p>
+            //
+            inline void addToCi(int nextL, unpacked_node *C, unsigned i,
+                    const edge_value &v, node_handle p)
+            {
+                // This case should be caught already
+                MEDDLY_DCASSERT( !ATYPE::isUnreachable(v, p) );
+                if (ATYPE::isUnreachable(edgeval(C, i), C->down(i)))
+                {
+                    C->setFull(i, v, p);
+                    return;
+                }
+                edge_value  newdv;
+                node_handle newdp;
+                accumulateOp->compute(nextL, ~0,
+                    edgeval(C, i), C->down(i), v, p, newdv, newdp
+                );
+                resF->unlinkNode(p);
+                resF->unlinkNode(C->down(i));
+                C->setFull(i, newdv, newdp);
+            }
+
+        private:
+            ct_entry_type* ct;
+            binary_operation* accumulateOp;
+#ifdef TRACE
+            ostream_output out;
+            unsigned top_count;
+#endif
+            edge_value nothing;
+            bool forced_by_levels;
+
+    }; // class
+}; // namespace MEDDLY
+
 
 // ******************************************************************
 // *                                                                *
