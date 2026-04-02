@@ -286,9 +286,9 @@ template <bool FWD>
 void MEDDLY::reachset_tradf_factory <FWD>::setup()
 {
     if (FWD) {
-        _setup(__FILE__, "REACHABLE_TRAD_FS(true)", "Build forward reachability set using a traditional breadth-first iteration, with a frontier set. The iterations stop once the frontier set is empty.");
+        _setup(__FILE__, "REACHABLE_TRAD_FS(true)", "Build forward reachability set using a traditional breadth-first iteration, with a frontier set. The first argument is the set of initial states, and the second argument is the transition relation. The iterations stop once the frontier set is empty.");
     } else {
-        _setup(__FILE__, "REACHABLE_TRAD_FS(false)", "Build backward reachability set using a traditional breadth-first iteration, with a frontier set. The iterations stop once the frontier set is empty.");
+        _setup(__FILE__, "REACHABLE_TRAD_FS(false)", "Build backward reachability set using a traditional breadth-first iteration, with a frontier set. The first argument is the set of initial states, and the second argument is the transition relation. The iterations stop once the frontier set is empty.");
     }
 }
 
@@ -343,9 +343,9 @@ template <bool FWD>
 void MEDDLY::reachset_tradnof_factory <FWD>::setup()
 {
     if (FWD) {
-        _setup(__FILE__, "REACHABLE_TRAD_NOFS(true)", "Build forward reachability set using a traditional breadth-first iteration, without a frontier set. The transition relation is applied to all reachable states, to obtain the new reachable states. The iterations stop once the frontier set is empty.");
+        _setup(__FILE__, "REACHABLE_TRAD_NOFS(true)", "Build forward reachability set using a traditional breadth-first iteration, without a frontier set. The first argument is the set of initial states, and the second argument is the transition relation. The transition relation is applied to all reachable states, to obtain the new reachable states. The iterations stop once the frontier set is empty.");
     } else {
-        _setup(__FILE__, "REACHABLE_TRAD_NOFS(false)", "Build backward reachability set using a traditional breadth-first iteration, without a frontier set. The transition relation is applied to all reachable states, to obtain the new reachable states. The iterations stop once the frontier set is empty.");
+        _setup(__FILE__, "REACHABLE_TRAD_NOFS(false)", "Build backward reachability set using a traditional breadth-first iteration, without a frontier set. The first argument is the set of initial states, and the second argument is the transition relation. The transition relation is applied to all reachable states, to obtain the new reachable states. The iterations stop once the frontier set is empty.");
     }
 }
 
