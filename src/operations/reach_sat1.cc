@@ -17,11 +17,17 @@
 */
 
 #include "../defines.h"
+#include "reach_sat1.h"
+
 #include "../forest.h"
 #include "../oper_unary.h"
 #include "../oper_binary.h"
 #include "../ops_builtin.h"
-#include "reach_sat1.h"
+#include "../ct_vector.h"
+#include "../forest_levels.h"
+#include "../forest_edgerules.h"
+
+#include "prepost_common.h"
 
 // ************************************************************************
 // ************************************************************************
@@ -81,6 +87,11 @@ namespace MEDDLY {
             void _compute(int L, const edge_value &av, node_handle A,
                     node_handle B, edge_value &cv, node_handle &C);
 
+
+            static inline const char* opName() {
+                return FORWD ? "fwd-sat1" : "bck-sat1";
+            }
+
         private:
             inline const edge_value &edgeval(unpacked_node *U, unsigned i) const
             {
@@ -127,6 +138,99 @@ namespace MEDDLY {
     }; // class
 }; // namespace MEDDLY
 
+// ************************************************************************
+
+template <class EOP, bool FORWD, class ATYPE>
+MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>
+    ::saturation1_set_mtrel(forest* arg1, forest* arg2, forest* res)
+    : binary_operation(arg1, arg2, res)
+#ifdef TRACE
+      , out(std::cout), top_count(0)
+#endif
+{
+    checkDomains(__FILE__, __LINE__);
+    checkRelations(__FILE__, __LINE__, SET, RELATION, SET);
+    checkLabelings(__FILE__, __LINE__,
+        res->getEdgeLabeling(),
+        edge_labeling::MULTI_TERMINAL,
+        res->getEdgeLabeling()
+    );
+
+    if (arg1F->getRangeType() != resF->getRangeType()) {
+        throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
+    }
+
+    //
+    // Addition operation for the vector-matrix multiply.
+    //  union for pre/post image, addition otherwise.
+    //
+    accumulateOp = ATYPE::accumulateOp(res);
+    MEDDLY_DCASSERT(accumulateOp);
+
+    //
+    // Do we need to recurse by levels and store level info in the CT?
+    // YES, if the set and relation are both fully-reduced.
+    // (If the set is quasi reduced, we will recurse by levels anyway.)
+    // (If the relation is identity-reduced, we can skip levels.)
+    //
+    forced_by_levels = arg1->isFullyReduced() && arg2->isFullyReduced();
+
+    // TBD
+
+    //
+    // Build compute table key and result types.
+    //
+    ct = new ct_entry_type(opName());
+    if (forced_by_levels) {
+        ct->setFixed('I', arg1, arg2);
+    } else {
+        ct->setFixed(arg1, arg2);
+    }
+    if (EOP::hasEdgeValues()) {
+        ct->setResult(EOP::edgeValueTypeLetter(), res);
+    } else {
+        ct->setResult(res);
+    }
+    ct->doneBuilding();
+}
+
+template <class EOP, bool FORWD, class ATYPE>
+MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>::~saturation1_set_mtrel()
+{
+    ct->markForDestroy();
+}
+
+template <class EOP, bool FORWD, class ATYPE>
+void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>
+    ::compute(int L, unsigned in,
+        const edge_value &av, node_handle ap,
+        const edge_value &bv, node_handle bp,
+        edge_value &cv, node_handle &cp)
+{
+#ifdef TRACE
+    out.indentation(0);
+    ++top_count;
+    out << opName() << " #" << top_count << " begin\n";
+#endif
+
+    // TBD: split the relation here
+
+    MEDDLY_DCASSERT(bv.isVoid());
+    _compute(L, av, ap, bp, cv, cp);
+
+#ifdef TRACE
+    out << opName() << " #" << top_count << " end\n";
+#endif
+}
+
+template <class EOP, bool FORWD, class ATYPE>
+void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
+        const edge_value &av, node_handle A,
+        node_handle B, edge_value &cv, node_handle &C)
+{
+    // TBD
+    MEDDLY_DCASSERT(false);
+}
 
 // ******************************************************************
 // *                                                                *
@@ -161,45 +265,40 @@ template <bool FWD>
 MEDDLY::binary_operation*
 MEDDLY::reachset_sat1_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 {
-    return nullptr;
-    /*
-    binary_operation* imageOp = nullptr;
-    binary_operation* unionOp = nullptr;
-
-    if (c->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
+    if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
 
         switch (c->getRangeType()) {
             case range_type::BOOLEAN:
-                imageOp = FWD ? MEDDLY::build(POST_IMAGE, a, b, c)
-                              : MEDDLY::build(PRE_IMAGE,  a, b, c);
-
-                unionOp = MEDDLY::build(UNION, c, c, c);
-                return new reachset_no_frontier(imageOp, unionOp);
+                return new saturation1_set_mtrel<EdgeOp_none, FWD,
+                            mt_prepost>(a, b, c);
 
             case range_type::INTEGER:
-                imageOp = FWD ? MEDDLY::build(POST_IMAGE, a, b, c)
-                              : MEDDLY::build(PRE_IMAGE,  a, b, c);
-
-                unionOp = MEDDLY::build(DIST_MIN, c, c, c);
-                return new reachset_no_frontier(imageOp, unionOp);
+                if (c->isFullyReduced())  {
+                    return new saturation1_set_mtrel<EdgeOp_none, FWD,
+                            mt_distance>(a, b, c);
+                }
 
             default:
                 return nullptr;
         }
     }
 
-    if (c->getEdgeLabeling() == edge_labeling::EVPLUS) {
-        if (c->getRangeType() == range_type::INTEGER) {
-            imageOp = FWD ? MEDDLY::build(POST_IMAGE, a, b, c)
-                          : MEDDLY::build(PRE_IMAGE,  a, b, c);
+    if (a->getEdgeLabeling() == edge_labeling::EVPLUS) {
 
-            unionOp = MEDDLY::build(MINIMUM, c, c, c);
-            return new reachset_no_frontier(imageOp, unionOp);
-        }
+        switch (a->getEdgeType()) {
+            case edge_type::INT:
+                return new saturation1_set_mtrel<EdgeOp_plus<int>, FWD,
+                            ev_prepost<int> > (a, b, c);
+
+            case edge_type::LONG:
+                return new saturation1_set_mtrel<EdgeOp_plus<long>, FWD,
+                            ev_prepost<long> > (a, b, c);
+
+            default:
+                return nullptr;
+        };
     }
-
     return nullptr;
-    */
 }
 
 
