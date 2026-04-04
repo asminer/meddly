@@ -86,6 +86,8 @@ int usage(const char* who)
     cout << "\t-ksat : use saturation by levels\n";
     cout << "\t-msat : use monolithic saturation (default)\n\n";
 
+    cout << "\t-sat1 : Saturation v1 (new implementation)\n";
+
     cout << "\t-edges:  count number of (actual) edges in reachability graph\n\n";
 #ifdef HAVE_LIBGMP
     cout << "\t-approx: approximate the number of states (default)\n";
@@ -172,6 +174,10 @@ int main(int argc, const char** argv)
         }
         if (strcmp("-msat", argv[i])==0) {
             method = 'm';
+            continue;
+        }
+        if (strcmp("-sat1", argv[i])==0) {
+            method = '1';
             continue;
         }
         if (strcmp("-exp", argv[i])==0) {
@@ -372,6 +378,12 @@ int main(int argc, const char** argv)
                 cout << "Building reachability set using saturation, monolithic relation"
                      << endl;
                 apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+                break;
+
+            case '1':
+                cout << "Building reachability set using saturation v1, monolithic relation"
+                     << endl;
+                apply(REACHABLE_SAT1(true), init_state, nsf, reachable);
                 break;
 
             case 'e':
