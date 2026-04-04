@@ -29,6 +29,14 @@
 
 #include "prepost_common.h"
 
+// #define TRACE
+// #define DEBUG_SPLIT
+
+#ifdef TRACE
+#include "../operators.h"
+#endif
+
+
 // ************************************************************************
 // ************************************************************************
 
@@ -84,9 +92,11 @@ namespace MEDDLY {
                     edge_value &cv, node_handle &cp);
 
         protected:
-            void _compute(int L, const edge_value &av, node_handle A,
-                    node_handle B, edge_value &cv, node_handle &C);
+            void saturate(int L, const edge_value &av, node_handle A,
+                    edge_value &cv, node_handle &C);
 
+            void recFire(int L, const edge_value &av, node_handle A,
+                    node_handle B, edge_value &cv, node_handle &c);
 
             static inline const char* opName() {
                 return FORWD ? "fwd-sat1" : "bck-sat1";
@@ -126,8 +136,12 @@ namespace MEDDLY {
             }
 
         private:
+            std::vector <dd_edge> rel_by_top;
+
             ct_entry_type* ct;
             binary_operation* accumulateOp;
+            binary_operation* mxdIntersection;
+            binary_operation* mxdDifference;
 #ifdef TRACE
             ostream_output out;
             unsigned top_count;
@@ -161,11 +175,24 @@ MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>
     }
 
     //
-    // Addition operation for the vector-matrix multiply.
-    //  union for pre/post image, addition otherwise.
+    // Set up space for relation split by top levels
+    //
+    rel_by_top.resize(arg2F->getNumVariables()+1);
+    for (unsigned i=1; i<=arg2F->getNumVariables(); i++) {
+        rel_by_top[i].attach(arg2F);
+    }
+
+    //
+    // Helper operations
     //
     accumulateOp = ATYPE::accumulateOp(res);
     MEDDLY_DCASSERT(accumulateOp);
+
+    mxdIntersection = build(INTERSECTION, arg2F, arg2F, arg2F);
+    MEDDLY_DCASSERT(mxdIntersection);
+
+    mxdDifference = build(DIFFERENCE, arg2F, arg2F, arg2F);
+    MEDDLY_DCASSERT(mxdDifference);
 
     //
     // Do we need to recurse by levels and store level info in the CT?
@@ -207,24 +234,94 @@ void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>
         const edge_value &bv, node_handle bp,
         edge_value &cv, node_handle &cp)
 {
+    //
+    // Split the relation
+    //
+    MEDDLY_DCASSERT(bv.isVoid());
+
+    dd_edge diag(arg2F);
+    dd_edge mxd(arg2F);
+    mxd.set(arg2F->linkNode(bp));
+    for (;;)
+    {
+        node_handle resp;
+        //
+        // Get relation node for current mxd
+        //
+        const node_handle mxdn = mxd.getNode();
+        const int k = ABS(arg2F->getNodeLevel(mxdn));
+        if (0 == k) break;
+        rel_node* Brn = arg2F->buildRelNode(mxdn);
+
+        // Determine common diagonal
+        diag.set(Brn->getDiagonal(0));
+        const unsigned maxi = arg2F->getLevelSize(k);
+        for (unsigned i=1; i<maxi; i++) {
+            mxdIntersection->compute(k, ~0,
+                    nothing, diag.getNode(),
+                    nothing, Brn->getDiagonal(i),
+                    diag.setEdgeValue(), resp
+            );
+            diag.set(resp);
+        }
+
+        // Set relation with top=k to relation minus common diagonal
+        // and continue the iteration with the common diagonal
+        mxdDifference->compute(k, ~0,
+            nothing, mxd.getNode(),
+            nothing, diag.getNode(),
+            rel_by_top[k].setEdgeValue(), resp
+        );
+        rel_by_top[k].set(resp);
+        mxd = diag;
+
+        // cleanup
+        arg2F->doneRelNode(Brn);
+    }
+
+#ifdef DEBUG_SPLIT
+    ostream_output splout(std::cout);
+    std::cout << "After splitting monolithic event in " << opName() << "\n";
+    for (unsigned k=1; k <= arg2F->getNumVariables(); k++) {
+        std::cout << "Relation with top level=" << k << ": ";
+        rel_by_top[k].show(splout);
+        std::cout << "\n";
+        rel_by_top[k].showGraph(splout);
+        std::cout << "======================================================================\n";
+    }
+#endif
+
 #ifdef TRACE
     out.indentation(0);
     ++top_count;
     out << opName() << " #" << top_count << " begin\n";
 #endif
 
-    // TBD: split the relation here
-
-    MEDDLY_DCASSERT(bv.isVoid());
-    _compute(L, av, ap, bp, cv, cp);
+    saturate(L, av, ap, cv, cp);
 
 #ifdef TRACE
     out << opName() << " #" << top_count << " end\n";
 #endif
+
+    //
+    // Clear out rel_by_top
+    //
+    for (int k=arg2F->getMaxLevelIndex(); k; --k) {
+        rel_by_top[k].set(0);
+    }
 }
 
 template <class EOP, bool FORWD, class ATYPE>
-void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
+void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>::saturate(int L,
+        const edge_value &av, node_handle A,
+        edge_value &cv, node_handle &C)
+{
+    // TBD
+    MEDDLY_DCASSERT(false);
+}
+
+template <class EOP, bool FORWD, class ATYPE>
+void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>::recFire(int L,
         const edge_value &av, node_handle A,
         node_handle B, edge_value &cv, node_handle &C)
 {

@@ -107,6 +107,8 @@ class MEDDLY::rel_node_from_dd : public rel_node {
         virtual ~rel_node_from_dd();
 
         virtual bool outgoing(unsigned i, unpacked_node &u);
+        virtual node_handle getDiagonal(unsigned i);
+        // virtual bool getDiagonal(unsigned i, edge_value &dv, node_handle &dp);
         virtual void show(output &out) const;
 
     protected:
@@ -221,6 +223,104 @@ bool MEDDLY::rel_node_from_dd::outgoing(unsigned i, unpacked_node &u)
     }
     return true;
 }
+
+MEDDLY::node_handle
+MEDDLY::rel_node_from_dd::getDiagonal(unsigned i)
+{
+    MEDDLY_DCASSERT(unp);
+    MEDDLY_DCASSERT(!unp->hasEdges());
+
+    /*
+        If unp is actually at a primed level,
+        then there's an implicit redundant node an the unprimed level.
+        Get element i of unp.
+    */
+    if (unp->getLevel() < 0) {
+        if (i >= unp->getSize()) {
+            return 0;
+        } else {
+            return unp->down(i);
+        }
+    }
+
+    /*
+        unp is at an unprimed level.
+        Check downward pointer i.
+    */
+
+    if (i >= unp->getSize() || 0 == unp->down(i)) {
+        return 0;
+    }
+
+    /*
+        unp[i] is non-zero. Get its ith pointer.
+    */
+    return getParent()->getDownPtr(unp->down(i), i);
+}
+
+#if 0
+bool MEDDLY::rel_node_from_dd::getDiagonal(unsigned i, edge_value &dv, node_handle &dp)
+{
+    MEDDLY_DCASSERT(unp);
+
+    /*
+        If unp is actually at a primed level,
+        then there's an implicit redundant node an the unprimed level.
+        Get element i of unp.
+    */
+    if (unp->getLevel() < 0) {
+        dp = unp->down(i);
+        if (unp->hasEdges()) {
+            dv = unp->edgeval(i);
+        } else {
+            dv.set();
+        }
+        return true;
+    }
+
+    /*
+        unp is at an unprimed level.
+        Check downward pointer i.
+    */
+
+    if (i >= unp->getSize() || 0 == unp->down(i)) {
+        return false;
+    }
+
+    /*
+        unp[i] is non-zero. Get its ith pointer.
+    */
+
+    if (unp->hasEdges()) {
+        getParent()->getDownPtr(unp->down(i), i, dv, dp);
+        switch (getParent()->getEdgeLabeling())
+        {
+            case edge_labeling::MULTI_TERMINAL:
+                FAIL(__FILE__, __LINE__, "Impossible combination");
+                break;
+
+            case edge_labeling::EVPLUS:
+                MEDDLY_DCASSERT(getParent()->isRangeType(range_type::INTEGER));
+                EdgeOp_plus<long>::accumulateOp(dv, unp->edgeval(i));
+                return true;
+
+            case edge_labeling::EVTIMES:
+                MEDDLY_DCASSERT(getParent()->isRangeType(range_type::REAL));
+                EdgeOp_times<float>::accumulateOp(dv, unp->edgeval(i));
+                return true;
+
+            default:
+                FAIL(__FILE__, __LINE__, "Unknown edge labeling");
+        }
+    } else {
+        dp = getParent()->getDownPtr(unp->down(i), i);
+        return (dp != 0);
+    }
+
+    // keep compilers happy
+    return false;
+}
+#endif
 
 void MEDDLY::rel_node_from_dd::show(output &out) const
 {

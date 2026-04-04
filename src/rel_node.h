@@ -26,6 +26,7 @@ namespace MEDDLY {
     class unpacked_node;
     class forest;
     class output;
+    class edge_value;
 };
 
 /**
@@ -47,6 +48,25 @@ class MEDDLY::rel_node {
                         false, otherwise (in which case, u is left unchanged).
         */
         virtual bool outgoing(unsigned i, unpacked_node &u) = 0;
+
+        /**
+            When viewed as a matrix, get the diagonal element of row i.
+                @param  i   variable value for both unprimed and primed
+
+                @return     The diagonal entry.
+        */
+        virtual node_handle getDiagonal(unsigned i) = 0;
+
+        /**
+            When viewed as a matrix, get the diagonal element of row i.
+                @param  i   variable value for both unprimed and primed
+
+                @param  dv  On output, if there is a diagonal entry,
+                            filled with the edge value.
+                @param  dp  On output, if there is a diagonal entry,
+                            filled with the edge pointer.
+        */
+        // virtual void getDiagonal(unsigned i, edge_value &dv, node_handle &dp) = 0;
 
         /**
             Show this node in some nice, human-readable form.
