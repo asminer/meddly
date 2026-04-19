@@ -665,6 +665,7 @@ int main(int argc, const char** argv)
             cout << "Writing to " << outfile << "\n";
             ofstream fout(outfile);
             ostream_output mfout(fout);
+            d->write(mfout);
             mdd_writer mywriter(mfout, mdd);
             mywriter.writeRootEdge(reachable);
             mywriter.finish();

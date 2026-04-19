@@ -153,6 +153,33 @@ void MEDDLY::domain::read(input &s)
     s.consumeKeyword("mod");
 }
 
+void MEDDLY::domain::verify(input &s) const
+{
+    s.stripWS();
+    s.consumeKeyword("dom");
+    s.stripWS();
+    unsigned file_nVars = unsigned(s.get_integer());
+    std::vector<long> file_vsize(file_nVars+1);
+    file_vsize[0] = 0;
+    for (unsigned i=file_nVars; i; i--) {
+        s.stripWS();
+        file_vsize[file_nVars-i+1] = s.get_integer();
+    }
+    s.stripWS();
+    s.consumeKeyword("mod");
+
+    //
+    // Now, compare file domain against us
+    //
+    if (file_nVars != nVars) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    //
+    // TBD: do we need to compare the variable bounds?
+    //
+}
+
 void MEDDLY::domain::showInfo(output &strm)
 {
     // list variables handles, their bounds and heights.

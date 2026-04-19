@@ -210,6 +210,18 @@ class MEDDLY::domain {
         void read(input &s);
 
         /**
+            Check that the domain matches the one in a file.
+            Allows us to compare against a domain that we
+            saved using \a write().
+                @param  s   Stream to read from
+
+                @throws     INVALID_FILE, if the file does not match
+                            what we expect.
+                            DOMAIN_MISMATCH, if the domains do not match.
+        */
+        void verify(input &s) const;
+
+        /**
             Display lots of information about the domain.
             This is primarily for aid in debugging.
                 @param  strm    Stream to write to.
