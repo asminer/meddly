@@ -246,11 +246,11 @@ struct MEDDLY::policies {
     /// Supported variable swap strategies.
     /// Work for relations only.
     enum class variable_swap_type {
-  	    /// Swap adjacent variables in one go.
-  	    VAR,
-  	    /// Swap adjacent variables through swapping levels 4 time.
-  	    /// Do not work for fully-identity reduced relations.
-  	    LEVEL
+        /// Swap adjacent variables in one go.
+        VAR,
+        /// Swap adjacent variables through swapping levels 4 time.
+        /// Do not work for fully-identity reduced relations.
+        LEVEL
     };
 
     /// Schedule heuristic for reordering via swaps.

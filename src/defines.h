@@ -60,7 +60,7 @@
 #include <iostream>
 #include <cassert>
 
-#define smart_cast	dynamic_cast
+#define smart_cast  dynamic_cast
 #define MEDDLY_DCASSERT(X)  assert(X)
 #define MEDDLY_CHECK_RANGE(L, X, U)  \
     do { \
@@ -83,7 +83,7 @@
 // *                                                                     *
 // ***********************************************************************
 
-#define smart_cast	static_cast
+#define smart_cast  static_cast
 #define MEDDLY_DCASSERT(X)
 #define MEDDLY_CHECK_RANGE(L, X, U)
 

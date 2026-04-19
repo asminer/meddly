@@ -1398,7 +1398,7 @@ class MEDDLY::forest {
         virtual void moveUpVariable(int low, int high) = 0;
 
         virtual void dynamicReorderVariables(int top, int bottom) {
-    	    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+            throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         }
 
         // needed by reordering_base.h

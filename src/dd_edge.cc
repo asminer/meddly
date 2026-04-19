@@ -1316,7 +1316,7 @@ namespace MEDDLY {
             {
                 MEDDLY_DCASSERT( !m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
-    	            int level = F->getNodeLevel(p);
+                    int level = F->getNodeLevel(p);
                     MEDDLY_DCASSERT(m.from(level)>=0);
                     p = F->getDownPtr(p, m.from(level));
                 }
@@ -1326,7 +1326,7 @@ namespace MEDDLY {
             {
                 MEDDLY_DCASSERT( m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
-    	            int level = F->getNodeLevel(p);
+                    int level = F->getNodeLevel(p);
                     if (level > 0) {
                         MEDDLY_DCASSERT(m.from(level)>=0);
                         p = F->getDownPtr(p, m.from(level));
@@ -1404,7 +1404,7 @@ namespace MEDDLY {
                 MEDDLY_DCASSERT( !m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
                     edge_value pv;
-    	            int level = F->getNodeLevel(p);
+                    int level = F->getNodeLevel(p);
                     MEDDLY_DCASSERT(level>0);
                     MEDDLY_DCASSERT(m.from(level)>=0);
                     F->getDownPtr(p, m.from(level), pv, p);
