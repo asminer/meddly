@@ -444,6 +444,9 @@ int usage(const char* exe)
     cerr << "The number of rows and columns given should be natural numbers.\n";
     cerr << "The standard \"16 puzzle\" uses 4 rows and 4 columns.\n";
     cerr << "\n";
+    cerr << "Tiles are numbered 1 .. rc-1, with 0 meaning empty.\n";
+    cerr << "Position (1,1) is #0, position (1,2) is #1, ..., position (r,c) is #rc-1\n";
+    cerr << "\n";
     cerr << "Switches:\n";
     cerr << "    -h:    This help\n\n";
 
@@ -457,9 +460,13 @@ int usage(const char* exe)
     cerr << "\n";
 
     cerr << "    --pos:     Use a position-based encoding: for each position,\n";
-    cerr << "               which tile is there.\n";
+    cerr << "               which tile is there. Position #0 is the bottom DD\n";
+    cerr << "               variable, and position #rc-1 is the top DD variable.\n";
+
     cerr << "    --tile:    Use a tile-based encoding: for each tile,\n";
-    cerr << "               where is it (default)\n";
+    cerr << "               where is it (default). The empty tile is the bottom\n";
+    cerr << "               DD variable, tile 1 is next, ..., tile rc-1 is the top\n";
+    cerr << "               DD variable.\n";
     cerr << "\n";
 
     cerr << "    --reach:   Build the reachability set (default).\n";
