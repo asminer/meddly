@@ -39,11 +39,11 @@ int usage(const char* exe)
     }
 
     cerr << "\n";
-    cerr << "Usage: " << base << " file1 file2\n";
+    cerr << "Usage: " << base << " file file ...\n";
     cerr << "\n";
-    cerr << "Read in and compare two DDs from files. Files with extensions .gz or .xz\n";
-    cerr << "are decompressed using gzcat and xzcat, respectively.\n";
-    cerr << "The DDs must be the same type.\n";
+    cerr << "Read in DDs from each input file, into a single forest. Files with\n"
+         << "extensions .gz or .xz are decompressed using gzcat and xzcat, respectively.\n";
+    cerr << "Displays information about each DD, and the overall forest.\n";
     cerr << "\n";
 
     return 1;
@@ -62,54 +62,53 @@ int main(int argc, const char** argv)
     //
     // For now: no switches
     //
-    if (argc != 3) {
+    if (argc < 2) {
         return usage(argv[0]);
     }
 
-    cout << "Comparing files " << argv[1] << " and " << argv[2] << "\n";
-
     try {
         MEDDLY::initialize();
+        std::vector <dd_edge> all_roots;
+        domain* d = nullptr;
+        forest* F = nullptr;
 
-        compressed_input read1(argv[1]);
-        if (!read1) {
-            cerr << "Couldn't open file: '" << argv[1] << "'\n";
-            return 1;
-        }
-
-        compressed_input read2(argv[2]);
-        if (!read2) {
-            cerr << "Couldn't open file: '" << argv[2] << "'\n";
-            return 1;
-        }
-
-        cout << "Reading " << argv[1] << "...\n";
-        domain *d = domain::create(read1.instream());
-        mdd_reader mdd1(read1.instream(), d);
-        forest* F = mdd1.getForest();
-        cout << "... done, " << mdd1.getFileNodes() << " nodes, "
-             << mdd1.numRoots() << " roots\n";
-
-
-        cout << "Reading " << argv[2] << "...\n";
-        d->verify(read2.instream());
-        mdd_reader mdd2(read2.instream(), F);
-        cout << "... done, " << mdd2.getFileNodes() << " nodes, "
-             << mdd2.numRoots() << " roots\n";
-
-        for (unsigned i=0; ; i++) {
-            if (i >= mdd1.numRoots()) break;
-            if (i >= mdd2.numRoots()) break;
-
-            cout << "Roots #" << i << ": ";
-
-            if (mdd1.getRoot(i) == mdd2.getRoot(i)) {
-                cout << "MATCH\n";
+        for (int i=1; i<argc; ++i) {
+            cout << "\n======================================================================\n" << argv[i] << " ... ";
+            compressed_input reader(argv[i]);
+            if (!reader) {
+                cout << "couldn't read, skipping\n\n";
+                continue;
+            }
+            mdd_reader* mddr = nullptr;
+            if (d) {
+                d->verify(reader.instream());
+                mddr = new mdd_reader(reader.instream(), F);
             } else {
-                cout << "differ\n";
+                d = domain::create(reader.instream());
+                mddr = new mdd_reader(reader.instream(), d);
+                F = mddr->getForest();
+            }
+            cout << mddr->getFileNodes() << " nodes, " << mddr->numRoots() << "roots\n\n";
+
+            for (unsigned r=0; r<mddr->numRoots(); r++) {
+                cout << "    Root #" << r << ": "
+                     << mddr->getRoot(r).getNodeCount() << " nodes "
+                     << mddr->getRoot(r).getEdgeCount() << " edges\n";
+
+                all_roots.push_back(mddr->getRoot(r));
             }
 
+            delete mddr;
         }
+
+        cout << "\n======================================================================\n\n";
+
+        cout << "Forest stats:\n";
+        ostream_output meddlyout(cout);
+        F->reportStats(meddlyout, "    ",
+            HUMAN_READABLE_MEMORY | BASIC_STATS | EXTRA_STATS
+        );
+
 
         MEDDLY::cleanup();
         cout << "Done!\n";

@@ -25,6 +25,8 @@
 #include "../src/meddly.h"
 #include "../timing/timer.h"
 
+#include "zstream.h"
+
 // #define SHOW_EVENTS
 
 // Number of rows.
@@ -478,6 +480,8 @@ int usage(const char* exe)
     cerr << "    --front    Traditional BFS with frontier set (RS only)\n";
     cerr << "\n";
     cerr << "    -o file    Write the MDD to the specified file, in an exchange format\n";
+    cerr << "               If the output filename ends in .gz or .xz, it will be\n";
+    cerr << "               compressed using gzip or xz, respectively.\n";
     cerr << "\n";
 
     return 1;
@@ -668,12 +672,11 @@ int main(int argc, const char** argv)
         //
         // Write to file
         //
-        if (outfile) {
+        compressed_output writer(outfile);
+        if (writer) {
             cout << "Writing to " << outfile << "\n";
-            ofstream fout(outfile);
-            ostream_output mfout(fout);
-            d->write(mfout);
-            mdd_writer mywriter(mfout, mdd);
+            d->write(writer.outstream());
+            mdd_writer mywriter(writer.outstream(), mdd);
             mywriter.writeRootEdge(reachable);
             mywriter.finish();
         }
