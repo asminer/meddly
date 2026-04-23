@@ -35,7 +35,7 @@
 namespace MEDDLY {
     const unsigned CODELEN = 8;
 
-    void buildCodeChars(const MEDDLY::forest* F, char* buf, char* rev)
+    void buildCodeChars(const forest* F, char* buf, char* rev)
     {
         buf[0] = 'd';
         buf[1] = 'd';
@@ -47,8 +47,12 @@ namespace MEDDLY {
                 buf[4] = 't';
                 break;
 
-            case edge_labeling::EVPLUS:
             case edge_labeling::INDEX_SET:
+                buf[3] = 'I';
+                buf[4] = '+';
+                break;
+
+            case edge_labeling::EVPLUS:
                 buf[3] = 'E';
                 buf[4] = '+';
                 break;
@@ -94,6 +98,85 @@ namespace MEDDLY {
         rev[5] = buf[1];
         rev[6] = buf[0];
         rev[7] = 0;
+    }
+
+    inline void validateChar(char x, const char* legal, const char* F, unsigned L)
+    {
+        for (const char* p = legal; *p; ++p) {
+            if (x == *p) return;
+        }
+#ifdef DEBUG_READ
+        std::cerr << "Got char '" << x << "', expected one of: " << legal
+                  << "\n\tfrom source line " << L << "\n";
+#endif
+        throw error(error::INVALID_FILE, F, L);
+    }
+
+    forest* code2forest(const char* code, domain* D)
+    {
+        // sanity checks
+        validateChar(code[0], "d", __FILE__, __LINE__);
+        validateChar(code[1], "d", __FILE__, __LINE__);
+        validateChar(code[2], "d", __FILE__, __LINE__);
+
+        //
+        // determine edge labeling
+        //
+        edge_labeling EL = edge_labeling::MULTI_TERMINAL;
+        validateChar(code[3], "MIE", __FILE__, __LINE__);
+        switch (code[3]) {
+            case 'M':
+                validateChar(code[4], "t", __FILE__, __LINE__);
+                EL = edge_labeling::MULTI_TERMINAL;
+                break;
+
+            case 'I':
+                validateChar(code[4], "+", __FILE__, __LINE__);
+                EL = edge_labeling::INDEX_SET;
+                break;
+
+            case 'E':
+                validateChar(code[4], "+*", __FILE__, __LINE__);
+                if ('+' == code[4]) {
+                    EL = edge_labeling::EVPLUS;
+                } else {
+                    EL = edge_labeling::EVTIMES;
+                }
+                break;
+
+            default:
+                FAIL(__FILE__, __LINE__, "Unknown edge label");
+        }
+
+        //
+        // determine set/relation
+        //
+        validateChar(code[5], "xv", __FILE__, __LINE__);
+        set_or_rel SR = ('x' == code[5]) ? RELATION : SET;
+
+        //
+        // determine range type
+        //
+        validateChar(code[6], "bir", __FILE__, __LINE__);
+        range_type RT = range_type::BOOLEAN;
+        switch (code[6]) {
+            case 'b':
+                RT = range_type::BOOLEAN;
+                break;
+
+            case 'i':
+                RT = range_type::INTEGER;
+                break;
+
+            case 'r':
+                RT = range_type::REAL;
+                break;
+
+            default:
+                FAIL(__FILE__, __LINE__, "Unknown range type");
+        }
+
+        return forest::create(D, SR, RT, EL);
     }
 }
 
@@ -210,14 +293,14 @@ void MEDDLY::mdd_writer::finish()
 
 // ******************************************************************
 // *                                                                *
-// *                       mdd_writer methods                       *
+// *                       mdd_reader methods                       *
 // *                                                                *
 // ******************************************************************
 
 MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
 {
     MEDDLY_DCASSERT(F);
-
+    For = F;
     rptr = 0;
 
     //
@@ -227,15 +310,95 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
     buildCodeChars(F, block, revblock);
 
     //
+    // Read the forest code sequence
+    //
+
+#ifdef DEBUG_READ
+    try {
+#endif
+        s.stripWS();
+        s.consumeKeyword(block);
+
+#ifdef DEBUG_READ
+    } // try
+    catch (error& e) {
+        handleError(s, e);
+    }
+#endif
+
+    readAfterForest(s);
+}
+
+MEDDLY::mdd_reader::mdd_reader(input &s, domain* D)
+{
+    rptr = 0;
+
+    //
+    // Read code char sequence
+    //
+    char block[CODELEN];
+#ifdef DEBUG_READ
+    try {
+#endif
+        s.stripWS();
+
+        block[CODELEN-1] = 0;
+        for (unsigned i=0; i<CODELEN; i++) {
+            int c = s.get_char();
+            if ( (EOF == c) || (' ' == c) || ('\t' == c) || ('\n' == c) || ('\r' == c) )
+            {
+                block[i] = 0;
+                break;
+            }
+            block[i] = c;
+        }
+#ifdef DEBUG_READ
+        std::cerr << "Read code block: '" << block << "'\n";
+#endif
+
+        For = code2forest(block, D);
+
+#ifdef DEBUG_READ
+    } // try
+    catch (error &e) {
+        handleError(s, e);
+    }
+#endif
+
+    readAfterForest(s);
+}
+
+void MEDDLY::mdd_reader::readRootEdge(dd_edge &E)
+{
+    if (rptr >= roots.size()) {
+        throw error(error::COULDNT_READ, __FILE__, __LINE__);
+    }
+    E = roots[rptr];
+    ++rptr;
+}
+
+void MEDDLY::mdd_reader::readAfterForest(input &s)
+{
+    MEDDLY_DCASSERT(For);
+
+    //
+    // Generate code char sequence
+    //
+    char block[CODELEN], revblock[CODELEN];
+    buildCodeChars(For, block, revblock);
+
+    //
     // Read the entire file and store the roots.
     //
 
 #ifdef DEBUG_READ
     try {
 #endif
+        //
+        // The MDD type has already been consumed
+        // Pick up with the number of nodes
+        //
 
-        s.stripWS();
-        s.consumeKeyword(block);
         s.stripWS();
         unsigned num_nodes = unsigned(s.get_integer());
 #ifdef DEBUG_READ_DD
@@ -259,7 +422,7 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
             //
             s.stripWS();
             int k = s.get_integer();
-            if (!F->isValidLevel(k)) {
+            if (!For->isValidLevel(k)) {
                 throw error(error::INVALID_LEVEL, __FILE__, __LINE__);
             }
 
@@ -273,7 +436,7 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
             s.stripWS();
             int rawsize = s.get_integer();
             // int n;
-            unpacked_node* nb = unpacked_node::newWritable(F, k, ABS(rawsize),
+            unpacked_node* nb = unpacked_node::newWritable(For, k, ABS(rawsize),
                     (rawsize < 0) ? SPARSE_ONLY : FULL_ONLY);
 
 #ifdef DEBUG_READ
@@ -289,7 +452,7 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
             // Reduce the node, and update the translation
             //
             edge_value ev;
-            F->createReducedNode(nb, ev, map[node_index]);
+            For->createReducedNode(nb, ev, map[node_index]);
 
             MEDDLY_DCASSERT( !ev.isInt()    || (0==int(ev)) );
             MEDDLY_DCASSERT( !ev.isLong()   || (0==long(ev)) );
@@ -339,7 +502,7 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
         std::cerr << "Reading " << num_ptrs << " pointers\n";
 #endif
         for (unsigned i=0; i<num_ptrs; i++) {
-            dd_edge E(F);
+            dd_edge E(For);
             E.read(s, map);
             roots.push_back(E);
         }
@@ -355,37 +518,34 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
         // unlink map pointers
         //
         for (unsigned i=1; i<=num_nodes; i++) {
-            F->unlinkNode(map[i]);
+            For->unlinkNode(map[i]);
         }
 
 #ifdef DEVELOPMENT_CODE
-        F->validateIncounts(true, __FILE__, __LINE__, "mdd reader");
+        For->validateIncounts(true, __FILE__, __LINE__, "mdd reader");
 #endif
 #ifdef DEBUG_READ
     } // try
     catch (error& e) {
-        std::cerr << "Read failed (error: " << e.getName() << ")\n";
-        std::cerr << "Next few characters of file:\n";
-        for (unsigned i=0; i<20; i++) {
-            int c = s.get_char();
-            if (EOF == c) {
-                std::cerr << "EOF";
-                break;
-            }
-            std::cerr << char(c) << " (" << c << ") ";
-        }
-        std::cerr << std::endl;
-        throw e;
+        handleError(s, e);
     }
 #endif
 }
 
-void MEDDLY::mdd_reader::readRootEdge(dd_edge &E)
+void MEDDLY::mdd_reader::handleError(input &s, error &e) const
 {
-    if (rptr >= roots.size()) {
-        throw error(error::COULDNT_READ, __FILE__, __LINE__);
+#ifdef DEBUG_READ
+    std::cerr << "Read failed (error: " << e.getName() << ")\n";
+    std::cerr << "Next few characters of file:\n";
+    for (unsigned i=0; i<20; i++) {
+        int c = s.get_char();
+        if (EOF == c) {
+            std::cerr << "EOF";
+            break;
+        }
+        std::cerr << char(c) << " (" << c << ") ";
     }
-    E = roots[rptr];
-    ++rptr;
+    std::cerr << std::endl;
+    throw e;
+#endif
 }
-

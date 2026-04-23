@@ -117,7 +117,7 @@ void MEDDLY::domain::testMarkAllDomains(bool mark)
 
 void MEDDLY::domain::write(output &s) const
 {
-    s << "dom\n" << nVars << "\n";
+    s << "dom " << nVars << "\n";
     for (unsigned i=nVars; i; i--) {
         s.put(long(vars[i]->getBound(false)));
         s.put(' ');
