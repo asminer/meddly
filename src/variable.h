@@ -66,6 +66,7 @@ class MEDDLY::variable {
 
         /// Update our list of domains: add \a d.
         inline void addToList(domain* d) {
+            MEDDLY_DCASSERT(d);
             domlist.push_back(d);
         }
 

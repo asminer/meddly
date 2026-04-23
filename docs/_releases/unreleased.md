@@ -21,6 +21,10 @@ layout: single
     use instead ```REACHABLE_TRAD_NOFS(true)```
     and ```REACHABLE_TRAD_NOFS(false)```, respectively.
 
+* To read a domain from a file,
+    method ```domain::read()``` has been replaced by
+    an overloaded static method ```domain::create()```.
+
 ### Implementation
 
 * The ```COPY``` operation will use relation nodes in some cases.

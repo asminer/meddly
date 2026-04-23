@@ -26,6 +26,8 @@
 #include <vector>
 #include <string>
 
+// #define DEBUG_READ
+
 // ******************************************************************
 // *                                                                *
 // *                         helper methods                         *
@@ -117,7 +119,7 @@ namespace MEDDLY {
         // sanity checks
         validateChar(code[0], "d", __FILE__, __LINE__);
         validateChar(code[1], "d", __FILE__, __LINE__);
-        validateChar(code[2], "d", __FILE__, __LINE__);
+        validateChar(code[2], "_", __FILE__, __LINE__);
 
         //
         // determine edge labeling
@@ -302,6 +304,7 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
     MEDDLY_DCASSERT(F);
     For = F;
     rptr = 0;
+    file_nodes = 0;
 
     //
     // Generate code char sequence
@@ -332,6 +335,7 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
 MEDDLY::mdd_reader::mdd_reader(input &s, domain* D)
 {
     rptr = 0;
+    file_nodes = 0;
 
     //
     // Read code char sequence
@@ -400,21 +404,21 @@ void MEDDLY::mdd_reader::readAfterForest(input &s)
         //
 
         s.stripWS();
-        unsigned num_nodes = unsigned(s.get_integer());
+        file_nodes = unsigned(s.get_integer());
 #ifdef DEBUG_READ_DD
-        std::cerr << "Reading " << num_nodes << " nodes in " << block << " forest\n";
+        std::cerr << "Reading " << file_nodes << " nodes in " << block << " forest\n";
 #endif
 #ifdef DEBUG_READ
-        std::cerr << "Reading " << num_nodes << " nodes in forest " << block << "\n";
+        std::cerr << "Reading " << file_nodes << " nodes in forest " << block << "\n";
 
 #endif
 
         //
         // Build translation from file node# to forest node handles
         //
-        std::vector <node_handle> map(1+num_nodes);
+        std::vector <node_handle> map(1+file_nodes);
 
-        for (unsigned node_index=1; node_index<=num_nodes; node_index++) {
+        for (unsigned node_index=1; node_index<=file_nodes; node_index++) {
             // Read this node
 
             //
@@ -427,7 +431,7 @@ void MEDDLY::mdd_reader::readAfterForest(input &s)
             }
 
 #ifdef DEBUG_READ
-            std::cerr << "Reading: level " << k;
+            std::cerr << "Reading #" << node_index << ": level " << k;
 #endif
 
             //
@@ -462,7 +466,7 @@ void MEDDLY::mdd_reader::readAfterForest(input &s)
 #ifdef DEBUG_READ
             std::cerr << "File node " << node_index << " reduced to ";
             ostream_output myout(std::cerr);
-            showNode(myout, map[node_index], SHOW_DETAILS | SHOW_INDEX);
+            For->showNode(myout, map[node_index], SHOW_DETAILS | SHOW_INDEX);
             std::cerr << std::endl;
 #endif
 
@@ -517,7 +521,7 @@ void MEDDLY::mdd_reader::readAfterForest(input &s)
         //
         // unlink map pointers
         //
-        for (unsigned i=1; i<=num_nodes; i++) {
+        for (unsigned i=1; i<=file_nodes; i++) {
             For->unlinkNode(map[i]);
         }
 

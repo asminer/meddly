@@ -6,6 +6,7 @@
 ## bin_PROGRAMS = \
 noinst_PROGRAMS = \
 applyinfo \
+diff_dd \
 dining_phils \
 graphs_to_mdds \
 hanoi \
@@ -35,6 +36,9 @@ AM_CXXFLAGS = -Wall
 
 applyinfo_SOURCES = applyinfo.cc
 applyinfo_LDADD = ../src/libmeddly.la
+
+diff_dd_SOURCES = diff_dd.cc
+diff_dd_LDADD = ../src/libmeddly.la
 
 dining_phils_SOURCES = dining_phils.cc
 dining_phils_LDADD = ../src/libmeddly.la
