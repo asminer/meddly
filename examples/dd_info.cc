@@ -88,7 +88,7 @@ int main(int argc, const char** argv)
                 mddr = new mdd_reader(reader.instream(), d);
                 F = mddr->getForest();
             }
-            cout << mddr->getFileNodes() << " nodes, " << mddr->numRoots() << "roots\n\n";
+            cout << mddr->getFileNodes() << " nodes, " << mddr->numRoots() << " roots\n\n";
 
             for (unsigned r=0; r<mddr->numRoots(); r++) {
                 cout << "    Root #" << r << ": "
