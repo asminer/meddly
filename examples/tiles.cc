@@ -42,6 +42,9 @@ bool approx_count;
 // Verbose output: show iteration details
 bool verbose;
 
+// Compute distances?
+bool distances = false;
+
 // #define DEBUG_EVENTS
 
 // There are two encodings.
@@ -391,7 +394,11 @@ void myTraditional(const MEDDLY::dd_edge &relation,
         //
         // Union with reachable
         //
-        apply(UNION, reachable, step, step);
+        if (distances) {
+            apply(MINIMUM, reachable, step, step);
+        } else {
+            apply(UNION, reachable, step, step);
+        }
         my_progress(next, ';');
 
         if (step == reachable) break;
@@ -656,7 +663,7 @@ int main(int argc, const char** argv)
     verbose = false;
     char satmethod = 'm';
     for_each_position_which_tile = false;
-    bool distances = false;
+    distances = false;
     const char* outfile = nullptr;
     DIR* thedir = nullptr;
 
