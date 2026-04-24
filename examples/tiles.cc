@@ -21,6 +21,7 @@
 #include <iomanip>
 #include <vector>
 #include <cassert>
+#include <dirent.h>
 
 #include "../src/meddly.h"
 #include "../timing/timer.h"
@@ -55,6 +56,12 @@ bool for_each_position_which_tile;
 // Forest for progress reports
 //
 MEDDLY::forest* fprog = nullptr;
+
+//
+// Directory for checkpoints.
+// If null, use the current directory.
+//
+const char* chk_dir = nullptr;
 
 inline void show_node_count(long x)
 {
@@ -269,14 +276,146 @@ void buildRelation(MEDDLY::dd_edge& trel)
 }
 
 // **********************************************************************
+// checkpoint file name
+//
+const char* chkpt_path(unsigned iter)
+{
+    static char pathname[512];
+    if (chk_dir) {
+        snprintf(pathname, 512, "%s/chk.%03d.txt.xz", chk_dir, iter);
+    } else {
+        snprintf(pathname, 512, "chk.%03d.txt.xz", iter);
+    }
+    return pathname;
+}
+
+// **********************************************************************
+// write checkpoint
+//
+void write_checkpoint(unsigned iter, const MEDDLY::dd_edge &e)
+{
+    using namespace MEDDLY;
+
+    const char* pathname = chkpt_path(iter);
+    std::cout << "            writing checkpoint " << pathname << " ";
+    compressed_output cpout(pathname);
+    if (!cpout) {
+        std::cout << "couldn't write\n";
+        return;
+    }
+    std::cout << ".";
+    std::cout.flush();
+
+    forest* F = e.getForest();
+    domain* D = F->getDomain();
+    D->write(cpout.outstream());
+    mdd_writer mywriter(cpout.outstream(), F);
+    mywriter.writeRootEdge(e);
+    std::cout << ".";
+    std::cout.flush();
+    mywriter.finish();
+    std::cout << " done\n";
+}
+
+// **********************************************************************
+// read checkpoint
+//
+void read_checkpoint(unsigned iter, MEDDLY::dd_edge &e)
+{
+    using namespace MEDDLY;
+
+    const char* pathname = chkpt_path(iter);
+    std::cout << "    restoring from checkpoint " << pathname << " ";
+    compressed_input cpin(pathname);
+    if (!cpin) {
+        std::cout << "couldn't read\n";
+        throw "checkpoint restore error: couldn't read";
+    }
+    std::cout << ".";
+    std::cout.flush();
+
+    forest* F = e.getForest();
+    domain* D = F->getDomain();
+    D->verify(cpin.instream());
+    mdd_reader myreader(cpin.instream(), F);
+    std::cout << ".";
+    std::cout.flush();
+    e = myreader.getRoot(0);
+    std::cout << " done\n";
+}
+
+// **********************************************************************
+// traditional iteration with checkpoints
+//      @param relation     Transition relation
+//      @param initial      Initial state
+//      @param reachable    (output) reachable states
+//
+// **********************************************************************
+void myTraditional(const MEDDLY::dd_edge &relation,
+        const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable)
+{
+    using namespace MEDDLY;
+
+    //
+    // Determine next checkpoint to compute
+    //
+    unsigned next = 0;
+    for (; ; ++next) {
+        FILE* f = fopen(chkpt_path(next), "r");
+        if (NULL == f) break;
+        fclose(f);
+    }
+
+    if (0==next) {
+        std::cout << "No checkpoints found\n";
+        apply(COPY, initial, reachable);
+        write_checkpoint(0, reachable);
+    } else {
+        --next;
+        std::cout << "Restoring from checkpoint " << chkpt_path(next) << "\n";
+        read_checkpoint(next, reachable);
+    }
+
+
+    do {
+        ++next;
+        my_progress(next, ' ');
+
+        //
+        // Compute next states
+        //
+        dd_edge step(reachable);
+        apply(POST_IMAGE, reachable, relation, step);
+        my_progress(next, 'N');
+
+        //
+        // Union with reachable
+        //
+        apply(UNION, reachable, step, step);
+        my_progress(next, ';');
+
+        if (step == reachable) break;
+        reachable = step;
+
+        //
+        // Write to checkpoint file
+        //
+        write_checkpoint(next, reachable);
+
+    } while(true);
+
+}
+
+
+// **********************************************************************
 // build reachable states or whatever was asked for
 //    @param method         What to do:
 //                              'm': saturation, monolithic
-//
 //                              'f': BFS with frontier
-//                              'b': BFS without frontier
+//                              't': BFS without frontier
+//                              'c': Hand-written BFS with checkpoints
 //
-//    @param prel           Partitioned pre-generated transition relation
+//    @param relation       Transition relation
 //    @param initial        Initial state
 //    @param reachable      (output) reachable states
 // **********************************************************************
@@ -319,6 +458,11 @@ void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
                     if (!bfs) throw "null bfs";
                     if (verbose) bfs->setProgressNotifier(my_progress);
                     bfs->compute(initial, relation, reachable);
+                    break;
+
+        case 'c':
+                    std::cout << "traditional without frontier..." << std::endl;
+                    myTraditional(relation, initial, reachable);
                     break;
 
         default:
@@ -477,11 +621,15 @@ int usage(const char* exe)
 
     cerr << "    --msat     Saturation, monolithic relation\n";
     cerr << "    --trad     Traditional BFS without frontier set\n";
+    cerr << "    --tradc    Traditional BFS without frontier set, using checkpoints\n";
     cerr << "    --front    Traditional BFS with frontier set (RS only)\n";
     cerr << "\n";
     cerr << "    -o file    Write the MDD to the specified file, in an exchange format\n";
     cerr << "               If the output filename ends in .gz or .xz, it will be\n";
     cerr << "               compressed using gzip or xz, respectively.\n";
+    cerr << "\n";
+    cerr << "    -d dir     Directory to use for checkpoint files. Only used with\n";
+    cerr << "               the --tradc option.\n";
     cerr << "\n";
 
     return 1;
@@ -510,6 +658,7 @@ int main(int argc, const char** argv)
     for_each_position_which_tile = false;
     bool distances = false;
     const char* outfile = nullptr;
+    DIR* thedir = nullptr;
 
     //
     // Process command line
@@ -534,6 +683,20 @@ int main(int argc, const char** argv)
                     case 'o':
                                 outfile = argv[i+1];
                                 ++i;
+                                continue;
+
+                    case 'd':
+                                if (argv[i+1]) {
+                                    thedir = opendir(argv[i+1]);
+                                    if (thedir) {
+                                        chk_dir = argv[i+1];
+                                        closedir(thedir);
+                                    } else {
+                                        cerr << "Bad directory '" << argv[i+1] << "' in -d switch\n";
+                                        return 1;
+                                    }
+                                    ++i;
+                                }
                                 continue;
 
                     case 'q':
@@ -578,6 +741,10 @@ int main(int argc, const char** argv)
 
                 if (0==strcmp("--trad", arg)) {
                     satmethod = 't';
+                    continue;
+                }
+                if (0==strcmp("--tradc", arg)) {
+                    satmethod = 'c';
                     continue;
                 }
                 if (0==strcmp("--front", arg)) {
