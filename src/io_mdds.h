@@ -71,9 +71,9 @@ class MEDDLY::mdd_writer {
 class MEDDLY::mdd_reader {
     public:
         /// Read into an existing forest
-        mdd_reader(input &s, forest* F);
+        mdd_reader(input &s, forest* F, output* prog=nullptr);
         /// Create the forest based on the file
-        mdd_reader(input &s, domain* D);
+        mdd_reader(input &s, domain* D, output* prog=nullptr);
         void readRootEdge(dd_edge &E);
         inline unsigned numRoots() const            { return roots.size(); }
         inline forest* getForest() const            { return For; }
@@ -83,7 +83,7 @@ class MEDDLY::mdd_reader {
             return roots[i];
         }
     private:
-        void readAfterForest(input &s);
+        void readAfterForest(input &s, output* prog);
         void handleError(input &s, error &e) const;
     private:
         forest* For;

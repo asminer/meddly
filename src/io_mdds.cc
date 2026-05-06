@@ -299,7 +299,7 @@ void MEDDLY::mdd_writer::finish()
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
+MEDDLY::mdd_reader::mdd_reader(input &s, forest* F, output* prog)
 {
     MEDDLY_DCASSERT(F);
     For = F;
@@ -329,10 +329,10 @@ MEDDLY::mdd_reader::mdd_reader(input &s, forest* F)
     }
 #endif
 
-    readAfterForest(s);
+    readAfterForest(s, prog);
 }
 
-MEDDLY::mdd_reader::mdd_reader(input &s, domain* D)
+MEDDLY::mdd_reader::mdd_reader(input &s, domain* D, output* prog)
 {
     rptr = 0;
     file_nodes = 0;
@@ -369,7 +369,7 @@ MEDDLY::mdd_reader::mdd_reader(input &s, domain* D)
     }
 #endif
 
-    readAfterForest(s);
+    readAfterForest(s, prog);
 }
 
 void MEDDLY::mdd_reader::readRootEdge(dd_edge &E)
@@ -381,7 +381,7 @@ void MEDDLY::mdd_reader::readRootEdge(dd_edge &E)
     ++rptr;
 }
 
-void MEDDLY::mdd_reader::readAfterForest(input &s)
+void MEDDLY::mdd_reader::readAfterForest(input &s, output* prog)
 {
     MEDDLY_DCASSERT(For);
 
@@ -412,6 +412,9 @@ void MEDDLY::mdd_reader::readAfterForest(input &s)
         std::cerr << "Reading " << file_nodes << " nodes in forest " << block << "\n";
 
 #endif
+        if (prog) {
+            (*prog) << "Reading " << file_nodes << " nodes in forest " << block << "\n";
+        }
 
         //
         // Build translation from file node# to forest node handles
@@ -487,6 +490,9 @@ void MEDDLY::mdd_reader::readAfterForest(input &s)
 #ifdef DEBUG_READ_DD
         std::cerr << "Finished " << block << " forest\n";
 #endif
+        if (prog) {
+            (*prog) << "Finished " << block << " forest\n";
+        }
 
         //
         // Read the pointers
@@ -505,6 +511,9 @@ void MEDDLY::mdd_reader::readAfterForest(input &s)
 #ifdef DEBUG_READ_DD
         std::cerr << "Reading " << num_ptrs << " pointers\n";
 #endif
+        if (prog) {
+            (*prog) << "Reading " << num_ptrs << " pointers\n";
+        }
         for (unsigned i=0; i<num_ptrs; i++) {
             dd_edge E(For);
             E.read(s, map);
@@ -517,6 +526,9 @@ void MEDDLY::mdd_reader::readAfterForest(input &s)
 #ifdef DEBUG_READ_DD
         std::cerr << "Done reading pointers\n";
 #endif
+        if (prog) {
+            (*prog) << "Done reading pointers\n";
+        }
 
         //
         // unlink map pointers
