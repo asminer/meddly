@@ -16,6 +16,7 @@ knight \
 knight2 \
 libinfo \
 life \
+mr2dist \
 nqueens \
 queen_cover \
 qc2 \
@@ -68,6 +69,8 @@ libinfo_LDADD = ../src/libmeddly.la
 life_SOURCES = life.cc
 life_LDADD = ../src/libmeddly.la
 
+mr2dist_SOURCES = mr2dist.cc zstream.h zstream.cc
+mr2dist_LDADD = ../src/libmeddly.la
 
 
 nqueens_SOURCES = nqueens.cc

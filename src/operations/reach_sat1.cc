@@ -92,6 +92,10 @@ namespace MEDDLY {
                     edge_value &cv, node_handle &cp);
 
         protected:
+            /* For an input set (av, A) from arg1F,
+             * determine saturated node (cv, C) in resF,
+             * with respect to level L relation(s).
+             */
             void saturate(int L, const edge_value &av, node_handle A,
                     edge_value &cv, node_handle &C);
 
@@ -136,9 +140,14 @@ namespace MEDDLY {
             }
 
         private:
-            std::vector <dd_edge> rel_by_top;
+            /// Split relation: events whose top is exactly k
+            std::vector <dd_edge> top_exactly;
+            /// Split relation: events whose top is at k or below
+            std::vector <dd_edge> top_at_or_below;
 
-            ct_entry_type* ct;
+            ct_entry_type* firect;
+            ct_entry_type* satct;
+            unary_operation*  copyOp;
             binary_operation* accumulateOp;
             binary_operation* mxdIntersection;
             binary_operation* mxdDifference;
@@ -148,6 +157,7 @@ namespace MEDDLY {
 #endif
             edge_value nothing;
             bool forced_by_levels;
+            bool sat_cache_level;
 
     }; // class
 }; // namespace MEDDLY
@@ -177,14 +187,20 @@ MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>
     //
     // Set up space for relation split by top levels
     //
-    rel_by_top.resize(arg2F->getNumVariables()+1);
+    top_exactly.resize(arg2F->getNumVariables()+1);
+    top_at_or_below.resize(arg2F->getNumVariables()+1);
+
     for (unsigned i=1; i<=arg2F->getNumVariables(); i++) {
-        rel_by_top[i].attach(arg2F);
+        top_exactly[i].attach(arg2F);
+        top_at_or_below[i].attach(arg2F);
     }
 
     //
     // Helper operations
     //
+    copyOp = build(COPY, arg1F, resF);
+    MEDDLY_DCASSERT(copyOp);
+
     accumulateOp = ATYPE::accumulateOp(res);
     MEDDLY_DCASSERT(accumulateOp);
 
@@ -202,29 +218,51 @@ MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>
     //
     forced_by_levels = arg1->isFullyReduced() && arg2->isFullyReduced();
 
+
     // TBD
 
     //
     // Build compute table key and result types.
     //
-    ct = new ct_entry_type(opName());
+    firect = new ct_entry_type("satfire");
     if (forced_by_levels) {
-        ct->setFixed('I', arg1, arg2);
+        firect->setFixed('I', arg1, arg2);
     } else {
-        ct->setFixed(arg1, arg2);
+        firect->setFixed(arg1, arg2);
     }
     if (EOP::hasEdgeValues()) {
-        ct->setResult(EOP::edgeValueTypeLetter(), res);
+        firect->setResult(EOP::edgeValueTypeLetter(), res);
     } else {
-        ct->setResult(res);
+        firect->setResult(res);
     }
-    ct->doneBuilding();
+    firect->doneBuilding();
+
+
+    //
+    // If the set is fully-reduced, we need to store the level in
+    // the saturation cache.
+    //
+    satct = new ct_entry_type("saturate");
+    sat_cache_level = arg1->isFullyReduced();
+    if (sat_cache_level) {
+        satct->setFixed('I', arg1, arg2);
+    } else {
+        satct->setFixed(arg1, arg2);
+    }
+    if (EOP::hasEdgeValues()) {
+        satct->setResult(EOP::edgeValueTypeLetter(), res);
+    } else {
+        satct->setResult(res);
+    }
+    satct->doneBuilding();
+
 }
 
 template <class EOP, bool FORWD, class ATYPE>
 MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>::~saturation1_set_mtrel()
 {
-    ct->markForDestroy();
+    firect->markForDestroy();
+    satct->markForDestroy();
 }
 
 template <class EOP, bool FORWD, class ATYPE>
@@ -251,6 +289,8 @@ void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>
         const node_handle mxdn = mxd.getNode();
         const int k = ABS(arg2F->getNodeLevel(mxdn));
         if (0 == k) break;
+
+        top_at_or_below[k] = mxd;
         rel_node* Brn = arg2F->buildRelNode(mxdn);
 
         // Determine common diagonal
@@ -270,23 +310,32 @@ void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>
         mxdDifference->compute(k, ~0,
             nothing, mxd.getNode(),
             nothing, diag.getNode(),
-            rel_by_top[k].setEdgeValue(), resp
+            top_exactly[k].setEdgeValue(), resp
         );
-        rel_by_top[k].set(resp);
+        top_exactly[k].set(resp);
         mxd = diag;
 
         // cleanup
         arg2F->doneRelNode(Brn);
     }
+    top_at_or_below[0].set(0);
+    top_exactly[0].set(0);
 
 #ifdef DEBUG_SPLIT
     ostream_output splout(std::cout);
     std::cout << "After splitting monolithic event in " << opName() << "\n";
+    for (unsigned k=0; k <= arg2F->getNumVariables(); k++) {
+        std::cout << "Relation with top level<=" << k << ": ";
+        top_at_or_below[k].show(splout);
+        std::cout << "\n";
+        top_at_or_below[k].showGraph(splout);
+        std::cout << "======================================================================\n";
+    }
     for (unsigned k=1; k <= arg2F->getNumVariables(); k++) {
         std::cout << "Relation with top level=" << k << ": ";
-        rel_by_top[k].show(splout);
+        top_exactly[k].show(splout);
         std::cout << "\n";
-        rel_by_top[k].showGraph(splout);
+        top_exactly[k].showGraph(splout);
         std::cout << "======================================================================\n";
     }
 #endif
@@ -304,10 +353,11 @@ void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>
 #endif
 
     //
-    // Clear out rel_by_top
+    // clear out split relation
     //
     for (int k=arg2F->getMaxLevelIndex(); k; --k) {
-        rel_by_top[k].set(0);
+        top_exactly[k].set(0);
+        top_at_or_below[k].set(0);
     }
 }
 
@@ -316,8 +366,180 @@ void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>::saturate(int L,
         const edge_value &av, node_handle A,
         edge_value &cv, node_handle &C)
 {
+    const node_handle B = top_at_or_below[L].getNode();
+
+    // **************************************************************
+    //
+    // Check terminal cases
+    //
+    // **************************************************************
+    if (ATYPE::isUnreachable(av, A)) {
+        ATYPE::setUnreachable(cv, C);
+        C = resF->makeRedundantsTo(C, 0, L);
+        return;
+    }
+    if (0==B) {
+        copyOp->compute(L, ~0, av, A, cv, C);
+        return;
+    }
+
+
+#ifdef TRACE
+    out << ATYPE::name(FORWD) << " saturate(" << L << ", ";
+    arg1F->showEdge(out, av, A);
+    out << ", " << B << ")\n";
+#endif
+
+    // **************************************************************
+    //
+    // Check the compute table
+    //
+    // **************************************************************
+    ct_vector key(satct->getKeySize());
+    ct_vector res(satct->getResultSize());
+    if (sat_cache_level) {
+        key[0].setI(L);
+        key[1].setN(A);
+        key[2].setN(B);
+    } else {
+        key[0].setN(A);
+        key[1].setN(B);
+    }
+
+    if (satct->findCT(key, res)) {
+        //
+        // compute table hit
+        //
+        if (EOP::hasEdgeValues()) {
+            res[0].get(cv);
+            EOP::accumulateOp(cv, av);
+            C = resF->linkNode(res[1].getN());
+            EOP::normalize(cv, C);
+        } else {
+            EOP::clear(cv);
+            C = resF->linkNode(res[0].getN());
+        }
+#ifdef TRACE
+        out << "CT hit ";
+        key.show(out);
+        out << " -> ";
+        res.show(out);
+        out << "\n";
+#endif
+        return;
+        //
+        // done compute table hit
+        //
+    }
+
+    // **************************************************************
+    //
+    // Compute table 'miss'; do computation
+    //
+    // **************************************************************
+
+    //
+    // Copy A to C, saturating children as we go
+    //
+    unpacked_node* Au = unpacked_node::New(arg1F, SPARSE_ONLY);
+    const int Alevel = arg1F->getNodeLevel(A);
+    if (Alevel < L) {
+        edge_value zero;
+        EOP::clear(zero);
+        Au->initRedundant(L, zero, A);
+    } else {
+        Au->initFromNode(A);
+    }
+
+    unpacked_node* Cu = unpacked_node::newWritable(resF, L, FULL_ONLY);
+    ATYPE::setAllUnreachable(Cu);
+
+#ifdef TRACE
+    out << "saturating children, node A: ";
+    Au->show(out, true);
+    out << "\n";
+#endif
+
+    for (unsigned z = 0; z<Au->getSize(); z++) {
+        node_handle cdp;
+        edge_value cdv;
+        saturate(L-1, edgeval(Au, z), Au->down(z), cdv, cdp);
+        const unsigned i = Au->index(z);
+        Cu->setFull(i, cdv, cdp);
+    }
+
+    unpacked_node::Recycle(Au);
+
+#ifdef TRACE
+    out << "done saturating children, node C: ";
+    Cu->show(out, true);
+    out << "\n";
+#endif
+
+
     // TBD
     MEDDLY_DCASSERT(false);
+
+    //
+    // OLD
+    //
+
+#ifdef OLD_SAT
+
+#ifdef DEBUG_DFS
+  printf("mdd: %d, k: %d\n", mdd, k);
+#endif
+
+  // terminal condition for recursion
+  if (argF->isTerminalNode(mdd)) return mdd;
+
+  // search compute table
+  node_handle n = 0;
+  ct_entry_key* Key = findSaturateResult(mdd, k, n);
+  if (0==Key) return n;
+
+  const unsigned sz = unsigned(argF->getLevelSize(k));    // size
+  const int mdd_level = argF->getNodeLevel(mdd);          // mdd level
+
+#ifdef DEBUG_DFS
+  printf("mdd: %d, level: %d, size: %d, mdd_level: %d\n",
+      mdd, k, sz, mdd_level);
+#endif
+
+  unpacked_node* C = unpacked_node::newWritable(resF, k, sz, FULL_ONLY);
+  // Initialize mdd reader
+  unpacked_node *mddDptrs = unpacked_node::New(argF, FULL_ONLY);
+  if (mdd_level < k) {
+    mddDptrs->initRedundant(k, mdd);
+  } else {
+    mddDptrs->initFromNode(mdd);
+  }
+
+  // Do computation
+  for (unsigned i=0; i<sz; i++) {
+    C->setFull(i,
+      mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0
+    );
+  }
+
+  // Cleanup
+  unpacked_node::Recycle(mddDptrs);
+
+  parent->saturateHelper(*C);
+  edge_value ev;
+  resF->createReducedNode(C, ev, n);
+  MEDDLY_DCASSERT(ev.isVoid());
+
+  // save in compute table
+  saveSaturateResult(Key, mdd, n);
+
+#ifdef DEBUG_DFS
+  resF->showNodeGraph(stdout, n);
+#endif
+
+  return n;
+#endif // OLD_SAT
+
 }
 
 template <class EOP, bool FORWD, class ATYPE>
