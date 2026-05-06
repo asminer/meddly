@@ -227,7 +227,7 @@ void MEDDLY::mdd_writer::finish()
 
         M.getNodesAtLevel(k, output2handle);
     } // for k
-    const unsigned num_nodes = output2handle.size();
+    const size_t num_nodes = output2handle.size();
 
     //
     // Build the inverse list.
@@ -236,24 +236,24 @@ void MEDDLY::mdd_writer::finish()
     // the output file.
     //
     node_handle maxnode = 0;
-    for (unsigned i=0; i<output2handle.size(); i++) {
+    for (size_t i=0; i<output2handle.size(); i++) {
         UPDATEMAX(maxnode, output2handle[i]);
     }
-    std::vector <unsigned> handle2output (unsigned(1+maxnode));
-    for (unsigned i=0; i<output2handle.size(); i++) {
+    std::vector <size_t> handle2output (1+maxnode);
+    for (size_t i=0; i<output2handle.size(); i++) {
         MEDDLY_CHECK_RANGE(1, output2handle[i], maxnode+1);
-        handle2output[unsigned(output2handle[i])] = i+1;
+        handle2output[output2handle[i]] = i+1;
     }
 
 #ifdef DEBUG_WRITE
     std::cerr << "Got list of nodes:\n";
-    for (int i=0; output2handle[i]; i++) {
+    for (size_t i=0; output2handle[i]; i++) {
         if (i) std::cerr << ", ";
         std::cerr << output2handle[i];
     }
     std::cerr << "\n";
     std::cerr << "Got inverse list:\n";
-    for (int i=0; i<=maxnode; i++) {
+    for (node_handle i=0; i<=maxnode; i++) {
         if (i) std::cerr << ", ";
         std::cerr << handle2output[i];
     }
@@ -271,7 +271,7 @@ void MEDDLY::mdd_writer::finish()
     //
     out << block << " " << num_nodes << "\n";
     unpacked_node* un = unpacked_node::New(For, FULL_OR_SPARSE);
-    for (unsigned i=0; i<output2handle.size(); i++) {
+    for (size_t i=0; i<output2handle.size(); i++) {
         out << For->getNodeLevel(output2handle[i]) << " ";
         un->initFromNode(output2handle[i]);
         // For->unpackNode(un, output2handle[i], FULL_OR_SPARSE);
@@ -404,7 +404,7 @@ void MEDDLY::mdd_reader::readAfterForest(input &s)
         //
 
         s.stripWS();
-        file_nodes = unsigned(s.get_integer());
+        file_nodes = size_t(s.get_integer());
 #ifdef DEBUG_READ_DD
         std::cerr << "Reading " << file_nodes << " nodes in " << block << " forest\n";
 #endif
@@ -418,7 +418,7 @@ void MEDDLY::mdd_reader::readAfterForest(input &s)
         //
         std::vector <node_handle> map(1+file_nodes);
 
-        for (unsigned node_index=1; node_index<=file_nodes; node_index++) {
+        for (size_t node_index=1; node_index<=file_nodes; node_index++) {
             // Read this node
 
             //
@@ -521,7 +521,7 @@ void MEDDLY::mdd_reader::readAfterForest(input &s)
         //
         // unlink map pointers
         //
-        for (unsigned i=1; i<=file_nodes; i++) {
+        for (size_t i=1; i<=file_nodes; i++) {
             For->unlinkNode(map[i]);
         }
 

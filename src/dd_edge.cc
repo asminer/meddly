@@ -1212,7 +1212,7 @@ void MEDDLY::dd_edge::showGraph(output &s) const
 }
 
 
-void MEDDLY::dd_edge::write(output &s, const std::vector <unsigned> &map) const
+void MEDDLY::dd_edge::write(output &s, const std::vector <size_t> &map) const
 {
     //
     // Edge info
@@ -1236,7 +1236,7 @@ void MEDDLY::dd_edge::write(output &s, const std::vector <unsigned> &map) const
         // non-terminal
         //
         s.put("n ");
-        s.put(map[unsigned(node)]);
+        s.put(map[node]);
     }
 }
 

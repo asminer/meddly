@@ -525,7 +525,7 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
 }
 
 
-void MEDDLY::unpacked_node::write(output &s, const std::vector <unsigned> &map)
+void MEDDLY::unpacked_node::write(output &s, const std::vector <size_t> &map)
     const
 {
     MEDDLY_DCASSERT(parent);
