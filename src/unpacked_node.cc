@@ -525,7 +525,7 @@ void MEDDLY::unpacked_node::show(output &s, bool details) const
 }
 
 
-void MEDDLY::unpacked_node::write(output &s, const std::vector <unsigned> &map)
+void MEDDLY::unpacked_node::write(output &s, const std::vector <size_t> &map)
     const
 {
     MEDDLY_DCASSERT(parent);
@@ -555,7 +555,7 @@ void MEDDLY::unpacked_node::write(output &s, const std::vector <unsigned> &map)
     s.put('\t');
     for (unsigned z=0; z<getSize(); z++) {
         s.put(' ');
-        const long d = down(z);
+        const node_handle d = down(z);
         if (d <= 0) {
             // terminal
             terminal t(parent->getTerminalType(), d);

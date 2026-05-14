@@ -71,27 +71,30 @@ int main(int argc, const char** argv)
         std::vector <dd_edge> all_roots;
         domain* d = nullptr;
         forest* F = nullptr;
+        ostream_output mout(cout);
 
         for (int i=1; i<argc; ++i) {
-            cout << "\n======================================================================\n" << argv[i] << " ... ";
+            mout << "\n======================================================================\n";
+            mout.indent_more();
+            mout << argv[i] << "\n";
             compressed_input reader(argv[i]);
             if (!reader) {
-                cout << "couldn't read, skipping\n\n";
+                mout << "couldn't read, skipping\n\n";
                 continue;
             }
             mdd_reader* mddr = nullptr;
             if (d) {
                 d->verify(reader.instream());
-                mddr = new mdd_reader(reader.instream(), F);
+                mddr = new mdd_reader(reader.instream(), F, &mout);
             } else {
                 d = domain::create(reader.instream());
-                mddr = new mdd_reader(reader.instream(), d);
+                mddr = new mdd_reader(reader.instream(), d, &mout);
                 F = mddr->getForest();
             }
-            cout << mddr->getFileNodes() << " nodes, " << mddr->numRoots() << " roots\n\n";
+            mout << mddr->getFileNodes() << " nodes, " << mddr->numRoots() << " roots\n\n";
 
             for (unsigned r=0; r<mddr->numRoots(); r++) {
-                cout << "    Root #" << r << ": "
+                mout << "Root #" << r << ": "
                      << mddr->getRoot(r).getNodeCount() << " nodes "
                      << mddr->getRoot(r).getEdgeCount() << " edges\n";
 
@@ -99,19 +102,20 @@ int main(int argc, const char** argv)
             }
 
             delete mddr;
+
+            mout.indent_less();
         }
 
-        cout << "\n======================================================================\n\n";
+        mout << "\n======================================================================\n\n";
 
-        cout << "Forest stats:\n";
-        ostream_output meddlyout(cout);
-        F->reportStats(meddlyout, "    ",
+        mout << "Forest stats:\n";
+        F->reportStats(mout, "    ",
             HUMAN_READABLE_MEMORY | BASIC_STATS | EXTRA_STATS
         );
 
 
         MEDDLY::cleanup();
-        cout << "Done!\n";
+        mout << "Done!\n";
         return 0;
     }
     catch (MEDDLY::error e) {

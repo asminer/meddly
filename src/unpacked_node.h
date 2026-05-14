@@ -372,7 +372,7 @@ class MEDDLY::unpacked_node {
             @param  map     Translation to use from node handle to file node#.
                             Allows us to renumber nodes as we write them.
         */
-        void write(output &s, const std::vector <unsigned> &map) const;
+        void write(output &s, const std::vector <size_t> &map) const;
 
 
         /** Read a node in machine-readable format.
