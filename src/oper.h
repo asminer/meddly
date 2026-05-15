@@ -21,6 +21,7 @@
 
 #include "defines.h"
 #include "io.h"
+#include "error.h"
 
 #include <vector>
 
@@ -59,6 +60,29 @@ namespace MEDDLY {
 */
 class MEDDLY::operation {
         friend class initializer_list;
+    public:
+        struct option {
+                char    type;
+                char    opt_c;
+                long    opt_i;
+                double  opt_f;
+            public:
+                option() {
+                    type=' ';
+                }
+                option(char c) {
+                    type='c';
+                    opt_c = c;
+                }
+                option(long i) {
+                    type='i';
+                    opt_i = i;
+                }
+                option(double f) {
+                    type='f';
+                    opt_f = f;
+                }
+        };
     public:
         /** Constructor (OLD)
                 @param  n           Operation name, for debugging
@@ -105,6 +129,45 @@ class MEDDLY::operation {
             return uses_progress;
         }
 
+        /// How many user-adjustable options are there for this
+        inline unsigned getNumOptions() const {
+            return num_options;
+        }
+
+        /** Get the option type.
+                @param  i   Option number, between 0 and #options-1.
+                @return One of the following.
+                    ' ':    There is no option.
+                    'c':    The option type is 'char'
+                    'i':    The option type is 'long'
+                    'f':    The option type is 'double'
+         */
+        inline char getOptionType(unsigned i) const {
+            if (i >= num_options) return ' ';
+            return options[i];
+        }
+
+        /** Set an option.
+                @param  i   Option number, between 0 and #options-1.
+                @param  x   Value
+                @return true on success, false otherwise.
+                @throws INVALID_OPTION error on type mismatch.
+        */
+        inline void setOption(unsigned i, option x) {
+            if (getOptionType(i) != x.type) {
+                throw error(error::INVALID_OPTION, __FILE__, __LINE__);
+            }
+            _setOption(i, x);
+        }
+
+        /** Get an actual option. Override in derived classes;
+            the default behavior returns an empty option.
+        */
+        virtual option getOption(unsigned i) const;
+
+        /// Display the operation name and options.
+        virtual void showNameAndOptions(output &s) const;
+
     protected:
         /// Set the name after constructing.
         inline void setName(const char* n) {
@@ -112,6 +175,20 @@ class MEDDLY::operation {
             MEDDLY_DCASSERT(!name);
             name = n;
         }
+
+        /// Set the option types. Default is nullptr.
+        inline void setOptionTypes(const char* optypes) {
+            options = optypes;
+            num_options = 0;
+            while (options[num_options]) {
+                ++num_options;
+            }
+        }
+
+        /** Set an actual option. Override in derived classes;
+            the default behavior throws an error.
+        */
+        virtual bool _setOption(unsigned i, option x);
 
         /// Indicate that the progress notifier might be used.
         /// (Default: it's never used.)
@@ -222,6 +299,8 @@ class MEDDLY::operation {
 
     private:
         const char* name;
+        const char* options;
+        unsigned num_options;
         /// List of forest IDs associated with this operation.
         std::vector <unsigned> FList;
 

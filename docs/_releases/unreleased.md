@@ -25,6 +25,11 @@ layout: single
     method ```domain::read()``` has been replaced by
     an overloaded static method ```domain::create()```.
 
+* Added "options" to operations.
+    This is the mechanism to adjust algorithms, for example,
+    different versions of saturation. Options are used only for
+    adjustments that do not affect the final answer.
+
 ### Implementation
 
 * The ```COPY``` operation will use relation nodes in some cases.
