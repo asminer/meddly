@@ -677,10 +677,14 @@ template <bool FWD>
 void MEDDLY::reachset_satur_factory <FWD>::setup()
 {
     if (FWD) {
-        _setup(__FILE__, "REACHABLE_SATUR(true)", "Build forward reachability set using saturation (citation? TBD). The first argument is the set of initial states, and the second argument is the transition relation.");
+        _setup(__FILE__, "REACHABLE_SATUR(true)", "Build forward reachability set using saturation (citation? TBD). The first argument is the set of initial states, and the second argument is the transition relation. The operation has two options. Option 0 is an integer, to indicate the version number of saturation to use (0 for default, 1 for original). Option 1 is a character, to indicate how to select the next index to explore (' ' for default, 'q' whatever is next in the queue).");
     } else {
-        _setup(__FILE__, "REACHABLE_SATUR(false)", "Build backward reachability set using saturation (citation? TBD). The first argument is the set of initial states, and the second argument is the transition relation.");
+        _setup(__FILE__, "REACHABLE_SATUR(false)", "Build backward reachability set using saturation (citation? TBD). The first argument is the set of initial states, and the second argument is the transition relation. The operation has two options. Option 0 is an integer, to indicate the version number of saturation to use (0 for default, 1 for original). Option 1 is a character, to indicate how to select the next index to explore (' ' for default, 'q' whatever is next in the queue).");
     }
+
+    appendOptionDoc("(integer): indicates the version number of saturation to use (0 for default, 1 for original)");
+
+    appendOptionDoc("(char): indicates how to select the next index to explore (' ' for default, 'q' whatever is next in the queue).");
 }
 
 template <bool FWD>
