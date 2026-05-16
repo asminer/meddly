@@ -91,7 +91,11 @@ namespace MEDDLY {
                     const edge_value &bv, node_handle bp,
                     edge_value &cv, node_handle &cp);
 
+            virtual void showNameAndOptions(output &s) const;
+            virtual option getOption(unsigned i) const;
         protected:
+            virtual bool _setOption(unsigned i, option x);
+
             /* For an input set (av, A) from arg1F,
              * determine saturated node (cv, C) in resF,
              * with respect to level L relation(s).
@@ -155,6 +159,10 @@ namespace MEDDLY {
             ostream_output out;
             unsigned top_count;
 #endif
+            // options
+            int version;
+            char index_order;
+
             edge_value nothing;
             bool forced_by_levels;
             bool sat_cache_level;
@@ -184,6 +192,17 @@ MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
+    //
+    // Set the options for saturation
+    //   option1: version number
+    //   option2: index explore order
+    //
+    setOptionTypes("ic");
+    setOption(0, 0L);
+    setOption(1, ' ');
+
+
+    // TBD: move split stuff; only use it for saturation v1
     //
     // Set up space for relation split by top levels
     //
@@ -263,6 +282,90 @@ MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>::~saturation_set_mtrel()
 {
     firect->markForDestroy();
     satct->markForDestroy();
+}
+
+
+template <class EOP, bool FORWD, class ATYPE>
+void
+MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
+    ::showNameAndOptions(output &s) const
+{
+    if (FORWD) {
+        s.put("Forward saturation version ");
+    } else {
+        s.put("Backward saturation version ");
+    }
+    s.put(version);
+    s.put(", ");
+    switch (index_order) {
+        case 'q':
+            s.put("queue index order");
+            break;
+
+        // TBD: other index orders
+
+        default:
+            s.put("unknown index order");
+    }
+}
+
+template <class EOP, bool FORWD, class ATYPE>
+MEDDLY::operation::option
+MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
+    ::getOption(unsigned i) const
+{
+    if (0==i) {
+        return option(long(version));
+    }
+    if (1==i) {
+        return option(index_order);
+    }
+    throw error(error::INVALID_OPTION, __FILE__, __LINE__);
+}
+
+template <class EOP, bool FORWD, class ATYPE>
+bool
+MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
+    ::_setOption(unsigned i, option x)
+{
+    if (0==i) {
+        // Version number
+        if (x.opt_i < 0 || x.opt_i > 3) {
+            return false;
+        }
+        if (0==x.opt_i) {
+            // Use default
+            version = 1;
+            return true;
+        }
+        version = x.opt_i;
+        return true;
+    }
+    if (1==i) {
+        // index order
+        if (' ' == x.opt_c) {
+            // Use default
+        }
+        switch (x.opt_c) {
+
+            case ' ':
+                // Use default
+                index_order = 'q';
+                return true;
+
+            case 'q':
+                index_order = x.opt_c;
+                return true;
+
+            // tbd: other orders here
+
+
+            default:
+                // unknown or unsupported character
+                return false;
+        }
+    }
+    return false;
 }
 
 template <class EOP, bool FORWD, class ATYPE>
