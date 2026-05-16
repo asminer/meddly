@@ -17,7 +17,7 @@
 */
 
 #include "../defines.h"
-#include "reach_sat1.h"
+#include "reach_satur.h"
 
 #include "../forest.h"
 #include "../oper_unary.h"
@@ -79,12 +79,12 @@
 namespace MEDDLY {
 
     template <class EOP, bool FORWD, class ATYPE>
-    class saturation1_set_mtrel : public binary_operation {
+    class saturation_set_mtrel : public binary_operation {
         public:
-            saturation1_set_mtrel(forest* arg1, forest* arg2,
+            saturation_set_mtrel(forest* arg1, forest* arg2,
                     forest* res);
 
-            virtual ~saturation1_set_mtrel();
+            virtual ~saturation_set_mtrel();
 
             virtual void compute(int L, unsigned in,
                     const edge_value &av, node_handle ap,
@@ -103,7 +103,7 @@ namespace MEDDLY {
                     node_handle B, edge_value &cv, node_handle &c);
 
             static inline const char* opName() {
-                return FORWD ? "fwd-sat1" : "bck-sat1";
+                return FORWD ? "fwd-sat" : "bck-sat";
             }
 
         private:
@@ -165,8 +165,8 @@ namespace MEDDLY {
 // ************************************************************************
 
 template <class EOP, bool FORWD, class ATYPE>
-MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>
-    ::saturation1_set_mtrel(forest* arg1, forest* arg2, forest* res)
+MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
+    ::saturation_set_mtrel(forest* arg1, forest* arg2, forest* res)
     : binary_operation(arg1, arg2, res)
 #ifdef TRACE
       , out(std::cout), top_count(0)
@@ -259,14 +259,14 @@ MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>
 }
 
 template <class EOP, bool FORWD, class ATYPE>
-MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>::~saturation1_set_mtrel()
+MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>::~saturation_set_mtrel()
 {
     firect->markForDestroy();
     satct->markForDestroy();
 }
 
 template <class EOP, bool FORWD, class ATYPE>
-void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>
+void MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
     ::compute(int L, unsigned in,
         const edge_value &av, node_handle ap,
         const edge_value &bv, node_handle bp,
@@ -362,7 +362,7 @@ void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>
 }
 
 template <class EOP, bool FORWD, class ATYPE>
-void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>::saturate(int L,
+void MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>::saturate(int L,
         const edge_value &av, node_handle A,
         edge_value &cv, node_handle &C)
 {
@@ -543,7 +543,7 @@ void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>::saturate(int L,
 }
 
 template <class EOP, bool FORWD, class ATYPE>
-void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>::recFire(int L,
+void MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>::recFire(int L,
         const edge_value &av, node_handle A,
         node_handle B, edge_value &cv, node_handle &C)
 {
@@ -553,13 +553,13 @@ void MEDDLY::saturation1_set_mtrel<EOP, FORWD, ATYPE>::recFire(int L,
 
 // ******************************************************************
 // *                                                                *
-// *                  reachset_sat1_factory  class                  *
+// *                  reachset_satur_factory class                  *
 // *                                                                *
 // ******************************************************************
 
 namespace MEDDLY {
     template <bool FWD>
-    class reachset_sat1_factory : public binary_factory {
+    class reachset_satur_factory : public binary_factory {
         public:
             virtual void setup();
 
@@ -571,29 +571,29 @@ namespace MEDDLY {
 // ******************************************************************
 
 template <bool FWD>
-void MEDDLY::reachset_sat1_factory <FWD>::setup()
+void MEDDLY::reachset_satur_factory <FWD>::setup()
 {
     if (FWD) {
-        _setup(__FILE__, "REACHABLE_SAT1(true)", "Build forward reachability set using saturation (citation? TBD). The first argument is the set of initial states, and the second argument is the transition relation.");
+        _setup(__FILE__, "REACHABLE_SATUR(true)", "Build forward reachability set using saturation (citation? TBD). The first argument is the set of initial states, and the second argument is the transition relation.");
     } else {
-        _setup(__FILE__, "REACHABLE_SAT1(false)", "Build backward reachability set using saturation (citation? TBD). The first argument is the set of initial states, and the second argument is the transition relation.");
+        _setup(__FILE__, "REACHABLE_SATUR(false)", "Build backward reachability set using saturation (citation? TBD). The first argument is the set of initial states, and the second argument is the transition relation.");
     }
 }
 
 template <bool FWD>
 MEDDLY::binary_operation*
-MEDDLY::reachset_sat1_factory <FWD>::build_new(forest* a, forest* b, forest* c)
+MEDDLY::reachset_satur_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 {
     if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
 
         switch (c->getRangeType()) {
             case range_type::BOOLEAN:
-                return new saturation1_set_mtrel<EdgeOp_none, FWD,
+                return new saturation_set_mtrel<EdgeOp_none, FWD,
                             mt_prepost>(a, b, c);
 
             case range_type::INTEGER:
                 if (c->isFullyReduced())  {
-                    return new saturation1_set_mtrel<EdgeOp_none, FWD,
+                    return new saturation_set_mtrel<EdgeOp_none, FWD,
                             mt_distance>(a, b, c);
                 }
 
@@ -606,11 +606,11 @@ MEDDLY::reachset_sat1_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 
         switch (a->getEdgeType()) {
             case edge_type::INT:
-                return new saturation1_set_mtrel<EdgeOp_plus<int>, FWD,
+                return new saturation_set_mtrel<EdgeOp_plus<int>, FWD,
                             ev_prepost<int> > (a, b, c);
 
             case edge_type::LONG:
-                return new saturation1_set_mtrel<EdgeOp_plus<long>, FWD,
+                return new saturation_set_mtrel<EdgeOp_plus<long>, FWD,
                             ev_prepost<long> > (a, b, c);
 
             default:
@@ -629,10 +629,10 @@ MEDDLY::reachset_sat1_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_factory& MEDDLY::REACHABLE_SAT1(bool fwd)
+MEDDLY::binary_factory& MEDDLY::REACHABLE_SATUR(bool fwd)
 {
-    static reachset_sat1_factory<true>  forwd;
-    static reachset_sat1_factory<false> bckwd;
+    static reachset_satur_factory<true>  forwd;
+    static reachset_satur_factory<false> bckwd;
 
     if (fwd) return forwd;
     else     return bckwd;

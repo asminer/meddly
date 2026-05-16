@@ -16,13 +16,13 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEDDLY_REACH_SAT1_H
-#define MEDDLY_REACH_SAT1_H
+#ifndef MEDDLY_REACH_SATUR_H
+#define MEDDLY_REACH_SATUR_H
 
 namespace MEDDLY {
     class binary_factory;
 
-    binary_factory& REACHABLE_SAT1(bool fwd);
+    binary_factory& REACHABLE_SATUR(bool fwd);
 
 }
 
