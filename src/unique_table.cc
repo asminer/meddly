@@ -185,7 +185,8 @@ void MEDDLY::unique_table::subtable::show(output &s) const
     for (unsigned i=0; i < size; i++) {
         if (table[i] != 0) {
             s << "[" << long(i) << "] : ";
-            for (int index = table[i]; index; index = parent->getNext(index)) {
+            node_handle index;
+            for (index = table[i]; index; index = parent->getNext(index)) {
                 s << index <<" ";
             }
             s.put("\n");
