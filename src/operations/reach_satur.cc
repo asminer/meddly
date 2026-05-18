@@ -48,9 +48,6 @@
 
         EOP: one of the EdgeOp classes in forests_edgerules.h.
 
-        FORWD: if true, do forward reachability, otherwise
-                        do backward reachability.
-
         ATYPE: arithmetic type class, must provide the following methods.
 
             /// Get the operation name, for display purposes
@@ -78,10 +75,10 @@
 */
 namespace MEDDLY {
 
-    template <class EOP, bool FORWD, class ATYPE>
+    template <class EOP, class ATYPE>
     class saturation_set_mtrel : public binary_operation {
         public:
-            saturation_set_mtrel(forest* arg1, forest* arg2,
+            saturation_set_mtrel(bool fwd, forest* arg1, forest* arg2,
                     forest* res);
 
             virtual ~saturation_set_mtrel();
@@ -106,7 +103,7 @@ namespace MEDDLY {
             void recFire(int L, const edge_value &av, node_handle A,
                     node_handle B, edge_value &cv, node_handle &c);
 
-            static inline const char* opName() {
+            inline const char* opName() {
                 return FORWD ? "fwd-sat" : "bck-sat";
             }
 
@@ -166,16 +163,17 @@ namespace MEDDLY {
             edge_value nothing;
             bool forced_by_levels;
             bool sat_cache_level;
+            const bool FORWD;
 
     }; // class
 }; // namespace MEDDLY
 
 // ************************************************************************
 
-template <class EOP, bool FORWD, class ATYPE>
-MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
-    ::saturation_set_mtrel(forest* arg1, forest* arg2, forest* res)
-    : binary_operation(arg1, arg2, res)
+template <class EOP, class ATYPE>
+MEDDLY::saturation_set_mtrel<EOP, ATYPE>
+    ::saturation_set_mtrel(bool fwd, forest* arg1, forest* arg2, forest* res)
+    : binary_operation(arg1, arg2, res), FORWD(fwd)
 #ifdef TRACE
       , out(std::cout), top_count(0)
 #endif
@@ -277,17 +275,17 @@ MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
 
 }
 
-template <class EOP, bool FORWD, class ATYPE>
-MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>::~saturation_set_mtrel()
+template <class EOP, class ATYPE>
+MEDDLY::saturation_set_mtrel<EOP, ATYPE>::~saturation_set_mtrel()
 {
     firect->markForDestroy();
     satct->markForDestroy();
 }
 
 
-template <class EOP, bool FORWD, class ATYPE>
+template <class EOP, class ATYPE>
 void
-MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
+MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     ::showNameAndOptions(output &s) const
 {
     if (FORWD) {
@@ -309,9 +307,9 @@ MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
     }
 }
 
-template <class EOP, bool FORWD, class ATYPE>
+template <class EOP, class ATYPE>
 MEDDLY::operation::option
-MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
+MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     ::getOption(unsigned i) const
 {
     if (0==i) {
@@ -323,9 +321,9 @@ MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
     throw error(error::INVALID_OPTION, __FILE__, __LINE__);
 }
 
-template <class EOP, bool FORWD, class ATYPE>
+template <class EOP, class ATYPE>
 bool
-MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
+MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     ::_setOption(unsigned i, option x)
 {
     if (0==i) {
@@ -368,8 +366,8 @@ MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
     return false;
 }
 
-template <class EOP, bool FORWD, class ATYPE>
-void MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
+template <class EOP, class ATYPE>
+void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     ::compute(int L, unsigned in,
         const edge_value &av, node_handle ap,
         const edge_value &bv, node_handle bp,
@@ -464,8 +462,8 @@ void MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>
     }
 }
 
-template <class EOP, bool FORWD, class ATYPE>
-void MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>::saturate(int L,
+template <class EOP, class ATYPE>
+void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate(int L,
         const edge_value &av, node_handle A,
         edge_value &cv, node_handle &C)
 {
@@ -645,8 +643,8 @@ void MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>::saturate(int L,
 
 }
 
-template <class EOP, bool FORWD, class ATYPE>
-void MEDDLY::saturation_set_mtrel<EOP, FORWD, ATYPE>::recFire(int L,
+template <class EOP, class ATYPE>
+void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
         const edge_value &av, node_handle A,
         node_handle B, edge_value &cv, node_handle &C)
 {
@@ -695,13 +693,13 @@ MEDDLY::reachset_satur_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 
         switch (c->getRangeType()) {
             case range_type::BOOLEAN:
-                return new saturation_set_mtrel<EdgeOp_none, FWD,
-                            mt_prepost>(a, b, c);
+                return new saturation_set_mtrel<EdgeOp_none,
+                            mt_prepost>(FWD, a, b, c);
 
             case range_type::INTEGER:
                 if (c->isFullyReduced())  {
-                    return new saturation_set_mtrel<EdgeOp_none, FWD,
-                            mt_distance>(a, b, c);
+                    return new saturation_set_mtrel<EdgeOp_none,
+                            mt_distance>(FWD, a, b, c);
                 }
 
             default:
@@ -713,12 +711,12 @@ MEDDLY::reachset_satur_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 
         switch (a->getEdgeType()) {
             case edge_type::INT:
-                return new saturation_set_mtrel<EdgeOp_plus<int>, FWD,
-                            ev_prepost<int> > (a, b, c);
+                return new saturation_set_mtrel<EdgeOp_plus<int>,
+                            ev_prepost<int> > (FWD, a, b, c);
 
             case edge_type::LONG:
-                return new saturation_set_mtrel<EdgeOp_plus<long>, FWD,
-                            ev_prepost<long> > (a, b, c);
+                return new saturation_set_mtrel<EdgeOp_plus<long>,
+                            ev_prepost<long> > (FWD, a, b, c);
 
             default:
                 return nullptr;
