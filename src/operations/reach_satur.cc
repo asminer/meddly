@@ -18,6 +18,7 @@
 
 #include "../defines.h"
 #include "reach_satur.h"
+#include "reach_index.h"
 
 #include "../forest.h"
 #include "../oper_unary.h"
@@ -97,7 +98,7 @@ namespace MEDDLY {
              * determine saturated node (cv, C) in resF,
              * with respect to level L relation(s).
              */
-            void saturate(int L, const edge_value &av, node_handle A,
+            void saturate_1(int L, const edge_value &av, node_handle A,
                     edge_value &cv, node_handle &C);
 
             void recFire(int L, const edge_value &av, node_handle A,
@@ -108,6 +109,9 @@ namespace MEDDLY {
             }
 
         private:
+            void initSplit();
+            void fillSplit(node_handle top);
+
             inline const edge_value &edgeval(unpacked_node *U, unsigned i) const
             {
                 if (EOP::hasEdgeValues()) {
@@ -119,16 +123,17 @@ namespace MEDDLY {
 
             //
             // Correctly do C[i] = C[i] + <v, p>
+            // Return true iff C[i] was updated
             //
-            inline void addToCi(int nextL, unpacked_node *C, unsigned i,
+            inline bool addToCi(int nextL, unpacked_node *C, unsigned i,
                     const edge_value &v, node_handle p)
             {
                 // This case should be caught already
-                MEDDLY_DCASSERT( !ATYPE::isUnreachable(v, p) );
+                if (ATYPE::isUnreachable(v, p)) return false;
                 if (ATYPE::isUnreachable(edgeval(C, i), C->down(i)))
                 {
                     C->setFull(i, v, p);
-                    return;
+                    return true;
                 }
                 edge_value  newdv;
                 node_handle newdp;
@@ -136,8 +141,10 @@ namespace MEDDLY {
                     edgeval(C, i), C->down(i), v, p, newdv, newdp
                 );
                 resF->unlinkNode(p);
+                bool changed = (newdp != C->down(i)) || (newdv != edgeval(C,i));
                 resF->unlinkNode(C->down(i));
                 C->setFull(i, newdv, newdp);
+                return changed;
             }
 
         private:
@@ -146,8 +153,11 @@ namespace MEDDLY {
             /// Split relation: events whose top is at k or below
             std::vector <dd_edge> top_at_or_below;
 
-            ct_entry_type* firect;
-            ct_entry_type* satct;
+            /// Helper for exploring indexes, by level.
+            std::vector <sat_index_explorer*> explorers;
+
+            ct_entry_type* fire_ct;
+            ct_entry_type* sat_ct;
             unary_operation*  copyOp;
             binary_operation* accumulateOp;
             binary_operation* mxdIntersection;
@@ -168,6 +178,8 @@ namespace MEDDLY {
     }; // class
 }; // namespace MEDDLY
 
+// ************************************************************************
+// constructor
 // ************************************************************************
 
 template <class EOP, class ATYPE>
@@ -199,17 +211,10 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     setOption(0, 0L);
     setOption(1, ' ');
 
-
-    // TBD: move split stuff; only use it for saturation v1
-    //
-    // Set up space for relation split by top levels
-    //
-    top_exactly.resize(arg2F->getNumVariables()+1);
-    top_at_or_below.resize(arg2F->getNumVariables()+1);
-
-    for (unsigned i=1; i<=arg2F->getNumVariables(); i++) {
-        top_exactly[i].attach(arg2F);
-        top_at_or_below[i].attach(arg2F);
+    // Helper explorers
+    explorers.resize(arg2F->getNumVariables()+1);
+    for (unsigned i=0; i<explorers.size(); i++) {
+        explorers[i] = nullptr;
     }
 
     //
@@ -241,47 +246,54 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     //
     // Build compute table key and result types.
     //
-    firect = new ct_entry_type("satfire");
+    fire_ct = new ct_entry_type("satfire");
     if (forced_by_levels) {
-        firect->setFixed('I', arg1, arg2);
+        fire_ct->setFixed('I', arg1, arg2);
     } else {
-        firect->setFixed(arg1, arg2);
+        fire_ct->setFixed(arg1, arg2);
     }
     if (EOP::hasEdgeValues()) {
-        firect->setResult(EOP::edgeValueTypeLetter(), res);
+        fire_ct->setResult(EOP::edgeValueTypeLetter(), res);
     } else {
-        firect->setResult(res);
+        fire_ct->setResult(res);
     }
-    firect->doneBuilding();
+    fire_ct->doneBuilding();
 
 
     //
     // If the set is fully-reduced, we need to store the level in
     // the saturation cache.
     //
-    satct = new ct_entry_type("saturate");
+    sat_ct = new ct_entry_type("saturate");
     sat_cache_level = arg1->isFullyReduced();
     if (sat_cache_level) {
-        satct->setFixed('I', arg1, arg2);
+        sat_ct->setFixed('I', arg1, arg2);
     } else {
-        satct->setFixed(arg1, arg2);
+        sat_ct->setFixed(arg1, arg2);
     }
     if (EOP::hasEdgeValues()) {
-        satct->setResult(EOP::edgeValueTypeLetter(), res);
+        sat_ct->setResult(EOP::edgeValueTypeLetter(), res);
     } else {
-        satct->setResult(res);
+        sat_ct->setResult(res);
     }
-    satct->doneBuilding();
+    sat_ct->doneBuilding();
 
 }
+
+// ************************************************************************
+// destructor
+// ************************************************************************
 
 template <class EOP, class ATYPE>
 MEDDLY::saturation_set_mtrel<EOP, ATYPE>::~saturation_set_mtrel()
 {
-    firect->markForDestroy();
-    satct->markForDestroy();
+    fire_ct->markForDestroy();
+    sat_ct->markForDestroy();
 }
 
+// ************************************************************************
+// showNameAndOptions()
+// ************************************************************************
 
 template <class EOP, class ATYPE>
 void
@@ -307,6 +319,10 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     }
 }
 
+// ************************************************************************
+// getOption()
+// ************************************************************************
+
 template <class EOP, class ATYPE>
 MEDDLY::operation::option
 MEDDLY::saturation_set_mtrel<EOP, ATYPE>
@@ -321,6 +337,10 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     throw error(error::INVALID_OPTION, __FILE__, __LINE__);
 }
 
+// ************************************************************************
+// _setOption()
+// ************************************************************************
+
 template <class EOP, class ATYPE>
 bool
 MEDDLY::saturation_set_mtrel<EOP, ATYPE>
@@ -333,10 +353,10 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
         }
         if (0==x.opt_i) {
             // Use default
-            version = 1;
-            return true;
+            x.opt_i = 1;
         }
         version = x.opt_i;
+        initSplit();
         return true;
     }
     if (1==i) {
@@ -366,6 +386,12 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     return false;
 }
 
+// ************************************************************************
+//
+// compute()
+//
+// ************************************************************************
+
 template <class EOP, class ATYPE>
 void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     ::compute(int L, unsigned in,
@@ -373,11 +399,317 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
         const edge_value &bv, node_handle bp,
         edge_value &cv, node_handle &cp)
 {
+    MEDDLY_DCASSERT(bv.isVoid());
     //
     // Split the relation
     //
-    MEDDLY_DCASSERT(bv.isVoid());
+    if (1==version) fillSplit(bp);
 
+#ifdef TRACE
+    out.indentation(0);
+    ++top_count;
+    out << opName() << " #" << top_count << " begin\n";
+#endif
+
+    //
+    // Initialize explorers
+    //
+    for (unsigned i=1; i<explorers.size(); i++) {
+        explorers[i] = makeSatIndexExplorer(index_order);
+    }
+
+    if (1==version) {
+        saturate_1(L, av, ap, cv, cp);
+    } else {
+        MEDDLY_DCASSERT(false);
+    }
+
+    //
+    // Clean up explorers
+    //
+    for (unsigned i=1; i<explorers.size(); i++) {
+        delete explorers[i];
+        explorers[i] = nullptr;
+    }
+
+#ifdef TRACE
+    out << opName() << " #" << top_count << " end\n";
+#endif
+
+    if (1==version) fillSplit(0);
+}
+
+// ************************************************************************
+//
+// saturate_1
+//
+// ************************************************************************
+
+template <class EOP, class ATYPE>
+void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
+        const edge_value &av, node_handle A,
+        edge_value &cv, node_handle &C)
+{
+    const node_handle B = top_at_or_below[L].getNode();
+
+    // **************************************************************
+    //
+    // Check terminal cases
+    //
+    // **************************************************************
+    if (ATYPE::isUnreachable(av, A)) {
+        ATYPE::setUnreachable(cv, C);
+        C = resF->makeRedundantsTo(C, 0, L);
+        return;
+    }
+    if (0==B) {
+        copyOp->compute(L, ~0, av, A, cv, C);
+        return;
+    }
+
+
+#ifdef TRACE
+    out << ATYPE::name(FORWD) << " saturate_1(" << L << ", ";
+    arg1F->showEdge(out, av, A);
+    out << ", " << B << ")\n";
+#endif
+
+    // **************************************************************
+    //
+    // Check the compute table
+    //
+    // **************************************************************
+    ct_vector key(sat_ct->getKeySize());
+    ct_vector res(sat_ct->getResultSize());
+    if (sat_cache_level) {
+        key[0].setI(L);
+        key[1].setN(A);
+        key[2].setN(B);
+    } else {
+        key[0].setN(A);
+        key[1].setN(B);
+    }
+
+    if (sat_ct->findCT(key, res)) {
+        //
+        // compute table hit
+        //
+        if (EOP::hasEdgeValues()) {
+            res[0].get(cv);
+            EOP::accumulateOp(cv, av);
+            C = resF->linkNode(res[1].getN());
+            EOP::normalize(cv, C);
+        } else {
+            EOP::clear(cv);
+            C = resF->linkNode(res[0].getN());
+        }
+#ifdef TRACE
+        out << "CT hit ";
+        key.show(out);
+        out << " -> ";
+        res.show(out);
+        out << "\n";
+#endif
+        return;
+        //
+        // done compute table hit
+        //
+    }
+
+    // **************************************************************
+    //
+    // Compute table 'miss'; do computation
+    //
+    // **************************************************************
+
+    //
+    // Copy A to C, saturating children as we go
+    //
+    unpacked_node* Au = unpacked_node::New(arg1F, SPARSE_ONLY);
+    const int Alevel = arg1F->getNodeLevel(A);
+    if (Alevel < L) {
+        edge_value zero;
+        EOP::clear(zero);
+        Au->initRedundant(L, zero, A);
+    } else {
+        Au->initFromNode(A);
+    }
+
+    unpacked_node* Cu = unpacked_node::newWritable(resF, L, FULL_ONLY);
+    ATYPE::setAllUnreachable(Cu);
+
+#ifdef TRACE
+    out << "saturating children, node A: ";
+    Au->show(out, true);
+    out << "\n";
+#endif
+
+    for (unsigned z = 0; z<Au->getSize(); z++) {
+        node_handle cdp;
+        edge_value cdv;
+        saturate_1(L-1, edgeval(Au, z), Au->down(z), cdv, cdp);
+        const unsigned i = Au->index(z);
+        Cu->setFull(i, cdv, cdp);
+    }
+
+    unpacked_node::Recycle(Au);
+
+#ifdef TRACE
+    out << "done saturating children, node C: ";
+    Cu->show(out, true);
+    out << "\nsaturating this node";
+    out.indent_more();
+    out.put('\n');
+#endif
+
+    if (top_exactly[L].getNode()) {
+        //
+        // Initialize explorer
+        //
+        MEDDLY_DCASSERT(explorers[L]);
+        explorers[L]->restart(top_exactly[L].getNode());
+        unsigned i, j;
+        node_handle d;
+        for (i=0; i<Cu->getSize(); i++) {
+            if (Cu->down(i)) {
+                explorers[L]->wasUpdated(i);
+            }
+        }
+        //
+        // Saturation loop :)
+        //
+        while (explorers[L]->nextEdge(i, j, d)) {
+#ifdef TRACE
+            out << "firing " << i << "->" << j << " down " << d << "\n";
+#endif
+            node_handle rfp;
+            edge_value  rfv;
+            recFire(L-1, edgeval(Au, i), Au->down(i), d, rfv, rfp);
+            if (addToCi(L-1, Cu, j, rfv, rfp)) {
+#ifdef TRACE
+                out << "element " << j << " was updated\n";
+#endif
+                explorers[L]->wasUpdated(j);
+            }
+#ifdef TRACE
+            out << "after firing " << i << "->" << j << " down " << d
+                << " node C is ";
+            Cu->show(out, false);
+            out.put('\n');
+#endif
+        }
+
+    }
+
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << "done saturating node C: ";
+    Cu->show(out, true);
+    out << "\n";
+#endif
+
+    //
+    // Reduce
+    //
+    resF->createReducedNode(Cu, cv, C);
+#ifdef TRACE
+    out << "reduced to ";
+    resF->showEdge(out, cv, C);
+    out << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
+
+    //
+    // Save result in CT
+    //
+    if (EOP::hasEdgeValues()) {
+        res[0].set(cv);
+        res[1].setN(C);
+    } else {
+        res[0].setN(C);
+    }
+    sat_ct->addCT(key, res);
+
+    //
+    // Cleanup
+    //
+    unpacked_node::Recycle(Au);
+
+    //
+    // Adjust result
+    //
+    EOP::accumulateOp(cv, av);
+    EOP::normalize(cv, C);
+}
+
+// ************************************************************************
+//
+// recFire()
+//
+// ************************************************************************
+
+
+template <class EOP, class ATYPE>
+void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
+        const edge_value &av, node_handle A,
+        node_handle B, edge_value &cv, node_handle &C)
+{
+    // TBD
+    MEDDLY_DCASSERT(false);
+}
+
+// ************************************************************************
+// initSplit()
+// ************************************************************************
+
+template <class EOP, class ATYPE>
+void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::initSplit()
+{
+    if (version != 1) {
+        //
+        // Clear relation split by top levels
+        //
+        top_exactly.clear();
+        top_at_or_below.clear();
+        return;
+    }
+
+    //
+    // Set up space for relation split by top levels
+    //
+    top_exactly.resize(arg2F->getNumVariables()+1);
+    top_at_or_below.resize(arg2F->getNumVariables()+1);
+
+    for (unsigned i=1; i<=arg2F->getNumVariables(); i++) {
+        top_exactly[i].attach(arg2F);
+        top_at_or_below[i].attach(arg2F);
+    }
+}
+
+// ************************************************************************
+// fillSplit()
+// ************************************************************************
+
+template <class EOP, class ATYPE>
+void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(node_handle bp)
+{
+    MEDDLY_DCASSERT(1==version);
+
+    //
+    // clear out split relation
+    //
+    for (int k=arg2F->getMaxLevelIndex(); k; --k) {
+        top_exactly[k].set(0);
+        top_at_or_below[k].set(0);
+    }
+
+    if (0==bp) return;
+
+    //
+    // fill split relation by levels
+    //
     dd_edge diag(arg2F);
     dd_edge mxd(arg2F);
     mxd.set(arg2F->linkNode(bp));
@@ -441,215 +773,6 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     }
 #endif
 
-#ifdef TRACE
-    out.indentation(0);
-    ++top_count;
-    out << opName() << " #" << top_count << " begin\n";
-#endif
-
-    saturate(L, av, ap, cv, cp);
-
-#ifdef TRACE
-    out << opName() << " #" << top_count << " end\n";
-#endif
-
-    //
-    // clear out split relation
-    //
-    for (int k=arg2F->getMaxLevelIndex(); k; --k) {
-        top_exactly[k].set(0);
-        top_at_or_below[k].set(0);
-    }
-}
-
-template <class EOP, class ATYPE>
-void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate(int L,
-        const edge_value &av, node_handle A,
-        edge_value &cv, node_handle &C)
-{
-    const node_handle B = top_at_or_below[L].getNode();
-
-    // **************************************************************
-    //
-    // Check terminal cases
-    //
-    // **************************************************************
-    if (ATYPE::isUnreachable(av, A)) {
-        ATYPE::setUnreachable(cv, C);
-        C = resF->makeRedundantsTo(C, 0, L);
-        return;
-    }
-    if (0==B) {
-        copyOp->compute(L, ~0, av, A, cv, C);
-        return;
-    }
-
-
-#ifdef TRACE
-    out << ATYPE::name(FORWD) << " saturate(" << L << ", ";
-    arg1F->showEdge(out, av, A);
-    out << ", " << B << ")\n";
-#endif
-
-    // **************************************************************
-    //
-    // Check the compute table
-    //
-    // **************************************************************
-    ct_vector key(satct->getKeySize());
-    ct_vector res(satct->getResultSize());
-    if (sat_cache_level) {
-        key[0].setI(L);
-        key[1].setN(A);
-        key[2].setN(B);
-    } else {
-        key[0].setN(A);
-        key[1].setN(B);
-    }
-
-    if (satct->findCT(key, res)) {
-        //
-        // compute table hit
-        //
-        if (EOP::hasEdgeValues()) {
-            res[0].get(cv);
-            EOP::accumulateOp(cv, av);
-            C = resF->linkNode(res[1].getN());
-            EOP::normalize(cv, C);
-        } else {
-            EOP::clear(cv);
-            C = resF->linkNode(res[0].getN());
-        }
-#ifdef TRACE
-        out << "CT hit ";
-        key.show(out);
-        out << " -> ";
-        res.show(out);
-        out << "\n";
-#endif
-        return;
-        //
-        // done compute table hit
-        //
-    }
-
-    // **************************************************************
-    //
-    // Compute table 'miss'; do computation
-    //
-    // **************************************************************
-
-    //
-    // Copy A to C, saturating children as we go
-    //
-    unpacked_node* Au = unpacked_node::New(arg1F, SPARSE_ONLY);
-    const int Alevel = arg1F->getNodeLevel(A);
-    if (Alevel < L) {
-        edge_value zero;
-        EOP::clear(zero);
-        Au->initRedundant(L, zero, A);
-    } else {
-        Au->initFromNode(A);
-    }
-
-    unpacked_node* Cu = unpacked_node::newWritable(resF, L, FULL_ONLY);
-    ATYPE::setAllUnreachable(Cu);
-
-#ifdef TRACE
-    out << "saturating children, node A: ";
-    Au->show(out, true);
-    out << "\n";
-#endif
-
-    for (unsigned z = 0; z<Au->getSize(); z++) {
-        node_handle cdp;
-        edge_value cdv;
-        saturate(L-1, edgeval(Au, z), Au->down(z), cdv, cdp);
-        const unsigned i = Au->index(z);
-        Cu->setFull(i, cdv, cdp);
-    }
-
-    unpacked_node::Recycle(Au);
-
-#ifdef TRACE
-    out << "done saturating children, node C: ";
-    Cu->show(out, true);
-    out << "\n";
-#endif
-
-
-    // TBD
-    MEDDLY_DCASSERT(false);
-
-    //
-    // OLD
-    //
-
-#ifdef OLD_SAT
-
-#ifdef DEBUG_DFS
-  printf("mdd: %d, k: %d\n", mdd, k);
-#endif
-
-  // terminal condition for recursion
-  if (argF->isTerminalNode(mdd)) return mdd;
-
-  // search compute table
-  node_handle n = 0;
-  ct_entry_key* Key = findSaturateResult(mdd, k, n);
-  if (0==Key) return n;
-
-  const unsigned sz = unsigned(argF->getLevelSize(k));    // size
-  const int mdd_level = argF->getNodeLevel(mdd);          // mdd level
-
-#ifdef DEBUG_DFS
-  printf("mdd: %d, level: %d, size: %d, mdd_level: %d\n",
-      mdd, k, sz, mdd_level);
-#endif
-
-  unpacked_node* C = unpacked_node::newWritable(resF, k, sz, FULL_ONLY);
-  // Initialize mdd reader
-  unpacked_node *mddDptrs = unpacked_node::New(argF, FULL_ONLY);
-  if (mdd_level < k) {
-    mddDptrs->initRedundant(k, mdd);
-  } else {
-    mddDptrs->initFromNode(mdd);
-  }
-
-  // Do computation
-  for (unsigned i=0; i<sz; i++) {
-    C->setFull(i,
-      mddDptrs->down(i) ? saturate(mddDptrs->down(i), k-1) : 0
-    );
-  }
-
-  // Cleanup
-  unpacked_node::Recycle(mddDptrs);
-
-  parent->saturateHelper(*C);
-  edge_value ev;
-  resF->createReducedNode(C, ev, n);
-  MEDDLY_DCASSERT(ev.isVoid());
-
-  // save in compute table
-  saveSaturateResult(Key, mdd, n);
-
-#ifdef DEBUG_DFS
-  resF->showNodeGraph(stdout, n);
-#endif
-
-  return n;
-#endif // OLD_SAT
-
-}
-
-template <class EOP, class ATYPE>
-void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
-        const edge_value &av, node_handle A,
-        node_handle B, edge_value &cv, node_handle &C)
-{
-    // TBD
-    MEDDLY_DCASSERT(false);
 }
 
 // ******************************************************************

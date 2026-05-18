@@ -45,7 +45,7 @@ class MEDDLY::sat_index_explorer {
         /**
             Get the next edge to fire, if there is one.
                 @param  i       On output, source index.
-                @param  j       On output, destination index.
+                @param  j       On output, destination index. Might equal i.
                 @param  down    On output, downward pointer.
 
                 @return false, if there is nothing to fire;
@@ -76,7 +76,18 @@ class MEDDLY::sat_index_explorer {
             Indicate that index i has been updated, and its outgoing edges
             need to be re-visited.
          */
-        virtual void wasUpdated(unsigned i) = 0;
+        inline void wasUpdated(unsigned i) {
+#ifdef DEVELOPMENT_CODE
+            if (! rows.at(i).explored) {
+                exploreRow(i);
+            }
+#else
+            if (! rows[i].explored) {
+                exploreRow(i);
+            }
+#endif
+            finishUpdate(i);
+        }
 
     protected:
         /**
@@ -121,6 +132,15 @@ class MEDDLY::sat_index_explorer {
             should not be called directly.
          */
         virtual void finishExpandRows(unsigned oldsz, unsigned newsz);
+
+        /**
+            Update internal structures as necessary when index i is updated.
+            Override this in derived classes as necessary. The default
+            behavior does nothing.
+            This method is called by method wasUpdated() and otherwise
+            should not be called directly.
+         */
+        virtual void finishUpdate(unsigned i);
 
     protected:
         struct row_element {

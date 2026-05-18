@@ -169,6 +169,12 @@ void MEDDLY::sat_index_explorer::finishExpandRows(unsigned, unsigned)
     // Do nothing
 }
 
+void MEDDLY::sat_index_explorer::finishUpdate(unsigned)
+{
+    // Do nothing
+}
+
+
 // **********************************************************************
 // *                                                                    *
 // *                             Front  end                             *
