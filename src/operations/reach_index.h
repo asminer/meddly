@@ -28,13 +28,19 @@
 
 namespace MEDDLY {
     class sat_index_explorer;
+    class forest;
     class rel_node;
+    class variable;
+    class unpacked_node;
 };
 
 class MEDDLY::sat_index_explorer {
     public:
-        sat_index_explorer(rel_node &_RN, bool _forwd);
+        sat_index_explorer(forest* _F, int _level, bool _forwd);
+
         virtual ~sat_index_explorer();
+
+        void restart(node_handle n);
 
         /**
             Get the next edge to fire, if there is one.
@@ -47,6 +53,11 @@ class MEDDLY::sat_index_explorer {
          */
         virtual bool nextEdge(unsigned &i, unsigned &j, node_handle &down) = 0;
 
+        /**
+            Get diagonal element [i,i].
+            For forward exploration, if row i has not been built,
+            we go ahead and build it.
+         */
         inline node_handle getDiagonal(unsigned i) {
 #ifdef DEVELOPMENT_CODE
             if (! rows.at(i).explored) {
@@ -68,6 +79,16 @@ class MEDDLY::sat_index_explorer {
         virtual void wasUpdated(unsigned i) = 0;
 
     protected:
+        /**
+            Clear out internal structures as necessary to start over
+            from another relation node at the same level.
+            Override this in derived classes as necessary. The default
+            behavior does nothing.
+            This method is called by method restart() and otherwise
+            should not be called directly.
+         */
+        virtual void clear();
+
         void exploreRow(unsigned i);
 
         /**
@@ -78,6 +99,16 @@ class MEDDLY::sat_index_explorer {
             should not be called directly.
          */
         virtual void finishRow(unsigned i);
+
+        /**
+            Update internal structures as necessary after all rows are built.
+            Override this in derived classes as necessary. The default
+            behavior does nothing.
+            This method is called by method restart() for backward
+            exploration and otherwise should not be called directly.
+         */
+        virtual void finishAllRows();
+
 
         void expandRows(unsigned newsz);
 
@@ -106,8 +137,12 @@ class MEDDLY::sat_index_explorer {
         };
 
     protected:
-        rel_node &RN;
+        forest* For;
+        int level;
         bool forwd;
+        const variable* var;
+        rel_node* RN;
+        unpacked_node* U;
 
         std::vector <row_info> rows;
         std::vector <node_handle> diagonals;

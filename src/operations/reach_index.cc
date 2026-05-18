@@ -17,6 +17,10 @@
 */
 
 #include "reach_index.h"
+#include "../variable.h"
+#include "../domain.h"
+#include "../forest.h"
+#include "../rel_node.h"
 
 #define DEBUG_BASE
 
@@ -26,26 +30,113 @@
 // *                                                                    *
 // **********************************************************************
 
-MEDDLY::sat_index_explorer::sat_index_explorer(rel_node &_RN, bool _forwd)
-    : RN(_RN), forwd(_forwd)
+MEDDLY::sat_index_explorer::sat_index_explorer(forest* F, int lvl, bool fwd)
+    : For(F), level(lvl), forwd(fwd)
 {
-    if (forwd) {
-        // determine current size
-        // and call expandRows
-    } else {
-        // determine current size
-        // build everything but its the transpose
-    }
+    MEDDLY_DCASSERT(For);
+    var = For->getDomain()->getVar(level);
+    RN = nullptr;
+    U = unpacked_node::New(For, SPARSE_ONLY);
 }
 
 MEDDLY::sat_index_explorer::~sat_index_explorer()
 {
+    if (RN) {
+        For->doneRelNode(RN);
+        RN = nullptr;
+    }
+    unpacked_node::Recycle(U);
+}
+
+void MEDDLY::sat_index_explorer::restart(node_handle n)
+{
+    //
+    // Clear old
+    //
+    for (unsigned i=0; i<diagonals.size(); i++) {
+        diagonals[i] = 0;
+    }
+    for (unsigned i=0; i<rows.size(); i++) {
+        if (!rows[i].explored) continue;
+        rows[i].elements.clear();
+        rows[i].explored = false;
+    }
+    if (RN) {
+        For->doneRelNode(RN);
+    }
+
+    //
+    // Build new
+    //
+    RN = For->buildRelNode(n);
+
+    // update size
+    expandRows(var->getBound(!forwd));
+
+    //
+    // For forward exploration, build rows on the fly as needed.
+    //
+    if (forwd) return;
+
+    //
+    // For backward exploration, build everything at the beginning.
+    // We explore the relation node elements [i,j]
+    // and store the transpose [j,i] internally.
+    //
+    row_element elem;
+    for (unsigned i=0; i<var->getBound(false); i++) {
+        if (!RN->outgoing(i, *U)) continue;
+        elem.index = i;
+
+        for (unsigned z=0; z<U->getSize(); z++) {
+            const unsigned j = U->index(z);
+            if (j==i) {
+                // Set diagonal
+                diagonals[i] = U->down(z);
+            } else {
+                // append (i, down) to row j
+                elem.down = U->down(z);
+                rows[j].elements.push_back(elem);
+            }
+        } // for z
+    } // for row i
+    for (unsigned i=0; i<rows.size(); i++) {
+        rows[i].explored = true;
+    }
+
+    finishAllRows();
+}
+
+void MEDDLY::sat_index_explorer::clear()
+{
+    // Do nothing
 }
 
 void MEDDLY::sat_index_explorer::exploreRow(unsigned i)
 {
+    MEDDLY_DCASSERT(forwd);
 
-    // TBD
+    unsigned max_index = i;
+    if (RN->outgoing(i, *U)) {
+        for (unsigned z=0; z<U->getSize(); z++) {
+            const unsigned j = U->index(z);
+            if (j==i) {
+                // Set diagonal
+                diagonals[i] = U->down(z);
+            } else {
+                // append (j, down) to row i
+                row_element elem;
+                elem.index = j;
+                elem.down = U->down(z);
+                rows[i].elements.push_back(elem);
+                max_index = MAX(max_index, j);
+            }
+        } // for z
+    }
+    rows[i].explored = true;
+    if (max_index > rows.size()) {
+        expandRows(1+max_index);
+    }
 
     finishRow(i);
 }
@@ -55,9 +146,22 @@ void MEDDLY::sat_index_explorer::finishRow(unsigned)
     // Do nothing
 }
 
+void MEDDLY::sat_index_explorer::finishAllRows()
+{
+    // Do nothing
+}
+
+
 void MEDDLY::sat_index_explorer::expandRows(unsigned newsz)
 {
-    // TBD
+    if (newsz <= rows.size()) return;
+
+    const unsigned oldsize = rows.size();
+
+    rows.resize(newsz);
+    diagonals.resize(newsz);
+
+    finishExpandRows(oldsize, newsz);
 }
 
 void MEDDLY::sat_index_explorer::finishExpandRows(unsigned, unsigned)
