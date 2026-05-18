@@ -81,10 +81,10 @@ namespace MEDDLY {
 */
 namespace MEDDLY {
 
-    template <class EOP, bool FORWD, class ATYPE>
+    template <class EOP, class ATYPE>
     class prepost_set_mtrel : public binary_operation {
         public:
-            prepost_set_mtrel(forest* arg1, forest* arg2,
+            prepost_set_mtrel(bool fwd, forest* arg1, forest* arg2,
                     forest* res, bool swap=false);
 
             virtual ~prepost_set_mtrel();
@@ -142,17 +142,18 @@ namespace MEDDLY {
             edge_value nothing;
             bool forced_by_levels;
 
+            const bool FORWD;
     }; // class prepost_set_mtrel
 }; // namespace MEDDLY
 
 // ************************************************************************
 
-template <class EOP, bool FORWD, class ATYPE>
-MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
-    ::prepost_set_mtrel(forest* arg1, forest* arg2, forest* res, bool swap)
-    : binary_operation(
+template <class EOP, class ATYPE>
+MEDDLY::prepost_set_mtrel<EOP, ATYPE>
+    ::prepost_set_mtrel(bool fwd, forest* arg1, forest* arg2, forest* res,
+        bool swap) : binary_operation(
             swap ? arg2 : arg1,
-            swap ? arg1 : arg2, res), swap_opnds(swap)
+            swap ? arg1 : arg2, res), swap_opnds(swap), FORWD(fwd)
 #ifdef TRACE
       , out(std::cout), top_count(0)
 #endif
@@ -209,14 +210,14 @@ MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
     ct->doneBuilding();
 }
 
-template <class EOP, bool FORWD, class ATYPE>
-MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::~prepost_set_mtrel()
+template <class EOP, class ATYPE>
+MEDDLY::prepost_set_mtrel<EOP, ATYPE>::~prepost_set_mtrel()
 {
     ct->markForDestroy();
 }
 
-template <class EOP, bool FORWD, class ATYPE>
-void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
+template <class EOP, class ATYPE>
+void MEDDLY::prepost_set_mtrel<EOP, ATYPE>
     ::compute(int L, unsigned in,
         const edge_value &av, node_handle ap,
         const edge_value &bv, node_handle bp,
@@ -241,8 +242,8 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
 #endif
 }
 
-template <class EOP, bool FORWD, class ATYPE>
-void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
+template <class EOP, class ATYPE>
+void MEDDLY::prepost_set_mtrel<EOP, ATYPE>::_compute(int L,
         const edge_value &av, node_handle A, node_handle B,
         edge_value &cv, node_handle &C)
 {
@@ -668,13 +669,13 @@ MEDDLY::_IMAGE_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 
         switch (c->getRangeType()) {
             case range_type::BOOLEAN:
-                return new prepost_set_mtrel<EdgeOp_none, FWD,
-                            mt_prepost>(a, b, c);
+                return new prepost_set_mtrel<EdgeOp_none,
+                            mt_prepost>(FWD, a, b, c);
 
             case range_type::INTEGER:
                 if (c->isFullyReduced())  {
-                    return new prepost_set_mtrel<EdgeOp_none, FWD,
-                            mt_distance>(a, b, c);
+                    return new prepost_set_mtrel<EdgeOp_none,
+                            mt_distance>(FWD, a, b, c);
                 }
 
             default:
@@ -686,12 +687,12 @@ MEDDLY::_IMAGE_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 
         switch (a->getEdgeType()) {
             case edge_type::INT:
-                return new prepost_set_mtrel<EdgeOp_plus<int>, FWD,
-                            ev_prepost<int> > (a, b, c);
+                return new prepost_set_mtrel<EdgeOp_plus<int>,
+                            ev_prepost<int> > (FWD, a, b, c);
 
             case edge_type::LONG:
-                return new prepost_set_mtrel<EdgeOp_plus<long>, FWD,
-                            ev_prepost<long> > (a, b, c);
+                return new prepost_set_mtrel<EdgeOp_plus<long>,
+                            ev_prepost<long> > (FWD, a, b, c);
 
             default:
                 return nullptr;
@@ -724,12 +725,12 @@ MEDDLY::VM_MULTIPLY_factory::build_new(forest* a, forest* b, forest* c)
 {
     switch (c->getRangeType()) {
         case range_type::INTEGER:
-            return new prepost_set_mtrel<EdgeOp_none, true,
-                            mt_vectXmatr<int> >(a, b, c);
+            return new prepost_set_mtrel<EdgeOp_none,
+                            mt_vectXmatr<int> >(true, a, b, c);
 
         case range_type::REAL:
-            return new prepost_set_mtrel<EdgeOp_none, true,
-                            mt_vectXmatr<float> >(a, b, c);
+            return new prepost_set_mtrel<EdgeOp_none,
+                            mt_vectXmatr<float> >(true, a, b, c);
 
         default:
             throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -760,12 +761,12 @@ MEDDLY::MV_MULTIPLY_factory::build_new(forest* a, forest* b, forest* c)
 {
     switch (c->getRangeType()) {
         case range_type::INTEGER:
-            return new prepost_set_mtrel<EdgeOp_none, false,
-                            mt_vectXmatr<int> >(a, b, c, true);
+            return new prepost_set_mtrel<EdgeOp_none,
+                            mt_vectXmatr<int> >(false, a, b, c, true);
 
         case range_type::REAL:
-            return new prepost_set_mtrel<EdgeOp_none, false,
-                            mt_vectXmatr<float> >(a, b, c, true);
+            return new prepost_set_mtrel<EdgeOp_none,
+                            mt_vectXmatr<float> >(false, a, b, c, true);
 
         default:
             throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
