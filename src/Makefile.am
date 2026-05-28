@@ -131,9 +131,10 @@ libmeddly_la_SOURCES = \
     operations/prepostplus.h            operations/prepostplus.cc  \
     \
     operations/reach_dfs.h              operations/reach_dfs.cc    \
-    operations/reach_index.h            operations/reach_index.cc  \
-    operations/reach_satur.h            operations/reach_satur.cc  \
     operations/reach_trad.h             operations/reach_trad.cc   \
+    \
+    operations/satur_index.h            operations/satur_index.cc  \
+    operations/satur_sets.h             operations/satur_sets.cc   \
     \
     operations/sat_hyb.h                operations/sat_hyb.cc      \
     operations/sat_impl.h               operations/sat_impl.cc     \

@@ -17,8 +17,8 @@
 */
 
 #include "../defines.h"
-#include "reach_satur.h"
-#include "reach_index.h"
+#include "satur_sets.h"
+#include "satur_index.h"
 
 #include "../forest.h"
 #include "../oper_unary.h"

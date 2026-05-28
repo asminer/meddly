@@ -16,8 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEDDLY_REACH_INDEX_H
-#define MEDDLY_REACH_INDEX_H
+#ifndef MEDDLY_SATUR_INDEX_H
+#define MEDDLY_SATUR_INDEX_H
 
 #include "../defines.h"
 #include <vector>

@@ -16,8 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MEDDLY_REACH_SATUR_H
-#define MEDDLY_REACH_SATUR_H
+#ifndef MEDDLY_SATUR_SETS_H
+#define MEDDLY_SATUR_SETS_H
 
 namespace MEDDLY {
     class binary_factory;
