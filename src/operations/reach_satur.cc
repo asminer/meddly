@@ -171,7 +171,7 @@ namespace MEDDLY {
             char index_order;
 
             edge_value nothing;
-            bool forced_by_levels;
+            bool fire_cache_level;
             bool sat_cache_level;
             const bool FORWD;
 
@@ -238,7 +238,7 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     // (If the set is quasi reduced, we will recurse by levels anyway.)
     // (If the relation is identity-reduced, we can skip levels.)
     //
-    forced_by_levels = arg1->isFullyReduced() && arg2->isFullyReduced();
+    fire_cache_level = arg1->isFullyReduced() && arg2->isFullyReduced();
 
 
     // TBD
@@ -247,7 +247,7 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     // Build compute table key and result types.
     //
     fire_ct = new ct_entry_type("satfire");
-    if (forced_by_levels) {
+    if (fire_cache_level) {
         fire_ct->setFixed('I', arg1, arg2);
     } else {
         fire_ct->setFixed(arg1, arg2);
@@ -415,7 +415,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     // Initialize explorers
     //
     for (unsigned i=1; i<explorers.size(); i++) {
-        explorers[i] = makeSatIndexExplorer(index_order);
+        explorers[i] = makeSatIndexExplorer(index_order, arg2F, i, FORWD);
     }
 
     if (1==version) {
@@ -599,7 +599,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
 #endif
         }
 
-    }
+    } // if top_exactly[L].getNode()
 
 #ifdef TRACE
     out.indent_less();
@@ -658,6 +658,336 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
 {
     // TBD
     MEDDLY_DCASSERT(false);
+
+    // **************************************************************
+    //
+    // Determine level information
+    //
+    // **************************************************************
+    const int Alevel = arg1F->getNodeLevel(A);
+    const int Blevel = ABS(arg2F->getNodeLevel(B));
+    const int Clevel = fire_cache_level ? L : MAX(Alevel, Blevel);
+    const int nextL = MDD_levels::downLevel(Clevel);
+
+    // **************************************************************
+    //
+    // Check terminal cases
+    //
+    // **************************************************************
+    if (0==B || ATYPE::isUnreachable(av, A)) {
+        ATYPE::setUnreachable(cv, C);
+        EOP::accumulateOp(cv, av);
+        C = resF->makeRedundantsTo(C, Clevel, L);
+        return;
+    }
+
+    if (arg2F->isTerminalNode(B) && (0==L || arg2F->isIdentityReduced())) {
+        //
+        // We're either at the bottom,
+        // or the matrix is an identity (or a scalar times identity).
+        // Treat that case quickly.
+        //
+        ATYPE::apply(arg1F, av, A, arg2F, B, resF, cv, C);
+
+        // TBD: saturate result?
+
+        return;
+    }
+
+#ifdef TRACE
+    out << ATYPE::name(FORWD) << " recFire(" << L << ", ";
+    arg1F->showEdge(out, av, A);
+    out << ", " << B << ")\n";
+    out << "A: #" << A << " ";
+    arg1F->showNode(out, A, SHOW_DETAILS);
+    out << "\n";
+    out << "B: #" << B << " ";
+    arg2F->showNode(out, B, SHOW_DETAILS);
+    out << "\n";
+    // out << A << " level " << Alevel << "\n";
+    // out << B << " level " << Blevel << "\n";
+    out << "result level " << Clevel << "\n";
+#endif
+
+    // **************************************************************
+    //
+    // Check the compute table
+    //
+    // **************************************************************
+    ct_vector key(fire_ct->getKeySize());
+    ct_vector res(fire_ct->getResultSize());
+    if (fire_cache_level) {
+        key[0].setI(L);
+        key[1].setN(A);
+        key[2].setN(B);
+    } else {
+        key[0].setN(A);
+        key[1].setN(B);
+    }
+
+    if (fire_ct->findCT(key, res)) {
+        //
+        // compute table hit
+        //
+        if (EOP::hasEdgeValues()) {
+            res[0].get(cv);
+            EOP::accumulateOp(cv, av);
+            C = resF->linkNode(res[1].getN());
+            EOP::normalize(cv, C);
+        } else {
+            EOP::clear(cv);
+            C = resF->linkNode(res[0].getN());
+        }
+#ifdef TRACE
+        out << "CT hit ";
+        key.show(out);
+        out << " -> ";
+        res.show(out);
+        out << "\n";
+#endif
+        C = resF->makeRedundantsTo(C, Clevel, L);
+        return;
+        //
+        // done compute table hit
+        //
+    }
+
+    // **************************************************************
+    //
+    // Compute table 'miss'; do computation
+    //
+    // **************************************************************
+
+    //
+    // Set up unpacked nodes
+    //
+
+    unpacked_node* Au = unpacked_node::New(arg1F, FULL_ONLY);
+    if (Alevel != Clevel) {
+        edge_value zero;
+        EOP::clear(zero);
+        Au->initRedundant(Clevel, zero, A);
+    } else {
+        Au->initFromNode(A);
+    }
+
+    rel_node* Brn;
+    if (Blevel != Clevel) {
+        Brn = nullptr;
+    } else {
+        Brn = arg2F->buildRelNode(B);
+    }
+
+#ifdef TRACE
+    out << "A: ";
+    Au->show(out, true);
+    out << "\nB: ";
+    if (Brn) {
+        Brn->show(out);
+    } else {
+        out << "identity to " << B;
+    }
+    out.indent_more();
+    out.put('\n');
+#endif
+
+    //
+    // Initialize result
+    //
+    unpacked_node* Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
+    ATYPE::setAllUnreachable(Cu);
+
+    //
+    // Recurse
+    //
+    if (!Brn) {
+        if (arg2F->isFullyReduced()) {
+            //
+            // Skipped Fully level(s)
+            //
+            // Forward:  C[j] = C[j] + A[i] * B, for all i,j
+            // Backward: C[i] = C[i] + B * A[j], for all i,j
+            //
+            // That's really the same thing, so we'll do:
+            // for all i s.t. A[i] != 0
+            //     tmp = A[i] * B
+            //     for all j
+            //         C[j] = C[j] + tmp
+            //
+            for (unsigned i=0; i<Au->getSize(); i++) {
+                if (ATYPE::isUnreachable(edgeval(Au, i), Au->down(i))) {
+                    continue;
+                }
+                node_handle ab_p;
+                edge_value  ab_v;
+                recFire(nextL, edgeval(Au, i), Au->down(i), B, ab_v, ab_p);
+                if (ATYPE::isUnreachable(ab_v, ab_p)) {
+                    continue;
+                }
+                for (unsigned j=0; j<Cu->getSize(); j++) {
+                    addToCi(nextL, Cu, j, ab_v, resF->linkNode(ab_p));
+                }
+                resF->unlinkNode(ab_p);
+            } // for zi
+        } else {
+            //
+            //  Skipped Identity level(s)
+            //
+            //  For both forward and backward, compute
+            //      C[i] = A[i] * B
+            //  for all i.
+            //
+            MEDDLY_DCASSERT(arg2F->isIdentityReduced());
+            for (unsigned i=0; i<Au->getSize(); i++) {
+                if (ATYPE::isUnreachable(edgeval(Au, i), Au->down(i))) {
+                    continue;
+                }
+                edge_value  ab_v;
+                node_handle ab_p;
+                recFire(nextL, edgeval(Au, i), Au->down(i), B, ab_v, ab_p);
+                Cu->setFull(i, ab_v, ab_p);
+            }
+        }
+    } else {
+        //
+        // Non-identity level
+        //
+        if (FORWD) {
+            /*
+             * Go forward one step.
+             */
+            unpacked_node* Bu = unpacked_node::New(arg2F, SPARSE_ONLY);
+
+            for (unsigned i=0; i<Au->getSize(); i++) {
+                if (ATYPE::isUnreachable(edgeval(Au, i), Au->down(i))) {
+                    continue;
+                }
+                if (Brn->outgoing(i, *Bu)) {
+                    for (unsigned zj=0; zj<Bu->getSize(); zj++) {
+                        const unsigned j = Bu->index(zj);
+#ifdef TRACE
+                        out << A << "x" << B << " computes  "
+                            << i << ">->" << j << ": "
+                            << Au->down(i) << "x" << Bu->down(zj) << "\n";
+#endif
+                        // C[j] = C[j] + A[i] * B[i,j]
+                        node_handle cdp;
+                        edge_value  cdv;
+                        recFire(nextL, edgeval(Au, i), Au->down(i),
+                                Bu->down(zj), cdv, cdp);
+                        if (!ATYPE::isUnreachable(cdv, cdp)) {
+                            addToCi(nextL, Cu, j, cdv, cdp);
+                        }
+#ifdef TRACE
+                        out << A << "x" << B << " completed "
+                            << i << ">->" << j << "; C is now ";
+
+                        Cu->show(out, false);
+                        out << "\n";
+#endif
+                    } // for zj
+                } // if brn[i]
+            } // for zi
+            unpacked_node::Recycle(Bu);
+        } else {
+            /*
+             * Go backward one step.
+             */
+            const unsigned kSize = unsigned(resF->getLevelSize(Clevel));
+            unpacked_node* Bu = unpacked_node::New(arg2F, FULL_ONLY);
+            for (unsigned i=0; i<kSize; i++) {
+                if (Brn->outgoing(i, *Bu)) {
+                    for (unsigned j=0; j<Au->getSize(); j++) {
+                        if (ATYPE::isUnreachable(edgeval(Au, j), Au->down(j))) {
+                            continue;
+                        }
+#ifdef TRACE
+                        out << A << "x" << B << " computes  "
+                            << i << "<-<" << j << ": "
+                            << Au->down(j) << "x" << Bu->down(j) << "\n";
+#endif
+                        if (Bu->down(j)) {
+                            // C[i] = C[i] + B[i,j] * A[j]
+                            node_handle cdp;
+                            edge_value  cdv;
+                            recFire(nextL, edgeval(Au, j), Au->down(j),
+                                    Bu->down(j), cdv, cdp);
+                            if (!ATYPE::isUnreachable(cdv, cdp)) {
+                                addToCi(nextL, Cu, i, cdv, cdp);
+                            }
+                        } // if bu[j]
+#ifdef TRACE
+                        out << A << "x" << B << " completed "
+                            << i << "<-<" << j << "; C is now ";
+
+                        Cu->show(out, false);
+                        out << "\n";
+#endif
+                    } // for zj
+                } // if brn[i]
+            } // for i
+            unpacked_node::Recycle(Bu);
+        }
+    }
+
+#ifdef TRACE
+    out.indent_less();
+    out.put('\n');
+    out << ATYPE::name(FORWD) << " recFire(" << L << ", ";
+    arg1F->showEdge(out, av, A);
+    out << ", " << B << ") done\n";
+    out << "  A: #" << A << ": ";
+    arg1F->showNode(out, A, SHOW_DETAILS);
+    out << "\n  B: #" << B << ": ";
+    if (Brn) {
+        Brn->show(out);
+    } else {
+        out << "identity to " << B;
+    }
+    out << "\n  C: ";
+    Cu->show(out, true);
+    out << "\n";
+#endif
+
+    //
+    // Reduce
+    //
+    resF->createReducedNode(Cu, cv, C);
+#ifdef TRACE
+    out << "reduced to ";
+    resF->showEdge(out, cv, C);
+    out << ": ";
+    resF->showNode(out, C, SHOW_DETAILS);
+    out << "\n";
+#endif
+
+    //
+    // Save result in CT
+    //
+    if (EOP::hasEdgeValues()) {
+        res[0].set(cv);
+        res[1].setN(C);
+    } else {
+        res[0].setN(C);
+    }
+    fire_ct->addCT(key, res);
+
+    //
+    // Cleanup
+    //
+    arg2F->doneRelNode(Brn);
+    unpacked_node::Recycle(Au);
+
+    //
+    // Adjust result
+    //
+    C = resF->makeRedundantsTo(C, Clevel, L);
+    EOP::accumulateOp(cv, av);
+    EOP::normalize(cv, C);
+
+    //
+    // TBD: saturate result
+    //
 }
 
 // ************************************************************************

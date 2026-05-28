@@ -175,7 +175,8 @@ class MEDDLY::sat_index_explorer {
 // **********************************************************************
 
 namespace MEDDLY {
-    sat_index_explorer* makeSatIndexExplorer(char which);
+    sat_index_explorer* makeSatIndexExplorer(char which, forest* F,
+            int level, bool forwd);
 };
 
 

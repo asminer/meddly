@@ -181,7 +181,8 @@ void MEDDLY::sat_index_explorer::finishUpdate(unsigned)
 // *                                                                    *
 // **********************************************************************
 
-MEDDLY::sat_index_explorer* MEDDLY::makeSatIndexExplorer(char which)
+MEDDLY::sat_index_explorer* MEDDLY::makeSatIndexExplorer(char which,
+        forest* F, int level, bool forwd)
 {
     // TBD
     return nullptr;
