@@ -94,13 +94,18 @@ namespace MEDDLY {
         protected:
             virtual bool _setOption(unsigned i, option x);
 
-            /* For an input set (av, A) from arg1F,
+            /* For an input set (av, A) in resF,
              * determine saturated node (cv, C) in resF,
              * with respect to level L relation(s).
              */
             void saturate_1(int L, const edge_value &av, node_handle A,
                     edge_value &cv, node_handle &C);
 
+            /* For an input set (av, A) in resF,
+             * fire relation B, and in some cases saturate the result
+             * with respect to level L relation(s),
+             * and store the result in (cv, C) in resF.
+             */
             void recFire(int L, const edge_value &av, node_handle A,
                     node_handle B, edge_value &cv, node_handle &c);
 
@@ -232,30 +237,25 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     mxdDifference = build(DIFFERENCE, arg2F, arg2F, arg2F);
     MEDDLY_DCASSERT(mxdDifference);
 
+
     //
+    // Build compute table key and result types.
     // Do we need to recurse by levels and store level info in the CT?
     // YES, if the set and relation are both fully-reduced.
     // (If the set is quasi reduced, we will recurse by levels anyway.)
     // (If the relation is identity-reduced, we can skip levels.)
     //
-    fire_cache_level = arg1->isFullyReduced() && arg2->isFullyReduced();
-
-
-    // TBD
-
-    //
-    // Build compute table key and result types.
-    //
+    fire_cache_level = resF->isFullyReduced() && arg2->isFullyReduced();
     fire_ct = new ct_entry_type("satfire");
     if (fire_cache_level) {
-        fire_ct->setFixed('I', arg1, arg2);
+        fire_ct->setFixed('I', resF, arg2F);
     } else {
-        fire_ct->setFixed(arg1, arg2);
+        fire_ct->setFixed(resF, arg2F);
     }
     if (EOP::hasEdgeValues()) {
-        fire_ct->setResult(EOP::edgeValueTypeLetter(), res);
+        fire_ct->setResult(EOP::edgeValueTypeLetter(), resF);
     } else {
-        fire_ct->setResult(res);
+        fire_ct->setResult(resF);
     }
     fire_ct->doneBuilding();
 
@@ -265,16 +265,16 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     // the saturation cache.
     //
     sat_ct = new ct_entry_type("saturate");
-    sat_cache_level = arg1->isFullyReduced();
+    sat_cache_level = resF->isFullyReduced();
     if (sat_cache_level) {
-        sat_ct->setFixed('I', arg1, arg2);
+        sat_ct->setFixed('I', resF, arg2);
     } else {
-        sat_ct->setFixed(arg1, arg2);
+        sat_ct->setFixed(resF, arg2);
     }
     if (EOP::hasEdgeValues()) {
-        sat_ct->setResult(EOP::edgeValueTypeLetter(), res);
+        sat_ct->setResult(EOP::edgeValueTypeLetter(), resF);
     } else {
-        sat_ct->setResult(res);
+        sat_ct->setResult(resF);
     }
     sat_ct->doneBuilding();
 
@@ -418,8 +418,18 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
         explorers[i] = makeSatIndexExplorer(index_order, arg2F, i, FORWD);
     }
 
+    //
+    // Copy (av, ap) from arg1F to resF, then operate entirely in resF
+    //
+    edge_value acv;
+    node_handle acp;
+    copyOp->compute(L, ~0, av, ap, acv, acp);
+
+    //
+    // Saturate
+    //
     if (1==version) {
-        saturate_1(L, av, ap, cv, cp);
+        saturate_1(L, acv, acp, cv, cp);
     } else {
         MEDDLY_DCASSERT(false);
     }
@@ -463,14 +473,15 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
         return;
     }
     if (0==B) {
-        copyOp->compute(L, ~0, av, A, cv, C);
+        cv = av;
+        C = A;
         return;
     }
 
 
 #ifdef TRACE
     out << ATYPE::name(FORWD) << " saturate_1(" << L << ", ";
-    arg1F->showEdge(out, av, A);
+    resF->showEdge(out, av, A);
     out << ", " << B << ")\n";
 #endif
 
@@ -525,8 +536,8 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
     //
     // Copy A to C, saturating children as we go
     //
-    unpacked_node* Au = unpacked_node::New(arg1F, SPARSE_ONLY);
-    const int Alevel = arg1F->getNodeLevel(A);
+    unpacked_node* Au = unpacked_node::New(resF, SPARSE_ONLY);
+    const int Alevel = resF->getNodeLevel(A);
     if (Alevel < L) {
         edge_value zero;
         EOP::clear(zero);
@@ -664,7 +675,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     // Determine level information
     //
     // **************************************************************
-    const int Alevel = arg1F->getNodeLevel(A);
+    const int Alevel = resF->getNodeLevel(A);
     const int Blevel = ABS(arg2F->getNodeLevel(B));
     const int Clevel = fire_cache_level ? L : MAX(Alevel, Blevel);
     const int nextL = MDD_levels::downLevel(Clevel);
@@ -687,19 +698,19 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
         // or the matrix is an identity (or a scalar times identity).
         // Treat that case quickly.
         //
-        ATYPE::apply(arg1F, av, A, arg2F, B, resF, cv, C);
-
-        // TBD: saturate result?
-
+        ATYPE::apply(resF, av, A, arg2F, B, resF, cv, C);
+        if (L) {
+            saturate_1(L, cv, C, cv, C);
+        }
         return;
     }
 
 #ifdef TRACE
     out << ATYPE::name(FORWD) << " recFire(" << L << ", ";
-    arg1F->showEdge(out, av, A);
+    resF->showEdge(out, av, A);
     out << ", " << B << ")\n";
     out << "A: #" << A << " ";
-    arg1F->showNode(out, A, SHOW_DETAILS);
+    resF->showNode(out, A, SHOW_DETAILS);
     out << "\n";
     out << "B: #" << B << " ";
     arg2F->showNode(out, B, SHOW_DETAILS);
@@ -746,6 +757,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
         out << "\n";
 #endif
         C = resF->makeRedundantsTo(C, Clevel, L);
+        saturate_1(L, cv, C, cv, C);
         return;
         //
         // done compute table hit
@@ -762,7 +774,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     // Set up unpacked nodes
     //
 
-    unpacked_node* Au = unpacked_node::New(arg1F, FULL_ONLY);
+    unpacked_node* Au = unpacked_node::New(resF, FULL_ONLY);
     if (Alevel != Clevel) {
         edge_value zero;
         EOP::clear(zero);
@@ -934,10 +946,10 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     out.indent_less();
     out.put('\n');
     out << ATYPE::name(FORWD) << " recFire(" << L << ", ";
-    arg1F->showEdge(out, av, A);
+    resF->showEdge(out, av, A);
     out << ", " << B << ") done\n";
     out << "  A: #" << A << ": ";
-    arg1F->showNode(out, A, SHOW_DETAILS);
+    resF->showNode(out, A, SHOW_DETAILS);
     out << "\n  B: #" << B << ": ";
     if (Brn) {
         Brn->show(out);
@@ -986,8 +998,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     EOP::normalize(cv, C);
 
     //
-    // TBD: saturate result
+    // Saturate result
     //
+    saturate_1(L, cv, C, cv, C);
 }
 
 // ************************************************************************
