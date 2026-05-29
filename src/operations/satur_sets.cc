@@ -37,6 +37,7 @@
 #include "../operators.h"
 #endif
 
+#define RECFIRE_THEN_SAT
 
 // ************************************************************************
 // ************************************************************************
@@ -177,8 +178,11 @@ namespace MEDDLY {
             char index_order;
 
             edge_value nothing;
-            bool fire_cache_level;
-            bool sat_cache_level;
+            // bool fire_cache_level;
+            // bool sat_cache_level;
+
+            // should we store levels in the cache
+            bool store_levels;
 
     }; // class
 }; // namespace MEDDLY
@@ -239,45 +243,32 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
 
 
     //
-    // Build compute table key and result types.
-    // Do we need to recurse by levels and store level info in the CT?
-    // YES, if the set and relation are both fully-reduced.
-    // (If the set is quasi reduced, we will recurse by levels anyway.)
-    // (If the relation is identity-reduced, we can skip levels.)
+    // Build keys and results for the compute tables.
+    // If the set is fully-reduced, then we need to store the level in the CT.
     //
-    fire_cache_level = resF->isFullyReduced() && arg2->isFullyReduced();
+    store_levels = resF->isFullyReduced();
+
     fire_ct = new ct_entry_type("satfire");
-    if (fire_cache_level) {
+    sat_ct  = new ct_entry_type("saturate");
+
+    if (store_levels) {
         fire_ct->setFixed('I', resF, arg2F);
+        sat_ct->setFixed('I', resF, arg2F);
     } else {
         fire_ct->setFixed(resF, arg2F);
+        sat_ct->setFixed(resF, arg2F);
     }
+
     if (EOP::hasEdgeValues()) {
         fire_ct->setResult(EOP::edgeValueTypeLetter(), resF);
-    } else {
-        fire_ct->setResult(resF);
-    }
-    fire_ct->doneBuilding();
-
-
-    //
-    // If the set is fully-reduced, we need to store the level in
-    // the saturation cache.
-    //
-    sat_ct = new ct_entry_type("saturate");
-    sat_cache_level = resF->isFullyReduced();
-    if (sat_cache_level) {
-        sat_ct->setFixed('I', resF, arg2);
-    } else {
-        sat_ct->setFixed(resF, arg2);
-    }
-    if (EOP::hasEdgeValues()) {
         sat_ct->setResult(EOP::edgeValueTypeLetter(), resF);
     } else {
+        fire_ct->setResult(resF);
         sat_ct->setResult(resF);
     }
-    sat_ct->doneBuilding();
 
+    fire_ct->doneBuilding();
+    sat_ct->doneBuilding();
 }
 
 // ************************************************************************
@@ -493,7 +484,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
     // **************************************************************
     ct_vector key(sat_ct->getKeySize());
     ct_vector res(sat_ct->getResultSize());
-    if (sat_cache_level) {
+    if (store_levels) {
         key[0].setI(L);
         key[1].setN(A);
         key[2].setN(B);
@@ -676,7 +667,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     // **************************************************************
     const int Alevel = resF->getNodeLevel(A);
     const int Blevel = ABS(arg2F->getNodeLevel(B));
-    const int Clevel = fire_cache_level ? L : MAX(Alevel, Blevel);
+    const int Clevel = L; // fire_cache_level ? L : MAX(Alevel, Blevel);
     const int nextL = MDD_levels::downLevel(Clevel);
 
     // **************************************************************
@@ -728,7 +719,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     // **************************************************************
     ct_vector key(fire_ct->getKeySize());
     ct_vector res(fire_ct->getResultSize());
-    if (fire_cache_level) {
+    if (store_levels) {
         key[0].setI(L);
         key[1].setN(A);
         key[2].setN(B);
@@ -758,9 +749,12 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
         out << "\n";
 #endif
         C = resF->makeRedundantsTo(C, Clevel, L);
+
+#ifdef RECFIRE_THEN_SAT
         node_handle oldC = C;
         saturate_1(L, cv, C, cv, C);
         resF->unlinkNode(oldC);
+#endif
         return;
         //
         // done compute table hit
@@ -977,17 +971,6 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
 #endif
 
     //
-    // Save result in CT
-    //
-    if (EOP::hasEdgeValues()) {
-        res[0].set(cv);
-        res[1].setN(C);
-    } else {
-        res[0].setN(C);
-    }
-    fire_ct->addCT(key, res);
-
-    //
     // Cleanup
     //
     arg2F->doneRelNode(Brn);
@@ -1000,12 +983,44 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     EOP::accumulateOp(cv, av);
     EOP::normalize(cv, C);
 
+#ifdef RECFIRE_THEN_SAT
+    //
+    // Save result in CT
+    //
+    if (EOP::hasEdgeValues()) {
+        res[0].set(cv);
+        res[1].setN(C);
+    } else {
+        res[0].setN(C);
+    }
+    fire_ct->addCT(key, res);
+
     //
     // Saturate result
     //
     node_handle oldC = C;
     saturate_1(L, cv, C, cv, C);
     resF->unlinkNode(oldC);
+#else
+    //
+    // Saturate result
+    //
+    node_handle oldC = C;
+    saturate_1(L, cv, C, cv, C);
+    resF->unlinkNode(oldC);
+
+    //
+    // Save result in CT
+    //
+    if (EOP::hasEdgeValues()) {
+        res[0].set(cv);
+        res[1].setN(C);
+    } else {
+        res[0].setN(C);
+    }
+    fire_ct->addCT(key, res);
+#endif
+
 }
 
 // ************************************************************************
