@@ -32,6 +32,7 @@ namespace MEDDLY {
     class rel_node;
     class variable;
     class unpacked_node;
+    class output;
 };
 
 class MEDDLY::sat_index_explorer {
@@ -88,6 +89,9 @@ class MEDDLY::sat_index_explorer {
 #endif
             finishUpdate(i);
         }
+
+        // For debugging
+        virtual void show(output &s) const;
 
     protected:
         /**

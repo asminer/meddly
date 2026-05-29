@@ -30,8 +30,8 @@
 
 #include "prepost_common.h"
 
-// #define TRACE
-// #define DEBUG_SPLIT
+#define TRACE
+#define DEBUG_SPLIT
 
 #ifdef TRACE
 #include "../operators.h"
@@ -167,6 +167,7 @@ namespace MEDDLY {
             binary_operation* accumulateOp;
             binary_operation* mxdIntersection;
             binary_operation* mxdDifference;
+            const bool FORWD;
 #ifdef TRACE
             ostream_output out;
             unsigned top_count;
@@ -178,7 +179,6 @@ namespace MEDDLY {
             edge_value nothing;
             bool fire_cache_level;
             bool sat_cache_level;
-            const bool FORWD;
 
     }; // class
 }; // namespace MEDDLY
@@ -564,6 +564,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
     }
 
     unpacked_node::Recycle(Au);
+#ifdef DEVELOPMENT_CODE
+    Au = nullptr;
+#endif
 
 #ifdef TRACE
     out << "done saturating children, node C: ";
@@ -586,6 +589,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
                 explorers[L]->wasUpdated(i);
             }
         }
+#ifdef TRACE
+        explorers[L]->show(out);
+#endif
         //
         // Saturation loop :)
         //
@@ -595,7 +601,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
 #endif
             node_handle rfp;
             edge_value  rfv;
-            recFire(L-1, edgeval(Au, i), Au->down(i), d, rfv, rfp);
+            recFire(L-1, edgeval(Cu, i), Cu->down(i), d, rfv, rfp);
             if (addToCi(L-1, Cu, j, rfv, rfp)) {
 #ifdef TRACE
                 out << "element " << j << " was updated\n";
@@ -644,11 +650,6 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
     sat_ct->addCT(key, res);
 
     //
-    // Cleanup
-    //
-    unpacked_node::Recycle(Au);
-
-    //
     // Adjust result
     //
     EOP::accumulateOp(cv, av);
@@ -667,9 +668,6 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
         const edge_value &av, node_handle A,
         node_handle B, edge_value &cv, node_handle &C)
 {
-    // TBD
-    MEDDLY_DCASSERT(false);
-
     // **************************************************************
     //
     // Determine level information

@@ -21,6 +21,7 @@
 #include "../domain.h"
 #include "../forest.h"
 #include "../rel_node.h"
+#include "../io.h"
 
 #define DEBUG_BASE
 
@@ -118,6 +119,35 @@ void MEDDLY::sat_index_explorer::restart(node_handle n)
     }
 
     finishAllRows();
+}
+
+void MEDDLY::sat_index_explorer::show(output &s) const
+{
+    s.put("explorer at level ");
+    s.put(level);
+    s.put("\n");
+    for (unsigned i=0; i<rows.size(); i++) {
+        s.put("Row ");
+        s.put(i);
+        s.put(":");
+        if (!rows[i].explored) {
+            s.put(" unexplored\n");
+            continue;
+        }
+        s.put("\n");
+        if (diagonals[i]) {
+            s.put("    diag: ");
+            s.put(diagonals[i]);
+            s.put("\n");
+        }
+        for (unsigned z=0; z<rows[i].elements.size(); z++) {
+            s.put("    ");
+            s.put(rows[i].elements[z].index);
+            s.put(": ");
+            s.put(rows[i].elements[z].down);
+            s.put("\n");
+        }
+    }
 }
 
 void MEDDLY::sat_index_explorer::clear()
@@ -224,7 +254,7 @@ class MEDDLY::index_fifo {
             return NULPTR == head;
         }
         inline int front() const {
-            return (head >= 0) ? data[head] : -1;
+            return (head >= 0) ? head : -1;
         }
         inline void add(int i) {
             MEDDLY_CHECK_RANGE(0, i, int(data.size()));
