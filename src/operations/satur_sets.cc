@@ -115,7 +115,7 @@ namespace MEDDLY {
 
         private:
             void initSplit();
-            void fillSplit(node_handle top);
+            void fillSplit(int L, node_handle top);
 
             inline const edge_value &edgeval(unpacked_node *U, unsigned i) const
             {
@@ -403,7 +403,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     //
     // Split the relation
     //
-    if (1==version) fillSplit(bp);
+    if (1==version) fillSplit(L, bp);
 
 #ifdef TRACE
     out.indentation(0);
@@ -446,7 +446,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     out << opName() << " #" << top_count << " end\n";
 #endif
 
-    if (1==version) fillSplit(0);
+    if (1==version) fillSplit(L, 0);
 }
 
 // ************************************************************************
@@ -1034,19 +1034,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::initSplit()
 // ************************************************************************
 
 template <class EOP, class ATYPE>
-void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(node_handle bp)
+void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
 {
     MEDDLY_DCASSERT(1==version);
-
-    //
-    // clear out split relation
-    //
-    for (int k=arg2F->getMaxLevelIndex(); k; --k) {
-        top_exactly[k].set(0);
-        top_at_or_below[k].set(0);
-    }
-
-    if (0==bp) return;
 
     //
     // fill split relation by levels
@@ -1054,17 +1044,20 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(node_handle bp)
     dd_edge diag(arg2F);
     dd_edge mxd(arg2F);
     mxd.set(arg2F->linkNode(bp));
-    for (;;)
+    for (int k=L; k; --k)
     {
         node_handle resp;
         //
         // Get relation node for current mxd
         //
         const node_handle mxdn = mxd.getNode();
-        const int k = ABS(arg2F->getNodeLevel(mxdn));
-        if (0 == k) break;
-
         top_at_or_below[k] = mxd;
+
+        if (ABS(arg2F->getNodeLevel(mxdn)) < k) {
+            top_exactly[k].set(0);
+            continue;
+        }
+
         rel_node* Brn = arg2F->buildRelNode(mxdn);
 
         // Determine common diagonal
@@ -1095,6 +1088,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(node_handle bp)
     top_at_or_below[0].set(0);
     top_exactly[0].set(0);
 
+
 #ifdef DEBUG_SPLIT
     ostream_output splout(std::cout);
     std::cout << "After splitting monolithic event in " << opName() << "\n";
@@ -1102,7 +1096,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(node_handle bp)
         std::cout << "Relation with top level<=" << k << ": ";
         top_at_or_below[k].show(splout);
         std::cout << "\n";
-        top_at_or_below[k].showGraph(splout);
+        if (ABS(arg2F->getNodeLevel(top_at_or_below[k].getNode())) == k) {
+            top_at_or_below[k].showGraph(splout);
+        }
         std::cout << "======================================================================\n";
     }
     for (unsigned k=1; k <= arg2F->getNumVariables(); k++) {
