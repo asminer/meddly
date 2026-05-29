@@ -433,6 +433,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     } else {
         MEDDLY_DCASSERT(false);
     }
+    resF->unlinkNode(acp);
 
     //
     // Clean up explorers
@@ -474,7 +475,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
     }
     if (0==B) {
         cv = av;
-        C = A;
+        C = resF->linkNode(A);
         return;
     }
 
@@ -698,7 +699,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
         //
         ATYPE::apply(resF, av, A, arg2F, B, resF, cv, C);
         if (L) {
+            node_handle oldC = C;
             saturate_1(L, cv, C, cv, C);
+            resF->unlinkNode(oldC);
         }
         return;
     }
@@ -755,7 +758,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
         out << "\n";
 #endif
         C = resF->makeRedundantsTo(C, Clevel, L);
+        node_handle oldC = C;
         saturate_1(L, cv, C, cv, C);
+        resF->unlinkNode(oldC);
         return;
         //
         // done compute table hit
@@ -998,7 +1003,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     //
     // Saturate result
     //
+    node_handle oldC = C;
     saturate_1(L, cv, C, cv, C);
+    resF->unlinkNode(oldC);
 }
 
 // ************************************************************************

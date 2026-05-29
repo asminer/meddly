@@ -412,6 +412,8 @@ int main(int argc, const char** argv)
         cout << "Done\n";
         cout << "Reachability set construction took "
              << start.get_last_seconds() << " seconds" << endl;
+        cout << "Reachability set uses "
+             << reachable.getNodeCount() << " nodes" << endl;
 #ifdef DUMP_REACHABLE
         cout << "Reachable states:\n";
         reachable.showGraph(meddlyout);
