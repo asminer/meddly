@@ -25,6 +25,19 @@
 #define DEBUG_BASE
 
 // **********************************************************************
+
+namespace MEDDLY {
+
+    // helper objects
+
+    class index_fifo;
+
+    // various explorers
+
+    class explore_fifo;
+}
+
+// **********************************************************************
 // *                                                                    *
 // *                     sat_index_explorer methods                     *
 // *                                                                    *
@@ -174,6 +187,149 @@ void MEDDLY::sat_index_explorer::finishUpdate(unsigned)
     // Do nothing
 }
 
+// **********************************************************************
+// *                                                                    *
+// *                         index_fifo   class                         *
+// *                                                                    *
+// **********************************************************************
+
+#define NULPTR -1
+#define NOTINQ -2
+
+class MEDDLY::index_fifo {
+        /**
+            A linked list of nodes.
+            Element i is NOTINQ if it is not in the queue.
+            Otherwise, element i is the index of the next item
+            in the queue, or -1 if it is the end of the list.
+         */
+        std::vector <int> data;
+
+        /// Index (in data) of the front of the queue.
+        int head;
+        /// Index (in data) of the end of the queue.
+        int tail;
+    public:
+        index_fifo() {
+            head = tail = NULPTR;
+        }
+
+        inline void resize(unsigned sz) {
+            data.resize(sz, NOTINQ);
+        }
+        inline void clear() {
+            data.assign(data.size(), NOTINQ);
+        }
+        inline bool isEmpty() const {
+            return NULPTR == head;
+        }
+        inline int front() const {
+            return (head >= 0) ? data[head] : -1;
+        }
+        inline void add(int i) {
+            MEDDLY_CHECK_RANGE(0, i, int(data.size()));
+            if (NOTINQ != data[i]) {
+                // already in queue
+                return;
+            }
+            if (NULPTR == head) {
+                // queue is empty
+                head = i;
+            } else {
+                // queue is not empty
+                MEDDLY_CHECK_RANGE(0, tail, int(data.size()));
+                data[tail] = i;
+            }
+            tail = i;
+            data[i] = NULPTR;
+        }
+        inline int remove() {
+            MEDDLY_CHECK_RANGE(0, head, int(data.size()));
+            int ans = head;
+            head = data[head];
+            data[ans] = NOTINQ;
+            return ans;
+        }
+};
+
+// **********************************************************************
+// *                                                                    *
+// *                        explore_fifo   class                        *
+// *                                                                    *
+// **********************************************************************
+
+class MEDDLY::explore_fifo : public sat_index_explorer {
+    public:
+        explore_fifo(forest* _F, int _level, bool _forwd);
+        virtual ~explore_fifo();
+        virtual bool nextEdge(unsigned &i, unsigned &j, node_handle &down);
+
+    protected:
+        virtual void clear();
+        virtual void finishExpandRows(unsigned oldsz, unsigned newsz);
+        virtual void finishUpdate(unsigned i);
+
+    private:
+        index_fifo queue;
+        int rptr;
+};
+
+MEDDLY::explore_fifo::explore_fifo(forest* _F, int _level, bool _forwd)
+    : sat_index_explorer(_F, _level, _forwd)
+{
+    rptr = -1;
+}
+
+MEDDLY::explore_fifo::~explore_fifo()
+{
+}
+
+bool MEDDLY::explore_fifo::nextEdge(unsigned &i, unsigned &j, node_handle &dn)
+{
+    for (;;) {
+        if (queue.isEmpty()) return false;
+
+        int ii = queue.front();
+        MEDDLY_DCASSERT(ii>=0);
+        i = unsigned(ii);
+
+        if (rptr < 0) {
+            rptr = 0;
+            if (diagonals[i]) {
+                j = i;
+                dn = diagonals[i];
+                return true;
+            }
+        }
+
+        if (rptr >= rows[i].elements.size()) {
+            queue.remove();
+            rptr = -1;
+            continue;
+        }
+
+        j = rows[i].elements[rptr].index;
+        dn = rows[i].elements[rptr].down;
+        rptr++;
+        return true;
+    }
+}
+
+void MEDDLY::explore_fifo::clear()
+{
+    queue.clear();
+}
+
+void MEDDLY::explore_fifo::finishExpandRows(unsigned oldsz, unsigned newsz)
+{
+    queue.resize(newsz);
+}
+
+void MEDDLY::explore_fifo::finishUpdate(unsigned i)
+{
+    queue.add(int(i));
+}
+
 
 // **********************************************************************
 // *                                                                    *
@@ -184,7 +340,17 @@ void MEDDLY::sat_index_explorer::finishUpdate(unsigned)
 MEDDLY::sat_index_explorer* MEDDLY::makeSatIndexExplorer(char which,
         forest* F, int level, bool forwd)
 {
-    // TBD
+    switch (which) {
+        // default:
+
+        case 'q':
+        default:
+
+            return new explore_fifo(F, level, forwd);
+
+    }
+
+    // Fail safe
     return nullptr;
 }
 
