@@ -46,6 +46,8 @@ int usage(const char* who)
     printf("\t-esat: use saturation by events\n");
     printf("\t-ksat: use saturation by levels\n");
     printf("\t-msat: use monolithic saturation (default)\n\n");
+
+    printf("\t-sat1 : Saturation v1 (new implementation)\n");
     printf("\t-exp: use explicit (very slow)\n");
     printf("\t-pdf: Write MDD for reachable states to out.pdf\n\n");
     printf("\t--batch b: specify explicit batch size\n\n");
@@ -291,6 +293,12 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
             apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
             break;
 
+        case '1':
+            printf("Building reachability set using saturation v1, monolithic relation\n");
+            fflush(stdout);
+            apply(REACHABLE_SATUR(true), init_state, nsf, reachable);
+            break;
+
         case 'e':
             printf("Building reachability set using explicit search\n");
             printf("Using batch size: %d\n", batchsize);
@@ -319,6 +327,7 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
     printf("Done\n");
     printf("Reachability set construction took %.4e seconds\n",
             start.get_last_seconds());
+    printf("Reachability set uses %ld nodes\n", reachable.getNodeCount());
     fflush(stdout);
 
 #ifdef SHOW_STATES
@@ -378,6 +387,10 @@ int main(int argc, const char** argv)
         }
         if (strcmp("-dfs", argv[i])==0) {
             method = 'm';
+            continue;
+        }
+        if (strcmp("-sat1", argv[i])==0) {
+            method = '1';
             continue;
         }
         if (strcmp("-esat", argv[i])==0) {
