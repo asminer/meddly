@@ -588,6 +588,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
         // Saturation loop :)
         //
         while (explorers[L]->nextEdge(i, j, d)) {
+            if (ATYPE::areAllReachable(edgeval(Cu, i), Cu->down(i))) {
+                continue;
+            }
 #ifdef TRACE
             out << "firing " << i << "->" << j << " down " << d << "\n";
 #endif
@@ -834,6 +837,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
                     continue;
                 }
                 for (unsigned j=0; j<Cu->getSize(); j++) {
+                    if (ATYPE::areAllReachable(edgeval(Cu, j), Cu->down(j))) {
+                        continue;
+                    }
                     addToCi(nextL, Cu, j, ab_v, resF->linkNode(ab_p));
                 }
                 resF->unlinkNode(ab_p);
@@ -874,6 +880,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
                 if (Brn->outgoing(i, *Bu)) {
                     for (unsigned zj=0; zj<Bu->getSize(); zj++) {
                         const unsigned j = Bu->index(zj);
+                        if (ATYPE::areAllReachable(edgeval(Cu, j), Cu->down(j))) {
+                            continue;
+                        }
 #ifdef TRACE
                         out << A << "x" << B << " computes  "
                             << i << ">->" << j << ": "
@@ -909,6 +918,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
                     for (unsigned j=0; j<Au->getSize(); j++) {
                         if (ATYPE::isUnreachable(edgeval(Au, j), Au->down(j))) {
                             continue;
+                        }
+                        if (ATYPE::areAllReachable(edgeval(Cu, i), Cu->down(i))) {
+                            break;
                         }
 #ifdef TRACE
                         out << A << "x" << B << " computes  "

@@ -49,6 +49,13 @@ namespace MEDDLY {
             return 0==p;
         }
 
+        /// Does the edge correspond to everything is reachable?
+        inline static bool areAllReachable(const edge_value &ev, node_handle p)
+        {
+            MEDDLY_DCASSERT(ev.isVoid());
+            return -1==p;
+        }
+
         /// Set edge to be unreachable states
         inline static void setUnreachable(edge_value &v, node_handle &p)
         {
@@ -102,6 +109,13 @@ namespace MEDDLY {
             if (p >= 0) return false;
             terminal t(terminal_type::INTEGER, p);
             return t.getInteger() < 0;
+        }
+
+        /// Does the edge correspond to everything is reachable?
+        inline static bool areAllReachable(const edge_value &ev, node_handle p)
+        {
+            MEDDLY_DCASSERT(ev.isVoid());
+            return 0==p;
         }
 
         /// Set edge to be unreachable states
@@ -162,6 +176,14 @@ namespace MEDDLY {
         {
             return OMEGA_INFINITY == p;
         }
+
+        /// Does the edge correspond to everything is reachable?
+        inline static bool areAllReachable(const edge_value &ev, node_handle p)
+        {
+            if (p) return false;
+            return INT(ev) == 0;
+        }
+
         /// Set edge to be unreachable states
         inline static void setUnreachable(edge_value &v, node_handle &p)
         {
