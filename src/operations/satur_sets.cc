@@ -30,8 +30,8 @@
 
 #include "prepost_common.h"
 
-#define TRACE
-#define DEBUG_SPLIT
+// #define TRACE
+// #define DEBUG_SPLIT
 
 #ifdef TRACE
 #include "../operators.h"
@@ -1037,6 +1037,9 @@ template <class EOP, class ATYPE>
 void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
 {
     MEDDLY_DCASSERT(1==version);
+#ifdef DEBUG_SPLIT
+    ostream_output splout(std::cout);
+#endif
 
     //
     // fill split relation by levels
@@ -1046,14 +1049,26 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
     mxd.set(arg2F->linkNode(bp));
     for (int k=L; k; --k)
     {
+#ifdef DEBUG_SPLIT
+        splout << "Splitting relation, at level " << k << "\n";
+#endif
         node_handle resp;
         //
         // Get relation node for current mxd
         //
         const node_handle mxdn = mxd.getNode();
         top_at_or_below[k] = mxd;
+#ifdef DEBUG_SPLIT
+        splout << "    at or below: ";
+        top_at_or_below[k].show(splout);
+        splout << "\n";
+#endif
 
         if (ABS(arg2F->getNodeLevel(mxdn)) < k) {
+#ifdef DEBUG_SPLIT
+            splout << "    no dependency on this level\n";
+            splout << "    exactly: 0\n";
+#endif
             top_exactly[k].set(0);
             continue;
         }
@@ -1071,6 +1086,19 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
             );
             diag.set(resp);
         }
+
+#ifdef DEBUG_SPLIT
+        splout << "    diagonals: ";
+        for (unsigned i=0; i<maxi; i++) {
+            if (i) splout << ", ";
+            splout << Brn->getDiagonal(i);
+        }
+        splout << "\n";
+        splout << "    common  : ";
+        diag.show(splout);
+        splout << "\n";
+#endif
+
 
         // Set relation with top=k to relation minus common diagonal
         // and continue the iteration with the common diagonal
@@ -1090,7 +1118,6 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
 
 
 #ifdef DEBUG_SPLIT
-    ostream_output splout(std::cout);
     std::cout << "After splitting monolithic event in " << opName() << "\n";
     for (unsigned k=0; k <= arg2F->getNumVariables(); k++) {
         std::cout << "Relation with top level<=" << k << ": ";

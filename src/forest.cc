@@ -253,9 +253,26 @@ MEDDLY::rel_node_from_dd::getDiagonal(unsigned i)
     }
 
     /*
-        unp[i] is non-zero. Get its ith pointer.
+        unp[i] is non-zero.
+        Check if it points to a node at the primed level or not.
     */
-    return getParent()->getDownPtr(unp->down(i), i);
+
+    const node_handle dn = unp->down(i);
+    const int next_level = MXD_levels::downLevel(unp->getLevel());
+    if (getParent()->getNodeLevel(dn) == next_level) {
+        /*
+            unp[i] is a node at the primed level.
+            Get its i'th child.
+         */
+        return getParent()->getDownPtr(dn, i);
+    } else {
+        /*
+            unp[i] skips the primed level.
+            For both identity-reduced and fully-reduced,
+            that means the diagonal element is unp[i].
+         */
+        return dn;
+    }
 }
 
 #if 0
