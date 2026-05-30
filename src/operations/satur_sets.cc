@@ -37,7 +37,7 @@
 #include "../operators.h"
 #endif
 
-#define RECFIRE_THEN_SAT
+// #define RECFIRE_THEN_SAT
 
 // ************************************************************************
 // ************************************************************************
@@ -101,6 +101,19 @@ namespace MEDDLY {
              */
             void saturate_1(int L, const edge_value &av, node_handle A,
                     edge_value &cv, node_handle &C);
+
+            /*
+             * core of saturate_1
+             */
+            inline void saturate_1(unpacked_node *C)
+            {
+                MEDDLY_DCASSERT(C);
+                if (top_exactly[C->getLevel()].getNode()) {
+                    _saturate_1(C);
+                }
+            }
+
+            void _saturate_1(unpacked_node *C);
 
             /* For an input set (av, A) in resF,
              * fire relation B, and in some cases saturate the result
@@ -568,6 +581,8 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
     out.put('\n');
 #endif
 
+    saturate_1(Cu);
+    /*
     if (top_exactly[L].getNode()) {
         //
         // Initialize explorer
@@ -612,6 +627,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
         }
 
     } // if top_exactly[L].getNode()
+    */
 
 #ifdef TRACE
     out.indent_less();
@@ -649,6 +665,60 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
     //
     EOP::accumulateOp(cv, av);
     EOP::normalize(cv, C);
+}
+
+// ************************************************************************
+//
+// _saturate_1()
+//
+// ************************************************************************
+template <class EOP, class ATYPE>
+void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::
+    _saturate_1(unpacked_node *Cu)
+{
+    //
+    // Initialize explorer
+    //
+    const int L = Cu->getLevel();
+    MEDDLY_DCASSERT(explorers[L]);
+    explorers[L]->restart(top_exactly[L].getNode());
+    unsigned i, j;
+    node_handle d;
+    for (i=0; i<Cu->getSize(); i++) {
+        if (Cu->down(i)) {
+            explorers[L]->wasUpdated(i);
+        }
+    }
+#ifdef TRACE
+    explorers[L]->show(out);
+#endif
+    //
+    // Saturation loop :)
+    //
+    while (explorers[L]->nextEdge(i, j, d)) {
+        if (ATYPE::areAllReachable(edgeval(Cu, i), Cu->down(i))) {
+            continue;
+        }
+#ifdef TRACE
+        out << "firing " << i << "->" << j << " down " << d << "\n";
+#endif
+        node_handle rfp;
+        edge_value  rfv;
+        recFire(L-1, edgeval(Cu, i), Cu->down(i), d, rfv, rfp);
+        if (addToCi(L-1, Cu, j, rfv, rfp)) {
+#ifdef TRACE
+            out << "element " << j << " was updated\n";
+#endif
+            explorers[L]->wasUpdated(j);
+        }
+#ifdef TRACE
+        out << "after firing " << i << "->" << j << " down " << d
+            << " node C is ";
+        Cu->show(out, false);
+        out.put('\n');
+#endif
+    }
+
 }
 
 // ************************************************************************
@@ -970,6 +1040,13 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     out << "\n";
 #endif
 
+#ifndef RECFIRE_THEN_SAT
+    //
+    // Saturate the unpacked node
+    //
+    saturate_1(Cu);
+#endif
+
     //
     // Reduce
     //
@@ -995,44 +1072,25 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     EOP::accumulateOp(cv, av);
     EOP::normalize(cv, C);
 
+    //
+    // Save result in CT
+    //
+    if (EOP::hasEdgeValues()) {
+        res[0].set(cv);
+        res[1].setN(C);
+    } else {
+        res[0].setN(C);
+    }
+    fire_ct->addCT(key, res);
+
 #ifdef RECFIRE_THEN_SAT
     //
-    // Save result in CT
-    //
-    if (EOP::hasEdgeValues()) {
-        res[0].set(cv);
-        res[1].setN(C);
-    } else {
-        res[0].setN(C);
-    }
-    fire_ct->addCT(key, res);
-
-    //
     // Saturate result
     //
     node_handle oldC = C;
     saturate_1(L, cv, C, cv, C);
     resF->unlinkNode(oldC);
-#else
-    //
-    // Saturate result
-    //
-    node_handle oldC = C;
-    saturate_1(L, cv, C, cv, C);
-    resF->unlinkNode(oldC);
-
-    //
-    // Save result in CT
-    //
-    if (EOP::hasEdgeValues()) {
-        res[0].set(cv);
-        res[1].setN(C);
-    } else {
-        res[0].setN(C);
-    }
-    fire_ct->addCT(key, res);
 #endif
-
 }
 
 // ************************************************************************
