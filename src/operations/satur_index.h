@@ -165,6 +165,7 @@ class MEDDLY::sat_index_explorer {
         int level;
         bool forwd;
         const variable* var;
+        node_handle node;
         rel_node* RN;
         unpacked_node* U;
 

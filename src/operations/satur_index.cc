@@ -51,6 +51,7 @@ MEDDLY::sat_index_explorer::sat_index_explorer(forest* F, int lvl, bool fwd)
     var = For->getDomain()->getVar(level);
     RN = nullptr;
     U = unpacked_node::New(For, SPARSE_ONLY);
+    node = 0;
 }
 
 MEDDLY::sat_index_explorer::~sat_index_explorer()
@@ -64,6 +65,9 @@ MEDDLY::sat_index_explorer::~sat_index_explorer()
 
 void MEDDLY::sat_index_explorer::restart(node_handle n)
 {
+    if (node == n) return;
+    node = n;
+
 #ifdef TRACE
     std::cout << "saturating level " << level
               << " (mxd " << n << ")\n";
