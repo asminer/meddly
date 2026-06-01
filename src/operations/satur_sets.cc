@@ -98,12 +98,13 @@ namespace MEDDLY {
             /* For an input set (av, A) in resF,
              * determine saturated node (cv, C) in resF,
              * with respect to level L relation(s).
+             * will saturate children.
              */
             void saturate_1(int L, const edge_value &av, node_handle A,
                     edge_value &cv, node_handle &C);
 
             /*
-             * core of saturate_1
+             * core of saturate_1. will NOT saturate children.
              */
             inline void saturate_1(unpacked_node *C)
             {
@@ -410,6 +411,13 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
 {
     MEDDLY_DCASSERT(bv.isVoid());
     //
+    // Initialize explorers
+    //
+    for (unsigned i=1; i<explorers.size(); i++) {
+        explorers[i] = makeSatIndexExplorer(index_order, arg2F, i, FORWD);
+    }
+
+    //
     // Split the relation
     //
     if (1==version) fillSplit(L, bp);
@@ -423,13 +431,6 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     sat_calls = 0;
     recfire_calls = 0;
 #endif
-
-    //
-    // Initialize explorers
-    //
-    for (unsigned i=1; i<explorers.size(); i++) {
-        explorers[i] = makeSatIndexExplorer(index_order, arg2F, i, FORWD);
-    }
 
     //
     // Copy (av, ap) from arg1F to resF, then operate entirely in resF
@@ -598,52 +599,6 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
 #endif
 
     saturate_1(Cu);
-    /*
-    if (top_exactly[L].getNode()) {
-        //
-        // Initialize explorer
-        //
-        MEDDLY_DCASSERT(explorers[L]);
-        explorers[L]->restart(top_exactly[L].getNode());
-        unsigned i, j;
-        node_handle d;
-        for (i=0; i<Cu->getSize(); i++) {
-            if (Cu->down(i)) {
-                explorers[L]->wasUpdated(i);
-            }
-        }
-#ifdef TRACE
-        explorers[L]->show(out);
-#endif
-        //
-        // Saturation loop :)
-        //
-        while (explorers[L]->nextEdge(i, j, d)) {
-            if (ATYPE::areAllReachable(edgeval(Cu, i), Cu->down(i))) {
-                continue;
-            }
-#ifdef TRACE
-            out << "firing " << i << "->" << j << " down " << d << "\n";
-#endif
-            node_handle rfp;
-            edge_value  rfv;
-            recFire(L-1, edgeval(Cu, i), Cu->down(i), d, rfv, rfp);
-            if (addToCi(L-1, Cu, j, rfv, rfp)) {
-#ifdef TRACE
-                out << "element " << j << " was updated\n";
-#endif
-                explorers[L]->wasUpdated(j);
-            }
-#ifdef TRACE
-            out << "after firing " << i << "->" << j << " down " << d
-                << " node C is ";
-            Cu->show(out, false);
-            out.put('\n');
-#endif
-        }
-
-    } // if top_exactly[L].getNode()
-    */
 
 #ifdef TRACE
     out.indent_less();
@@ -697,7 +652,6 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::
     //
     const int L = Cu->getLevel();
     MEDDLY_DCASSERT(explorers[L]);
-    explorers[L]->restart(top_exactly[L].getNode());
     unsigned i, j;
     node_handle d;
     for (i=0; i<Cu->getSize(); i++) {
@@ -1259,6 +1213,19 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
     }
 #endif
 
+
+    /*
+     * Set the explorers. We only need to do this once per split.
+     */
+
+    for (unsigned k=1; k<=arg2F->getNumVariables(); k++) {
+        const node_handle n = top_exactly[k].getNode();
+        if (explorers[k]) {
+            explorers[k]->restart(n);
+        } else {
+            MEDDLY_DCASSERT(0==n);
+        }
+    }
 }
 
 // ******************************************************************

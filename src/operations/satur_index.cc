@@ -81,7 +81,10 @@ void MEDDLY::sat_index_explorer::restart(node_handle n)
     }
     if (RN) {
         For->doneRelNode(RN);
+        RN = nullptr;
     }
+
+    if (0==n) return;
 
     //
     // Build new
