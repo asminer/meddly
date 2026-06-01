@@ -37,6 +37,7 @@
 // #define DEBUG_SPLIT
 
 // #define TRACE_INDEXES
+// #define COUNT_CALLS
 
 namespace MEDDLY {
     class saturation_op;
@@ -65,6 +66,9 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::saturation_op : public unary_operation {
+#ifdef COUNT_CALLS
+    size_t num_calls;
+#endif
     common_dfs_mt* parent;
   public:
     saturation_op(common_dfs_mt* p, unary_list &c, forest* argF, forest* resF);
@@ -154,6 +158,9 @@ class MEDDLY::common_dfs : public binary_operation {
     binary_operation* mddUnion;
     binary_operation* mxdIntersection;
     binary_operation* mxdDifference;
+#ifdef COUNT_CALLS
+    size_t num_calls;
+#endif
 
   protected:
     class indexq {
@@ -212,7 +219,6 @@ class MEDDLY::common_dfs : public binary_operation {
   private:
     indexq* freeqs;
     charbuf* freebufs;
-
   protected:
 
     void splitMxd(node_handle mxd);
@@ -375,7 +381,13 @@ MEDDLY::saturation_op::~saturation_op()
 
 void MEDDLY::saturation_op::saturate(const dd_edge& in, dd_edge& out)
 {
+#ifdef COUNT_CALLS
+  num_calls = 0;
+#endif
   out.set( saturate(in.getNode(), argF->getMaxLevelIndex()) );
+#ifdef COUNT_CALLS
+  std::cout << "#saturate calls: " << num_calls << "\n";
+#endif
 }
 
 MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
@@ -391,6 +403,10 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
   node_handle n = 0;
   ct_entry_key* Key = findSaturateResult(mdd, k, n);
   if (0==Key) return n;
+
+#ifdef COUNT_CALLS
+  ++num_calls;
+#endif
 
   const unsigned sz = unsigned(argF->getLevelSize(k));    // size
   const int mdd_level = argF->getNodeLevel(mdd);          // mdd level
@@ -637,6 +653,9 @@ void MEDDLY::common_dfs::splitMxd(node_handle mxd_nh)
     splout << "\n";
   }
 #endif
+#ifdef COUNT_CALLS
+  num_calls = 0;
+#endif
 }
 
 
@@ -657,6 +676,9 @@ void MEDDLY::common_dfs::cleanup()
   // Shouldn't need to do the above b/c we're using dd_edges now
   delete[] splits;
   splits = 0;
+#ifdef COUNT_CALLS
+  std::cout << "#recfire calls: " << num_calls << "\n";
+#endif
 }
 
 // ******************************************************************
@@ -896,6 +918,10 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
     if (arg1F == resF)
       return resF->linkNode(mdd);
   }
+
+#ifdef COUNT_CALLS
+  ++num_calls;
+#endif
 
   // check the cache
   node_handle result = 0;

@@ -37,6 +37,7 @@
 // #define TRACE_RECFIRE
 
 // #define RECFIRE_THEN_SAT
+// #define COUNT_CALLS
 
 // ************************************************************************
 // ************************************************************************
@@ -195,6 +196,11 @@ namespace MEDDLY {
 
             // should we store levels in the cache
             bool store_levels;
+
+#ifdef COUNT_CALLS
+            size_t sat_calls;
+            size_t recfire_calls;
+#endif
 
     }; // class
 }; // namespace MEDDLY
@@ -413,6 +419,10 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     ++top_count;
     out << opName() << " #" << top_count << " begin\n";
 #endif
+#ifdef COUNT_CALLS
+    sat_calls = 0;
+    recfire_calls = 0;
+#endif
 
     //
     // Initialize explorers
@@ -449,6 +459,10 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
 #ifdef TRACE
     out << opName() << " #" << top_count << " end\n";
 #endif
+#ifdef COUNT_CALLS
+    std::cout << "#saturate calls: " << sat_calls << "\n";
+    std::cout << "#recfire  calls: " << recfire_calls << "\n";
+#endif
 
     if (1==version) fillSplit(L, 0);
 }
@@ -482,6 +496,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
         return;
     }
 
+#ifdef COUNT_CALLS
+    ++sat_calls;
+#endif
 
 #ifdef TRACE
     out << ATYPE::name(FORWD) << " saturate_1(" << L << ", ";
@@ -763,6 +780,10 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
         ATYPE::apply(resF, av, A, arg2F, B, resF, cv, C);
         return;
     }
+
+#ifdef COUNT_CALLS
+    ++recfire_calls;
+#endif
 
 #ifdef TRACE
     out << ATYPE::name(FORWD) << " recFire(" << L << ", ";
