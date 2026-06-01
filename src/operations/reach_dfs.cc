@@ -27,11 +27,16 @@
 #include "../ops_builtin.h"
 #include "../forest_levels.h"
 
+#include "../io.h"
+#include "../operators.h"
+
 // #define TRACE_RECFIRE
 // #define DEBUG_DFS
 // #define DEBUG_INITIAL
 // #define DEBUG_NSF
 // #define DEBUG_SPLIT
+
+// #define TRACE_INDEXES
 
 namespace MEDDLY {
     class saturation_op;
@@ -625,13 +630,12 @@ void MEDDLY::common_dfs::splitMxd(node_handle mxd_nh)
   } // for level
 
 #ifdef DEBUG_SPLIT
-  printf("After splitting monolithic event in msat\n");
-  printf("splits array: [");
-  for (unsigned k=0; k <= arg2F->getNumVariables(); k++) {
-    if (k) printf(", ");
-    printf("%d", splits[k]);
+  ostream_output splout(std::cout);
+  for (unsigned k=1; k <= arg2F->getNumVariables(); k++) {
+    splout << "Relation with top level=" << k << ": ";
+    splits[k].show(splout);
+    splout << "\n";
   }
-  printf("]\n");
 #endif
 }
 
@@ -783,6 +787,11 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
   node_handle mxd = splits[nb.getLevel()].getNode();
   if (mxd == 0) return;
 
+#ifdef TRACE_INDEXES
+  std::cout << "saturating level " << nb.getLevel()
+            << " (mxd " << mxd << ")\n";
+#endif
+
   const int mxdLevel = arg2F->getNodeLevel(mxd);
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
@@ -823,6 +832,11 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
       MEDDLY_DCASSERT(jz>=0);
       const unsigned j = Rp->index(unsigned(jz));
       if (-1==nb.down(j)) continue;  // nothing can be added to this set
+
+#ifdef TRACE_INDEXES
+      std::cout << "level " << nb.getLevel() << ": "
+                << i << " -> " << j << " (down " << Rp->down(jz) << ")\n";
+#endif
 
       node_handle rec = recFire(nb.down(i), Rp->down(unsigned(jz)));
 
@@ -889,12 +903,15 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
   if (0==Key) return result;
 
 #ifdef TRACE_RECFIRE
+  std::cout << "starting recfire(" << mdd << ", " << mxd << ")\n";
+  /*
   printf("computing recFire(%d, %d)\n", mdd, mxd);
   printf("  node %3d ", mdd);
   arg1F->showNode(stdout, mdd, 1);
   printf("\n  node %3d ", mxd);
   arg2F->showNode(stdout, mxd, 1);
   printf("\n");
+  */
 #endif
 
   // check if mxd and mdd are at the same level
@@ -974,6 +991,10 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
     unpacked_node::Recycle(Ru);
   } // else
 
+#ifdef TRACE_RECFIRE
+  std::cout << "saturate recfire(" << mdd << ", " << mxd << ")\n";
+#endif
+
   // cleanup mdd reader
   unpacked_node::Recycle(A);
 
@@ -986,11 +1007,16 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
 #endif
 #ifdef TRACE_RECFIRE
+  std::cout << "computed recfire(" << mdd << ", " << mxd << ") = "
+            << result << "\n";
+  /*
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
   printf("  node %3d ", result);
   resF->showNode(stdout, result, 1);
   printf("\n");
+  */
 #endif
+
   return saveResult(Key, mdd, mxd, result);
 }
 
@@ -1412,12 +1438,14 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
   if (0==Key) return;
 
 #ifdef TRACE_RECFIRE
+  /*
   printf("computing recFire(<%d, %d>, %d)\n", ev, evmdd, mxd);
   printf("  node <%d, %d> ", ev, evmdd);
   arg1F->showNode(stdout, evmdd, 1);
   printf("\n  node %3d ", mxd);
   arg2F->showNode(stdout, mxd, 1);
   printf("\n");
+  */
 #endif
 
   // check if mxd and evmdd are at the same level
@@ -1517,10 +1545,12 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
   printf("computed recfire(<%d, %d>, %d) = <%d, %d>\n", ev, evmdd, mxd, resEv, resEvmdd);
 #endif
 #ifdef TRACE_RECFIRE
+  /*
   printf("computed recfire(<%d, %d>, %d) = <%d, %d>\n", ev, evmdd, mxd, resEv, resEvmdd);
   printf("  node <%d, %d> ", resEv, resEvmdd);
   resF->showNode(stdout, resEvmdd, 1);
   printf("\n");
+  */
 #endif
 
   saveResult(Key, ev, evmdd, mxd, resEv, resEvmdd);

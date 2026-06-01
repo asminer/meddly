@@ -23,7 +23,7 @@
 #include "../rel_node.h"
 #include "../io.h"
 
-#define DEBUG_BASE
+// #define TRACE
 
 // **********************************************************************
 
@@ -64,6 +64,10 @@ MEDDLY::sat_index_explorer::~sat_index_explorer()
 
 void MEDDLY::sat_index_explorer::restart(node_handle n)
 {
+#ifdef TRACE
+    std::cout << "saturating level " << level
+              << " (mxd " << n << ")\n";
+#endif
     //
     // Clear old
     //
@@ -328,7 +332,7 @@ bool MEDDLY::explore_fifo::nextEdge(unsigned &i, unsigned &j, node_handle &dn)
             if (diagonals[i]) {
                 j = i;
                 dn = diagonals[i];
-                return true;
+                break;
             }
         }
 
@@ -341,8 +345,14 @@ bool MEDDLY::explore_fifo::nextEdge(unsigned &i, unsigned &j, node_handle &dn)
         j = rows[i].elements[rptr].index;
         dn = rows[i].elements[rptr].down;
         rptr++;
-        return true;
+        break;
     }
+
+#ifdef TRACE
+    std::cout << "level " << level << ": " << i << " -> " << j
+              << " (down " << dn << ")\n";
+#endif
+    return true;
 }
 
 void MEDDLY::explore_fifo::clear()

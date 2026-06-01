@@ -29,13 +29,12 @@
 #include "../forest_edgerules.h"
 
 #include "prepost_common.h"
+#include "../operators.h"
 
 // #define TRACE
 // #define DEBUG_SPLIT
-
-#ifdef TRACE
-#include "../operators.h"
-#endif
+// #define DEBUG_SPLIT_FULL
+// #define TRACE_RECFIRE
 
 // #define RECFIRE_THEN_SAT
 
@@ -762,11 +761,6 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
         // Treat that case quickly.
         //
         ATYPE::apply(resF, av, A, arg2F, B, resF, cv, C);
-        if (L) {
-            node_handle oldC = C;
-            saturate_1(L, cv, C, cv, C);
-            resF->unlinkNode(oldC);
-        }
         return;
     }
 
@@ -839,6 +833,10 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     // Compute table 'miss'; do computation
     //
     // **************************************************************
+
+#ifdef TRACE_RECFIRE
+    std::cout << "starting recfire(" << A << ", " << B << ")\n";
+#endif
 
     //
     // Set up unpacked nodes
@@ -1039,6 +1037,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     Cu->show(out, true);
     out << "\n";
 #endif
+#ifdef TRACE_RECFIRE
+    std::cout << "saturate recfire(" << A << ", " << B << ")\n";
+#endif
 
 #ifndef RECFIRE_THEN_SAT
     //
@@ -1091,6 +1092,10 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     saturate_1(L, cv, C, cv, C);
     resF->unlinkNode(oldC);
 #endif
+
+#ifdef TRACE_RECFIRE
+    std::cout << "computed recfire(" << A << ", " << B << ") = " << C << "\n";
+#endif
 }
 
 // ************************************************************************
@@ -1141,7 +1146,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
     mxd.set(arg2F->linkNode(bp));
     for (int k=L; k; --k)
     {
-#ifdef DEBUG_SPLIT
+#ifdef DEBUG_SPLIT_FULL
         splout << "Splitting relation, at level " << k << "\n";
 #endif
         node_handle resp;
@@ -1150,14 +1155,14 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
         //
         const node_handle mxdn = mxd.getNode();
         top_at_or_below[k] = mxd;
-#ifdef DEBUG_SPLIT
+#ifdef DEBUG_SPLIT_FULL
         splout << "    at or below: ";
         top_at_or_below[k].show(splout);
         splout << "\n";
 #endif
 
         if (ABS(arg2F->getNodeLevel(mxdn)) < k) {
-#ifdef DEBUG_SPLIT
+#ifdef DEBUG_SPLIT_FULL
             splout << "    no dependency on this level\n";
             splout << "    exactly: 0\n";
 #endif
@@ -1179,7 +1184,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
             diag.set(resp);
         }
 
-#ifdef DEBUG_SPLIT
+#ifdef DEBUG_SPLIT_FULL
         splout << "    diagonals: ";
         for (unsigned i=0; i<maxi; i++) {
             if (i) splout << ", ";
@@ -1209,23 +1214,27 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
     top_exactly[0].set(0);
 
 
-#ifdef DEBUG_SPLIT
-    std::cout << "After splitting monolithic event in " << opName() << "\n";
+#ifdef DEBUG_SPLIT_FULL
+    splout << "After splitting monolithic event in " << opName() << "\n";
     for (unsigned k=0; k <= arg2F->getNumVariables(); k++) {
-        std::cout << "Relation with top level<=" << k << ": ";
+        splout << "Relation with top level<=" << k << ": ";
         top_at_or_below[k].show(splout);
-        std::cout << "\n";
+        splout << "\n";
         if (ABS(arg2F->getNodeLevel(top_at_or_below[k].getNode())) == k) {
             top_at_or_below[k].showGraph(splout);
         }
-        std::cout << "======================================================================\n";
+        splout << "======================================================================\n";
     }
+#endif
+#ifdef DEBUG_SPLIT
     for (unsigned k=1; k <= arg2F->getNumVariables(); k++) {
-        std::cout << "Relation with top level=" << k << ": ";
+        splout << "Relation with top level=" << k << ": ";
         top_exactly[k].show(splout);
-        std::cout << "\n";
+        splout << "\n";
+#ifdef DEBUG_SPLIT_FULL
         top_exactly[k].showGraph(splout);
-        std::cout << "======================================================================\n";
+        splout << "======================================================================\n";
+#endif
     }
 #endif
 
