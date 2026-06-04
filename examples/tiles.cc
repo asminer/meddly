@@ -446,6 +446,11 @@ void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
     forest* relF = relation.getForest();
 
     switch (method) {
+        case '1':
+                    std::cout << "saturation v1..." << std::endl;
+                    apply(REACHABLE_SATUR(true), initial, relation, reachable);
+                    break;
+
         case 'm':
                     std::cout << "saturation..." << std::endl;
                     apply(REACHABLE_STATES_DFS, initial, relation, reachable);
@@ -626,6 +631,7 @@ int usage(const char* exe)
     cerr << "    --dist:    Build the distance function.\n";
     cerr << "\n";
 
+    cerr << "    --sat1     Saturation v1 (new), monolithic relation\n";
     cerr << "    --msat     Saturation, monolithic relation\n";
     cerr << "    --trad     Traditional BFS without frontier set\n";
     cerr << "    --tradc    Traditional BFS without frontier set, using checkpoints\n";
@@ -741,6 +747,10 @@ int main(int argc, const char** argv)
                     continue;
                 }
 
+                if (0==strcmp("--sat1", arg)) {
+                    satmethod = '1';
+                    continue;
+                }
                 if (0==strcmp("--msat", arg)) {
                     satmethod = 'm';
                     continue;
