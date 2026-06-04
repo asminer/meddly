@@ -291,7 +291,23 @@ class MEDDLY::index_fifo {
             data[ans] = NOTINQ;
             return ans;
         }
+
+        void show(output &s) const;
 };
+
+// **********************************************************************
+
+void MEDDLY::index_fifo::show(output &s) const
+{
+    int p = head;
+    while (p != NULPTR) {
+        s.put(p);
+        s.put(", ");
+
+        p = data[p];
+    }
+    s.put('_');
+}
 
 // **********************************************************************
 // *                                                                    *
@@ -304,6 +320,7 @@ class MEDDLY::explore_fifo : public sat_index_explorer {
         explore_fifo(forest* _F, int _level, bool _forwd);
         virtual ~explore_fifo();
         virtual bool nextEdge(unsigned &i, unsigned &j, node_handle &down);
+        virtual void show(output &s) const;
 
     protected:
         virtual void clear();
@@ -360,6 +377,14 @@ bool MEDDLY::explore_fifo::nextEdge(unsigned &i, unsigned &j, node_handle &dn)
               << " (down " << dn << ")\n";
 #endif
     return true;
+}
+
+void MEDDLY::explore_fifo::show(output &s) const
+{
+    sat_index_explorer::show(s);
+    s.put("updated: ");
+    queue.show(s);
+    s.put('\n');
 }
 
 void MEDDLY::explore_fifo::clear()

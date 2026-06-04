@@ -31,12 +31,13 @@
 #include "prepost_common.h"
 #include "../operators.h"
 
+// #define RECFIRE_THEN_SAT
+
 // #define TRACE
 // #define DEBUG_SPLIT
 // #define DEBUG_SPLIT_FULL
 // #define TRACE_RECFIRE
 
-// #define RECFIRE_THEN_SAT
 // #define COUNT_CALLS
 
 // ************************************************************************
@@ -666,7 +667,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::
     // Saturation loop :)
     //
     while (explorers[L]->nextEdge(i, j, d)) {
-        if (ATYPE::areAllReachable(edgeval(Cu, i), Cu->down(i))) {
+        if (ATYPE::areAllReachable(edgeval(Cu, j), Cu->down(j))) {
             continue;
         }
 #ifdef TRACE
