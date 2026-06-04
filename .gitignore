@@ -1,5 +1,6 @@
 .DS_Store
 .trad_ss.txt
+.satur.txt
 aclocal.m4
 ar-lib
 autom4te.cache

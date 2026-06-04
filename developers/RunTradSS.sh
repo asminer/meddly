@@ -15,14 +15,14 @@ first_word()
 # Arg7: front peak
 table_row()
 {
-    printf "%-10s || %10s | %10s || %6s | %6s || %10s | %10s\n" "$1" "$2" "$3" "$4" "$5" "$6" "$7"
+    printf "%-10s || %7.3f | %7.3f || %5d | %5d || %9d | %9d\n" "$1" "$2" "$3" "$4" "$5" "$6" "$7"
 }
 
 table_header()
 {
-    printf -- "           || RSS Generation Time (s) ||   Final Nodes   ||       Peak   Nodes     \n"
-    printf -- " Model     || Trad.      | Frontier   || Trad,  | Front. || Trad.      | Frontier  \n"
-    printf -- "-----------++------------+------------++--------+--------++------------+-----------\n"
+    printf -- "           ||  Generation Time  ||  Final Nodes  ||      Peak   Nodes    \n"
+    printf -- " Model     || Trad.   | Front.  || Trad, | Front || Trad.     | Frontier \n"
+    printf -- "-----------++---------+---------++-------+-------++-----------+----------\n"
 }
 
 show_table()
