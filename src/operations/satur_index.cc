@@ -245,7 +245,7 @@ class MEDDLY::explore_fifo : public sat_index_explorer {
         virtual void finishUpdate(unsigned i);
 
     private:
-        index_fifo queue;
+        index_queue queue;
         int rptr;
 };
 

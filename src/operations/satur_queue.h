@@ -25,7 +25,12 @@
 namespace MEDDLY {
     class output;
 
-    class index_fifo {
+    /*
+        Queue of indexes to explore.
+        Quick addition and removal from the queue,
+        and also checking if an index belongs to the queue already.
+     */
+    class index_queue {
             /**
                 A linked list of nodes.
                 Element i is NOTINQ if it is not in the queue.
@@ -46,7 +51,7 @@ namespace MEDDLY {
                 return -2;
             }
         public:
-            index_fifo() {
+            index_queue() {
                 head = tail = NULPTR();
             }
 

@@ -134,6 +134,7 @@ libmeddly_la_SOURCES = \
     operations/reach_trad.h             operations/reach_trad.cc   \
     \
     operations/satur_index.h            operations/satur_index.cc  \
+    operations/satur_graph.h            operations/satur_graph.cc  \
     operations/satur_queue.h            operations/satur_queue.cc  \
     operations/satur_sets.h             operations/satur_sets.cc   \
     \

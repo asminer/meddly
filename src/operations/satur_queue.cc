@@ -20,7 +20,13 @@
 #include "../io.h"
 
 
-void MEDDLY::index_fifo::show(output &s) const
+// ******************************************************************
+// *                                                                *
+// *                      index_queue  methods                      *
+// *                                                                *
+// ******************************************************************
+
+void MEDDLY::index_queue::show(output &s) const
 {
     int p = head;
     while (p != NULPTR()) {
