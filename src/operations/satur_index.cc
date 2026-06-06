@@ -23,15 +23,13 @@
 #include "../rel_node.h"
 #include "../io.h"
 
+#include "satur_queue.h"
+
 // #define TRACE
 
 // **********************************************************************
 
 namespace MEDDLY {
-
-    // helper objects
-
-    class index_fifo;
 
     // various explorers
 
@@ -226,87 +224,6 @@ void MEDDLY::sat_index_explorer::finishExpandRows(unsigned, unsigned)
 void MEDDLY::sat_index_explorer::finishUpdate(unsigned)
 {
     // Do nothing
-}
-
-// **********************************************************************
-// *                                                                    *
-// *                         index_fifo   class                         *
-// *                                                                    *
-// **********************************************************************
-
-#define NULPTR -1
-#define NOTINQ -2
-
-class MEDDLY::index_fifo {
-        /**
-            A linked list of nodes.
-            Element i is NOTINQ if it is not in the queue.
-            Otherwise, element i is the index of the next item
-            in the queue, or -1 if it is the end of the list.
-         */
-        std::vector <int> data;
-
-        /// Index (in data) of the front of the queue.
-        int head;
-        /// Index (in data) of the end of the queue.
-        int tail;
-    public:
-        index_fifo() {
-            head = tail = NULPTR;
-        }
-
-        inline void resize(unsigned sz) {
-            data.resize(sz, NOTINQ);
-        }
-        inline void clear() {
-            data.assign(data.size(), NOTINQ);
-        }
-        inline bool isEmpty() const {
-            return NULPTR == head;
-        }
-        inline int front() const {
-            return (head >= 0) ? head : -1;
-        }
-        inline void add(int i) {
-            MEDDLY_CHECK_RANGE(0, i, int(data.size()));
-            if (NOTINQ != data[i]) {
-                // already in queue
-                return;
-            }
-            if (NULPTR == head) {
-                // queue is empty
-                head = i;
-            } else {
-                // queue is not empty
-                MEDDLY_CHECK_RANGE(0, tail, int(data.size()));
-                data[tail] = i;
-            }
-            tail = i;
-            data[i] = NULPTR;
-        }
-        inline int remove() {
-            MEDDLY_CHECK_RANGE(0, head, int(data.size()));
-            int ans = head;
-            head = data[head];
-            data[ans] = NOTINQ;
-            return ans;
-        }
-
-        void show(output &s) const;
-};
-
-// **********************************************************************
-
-void MEDDLY::index_fifo::show(output &s) const
-{
-    int p = head;
-    while (p != NULPTR) {
-        s.put(p);
-        s.put(", ");
-
-        p = data[p];
-    }
-    s.put('_');
 }
 
 // **********************************************************************
