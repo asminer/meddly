@@ -48,6 +48,8 @@ namespace MEDDLY {
     typedef void (*operation_progress)(unsigned itno, char status);
 };
 
+// #define ALLOW_OPTIONS
+
 // ******************************************************************
 // *                                                                *
 // *                        operation  class                        *
@@ -60,6 +62,7 @@ namespace MEDDLY {
 */
 class MEDDLY::operation {
         friend class initializer_list;
+#ifdef ALLOW_OPTIONS
     public:
         struct option {
                 char    type;
@@ -83,6 +86,7 @@ class MEDDLY::operation {
                     opt_f = f;
                 }
         };
+#endif
     public:
         /** Constructor (OLD)
                 @param  n           Operation name, for debugging
@@ -129,6 +133,8 @@ class MEDDLY::operation {
             return uses_progress;
         }
 
+#ifdef ALLOW_OPTIONS
+
         /// How many user-adjustable options are there for this
         inline unsigned getNumOptions() const {
             return num_options;
@@ -168,6 +174,8 @@ class MEDDLY::operation {
         /// Display the operation name and options.
         virtual void showNameAndOptions(output &s) const;
 
+#endif
+
     protected:
         /// Set the name after constructing.
         inline void setName(const char* n) {
@@ -175,6 +183,8 @@ class MEDDLY::operation {
             MEDDLY_DCASSERT(!name);
             name = n;
         }
+
+#ifdef ALLOW_OPTIONS
 
         /// Set the option types. Default is nullptr.
         inline void setOptionTypes(const char* optypes) {
@@ -189,6 +199,8 @@ class MEDDLY::operation {
             the default behavior throws an error.
         */
         virtual bool _setOption(unsigned i, option x);
+
+#endif
 
         /// Indicate that the progress notifier might be used.
         /// (Default: it's never used.)
@@ -299,8 +311,10 @@ class MEDDLY::operation {
 
     private:
         const char* name;
+#ifdef ALLOW_OPTIONS
         const char* options;
         unsigned num_options;
+#endif
         /// List of forest IDs associated with this operation.
         std::vector <unsigned> FList;
 

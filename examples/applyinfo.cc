@@ -115,6 +115,7 @@ int main()
         cout << "    " << F->getName() << "\n        ";
         showDocs(8, F->getDocs());
         cout << "\n";
+#ifdef ALLOW_OPTIONS
         if (F->getNumOptions()) {
             cout << "        After instantiating, the following options may be set.\n\n";
             for (unsigned o=0; o<F->getNumOptions(); o++) {
@@ -123,6 +124,7 @@ int main()
                 cout << "\n";
             }
         }
+#endif
 
         cout << "        Implemented in " << F->getFile() << ".\n";
         cout << "\n\n";

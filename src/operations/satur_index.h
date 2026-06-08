@@ -22,6 +22,55 @@
 #include "../defines.h"
 #include <vector>
 
+#define OLD_INDEX_INTERFACE
+
+/*
+ *  Interface for index explorer objects used in saturation.
+ *
+ *      constructor with no parameters
+ *      destructor if needed
+ *
+ *      void attach(forest* F, int level, bool forwd):
+ *
+ *          called once, to attach the explorer to the MXD forest and level
+ *
+ *
+ *      void restart(node handle n):
+ *
+ *          initialize the explorer from MXD node n
+ *
+ *
+ *      void wasUpdated(unsigned i):
+ *
+ *          Indicate that index i has been updated, and its outgoing edges
+ *          need to be re-visited.
+ *
+ *
+ *      bool nextEdge(unsigned &i, unsigned &j, node_handle &down):
+ *
+ *          Get the next edge to explore, if there is one. Returns
+ *          false if there are no more edges, otherwise returns true.
+ *          On true return, we should explore edge [i, j] which has
+ *          the specified downward pointer.
+ *
+ *
+ *      node_handle getDiagonal(unsigned i):
+ *
+ *          Obtain edge [i,i]. Will explore from index i as needed.
+ *
+ *
+ *      void show(output &s):
+ *
+ *          Display information, for debugging.
+ */
+
+// ******************************************************************
+// *                                                                *
+// *                         OLD  INTERFACE                         *
+// *                                                                *
+// ******************************************************************
+#ifdef OLD_INDEX_INTERFACE
+
 // Interface for index selection in saturation
 //
 //
@@ -183,6 +232,6 @@ namespace MEDDLY {
     sat_index_explorer* makeSatIndexExplorer(char which, forest* F,
             int level, bool forwd);
 };
-
+#endif // ifdef OLD_INDEX_INTERFACE
 
 #endif

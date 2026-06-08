@@ -342,12 +342,14 @@ class MEDDLY::binary_factory {
         inline const char* getName() const { return _name; }
         inline const char* getDocs() const { return _doc; }
 
+#ifdef ALLOW_OPTIONS
         inline unsigned getNumOptions() const {
             return _options.size();
         }
         inline const char* getOptionDoc(unsigned i) const {
             return _options[i];
         }
+#endif
 
         /// Should ONLY be called in binary_operation destructor
         inline void remove(binary_operation* bop)
@@ -391,12 +393,14 @@ class MEDDLY::binary_factory {
         */
         void _setup(const char* file, const char* name, const char* doc);
 
+#ifdef ALLOW_OPTIONS
         /**
             Add option documentation.
         */
         inline void appendOptionDoc(const char* option_doc) {
             _options.push_back(option_doc);
         }
+#endif
 
         /** Clean up base class.
             Called during library cleanup.
@@ -425,7 +429,9 @@ class MEDDLY::binary_factory {
         const char* _file;
         const char* _name;
         const char* _doc;
+#ifdef ALLOW_OPTIONS
         std::vector <const char*> _options;
+#endif
 
         binary_operation* front;
 

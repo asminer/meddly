@@ -296,7 +296,7 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
         case '1':
             printf("Building reachability set using saturation v1, monolithic relation\n");
             fflush(stdout);
-            apply(REACHABLE_SATUR(true), init_state, nsf, reachable);
+            apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
             break;
 
         case 'e':

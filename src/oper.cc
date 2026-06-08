@@ -42,8 +42,10 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
     fflush(stdout);
 #endif
     name = n;
+#ifdef ALLOW_OPTIONS
     options = nullptr;
     num_options = 0;
+#endif
 
     registerOperation(*this);
 
@@ -89,8 +91,10 @@ MEDDLY::operation::operation(const char* n, unsigned et_slots)
 MEDDLY::operation::operation()
 {
     name = nullptr;
+#ifdef ALLOW_OPTIONS
     options = nullptr;
     num_options = 0;
+#endif
     registerOperation(*this);
     FList.clear();
 
@@ -169,6 +173,8 @@ void MEDDLY::operation::destroyAllWithForest(const forest* f)
 // Protected
 //
 
+#ifdef ALLOW_OPTIONS
+
 MEDDLY::operation::option MEDDLY::operation::getOption(unsigned i) const
 {
     return option();
@@ -183,6 +189,8 @@ bool MEDDLY::operation::_setOption(unsigned i, option x)
 {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
+
+#endif
 
 void MEDDLY::operation::registerInForest(MEDDLY::forest* f)
 {

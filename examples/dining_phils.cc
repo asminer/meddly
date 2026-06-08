@@ -612,7 +612,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
         case '1':
             printf("Building reachability set using saturation v1, monolithic relation\n");
             fflush(stdout);
-            apply(REACHABLE_SATUR(true), initialStates, nsf, reachableStates);
+            apply(REACHABLE_SATUR(true, 1), initialStates, nsf, reachableStates);
             break;
 
         case 'k':

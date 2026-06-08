@@ -448,7 +448,7 @@ void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
     switch (method) {
         case '1':
                     std::cout << "saturation v1..." << std::endl;
-                    apply(REACHABLE_SATUR(true), initial, relation, reachable);
+                    apply(REACHABLE_SATUR(true, 1), initial, relation, reachable);
                     break;
 
         case 'm':

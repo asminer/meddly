@@ -81,8 +81,8 @@ namespace MEDDLY {
     template <class EOP, class ATYPE>
     class saturation_set_mtrel : public binary_operation {
         public:
-            saturation_set_mtrel(bool fwd, forest* arg1, forest* arg2,
-                    forest* res);
+            saturation_set_mtrel(const int version, bool fwd,
+                    forest* arg1, forest* arg2, forest* res);
 
             virtual ~saturation_set_mtrel();
 
@@ -91,10 +91,14 @@ namespace MEDDLY {
                     const edge_value &bv, node_handle bp,
                     edge_value &cv, node_handle &cp);
 
+#ifdef ALLOW_OPTIONS
             virtual void showNameAndOptions(output &s) const;
             virtual option getOption(unsigned i) const;
+#endif
         protected:
+#ifdef ALLOW_OPTIONS
             virtual bool _setOption(unsigned i, option x);
+#endif
 
             /* For an input set (av, A) in resF,
              * determine saturated node (cv, C) in resF,
@@ -188,9 +192,12 @@ namespace MEDDLY {
             ostream_output out;
             unsigned top_count;
 #endif
+#ifdef ALLOW_OPTIONS
             // options
             int version;
             char index_order;
+#endif
+            const int VERSN;
 
             edge_value nothing;
             // bool fire_cache_level;
@@ -213,8 +220,9 @@ namespace MEDDLY {
 
 template <class EOP, class ATYPE>
 MEDDLY::saturation_set_mtrel<EOP, ATYPE>
-    ::saturation_set_mtrel(bool fwd, forest* arg1, forest* arg2, forest* res)
-    : binary_operation(arg1, arg2, res), FORWD(fwd)
+    ::saturation_set_mtrel(const int version, bool fwd,
+            forest* arg1, forest* arg2, forest* res)
+    : binary_operation(arg1, arg2, res), FORWD(fwd), VERSN(version)
 #ifdef TRACE
       , out(std::cout), top_count(0)
 #endif
@@ -231,6 +239,7 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
+#ifdef ALLOW_OPTIONS
     //
     // Set the options for saturation
     //   option1: version number
@@ -239,12 +248,9 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     setOptionTypes("ic");
     setOption(0, 0L);
     setOption(1, ' ');
-
-    // Helper explorers
-    explorers.resize(arg2F->getNumVariables()+1);
-    for (unsigned i=0; i<explorers.size(); i++) {
-        explorers[i] = nullptr;
-    }
+#else
+    initSplit();
+#endif
 
     //
     // Helper operations
@@ -289,6 +295,19 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
 
     fire_ct->doneBuilding();
     sat_ct->doneBuilding();
+
+    //
+    // Initialize explorers
+    //
+    explorers.resize(arg2F->getNumVariables()+1);
+    explorers[0] = nullptr;
+
+    for (unsigned i=1; i<explorers.size(); i++) {
+#ifdef OLD_INDEX_INTERFACE
+        explorers[i] = makeSatIndexExplorer('q', arg2F, i, FORWD);
+        std::cout << "made explorer level " << i << "\n";
+#endif
+    }
 }
 
 // ************************************************************************
@@ -300,11 +319,23 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>::~saturation_set_mtrel()
 {
     fire_ct->markForDestroy();
     sat_ct->markForDestroy();
+
+    //
+    // Clean up explorers
+    //
+#ifdef OLD_INDEX_INTERFACE
+    for (unsigned i=1; i<explorers.size(); i++) {
+        delete explorers[i];
+        explorers[i] = nullptr;
+    }
+#endif
 }
 
 // ************************************************************************
 // showNameAndOptions()
 // ************************************************************************
+
+#ifdef ALLOW_OPTIONS
 
 template <class EOP, class ATYPE>
 void
@@ -330,9 +361,13 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     }
 }
 
+#endif
+
 // ************************************************************************
 // getOption()
 // ************************************************************************
+
+#ifdef ALLOW_OPTIONS
 
 template <class EOP, class ATYPE>
 MEDDLY::operation::option
@@ -348,9 +383,13 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     throw error(error::INVALID_OPTION, __FILE__, __LINE__);
 }
 
+#endif
+
 // ************************************************************************
 // _setOption()
 // ************************************************************************
+
+#ifdef ALLOW_OPTIONS
 
 template <class EOP, class ATYPE>
 bool
@@ -397,6 +436,8 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     return false;
 }
 
+#endif
+
 // ************************************************************************
 //
 // compute()
@@ -411,17 +452,11 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
         edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(bv.isVoid());
-    //
-    // Initialize explorers
-    //
-    for (unsigned i=1; i<explorers.size(); i++) {
-        explorers[i] = makeSatIndexExplorer(index_order, arg2F, i, FORWD);
-    }
 
     //
     // Split the relation
     //
-    if (1==version) fillSplit(L, bp);
+    if (1==VERSN) fillSplit(L, bp);
 
 #ifdef TRACE
     out.indentation(0);
@@ -443,20 +478,12 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     //
     // Saturate
     //
-    if (1==version) {
+    if (1==VERSN) {
         saturate_1(L, acv, acp, cv, cp);
     } else {
         MEDDLY_DCASSERT(false);
     }
     resF->unlinkNode(acp);
-
-    //
-    // Clean up explorers
-    //
-    for (unsigned i=1; i<explorers.size(); i++) {
-        delete explorers[i];
-        explorers[i] = nullptr;
-    }
 
 #ifdef TRACE
     out << opName() << " #" << top_count << " end\n";
@@ -466,7 +493,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     std::cout << "#recfire  calls: " << recfire_calls << "\n";
 #endif
 
-    if (1==version) fillSplit(L, 0);
+    // if (1==VERSN) fillSplit(L, 0);
 }
 
 // ************************************************************************
@@ -1081,7 +1108,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
 template <class EOP, class ATYPE>
 void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::initSplit()
 {
-    if (version != 1) {
+    if (VERSN != 1) {
         //
         // Clear relation split by top levels
         //
@@ -1109,7 +1136,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::initSplit()
 template <class EOP, class ATYPE>
 void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
 {
-    MEDDLY_DCASSERT(1==version);
+    MEDDLY_DCASSERT(1==VERSN);
 #ifdef DEBUG_SPLIT
     ostream_output splout(std::cout);
 #endif
@@ -1236,7 +1263,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
 // ******************************************************************
 
 namespace MEDDLY {
-    template <bool FWD>
+    template <bool FWD, int VER>
     class reachset_satur_factory : public binary_factory {
         public:
             virtual void setup();
@@ -1248,35 +1275,40 @@ namespace MEDDLY {
 
 // ******************************************************************
 
-template <bool FWD>
-void MEDDLY::reachset_satur_factory <FWD>::setup()
+template <bool FWD, int VER>
+void MEDDLY::reachset_satur_factory <FWD, VER>::setup()
 {
+    //
+    // TBD: rewrite these
+    //
     if (FWD) {
         _setup(__FILE__, "REACHABLE_SATUR(true)", "Build forward reachability set using saturation (citation? TBD). The first argument is the set of initial states, and the second argument is the transition relation. The operation has two options. Option 0 is an integer, to indicate the version number of saturation to use (0 for default, 1 for original). Option 1 is a character, to indicate how to select the next index to explore (' ' for default, 'q' whatever is next in the queue).");
     } else {
         _setup(__FILE__, "REACHABLE_SATUR(false)", "Build backward reachability set using saturation (citation? TBD). The first argument is the set of initial states, and the second argument is the transition relation. The operation has two options. Option 0 is an integer, to indicate the version number of saturation to use (0 for default, 1 for original). Option 1 is a character, to indicate how to select the next index to explore (' ' for default, 'q' whatever is next in the queue).");
     }
 
+#ifdef ALLOW_OPTIONS
     appendOptionDoc("(integer): indicates the version number of saturation to use (0 for default, 1 for original)");
 
     appendOptionDoc("(char): indicates how to select the next index to explore (' ' for default, 'q' whatever is next in the queue).");
+#endif
 }
 
-template <bool FWD>
+template <bool FWD, int VER>
 MEDDLY::binary_operation*
-MEDDLY::reachset_satur_factory <FWD>::build_new(forest* a, forest* b, forest* c)
+MEDDLY::reachset_satur_factory <FWD, VER>::build_new(forest* a, forest* b, forest* c)
 {
     if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
 
         switch (c->getRangeType()) {
             case range_type::BOOLEAN:
                 return new saturation_set_mtrel<EdgeOp_none,
-                            mt_prepost>(FWD, a, b, c);
+                            mt_prepost>(VER, FWD, a, b, c);
 
             case range_type::INTEGER:
                 if (c->isFullyReduced())  {
                     return new saturation_set_mtrel<EdgeOp_none,
-                            mt_distance>(FWD, a, b, c);
+                            mt_distance>(VER, FWD, a, b, c);
                 }
 
             default:
@@ -1289,11 +1321,11 @@ MEDDLY::reachset_satur_factory <FWD>::build_new(forest* a, forest* b, forest* c)
         switch (a->getEdgeType()) {
             case edge_type::INT:
                 return new saturation_set_mtrel<EdgeOp_plus<int>,
-                            ev_prepost<int> > (FWD, a, b, c);
+                            ev_prepost<int> > (VER, FWD, a, b, c);
 
             case edge_type::LONG:
                 return new saturation_set_mtrel<EdgeOp_plus<long>,
-                            ev_prepost<long> > (FWD, a, b, c);
+                            ev_prepost<long> > (VER, FWD, a, b, c);
 
             default:
                 return nullptr;
@@ -1311,12 +1343,16 @@ MEDDLY::reachset_satur_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::binary_factory& MEDDLY::REACHABLE_SATUR(bool fwd)
+MEDDLY::binary_factory& MEDDLY::REACHABLE_SATUR(bool fwd, int version)
 {
-    static reachset_satur_factory<true>  forwd;
-    static reachset_satur_factory<false> bckwd;
+    //
+    // TBD: ignore the version number for now
+    //
 
-    if (fwd) return forwd;
-    else     return bckwd;
+    static reachset_satur_factory<true, 1>  forwd1;
+    static reachset_satur_factory<false, 1> bckwd1;
+
+    if (fwd) return forwd1;
+    else     return bckwd1;
 }
 

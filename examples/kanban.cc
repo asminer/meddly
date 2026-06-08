@@ -383,7 +383,7 @@ int main(int argc, const char** argv)
             case '1':
                 cout << "Building reachability set using saturation v1, monolithic relation"
                      << endl;
-                apply(REACHABLE_SATUR(true), init_state, nsf, reachable);
+                apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
                 break;
 
             case 'e':

@@ -28,6 +28,10 @@
 // #define TRACE
 
 // **********************************************************************
+// **********************************************************************
+// **********************************************************************
+
+#ifdef OLD_INDEX_INTERFACE
 
 namespace MEDDLY {
 
@@ -343,3 +347,4 @@ MEDDLY::sat_index_explorer* MEDDLY::makeSatIndexExplorer(char which,
     return nullptr;
 }
 
+#endif // ifdef OLD_INDEX_INTERFACE

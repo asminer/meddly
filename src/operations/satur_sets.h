@@ -22,7 +22,7 @@
 namespace MEDDLY {
     class binary_factory;
 
-    binary_factory& REACHABLE_SATUR(bool fwd);
+    binary_factory& REACHABLE_SATUR(bool fwd, int version);
 
 }
 
