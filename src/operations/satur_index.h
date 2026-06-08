@@ -22,6 +22,9 @@
 #include "../defines.h"
 #include <vector>
 
+#include "satur_queue.h"
+#include "satur_graph.h"
+
 #define OLD_INDEX_INTERFACE
 
 /*
@@ -56,13 +59,50 @@
  *
  *      node_handle getDiagonal(unsigned i):
  *
- *          Obtain edge [i,i]. Will explore from index i as needed.
+ *          Obtain edge [i,i]
  *
  *
  *      void show(output &s):
  *
  *          Display information, for debugging.
  */
+
+namespace MEDDLY {
+    class satur_index_basic;
+}
+
+// ******************************************************************
+// *                                                                *
+// *                    satur_index_basic  class                    *
+// *                                                                *
+// ******************************************************************
+
+// Basic graph and queue
+class MEDDLY::satur_index_basic {
+        satur_graph graph;
+        index_queue queue;
+        int curr;
+    public:
+        satur_index_basic();
+
+        inline void attach(forest* F, int level, bool forwd) {
+            graph.attach(F, level, forwd);
+        }
+        inline void restart(node_handle n) {
+            curr = -1;
+            graph.restart(n);
+            queue.clear();
+        }
+        inline void wasUpdated(unsigned i) {
+            graph.ensureRowExplored(i);
+            queue.add(int(i));
+        }
+        bool nextEdge(unsigned &i, unsigned &j, node_handle &down);
+        inline node_handle getDiagonal(unsigned i) {
+            return graph.getDiagonal(i);
+        }
+        void show(output &s) const;
+};
 
 // ******************************************************************
 // *                                                                *

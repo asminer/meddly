@@ -72,7 +72,9 @@ namespace MEDDLY {
                 return (head >= 0) ? head : NOINDEX();
             }
             inline void add(int i) {
-                MEDDLY_CHECK_RANGE(0, i, int(data.size()));
+                if (i >= data.size()) {
+                    data.resize(i+1, NOTINQ());
+                }
                 if (NOTINQ() != data[i]) {
                     // already in queue
                     return;

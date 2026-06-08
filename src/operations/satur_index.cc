@@ -28,6 +28,71 @@
 // #define TRACE
 
 // **********************************************************************
+// *                                                                    *
+// *                     satur_index_basic  methods                     *
+// *                                                                    *
+// **********************************************************************
+
+// TBD all of these methods
+
+MEDDLY::satur_index_basic::satur_index_basic()
+{
+    curr = -1;
+}
+
+bool MEDDLY::satur_index_basic::
+nextEdge(unsigned &i, unsigned &j, node_handle &down)
+{
+    for (;;) {
+        if (queue.isEmpty()) return false;
+
+        int ii = queue.front();
+        MEDDLY_DCASSERT(ii>=0);
+        i = unsigned(ii);
+
+        if (curr < 0) {
+            //
+            // Starting fresh
+            //
+            curr = graph.getRowStart(i);
+            down = graph.getDiagonal(i);
+            if (down) {
+                j = i;
+                break;
+            }
+        }
+
+        if (graph.getElement(curr, j, down)) {
+            //
+            // We got the next element; advance pointer
+            //
+            ++curr;
+            break;
+        }
+        //
+        // We're done with the row. Reset and loop
+        //
+        queue.remove();
+        curr = -1;
+    }
+
+#ifdef TRACE
+    std::cout << "level " << level << ": " << i << " -> " << j
+              << " (down " << down << ")\n";
+#endif
+    return true;
+}
+
+void MEDDLY::satur_index_basic::show(output &s) const
+{
+    graph.show(s);
+    s.put("updated: ");
+    queue.show(s);
+    s.put('\n');
+}
+
+
+// **********************************************************************
 // **********************************************************************
 // **********************************************************************
 

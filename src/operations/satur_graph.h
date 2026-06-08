@@ -70,6 +70,7 @@ namespace MEDDLY {
 #endif
                 return rowptr[i];
             }
+            /*
             inline const sparse_element& getElement(int p) const {
                 MEDDLY_DCASSERT(p>=0);
 #ifdef DEVELOPMENT_CODE
@@ -78,10 +79,21 @@ namespace MEDDLY {
                 return elements[p];
 #endif
             }
+            */
+            inline bool getElement(int p, unsigned &j, node_handle &dn) const {
+                MEDDLY_DCASSERT(p>=0);
+#ifdef DEVELOPMENT_CODE
+                if (elements.at(p).index < 0) return false;
+                j = unsigned(elements.at(p).index);
+                dn = elements.at(p).down;
+#else
+                if (elements[p].index < 0) return false;
+                j = unsigned(elements[p].index);
+                dn = elements[p].down;
+#endif
+                return true;
+            }
             inline node_handle getDiagonal(unsigned i) {
-                if (isRowUnexplored(i)) {
-                    exploreRow(i);
-                }
 #ifdef DEVELOPMENT_CODE
                 return diagonals.at(i) < 0;
 #else
