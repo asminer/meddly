@@ -162,8 +162,18 @@ dd_edge buildReachset(domain* d, int N, range_type R, edge_labeling E,
             apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
             break;
 
+        case '1':
+            std::cout << "\t\tUsing saturation v1\n";
+            apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
+            break;
+
+        case '2':
+            std::cout << "\t\tUsing saturation v2\n";
+            apply(REACHABLE_SATUR(true, 2), init_state, nsf, reachable);
+            break;
+
         default:
-            std::cout << "\t\tusing saturation\n";
+            std::cout << "\t\tusing original saturation\n";
             apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
     };
 
@@ -316,10 +326,11 @@ int Usage(const char* exe)
     cerr << "    --mti  : use integer MTMDDs (distances)\n";
     cerr << "    --ev   : use EV+MDDs (distances)\n";
     cerr << "\n";
-    cerr << "    --sat  : use saturation (default)\n";
+    cerr << "    --dfs  : use original saturation (default)\n";
+    cerr << "    --sat1 : use saturation v1\n";
+    cerr << "    --sat2 : use saturation v2\n";
     cerr << "    --front: use traditional iteration, with frontier set\n";
     cerr << "    --trad : use traditional iteration, without frontier set\n";
-    cerr << "    --bfs  : use old traditional iteration\n";
 
     return 1;
 }
@@ -379,8 +390,16 @@ int main(int argc, const char** argv)
         // saturation vs traditional
         //
 
-        if (0==strcmp("--sat", argv[i])) {
+        if (0==strcmp("--dfs", argv[i])) {
             method = 'S';
+            continue;
+        }
+        if (0==strcmp("--sat1", argv[i])) {
+            method = '1';
+            continue;
+        }
+        if (0==strcmp("--sat2", argv[i])) {
+            method = '2';
             continue;
         }
         if (0==strcmp("--trad", argv[i])) {

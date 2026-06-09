@@ -30,6 +30,18 @@ layout: single
     different versions of saturation. Options are used only for
     adjustments that do not affect the final answer.
 
+* Added ```REACHABLE_SATUR(fwd, version)``` operation
+    as a replacement for old saturation for monolithic relations
+    (and eventually, partitioned relations, etc., through
+    the relation node abstraction).
+    Version 1 is currently supported.
+
+* Added bogus built-in unary and binary operations,
+    that always fail.
+    The idea is to use these when an operation (or factory) is
+    required, but there really isn't one.
+
+
 ### Implementation
 
 * The ```COPY``` operation will use relation nodes in some cases.

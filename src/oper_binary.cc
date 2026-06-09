@@ -288,3 +288,33 @@ void MEDDLY::binary_list::searchRemove(binary_operation* bop)
 }
 
 #endif
+
+// ******************************************************************
+// *                                                                *
+// *                   bogus_binary_factory class                   *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    class bogus_binary_factory : public binary_factory {
+        public:
+            virtual void setup();
+    };
+};
+
+void MEDDLY::bogus_binary_factory::setup()
+{
+    _setup(__FILE__, "BOGUS_BINARY", "Bogus binary operation that always fails.");
+}
+
+// ******************************************************************
+// *                                                                *
+// *                       Factory front ends                       *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::binary_factory& MEDDLY::BOGUS_BINARY()
+{
+    static bogus_binary_factory fact;
+    return fact;
+}

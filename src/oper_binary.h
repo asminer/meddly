@@ -546,6 +546,8 @@ namespace MEDDLY {
     }
 #endif
 
+    /// Bogus binary operation that always fails.
+    binary_factory& BOGUS_BINARY();
 };
 
 #endif // #include guard

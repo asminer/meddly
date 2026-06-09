@@ -93,6 +93,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     //
     // Add all unary factories here
     //
+    all_unary.push_back( &BOGUS_UNARY()             );
     all_unary.push_back( &CARDINALITY()             );
     all_unary.push_back( &COMPLEMENT()              );
     all_unary.push_back( &CONVERT_TO_INDEX_SET()    );
@@ -108,6 +109,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     //
     // Add all binary factories here
     //
+    all_binary.push_back( &BOGUS_BINARY()           );
     all_binary.push_back( &CROSS()                  );
     all_binary.push_back( &DIFFERENCE()             );
     all_binary.push_back( &DIST_MIN()               );

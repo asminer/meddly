@@ -32,6 +32,10 @@ namespace MEDDLY {
 
     class unary_factory;
 
+    /// Bogus unary operation that always fails.
+    /// Useful for defaults or errors.
+    unary_factory& BOGUS_UNARY();
+
     /// Return the number of variable assignments
     /// so that the function evaluates to non-zero.
     unary_factory& CARDINALITY();
@@ -70,6 +74,10 @@ namespace MEDDLY {
 
     class binary_operation; // to be removed
     class binary_factory;
+
+    /// Bogus unary operation that always fails.
+    /// Useful for defaults or errors.
+    binary_factory& BOGUS_BINARY();
 
     /// Set difference
     binary_factory& DIFFERENCE();

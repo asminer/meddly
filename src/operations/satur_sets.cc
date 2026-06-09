@@ -1195,13 +1195,24 @@ MEDDLY::reachset_satur_factory <FWD, VER>::build_new(forest* a, forest* b, fores
 MEDDLY::binary_factory& MEDDLY::REACHABLE_SATUR(bool fwd, int version)
 {
     //
-    // TBD: ignore the version number for now
+    // Version 1
     //
-
     static reachset_satur_factory<true, 1>  forwd1;
     static reachset_satur_factory<false, 1> bckwd1;
 
-    if (fwd) return forwd1;
-    else     return bckwd1;
+    //
+    // Version 2
+    //
+
+    // TBD
+
+    switch (version) {
+        case 1:
+            if (fwd) return forwd1;
+            else     return bckwd1;
+
+        default:
+            return BOGUS_BINARY();
+    }
 }
 

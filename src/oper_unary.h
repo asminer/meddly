@@ -722,6 +722,10 @@ namespace MEDDLY {
 
 #endif
 
+
+    /// Bogus unary operation that always fails.
+    unary_factory& BOGUS_UNARY();
+
 };
 
 

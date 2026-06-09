@@ -348,3 +348,32 @@ void MEDDLY::unary_list::searchRemove(unary_operation* uop)
 
 #endif
 
+// ******************************************************************
+// *                                                                *
+// *                   bogus_unary_factory  class                   *
+// *                                                                *
+// ******************************************************************
+
+namespace MEDDLY {
+    class bogus_unary_factory : public unary_factory {
+        public:
+            virtual void setup();
+    };
+};
+
+void MEDDLY::bogus_unary_factory::setup()
+{
+    _setup(__FILE__, "BOGUS_UNARY", "Bogus unary operation that always fails.");
+}
+
+// ******************************************************************
+// *                                                                *
+// *                       Factory front ends                       *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::unary_factory& MEDDLY::BOGUS_UNARY()
+{
+    static bogus_unary_factory fact;
+    return fact;
+}
