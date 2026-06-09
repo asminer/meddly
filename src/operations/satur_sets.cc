@@ -146,7 +146,6 @@ namespace MEDDLY {
             inline bool addToCi(int nextL, unpacked_node *C, unsigned i,
                     const edge_value &v, node_handle p)
             {
-                // This case should be caught already
                 if (ATYPE::isUnreachable(v, p)) return false;
                 if (ATYPE::isUnreachable(edgeval(C, i), C->down(i)))
                 {
@@ -159,7 +158,12 @@ namespace MEDDLY {
                     edgeval(C, i), C->down(i), v, p, newdv, newdp
                 );
                 resF->unlinkNode(p);
-                bool changed = (newdp != C->down(i)) || (newdv != edgeval(C,i));
+                bool changed;
+                if (EOP::hasEdgeValues()) {
+                    changed = (newdp != C->down(i)) || (newdv != edgeval(C,i));
+                } else {
+                    changed = (newdp != C->down(i));
+                }
                 resF->unlinkNode(C->down(i));
                 C->setFull(i, newdv, newdp);
                 return changed;
