@@ -178,8 +178,13 @@ namespace MEDDLY {
             /// Split relation: events whose top is at k or below
             std::vector <dd_edge> top_at_or_below;
 
+#ifdef OLD_INDEX_INTERFACE
             /// Helper for exploring indexes, by level.
             std::vector <sat_index_explorer*> explorers;
+#else
+            /// For now; switch to template later
+            std::vector <satur_index_basic> explorers;
+#endif
 
             ct_entry_type* fire_ct;
             ct_entry_type* sat_ct;
@@ -300,14 +305,16 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     // Initialize explorers
     //
     explorers.resize(arg2F->getNumVariables()+1);
-    explorers[0] = nullptr;
-
-    for (unsigned i=1; i<explorers.size(); i++) {
 #ifdef OLD_INDEX_INTERFACE
+    explorers[0] = nullptr;
+    for (unsigned i=1; i<explorers.size(); i++) {
         explorers[i] = makeSatIndexExplorer('q', arg2F, i, FORWD);
-        std::cout << "made explorer level " << i << "\n";
-#endif
     }
+#else
+    for (unsigned i=1; i<explorers.size(); i++) {
+        explorers[i].attach(arg2F, i, FORWD);
+    }
+#endif
 }
 
 // ************************************************************************
@@ -679,7 +686,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::
     // Initialize explorer
     //
     const int L = Cu->getLevel();
+#ifdef OLD_INDEX_INTERFACE
     MEDDLY_DCASSERT(explorers[L]);
+#endif
     unsigned i, j;
     node_handle d;
     for (i=0; i<Cu->getSize(); i++) {
@@ -688,12 +697,20 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::
         }
     }
 #ifdef TRACE
+#ifdef OLD_INDEX_INTERFACE
     explorers[L]->show(out);
+#else
+    explorers[L].show(out);
+#endif
 #endif
     //
     // Saturation loop :)
     //
+#ifdef OLD_INDEX_INTERFACE
     while (explorers[L]->nextEdge(i, j, d)) {
+#else
+    while (explorers[L].nextEdge(i, j, d)) {
+#endif
         if (ATYPE::areAllReachable(edgeval(Cu, j), Cu->down(j))) {
             continue;
         }
@@ -707,7 +724,11 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::
 #ifdef TRACE
             out << "element " << j << " was updated\n";
 #endif
+#ifdef OLD_INDEX_INTERFACE
             explorers[L]->wasUpdated(j);
+#else
+            explorers[L].wasUpdated(j);
+#endif
         }
 #ifdef TRACE
         out << "after firing " << i << "->" << j << " down " << d
@@ -1248,11 +1269,12 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
 
     for (unsigned k=1; k<=arg2F->getNumVariables(); k++) {
         const node_handle n = top_exactly[k].getNode();
-        if (explorers[k]) {
-            explorers[k]->restart(n);
-        } else {
-            MEDDLY_DCASSERT(0==n);
-        }
+#ifdef OLD_INDEX_INTERFACE
+        MEDDLY_DCASSERT(explorers[k]);
+        explorers[k]->restart(n);
+#else
+        explorers[k].restart(n);
+#endif
     }
 }
 
