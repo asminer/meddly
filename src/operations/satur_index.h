@@ -25,7 +25,7 @@
 #include "satur_queue.h"
 #include "satur_graph.h"
 
-#define OLD_INDEX_INTERFACE
+// #define OLD_INDEX_INTERFACE
 
 /*
  *  Interface for index explorer objects used in saturation.

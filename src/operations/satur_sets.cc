@@ -693,7 +693,11 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::
     node_handle d;
     for (i=0; i<Cu->getSize(); i++) {
         if (Cu->down(i)) {
+#ifdef OLD_INDEX_INTERFACE
             explorers[L]->wasUpdated(i);
+#else
+            explorers[L].wasUpdated(i);
+#endif
         }
     }
 #ifdef TRACE
