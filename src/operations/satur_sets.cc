@@ -91,14 +91,7 @@ namespace MEDDLY {
                     const edge_value &bv, node_handle bp,
                     edge_value &cv, node_handle &cp);
 
-#ifdef ALLOW_OPTIONS
-            virtual void showNameAndOptions(output &s) const;
-            virtual option getOption(unsigned i) const;
-#endif
         protected:
-#ifdef ALLOW_OPTIONS
-            virtual bool _setOption(unsigned i, option x);
-#endif
 
             /* For an input set (av, A) in resF,
              * determine saturated node (cv, C) in resF,
@@ -189,16 +182,11 @@ namespace MEDDLY {
             binary_operation* mxdIntersection;
             binary_operation* mxdDifference;
             const bool FORWD;
+            const int VERSN;
 #ifdef TRACE
             ostream_output out;
             unsigned top_count;
 #endif
-#ifdef ALLOW_OPTIONS
-            // options
-            int version;
-            char index_order;
-#endif
-            const int VERSN;
 
             edge_value nothing;
             // bool fire_cache_level;
@@ -240,18 +228,7 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
 
-#ifdef ALLOW_OPTIONS
-    //
-    // Set the options for saturation
-    //   option1: version number
-    //   option2: index explore order
-    //
-    setOptionTypes("ic");
-    setOption(0, 0L);
-    setOption(1, ' ');
-#else
     initSplit();
-#endif
 
     //
     // Helper operations
@@ -316,113 +293,6 @@ MEDDLY::saturation_set_mtrel<EOP, ATYPE>::~saturation_set_mtrel()
     fire_ct->markForDestroy();
     sat_ct->markForDestroy();
 }
-
-// ************************************************************************
-// showNameAndOptions()
-// ************************************************************************
-
-#ifdef ALLOW_OPTIONS
-
-template <class EOP, class ATYPE>
-void
-MEDDLY::saturation_set_mtrel<EOP, ATYPE>
-    ::showNameAndOptions(output &s) const
-{
-    if (FORWD) {
-        s.put("Forward saturation version ");
-    } else {
-        s.put("Backward saturation version ");
-    }
-    s.put(version);
-    s.put(", ");
-    switch (index_order) {
-        case 'q':
-            s.put("queue index order");
-            break;
-
-        // TBD: other index orders
-
-        default:
-            s.put("unknown index order");
-    }
-}
-
-#endif
-
-// ************************************************************************
-// getOption()
-// ************************************************************************
-
-#ifdef ALLOW_OPTIONS
-
-template <class EOP, class ATYPE>
-MEDDLY::operation::option
-MEDDLY::saturation_set_mtrel<EOP, ATYPE>
-    ::getOption(unsigned i) const
-{
-    if (0==i) {
-        return option(long(version));
-    }
-    if (1==i) {
-        return option(index_order);
-    }
-    throw error(error::INVALID_OPTION, __FILE__, __LINE__);
-}
-
-#endif
-
-// ************************************************************************
-// _setOption()
-// ************************************************************************
-
-#ifdef ALLOW_OPTIONS
-
-template <class EOP, class ATYPE>
-bool
-MEDDLY::saturation_set_mtrel<EOP, ATYPE>
-    ::_setOption(unsigned i, option x)
-{
-    if (0==i) {
-        // Version number
-        if (x.opt_i < 0 || x.opt_i > 3) {
-            return false;
-        }
-        if (0==x.opt_i) {
-            // Use default
-            x.opt_i = 1;
-        }
-        version = x.opt_i;
-        initSplit();
-        return true;
-    }
-    if (1==i) {
-        // index order
-        if (' ' == x.opt_c) {
-            // Use default
-        }
-        switch (x.opt_c) {
-
-            case ' ':
-                // Use default
-                index_order = 'q';
-                return true;
-
-            case 'q':
-                index_order = x.opt_c;
-                return true;
-
-            // tbd: other orders here
-
-
-            default:
-                // unknown or unsupported character
-                return false;
-        }
-    }
-    return false;
-}
-
-#endif
 
 // ************************************************************************
 //
@@ -1267,12 +1137,6 @@ void MEDDLY::reachset_satur_factory <FWD, VER>::setup()
     } else {
         _setup(__FILE__, "REACHABLE_SATUR(false)", "Build backward reachability set using saturation (citation? TBD). The first argument is the set of initial states, and the second argument is the transition relation. The operation has two options. Option 0 is an integer, to indicate the version number of saturation to use (0 for default, 1 for original). Option 1 is a character, to indicate how to select the next index to explore (' ' for default, 'q' whatever is next in the queue).");
     }
-
-#ifdef ALLOW_OPTIONS
-    appendOptionDoc("(integer): indicates the version number of saturation to use (0 for default, 1 for original)");
-
-    appendOptionDoc("(char): indicates how to select the next index to explore (' ' for default, 'q' whatever is next in the queue).");
-#endif
 }
 
 template <bool FWD, int VER>
