@@ -931,13 +931,6 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     unpacked_node::Recycle(Au);
 
     //
-    // Adjust result
-    //
-    C = resF->makeRedundantsTo(C, Clevel, L);
-    EOP::accumulateOp(cv, av);
-    EOP::normalize(cv, C);
-
-    //
     // Save result in CT
     //
     if (EOP::hasEdgeValues()) {
@@ -947,6 +940,13 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
         res[0].setN(C);
     }
     fire_ct->addCT(key, res);
+
+    //
+    // Adjust result
+    //
+    C = resF->makeRedundantsTo(C, Clevel, L);
+    EOP::accumulateOp(cv, av);
+    EOP::normalize(cv, C);
 
 #ifdef RECFIRE_THEN_SAT
     //

@@ -393,7 +393,7 @@ void MEDDLY::saturation_op::saturate(const dd_edge& in, dd_edge& out)
 MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
 {
 #ifdef DEBUG_DFS
-  printf("mdd: %d, k: %d\n", mdd, k);
+  printf("mdd: %ld, k: %d\n", long(mdd), k);
 #endif
 
   // terminal condition for recursion
@@ -412,8 +412,8 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
   const int mdd_level = argF->getNodeLevel(mdd);          // mdd level
 
 #ifdef DEBUG_DFS
-  printf("mdd: %d, level: %d, size: %d, mdd_level: %d\n",
-      mdd, k, sz, mdd_level);
+  printf("mdd: %ld, level: %d, size: %d, mdd_level: %d\n",
+      long(mdd), k, sz, mdd_level);
 #endif
 
   unpacked_node* C = unpacked_node::newWritable(resF, k, sz, FULL_ONLY);
@@ -444,7 +444,9 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
   saveSaturateResult(Key, mdd, n);
 
 #ifdef DEBUG_DFS
-  resF->showNodeGraph(stdout, n);
+  FILE_output out(stdout);
+  resF->showNode(out, n);
+  out.put('\n');
 #endif
 
   return n;
@@ -496,7 +498,7 @@ void MEDDLY::saturation_evplus_op::saturate(const dd_edge& in, dd_edge& out)
 void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, long& resEv, node_handle& resEvmdd)
 {
 #ifdef DEBUG_DFS
-  printf("evmdd: %d, ev: %ld, k: %d\n", evmdd, ev, k);
+  printf("evmdd: %ld, ev: %ld, k: %d\n", long(evmdd), ev, k);
 #endif
 
   // terminal condition for recursion
@@ -516,8 +518,8 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
   const int evmdd_level = argF->getNodeLevel(evmdd);      // evmdd level
 
 #ifdef DEBUG_DFS
-  printf("evmdd: %d, level: %d, size: %d, evmdd_level: %d\n",
-      evmdd, k, sz, evmdd_level);
+  printf("evmdd: %ld, level: %d, size: %d, evmdd_level: %d\n",
+      long(evmdd), k, sz, evmdd_level);
 #endif
 
   unpacked_node* C = unpacked_node::newWritable(resF, k, sz, FULL_ONLY);
@@ -553,7 +555,9 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
   saveSaturateResult(Key, ev, evmdd, resEv, resEvmdd);
 
 #ifdef DEBUG_DFS
-  resF->showNodeGraph(stdout, resEvmdd);
+  FILE_output out(stdout);
+  resF->showNode(out, resEvmdd);
+  out.put('\n');
 #endif
 }
 
