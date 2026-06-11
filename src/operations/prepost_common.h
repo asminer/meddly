@@ -180,7 +180,7 @@ namespace MEDDLY {
         /// Does the edge correspond to everything is reachable?
         inline static bool areAllReachable(const edge_value &ev, node_handle p)
         {
-            if (p) return false;
+            if (OMEGA_NORMAL != p) return false;
             return INT(ev) == 0;
         }
 

@@ -553,12 +553,15 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::
     // Saturation loop :)
     //
     while (explorers[L].nextEdge(i, j, d)) {
-        if (ATYPE::areAllReachable(edgeval(Cu, j), Cu->down(j))) {
-            continue;
-        }
 #ifdef TRACE
         out << "firing " << i << "->" << j << " down " << d << "\n";
 #endif
+        if (ATYPE::areAllReachable(edgeval(Cu, j), Cu->down(j))) {
+#ifdef TRACE
+            out << "    target index all reachable; skipping\n";
+#endif
+            continue;
+        }
         node_handle rfp;
         edge_value  rfv;
         recFire(L-1, edgeval(Cu, i), Cu->down(i), d, rfv, rfp);
