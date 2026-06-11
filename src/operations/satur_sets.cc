@@ -610,7 +610,6 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     // **************************************************************
     if (0==B || ATYPE::isUnreachable(av, A)) {
         ATYPE::setUnreachable(cv, C);
-        EOP::accumulateOp(cv, av);
         C = resF->makeRedundantsTo(C, Clevel, L);
         return;
     }
