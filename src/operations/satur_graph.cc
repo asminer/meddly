@@ -22,6 +22,41 @@
 #include "../forest.h"
 
 // #define TRACE
+// #define DEBUG_TRANSPOSE
+
+#ifdef DEBUG_TRANSPOSE
+
+inline void showVector(MEDDLY::output &s, const char* name,
+        const std::vector <int> &A)
+{
+    s.put(name);
+    s.put('[');
+    for (unsigned i=0; i<A.size(); i++) {
+        if (i) s.put(", ");
+        s.put(A[i]);
+    }
+    s.put(']');
+    s.put('\n');
+}
+
+inline void showVector(MEDDLY::output &s, const char* name,
+        const std::vector <MEDDLY::satur_graph::sparse_element> &A)
+{
+    s.put(name);
+    s.put('[');
+    for (unsigned i=0; i<A.size(); i++) {
+        if (i) s.put(", ");
+        s.put('(');
+        s.put(A[i].index);
+        s.put(':');
+        s.put(A[i].down);
+        s.put(')');
+    }
+    s.put(']');
+    s.put('\n');
+}
+
+#endif
 
 // ******************************************************************
 // *                                                                *
@@ -125,18 +160,10 @@ void MEDDLY::satur_graph::_restart(node_handle n)
     expandRows(var->getBound(!forwd));
 
     //
-    // For forward exploration, build rows on the fly as needed.
+    // Backward exploration: build the entire transpose, now
     //
-    if (forwd) return;
+    if (!forwd) buildTranspose();
 
-    //
-    // For backward exploration, build the rows as usual
-    // and then transpose the matrix
-    //
-    for (unsigned i=0; i<var->getBound(false); i++) {
-        exploreRow(i);
-    }
-    transpose();
 }
 
 void MEDDLY::satur_graph::exploreRow(unsigned i)
@@ -162,7 +189,83 @@ void MEDDLY::satur_graph::exploreRow(unsigned i)
     expandRows(1+max_index);
 }
 
-void MEDDLY::satur_graph::transpose()
+void MEDDLY::satur_graph::buildTranspose()
 {
-    // TBD
+#ifdef DEBUG_TRANSPOSE
+    ostream_output out(std::cout);
+    out.put("Transposing relation:\n");
+    RN->show(out);
+#endif
+
+    //
+    // Go through and count number of elements per column
+    //
+    std::vector <int> col_counts(var->getBound(true), 0);
+    for (unsigned i=0; i<var->getBound(false); i++) {
+        if (RN->outgoing(i, *U)) {
+            for (unsigned z=0; z<U->getSize(); z++) {
+                const unsigned j = U->index(z);
+                if (i != j) {
+                    // count column j unless this is a diagonal entry
+                    ++col_counts[j];
+                }
+            }
+        }
+    } // for i
+#ifdef DEBUG_TRANSPOSE
+    showVector(out, "col_counts: ", col_counts);
+#endif
+
+    //
+    // Build the rowptr array
+    //
+    int acc = 0;
+    for (unsigned i=0; i<rowptr.size(); i++) {
+        rowptr[i] = acc;
+        acc += col_counts[i] + 1;   // we null-terminate every row
+    }
+
+#ifdef DEBUG_TRANSPOSE
+    showVector(out, "rowptr: ", rowptr);
+    out.put("total size of entry array: ");
+    out.put(long(acc));
+    out.put('\n');
+#endif
+
+    //
+    // Fill elements with 0
+    //
+    elements.resize(acc, sparse_element(-1, 0));
+
+    //
+    // Go through and add elements in transpose order.
+    // This will update the rowptr array, so we will correct it after.
+    //
+    for (unsigned i=0; i<var->getBound(false); i++) {
+        if (RN->outgoing(i, *U)) {
+            for (unsigned z=0; z<U->getSize(); z++) {
+                const unsigned j = U->index(z);
+                if (i != j) {
+                    elements[ rowptr[j]++ ] = sparse_element(i, U->down(z));
+                } else {
+                    diagonals[i] = U->down(z);
+                }
+            }
+        }
+    } // for i
+
+    //
+    // Rebuild the rowptr array
+    //
+    acc = 0;
+    for (unsigned i=0; i<rowptr.size(); i++) {
+        rowptr[i] = acc;
+        acc += col_counts[i] + 1;   // we null-terminate every row
+    }
+
+#ifdef DEBUG_TRANSPOSE
+    out.put("Done building\n");
+    show(out);
+#endif
 }
+

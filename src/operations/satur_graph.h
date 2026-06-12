@@ -70,16 +70,6 @@ namespace MEDDLY {
 #endif
                 return rowptr[i];
             }
-            /*
-            inline const sparse_element& getElement(int p) const {
-                MEDDLY_DCASSERT(p>=0);
-#ifdef DEVELOPMENT_CODE
-                return elements.at(p);
-#else
-                return elements[p];
-#endif
-            }
-            */
             inline bool getElement(int p, unsigned &j, node_handle &dn) const {
                 MEDDLY_DCASSERT(p>=0);
 #ifdef DEVELOPMENT_CODE
@@ -111,7 +101,7 @@ namespace MEDDLY {
         protected:
             void _restart(node_handle n);
             void exploreRow(unsigned i);
-            void transpose();
+            void buildTranspose();
 
             inline void expandRows(unsigned sz) {
                 if (sz > rowptr.size()) {
