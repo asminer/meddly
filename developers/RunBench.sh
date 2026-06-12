@@ -70,9 +70,9 @@ benchCmd=(
     "#e/kanban 75 -trad"
     "#e/slot 20 -trad"
     #
-    "#e/dining_phils -n10000 -dfs"
-    "#e/kanban 200 -dfs"
-    "#e/slot 100 -dfs"
+    "#e/dining_phils -n10000 -sat1"
+    "#e/kanban 200 -sat1"
+    "#e/slot 100 -sat1"
     #
     "#e/kanban 6 -exp"
     "#e/slot 7 -exp"

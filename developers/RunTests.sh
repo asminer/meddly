@@ -30,9 +30,9 @@ summarize()
   print_status "phils-trad" "$s_philstrad"
   print_status "kanban-trad" "$s_kanbantrad"
   print_status "slot-trad" "$s_slottrad"
-  print_status "phils-dfs" "$s_philsdfs"
-  print_status "kanban-dfs" "$s_kanbandfs"
-  print_status "slot-dfs" "$s_slotdfs"
+  print_status "phils-sat1" "$s_philssat"
+  print_status "kanban-sat1" "$s_kanbansat"
+  print_status "slot-sat1" "$s_slotsat"
   print_status "kanban-exp" "$s_kanbanexp"
   print_status "slot-exp" "$s_slotexp"
   echo "==============================================================="
@@ -85,20 +85,20 @@ for i in 2 3 4 5 6 7 8 9; do
 done
 
 for i in 2 4 6 8 10 15 20; do
-  run_or_exit $EXDIR/dining_phils -n$i -dfs
-  s_philsdfs="..$i "
+  run_or_exit $EXDIR/dining_phils -n$i -sat1
+  s_philssat="..$i "
   summarize
 done
 
 for i in 1 2 3 4 5 6; do
-  run_or_exit $EXDIR/kanban $i -dfs
-  s_kanbandfs="..$i "
+  run_or_exit $EXDIR/kanban $i -sat1
+  s_kanbansat="..$i "
   summarize
 done
 
 for i in 2 4 6 8 10 15; do
-  run_or_exit $EXDIR/slot $i -dfs
-  s_slotdfs="..$i "
+  run_or_exit $EXDIR/slot $i -sat1
+  s_slotsat="..$i "
   summarize
 done
 
@@ -154,24 +154,24 @@ for i in 10 11 12 13 14 15 16 17; do
 done
 
 for i in 25 50 75 100 250 500 750 1000 1250 2500 5000; do
-  run_or_exit $EXDIR/dining_phils -n$i -dfs
-  s_philsdfs="..$i+"
+  run_or_exit $EXDIR/dining_phils -n$i -sat1
+  s_philssat="..$i+"
   summarize
-  s_philsdfs="..$i "
+  s_philssat="..$i "
 done
 
 for i in 7 8 9 10 15 20 25 30 35 40 45 50 75 100 125; do
-  run_or_exit $EXDIR/kanban $i -dfs
-  s_kanbandfs="..$i+"
+  run_or_exit $EXDIR/kanban $i -sat1
+  s_kanbansat="..$i+"
   summarize
-  s_kanbandfs="..$i "
+  s_kanbansat="..$i "
 done
 
 for i in 20 25 30 35 40 45; do
-  run_or_exit $EXDIR/slot $i -dfs
-  s_slotdfs="..$i+"
+  run_or_exit $EXDIR/slot $i -sat1
+  s_slotsat="..$i+"
   summarize
-  s_slotdfs="..$i "
+  s_slotsat="..$i "
 done
 
 for i in 4; do
@@ -228,24 +228,24 @@ for i in 18 19 20; do
 done
 
 for i in 6000 7000 8000; do
-  run_or_exit $EXDIR/dining_phils -n$i -dfs
-  s_philsdfs="..$i+"
+  run_or_exit $EXDIR/dining_phils -n$i -sat1
+  s_philssat="..$i+"
   summarize
-  s_philsdfs="..$i "
+  s_philssat="..$i "
 done
 
 for i in 150 175 200; do
-  run_or_exit $EXDIR/kanban $i -dfs
-  s_kanbandfs="..$i+"
+  run_or_exit $EXDIR/kanban $i -sat1
+  s_kanbansat="..$i+"
   summarize
-  s_kanbandfs="..$i "
+  s_kanbansat="..$i "
 done
 
 for i in 50 75 100; do
-  run_or_exit $EXDIR/slot $i -dfs
-  s_slotdfs="..$i+"
+  run_or_exit $EXDIR/slot $i -sat1
+  s_slotsat="..$i+"
   summarize
-  s_slotdfs="..$i "
+  s_slotsat="..$i "
 done
 
 for i in 5; do
