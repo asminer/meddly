@@ -177,7 +177,8 @@ namespace MEDDLY {
 
             /// Helper for exploring indexes, by level.
             /// TBD: make this a template
-            std::vector <satur_index_basic> explorers;
+            std::vector <satur_index_nothing> explorers;
+            //std::vector <satur_index_basic> explorers;
 
             ct_entry_type* fire_ct;
             ct_entry_type* sat_ct;

@@ -29,11 +29,122 @@
 
 // **********************************************************************
 // *                                                                    *
-// *                     satur_index_basic  methods                     *
+// *                    satur_index_nothing  methods                    *
 // *                                                                    *
 // **********************************************************************
 
-// TBD all of these methods
+MEDDLY::satur_index_nothing::satur_index_nothing()
+{
+    RN = nullptr;
+    U = nullptr;
+    For = nullptr;
+    curr = -1;
+    level = 0;
+    node = 0;
+}
+
+MEDDLY::satur_index_nothing::~satur_index_nothing()
+{
+    if (RN) {
+        MEDDLY_DCASSERT(For);
+        For->doneRelNode(RN);
+    }
+    unpacked_node::Recycle(U);
+}
+
+void MEDDLY::satur_index_nothing::attach(forest* F, int lvl, bool fwd)
+{
+    MEDDLY_DCASSERT(!For);
+    For = F;
+    level = lvl;
+    forwd = fwd;
+    U = unpacked_node::New(For, SPARSE_ONLY);
+}
+
+bool MEDDLY::satur_index_nothing
+    ::nextEdge(unsigned &i, unsigned &j, node_handle &down)
+{
+    for (;;) {
+        if (queue.isEmpty()) return false;
+
+        int q = queue.front();
+        MEDDLY_DCASSERT(q >= 0);
+
+        if (curr < 0) {
+            //
+            // start next
+            //
+            if (!RN->outgoing(q, *U)) {
+                // this row is empty
+                queue.remove();
+                continue;
+            }
+            //
+            // Row is not empty
+            //
+            curr = 0;
+        }
+
+        if (curr >= U->getSize()) {
+            // end of this row
+            queue.remove();
+            curr = -1;
+            continue;
+        }
+
+        //
+        // Get next element in this row
+        //
+        if (forwd) {
+            i = unsigned(q);
+            j = U->index(curr);
+            down = U->down(curr);
+        } else {
+            j = unsigned(q);
+            i = U->index(curr);
+            down = U->down(curr);
+        }
+        ++curr;
+        break;
+    }
+
+#ifdef TRACE
+    std::cout << "level " << level << ": " << i << " -> " << j
+              << " (down " << down << ")\n";
+#endif
+    return true;
+}
+
+void MEDDLY::satur_index_nothing::show(output &s) const
+{
+    if (RN) {
+        RN->show(s);
+    } else {
+        s.put("relation not set\n");
+    }
+    s.put("updated: ");
+    queue.show(s);
+    s.put('\n');
+}
+
+void MEDDLY::satur_index_nothing::_restart(node_handle n)
+{
+    node = n;
+    if (RN) {
+        For->doneRelNode(RN);
+        RN = nullptr;
+    }
+    if (0==n) return;
+
+    RN = For->buildRelNode(n);
+    curr = -1;
+}
+
+// **********************************************************************
+// *                                                                    *
+// *                     satur_index_basic  methods                     *
+// *                                                                    *
+// **********************************************************************
 
 MEDDLY::satur_index_basic::satur_index_basic()
 {

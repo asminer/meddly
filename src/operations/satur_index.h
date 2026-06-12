@@ -66,8 +66,53 @@
  */
 
 namespace MEDDLY {
+    class satur_index_nothing;
     class satur_index_basic;
 }
+
+// TBD: satur_index_old class that does NOT build the graph
+// ******************************************************************
+// *                                                                *
+// *                   satur_index_nothing  class                   *
+// *                                                                *
+// ******************************************************************
+
+// Just a queue; we explore by examining MxD nodes
+class MEDDLY::satur_index_nothing {
+        index_queue queue;
+
+        rel_node* RN;
+        unpacked_node* U;
+        forest* For;
+        node_handle node;
+        int curr;
+
+        int level;
+        bool forwd;
+
+    public:
+        satur_index_nothing();
+        ~satur_index_nothing();
+
+        void attach(forest* F, int level, bool forwd);
+        inline void restart(node_handle n) {
+            if (n != node) _restart(n);
+        }
+
+        inline void wasUpdated(unsigned i) {
+            queue.add(int(i));
+        }
+
+        bool nextEdge(unsigned &i, unsigned &j, node_handle &down);
+        inline node_handle getDiagonal(unsigned i) {
+            MEDDLY_DCASSERT(false);
+            return 0;
+        }
+        void show(output &s) const;
+
+    private:
+        void _restart(node_handle n);
+};
 
 // ******************************************************************
 // *                                                                *
