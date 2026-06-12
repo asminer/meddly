@@ -71,14 +71,25 @@ TESTS = \
     domain_list \
     kan_batch \
     \
-    kan_chkrs.--mtb.--front._sh \
-    kan_chkrs.--mtb.--trad._sh \
-    kan_chkrs.--mtb.--dfs._sh \
-    kan_chkrs.--mtb.--sat1._sh \
-    kan_chkrs.--mti.--trad._sh \
-    kan_chkrs.--ev.--trad._sh \
-    kan_chkrs.--ev.--dfs._sh \
-    kan_chkrs.--ev.--sat1._sh \
+    kan_chkrs.-f.--mtb.--front._sh \
+    kan_chkrs.-f.--mtb.--trad._sh \
+    kan_chkrs.-f.--mtb.--dfs._sh \
+    kan_chkrs.-f.--mtb.--sat1._sh \
+    kan_chkrs.-f.--mti.--trad._sh \
+    kan_chkrs.-f.--mti.--sat1._sh \
+    kan_chkrs.-f.--ev.--trad._sh \
+    kan_chkrs.-f.--ev.--dfs._sh \
+    kan_chkrs.-f.--ev.--sat1._sh \
+    \
+    kan_chkrs.-b.--mtb.--front._sh \
+    kan_chkrs.-b.--mtb.--trad._sh \
+    kan_chkrs.-b.--mtb.--dfs._sh \
+    kan_chkrs.-b.--mtb.--sat1._sh \
+    kan_chkrs.-b.--mti.--trad._sh \
+    kan_chkrs.-b.--mti.--sat1._sh \
+    kan_chkrs.-b.--ev.--trad._sh \
+    kan_chkrs.-b.--ev.--dfs._sh \
+    kan_chkrs.-b.--ev.--sat1._sh \
     \
     kan_index \
     kan_io \

@@ -31,9 +31,12 @@ struct statedist {
 #define HAVE_ORACLE
 
 #ifdef HAVE_ORACLE
-#include "kan_df1.h"
-#include "kan_df2.h"
-#include "kan_df3.h"
+#include "kan_fwd_df1.h"
+#include "kan_fwd_df2.h"
+#include "kan_fwd_df3.h"
+#include "kan_bwd_df1.h"
+#include "kan_bwd_df2.h"
+#include "kan_bwd_df3.h"
 #endif
 
 const char* kanban[] = {
@@ -55,11 +58,7 @@ const char* kanban[] = {
     "X.............-.+"   // Tg4
 };
 
-// 160 states for N=1
-long expected[] = {
-    1, 160, 4600, 58400, 454475, 2546432, 11261376,
-    41644800, 133865325, 384392800, 1005927208
-};
+bool FORWD;
 
 using namespace MEDDLY;
 
@@ -150,31 +149,37 @@ dd_edge buildReachset(domain* d, int N, range_type R, edge_labeling E,
     //
     // Build reachable states
     //
+    const char* fwd = FORWD ? " forward " : " backward ";
+
     dd_edge reachable(mdd);
     switch (method) {
         case 'F':
-            std::cout << "\t\tUsing traditional generation, with frontier\n";
-            apply(REACHABLE_TRAD_FS(true), init_state, nsf, reachable);
+            std::cout << "\t\tUsing traditional" << fwd << "generation, with frontier\n";
+            apply(REACHABLE_TRAD_FS(FORWD), init_state, nsf, reachable);
             break;
 
         case 'T':
-            std::cout << "\t\tUsing traditional generation, without frontier\n";
-            apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
+            std::cout << "\t\tUsing traditional" << fwd << "generation, without frontier\n";
+            apply(REACHABLE_TRAD_NOFS(FORWD), init_state, nsf, reachable);
             break;
 
         case '1':
-            std::cout << "\t\tUsing saturation v1\n";
-            apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
+            std::cout << "\t\tUsing" << fwd << "saturation v1\n";
+            apply(REACHABLE_SATUR(FORWD, 1), init_state, nsf, reachable);
             break;
 
         case '2':
-            std::cout << "\t\tUsing saturation v2\n";
-            apply(REACHABLE_SATUR(true, 2), init_state, nsf, reachable);
+            std::cout << "\t\tUsing" << fwd << "saturation v2\n";
+            apply(REACHABLE_SATUR(FORWD, 2), init_state, nsf, reachable);
             break;
 
         default:
-            std::cout << "\t\tusing original saturation\n";
-            apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+            std::cout << "\t\tusing original" << fwd << "saturation\n";
+            if (FORWD) {
+                apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+            } else {
+                apply(REVERSE_REACHABLE_DFS, init_state, nsf, reachable);
+            }
     };
 
     if ( (range_type::INTEGER == R) && (edge_labeling::EVPLUS != E) )
@@ -222,15 +227,15 @@ void checkRS(int N, range_type R, edge_labeling E, char method)
 #ifdef HAVE_ORACLE
     switch (N) {
         case 1:
-            krs = kanban_rs1;
+            krs = FORWD ? kanban_fwd_rs1 : kanban_bwd_rs1;
             break;
 
         case 2:
-            krs = kanban_rs2;
+            krs = FORWD ? kanban_fwd_rs2 : kanban_bwd_rs2;
             break;
 
         case 3:
-            krs = kanban_rs3;
+            krs = FORWD ? kanban_fwd_rs3 : kanban_bwd_rs3;
             break;
 
         default:
@@ -281,13 +286,16 @@ void genRS(int N)
 
     domain* d = buildDomain(N);
     dd_edge reachable = buildReachset(d, N, range_type::INTEGER,
-                            edge_labeling::EVPLUS, 'S');
+                            edge_labeling::EVPLUS, 'T');
 
     cout << "//\n";
-    cout << "// Finite distance function for Kanban N=" << N << "\n";
+    cout << "// Finite "
+         << (FORWD ? "forward" : "backward")
+         << " distance function for Kanban N=" << N << "\n";
     cout << "//\n";
     cout << "\n";
-    cout << "const statedist kanban_rs" << N << "[] = {\n";
+    cout << "const statedist kanban_" << (FORWD ? "fwd" : "bwd")
+         << "_rs" << N << "[] = {\n";
 
     // enumerate states
     for (dd_edge::iterator i = reachable.begin(); i; ++i)
@@ -318,9 +326,12 @@ int Usage(const char* exe)
     cerr << "Kanban instances.\n";
     cerr << "\n";
     cerr << "Switches:\n";
+    cerr << "    -b     : backward generation\n";
+    cerr << "    -f     : forward generation (default)\n";
+    cerr << "\n";
     cerr << "    -c     : check against expected states and distances (default)\n";
     cerr << "    -g n   : generate header for N=n instance. Use n>0. Does not\n";
-    cerr << "             perform any checking. Ignores all other switches.\n";
+    cerr << "             perform any checking. Ignores all -- switches.\n";
     cerr << "\n";
     cerr << "    --mtb  : use boolean MTMDDs (reachable states)\n";
     cerr << "    --mti  : use integer MTMDDs (distances)\n";
@@ -345,6 +356,7 @@ int main(int argc, const char** argv)
     range_type rtype = range_type::BOOLEAN;
     edge_labeling elmdd = edge_labeling::MULTI_TERMINAL;
     char method = 'S';
+    FORWD = true;
 
     //
     // Process switches
@@ -365,6 +377,19 @@ int main(int argc, const char** argv)
             geninstance = 0;
             continue;
         }
+
+        //
+        // FORWD or not
+        //
+        if (0==strcmp("-b", argv[i])) {
+            FORWD = false;
+            continue;
+        }
+        if (0==strcmp("-f", argv[i])) {
+            FORWD = true;
+            continue;
+        }
+
 
         //
         // mt vs ev
