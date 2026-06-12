@@ -1135,13 +1135,22 @@ namespace MEDDLY {
 template <bool FWD, int VER>
 void MEDDLY::reachset_satur_factory <FWD, VER>::setup()
 {
-    //
-    // TBD: rewrite these
-    //
-    if (FWD) {
-        _setup(__FILE__, "REACHABLE_SATUR(true)", "Build forward reachability set using saturation (citation? TBD). The first argument is the set of initial states, and the second argument is the transition relation. The operation has two options. Option 0 is an integer, to indicate the version number of saturation to use (0 for default, 1 for original). Option 1 is a character, to indicate how to select the next index to explore (' ' for default, 'q' whatever is next in the queue).");
-    } else {
-        _setup(__FILE__, "REACHABLE_SATUR(false)", "Build backward reachability set using saturation (citation? TBD). The first argument is the set of initial states, and the second argument is the transition relation. The operation has two options. Option 0 is an integer, to indicate the version number of saturation to use (0 for default, 1 for original). Option 1 is a character, to indicate how to select the next index to explore (' ' for default, 'q' whatever is next in the queue).");
+    switch (VER) {
+        case 1:
+            if (FWD) {
+                _setup(__FILE__, "REACHABLE_SATUR(true, 1)", "Build forward reachability set using saturation version 1 (the algorithm of Ciardo, Lüttgen, and Siminiceanu, 2001). The first argument is the set of initial states, and the second argument is the transition relation.");
+            } else {
+                _setup(__FILE__, "REACHABLE_SATUR(false, 1)", "Build backward reachability set using saturation version 1 (the algorithm of Ciardo, Lüttgen, and Siminiceanu, 2001). The first argument is the set of initial states, and the second argument is the transition relation.");
+            }
+            return;
+
+        default:
+            MEDDLY_DCASSERT(false);
+            if (FWD) {
+                _setup(__FILE__, "REACHABLE_SATUR(true, ?)", "Unsupported version");
+            } else {
+                _setup(__FILE__, "REACHABLE_SATUR(false, ?)", "Unsupported version");
+            }
     }
 }
 
