@@ -19,6 +19,8 @@
 #include "../defines.h"
 #include "reach_dfs.h"
 
+#ifdef ALLOW_DEPRECATED_0_18_1
+
 #include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
 #include "../compute_table.h"
@@ -1653,3 +1655,4 @@ void MEDDLY::REVERSE_REACHABLE_DFS_done()
     MEDDLY_DCASSERT(REV_DFS_cache.isEmpty());
 }
 
+#endif // allow_deprecated_0_18_1

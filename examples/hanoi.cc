@@ -146,9 +146,9 @@ void buildRelation(std::vector <int> &ring2level, MEDDLY::pregen_relation& prel)
 // **********************************************************************
 // build reachable states or whatever was asked for
 //    @param method         What to do:
-//                              'd': saturation for distances
 //                              'k': saturation, partitioned by level
 //                              'm': saturation, monolithic
+//                              '1': saturation new version 1
 //
 //                              'f': BFS with frontier
 //                              'b': BFS without frontier
@@ -209,10 +209,15 @@ void buildReachable(char method, MEDDLY::pregen_relation* prel,
                     sat->compute(initial, reachable);
                     break;
 
+#ifdef ALLOW_DEPRECATED_0_18_1
         case 'm':
-        case 'd':
                     std::cout << "Building " << what << " using saturation..." << std::endl;
                     apply(REACHABLE_STATES_DFS, initial, monolithic, reachable);
+                    break;
+#endif
+        case '1':
+                    std::cout << "Building " << what << " using saturation (new v1)..." << std::endl;
+                    apply(REACHABLE_SATUR(true, 1), initial, monolithic, reachable);
                     break;
 
         case 't':
@@ -367,11 +372,17 @@ int usage(const char* exe)
     cerr << "    -v:    Verbose. Show BFS iteration details.\n";
     cerr << "\n";
 
-    cerr << "    --dsat     Saturation for distance\n";
+    cerr << "    --dist     Build distance function\n";
+    cerr << "    --reach    Build reachable states (default)\n";
+    cerr << "\n";
     cerr << "    --ksat     Saturation, relation partitioned by levels (default)\n";
+
+#ifdef ALLOW_DEPRECATED_0_18_1
     cerr << "    --msat     Saturation, monolithic relation\n";
+#endif
     cerr << "\n";
 
+    cout << "    --sat1     Saturation v1 (new implementation)\n";
     cerr << "    --trad     Traditional BFS without frontier set\n";
     cerr << "    --front    Traditional BFS with frontier set\n";
     cerr << "\n";
@@ -398,6 +409,7 @@ int main(int argc, const char** argv)
     verbose = false;
     bool reverse_order = false;
     char satmethod = 'k';
+    bool distances = false;
     //
     // Process command line
     //
@@ -442,19 +454,28 @@ int main(int argc, const char** argv)
             }
             // double dash switches
             if ('-' == arg[1]) {
-                if (0==strcmp("--dsat", arg)) {
-                    satmethod = 'd';
+                if (0==strcmp("--dist", arg)) {
+                    distances = true;
+                    continue;
+                }
+                if (0==strcmp("--reach", arg)) {
+                    distances = false;
                     continue;
                 }
                 if (0==strcmp("--ksat", arg)) {
                     satmethod = 'k';
                     continue;
                 }
+#ifdef ALLOW_DEPRECATED_0_18_1
                 if (0==strcmp("--msat", arg)) {
                     satmethod = 'm';
                     continue;
                 }
-
+#endif
+                if (0==strcmp("--sat1", arg)) {
+                    satmethod = '1';
+                    continue;
+                }
                 if (0==strcmp("--trad", arg)) {
                     satmethod = 't';
                     continue;
@@ -531,7 +552,7 @@ int main(int argc, const char** argv)
         // any policy changes?
         forest* mdd = nullptr;
 
-        if ('d' == satmethod) {
+        if (distances) {
             mdd = forest::create(d, false, range_type::INTEGER, edge_labeling::EVPLUS, pmdd);
         } else {
             mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
@@ -545,7 +566,7 @@ int main(int argc, const char** argv)
         minterm init_minterm(mdd);
         init_minterm.setAllVars(0);
         dd_edge initial(mdd);
-        if ('d' == satmethod) {
+        if (distances) {
             init_minterm.setValue(0);
             init_minterm.buildFunction(rangeval(range_special::PLUS_INFINITY, range_type::INTEGER), initial);
         } else {
@@ -576,7 +597,7 @@ int main(int argc, const char** argv)
         mxd->reportStats(meddlyout, "    ",
                 HUMAN_READABLE_MEMORY | BASIC_STATS
         );
-        if ('d' == satmethod) {
+        if (distances) {
             meddlyout << "EV+MDD stats:\n";
         } else {
             meddlyout << "MDD stats:\n";

@@ -49,7 +49,11 @@ int main()
         // build rs using traditional & saturation
         dd_edge reachable1(mdd);
         dd_edge reachable2(mdd);
+#ifdef ALLOW_DEPRECATED_0_18_1
         apply(REACHABLE_STATES_DFS, init_state, nsf, reachable1);
+#else
+        apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable1);
+#endif
         apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable2);
 
         // Display everything

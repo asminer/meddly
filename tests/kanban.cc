@@ -92,7 +92,7 @@ long buildReachset(int N, char method)
     dd_edge reachable(mdd);
     switch (method) {
         case 'S':
-            apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+            apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
             break;
 
         case 'T':

@@ -451,10 +451,12 @@ void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
                     apply(REACHABLE_SATUR(true, 1), initial, relation, reachable);
                     break;
 
+#ifdef ALLOW_DEPRECATED_0_18_1
         case 'm':
                     std::cout << "saturation..." << std::endl;
                     apply(REACHABLE_STATES_DFS, initial, relation, reachable);
                     break;
+#endif
 
         case 'f':
                     std::cout << "traditional with frontier..." << std::endl;
@@ -631,8 +633,10 @@ int usage(const char* exe)
     cerr << "    --dist:    Build the distance function.\n";
     cerr << "\n";
 
-    cerr << "    --sat1     Saturation v1 (new), monolithic relation\n";
+    cerr << "    --sat1     Saturation v1 (new), monolithic relation (default)\n";
+#ifdef ALLOW_DEPRECATED_0_18_1
     cerr << "    --msat     Saturation, monolithic relation\n";
+#endif
     cerr << "    --trad     Traditional BFS without frontier set\n";
     cerr << "    --tradc    Traditional BFS without frontier set, using checkpoints\n";
     cerr << "    --front    Traditional BFS with frontier set (RS only)\n";
@@ -667,7 +671,7 @@ int main(int argc, const char** argv)
     C = -1;
     approx_count = true;
     verbose = false;
-    char satmethod = 'm';
+    char satmethod = '1';
     for_each_position_which_tile = false;
     distances = false;
     const char* outfile = nullptr;
@@ -751,11 +755,12 @@ int main(int argc, const char** argv)
                     satmethod = '1';
                     continue;
                 }
+#ifdef ALLOW_DEPRECATED_0_18_1
                 if (0==strcmp("--msat", arg)) {
                     satmethod = 'm';
                     continue;
                 }
-
+#endif
                 if (0==strcmp("--trad", arg)) {
                     satmethod = 't';
                     continue;

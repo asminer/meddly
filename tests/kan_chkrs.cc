@@ -174,12 +174,16 @@ dd_edge buildReachset(domain* d, int N, range_type R, edge_labeling E,
             break;
 
         default:
+#ifdef ALLOW_DEPRECATED_0_18_1
             std::cout << "\t\tusing original" << fwd << "saturation\n";
             if (FORWD) {
                 apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
             } else {
                 apply(REVERSE_REACHABLE_DFS, init_state, nsf, reachable);
             }
+#else
+            throw "Unexpected method";
+#endif
     };
 
     if ( (range_type::INTEGER == R) && (edge_labeling::EVPLUS != E) )
@@ -337,8 +341,10 @@ int Usage(const char* exe)
     cerr << "    --mti  : use integer MTMDDs (distances)\n";
     cerr << "    --ev   : use EV+MDDs (distances)\n";
     cerr << "\n";
-    cerr << "    --dfs  : use original saturation (default)\n";
-    cerr << "    --sat1 : use saturation v1\n";
+#ifdef ALLOW_DEPRECATED_0_18_1
+    cerr << "    --dfs  : use original saturation\n";
+#endif
+    cerr << "    --sat1 : use saturation v1 (default)\n";
     cerr << "    --sat2 : use saturation v2\n";
     cerr << "    --front: use traditional iteration, with frontier set\n";
     cerr << "    --trad : use traditional iteration, without frontier set\n";
@@ -355,7 +361,7 @@ int main(int argc, const char** argv)
     long geninstance = 0;
     range_type rtype = range_type::BOOLEAN;
     edge_labeling elmdd = edge_labeling::MULTI_TERMINAL;
-    char method = 'S';
+    char method = '1';
     FORWD = true;
 
     //
@@ -415,10 +421,12 @@ int main(int argc, const char** argv)
         // saturation vs traditional
         //
 
+#ifdef ALLOW_DEPRECATED_0_18_1
         if (0==strcmp("--dfs", argv[i])) {
             method = 'S';
             continue;
         }
+#endif
         if (0==strcmp("--sat1", argv[i])) {
             method = '1';
             continue;

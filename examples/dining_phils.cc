@@ -603,11 +603,13 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
             rsgen->compute(initialStates, nsf, reachableStates);
             break;
 
+#ifdef ALLOW_DEPRECATED_0_18_1
         case 'm':
             printf("Building reachability set using saturation, monolithic relation\n");
             fflush(stdout);
             apply(REACHABLE_STATES_DFS, initialStates, nsf, reachableStates);
             break;
+#endif
 
         case '1':
             printf("Building reachability set using saturation v1, monolithic relation\n");
@@ -731,10 +733,12 @@ int usage(const char* who)
     printf("\t-trad:      use traditional iterations without frontier (default)\n");
     printf("\t-front:     use traditional iterations with frontier\n\n");
 
+#ifdef ALLOW_DEPRECATED_0_18_1
     printf("\t-dfs:       use fastest saturation (currently, -msat)\n");
+    printf("\t-msat:      use monolithic saturation\n");
+#endif
     printf("\t-esat:      use saturation by events\n");
     printf("\t-ksat:      use saturation by levels\n");
-    printf("\t-msat:      use monolithic saturation\n");
     printf("\n");
     printf("\t-sat1:      Saturation v1 (new implementation)\n");
     printf("\n");
@@ -812,15 +816,17 @@ int main(int argc, char *argv[])
             continue;
         }
 
+#ifdef ALLOW_DEPRECATED_0_18_1
         if (strcmp(cmd, "-dfs") == 0) {
             sw.method = 'm';
             continue;
         }
-
         if (strcmp(cmd, "-msat") == 0) {
             sw.method = 'm';
             continue;
         }
+#endif
+
         if (strcmp(cmd, "-sat1") == 0) {
             sw.method = '1';
             continue;

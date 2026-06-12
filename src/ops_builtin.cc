@@ -170,8 +170,11 @@ void MEDDLY::builtin_init::setup()
     PRE_PLUS_init();
     POST_PLUS_init();
     TC_POST_IMAGE_init();
+
+#ifdef ALLOW_DEPRECATED_0_18_1
     REACHABLE_STATES_DFS_init();
     REVERSE_REACHABLE_DFS_init();
+#endif
 
     MM_MULTIPLY_init();
 
@@ -208,8 +211,11 @@ void MEDDLY::builtin_init::cleanup()
     PRE_PLUS_done();
     POST_PLUS_done();
     TC_POST_IMAGE_done();
+
+#ifdef ALLOW_DEPRECATED_0_18_1
     REACHABLE_STATES_DFS_done();
     REVERSE_REACHABLE_DFS_done();
+#endif
 
     MM_MULTIPLY_done();
 

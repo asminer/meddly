@@ -81,12 +81,14 @@ int usage(const char* who)
     cout << "\tnnnn  : number of parts\n";
     cout << "\t-trad : use traditional iterations, without frontier\n";
     cout << "\t-front: use traditional iterations, with frontier\n";
-    cout << "\t-dfs  : use saturation\n";
     cout << "\t-esat : use saturation by events\n";
     cout << "\t-ksat : use saturation by levels\n";
-    cout << "\t-msat : use monolithic saturation (default)\n\n";
-
-    cout << "\t-sat1 : Saturation v1 (new implementation)\n";
+#ifdef ALLOW_DEPRECATED_0_18_1
+    cout << "\t-dfs  : use saturation\n";
+    cout << "\t-msat : use monolithic saturation\n";
+#endif
+    cout << "\t-sat1 : Saturation v1, new implementation (default)\n";
+    cout << "\n";
 
     cout << "\t-edges:  count number of (actual) edges in reachability graph\n\n";
 #ifdef HAVE_LIBGMP
@@ -137,7 +139,7 @@ void showCard(const oper_item &x, const char* what)
 int main(int argc, const char** argv)
 {
     int N = -1;
-    char method = 'm';
+    char method = '1';
     unsigned batchsize = 256;
     const char* lfile = 0;
     bool build_pdf = false;
@@ -160,20 +162,22 @@ int main(int argc, const char** argv)
             method = 'f';
             continue;
         }
+#ifdef ALLOW_DEPRECATED_0_18_1
         if (strcmp("-dfs", argv[i])==0) {
             method = 'm';
             continue;
         }
+        if (strcmp("-msat", argv[i])==0) {
+            method = 'm';
+            continue;
+        }
+#endif
         if (strcmp("-esat", argv[i])==0) {
             method = 's';
             continue;
         }
         if (strcmp("-ksat", argv[i])==0) {
             method = 'k';
-            continue;
-        }
-        if (strcmp("-msat", argv[i])==0) {
-            method = 'm';
             continue;
         }
         if (strcmp("-sat1", argv[i])==0) {
@@ -374,11 +378,13 @@ int main(int argc, const char** argv)
                 rsgen->compute(init_state, nsf, reachable);
                 break;
 
+#ifdef ALLOW_DEPRECATED_0_18_1
             case 'm':
                 cout << "Building reachability set using saturation, monolithic relation"
                      << endl;
                 apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
                 break;
+#endif
 
             case '1':
                 cout << "Building reachability set using saturation v1, monolithic relation"
@@ -467,7 +473,7 @@ int main(int argc, const char** argv)
             mdd_dot.addRootEdge(reachable);
             mdd_dot.doneGraph();
             mdd_dot.runDot("pdf");
-            if ('m' == method) {
+            if ('1' == method) {
                 nsf.setLabel("next-state");
                 dot_maker mxd_dot(mxd, "kanban-nsf");
                 mxd_dot.addRootEdge(nsf);

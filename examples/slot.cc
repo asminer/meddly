@@ -41,13 +41,13 @@ int usage(const char* who)
     printf("\tnnnn: number of parts\n\n");
     printf("\t-front: use traditional iterations, with frontier\n");
     printf("\t-trad:  use traditional iterations, no frontier\n\n");
-    printf("\t-bfs: use traditional iterations\n\n");
-    printf("\t-dfs: use fastest saturation (currently, -msat)\n");
     printf("\t-esat: use saturation by events\n");
     printf("\t-ksat: use saturation by levels\n");
-    printf("\t-msat: use monolithic saturation (default)\n\n");
-
-    printf("\t-sat1 : Saturation v1 (new implementation)\n");
+#ifdef ALLOW_DEPRECATED_0_18_1
+    printf("\t-dfs: use fastest saturation (currently, -msat)\n");
+    printf("\t-msat: use monolithic saturation\n");
+#endif
+    printf("\t-sat1 : Saturation v1, new implementation (default)\n\n");
     printf("\t-exp: use explicit (very slow)\n");
     printf("\t-pdf: Write MDD for reachable states to out.pdf\n\n");
     printf("\t--batch b: specify explicit batch size\n\n");
@@ -287,11 +287,13 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
             rsgen->compute(init_state, nsf, reachable);
             break;
 
+#ifdef ALLOW_DEPRECATED_0_18_1
         case 'm':
             printf("Building reachability set using saturation, monolithic relation\n");
             fflush(stdout);
             apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
             break;
+#endif
 
         case '1':
             printf("Building reachability set using saturation v1, monolithic relation\n");
@@ -371,7 +373,7 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
 int main(int argc, const char** argv)
 {
     int N = -1;
-    char method = 'm';
+    char method = '1';
     int batchsize = 256;
     const char* lfile = 0;
     bool build_pdf = false;
@@ -383,10 +385,6 @@ int main(int argc, const char** argv)
         }
         if (strcmp("-front", argv[i])==0) {
             method = 'f';
-            continue;
-        }
-        if (strcmp("-dfs", argv[i])==0) {
-            method = 'm';
             continue;
         }
         if (strcmp("-sat1", argv[i])==0) {
@@ -401,10 +399,16 @@ int main(int argc, const char** argv)
             method = 'k';
             continue;
         }
+#ifdef ALLOW_DEPRECATED_0_18_1
+        if (strcmp("-dfs", argv[i])==0) {
+            method = 'm';
+            continue;
+        }
         if (strcmp("-msat", argv[i])==0) {
             method = 'm';
             continue;
         }
+#endif
         if (strcmp("-exp", argv[i])==0) {
             method = 'e';
             continue;

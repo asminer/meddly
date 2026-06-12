@@ -236,10 +236,13 @@ int usage(const char* who)
     printf("\tnnnn: array size\n\n");
     printf("\t-front: use traditional iterations with frontier\n");
     printf("\t-trad:  use traditional iterations, no frontier\n\n");
+#ifdef ALLOW_DEPRECATED_0_18_1
     printf("\t-dfs: use fastest saturation (currently, -msat)\n");
+    printf("\t-msat: use monolithic saturation\n");
+#endif
+    printf("\t-sat1: use saturation v1, new implementation (default)\n\n");
     //  printf("\t-esat: use saturation by events\n");
     //  printf("\t-ksat: use saturation by levels\n");
-    printf("\t-msat: use monolithic saturation (default)\n\n");
     printf("\t-alt: use alternate description\n\n");
     printf("\t-v: verbose, show iterations\n");
     return 1;
@@ -345,11 +348,13 @@ void runWithArgs(int N, char method, bool alternate)
             break;
 
 
+#ifdef ALLOW_DEPRECATED_0_18_1
         case 'm':
             printf("Building reachability set using saturation\n");
             fflush(stdout);
             apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
             break;
+#endif
 
         case 'k':
         case 's':
@@ -397,7 +402,7 @@ void runWithArgs(int N, char method, bool alternate)
 int main(int argc, const char** argv)
 {
     int N = -1;
-    char method = 'm';
+    char method = '1';
     bool alt = false;
     verbose = false;
 
@@ -410,20 +415,22 @@ int main(int argc, const char** argv)
             method = 't';
             continue;
         }
+#ifdef ALLOW_DEPRECATED_0_18_1
         if (strcmp("-dfs", argv[i])==0) {
             method = 'm';
             continue;
         }
+        if (strcmp("-msat", argv[i])==0) {
+            method = 'm';
+            continue;
+        }
+#endif
         if (strcmp("-esat", argv[i])==0) {
             method = 's';
             continue;
         }
         if (strcmp("-ksat", argv[i])==0) {
             method = 'k';
-            continue;
-        }
-        if (strcmp("-msat", argv[i])==0) {
-            method = 'm';
             continue;
         }
         if (strcmp("-alt", argv[i])==0) {

@@ -110,7 +110,7 @@ long writeReachset(FILE* s, int N)
 
     // Build reachable states
     dd_edge reachable(mdd);
-    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
 
 #ifdef PROGRESS
     fputc('r', stdout);
@@ -188,7 +188,7 @@ bool generateAndRead(FILE* s, int N)
 
     // Build reachable states
     dd_edge reachable(mdd);
-    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
 
     // Build index set for reachable states
     forest* evmdd = forest::create(d, SET, range_type::INTEGER,
@@ -297,7 +297,7 @@ bool readAndGenerate(FILE* s, int N)
 
     // Build reachable states
     dd_edge reachable(mdd);
-    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
 
     // Build index set for reachable states
     dd_edge reach_index(evmdd);

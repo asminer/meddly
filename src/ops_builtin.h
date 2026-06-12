@@ -173,6 +173,12 @@ namespace MEDDLY {
 
     /// Deprecated; use REACHABLE_TRAD_NOFS(false)
     binary_factory& REVERSE_REACHABLE_BFS();
+
+    /// Deprecated; use REACHABLE_SATUR(true, 1)
+    binary_operation* REACHABLE_STATES_DFS(forest* a, forest* b, forest* c);
+
+    /// Deprecated; use REACHABLE_SATUR(false, 1)
+    binary_operation* REVERSE_REACHABLE_DFS(forest* a, forest* b, forest* c);
 #endif
 
     // ======================================================================
@@ -196,8 +202,6 @@ namespace MEDDLY {
         REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
     */
     binary_operation* TC_POST_IMAGE(forest* a, forest* b, forest* c);
-    binary_operation* REACHABLE_STATES_DFS(forest* a, forest* b, forest* c);
-    binary_operation* REVERSE_REACHABLE_DFS(forest* a, forest* b, forest* c);
 
     /** Matrix multiplication, where the first argument is a matrix (MXD),
         the second argument is a matrix (MXD),

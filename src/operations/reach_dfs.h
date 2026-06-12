@@ -19,6 +19,8 @@
 #ifndef MEDDLY_REACH_DFS_H
 #define MEDDLY_REACH_DFS_H
 
+#ifdef ALLOW_DEPRECATED_0_18_1
+
 namespace MEDDLY {
     class forest;
     class binary_operation;
@@ -33,6 +35,8 @@ namespace MEDDLY {
     void REVERSE_REACHABLE_DFS_init();
     void REVERSE_REACHABLE_DFS_done();
 }
+
+#endif // allow_deprecated_0_18_1
 
 #endif
 
