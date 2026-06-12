@@ -80,7 +80,7 @@ namespace MEDDLY {
 class MEDDLY::satur_index_basic {
         satur_graph graph;
         index_queue queue;
-        int curr;
+        int curr_ptr;
     public:
         satur_index_basic();
 
@@ -88,13 +88,17 @@ class MEDDLY::satur_index_basic {
             graph.attach(F, level, forwd);
         }
         inline void restart(node_handle n) {
-            curr = -1;
+            curr_ptr = -1;
             graph.restart(n);
             queue.clear();
         }
         inline void wasUpdated(unsigned i) {
-            graph.ensureRowExplored(i);
-            queue.add(int(i));
+            if (queue.isFront(i)) {
+                curr_ptr = -1;
+            } else {
+                graph.ensureRowExplored(i);
+                queue.add(int(i));
+            }
         }
         bool nextEdge(unsigned &i, unsigned &j, node_handle &down);
         inline node_handle getDiagonal(unsigned i) {

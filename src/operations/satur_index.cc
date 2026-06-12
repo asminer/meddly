@@ -35,47 +35,68 @@
 
 MEDDLY::satur_index_basic::satur_index_basic()
 {
-    curr = -1;
+    curr_ptr = -1;
 }
 
 bool MEDDLY::satur_index_basic::
 nextEdge(unsigned &i, unsigned &j, node_handle &down)
 {
+#ifdef TRACE
+    std::cout << "next edge at level " << graph.getLevel() << " explorer...\n";
+#endif
     for (;;) {
-        if (queue.isEmpty()) return false;
+        if (queue.isEmpty()) {
+#ifdef TRACE
+            std::cout << "    empty queue\n";
+#endif
+            return false;
+        }
 
         int ii = queue.front();
         MEDDLY_DCASSERT(ii>=0);
         i = unsigned(ii);
 
-        if (curr < 0) {
+#ifdef TRACE
+        std::cout << "    queue front " << i << "\n";
+#endif
+
+        if (curr_ptr < 0) {
             //
             // Starting fresh
             //
-            curr = graph.getRowStart(i);
+#ifdef TRACE
+            std::cout << "    starting\n";
+#endif
+            curr_ptr = graph.getRowStart(i);
             down = graph.getDiagonal(i);
             if (down) {
                 j = i;
+#ifdef TRACE
+                std::cout << "    diagonal\n";
+#endif
                 break;
             }
+#ifdef TRACE
+            std::cout << "    no diagonal\n";
+#endif
         }
 
-        if (graph.getElement(curr, j, down)) {
+        if (graph.getElement(curr_ptr, j, down)) {
             //
             // We got the next element; advance pointer
             //
-            ++curr;
+            ++curr_ptr;
             break;
         }
         //
         // We're done with the row. Reset and loop
         //
         queue.remove();
-        curr = -1;
+        curr_ptr = -1;
     }
 
 #ifdef TRACE
-    std::cout << "level " << level << ": " << i << " -> " << j
+    std::cout << "level " << graph.getLevel() << ": " << i << " -> " << j
               << " (down " << down << ")\n";
 #endif
     return true;

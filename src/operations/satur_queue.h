@@ -71,6 +71,9 @@ namespace MEDDLY {
             inline int front() const {
                 return (head >= 0) ? head : NOINDEX();
             }
+            inline bool isFront(unsigned i) const {
+                return (head >= 0) ? (int(i) == head) : false;
+            }
             inline void add(int i) {
                 if (i >= data.size()) {
                     data.resize(i+1, NOTINQ());

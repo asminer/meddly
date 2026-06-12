@@ -53,6 +53,9 @@ namespace MEDDLY {
             inline forest* getForest() const {
                 return For;
             }
+            inline int getLevel() const {
+                return level;
+            }
             inline unsigned numRows() const {
                 return rowptr.size();
             }
@@ -85,9 +88,9 @@ namespace MEDDLY {
             }
             inline node_handle getDiagonal(unsigned i) {
 #ifdef DEVELOPMENT_CODE
-                return diagonals.at(i) < 0;
+                return diagonals.at(i);
 #else
-                return diagonals[i] < 0;
+                return diagonals[i];
 #endif
             }
             inline void ensureRowExplored(unsigned i) {
