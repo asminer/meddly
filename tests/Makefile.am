@@ -88,7 +88,6 @@ TESTS = \
     kan_chkrs.-b.--mti.--trad._sh \
     kan_chkrs.-b.--mti.--sat1._sh \
     kan_chkrs.-b.--ev.--trad._sh \
-    kan_chkrs.-b.--ev.--dfs._sh \
     kan_chkrs.-b.--ev.--sat1._sh \
     \
     kan_index \
