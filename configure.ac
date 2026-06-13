@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.71])
+AC_PREREQ([2.70])
 
 #
 # Set version number
@@ -57,7 +57,7 @@ AC_FUNC_MEMCMP
 AC_FUNC_REALLOC
 
 AC_FUNC_STRTOD
-AC_CHECK_FUNCS([getrusage gettimeofday memmove memset strtol malloc_size malloc_good_size malloc_usable_size])
+AC_CHECK_FUNCS([getrusage gettimeofday memset strtol malloc_size malloc_good_size malloc_usable_size])
 
 AC_CONFIG_FILES([Makefile
                  examples/Makefile
