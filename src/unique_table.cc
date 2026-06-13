@@ -185,7 +185,8 @@ void MEDDLY::unique_table::subtable::show(output &s) const
     for (unsigned i=0; i < size; i++) {
         if (table[i] != 0) {
             s << "[" << long(i) << "] : ";
-            for (int index = table[i]; index; index = parent->getNext(index)) {
+            node_handle index;
+            for (index = table[i]; index; index = parent->getNext(index)) {
                 s << index <<" ";
             }
             s.put("\n");
@@ -200,6 +201,7 @@ void MEDDLY::unique_table::subtable::init(forest *ef)
     size = MIN_SIZE;
     num_entries = 0;
 
+    MEDDLY_DCASSERT(nullptr == table);
     table = static_cast<node_handle*>(calloc(size, sizeof(node_handle)));
     if (table == nullptr) {
         throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
@@ -258,6 +260,7 @@ void MEDDLY::unique_table::subtable::clear()
 {
     if (parent != 0) {
         free(table);
+        table = nullptr;
         init(parent);
     }
 }

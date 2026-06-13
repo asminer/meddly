@@ -78,7 +78,7 @@ dd_edge buildReachsetSAT(forest* mdd, forest* mxd, int N)
     // Build reachable states
     //
     dd_edge reachable(mdd);
-    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
 
     return reachable;
 }

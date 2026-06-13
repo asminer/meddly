@@ -1212,7 +1212,7 @@ void MEDDLY::dd_edge::showGraph(output &s) const
 }
 
 
-void MEDDLY::dd_edge::write(output &s, const std::vector <unsigned> &map) const
+void MEDDLY::dd_edge::write(output &s, const std::vector <size_t> &map) const
 {
     //
     // Edge info
@@ -1236,7 +1236,7 @@ void MEDDLY::dd_edge::write(output &s, const std::vector <unsigned> &map) const
         // non-terminal
         //
         s.put("n ");
-        s.put(map[unsigned(node)]);
+        s.put(map[node]);
     }
 }
 
@@ -1316,7 +1316,7 @@ namespace MEDDLY {
             {
                 MEDDLY_DCASSERT( !m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
-    	            int level = F->getNodeLevel(p);
+                    int level = F->getNodeLevel(p);
                     MEDDLY_DCASSERT(m.from(level)>=0);
                     p = F->getDownPtr(p, m.from(level));
                 }
@@ -1326,7 +1326,7 @@ namespace MEDDLY {
             {
                 MEDDLY_DCASSERT( m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
-    	            int level = F->getNodeLevel(p);
+                    int level = F->getNodeLevel(p);
                     if (level > 0) {
                         MEDDLY_DCASSERT(m.from(level)>=0);
                         p = F->getDownPtr(p, m.from(level));
@@ -1404,7 +1404,7 @@ namespace MEDDLY {
                 MEDDLY_DCASSERT( !m.isForRelations() );
                 while (!F->isTerminalNode(p)) {
                     edge_value pv;
-    	            int level = F->getNodeLevel(p);
+                    int level = F->getNodeLevel(p);
                     MEDDLY_DCASSERT(level>0);
                     MEDDLY_DCASSERT(m.from(level)>=0);
                     F->getDownPtr(p, m.from(level), pv, p);
@@ -1682,17 +1682,15 @@ void MEDDLY::dd_edge::init(const dd_edge &e)
 
 void MEDDLY::dd_edge::set(node_handle n)
 {
-    if (node != n) {
-        forest* efp = forest::getForestWithID(parentFID);
-        if (efp) {
+    forest* efp = forest::getForestWithID(parentFID);
+    if (efp) {
 #ifdef DEBUG_CLEANUP
-            std::cout << "unlinking " << node << " in dd_edge::set" << std::endl;
+        std::cout << "unlinking " << node << " in dd_edge::set" << std::endl;
 #endif
-            efp->unlinkNode(node);
-            node = n;
-        } else {
-            node = 0;
-        }
+        efp->unlinkNode(node);
+        node = n;
+    } else {
+        node = 0;
     }
 }
 

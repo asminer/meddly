@@ -21,7 +21,6 @@
 #include <iostream>
 #include <iomanip>
 #include <string.h>
-#include <gmp.h>
 
 #include "../src/meddly.h"
 #include "simple_model.h"
@@ -55,6 +54,22 @@ using namespace std;
 
 ostream_output meddlyout(cout);
 
+bool verbose;
+
+void my_progress(unsigned iter, char st)
+{
+    if (' ' == st) {
+        std::cerr << "    Iteration " << iter << ": ";
+        return;
+    }
+    if (';' == st) {
+        std::cerr << std::endl;
+        return;
+    }
+    std::cerr << st << " ";
+}
+
+
 int usage(const char* who)
 {
     /* Strip leading directory, if any: */
@@ -63,25 +78,32 @@ int usage(const char* who)
         if ('/' == *ptr) name = ptr+1;
     }
     cout << "\nUsage: " << name << " [options] nnnn\n\n";
-    cout << "\tnnnn: number of parts\n";
-    cout << "\t-bfs:  use traditional iterations\n";
-    cout << "\t-bbfs: use and show traditional iterations\n";
-    cout << "\t-fbfs: use and show traditional with frontier iterations\n";
-    cout << "\t-dfs:  use saturation\n";
-    cout << "\t-esat: use saturation by events\n";
-    cout << "\t-ksat: use saturation by levels\n";
-    cout << "\t-msat: use monolithic saturation (default)\n\n";
+    cout << "\tnnnn  : number of parts\n";
+    cout << "\t-trad : use traditional iterations, without frontier\n";
+    cout << "\t-front: use traditional iterations, with frontier\n";
+    cout << "\t-esat : use saturation by events\n";
+    cout << "\t-ksat : use saturation by levels\n";
+#ifdef ALLOW_DEPRECATED_0_18_1
+    cout << "\t-msat : use monolithic saturation\n";
+#endif
+    cout << "\t-dfs  : use default saturation\n";
+    cout << "\t-sat1 : Saturation v1, new implementation (default)\n";
+    cout << "\n";
 
     cout << "\t-edges:  count number of (actual) edges in reachability graph\n\n";
+#ifdef HAVE_LIBGMP
     cout << "\t-approx: approximate the number of states (default)\n";
     cout << "\t-exact:  determine the exact number of states (requires gmp)\n\n";
+#endif
     cout << "\t-exp: use explicit (very slow)\n\n";
     cout << "\t--batch b: specify explicit batch size\n\n";
     cout << "\t -l lfile: Write logging information to specified file\n\n";
     cout << "\t-pdf: write the MDD representing the reachable states to Kanban.pdf\n\n";
     cout << "\t-ms: mark and sweep\n";
     cout << "\t-opt: optimistic reference counts\n";
-    cout << "\t-pess: pessimistic reference counts\n";
+    cout << "\t-pess: pessimistic reference counts\n\n";
+
+    cout << "\t-v   : verbose\n";
     return 1;
 }
 
@@ -117,34 +139,39 @@ void showCard(const oper_item &x, const char* what)
 int main(int argc, const char** argv)
 {
     int N = -1;
-    char method = 'm';
+    char method = '1';
     unsigned batchsize = 256;
     const char* lfile = 0;
     bool build_pdf = false;
+#ifdef HAVE_LIBGMP
     bool approx_count = true;
+#endif
     bool count_edges = false;
     char node_del = 'o';
+    verbose = false;
 
     //
     // Process command line
     //
     for (int i=1; i<argc; i++) {
-        if (strcmp("-bfs", argv[i])==0) {
-            method = 'b';
+        if (strcmp("-trad", argv[i])==0) {
+            method = 't';
             continue;
         }
-        if (strcmp("-bbfs", argv[i])==0) {
-            method = 'B';
-            continue;
-        }
-        if (strcmp("-fbfs", argv[i])==0) {
-            method = 'F';
+        if (strcmp("-front", argv[i])==0) {
+            method = 'f';
             continue;
         }
         if (strcmp("-dfs", argv[i])==0) {
+            method = 'd';
+            continue;
+        }
+#ifdef ALLOW_DEPRECATED_0_18_1
+        if (strcmp("-msat", argv[i])==0) {
             method = 'm';
             continue;
         }
+#endif
         if (strcmp("-esat", argv[i])==0) {
             method = 's';
             continue;
@@ -153,8 +180,8 @@ int main(int argc, const char** argv)
             method = 'k';
             continue;
         }
-        if (strcmp("-msat", argv[i])==0) {
-            method = 'm';
+        if (strcmp("-sat1", argv[i])==0) {
+            method = '1';
             continue;
         }
         if (strcmp("-exp", argv[i])==0) {
@@ -165,6 +192,7 @@ int main(int argc, const char** argv)
             count_edges = true;
             continue;
         }
+#ifdef HAVE_LIBGMP
         if (strcmp("-approx", argv[i])==0) {
             approx_count = true;
             continue;
@@ -173,6 +201,7 @@ int main(int argc, const char** argv)
             approx_count = false;
             continue;
         }
+#endif
         if (strcmp("-l", argv[i])==0) {
             lfile = argv[i+1];
             i++;
@@ -202,6 +231,15 @@ int main(int argc, const char** argv)
             node_del='p';
             continue;
         }
+        if (strcmp("-v", argv[i]) == 0) {
+            verbose = true;
+            continue;
+        }
+
+        if (argv[i][0] == '-') {
+            return usage(argv[0]);
+        }
+
         N = atoi(argv[i]);
     }
 
@@ -324,29 +362,40 @@ int main(int argc, const char** argv)
         if (LOG) LOG->newPhase(mdd, "Building reachability set");
         dd_edge reachable(mdd);
         start.note_time();
+        binary_operation* rsgen = nullptr;
         switch (method) {
-            case 'B':
-                meddlyout.indent_more();
-                buildReachsetBFS(&meddlyout, nsf, init_state, reachable);
-                meddlyout.indent_less();
+            case 't':
+                cout << "Building reachability set using traditional algorithm (no frontier)" << endl;
+                rsgen = build(REACHABLE_TRAD_NOFS(true), mdd, mxd, mdd);
+                if (verbose) rsgen->setProgressNotifier(my_progress);
+                rsgen->compute(init_state, nsf, reachable);
                 break;
 
-            case 'F':
-                meddlyout.indent_more();
-                buildReachsetFrontier(&meddlyout, nsf, init_state, reachable);
-                meddlyout.indent_less();
+            case 'f':
+                cout << "Building reachability set using traditional algorithm (with frontier)" << endl;
+                rsgen = build(REACHABLE_TRAD_FS(true), mdd, mxd, mdd);
+                if (verbose) rsgen->setProgressNotifier(my_progress);
+                rsgen->compute(init_state, nsf, reachable);
                 break;
 
-            case 'b':
-                cout << "Building reachability set using traditional algorithm"
-                     << endl;
-                apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
-                break;
-
+#ifdef ALLOW_DEPRECATED_0_18_1
             case 'm':
                 cout << "Building reachability set using saturation, monolithic relation"
                      << endl;
                 apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+                break;
+#endif
+
+            case 'd':
+                cout << "Building reachability set using default saturation"
+                     << endl;
+                apply(REACHABLE_SATUR(true), init_state, nsf, reachable);
+                break;
+
+            case '1':
+                cout << "Building reachability set using saturation v1, monolithic relation"
+                     << endl;
+                apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
                 break;
 
             case 'e':
@@ -375,6 +424,8 @@ int main(int argc, const char** argv)
         cout << "Done\n";
         cout << "Reachability set construction took "
              << start.get_last_seconds() << " seconds" << endl;
+        cout << "Reachability set uses "
+             << reachable.getNodeCount() << " nodes" << endl;
 #ifdef DUMP_REACHABLE
         cout << "Reachable states:\n";
         reachable.showGraph(meddlyout);
@@ -428,7 +479,7 @@ int main(int argc, const char** argv)
             mdd_dot.addRootEdge(reachable);
             mdd_dot.doneGraph();
             mdd_dot.runDot("pdf");
-            if ('m' == method) {
+            if ('1' == method) {
                 nsf.setLabel("next-state");
                 dot_maker mxd_dot(mxd, "kanban-nsf");
                 mxd_dot.addRootEdge(nsf);

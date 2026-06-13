@@ -37,6 +37,7 @@ noinst_PROGRAMS = \
     ops_plusminus \
     ops_prepost \
     ops_set \
+    ops_user_un \
     ops_vmmult \
     refcount \
     sat_test \
@@ -70,10 +71,21 @@ TESTS = \
     domain_list \
     kan_batch \
     \
-    kan_chkrs.--mt.--trad._sh \
-    kan_chkrs.--mt.--sat._sh \
-    kan_chkrs.--ev.--trad._sh \
-    kan_chkrs.--ev.--sat._sh \
+    kan_chkrs.-f.--mtb.--front._sh \
+    kan_chkrs.-f.--mtb.--trad._sh \
+    kan_chkrs.-f.--mtb.--sat1._sh \
+    kan_chkrs.-f.--mti.--trad._sh \
+    kan_chkrs.-f.--mti.--sat1._sh \
+    kan_chkrs.-f.--ev.--trad._sh \
+    kan_chkrs.-f.--ev.--sat1._sh \
+    \
+    kan_chkrs.-b.--mtb.--front._sh \
+    kan_chkrs.-b.--mtb.--trad._sh \
+    kan_chkrs.-b.--mtb.--sat1._sh \
+    kan_chkrs.-b.--mti.--trad._sh \
+    kan_chkrs.-b.--mti.--sat1._sh \
+    kan_chkrs.-b.--ev.--trad._sh \
+    kan_chkrs.-b.--ev.--sat1._sh \
     \
     kan_index \
     kan_io \
@@ -148,6 +160,14 @@ TESTS = \
     \
     ops_set.--set._sh \
     ops_set.--rel._sh \
+    \
+    ops_user_un.--set.--MT.--int._sh    \
+    ops_user_un.--set.--MT.--float._sh  \
+    ops_user_un.--set.--EVp.--long._sh  \
+    ops_user_un.--rel.--MT.--int._sh    \
+    ops_user_un.--rel.--MT.--float._sh  \
+    ops_user_un.--rel.--EVp.--long._sh  \
+    ops_user_un.--rel.--EVs.--float._sh \
     \
     ops_vmmult.--int.--vF.--mF._sh \
     ops_vmmult.--int.--vF.--mI._sh \
@@ -288,6 +308,9 @@ ops_plusminus_LDADD = ../src/libmeddly.la
 
 ops_set_SOURCES = ops_set.cc randomize.h randomize.cc
 ops_set_LDADD = ../src/libmeddly.la
+
+ops_user_un_SOURCES = ops_user_un.cc randomize.h randomize.cc
+ops_user_un_LDADD = ../src/libmeddly.la
 
 ops_vmmult_SOURCES = ops_vmmult.cc randomize.h randomize.cc
 ops_vmmult_LDADD = ../src/libmeddly.la

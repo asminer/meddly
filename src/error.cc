@@ -52,6 +52,7 @@ const char* MEDDLY::error::getName() const
         case  error::INVALID_ASSIGNMENT:    return "Invalid assignment";
         case  error::INVALID_ARGUMENT:      return "Invalid argument";
         case  error::INVALID_FILE:          return "Invalid file";
+        case  error::INVALID_OPTION:        return "Invalid option";
         case  error::COULDNT_WRITE:         return "Couldn't write to file";
         case  error::COULDNT_READ:          return "Couldn't read from file";
         case  error::MISCELLANEOUS:         return "Miscellaneous";

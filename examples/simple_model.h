@@ -59,8 +59,10 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
         @param initial  Initial states
         @param reach    Output: reachable states
  */
+/*
 void buildReachsetFrontier(MEDDLY::output *fout, const MEDDLY::dd_edge &nsf,
         const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reach);
+        */
 
 /**
     Build the reachability set using breadth-first without a frontier set.
@@ -69,8 +71,10 @@ void buildReachsetFrontier(MEDDLY::output *fout, const MEDDLY::dd_edge &nsf,
         @param initial  Initial states
         @param reach    Output: reachable states
  */
+/*
 void buildReachsetBFS(MEDDLY::output *fout, const MEDDLY::dd_edge &nsf,
         const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reach);
+        */
 
 
 

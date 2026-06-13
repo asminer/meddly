@@ -50,6 +50,9 @@ namespace MEDDLY {
             fbuilder_forest(forest* f, const rangeval &def);
             ~fbuilder_forest();
 
+            /// unlink any edges
+            void destroy();
+
             /// Build a chain of nodes for a single "set" minterm.
             ///     @param L    Last level to build a node.
             ///     @param m    Minterm to build from
@@ -229,7 +232,7 @@ namespace MEDDLY {
                 union_op = build(Union, f, f, f);
             }
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
             fbuilder_common(forest* f, const rangeval &def,
                     minterm_coll &mtl, binary_builtin2 Union)
                     : fbuilder_forest(f, def), mtc(mtl)
@@ -413,7 +416,7 @@ namespace MEDDLY {
                     minterm_coll &mtl, binary_builtin0 Union)
                     : fbuilder_common(f, def, mtl, Union) { }
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
             fbuilder(forest* f, const rangeval &def,
                     minterm_coll &mtl, binary_builtin2 Union)
                     : fbuilder_common(f, def, mtl, Union) { }
@@ -598,9 +601,11 @@ void MEDDLY::minterm::buildFunction(rangeval def, dd_edge &e) const
     } else {
         fb.setPathToBottom(num_vars, *this, cv, cp);
     }
+
     e.set(cv, cp);
 #ifdef DEVELOPMENT_CODE
-    F->validateIncounts(true, __FILE__, __LINE__);
+    fb.destroy();   // destroy early, for counts
+    F->validateIncounts(true, __FILE__, __LINE__, "minterm::buildFunction");
 #endif
 }
 
@@ -793,7 +798,7 @@ void MEDDLY::minterm_coll::buildFunctionMin(rangeval def, dd_edge &e)
     e.set(ev, en);
 #ifdef DEVELOPMENT_CODE
     F->validateIncounts(true, __FILE__, __LINE__,
-            "minterm_coll::buildFunctionMax");
+            "minterm_coll::buildFunctionMin");
 #endif
 }
 
@@ -877,11 +882,21 @@ MEDDLY::fbuilder_forest::fbuilder_forest(forest* f, const rangeval &def)
 
 MEDDLY::fbuilder_forest::~fbuilder_forest()
 {
-    if (!default_is_zero) {
+    destroy();
+    if (dp_unp) {
+        delete[] dp_unp;
+    }
+    if (dp_pri) {
+        delete[] dp_pri;
+    }
+}
+
+void MEDDLY::fbuilder_forest::destroy()
+{
+    if (dp_unp) {
         const unsigned L = F->getNumVariables();
         F->unlinkNode(dp_unp[L]);
-        delete[] dp_unp;
-        delete[] dp_pri;
+        dp_unp[L] = 0;
     }
 }
 

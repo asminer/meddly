@@ -54,6 +54,28 @@ MEDDLY::domain* MEDDLY::domain::create(variable** vars, unsigned N)
     return new domain(vars, N);
 }
 
+MEDDLY::domain* MEDDLY::domain::create(input &s)
+{
+    s.stripWS();
+    s.consumeKeyword("dom");
+    s.stripWS();
+    unsigned N = unsigned(s.get_integer());
+    variable** vars = nullptr;
+    if (N) {
+        vars = new variable*[1+N];
+        vars[0] = nullptr;
+    }
+    for (unsigned i=N; i; i--) {
+        s.stripWS();
+        long bound = s.get_integer();
+        vars[N-i+1] = new variable(bound, "");
+    }
+    s.stripWS();
+    s.consumeKeyword("mod");
+
+    return new domain(vars, N);
+}
+
 MEDDLY::domain* MEDDLY::domain::createBottomUp(const int* bounds, unsigned N)
 {
     if (!initializer_list::libraryIsRunning()) {
@@ -117,7 +139,7 @@ void MEDDLY::domain::testMarkAllDomains(bool mark)
 
 void MEDDLY::domain::write(output &s) const
 {
-    s << "dom\n" << nVars << "\n";
+    s << "dom " << nVars << "\n";
     for (unsigned i=nVars; i; i--) {
         s.put(long(vars[i]->getBound(false)));
         s.put(' ');
@@ -126,6 +148,7 @@ void MEDDLY::domain::write(output &s) const
     s << "\nmod\n";
 }
 
+/*
 void MEDDLY::domain::read(input &s)
 {
     // domain must be empty -- no variables defined so far
@@ -146,11 +169,41 @@ void MEDDLY::domain::read(input &s)
     for (unsigned i=nVars; i; i--) {
         s.stripWS();
         long bound = s.get_integer();
-        vars[nVars-i+1] = new variable(bound, "");
-        vars[i]->addToList(this);
+        variable* v = new variable(bound, "");
+        v->addToList(this);
+
+        vars[nVars-i+1] = v;
     }
     s.stripWS();
     s.consumeKeyword("mod");
+}
+*/
+
+void MEDDLY::domain::verify(input &s) const
+{
+    s.stripWS();
+    s.consumeKeyword("dom");
+    s.stripWS();
+    unsigned file_nVars = unsigned(s.get_integer());
+    std::vector<long> file_vsize(file_nVars+1);
+    file_vsize[0] = 0;
+    for (unsigned i=file_nVars; i; i--) {
+        s.stripWS();
+        file_vsize[file_nVars-i+1] = s.get_integer();
+    }
+    s.stripWS();
+    s.consumeKeyword("mod");
+
+    //
+    // Now, compare file domain against us
+    //
+    if (file_nVars != nVars) {
+        throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+    }
+
+    //
+    // TBD: do we need to compare the variable bounds?
+    //
 }
 
 void MEDDLY::domain::showInfo(output &strm)

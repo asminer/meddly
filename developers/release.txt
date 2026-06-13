@@ -5,10 +5,7 @@ Preferred mechanism to "release" the library:
 
 (1) Finalize any release notes in docs/_releases/unreleased.md
 
-(2) Check that we can build applications from the "installed" headers
-    and library, by running the following.
-    (a) In the parent directory: rm include/meddly/* lib/*; make install
-    (b) In this directory: run make
+(2) Check "make install" headers/library by running ./checkInstall.sh
 
 (3) Run ./Release.sh script, which automatically
     (a) updates version number in configure.ac

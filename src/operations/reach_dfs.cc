@@ -19,6 +19,8 @@
 #include "../defines.h"
 #include "reach_dfs.h"
 
+#ifdef ALLOW_DEPRECATED_0_18_1
+
 #include "../ct_entry_key.h"
 #include "../ct_entry_result.h"
 #include "../compute_table.h"
@@ -27,11 +29,17 @@
 #include "../ops_builtin.h"
 #include "../forest_levels.h"
 
+#include "../io.h"
+#include "../operators.h"
+
 // #define TRACE_RECFIRE
 // #define DEBUG_DFS
 // #define DEBUG_INITIAL
 // #define DEBUG_NSF
 // #define DEBUG_SPLIT
+
+// #define TRACE_INDEXES
+// #define COUNT_CALLS
 
 namespace MEDDLY {
     class saturation_op;
@@ -60,6 +68,9 @@ namespace MEDDLY {
 // ******************************************************************
 
 class MEDDLY::saturation_op : public unary_operation {
+#ifdef COUNT_CALLS
+    size_t num_calls;
+#endif
     common_dfs_mt* parent;
   public:
     saturation_op(common_dfs_mt* p, unary_list &c, forest* argF, forest* resF);
@@ -149,6 +160,9 @@ class MEDDLY::common_dfs : public binary_operation {
     binary_operation* mddUnion;
     binary_operation* mxdIntersection;
     binary_operation* mxdDifference;
+#ifdef COUNT_CALLS
+    size_t num_calls;
+#endif
 
   protected:
     class indexq {
@@ -207,7 +221,6 @@ class MEDDLY::common_dfs : public binary_operation {
   private:
     indexq* freeqs;
     charbuf* freebufs;
-
   protected:
 
     void splitMxd(node_handle mxd);
@@ -370,13 +383,19 @@ MEDDLY::saturation_op::~saturation_op()
 
 void MEDDLY::saturation_op::saturate(const dd_edge& in, dd_edge& out)
 {
+#ifdef COUNT_CALLS
+  num_calls = 0;
+#endif
   out.set( saturate(in.getNode(), argF->getMaxLevelIndex()) );
+#ifdef COUNT_CALLS
+  std::cout << "#saturate calls: " << num_calls << "\n";
+#endif
 }
 
 MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
 {
 #ifdef DEBUG_DFS
-  printf("mdd: %d, k: %d\n", mdd, k);
+  printf("mdd: %ld, k: %d\n", long(mdd), k);
 #endif
 
   // terminal condition for recursion
@@ -387,12 +406,16 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
   ct_entry_key* Key = findSaturateResult(mdd, k, n);
   if (0==Key) return n;
 
+#ifdef COUNT_CALLS
+  ++num_calls;
+#endif
+
   const unsigned sz = unsigned(argF->getLevelSize(k));    // size
   const int mdd_level = argF->getNodeLevel(mdd);          // mdd level
 
 #ifdef DEBUG_DFS
-  printf("mdd: %d, level: %d, size: %d, mdd_level: %d\n",
-      mdd, k, sz, mdd_level);
+  printf("mdd: %ld, level: %d, size: %d, mdd_level: %d\n",
+      long(mdd), k, sz, mdd_level);
 #endif
 
   unpacked_node* C = unpacked_node::newWritable(resF, k, sz, FULL_ONLY);
@@ -423,7 +446,9 @@ MEDDLY::node_handle MEDDLY::saturation_op::saturate(node_handle mdd, int k)
   saveSaturateResult(Key, mdd, n);
 
 #ifdef DEBUG_DFS
-  resF->showNodeGraph(stdout, n);
+  FILE_output out(stdout);
+  resF->showNode(out, n);
+  out.put('\n');
 #endif
 
   return n;
@@ -475,7 +500,7 @@ void MEDDLY::saturation_evplus_op::saturate(const dd_edge& in, dd_edge& out)
 void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, long& resEv, node_handle& resEvmdd)
 {
 #ifdef DEBUG_DFS
-  printf("evmdd: %d, ev: %ld, k: %d\n", evmdd, ev, k);
+  printf("evmdd: %ld, ev: %ld, k: %d\n", long(evmdd), ev, k);
 #endif
 
   // terminal condition for recursion
@@ -495,8 +520,8 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
   const int evmdd_level = argF->getNodeLevel(evmdd);      // evmdd level
 
 #ifdef DEBUG_DFS
-  printf("evmdd: %d, level: %d, size: %d, evmdd_level: %d\n",
-      evmdd, k, sz, evmdd_level);
+  printf("evmdd: %ld, level: %d, size: %d, evmdd_level: %d\n",
+      long(evmdd), k, sz, evmdd_level);
 #endif
 
   unpacked_node* C = unpacked_node::newWritable(resF, k, sz, FULL_ONLY);
@@ -532,7 +557,9 @@ void MEDDLY::saturation_evplus_op::saturate(long ev, node_handle evmdd, int k, l
   saveSaturateResult(Key, ev, evmdd, resEv, resEvmdd);
 
 #ifdef DEBUG_DFS
-  resF->showNodeGraph(stdout, resEvmdd);
+  FILE_output out(stdout);
+  resF->showNode(out, resEvmdd);
+  out.put('\n');
 #endif
 }
 
@@ -625,13 +652,15 @@ void MEDDLY::common_dfs::splitMxd(node_handle mxd_nh)
   } // for level
 
 #ifdef DEBUG_SPLIT
-  printf("After splitting monolithic event in msat\n");
-  printf("splits array: [");
-  for (unsigned k=0; k <= arg2F->getNumVariables(); k++) {
-    if (k) printf(", ");
-    printf("%d", splits[k]);
+  ostream_output splout(std::cout);
+  for (unsigned k=1; k <= arg2F->getNumVariables(); k++) {
+    splout << "Relation with top level=" << k << ": ";
+    splits[k].show(splout);
+    splout << "\n";
   }
-  printf("]\n");
+#endif
+#ifdef COUNT_CALLS
+  num_calls = 0;
 #endif
 }
 
@@ -653,6 +682,9 @@ void MEDDLY::common_dfs::cleanup()
   // Shouldn't need to do the above b/c we're using dd_edges now
   delete[] splits;
   splits = 0;
+#ifdef COUNT_CALLS
+  std::cout << "#recfire calls: " << num_calls << "\n";
+#endif
 }
 
 // ******************************************************************
@@ -783,6 +815,11 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
   node_handle mxd = splits[nb.getLevel()].getNode();
   if (mxd == 0) return;
 
+#ifdef TRACE_INDEXES
+  std::cout << "saturating level " << nb.getLevel()
+            << " (mxd " << mxd << ")\n";
+#endif
+
   const int mxdLevel = arg2F->getNodeLevel(mxd);
   MEDDLY_DCASSERT(ABS(mxdLevel) == nb.getLevel());
 
@@ -823,6 +860,11 @@ void MEDDLY::forwd_dfs_mt::saturateHelper(unpacked_node &nb)
       MEDDLY_DCASSERT(jz>=0);
       const unsigned j = Rp->index(unsigned(jz));
       if (-1==nb.down(j)) continue;  // nothing can be added to this set
+
+#ifdef TRACE_INDEXES
+      std::cout << "level " << nb.getLevel() << ": "
+                << i << " -> " << j << " (down " << Rp->down(jz) << ")\n";
+#endif
 
       node_handle rec = recFire(nb.down(i), Rp->down(unsigned(jz)));
 
@@ -883,18 +925,25 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
       return resF->linkNode(mdd);
   }
 
+#ifdef COUNT_CALLS
+  ++num_calls;
+#endif
+
   // check the cache
   node_handle result = 0;
   ct_entry_key* Key = findResult(mdd, mxd, result);
   if (0==Key) return result;
 
 #ifdef TRACE_RECFIRE
+  std::cout << "starting recfire(" << mdd << ", " << mxd << ")\n";
+  /*
   printf("computing recFire(%d, %d)\n", mdd, mxd);
   printf("  node %3d ", mdd);
   arg1F->showNode(stdout, mdd, 1);
   printf("\n  node %3d ", mxd);
   arg2F->showNode(stdout, mxd, 1);
   printf("\n");
+  */
 #endif
 
   // check if mxd and mdd are at the same level
@@ -974,6 +1023,10 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
     unpacked_node::Recycle(Ru);
   } // else
 
+#ifdef TRACE_RECFIRE
+  std::cout << "saturate recfire(" << mdd << ", " << mxd << ")\n";
+#endif
+
   // cleanup mdd reader
   unpacked_node::Recycle(A);
 
@@ -986,11 +1039,16 @@ MEDDLY::node_handle MEDDLY::forwd_dfs_mt::recFire(node_handle mdd, node_handle m
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
 #endif
 #ifdef TRACE_RECFIRE
+  std::cout << "computed recfire(" << mdd << ", " << mxd << ") = "
+            << result << "\n";
+  /*
   printf("computed recfire(%d, %d) = %d\n", mdd, mxd, result);
   printf("  node %3d ", result);
   resF->showNode(stdout, result, 1);
   printf("\n");
+  */
 #endif
+
   return saveResult(Key, mdd, mxd, result);
 }
 
@@ -1412,12 +1470,14 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
   if (0==Key) return;
 
 #ifdef TRACE_RECFIRE
+  /*
   printf("computing recFire(<%d, %d>, %d)\n", ev, evmdd, mxd);
   printf("  node <%d, %d> ", ev, evmdd);
   arg1F->showNode(stdout, evmdd, 1);
   printf("\n  node %3d ", mxd);
   arg2F->showNode(stdout, mxd, 1);
   printf("\n");
+  */
 #endif
 
   // check if mxd and evmdd are at the same level
@@ -1517,10 +1577,12 @@ void MEDDLY::forwd_dfs_evplus::recFire(long ev, node_handle evmdd, node_handle m
   printf("computed recfire(<%d, %d>, %d) = <%d, %d>\n", ev, evmdd, mxd, resEv, resEvmdd);
 #endif
 #ifdef TRACE_RECFIRE
+  /*
   printf("computed recfire(<%d, %d>, %d) = <%d, %d>\n", ev, evmdd, mxd, resEv, resEvmdd);
   printf("  node <%d, %d> ", resEv, resEvmdd);
   resF->showNode(stdout, resEvmdd, 1);
   printf("\n");
+  */
 #endif
 
   saveResult(Key, ev, evmdd, mxd, resEv, resEvmdd);
@@ -1593,3 +1655,4 @@ void MEDDLY::REVERSE_REACHABLE_DFS_done()
     MEDDLY_DCASSERT(REV_DFS_cache.isEmpty());
 }
 
+#endif // allow_deprecated_0_18_1

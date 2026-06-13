@@ -83,8 +83,12 @@ int main(int argc, char *argv[])
     dd_edge reachBFS(initialStates);
     dd_edge reachDFS(initialStates);
 
-    apply(REACHABLE_STATES_BFS, reachBFS, nsf, reachBFS);
+    apply(REACHABLE_TRAD_NOFS(true), reachBFS, nsf, reachBFS);
+#ifdef ALLOW_DEPRECATED_0_18_1
     apply(REACHABLE_STATES_DFS, reachDFS, nsf, reachDFS);
+#else
+    apply(REACHABLE_SATUR(true, 1), reachDFS, nsf, reachDFS);
+#endif
 
     int retval = (reachBFS == reachDFS)? 0: 1;
 

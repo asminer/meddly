@@ -26,6 +26,7 @@
 namespace MEDDLY {
     class output;
     class input;
+    class domain;
     class forest;
     class dd_edge;
 
@@ -69,12 +70,26 @@ class MEDDLY::mdd_writer {
 */
 class MEDDLY::mdd_reader {
     public:
-        mdd_reader(input &s, forest* F);
+        /// Read into an existing forest
+        mdd_reader(input &s, forest* F, output* prog=nullptr);
+        /// Create the forest based on the file
+        mdd_reader(input &s, domain* D, output* prog=nullptr);
         void readRootEdge(dd_edge &E);
-        inline unsigned numRoots() const { return roots.size(); }
+        inline unsigned numRoots() const            { return roots.size(); }
+        inline forest* getForest() const            { return For; }
+        inline size_t getFileNodes() const          { return file_nodes; }
+        inline const dd_edge& getRoot(unsigned i) const
+        {
+            return roots[i];
+        }
     private:
+        void readAfterForest(input &s, output* prog);
+        void handleError(input &s, error &e) const;
+    private:
+        forest* For;
         std::vector <dd_edge> roots;
         unsigned rptr;
+        size_t file_nodes;
 };
 
 #endif

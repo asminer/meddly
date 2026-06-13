@@ -23,7 +23,6 @@
 
 
 #include <cstdlib>
-#include <time.h>
 #include <cassert>
 
 #include "../src/meddly.h"
@@ -192,6 +191,7 @@ void testCopy(forest* srcF, forest* destF)
             printf("\n\nBuilding source\n");
 #endif
             buildRandomFunc(save_seed, t, srcE, nullptr);
+            // printf("s");
 #ifdef DEBUG_BUILD
             printf("\n\nBuilding destination\n");
 #endif
@@ -212,6 +212,7 @@ void testCopy(forest* srcF, forest* destF)
                 }
             }
 
+            // printf("d");
 #ifdef DEBUG_BUILD
             printf("\n\nBuilding copy\n");
 #endif
@@ -247,7 +248,10 @@ void testCopy(forest* srcF, forest* destF)
         printf("  OK\n");
     }
     catch (MEDDLY::error e) {
-        printf("%s\n", e.getName());
+        printf("\nException %s thrown in %s line %u\n",
+                e.getName(), e.getFile(), e.getLine());
+
+        exit(1);
     }
 
 }

@@ -3,6 +3,8 @@
 .dirstamp
 .libs
 applyinfo
+dd_info
+diff_dd
 dining_phils
 graphs_to_mdds
 hanoi
@@ -11,6 +13,7 @@ knight
 knight2
 libinfo
 life
+mr2dist
 nqueens
 qc2
 queen_cover

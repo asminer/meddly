@@ -66,7 +66,7 @@ namespace MEDDLY {
                                     and each entry needs a next pointer.
 
             @param  INTSLOTS        If true, we use unsigned integer slots
-                                    instead of unsigned long slots for
+                                    instead of ct_entry_item slots for
                                     entries, and some items will require
                                     two slots instead of one.
 
@@ -416,11 +416,16 @@ namespace MEDDLY {
                 s << "\n";
             }
 
+            /*
             /// Convert unsigned pointer to node
             static inline node_handle u2n(const unsigned* ptr)
             {
+                //
+                // TBD: if node_handle is larger than unsigned?
+                //
                 return *((const node_handle*)ptr);
             }
+            */
 
             /// Multiply and check for overflow
             static inline TTYPE safemult(TTYPE sz, TTYPE a)
@@ -2081,13 +2086,8 @@ void MEDDLY::ct_tmpl<T,M,C,I>
         const ct_itemtype &it = et->getResultType(i);
         switch (it.getType())
         {
-            case ct_typeID::NODE:
-                    it.cacheNode(data[i].N);
-                    // FALL THROUGH
-
             case ct_typeID::INTEGER:
             case ct_typeID::FLOAT:
-                    MEDDLY_DCASSERT(sizeof(data[i].N) == sizeof(data[i].U));
                     MEDDLY_DCASSERT(sizeof(data[i].I) == sizeof(data[i].U));
                     MEDDLY_DCASSERT(sizeof(data[i].F) == sizeof(data[i].U));
                     if (I) {
@@ -2110,6 +2110,28 @@ void MEDDLY::ct_tmpl<T,M,C,I>
                         ue+=2;
                     } else {
                         cte->UL = data[i].UL;
+                        cte++;
+                    }
+                    continue;
+
+            case ct_typeID::NODE:
+                    it.cacheNode(data[i].N);
+
+                    if (I) {
+                        //
+                        // Copy into one or two integer slots
+                        //
+                        if (sizeof(data[i].N) == sizeof(data[i].U)) {
+                            *ue = data[i].U;
+                            ue++;
+                        } else {
+                            ue[0] = data[i].raw[0];
+                            ue[1] = data[i].raw[1];
+                            ue+=2;
+                        }
+
+                    } else {
+                        cte->N = data[i].N;
                         cte++;
                     }
                     continue;
@@ -2246,6 +2268,7 @@ void MEDDLY::ct_tmpl<T,M,C,I>
     for (unsigned i=0; i<res.size(); i++) {
         const ct_itemtype &it = ET.getResultType(i);
         MEDDLY_DCASSERT(it.hasType(res[i].getType()));
+        /*
         if (it.hasNodeType()) {
             MEDDLY_DCASSERT(!it.requiresTwoSlots());
             it.cacheNode(res[i].getN());
@@ -2257,6 +2280,10 @@ void MEDDLY::ct_tmpl<T,M,C,I>
                 ++cte;
             }
             continue;
+        }
+        */
+        if (it.hasNodeType()) {
+            it.cacheNode(res[i].getN());
         }
 
         if (it.requiresTwoSlots()) {
@@ -2433,10 +2460,11 @@ bool MEDDLY::ct_tmpl<T,M,C,I>::isStale(const void* entry, bool mark) const
             // Check the node
             //
             if (I) {
-                if (item.isStaleEntry(u2n(uptr), mark)) {
+                ct_item x;
+                uptr = x.set(ct_typeID::NODE, uptr);
+                if (item.isStaleEntry(x.getN(), mark)) {
                     return true;
                 }
-                uptr++;
             } else {
                 if (item.isStaleEntry(ctptr->N, mark)) {
                     return true;
@@ -2465,10 +2493,11 @@ bool MEDDLY::ct_tmpl<T,M,C,I>::isStale(const void* entry, bool mark) const
             // Check the node
             //
             if (I) {
-                if (item.isStaleEntry(u2n(uptr), mark)) {
+                ct_item x;
+                uptr = x.set(ct_typeID::NODE, uptr);
+                if (item.isStaleEntry(x.getN(), mark)) {
                     return true;
                 }
-                uptr++;
             } else {
                 if (item.isStaleEntry(ctptr->N, mark)) {
                     return true;
@@ -2554,8 +2583,12 @@ void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
         const ct_itemtype &item = et->getKeyType(i);
         if (item.hasNodeType()) {
             if (I) {
-                item.uncacheNode(u2n(uptr));
-                uptr += item.intslots();
+                ct_item x;
+                uptr = x.set(ct_typeID::NODE, uptr);
+                item.uncacheNode(x.getN());
+
+                // item.uncacheNode(u2n(uptr));
+                // uptr += item.intslots();
             } else {
                 item.uncacheNode( ctptr->N );
                 ++ctptr;
@@ -2565,11 +2598,13 @@ void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
         if (item.hasType(ct_typeID::GENERIC)) {
             if (I) {
                 ct_item x;
-                x.set(ct_typeID::GENERIC, uptr);
+                uptr = x.set(ct_typeID::GENERIC, uptr);
                 delete x.getG();
             } else {
                 delete ctptr->G;
+                ++ctptr;
             }
+            continue;
         }
         if (I) {
             uptr += item.intslots();
@@ -2585,8 +2620,11 @@ void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
         const ct_itemtype &item = et->getResultType(i);
         if (item.hasNodeType()) {
             if (I) {
-                item.uncacheNode(u2n(uptr));
-                uptr += item.intslots();
+                ct_item x;
+                uptr = x.set(ct_typeID::NODE, uptr);
+                item.uncacheNode(x.getN());
+                // item.uncacheNode(u2n(uptr));
+                // uptr += item.intslots();
             } else {
                 item.uncacheNode( ctptr->N );
                 ++ctptr;
@@ -2596,11 +2634,13 @@ void MEDDLY::ct_tmpl<TTYPE,M,C,I>::deleteEntry(TTYPE &h)
         if (item.hasType(ct_typeID::GENERIC)) {
             if (I) {
                 ct_item x;
-                x.set(ct_typeID::GENERIC, uptr);
+                uptr = x.set(ct_typeID::GENERIC, uptr);
                 delete x.getG();
             } else {
                 delete ctptr->G;
+                ++ctptr;
             }
+            continue;
         }
         if (I) {
             uptr += item.intslots();

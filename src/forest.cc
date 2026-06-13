@@ -45,14 +45,6 @@
 #include "forest_levels.h"
 #include "forest_edgerules.h"
 
-// for timestamps.
-// to do - check during configuration that these are present,
-// and act accordingly here
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
 //
 // For constructing forests.
 //
@@ -115,6 +107,8 @@ class MEDDLY::rel_node_from_dd : public rel_node {
         virtual ~rel_node_from_dd();
 
         virtual bool outgoing(unsigned i, unpacked_node &u);
+        virtual node_handle getDiagonal(unsigned i);
+        // virtual bool getDiagonal(unsigned i, edge_value &dv, node_handle &dp);
         virtual void show(output &out) const;
 
     protected:
@@ -229,6 +223,121 @@ bool MEDDLY::rel_node_from_dd::outgoing(unsigned i, unpacked_node &u)
     }
     return true;
 }
+
+MEDDLY::node_handle
+MEDDLY::rel_node_from_dd::getDiagonal(unsigned i)
+{
+    MEDDLY_DCASSERT(unp);
+    MEDDLY_DCASSERT(!unp->hasEdges());
+
+    /*
+        If unp is actually at a primed level,
+        then there's an implicit redundant node an the unprimed level.
+        Get element i of unp.
+    */
+    if (unp->getLevel() < 0) {
+        if (i >= unp->getSize()) {
+            return 0;
+        } else {
+            return unp->down(i);
+        }
+    }
+
+    /*
+        unp is at an unprimed level.
+        Check downward pointer i.
+    */
+
+    if (i >= unp->getSize() || 0 == unp->down(i)) {
+        return 0;
+    }
+
+    /*
+        unp[i] is non-zero.
+        Check if it points to a node at the primed level or not.
+    */
+
+    const node_handle dn = unp->down(i);
+    const int next_level = MXD_levels::downLevel(unp->getLevel());
+    if (getParent()->getNodeLevel(dn) == next_level) {
+        /*
+            unp[i] is a node at the primed level.
+            Get its i'th child.
+         */
+        return getParent()->getDownPtr(dn, i);
+    } else {
+        /*
+            unp[i] skips the primed level.
+            For both identity-reduced and fully-reduced,
+            that means the diagonal element is unp[i].
+         */
+        return dn;
+    }
+}
+
+#if 0
+bool MEDDLY::rel_node_from_dd::getDiagonal(unsigned i, edge_value &dv, node_handle &dp)
+{
+    MEDDLY_DCASSERT(unp);
+
+    /*
+        If unp is actually at a primed level,
+        then there's an implicit redundant node an the unprimed level.
+        Get element i of unp.
+    */
+    if (unp->getLevel() < 0) {
+        dp = unp->down(i);
+        if (unp->hasEdges()) {
+            dv = unp->edgeval(i);
+        } else {
+            dv.set();
+        }
+        return true;
+    }
+
+    /*
+        unp is at an unprimed level.
+        Check downward pointer i.
+    */
+
+    if (i >= unp->getSize() || 0 == unp->down(i)) {
+        return false;
+    }
+
+    /*
+        unp[i] is non-zero. Get its ith pointer.
+    */
+
+    if (unp->hasEdges()) {
+        getParent()->getDownPtr(unp->down(i), i, dv, dp);
+        switch (getParent()->getEdgeLabeling())
+        {
+            case edge_labeling::MULTI_TERMINAL:
+                FAIL(__FILE__, __LINE__, "Impossible combination");
+                break;
+
+            case edge_labeling::EVPLUS:
+                MEDDLY_DCASSERT(getParent()->isRangeType(range_type::INTEGER));
+                EdgeOp_plus<long>::accumulateOp(dv, unp->edgeval(i));
+                return true;
+
+            case edge_labeling::EVTIMES:
+                MEDDLY_DCASSERT(getParent()->isRangeType(range_type::REAL));
+                EdgeOp_times<float>::accumulateOp(dv, unp->edgeval(i));
+                return true;
+
+            default:
+                FAIL(__FILE__, __LINE__, "Unknown edge labeling");
+        }
+    } else {
+        dp = getParent()->getDownPtr(unp->down(i), i);
+        return (dp != 0);
+    }
+
+    // keep compilers happy
+    return false;
+}
+#endif
 
 void MEDDLY::rel_node_from_dd::show(output &out) const
 {
@@ -1659,12 +1768,18 @@ void MEDDLY::forest
 
 void MEDDLY::forest::dump(output &s, display_flags flags) const
 {
-  for (long p=0; p<=nodeHeaders.lastUsedHandle(); p++) {
-    if (showNode(s, p, flags | SHOW_INDEX)) {
-      s.put('\n');
-      s.flush();
+    for (long p=0; p<=nodeHeaders.lastUsedHandle(); p++) {
+        if (showNode(s, p, flags | SHOW_INDEX)) {
+            s.put('\n');
+            s.flush();
+        }
     }
-  }
+    s << "Root edges:\n";
+    for (const dd_edge* r = roots; r; r=r->next) {
+        s << "    ";
+        r->show(s);
+        s << "\n";
+    }
 }
 
 void MEDDLY::forest::dumpInternal(output &s) const
@@ -1685,7 +1800,7 @@ void MEDDLY::forest::dumpUniqueTable(output &s) const
 }
 
 void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN,
-        const char* opname) const
+        const char* opname, const char* notes) const
 {
 #ifndef ACTUALLY_VALIDATE_INCOUNTS
     return;
@@ -1745,6 +1860,7 @@ void MEDDLY::forest::validateIncounts(bool exact, const char* FN, unsigned LN,
             dump(fout, SHOW_DETAILS);
             fout << "Requested from " << FN << " line " << LN;
             if (opname) fout << " operation " << opname;
+            if (notes)  fout << " " << notes;
             fout << '\n';
             fout.flush();
             throw error(error::MISCELLANEOUS, __FILE__, __LINE__);

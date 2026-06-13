@@ -1,8 +1,8 @@
 //
-// Finite distance function for Kanban N=1
+// Finite forward distance function for Kanban N=1
 //
 
-const statedist kanban_rs1[] = {
+const statedist kanban_fwd_rs1[] = {
     { "b1000100010001000", 0},
     { "b0100100010001000", 1},
     { "b0010100010001000", 2},

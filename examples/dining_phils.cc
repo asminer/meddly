@@ -127,7 +127,7 @@ struct switches {
             mark_sweep = false;
             pessimistic = false;
             exact = false;
-            method = 'b';
+            method = 't';
             // chaining = true;
             printReachableStates = false;
             vord = fpfp;
@@ -335,6 +335,24 @@ void philsModel::eventsForPhil(int phil, dd_edge &e)
 // **********************************************************************
 // Helper functions
 // **********************************************************************
+
+// Verbose output: show iteration details
+bool verbose;
+
+void my_progress(unsigned iter, char st)
+{
+    if (' ' == st) {
+        fprintf(stderr, "    Iteration %u: ", iter);
+        return;
+    }
+    if (';' == st) {
+        fputc('\n', stderr);
+        return;
+    }
+    fputc(st, stderr);
+    fputc(' ', stderr);
+}
+
 
 void printStats(const char* who, const forest* f)
 {
@@ -566,17 +584,43 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
     dd_edge reachableStates(initialStates);
     start.note_time();
 
+    binary_operation* rsgen = nullptr;
+
     switch (sw.method) {
-        case 'b':
-            printf("Building reachability set using traditional algorithm\n");
+        case 'f':
+            printf("Building reachability set using traditional algorithm with frontier\n");
             fflush(stdout);
-            apply(REACHABLE_STATES_BFS, initialStates, nsf, reachableStates);
+            rsgen = build(REACHABLE_TRAD_FS(true), mdd, mxd, mdd);
+            if (verbose) rsgen->setProgressNotifier(my_progress);
+            rsgen->compute(initialStates, nsf, reachableStates);
             break;
 
+        case 't':
+            printf("Building reachability set using traditional algorithm (no frontier)\n");
+            fflush(stdout);
+            rsgen = build(REACHABLE_TRAD_NOFS(true), mdd, mxd, mdd);
+            if (verbose) rsgen->setProgressNotifier(my_progress);
+            rsgen->compute(initialStates, nsf, reachableStates);
+            break;
+
+#ifdef ALLOW_DEPRECATED_0_18_1
         case 'm':
             printf("Building reachability set using saturation, monolithic relation\n");
             fflush(stdout);
             apply(REACHABLE_STATES_DFS, initialStates, nsf, reachableStates);
+            break;
+#endif
+
+        case 'd':
+            printf("Building reachability set using default saturation, monolithic relation\n");
+            fflush(stdout);
+            apply(REACHABLE_SATUR(true), initialStates, nsf, reachableStates);
+            break;
+
+        case '1':
+            printf("Building reachability set using saturation v1, monolithic relation\n");
+            fflush(stdout);
+            apply(REACHABLE_SATUR(true, 1), initialStates, nsf, reachableStates);
             break;
 
         case 'k':
@@ -692,11 +736,17 @@ int usage(const char* who)
     printf("\t-pess:      use pessimistic node deletion (lower mem usage)\n");
     printf("\n");
 
-    printf("\t-bfs:       use traditional iterations (default)\n\n");
-    printf("\t-dfs:       use fastest saturation (currently, -msat)\n");
+    printf("\t-trad:      use traditional iterations without frontier (default)\n");
+    printf("\t-front:     use traditional iterations with frontier\n\n");
+
+    printf("\t-dfs:       use default saturation\n");
+#ifdef ALLOW_DEPRECATED_0_18_1
+    printf("\t-msat:      use monolithic saturation\n");
+#endif
     printf("\t-esat:      use saturation by events\n");
     printf("\t-ksat:      use saturation by levels\n");
-    printf("\t-msat:      use monolithic saturation\n");
+    printf("\n");
+    printf("\t-sat1:      Saturation v1 (new implementation)\n");
     printf("\n");
 
     printf("\t-l lfile:   Write logging information to specified file\n");
@@ -710,6 +760,7 @@ int usage(const char* who)
     printf("\n");
 
     printf("\t-print:     Print the reachable states\n");
+    printf("\t-v    :     Verbose (show iterations)\n");
     printf("\n");
     return 0;
 }
@@ -721,6 +772,7 @@ int main(int argc, char *argv[])
     switches sw;
     int cacheSize = 0;
     const char* lfile = 0;
+    verbose = false;
 
     for (int i=1; i<argc; i++) {
         const char* cmd = argv[i];
@@ -761,18 +813,28 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        if (strcmp(cmd, "-bfs") == 0) {
-            sw.method = 'b';
+        if (strcmp(cmd, "-trad") == 0) {
+            sw.method = 't';
+            continue;
+        }
+        if (strcmp(cmd, "-front") == 0) {
+            sw.method = 'f';
             continue;
         }
 
         if (strcmp(cmd, "-dfs") == 0) {
+            sw.method = 'd';
+            continue;
+        }
+#ifdef ALLOW_DEPRECATED_0_18_1
+        if (strcmp(cmd, "-msat") == 0) {
             sw.method = 'm';
             continue;
         }
+#endif
 
-        if (strcmp(cmd, "-msat") == 0) {
-            sw.method = 'm';
+        if (strcmp(cmd, "-sat1") == 0) {
+            sw.method = '1';
             continue;
         }
         if (strcmp(cmd, "-esat") == 0) {
@@ -807,6 +869,10 @@ int main(int argc, char *argv[])
         }
         if (strcmp(cmd, "-offpp") == 0) {
             sw.vord = ffpp;
+            continue;
+        }
+        if (strcmp(cmd, "-v") == 0) {
+            verbose = true;
             continue;
         }
 

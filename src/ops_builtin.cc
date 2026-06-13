@@ -61,6 +61,7 @@ namespace MEDDLY {
 #include "operations/prepostplus.h"
 #include "operations/prepost_sets.h"
 #include "operations/prepost_rels.h"
+#include "operations/reach_trad.h"
 #include "operations/vect_matr.h"
 #include "operations/mm_mult.h"
 //
@@ -70,7 +71,6 @@ namespace MEDDLY {
 //
 // For initializing saturation-line operations
 //
-#include "operations/reach_bfs.h"
 #include "operations/reach_dfs.h"
 #include "operations/sat_pregen.h"
 #include "operations/sat_otf.h"
@@ -93,6 +93,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     //
     // Add all unary factories here
     //
+    all_unary.push_back( &BOGUS_UNARY()             );
     all_unary.push_back( &CARDINALITY()             );
     all_unary.push_back( &COMPLEMENT()              );
     all_unary.push_back( &CONVERT_TO_INDEX_SET()    );
@@ -108,6 +109,7 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     //
     // Add all binary factories here
     //
+    all_binary.push_back( &BOGUS_BINARY()           );
     all_binary.push_back( &CROSS()                  );
     all_binary.push_back( &DIFFERENCE()             );
     all_binary.push_back( &DIST_MIN()               );
@@ -128,6 +130,14 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     all_binary.push_back( &PLUS()                   );
     all_binary.push_back( &POST_IMAGE()             );
     all_binary.push_back( &PRE_IMAGE()              );
+
+    all_binary.push_back( &REACHABLE_SATUR(true, 1)     );
+    all_binary.push_back( &REACHABLE_SATUR(false, 1)    );
+    all_binary.push_back( &REACHABLE_TRAD_FS(true)      );
+    all_binary.push_back( &REACHABLE_TRAD_FS(false)     );
+    all_binary.push_back( &REACHABLE_TRAD_NOFS(true)    );
+    all_binary.push_back( &REACHABLE_TRAD_NOFS(false)   );
+
     all_binary.push_back( &UNION()                  );
     all_binary.push_back( &VM_MULTIPLY()            );
 }
@@ -160,10 +170,11 @@ void MEDDLY::builtin_init::setup()
     PRE_PLUS_init();
     POST_PLUS_init();
     TC_POST_IMAGE_init();
-    REACHABLE_STATES_BFS_init();
+
+#ifdef ALLOW_DEPRECATED_0_18_1
     REACHABLE_STATES_DFS_init();
-    REVERSE_REACHABLE_BFS_init();
     REVERSE_REACHABLE_DFS_init();
+#endif
 
     MM_MULTIPLY_init();
 
@@ -200,10 +211,11 @@ void MEDDLY::builtin_init::cleanup()
     PRE_PLUS_done();
     POST_PLUS_done();
     TC_POST_IMAGE_done();
-    REACHABLE_STATES_BFS_done();
+
+#ifdef ALLOW_DEPRECATED_0_18_1
     REACHABLE_STATES_DFS_done();
-    REVERSE_REACHABLE_BFS_done();
     REVERSE_REACHABLE_DFS_done();
+#endif
 
     MM_MULTIPLY_done();
 

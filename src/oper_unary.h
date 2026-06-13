@@ -28,7 +28,10 @@ namespace MEDDLY {
     class unary_operation;
     class unary_factory;
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+    typedef void (*user_defined_unary)(const rangeval &arg, rangeval &res);
+    class user_unary_factory;
+
+#ifdef ALLOW_OLD_UNARY_0_17_6
     class unary_list;
 #endif
 };
@@ -44,7 +47,7 @@ namespace MEDDLY {
 */
 class MEDDLY::unary_operation : public operation {
     public:
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
         /// Old constructor, returns DD
         unary_operation(unary_list& owner, unsigned et_slots,
             forest* arg, forest* res);
@@ -171,7 +174,7 @@ class MEDDLY::unary_operation : public operation {
         */
         void compute(const dd_edge &arg, dd_edge &res);
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
         void computeTemp(const dd_edge &arg, dd_edge &res);
         virtual void computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag);
 #endif
@@ -265,7 +268,7 @@ class MEDDLY::unary_operation : public operation {
         unary_operation* next;
         friend class unary_factory;
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
         unary_list* parent;
         bool new_style;
         friend class unary_list;
@@ -343,11 +346,6 @@ class MEDDLY::unary_factory {
             return cache_add( build_new(arg, res) );
         }
 
-        /**
-            Build a specific operation instance.
-            For this version, the result is a value.
-            The default behavior returns NULL.
-        */
 
         /// Default: just calls _cleanup()
         virtual void cleanup();
@@ -494,7 +492,7 @@ class MEDDLY::unary_factory {
 
 };
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_UNARY_0_17_6
 
 // ******************************************************************
 // *                                                                *
@@ -565,6 +563,40 @@ class MEDDLY::unary_list {
 
 // ******************************************************************
 // *                                                                *
+// *                    user_unary_factory class                    *
+// *                                                                *
+// ******************************************************************
+
+/**
+    Special factory for user-defined unary operations.
+    Implementation is in operations/user_unary.cc
+ */
+class MEDDLY::user_unary_factory : public unary_factory {
+    public:
+        /// Build a new unary operation, based on function F.
+        user_unary_factory(const char* name, user_defined_unary F);
+        ~user_unary_factory() {
+            _cleanup();
+        }
+        const char* getName() const {
+            return name;
+        }
+        user_defined_unary getFunc() const {
+            return F;
+        }
+
+        virtual void setup();
+
+    protected:
+        virtual unary_operation* build_new(forest* arg, forest* res);
+
+    private:
+        user_defined_unary F;
+        const char* name;
+};
+
+// ******************************************************************
+// *                                                                *
 // *                          Unary  apply                          *
 // *                                                                *
 // ******************************************************************
@@ -589,6 +621,11 @@ namespace MEDDLY {
     }
 #endif
 
+    inline void apply(unary_factory& bu, const dd_edge &a, dd_edge &c)
+    {
+        bu.apply(a, c);
+    }
+
     inline unary_operation* build(unary_builtin0 bu, forest* arg, forest* res)
     {
         return bu().build(arg, res);
@@ -599,7 +636,12 @@ namespace MEDDLY {
         return bu().build(arg, res);
     }
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+    inline unary_operation* build(unary_factory& bu, forest* arg, forest* res)
+    {
+        return bu.build(arg, res);
+    }
+
+#ifdef ALLOW_OLD_UNARY_0_17_6
     typedef unary_operation* (*unary_builtin1)(forest* arg, forest* res);
     typedef unary_operation* (*unary_builtin2)(forest* arg, opnd_type res);
 
@@ -679,6 +721,10 @@ namespace MEDDLY {
 #endif
 
 #endif
+
+
+    /// Bogus unary operation that always fails.
+    unary_factory& BOGUS_UNARY();
 
 };
 

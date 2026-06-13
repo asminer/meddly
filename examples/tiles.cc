@@ -17,12 +17,16 @@
 */
 
 #include <iostream>
+#include <fstream>
+#include <iomanip>
 #include <vector>
 #include <cassert>
+#include <dirent.h>
 
 #include "../src/meddly.h"
 #include "../timing/timer.h"
-#include "simple_model.h"
+
+#include "zstream.h"
 
 // #define SHOW_EVENTS
 
@@ -38,6 +42,9 @@ bool approx_count;
 // Verbose output: show iteration details
 bool verbose;
 
+// Compute distances?
+bool distances = false;
+
 // #define DEBUG_EVENTS
 
 // There are two encodings.
@@ -47,6 +54,88 @@ bool verbose;
 //     "for each tile, where is it."
 //
 bool for_each_position_which_tile;
+
+//
+// Forest for progress reports
+//
+MEDDLY::forest* fprog = nullptr;
+
+//
+// Directory for checkpoints.
+// If null, use the current directory.
+//
+const char* chk_dir = nullptr;
+
+inline void show_node_count(long x)
+{
+    if (x<0) {
+        std::cerr << "-";
+        x = -x;
+    } else {
+        std::cerr << " ";
+    }
+    long grouping = 1000000000000L;
+    char filler = ' ';
+    while (grouping) {
+        if (filler != ' ') {
+            std::cerr << ",";
+        } else {
+            std::cerr << " ";
+        }
+        const long d = x / grouping;
+        if (d) {
+            if (d < 100) {
+                std::cerr << filler;
+            }
+            if (d < 10) {
+                std::cerr << filler;
+            }
+            std::cerr << d;
+            x %= grouping;
+            filler = '0';
+        } else {
+            std::cerr << filler << filler << filler;
+        }
+        grouping /= 1000;
+    }
+}
+
+void my_progress(unsigned iter, char st)
+{
+    static timer watch;
+    if (' ' == st) {
+        watch.note_time();
+        std::cerr << "    Iter" << std::setw(5) << iter << ": ";
+        return;
+    }
+    if (';' == st) {
+        watch.note_time();
+        std::cerr   << std::fixed
+                    << std::setprecision(4)
+                    << std::setw(12)
+                    << watch.get_last_seconds()
+                    << " sec";
+
+        if (fprog) {
+            show_node_count(fprog->getCurrentNumNodes());
+            std::cerr << " nodes";
+
+            unsigned long mem = fprog->getCurrentMemoryUsed();
+            unsigned units = 0;
+            while (mem >= 1024) {
+                mem /= 1024;
+                ++units;
+            }
+            const char* uletters = " KMGTPEZYabcdefgh";
+            std::cerr << std::setw(5) << mem << " " << uletters[units] << "bytes";
+        }
+
+        std::cerr << std::endl;
+        return;
+    }
+    std::cerr << st << " ";
+}
+
 
 // **********************************************************************
 // build the initial state, as a minterm
@@ -190,14 +279,150 @@ void buildRelation(MEDDLY::dd_edge& trel)
 }
 
 // **********************************************************************
+// checkpoint file name
+//
+const char* chkpt_path(unsigned iter)
+{
+    static char pathname[512];
+    if (chk_dir) {
+        snprintf(pathname, 512, "%s/chk.%03d.txt.xz", chk_dir, iter);
+    } else {
+        snprintf(pathname, 512, "chk.%03d.txt.xz", iter);
+    }
+    return pathname;
+}
+
+// **********************************************************************
+// write checkpoint
+//
+void write_checkpoint(unsigned iter, const MEDDLY::dd_edge &e)
+{
+    using namespace MEDDLY;
+
+    const char* pathname = chkpt_path(iter);
+    std::cout << "            writing checkpoint " << pathname << " ";
+    compressed_output cpout(pathname);
+    if (!cpout) {
+        std::cout << "couldn't write\n";
+        return;
+    }
+    std::cout << ".";
+    std::cout.flush();
+
+    forest* F = e.getForest();
+    domain* D = F->getDomain();
+    D->write(cpout.outstream());
+    mdd_writer mywriter(cpout.outstream(), F);
+    mywriter.writeRootEdge(e);
+    std::cout << ".";
+    std::cout.flush();
+    mywriter.finish();
+    std::cout << " done\n";
+}
+
+// **********************************************************************
+// read checkpoint
+//
+void read_checkpoint(unsigned iter, MEDDLY::dd_edge &e)
+{
+    using namespace MEDDLY;
+
+    const char* pathname = chkpt_path(iter);
+    std::cout << "    restoring from checkpoint " << pathname << " ";
+    compressed_input cpin(pathname);
+    if (!cpin) {
+        std::cout << "couldn't read\n";
+        throw "checkpoint restore error: couldn't read";
+    }
+    std::cout << ".";
+    std::cout.flush();
+
+    forest* F = e.getForest();
+    domain* D = F->getDomain();
+    D->verify(cpin.instream());
+    mdd_reader myreader(cpin.instream(), F);
+    std::cout << ".";
+    std::cout.flush();
+    e = myreader.getRoot(0);
+    std::cout << " done\n";
+}
+
+// **********************************************************************
+// traditional iteration with checkpoints
+//      @param relation     Transition relation
+//      @param initial      Initial state
+//      @param reachable    (output) reachable states
+//
+// **********************************************************************
+void myTraditional(const MEDDLY::dd_edge &relation,
+        const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable)
+{
+    using namespace MEDDLY;
+
+    //
+    // Determine next checkpoint to compute
+    //
+    unsigned next = 0;
+    for (; ; ++next) {
+        FILE* f = fopen(chkpt_path(next), "r");
+        if (NULL == f) break;
+        fclose(f);
+    }
+
+    if (0==next) {
+        std::cout << "No checkpoints found\n";
+        apply(COPY, initial, reachable);
+        write_checkpoint(0, reachable);
+    } else {
+        --next;
+        std::cout << "Restoring from checkpoint " << chkpt_path(next) << "\n";
+        read_checkpoint(next, reachable);
+    }
+
+
+    do {
+        ++next;
+        my_progress(next, ' ');
+
+        //
+        // Compute next states
+        //
+        dd_edge step(reachable);
+        apply(POST_IMAGE, reachable, relation, step);
+        my_progress(next, 'N');
+
+        //
+        // Union with reachable
+        //
+        if (distances) {
+            apply(MINIMUM, reachable, step, step);
+        } else {
+            apply(UNION, reachable, step, step);
+        }
+        my_progress(next, ';');
+
+        if (step == reachable) break;
+        reachable = step;
+
+        //
+        // Write to checkpoint file
+        //
+        write_checkpoint(next, reachable);
+
+    } while(true);
+
+}
+
+
+// **********************************************************************
 // build reachable states or whatever was asked for
 //    @param method         What to do:
 //                              'm': saturation, monolithic
-//
 //                              'f': BFS with frontier
-//                              'b': BFS without frontier
+//                              't': BFS without frontier
+//                              'c': Hand-written BFS with checkpoints
 //
-//    @param prel           Partitioned pre-generated transition relation
+//    @param relation       Transition relation
 //    @param initial        Initial state
 //    @param reachable      (output) reachable states
 // **********************************************************************
@@ -208,11 +433,6 @@ void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
     using namespace MEDDLY;
     timer watch;
 
-    ostream_output merr(std::cerr);
-    merr.indent_more();
-
-    output* perr = verbose ? &merr : nullptr;
-
     watch.note_time();
 
     if (dist) {
@@ -221,20 +441,47 @@ void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
         std::cout << "Building reachable states using ";
     }
 
+    binary_operation* bfs = nullptr;
+    forest* initF = initial.getForest();
+    forest* relF = relation.getForest();
+
     switch (method) {
+        case 'd':
+                    std::cout << "default saturation..." << std::endl;
+                    apply(REACHABLE_SATUR(true), initial, relation, reachable);
+                    break;
+
+        case '1':
+                    std::cout << "saturation v1..." << std::endl;
+                    apply(REACHABLE_SATUR(true, 1), initial, relation, reachable);
+                    break;
+
+#ifdef ALLOW_DEPRECATED_0_18_1
         case 'm':
                     std::cout << "saturation..." << std::endl;
                     apply(REACHABLE_STATES_DFS, initial, relation, reachable);
                     break;
+#endif
 
         case 'f':
                     std::cout << "traditional with frontier..." << std::endl;
-                    buildReachsetFrontier(perr, relation, initial, reachable);
+                    bfs = build(REACHABLE_TRAD_FS(true), initF, relF, initF);
+                    if (!bfs) throw "null bfs";
+                    if (verbose) bfs->setProgressNotifier(my_progress);
+                    bfs->compute(initial, relation, reachable);
                     break;
 
-        case 'b':
+        case 't':
                     std::cout << "traditional without frontier..." << std::endl;
-                    buildReachsetBFS(perr, relation, initial, reachable);
+                    bfs = build(REACHABLE_TRAD_NOFS(true), initF, relF, initF);
+                    if (!bfs) throw "null bfs";
+                    if (verbose) bfs->setProgressNotifier(my_progress);
+                    bfs->compute(initial, relation, reachable);
+                    break;
+
+        case 'c':
+                    std::cout << "traditional without frontier..." << std::endl;
+                    myTraditional(relation, initial, reachable);
                     break;
 
         default:
@@ -257,6 +504,7 @@ void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
 // Add comma separators to a large integer
 // **********************************************************************
 #ifdef HAVE_LIBGMP
+#include <gmp.h>
 void showNumber(mpz_t x)
 {
     unsigned digits = mpz_sizeinbase(x, 10)+2;
@@ -361,6 +609,9 @@ int usage(const char* exe)
     cerr << "The number of rows and columns given should be natural numbers.\n";
     cerr << "The standard \"16 puzzle\" uses 4 rows and 4 columns.\n";
     cerr << "\n";
+    cerr << "Tiles are numbered 1 .. rc-1, with 0 meaning empty.\n";
+    cerr << "Position (1,1) is #0, position (1,2) is #1, ..., position (r,c) is #rc-1\n";
+    cerr << "\n";
     cerr << "Switches:\n";
     cerr << "    -h:    This help\n\n";
 
@@ -374,19 +625,36 @@ int usage(const char* exe)
     cerr << "\n";
 
     cerr << "    --pos:     Use a position-based encoding: for each position,\n";
-    cerr << "               which tile is there.\n";
+    cerr << "               which tile is there. Position #0 is the bottom DD\n";
+    cerr << "               variable, and position #rc-1 is the top DD variable.\n";
+
     cerr << "    --tile:    Use a tile-based encoding: for each tile,\n";
-    cerr << "               where is it (default)\n";
+    cerr << "               where is it (default). The empty tile is the bottom\n";
+    cerr << "               DD variable, tile 1 is next, ..., tile rc-1 is the top\n";
+    cerr << "               DD variable.\n";
     cerr << "\n";
 
     cerr << "    --reach:   Build the reachability set (default).\n";
     cerr << "    --dist:    Build the distance function.\n";
     cerr << "\n";
 
+    cerr << "    --dfs      Use default saturation\n";
+    cerr << "    --sat1     Saturation v1 (new), monolithic relation (default)\n";
+#ifdef ALLOW_DEPRECATED_0_18_1
     cerr << "    --msat     Saturation, monolithic relation\n";
-    cerr << "    --bfs      BFS without frontier set\n";
-    cerr << "    --fbfs     BFS with frontier set (RS only)\n";
+#endif
+    cerr << "    --trad     Traditional BFS without frontier set\n";
+    cerr << "    --tradc    Traditional BFS without frontier set, using checkpoints\n";
+    cerr << "    --front    Traditional BFS with frontier set (RS only)\n";
     cerr << "\n";
+    cerr << "    -o file    Write the MDD to the specified file, in an exchange format\n";
+    cerr << "               If the output filename ends in .gz or .xz, it will be\n";
+    cerr << "               compressed using gzip or xz, respectively.\n";
+    cerr << "\n";
+    cerr << "    -d dir     Directory to use for checkpoint files. Only used with\n";
+    cerr << "               the --tradc option.\n";
+    cerr << "\n";
+
     return 1;
 }
 
@@ -409,9 +677,11 @@ int main(int argc, const char** argv)
     C = -1;
     approx_count = true;
     verbose = false;
-    char satmethod = 'm';
+    char satmethod = '1';
     for_each_position_which_tile = false;
-    bool distances = false;
+    distances = false;
+    const char* outfile = nullptr;
+    DIR* thedir = nullptr;
 
     //
     // Process command line
@@ -433,6 +703,25 @@ int main(int argc, const char** argv)
                     case 'e':   approx_count = false;
                                 continue;
 #endif
+                    case 'o':
+                                outfile = argv[i+1];
+                                ++i;
+                                continue;
+
+                    case 'd':
+                                if (argv[i+1]) {
+                                    thedir = opendir(argv[i+1]);
+                                    if (thedir) {
+                                        chk_dir = argv[i+1];
+                                        closedir(thedir);
+                                    } else {
+                                        cerr << "Bad directory '" << argv[i+1] << "' in -d switch\n";
+                                        return 1;
+                                    }
+                                    ++i;
+                                }
+                                continue;
+
                     case 'q':
                                 verbose = false;
                                 continue;
@@ -468,16 +757,29 @@ int main(int argc, const char** argv)
                     continue;
                 }
 
+                if (0==strcmp("--sat1", arg)) {
+                    satmethod = '1';
+                    continue;
+                }
+#ifdef ALLOW_DEPRECATED_0_18_1
                 if (0==strcmp("--msat", arg)) {
                     satmethod = 'm';
                     continue;
                 }
-
-                if (0==strcmp("--bfs", arg)) {
-                    satmethod = 'b';
+#endif
+                if (0==strcmp("--dfs", arg)) {
+                    satmethod = 'd';
                     continue;
                 }
-                if (0==strcmp("--fbfs", arg)) {
+                if (0==strcmp("--trad", arg)) {
+                    satmethod = 't';
+                    continue;
+                }
+                if (0==strcmp("--tradc", arg)) {
+                    satmethod = 'c';
+                    continue;
+                }
+                if (0==strcmp("--front", arg)) {
                     satmethod = 'f';
                     continue;
                 }
@@ -525,6 +827,7 @@ int main(int argc, const char** argv)
         } else {
             mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
         }
+        fprog = mdd;
 
         forest* mxd = forest::create(d, true,  range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
 
@@ -566,6 +869,18 @@ int main(int argc, const char** argv)
         showCardinality(reachable);
 
         //
+        // Write to file
+        //
+        compressed_output writer(outfile);
+        if (writer) {
+            cout << "Writing to " << outfile << "\n";
+            d->write(writer.outstream());
+            mdd_writer mywriter(writer.outstream(), mdd);
+            mywriter.writeRootEdge(reachable);
+            mywriter.finish();
+        }
+
+        //
         // Reporting
         //
         ostream_output meddlyout(cout);
@@ -583,6 +898,7 @@ int main(int argc, const char** argv)
             HUMAN_READABLE_MEMORY | BASIC_STATS | EXTRA_STATS
         );
 
+        compute_table::showAll(meddlyout, 2);
 
         cout << "Done!\n";
         return 0;

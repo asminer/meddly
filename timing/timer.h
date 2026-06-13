@@ -96,14 +96,13 @@ class timer
 };
 
 #else
-#if HAVE_GETTIMEOFDAY
+#if HAVE_SYS_TIME_H
 
 /*
     Timer based on gettimeofday.
 */
 
 #include <sys/time.h>
-#include <time.h>
 
 class timer
 {

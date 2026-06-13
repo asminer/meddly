@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
     out << "Building reachable using BFS\n";
     out.flush();
 #endif
-    apply(REACHABLE_STATES_BFS, reachBFS, nsf, reachBFS);
+    apply(REACHABLE_TRAD_NOFS(true), reachBFS, nsf, reachBFS);
 #ifdef VERBOSE
     out << "BFS states\n";
     reachBFS.showGraph(out);
@@ -116,10 +116,14 @@ int main(int argc, char *argv[])
     out << "Building reachable using DFS\n";
     out.flush();
 #endif
+#ifdef ALLOW_DEPRECATED_0_18_1
     apply(REACHABLE_STATES_DFS, reachDFS, nsf, reachDFS);
+#else
+    apply(REACHABLE_SATUR(true, 1), reachDFS, nsf, reachDFS);
+#endif
 #ifdef VERBOSE
     out << "DFS states\n";
-    reachBFS.showGraph(out);
+    reachDFS.showGraph(out);
 #endif
 
 

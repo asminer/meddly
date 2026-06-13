@@ -343,11 +343,11 @@ class MEDDLY::FILE_output : public MEDDLY::output {
         }
 
         virtual void put(char x);
-        virtual void put(std::string, int w);
-        virtual void put(long x, int w);
-        virtual void put(unsigned long x, int w);
-        virtual void put_hex(unsigned long x, int w);
-        virtual void put(double x, int w, int p, char f);
+        virtual void put(std::string, int w=0);
+        virtual void put(long x, int w=0);
+        virtual void put(unsigned long x, int w=0);
+        virtual void put_hex(unsigned long x, int w=0);
+        virtual void put(double x, int w=0, int p=6, char f='g');
         virtual size_t write(size_t bytes, const unsigned char* buffer);
         virtual void flush();
 
@@ -375,11 +375,11 @@ class MEDDLY::ostream_output : public MEDDLY::output {
         virtual ~ostream_output();
 
         virtual void put(char x);
-        virtual void put(std::string, int w);
-        virtual void put(long x, int w);
-        virtual void put(unsigned long x, int w);
-        virtual void put_hex(unsigned long x, int w);
-        virtual void put(double x, int w, int p, char f);
+        virtual void put(std::string, int w=0);
+        virtual void put(long x, int w=0);
+        virtual void put(unsigned long x, int w=0);
+        virtual void put_hex(unsigned long x, int w=0);
+        virtual void put(double x, int w=0, int p=6, char f='g');
         virtual size_t write(size_t bytes, const unsigned char* buffer);
         virtual void flush();
 

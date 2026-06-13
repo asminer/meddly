@@ -25,13 +25,20 @@
 #include <stdlib.h>
 #include "../src/meddly.h"
 
-void showDocs(const char* doc)
+inline void mytab(unsigned sp)
+{
+    while (sp) {
+        std::cout << ' ';
+        sp--;
+    }
+}
+
+void showDocs(unsigned indent, const char* doc)
 {
     const unsigned MAXCOL = 68;
 
     using namespace std;
-    cout << "        ";
-    unsigned col = 8;
+    unsigned col = indent;
     for (unsigned i=0; doc[i]; ) {
         // Print next word
         for (; doc[i]; i++) {
@@ -43,8 +50,9 @@ void showDocs(const char* doc)
             // we could break a line on - if necessary
             if ('-' == doc[i]) {
                 if (col > MAXCOL) {
-                    cout << "\n        ";
-                    col = 8;
+                    cout << "\n";
+                    mytab(indent);
+                    col = indent;
                 }
             }
         }
@@ -60,8 +68,9 @@ void showDocs(const char* doc)
             col = MAXCOL+2;
         }
         if (col > MAXCOL) {
-            cout << "\n        ";
-            col = 8;
+            cout << "\n";
+            mytab(indent);
+            col = indent;
         } else {
             cout << " ";
             ++col;
@@ -89,8 +98,8 @@ int main()
         const unary_factory *F = B.getUnary(i);
         if (!F) continue;
 
-        cout << "    " << F->getName() << "\n";
-        showDocs(F->getDocs());
+        cout << "    " << F->getName() << "\n        ";
+        showDocs(8, F->getDocs());
         cout << "\n";
         cout << "        Implemented in " << F->getFile() << ".\n";
         cout << "\n\n";
@@ -103,8 +112,8 @@ int main()
         const binary_factory *F = B.getBinary(i);
         if (!F) continue;
 
-        cout << "    " << F->getName() << "\n";
-        showDocs(F->getDocs());
+        cout << "    " << F->getName() << "\n        ";
+        showDocs(8, F->getDocs());
         cout << "\n";
         cout << "        Implemented in " << F->getFile() << ".\n";
         cout << "\n\n";

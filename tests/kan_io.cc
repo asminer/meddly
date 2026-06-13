@@ -110,7 +110,7 @@ long writeReachset(FILE* s, int N)
 
     // Build reachable states
     dd_edge reachable(mdd);
-    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
 
 #ifdef PROGRESS
     fputc('r', stdout);
@@ -137,6 +137,8 @@ long writeReachset(FILE* s, int N)
 #endif
 
     FILE_output mys(s);
+    d->write(mys);
+
 #ifdef WRITE_MXD
     mdd_writer wmxd(mys, mxd);
     wmxd.writeRootEdge(nsf);
@@ -169,76 +171,80 @@ long writeReachset(FILE* s, int N)
 */
 bool generateAndRead(FILE* s, int N)
 {
-  // Build domain
-  domain* d = buildKanbanDomain(N);
+    // Build domain
+    domain* d = buildKanbanDomain(N);
 
-  // Build initial state
-  forest* mdd = forest::create(d, SET, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  dd_edge init_state(mdd);
-  buildInitial(N, mdd, init_state);
+    // Build initial state
+    forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
+                            edge_labeling::MULTI_TERMINAL);
+    dd_edge init_state(mdd);
+    buildInitial(N, mdd, init_state);
 
-  // Build next-state function
-  forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf);
+    // Build next-state function
+    forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
+                            edge_labeling::MULTI_TERMINAL);
+    dd_edge nsf(mxd);
+    buildNextStateFunction(kanban, 16, mxd, nsf);
 
-  // Build reachable states
-  dd_edge reachable(mdd);
-  apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    // Build reachable states
+    dd_edge reachable(mdd);
+    apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
 
-  // Build index set for reachable states
-  forest* evmdd = forest::create(d, SET, range_type::INTEGER, edge_labeling::INDEX_SET);
-  dd_edge reach_index(evmdd);
-  apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
+    // Build index set for reachable states
+    forest* evmdd = forest::create(d, SET, range_type::INTEGER,
+                                edge_labeling::INDEX_SET);
+    dd_edge reach_index(evmdd);
+    apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 
-  // Now, read from the file and verify
-  FILE_input mys(s);
+    // Now, read from the file and verify
+    FILE_input mys(s);
+    d->verify(mys);
 
-  dd_edge list[2];
+    dd_edge list[2];
 #ifdef WRITE_MXD
-  mdd_reader R_mxd(mys, mxd);
-  dd_edge r_nsf;
-  R_mxd.readRootEdge(r_nsf);
-  if (r_nsf != nsf) {
-    printf("Failed to generate and read MXD\n");
-    return false;
-  }
+    mdd_reader R_mxd(mys, mxd);
+    dd_edge r_nsf;
+    R_mxd.readRootEdge(r_nsf);
+    if (r_nsf != nsf) {
+        printf("Failed to generate and read MXD\n");
+        return false;
+    }
 #endif
 
 #ifdef WRITE_MDD
-  mdd_reader R_mdd(mys, mdd);
-  dd_edge r_init, r_reach;
-  R_mdd.readRootEdge(r_init);
-  R_mdd.readRootEdge(r_reach);
-  if (r_init != init_state) {
-    printf("Failed to generate and read initial state\n");
-    return false;
-  }
-  if (r_reach != reachable) {
-    printf("Failed to generate and read reachable states\n");
-    return false;
-  }
+    mdd_reader R_mdd(mys, mdd);
+    dd_edge r_init, r_reach;
+    R_mdd.readRootEdge(r_init);
+    R_mdd.readRootEdge(r_reach);
+    if (r_init != init_state) {
+        printf("Failed to generate and read initial state\n");
+        return false;
+    }
+    if (r_reach != reachable) {
+        printf("Failed to generate and read reachable states\n");
+        return false;
+    }
 #endif
 
 #ifdef WRITE_EVMDD
-  mdd_reader R_evmdd(mys, evmdd);
-  dd_edge r_index;
-  R_evmdd.readRootEdge(r_index);
-  if (r_index != reach_index) {
-    printf("Failed to generate and read reachable state indexes\n");
-    FILE_output myout(stdout);
-    myout << "reach_index: " << reach_index << "\n";
-    myout << "from file  : " << r_index << "\n";
+    mdd_reader R_evmdd(mys, evmdd);
+    dd_edge r_index;
+    R_evmdd.readRootEdge(r_index);
+    if (r_index != reach_index) {
+        printf("Failed to generate and read reachable state indexes\n");
+        FILE_output myout(stdout);
+        myout << "reach_index: " << reach_index << "\n";
+        myout << "from file  : " << r_index << "\n";
 #ifdef DEBUG_FILE
-    reach_index.showGraph(myout);
-    r_index.showGraph(myout);
+        reach_index.showGraph(myout);
+        r_index.showGraph(myout);
 #endif
-    return false;
-  }
+        return false;
+    }
 #endif
 
-  domain::destroy(d);
-  return true;
+    domain::destroy(d);
+    return true;
 }
 
 
@@ -248,76 +254,81 @@ bool generateAndRead(FILE* s, int N)
 */
 bool readAndGenerate(FILE* s, int N)
 {
-  FILE_input mys(s);
+    // Build domain
+    domain* d = buildKanbanDomain(N);
 
-  // Build domain
-  domain* d = buildKanbanDomain(N);
+    // Build (empty) forests
+    forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
+                            edge_labeling::MULTI_TERMINAL);
+    forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
+                            edge_labeling::MULTI_TERMINAL);
+    forest* evmdd = forest::create(d, SET, range_type::INTEGER,
+                            edge_labeling::INDEX_SET);
 
-  // Build (empty) forests
-  forest* mdd = forest::create(d, SET, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-  forest* evmdd = forest::create(d, SET, range_type::INTEGER, edge_labeling::INDEX_SET);
+    dd_edge mxdfile;
+    dd_edge mddfile0, mddfile1;
+    dd_edge indexfile;
 
-  dd_edge mxdfile;
-  dd_edge mddfile0, mddfile1;
-  dd_edge indexfile;
-  // Read from the file
+    // Read from the file
+    FILE_input mys(s);
+    d->verify(mys);
+
 #ifdef WRITE_MXD
-  mdd_reader R_mxd(mys, mxd);
-  R_mxd.readRootEdge(mxdfile);
+    mdd_reader R_mxd(mys, mxd);
+    R_mxd.readRootEdge(mxdfile);
 #endif
 #ifdef WRITE_MDD
-  mdd_reader R_mdd(mys, mdd);
-  R_mdd.readRootEdge(mddfile0);
-  R_mdd.readRootEdge(mddfile1);
+    mdd_reader R_mdd(mys, mdd);
+    R_mdd.readRootEdge(mddfile0);
+    R_mdd.readRootEdge(mddfile1);
 #endif
 #ifdef WRITE_EVMDD
-  mdd_reader R_evmdd(mys, evmdd);
-  R_evmdd.readRootEdge(indexfile);
+    mdd_reader R_evmdd(mys, evmdd);
+    R_evmdd.readRootEdge(indexfile);
 #endif
 
-  // Build initial state
-  dd_edge init_state(mdd);
-  buildInitial(N, mdd, init_state);
+    // Build initial state
+    dd_edge init_state(mdd);
+    buildInitial(N, mdd, init_state);
 
-  // Build next-state function
-  dd_edge nsf(mxd);
-  buildNextStateFunction(kanban, 16, mxd, nsf);
+    // Build next-state function
+    dd_edge nsf(mxd);
+    buildNextStateFunction(kanban, 16, mxd, nsf);
 
-  // Build reachable states
-  dd_edge reachable(mdd);
-  apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    // Build reachable states
+    dd_edge reachable(mdd);
+    apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
 
-  // Build index set for reachable states
-  dd_edge reach_index(evmdd);
-  apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
+    // Build index set for reachable states
+    dd_edge reach_index(evmdd);
+    apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 
-  // Verify
+    // Verify
 #ifdef WRITE_MXD
-  if (mxdfile != nsf) {
-    printf("Failed to read and generate MXD\n");
-    return false;
-  }
+    if (mxdfile != nsf) {
+        printf("Failed to read and generate MXD\n");
+        return false;
+    }
 #endif
 #ifdef WRITE_MDD
-  if (mddfile0 != init_state) {
-    printf("Failed to generate and read initial state\n");
-    return false;
-  }
-  if (mddfile1 != reachable) {
-    printf("Failed to generate and read reachable states\n");
-    return false;
-  }
+    if (mddfile0 != init_state) {
+        printf("Failed to generate and read initial state\n");
+        return false;
+    }
+    if (mddfile1 != reachable) {
+        printf("Failed to generate and read reachable states\n");
+        return false;
+    }
 #endif
 #ifdef WRITE_EVMDD
-  if (indexfile != reach_index) {
-    printf("Failed to generate and read reachable state indexes\n");
-    return false;
-  }
+    if (indexfile != reach_index) {
+        printf("Failed to generate and read reachable state indexes\n");
+        return false;
+    }
 #endif
 
-  domain::destroy(d);
-  return true;
+    domain::destroy(d);
+    return true;
 }
 
 
@@ -328,109 +339,109 @@ bool readAndGenerate(FILE* s, int N)
 int main()
 {
 #ifdef DEBUG_FILE
-  const int N = 2;
+    const int N = 2;
 #else
-  const int N = 11;
+    const int N = 11;
 #endif
-  MEDDLY::initialize();
+    MEDDLY::initialize();
 
-  char filename[20];
-  strcpy(filename, "kan_io.data.XXXXXX");
-  mkstemp(filename);
+    char filename[20];
+    strcpy(filename, "kan_io.data.XXXXXX");
+    mkstemp(filename);
 #ifdef DEBUG_FILE
-  printf("Creating file %s\n", filename);
+    printf("Creating file %s\n", filename);
 #endif
 
-  FILE* s = fopen(filename, "w");
-  if (0==s) {
-    printf("Couldn't open file %s for writing\n", filename);
-    return 2;
-  }
-
-  try {
-    printf("Saving dds to file...\n");
-    for (int n=1; n<N; n++) {
-      printf("N=%2d:  ", n);
-      fflush(stdout);
-      long c = writeReachset(s, n);
-      printf("%12ld states\n", c);
-      if (c !=expected[n]) {
-        printf("Wrong number of states!\n");
-        throw 1;
-      }
-    }
-    fclose(s);
-
-    // read back the file into already built forest
-
-    s = fopen(filename, "r");
+    FILE* s = fopen(filename, "w");
     if (0==s) {
-      printf("Couldn't open file %s for reading\n", filename);
-      throw 2;
+        printf("Couldn't open file %s for writing\n", filename);
+        return 2;
     }
 
-    printf("Generate and read...\n");
-    for (int n=1; n<N; n++) {
-      printf("N=%2d:  ", n);
-      fflush(stdout);
-      if (!generateAndRead(s, n)) throw 3;
-      printf("%19s\n", "verified");
+    try {
+        printf("Saving dds to file...\n");
+        for (int n=1; n<N; n++) {
+            printf("N=%2d:  ", n);
+            fflush(stdout);
+            long c = writeReachset(s, n);
+            printf("%12ld states\n", c);
+            if (c !=expected[n]) {
+                printf("Wrong number of states!\n");
+                throw 1;
+            }
+        }
+        fclose(s);
+
+        // read back the file into already built forest
+
+        s = fopen(filename, "r");
+        if (0==s) {
+            printf("Couldn't open file %s for reading\n", filename);
+            throw 2;
+        }
+
+        printf("Generate and read...\n");
+        for (int n=1; n<N; n++) {
+            printf("N=%2d:  ", n);
+            fflush(stdout);
+            if (!generateAndRead(s, n)) throw 3;
+            printf("%19s\n", "verified");
+        }
+        fclose(s);
+
+        // read back the file and then build up forest
+
+        s = fopen(filename, "r");
+        if (0==s) {
+            printf("Couldn't open file %s for reading\n", filename);
+            throw 2;
+        }
+
+        printf("Read and generate...\n");
+        for (int n=1; n<N; n++) {
+            printf("N=%2d:  ", n);
+            fflush(stdout);
+            if (!readAndGenerate(s, n)) throw 4;
+            printf("%19s\n", "verified");
+        }
+        fclose(s);
+
+
+        // Cleanup
+#ifndef DEBUG_FILE
+        remove(filename);
+#endif
+        MEDDLY::cleanup();
+        printf("Done\n");
+        return 0;
     }
-    fclose(s);
-
-    // read back the file and then build up forest
-
-    s = fopen(filename, "r");
-    if (0==s) {
-      printf("Couldn't open file %s for reading\n", filename);
-      throw 2;
+    catch (int e) {
+        // cleanup
+#ifndef DEBUG_FILE
+        remove(filename);
+#endif
+        MEDDLY::cleanup();
+        printf("\nError %d\n", e);
+        return e;
     }
-
-    printf("Read and generate...\n");
-    for (int n=1; n<N; n++) {
-      printf("N=%2d:  ", n);
-      fflush(stdout);
-      if (!readAndGenerate(s, n)) throw 4;
-      printf("%19s\n", "verified");
+    catch (MEDDLY::error e) {
+        // cleanup
+#ifndef DEBUG_FILE
+        remove(filename);
+#endif
+        MEDDLY::cleanup();
+        printf("\nError: %s, thrown at %s line %u\n", e.getName(),
+                e.getFile(), e.getLine());
+        return 1;
     }
-    fclose(s);
-
-
-    // Cleanup
+    catch (...) {
+        // cleanup
 #ifndef DEBUG_FILE
-    remove(filename);
+        remove(filename);
 #endif
-    MEDDLY::cleanup();
-    printf("Done\n");
-    return 0;
-  }
-  catch (int e) {
-    // cleanup
-#ifndef DEBUG_FILE
-    remove(filename);
-#endif
-    MEDDLY::cleanup();
-    printf("\nError %d\n", e);
-    return e;
-  }
-  catch (MEDDLY::error e) {
-    // cleanup
-#ifndef DEBUG_FILE
-    remove(filename);
-#endif
-    MEDDLY::cleanup();
-    printf("\nError: %s, thrown at %s line %u\n", e.getName(),
-            e.getFile(), e.getLine());
-    return 1;
-  }
-  catch (...) {
-    // cleanup
-#ifndef DEBUG_FILE
-    remove(filename);
-#endif
-    MEDDLY::cleanup();
-    printf("\nFailed (caught exception)\n");
-    return 1;
-  }
+        MEDDLY::cleanup();
+        printf("\nFailed (caught exception)\n");
+        return 1;
+    }
 }
 

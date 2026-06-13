@@ -22,7 +22,6 @@
 
 
 #include <cstdlib>
-#include <time.h>
 #include <cassert>
 
 #include "../src/meddly.h"

@@ -27,7 +27,7 @@ namespace MEDDLY {
     class binary_operation;
     class binary_factory;
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
     class binary_list;
 #endif
 };
@@ -43,7 +43,7 @@ namespace MEDDLY {
 */
 class MEDDLY::binary_operation : public operation {
     public:
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
         /**
             OLD constructor.
          */
@@ -195,7 +195,7 @@ class MEDDLY::binary_operation : public operation {
         void compute(const dd_edge &ar1, const dd_edge &ar2,
                 dd_edge &res);
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
         void computeTemp(const dd_edge &ar1, const dd_edge &ar2,
                 dd_edge &res);
 
@@ -232,12 +232,12 @@ class MEDDLY::binary_operation : public operation {
                 const edge_value &av, node_handle ap,
                 const edge_value &bv, node_handle bp,
                 edge_value &cv, node_handle &cp)
-#ifndef ALLOW_DEPRECATED_0_17_6
+#ifndef ALLOW_OLD_BINARY_0_17_6
                 = 0
 #endif
                 ;
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
         /**
             During the transition, callers may need to know
             which version of compute() to call.
@@ -246,7 +246,7 @@ class MEDDLY::binary_operation : public operation {
 #endif
 
     protected:
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
         inline bool canCommute() const {
             return can_commute;
         }
@@ -275,7 +275,7 @@ class MEDDLY::binary_operation : public operation {
         binary_operation* next;
         friend class binary_factory;
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
         binary_list* parent;
         bool can_commute;
         bool new_style;
@@ -411,11 +411,12 @@ class MEDDLY::binary_factory {
         const char* _file;
         const char* _name;
         const char* _doc;
+
         binary_operation* front;
 
 };
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+#ifdef ALLOW_OLD_BINARY_0_17_6
 
 // ******************************************************************
 // *                                                                *
@@ -499,8 +500,20 @@ namespace MEDDLY {
         return bb().build(a, b, c);
     }
 
+    inline void apply(binary_factory &bf, const dd_edge &a,
+            const dd_edge &b, dd_edge &c)
+    {
+        bf.apply(a, b, c);
+    }
 
-#ifdef ALLOW_DEPRECATED_0_17_6
+    inline binary_operation* build(binary_factory &bf,
+            forest* a, forest* b, forest* c)
+    {
+        return bf.build(a, b, c);
+    }
+
+
+#ifdef ALLOW_OLD_BINARY_0_17_6
     typedef binary_operation* (*binary_builtin2)(forest* arg1,
             forest* arg2, forest* res);
 
@@ -533,6 +546,8 @@ namespace MEDDLY {
     }
 #endif
 
+    /// Bogus binary operation that always fails.
+    binary_factory& BOGUS_BINARY();
 };
 
 #endif // #include guard

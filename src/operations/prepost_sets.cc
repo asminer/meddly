@@ -26,6 +26,8 @@
 #include "../forest_levels.h"
 #include "../forest_edgerules.h"
 
+#include "prepost_common.h"
+
 // #define TRACE
 
 #ifdef TRACE
@@ -77,13 +79,12 @@ namespace MEDDLY {
             );
 
 */
-
 namespace MEDDLY {
 
-    template <class EOP, bool FORWD, class ATYPE>
+    template <class EOP, class ATYPE>
     class prepost_set_mtrel : public binary_operation {
         public:
-            prepost_set_mtrel(forest* arg1, forest* arg2,
+            prepost_set_mtrel(bool fwd, forest* arg1, forest* arg2,
                     forest* res, bool swap=false);
 
             virtual ~prepost_set_mtrel();
@@ -141,17 +142,18 @@ namespace MEDDLY {
             edge_value nothing;
             bool forced_by_levels;
 
-    }; // class prepost_op
+            const bool FORWD;
+    }; // class prepost_set_mtrel
 }; // namespace MEDDLY
 
 // ************************************************************************
 
-template <class EOP, bool FORWD, class ATYPE>
-MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
-    ::prepost_set_mtrel(forest* arg1, forest* arg2, forest* res, bool swap)
-    : binary_operation(
+template <class EOP, class ATYPE>
+MEDDLY::prepost_set_mtrel<EOP, ATYPE>
+    ::prepost_set_mtrel(bool fwd, forest* arg1, forest* arg2, forest* res,
+        bool swap) : binary_operation(
             swap ? arg2 : arg1,
-            swap ? arg1 : arg2, res), swap_opnds(swap)
+            swap ? arg1 : arg2, res), swap_opnds(swap), FORWD(fwd)
 #ifdef TRACE
       , out(std::cout), top_count(0)
 #endif
@@ -208,14 +210,14 @@ MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
     ct->doneBuilding();
 }
 
-template <class EOP, bool FORWD, class ATYPE>
-MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::~prepost_set_mtrel()
+template <class EOP, class ATYPE>
+MEDDLY::prepost_set_mtrel<EOP, ATYPE>::~prepost_set_mtrel()
 {
     ct->markForDestroy();
 }
 
-template <class EOP, bool FORWD, class ATYPE>
-void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
+template <class EOP, class ATYPE>
+void MEDDLY::prepost_set_mtrel<EOP, ATYPE>
     ::compute(int L, unsigned in,
         const edge_value &av, node_handle ap,
         const edge_value &bv, node_handle bp,
@@ -240,8 +242,8 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>
 #endif
 }
 
-template <class EOP, bool FORWD, class ATYPE>
-void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
+template <class EOP, class ATYPE>
+void MEDDLY::prepost_set_mtrel<EOP, ATYPE>::_compute(int L,
         const edge_value &av, node_handle A, node_handle B,
         edge_value &cv, node_handle &C)
 {
@@ -471,6 +473,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                     } // for zj
                 } // if brn[i]
             } // for zi
+            unpacked_node::Recycle(Bu);
         } else {
             /*
              * Go backward one step.
@@ -508,6 +511,7 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
                     } // for zj
                 } // if brn[i]
             } // for i
+            unpacked_node::Recycle(Bu);
         }
     }
 
@@ -567,175 +571,6 @@ void MEDDLY::prepost_set_mtrel<EOP, FORWD, ATYPE>::_compute(int L,
     EOP::normalize(cv, C);
 }
 
-// ******************************************************************
-// *                                                                *
-// *                       mt_prepost  struct                       *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-    struct mt_prepost {
-        inline static const char* name(bool forwd)
-        {
-            return forwd ? "post-image" : "pre-image";
-        }
-
-        /// Get the accumulate operation for result nodes.
-        inline static binary_operation* accumulateOp(forest* resF)
-        {
-            return build(UNION, resF, resF, resF);
-        }
-
-        /// Does the edge correspond to an unreachable state?
-        inline static bool isUnreachable(const edge_value &ev, node_handle p)
-        {
-            MEDDLY_DCASSERT(ev.isVoid());
-            return 0==p;
-        }
-
-        /// Set edge to be unreachable states
-        inline static void setUnreachable(edge_value &v, node_handle &p)
-        {
-            v.set();
-            p = 0;
-        }
-
-        /// Set all edges to unreachable
-        inline static void setAllUnreachable(unpacked_node *U)
-        {
-            U->clear(0, U->getSize());
-        }
-
-        /// Apply the operation when b is a terminal node.
-        static void apply(forest* fa, const edge_value &av, node_handle a,
-                          const forest* fb, node_handle b,
-                          forest* fc, edge_value &cv, node_handle &c)
-        {
-            MEDDLY_DCASSERT(b<0);
-            unary_operation* copy = build(COPY, fa, fc);
-            MEDDLY_DCASSERT(copy);
-            copy->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
-        }
-
-    };
-};
-
-// ******************************************************************
-// *                                                                *
-// *                       mt_distance struct                       *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-    struct mt_distance {
-        inline static const char* name(bool forwd)
-        {
-            return forwd ? "post-image" : "pre-image";
-        }
-
-        /// Get the accumulate operation for result nodes.
-        inline static binary_operation* accumulateOp(forest* resF)
-        {
-            return build(DIST_MIN, resF, resF, resF);
-        }
-
-        /// Does the edge correspond to an unreachable state?
-        inline static bool isUnreachable(const edge_value &ev, node_handle p)
-        {
-            MEDDLY_DCASSERT(ev.isVoid());
-            if (p >= 0) return false;
-            terminal t(terminal_type::INTEGER, p);
-            return t.getInteger() < 0;
-        }
-
-        /// Set edge to be unreachable states
-        inline static void setUnreachable(edge_value &v, node_handle &p)
-        {
-            v.set();
-            terminal t = -1;
-            p = t.getIntegerHandle();
-        }
-
-        /// Set all edges to unreachable
-        inline static void setAllUnreachable(unpacked_node *U)
-        {
-            terminal t = -1;
-            node_handle neg1 = t.getIntegerHandle();
-            for (unsigned i=0; i<U->getSize(); i++) {
-                U->setFull(i, neg1);
-            }
-        }
-
-        /// Apply the operation when b is a terminal node.
-        static void apply(forest* fa, const edge_value &av, node_handle a,
-                          const forest* fb, node_handle b,
-                          forest* fc, edge_value &cv, node_handle &c)
-        {
-            MEDDLY_DCASSERT(b<0);
-            unary_operation* increment = build(DIST_INC, fa, fc);
-            MEDDLY_DCASSERT(increment);
-            increment->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
-        }
-
-    };
-};
-
-
-// ******************************************************************
-// *                                                                *
-// *                       ev_prepost  struct                       *
-// *                                                                *
-// ******************************************************************
-
-namespace MEDDLY {
-    template <typename INT>
-    struct ev_prepost {
-        inline static const char* name(bool forwd)
-        {
-            return forwd ? "post-image" : "pre-image";
-        }
-
-        /// Get the accumulate operation for result nodes.
-        inline static binary_operation* accumulateOp(forest* resF)
-        {
-            return build(MINIMUM, resF, resF, resF);
-        }
-
-        /// Does the edge correspond to an unreachable state?
-        inline static bool isUnreachable(const edge_value &ev, node_handle p)
-        {
-            return OMEGA_INFINITY == p;
-        }
-        /// Set edge to be unreachable states
-        inline static void setUnreachable(edge_value &v, node_handle &p)
-        {
-            p = OMEGA_INFINITY;
-            v = INT(0);
-        }
-
-        /// Set all edges to unreachable
-        inline static void setAllUnreachable(unpacked_node *U)
-        {
-            U->clear(0, U->getSize());
-        }
-
-        /// Apply the operation when b is a terminal node.
-        static void apply(forest* fa, const edge_value &av, node_handle a,
-                          const forest* fb, node_handle b,
-                          forest* fc, edge_value &cv, node_handle &c)
-        {
-            MEDDLY_DCASSERT(b<0);
-            unary_operation* copy = build(COPY, fa, fc);
-            MEDDLY_DCASSERT(copy);
-            copy->compute(fa->getNodeLevel(a), ~0, av, a, cv, c);
-
-            if (OMEGA_INFINITY != c) {
-                cv.add(INT(1));
-            }
-        }
-
-    };
-};
 
 // ******************************************************************
 // *                                                                *
@@ -818,7 +653,7 @@ namespace MEDDLY {
 template <bool FWD>
 void MEDDLY::_IMAGE_factory <FWD>::setup()
 {
-    snprintf(docs, 1024, "Follow edges %s in a transition relation. The first operand should be a set/vector. The second operand should be a relation/matrix. The result should be a set/vector, and should have the same range and edge labeling type as the first operand. All forests should be over the same domain.\nIf the output function has type BOOLEAN, then the output value is true if and only if one of the input states has an %s the output state.\nIf the output function has type INTEGER, then the first operand is assumed to be a distance function over states, and the output value is one plus the minimum over all input states that have an %s the output state. For multi-terminal forests, a negative value is used to indicate unreachable or undefined distances, and the result forest should be fully reduced. For EV+ forests, positive infinity is used to indicate unreachable or undefined distances.",
+    snprintf(docs, 1024, "Follow edges %s in a transition relation, for exactly one step. The first operand should be a set/vector. The second operand should be a relation/matrix, with range type boolean. The result should be a set/vector, and should have the same range and edge labeling type as the first operand. All forests should be over the same domain.\nIf the output function has type BOOLEAN, then the output value is true if and only if one of the input states has an %s the output state.\nIf the output function has type INTEGER, then the first operand is assumed to be a distance function over states, and the output value is one plus the minimum over all input states that have an %s the output state. For multi-terminal forests, a negative value is used to indicate unreachable or undefined distances, and the result forest should be fully reduced. For EV+ forests, positive infinity is used to indicate unreachable or undefined distances.",
             FWD ? "forward" : "backward",
             FWD ? "outgoing edge to" : "incoming edge from",
             FWD ? "outgoing edge to" : "incoming edge from");
@@ -834,13 +669,13 @@ MEDDLY::_IMAGE_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 
         switch (c->getRangeType()) {
             case range_type::BOOLEAN:
-                return new prepost_set_mtrel<EdgeOp_none, FWD,
-                            mt_prepost>(a, b, c);
+                return new prepost_set_mtrel<EdgeOp_none,
+                            mt_prepost>(FWD, a, b, c);
 
             case range_type::INTEGER:
                 if (c->isFullyReduced())  {
-                    return new prepost_set_mtrel<EdgeOp_none, FWD,
-                            mt_distance>(a, b, c);
+                    return new prepost_set_mtrel<EdgeOp_none,
+                            mt_distance>(FWD, a, b, c);
                 }
 
             default:
@@ -852,12 +687,12 @@ MEDDLY::_IMAGE_factory <FWD>::build_new(forest* a, forest* b, forest* c)
 
         switch (a->getEdgeType()) {
             case edge_type::INT:
-                return new prepost_set_mtrel<EdgeOp_plus<int>, FWD,
-                            ev_prepost<int> > (a, b, c);
+                return new prepost_set_mtrel<EdgeOp_plus<int>,
+                            ev_prepost<int> > (FWD, a, b, c);
 
             case edge_type::LONG:
-                return new prepost_set_mtrel<EdgeOp_plus<long>, FWD,
-                            ev_prepost<long> > (a, b, c);
+                return new prepost_set_mtrel<EdgeOp_plus<long>,
+                            ev_prepost<long> > (FWD, a, b, c);
 
             default:
                 return nullptr;
@@ -890,12 +725,12 @@ MEDDLY::VM_MULTIPLY_factory::build_new(forest* a, forest* b, forest* c)
 {
     switch (c->getRangeType()) {
         case range_type::INTEGER:
-            return new prepost_set_mtrel<EdgeOp_none, true,
-                            mt_vectXmatr<int> >(a, b, c);
+            return new prepost_set_mtrel<EdgeOp_none,
+                            mt_vectXmatr<int> >(true, a, b, c);
 
         case range_type::REAL:
-            return new prepost_set_mtrel<EdgeOp_none, true,
-                            mt_vectXmatr<float> >(a, b, c);
+            return new prepost_set_mtrel<EdgeOp_none,
+                            mt_vectXmatr<float> >(true, a, b, c);
 
         default:
             throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
@@ -926,12 +761,12 @@ MEDDLY::MV_MULTIPLY_factory::build_new(forest* a, forest* b, forest* c)
 {
     switch (c->getRangeType()) {
         case range_type::INTEGER:
-            return new prepost_set_mtrel<EdgeOp_none, false,
-                            mt_vectXmatr<int> >(a, b, c, true);
+            return new prepost_set_mtrel<EdgeOp_none,
+                            mt_vectXmatr<int> >(false, a, b, c, true);
 
         case range_type::REAL:
-            return new prepost_set_mtrel<EdgeOp_none, false,
-                            mt_vectXmatr<float> >(a, b, c, true);
+            return new prepost_set_mtrel<EdgeOp_none,
+                            mt_vectXmatr<float> >(false, a, b, c, true);
 
         default:
             throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);

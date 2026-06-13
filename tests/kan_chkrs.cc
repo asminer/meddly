@@ -31,9 +31,12 @@ struct statedist {
 #define HAVE_ORACLE
 
 #ifdef HAVE_ORACLE
-#include "kan_df1.h"
-#include "kan_df2.h"
-#include "kan_df3.h"
+#include "kan_fwd_df1.h"
+#include "kan_fwd_df2.h"
+#include "kan_fwd_df3.h"
+#include "kan_bwd_df1.h"
+#include "kan_bwd_df2.h"
+#include "kan_bwd_df3.h"
 #endif
 
 const char* kanban[] = {
@@ -55,11 +58,7 @@ const char* kanban[] = {
     "X.............-.+"   // Tg4
 };
 
-// 160 states for N=1
-long expected[] = {
-    1, 160, 4600, 58400, 454475, 2546432, 11261376,
-    41644800, 133865325, 384392800, 1005927208
-};
+bool FORWD;
 
 using namespace MEDDLY;
 
@@ -76,20 +75,37 @@ domain* buildDomain(int N)
 
 // ============================================
 
-dd_edge buildReachset(domain* d, int N, edge_labeling E, bool use_sat)
+// Adjust multi-terminal, integer distance function
+// to be distance plus one, for reachable states,
+// zero for unreachable states.
+
+void distance_adjust(const rangeval &in, rangeval &out)
+{
+    long x = long(in);
+    if (x<0) {
+        out = 0;
+    } else {
+        out = x+1;
+    }
+}
+
+// ============================================
+
+dd_edge buildReachset(domain* d, int N, range_type R, edge_labeling E,
+        char method)
 {
     //
     // Build forests
     //
-    forest* mdd = nullptr;
-    if (edge_labeling::EVPLUS == E) {
-        std::cout << "\tusing EV+MDD for distance\n";
-        mdd = forest::create(d, SET, range_type::INTEGER,
-                edge_labeling::EVPLUS);
-    } else {
+    forest* mdd = forest::create(d, SET, R, E);
+    if (range_type::BOOLEAN == R) {
         std::cout << "\tusing MTMDD for reachable states\n";
-        mdd = forest::create(d, SET, range_type::BOOLEAN,
-                edge_labeling::MULTI_TERMINAL);
+    } else {
+        if (edge_labeling::EVPLUS == E) {
+            std::cout << "\tusing EV+MDD for distance\n";
+        } else {
+            std::cout << "\tusing MTMDD for distance\n";
+        }
     }
     forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL);
@@ -105,12 +121,18 @@ dd_edge buildReachset(domain* d, int N, edge_labeling E, bool use_sat)
     initial.setVar(9, N);
     initial.setVar(13, N);
 
-    if (edge_labeling::EVPLUS == E) {
-        initial.setValue(0);
-        rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
-        initial.buildFunction(infty, init_state);
-    } else {
+
+    if (range_type::BOOLEAN == R) {
+        initial.setValue(true);
         initial.buildFunction(false, init_state);
+    } else {
+        initial.setValue(0);
+        if (edge_labeling::EVPLUS == E) {
+            rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
+            initial.buildFunction(infty, init_state);
+        } else {
+            initial.buildFunction(-1, init_state);
+        }
     }
 
     std::cout << "\t\tbuilt initial state\n";
@@ -127,13 +149,48 @@ dd_edge buildReachset(domain* d, int N, edge_labeling E, bool use_sat)
     //
     // Build reachable states
     //
+    const char* fwd = FORWD ? " forward " : " backward ";
+
     dd_edge reachable(mdd);
-    if (use_sat) {
-        std::cout << "\t\tusing saturation\n";
-        apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
-    } else {
-        std::cout << "\t\tusing traditional iteration\n";
-        apply(REACHABLE_STATES_BFS, init_state, nsf, reachable);
+    switch (method) {
+        case 'F':
+            std::cout << "\t\tUsing traditional" << fwd << "generation, with frontier\n";
+            apply(REACHABLE_TRAD_FS(FORWD), init_state, nsf, reachable);
+            break;
+
+        case 'T':
+            std::cout << "\t\tUsing traditional" << fwd << "generation, without frontier\n";
+            apply(REACHABLE_TRAD_NOFS(FORWD), init_state, nsf, reachable);
+            break;
+
+        case '1':
+            std::cout << "\t\tUsing" << fwd << "saturation v1\n";
+            apply(REACHABLE_SATUR(FORWD, 1), init_state, nsf, reachable);
+            break;
+
+        case '2':
+            std::cout << "\t\tUsing" << fwd << "saturation v2\n";
+            apply(REACHABLE_SATUR(FORWD, 2), init_state, nsf, reachable);
+            break;
+
+        default:
+#ifdef ALLOW_DEPRECATED_0_18_1
+            std::cout << "\t\tusing original" << fwd << "saturation\n";
+            if (FORWD) {
+                apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+            } else {
+                apply(REVERSE_REACHABLE_DFS, init_state, nsf, reachable);
+            }
+#else
+            throw "Unexpected method";
+#endif
+    };
+
+    if ( (range_type::INTEGER == R) && (edge_labeling::EVPLUS != E) )
+    {
+        // Adjust distances if needed
+        user_unary_factory adjust("distadjust", distance_adjust);
+        apply(adjust, reachable, reachable);
     }
 
     return reachable;
@@ -141,7 +198,7 @@ dd_edge buildReachset(domain* d, int N, edge_labeling E, bool use_sat)
 
 // ============================================
 
-bool matches(const statedist &sd, const minterm &m)
+bool matches(const long adjust, const statedist &sd, const minterm &m)
 {
     if (!sd.state) {
         throw "not enough reachable markings";
@@ -155,7 +212,7 @@ bool matches(const statedist &sd, const minterm &m)
     if (oracle.isBoolean()) return true;
 
     if (oracle.isInteger()) {
-        return long(oracle) == sd.distance;
+        return long(oracle) == sd.distance + adjust;
     }
 
     throw "Unexpected state value type";
@@ -163,26 +220,26 @@ bool matches(const statedist &sd, const minterm &m)
 
 // ============================================
 
-void checkRS(int N, edge_labeling E, bool use_sat)
+void checkRS(int N, range_type R, edge_labeling E, char method)
 {
     std::cout << "Checking Kanban reachability set, N=" << N << "\n";
 
     domain* d = buildDomain(N);
-    dd_edge reachable = buildReachset(d, N, E, use_sat);
+    dd_edge reachable = buildReachset(d, N, R, E, method);
 
     const statedist* krs = nullptr;
 #ifdef HAVE_ORACLE
     switch (N) {
         case 1:
-            krs = kanban_rs1;
+            krs = FORWD ? kanban_fwd_rs1 : kanban_bwd_rs1;
             break;
 
         case 2:
-            krs = kanban_rs2;
+            krs = FORWD ? kanban_fwd_rs2 : kanban_bwd_rs2;
             break;
 
         case 3:
-            krs = kanban_rs3;
+            krs = FORWD ? kanban_fwd_rs3 : kanban_bwd_rs3;
             break;
 
         default:
@@ -196,10 +253,21 @@ void checkRS(int N, edge_labeling E, bool use_sat)
         // enumerate states
         long c = 0;
 
+        const long adjust =
+            (range_type::INTEGER == R) && (edge_labeling::MULTI_TERMINAL == E)
+            ? 1
+            : 0;
+
         for (dd_edge::iterator i = reachable.begin(); i; ++i)
         {
-            if (!matches( krs[c], *i) ) {
+            if (!matches( adjust, krs[c], *i) ) {
                 std::cerr << "Marking " << c << " mismatched\n";
+
+                ostream_output merr(std::cerr);
+                merr << "Marking was ";
+                (*i).show(merr);
+                merr << "\n";
+
                 throw "mismatch";
             }
             c++;
@@ -221,13 +289,17 @@ void genRS(int N)
     using namespace std;
 
     domain* d = buildDomain(N);
-    dd_edge reachable = buildReachset(d, N, edge_labeling::EVPLUS, true);
+    dd_edge reachable = buildReachset(d, N, range_type::INTEGER,
+                            edge_labeling::EVPLUS, 'T');
 
     cout << "//\n";
-    cout << "// Finite distance function for Kanban N=" << N << "\n";
+    cout << "// Finite "
+         << (FORWD ? "forward" : "backward")
+         << " distance function for Kanban N=" << N << "\n";
     cout << "//\n";
     cout << "\n";
-    cout << "const statedist kanban_rs" << N << "[] = {\n";
+    cout << "const statedist kanban_" << (FORWD ? "fwd" : "bwd")
+         << "_rs" << N << "[] = {\n";
 
     // enumerate states
     for (dd_edge::iterator i = reachable.begin(); i; ++i)
@@ -258,15 +330,24 @@ int Usage(const char* exe)
     cerr << "Kanban instances.\n";
     cerr << "\n";
     cerr << "Switches:\n";
+    cerr << "    -b     : backward generation\n";
+    cerr << "    -f     : forward generation (default)\n";
+    cerr << "\n";
     cerr << "    -c     : check against expected states and distances (default)\n";
     cerr << "    -g n   : generate header for N=n instance. Use n>0. Does not\n";
-    cerr << "             perform any checking. Ignores all other switches.\n";
+    cerr << "             perform any checking. Ignores all -- switches.\n";
     cerr << "\n";
-    cerr << "    --mt   : use MTMDDs (default)\n";
-    cerr << "    --ev   : use EV+MDDs\n";
+    cerr << "    --mtb  : use boolean MTMDDs (reachable states)\n";
+    cerr << "    --mti  : use integer MTMDDs (distances)\n";
+    cerr << "    --ev   : use EV+MDDs (distances)\n";
     cerr << "\n";
-    cerr << "    --sat  : use saturation (default)\n";
-    cerr << "    --trad : use traditional iteration\n";
+#ifdef ALLOW_DEPRECATED_0_18_1
+    cerr << "    --dfs  : use original saturation\n";
+#endif
+    cerr << "    --sat1 : use saturation v1 (default)\n";
+    cerr << "    --sat2 : use saturation v2\n";
+    cerr << "    --front: use traditional iteration, with frontier set\n";
+    cerr << "    --trad : use traditional iteration, without frontier set\n";
 
     return 1;
 }
@@ -278,8 +359,10 @@ int Usage(const char* exe)
 int main(int argc, const char** argv)
 {
     long geninstance = 0;
+    range_type rtype = range_type::BOOLEAN;
     edge_labeling elmdd = edge_labeling::MULTI_TERMINAL;
-    bool use_sat = true;
+    char method = '1';
+    FORWD = true;
 
     //
     // Process switches
@@ -302,15 +385,34 @@ int main(int argc, const char** argv)
         }
 
         //
-        // mt vs ev
+        // FORWD or not
         //
-
-        if (0==strcmp("--mt", argv[i])) {
-            elmdd = edge_labeling::MULTI_TERMINAL;
+        if (0==strcmp("-b", argv[i])) {
+            FORWD = false;
+            continue;
+        }
+        if (0==strcmp("-f", argv[i])) {
+            FORWD = true;
             continue;
         }
 
+
+        //
+        // mt vs ev
+        //
+
+        if (0==strcmp("--mtb", argv[i])) {
+            rtype = range_type::BOOLEAN;
+            elmdd = edge_labeling::MULTI_TERMINAL;
+            continue;
+        }
+        if (0==strcmp("--mti", argv[i])) {
+            rtype = range_type::INTEGER;
+            elmdd = edge_labeling::MULTI_TERMINAL;
+            continue;
+        }
         if (0==strcmp("--ev", argv[i])) {
+            rtype = range_type::INTEGER;
             elmdd = edge_labeling::EVPLUS;
             continue;
         }
@@ -319,13 +421,26 @@ int main(int argc, const char** argv)
         // saturation vs traditional
         //
 
-        if (0==strcmp("--sat", argv[i])) {
-            use_sat = true;
+#ifdef ALLOW_DEPRECATED_0_18_1
+        if (0==strcmp("--dfs", argv[i])) {
+            method = 'S';
             continue;
         }
-
+#endif
+        if (0==strcmp("--sat1", argv[i])) {
+            method = '1';
+            continue;
+        }
+        if (0==strcmp("--sat2", argv[i])) {
+            method = '2';
+            continue;
+        }
         if (0==strcmp("--trad", argv[i])) {
-            use_sat = false;
+            method = 'T';
+            continue;
+        }
+        if (0==strcmp("--front", argv[i])) {
+            method = 'F';
             continue;
         }
 
@@ -345,9 +460,9 @@ int main(int argc, const char** argv)
             return 0;
         }
 
-        checkRS(1, elmdd, use_sat);
-        checkRS(2, elmdd, use_sat);
-        checkRS(3, elmdd, use_sat);
+        checkRS(1, rtype, elmdd, method);
+        checkRS(2, rtype, elmdd, method);
+        checkRS(3, rtype, elmdd, method);
 
         MEDDLY::cleanup();
         std::cout << "Done\n";

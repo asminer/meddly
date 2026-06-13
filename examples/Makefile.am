@@ -6,6 +6,8 @@
 ## bin_PROGRAMS = \
 noinst_PROGRAMS = \
 applyinfo \
+dd_info \
+diff_dd \
 dining_phils \
 graphs_to_mdds \
 hanoi \
@@ -14,6 +16,7 @@ knight \
 knight2 \
 libinfo \
 life \
+mr2dist \
 nqueens \
 queen_cover \
 qc2 \
@@ -35,6 +38,12 @@ AM_CXXFLAGS = -Wall
 
 applyinfo_SOURCES = applyinfo.cc
 applyinfo_LDADD = ../src/libmeddly.la
+
+dd_info_SOURCES = dd_info.cc zstream.h zstream.cc
+dd_info_LDADD = ../src/libmeddly.la
+
+diff_dd_SOURCES = diff_dd.cc zstream.h zstream.cc
+diff_dd_LDADD = ../src/libmeddly.la
 
 dining_phils_SOURCES = dining_phils.cc
 dining_phils_LDADD = ../src/libmeddly.la
@@ -60,6 +69,8 @@ libinfo_LDADD = ../src/libmeddly.la
 life_SOURCES = life.cc
 life_LDADD = ../src/libmeddly.la
 
+mr2dist_SOURCES = mr2dist.cc zstream.h zstream.cc
+mr2dist_LDADD = ../src/libmeddly.la
 
 
 nqueens_SOURCES = nqueens.cc
@@ -102,6 +113,6 @@ test_sccs_LDADD = ../src/libmeddly.la
 test_otf_sat_SOURCES = test_otf_sat.cc
 test_otf_sat_LDADD = ../src/libmeddly.la
 
-tiles_SOURCES = tiles.cc simple_model.h simple_model.cc
+tiles_SOURCES = tiles.cc simple_model.h simple_model.cc zstream.h zstream.cc
 tiles_LDADD = ../src/libmeddly.la
 

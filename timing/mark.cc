@@ -237,7 +237,7 @@ void runWithArgs(unsigned N, unsigned marks, unsigned counts)
     //
     std::cout << "Building reachability set" << std::endl;
     dd_edge reachable(mdd);
-    apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+    apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
 
     //
     // Mark timing tests, finally

@@ -187,19 +187,43 @@ class MEDDLY::terminal {
         }
 
         //
+        // Get the smallest integer terminal
+        //
+        static inline node_handle intMin() {
+            if (sizeof(node_handle) == 4) {
+                return node_handle(-1073741824L);
+            } else {
+                return node_handle(-4611686018427387904L);
+            }
+        }
+
+        static inline node_handle intMax() {
+            if (sizeof(node_handle) == 4) {
+                return node_handle(1073741823L);
+            } else {
+                return node_handle(4611686018427387903L);
+            }
+        }
+
+        static inline node_handle msb() {
+            return node_handle(1) << (sizeof(node_handle)*8-1);
+        }
+
+
+        //
         // Get the node handle for an integer terminal
         //
         inline node_handle getIntegerHandle() const {
             MEDDLY_DCASSERT(isInteger());
             if (t_integer) {
-                if (t_integer < -1073741824 ||
-                        t_integer > 1073741823)
+                if (t_integer < intMin() || t_integer > intMax())
                 {
                     // Can't fit in 31 bits (signed)
                     throw error(error::VALUE_OVERFLOW,
                             __FILE__, __LINE__);
                 }
-                return t_integer | -2147483648; // set sign bit
+                return t_integer | msb();
+                // set sign bit
             } else {
                 return 0;
             }
@@ -211,19 +235,24 @@ class MEDDLY::terminal {
         inline node_handle getRealHandle() const {
             MEDDLY_DCASSERT(isReal());
             if (t_real) {
-                union {
-                    node_handle h;
-                    float f;
-                } x;
-                x.f = t_real;
-                // const unsigned x = * (unsigned*) (&t_real);
-                // strip the lsb in fraction, and add sign bit
-                return (x.h>>1) | -2147483648;
-                /*
-                   unsigned x;
-                   memcpy(&x, &t_real, sizeof(unsigned));
-                   return node_handle(x>>1) | -2147483648;
-                   */
+                if (sizeof(node_handle) == sizeof(float)) {
+                    union {
+                        node_handle h;
+                        float f;
+                    } x;
+                    x.f = t_real;
+                    // strip the lsb in fraction, and add sign bit
+                    return (x.h>>1) | msb();
+                } else {
+                    MEDDLY_DCASSERT(sizeof(node_handle) == sizeof(double));
+                    union {
+                        node_handle h;
+                        double d;
+                    } x;
+                    x.d = t_real;
+                    // strip the lsb in fraction, and add sign bit
+                    return (x.h>>1) | msb();
+                }
             } else {
                 return 0;
             }
@@ -269,12 +298,6 @@ class MEDDLY::terminal {
         }
         inline void setInteger(long v) {
             mytype = terminal_type::INTEGER;
-            /*
-            if (v < -1073741824 || v > 1073741823) {
-                // Can't fit in 31 bits (signed)
-                throw error(error::VALUE_OVERFLOW, __FILE__, __LINE__);
-            }
-            */
             t_integer = v;
         }
         inline void setReal(double v) {
@@ -341,13 +364,24 @@ class MEDDLY::terminal {
                         return;
 
                 case terminal_type::REAL:
-                        union {
-                            node_handle h;
-                            float f;
-                        } x;
-                        // Strip sign bit
-                        x.h = (h << 1);
-                        t_real = x.f;
+                        if (sizeof(node_handle) == sizeof(float)) {
+                            union {
+                                node_handle h;
+                                float f;
+                            } x;
+                            // Strip sign bit
+                            x.h = (h << 1);
+                            t_real = x.f;
+                        } else {
+                            MEDDLY_DCASSERT(sizeof(node_handle) == sizeof(double));
+                            union {
+                                node_handle h;
+                                double d;
+                            } x;
+                            // Strip sign bit
+                            x.h = (h << 1);
+                            t_real = x.d;
+                        }
                         return;
 
                 default:

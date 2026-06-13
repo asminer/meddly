@@ -19,11 +19,15 @@
 #ifndef MEDDLY_DEFINES_H
 #define MEDDLY_DEFINES_H
 
-#ifdef HAVE_CONFIG_H
+// #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
+// #endif
 
-#define ALLOW_DEPRECATED_0_17_6  "11/11/2024"
+#define ALLOW_DEPRECATED_0_17_6     "11/11/2024"
+#define ALLOW_OLD_UNARY_0_17_6      "11/11/2024"
+#define ALLOW_OLD_BINARY_0_17_6     "11/11/2024"
+#define ALLOW_OLD_TERNARY_0_17_6    "11/11/2024"
+//
 // #define ALLOW_DEPRECATED_0_17_8  "05/25/2025"
 // #define ALLOW_DEPRECATED_0_18_0  "01/18/2025"
 // #define ALLOW_DEPRECATED_0_18_1
@@ -56,7 +60,7 @@
 #include <iostream>
 #include <cassert>
 
-#define smart_cast	dynamic_cast
+#define smart_cast  dynamic_cast
 #define MEDDLY_DCASSERT(X)  assert(X)
 #define MEDDLY_CHECK_RANGE(L, X, U)  \
     do { \
@@ -79,7 +83,7 @@
 // *                                                                     *
 // ***********************************************************************
 
-#define smart_cast	static_cast
+#define smart_cast  static_cast
 #define MEDDLY_DCASSERT(X)
 #define MEDDLY_CHECK_RANGE(L, X, U)
 
@@ -104,11 +108,12 @@ namespace MEDDLY {
         This also specifies the incoming count range for each node.
     */
     typedef int  node_handle;
+    // typedef long node_handle;
 
     /** Handles for relation nodes.
         TBD: can we just use node_handle everywhere?
      */
-    typedef int  rel_node_handle;
+    typedef node_handle rel_node_handle;
 
     /** Node addresses.
         This is used for internal storage of a node,

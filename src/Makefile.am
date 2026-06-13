@@ -12,6 +12,11 @@
 lib_LTLIBRARIES = libmeddly.la
 
 ##
+## Get library version number from autoconf
+##
+libmeddly_la_LDFLAGS = -version-info @version_info@
+
+##
 ## This list should include any source file that should be part of
 ## the library's tarball
 ##
@@ -120,11 +125,19 @@ libmeddly_la_SOURCES = \
     operations/maxmin_range.h           operations/maxmin_range.cc \
     operations/mdd2index.h              operations/mdd2index.cc    \
     operations/mm_mult.h                operations/mm_mult.cc      \
+    operations/prepost_common.h         \
     operations/prepost_rels.h           operations/prepost_rels.cc \
     operations/prepost_sets.h           operations/prepost_sets.cc \
     operations/prepostplus.h            operations/prepostplus.cc  \
-    operations/reach_bfs.h              operations/reach_bfs.cc    \
+    \
     operations/reach_dfs.h              operations/reach_dfs.cc    \
+    operations/reach_trad.h             operations/reach_trad.cc   \
+    \
+    operations/satur_index.h            operations/satur_index.cc  \
+    operations/satur_graph.h            operations/satur_graph.cc  \
+    operations/satur_queue.h            operations/satur_queue.cc  \
+    operations/satur_sets.h             operations/satur_sets.cc   \
+    \
     operations/sat_hyb.h                operations/sat_hyb.cc      \
     operations/sat_impl.h               operations/sat_impl.cc     \
     operations/sat_otf.h                operations/sat_otf.cc      \
@@ -133,6 +146,7 @@ libmeddly_la_SOURCES = \
     operations/select.h                 operations/select.cc       \
     operations/transitive_closure.h     operations/transitive_closure.cc \
     operations/union.h                  operations/union.cc        \
+    operations/user_unary.h             operations/user_unary.cc   \
     operations/vect_matr.h              operations/vect_matr.cc    \
     \
     reordering/bring_up_reordering.h            \
@@ -164,6 +178,7 @@ libmeddly_la_SOURCES = \
 pkginclude_HEADERS = \
     arrays.h \
     compute_table.h \
+    ../config.h \
     ct_entry_key.h \
     ct_entry_result.h \
     ct_entry_type.h \

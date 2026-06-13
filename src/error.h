@@ -75,6 +75,8 @@ class MEDDLY::error {
             INVALID_ASSIGNMENT,
             /// Invalid argument (for specialized operations)
             INVALID_ARGUMENT,
+            /// Option mismatch
+            INVALID_OPTION,
             /// File format error.
             INVALID_FILE,
             /// File input error.

@@ -28,246 +28,246 @@
 #include <algorithm>
 
 size_t MEDDLY::global_rebuilder::RestrictKeyHasher::operator()(
-    const RestrictKey &key) const {
-  MEDDLY::hash_stream s;
-  s.start(0);
-  s.push(key.p, key.var, key.idx);
-  return s.finish();
+        const RestrictKey &key) const {
+    MEDDLY::hash_stream s;
+    s.start(0);
+    s.push(key.p, key.var, key.idx);
+    return s.finish();
 }
 
 size_t MEDDLY::global_rebuilder::TransformKeyHasher::operator()(
-    const TransformKey &key) const {
-  MEDDLY::hash_stream s;
-  s.start(0);
-  s.push(key.sig);
-//  s.push(key.sig, key.var);
-  return s.finish();
+        const TransformKey &key) const {
+    MEDDLY::hash_stream s;
+    s.start(0);
+    s.push(key.sig);
+    //  s.push(key.sig, key.var);
+    return s.finish();
 }
 
 MEDDLY::global_rebuilder::global_rebuilder(forest* source,
-    forest* target) :
+        forest* target) :
     _source(source), _target(target), _hit(0), _total(0) {
-  if (_source->getDomain() != _target->getDomain()) {
-    throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
-  }
+        if (_source->getDomain() != _target->getDomain()) {
+            throw error(error::DOMAIN_MISMATCH, __FILE__, __LINE__);
+        }
 
-  _sg = new TopDownSignatureGenerator(*this);
-//  _sc = new BottomUpSignatureComputer(*this);
-  _sg->precompute();
-}
+        _sg = new TopDownSignatureGenerator(*this);
+        //  _sc = new BottomUpSignatureComputer(*this);
+        _sg->precompute();
+    }
 
 MEDDLY::global_rebuilder::~global_rebuilder() {
-  delete _sg;
+    delete _sg;
 }
 
 int MEDDLY::global_rebuilder::check_dependency(node_handle p, int target_level) const
 {
-  MEDDLY_DCASSERT(!_source->isTerminalNode(p));
-  MEDDLY_DCASSERT(target_level > 0);
-
-#ifdef DEVELOPMENT_CODE
-  int level = target_level;
-#endif
-
-  auto comp =
-      [this](const node_handle& x, const node_handle& y) {
-        return isLevelAbove(this->_source->getNodeLevel(y), this->_source->getNodeLevel(x));
-      };
-  std::priority_queue<node_handle, std::vector<node_handle>, decltype(comp)> s(comp);
-  std::unordered_set<node_handle> visited;
-  std::unordered_set<int> depended;
-
-  s.emplace(p);
-  visited.emplace(p);
-
-  int top_var = _target->getVarByLevel(target_level);
-  int source_level = _source->getLevelByVar(top_var);
-  while(!s.empty()) {
-    node_handle pv = s.top();
-    s.pop();
-
-    while(isLevelAbove(source_level, _source->getNodeLevel(pv))) {
-      target_level--;
-      MEDDLY_DCASSERT(target_level > 0);
-      top_var = _target->getVarByLevel(target_level);
-      if(depended.find(top_var) != depended.end()) {
-        return top_var;
-      }
-      source_level = _source->getLevelByVar(top_var);
-    }
-
-    int var = _source->getVarByLevel(_source->getNodeLevel(pv));
-    int size = _source->getVariableSize(var);
-    MEDDLY_DCASSERT(size == 2);
-    unpacked_node *nr = unpacked_node::newFromNode(_source, pv, FULL_ONLY);
-    // source->newUnpacked(pv, FULL_ONLY);
-    for(int i = 1; i < size; i++) {
-      if(nr->down(i) != nr->down(0)) {
-        if(var == top_var) {
-          return top_var;
-        }
-        else {
-#ifdef DEVELOPMENT_CODE
-          MEDDLY_DCASSERT(!isLevelAbove(_target->getLevelByVar(var), level));
-#endif
-          depended.emplace(var);
-          if(!_source->isTerminalNode(nr->down(i)) && visited.find(nr->down(i)) == visited.end()) {
-            s.emplace(nr->down(i));
-            visited.emplace(nr->down(i));
-          }
-        }
-      }
-    }
-
-    if(!_source->isTerminalNode(nr->down(0)) && visited.find(nr->down(0)) == visited.end()) {
-      s.emplace(nr->down(0));
-      visited.emplace(nr->down(0));
-    }
-
-    unpacked_node::Recycle(nr);
-  }
-
-  while(true) {
-    target_level--;
+    MEDDLY_DCASSERT(!_source->isTerminalNode(p));
     MEDDLY_DCASSERT(target_level > 0);
-    top_var = _target->getVarByLevel(target_level);
-    // There must exist a variable the decision diagram depends on
-    if(depended.find(top_var) != depended.end()) {
-      return top_var;
+
+#ifdef DEVELOPMENT_CODE
+    int level = target_level;
+#endif
+
+    auto comp =
+        [this](const node_handle& x, const node_handle& y) {
+            return isLevelAbove(this->_source->getNodeLevel(y), this->_source->getNodeLevel(x));
+        };
+    std::priority_queue<node_handle, std::vector<node_handle>, decltype(comp)> s(comp);
+    std::unordered_set<node_handle> visited;
+    std::unordered_set<int> depended;
+
+    s.emplace(p);
+    visited.emplace(p);
+
+    int top_var = _target->getVarByLevel(target_level);
+    int source_level = _source->getLevelByVar(top_var);
+    while(!s.empty()) {
+        node_handle pv = s.top();
+        s.pop();
+
+        while(isLevelAbove(source_level, _source->getNodeLevel(pv))) {
+            target_level--;
+            MEDDLY_DCASSERT(target_level > 0);
+            top_var = _target->getVarByLevel(target_level);
+            if(depended.find(top_var) != depended.end()) {
+                return top_var;
+            }
+            source_level = _source->getLevelByVar(top_var);
+        }
+
+        int var = _source->getVarByLevel(_source->getNodeLevel(pv));
+        int size = _source->getVariableSize(var);
+        MEDDLY_DCASSERT(size == 2);
+        unpacked_node *nr = unpacked_node::newFromNode(_source, pv, FULL_ONLY);
+        // source->newUnpacked(pv, FULL_ONLY);
+        for(int i = 1; i < size; i++) {
+            if(nr->down(i) != nr->down(0)) {
+                if(var == top_var) {
+                    return top_var;
+                }
+                else {
+#ifdef DEVELOPMENT_CODE
+                    MEDDLY_DCASSERT(!isLevelAbove(_target->getLevelByVar(var), level));
+#endif
+                    depended.emplace(var);
+                    if(!_source->isTerminalNode(nr->down(i)) && visited.find(nr->down(i)) == visited.end()) {
+                        s.emplace(nr->down(i));
+                        visited.emplace(nr->down(i));
+                    }
+                }
+            }
+        }
+
+        if(!_source->isTerminalNode(nr->down(0)) && visited.find(nr->down(0)) == visited.end()) {
+            s.emplace(nr->down(0));
+            visited.emplace(nr->down(0));
+        }
+
+        unpacked_node::Recycle(nr);
     }
-  }
+
+    while(true) {
+        target_level--;
+        MEDDLY_DCASSERT(target_level > 0);
+        top_var = _target->getVarByLevel(target_level);
+        // There must exist a variable the decision diagram depends on
+        if(depended.find(top_var) != depended.end()) {
+            return top_var;
+        }
+    }
 }
 
 MEDDLY::dd_edge MEDDLY::global_rebuilder::rebuild(const dd_edge& e) {
-  if (!e.isAttachedTo(_source)) {
-    throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
-  }
+    if (!e.isAttachedTo(_source)) {
+        throw error(error::FOREST_MISMATCH, __FILE__, __LINE__);
+    }
 
-  int num_var = (int) e.getForest()->getDomain()->getNumVariables();
-  _root = e.getNode();
+    int num_var = (int) e.getForest()->getDomain()->getNumVariables();
+    _root = e.getNode();
 
-  // Partial assignment
-  std::vector<int> pa;
-  node_handle pt = transform(_root, num_var, pa);
-  clearCache();
+    // Partial assignment
+    std::vector<int> pa;
+    node_handle pt = transform(_root, num_var, pa);
+    clearCache();
 
-  dd_edge out(_target);
-  out.set(pt);
-  return out;
+    dd_edge out(_target);
+    out.set(pt);
+    return out;
 }
 
 MEDDLY::node_handle MEDDLY::global_rebuilder::transform(node_handle p,
-    int target_level, std::vector<int>& pa) {
-  if (_source->isTerminalNode(p)) {
-    return p;
-  }
-
-//  int top_var = _target->getVarByLevel(target_level);
-//  while (isLevelAbove(_source->getLevelByVar(top_var), _source->getNodeLevel(p))) {
-//    // p does not depend on top_var
-//    target_level--;
-//    top_var = _target->getVarByLevel(target_level);
-//  }
-
-//  FILE_output output(stdout);
-//  _source->showNodeGraph(output, &p, 1);
-
-  // int level = target_level;
-  int top_var = check_dependency(p, target_level);
-  target_level = _target->getLevelByVar(top_var);
-
-  int sig = signature(p);
-  auto search = _computed_transform.equal_range( { sig });
-//  auto search = _computed_transform.equal_range( { sig, top_var });
-  _total++;
-  for (auto entry = search.first; entry != search.second; entry++) {
-    node_handle result;
-    bool exist = restrict_exist(_root, entry->second.pa, 0, result);
-    _computed_restrict.clear();
-    _source->unlinkNode(result);
-
-    if (exist && result == p) {
-      _hit++;
-//			printf("Hit %d Target %d\n", result, _target->getCurrentNumNodes());
-      fflush(stdout);
-      return _target->linkNode(entry->second.p);
+        int target_level, std::vector<int>& pa) {
+    if (_source->isTerminalNode(p)) {
+        return p;
     }
-  }
 
-  int size = _target->getVariableSize(top_var);
-  MEDDLY_DCASSERT(size == 2);
-  unpacked_node* nb = unpacked_node::newWritable(_target, target_level, size, FULL_ONLY);
-  for (int i = 0; i < size; i++) {
-    pa.push_back(i == 0 ? -top_var : top_var);
-    node_handle pr = restrict(p, pa);
+    //  int top_var = _target->getVarByLevel(target_level);
+    //  while (isLevelAbove(_source->getLevelByVar(top_var), _source->getNodeLevel(p))) {
+    //    // p does not depend on top_var
+    //    target_level--;
+    //    top_var = _target->getVarByLevel(target_level);
+    //  }
 
-//    _source->showNodeGraph(output, &pr, 1);
-//
-//    int top_pr = check_dependency(pr, _target->getNumVariables());
-//    MEDDLY_DCASSERT(_target->getLevelByVar(top_pr) < _target->getLevelByVar(top_var));
+    //  FILE_output output(stdout);
+    //  _source->showNodeGraph(output, &p, 1);
 
-    _computed_restrict.clear();
-    nb->setFull(i, transform(pr, target_level - 1, pa));
-    _source->unlinkNode(pr);
-    pa.pop_back();
-  }
-  node_handle pt = _target->createReducedNode(-1, nb);
+    // int level = target_level;
+    int top_var = check_dependency(p, target_level);
+    target_level = _target->getLevelByVar(top_var);
 
-//  if(pt==46) {
-//      FILE_output output(stdout);
-//      _source->showNodeGraph(output, &p, 1);
-//  }
+    int sig = signature(p);
+    auto search = _computed_transform.equal_range( { sig });
+    //  auto search = _computed_transform.equal_range( { sig, top_var });
+    _total++;
+    for (auto entry = search.first; entry != search.second; entry++) {
+        node_handle result;
+        bool exist = restrict_exist(_root, entry->second.pa, 0, result);
+        _computed_restrict.clear();
+        _source->unlinkNode(result);
 
-  // Saved in the computed table
-  std::vector<int> cpa(pa);
-  std::sort(cpa.begin(), cpa.end(),
-      [this](const int& x, const int& y) {
-        MEDDLY_DCASSERT(ABS(x) != ABS(y));
-        return this->_source->getLevelByVar(ABS(x)) > this->_source->getLevelByVar(ABS(y));
-      });
-  _computed_transform.insert( { { sig }, { cpa, pt } });
-//  _computed_transform.emplace({ sig }, { cpa, pt });
-//  _computed_transform.insert( { { sig, top_var }, { cpa, pt } });
-  return pt;
+        if (exist && result == p) {
+            _hit++;
+            //			printf("Hit %d Target %d\n", result, _target->getCurrentNumNodes());
+            fflush(stdout);
+            return _target->linkNode(entry->second.p);
+        }
+    }
+
+    int size = _target->getVariableSize(top_var);
+    MEDDLY_DCASSERT(size == 2);
+    unpacked_node* nb = unpacked_node::newWritable(_target, target_level, size, FULL_ONLY);
+    for (int i = 0; i < size; i++) {
+        pa.push_back(i == 0 ? -top_var : top_var);
+        node_handle pr = restrict(p, pa);
+
+        //    _source->showNodeGraph(output, &pr, 1);
+        //
+        //    int top_pr = check_dependency(pr, _target->getNumVariables());
+        //    MEDDLY_DCASSERT(_target->getLevelByVar(top_pr) < _target->getLevelByVar(top_var));
+
+        _computed_restrict.clear();
+        nb->setFull(i, transform(pr, target_level - 1, pa));
+        _source->unlinkNode(pr);
+        pa.pop_back();
+    }
+    node_handle pt = _target->createReducedNode(-1, nb);
+
+    //  if(pt==46) {
+    //      FILE_output output(stdout);
+    //      _source->showNodeGraph(output, &p, 1);
+    //  }
+
+    // Saved in the computed table
+    std::vector<int> cpa(pa);
+    std::sort(cpa.begin(), cpa.end(),
+            [this](const int& x, const int& y) {
+            MEDDLY_DCASSERT(ABS(x) != ABS(y));
+            return this->_source->getLevelByVar(ABS(x)) > this->_source->getLevelByVar(ABS(y));
+            });
+    _computed_transform.insert( { { sig }, { cpa, pt } });
+    //  _computed_transform.emplace({ sig }, { cpa, pt });
+    //  _computed_transform.insert( { { sig, top_var }, { cpa, pt } });
+    return pt;
 }
 
 MEDDLY::node_handle MEDDLY::global_rebuilder::restrict(node_handle p,
-    std::vector<int>& pa) {
-  int var = ABS(pa.back());
+        std::vector<int>& pa) {
+    int var = ABS(pa.back());
 
-  int level1 = _source->getNodeLevel(p);
-  int level2 = _source->getLevelByVar(var);
-  if (level1 < level2) {
-    return _source->linkNode(p);
-  } else {
-    int idx = (pa.back() < 0 ? 0 : 1);
-
-    auto search = _computed_restrict.find( { p, var, idx });
-    if (search != _computed_restrict.end()) {
-      return _source->linkNode(search->second);
-    }
-
-    if (level1 > level2) {
-      unpacked_node* nr = unpacked_node::newFromNode(_source, p, FULL_ONLY);
-
-      int size = _source->getVariableSize(_source->getVarByLevel(level1));
-      unpacked_node* nb = unpacked_node::newWritable(_source, level1, size, FULL_ONLY);
-      for (int i = 0; i < size; i++) {
-        MEDDLY_DCASSERT(size==2);
-        nb->setFull(i, restrict(nr->down(i), pa));
-      }
-      unpacked_node::Recycle(nr);
-
-      node_handle pr = _source->createReducedNode(-1, nb);
-
-      // Saved in the computed table
-      _computed_restrict.insert( { { p, var, idx }, pr });
-      return pr;
+    int level1 = _source->getNodeLevel(p);
+    int level2 = _source->getLevelByVar(var);
+    if (level1 < level2) {
+        return _source->linkNode(p);
     } else {
-      node_handle d = _source->getDownPtr(p, idx);
-      return _source->linkNode(d);
+        int idx = (pa.back() < 0 ? 0 : 1);
+
+        auto search = _computed_restrict.find( { p, var, idx });
+        if (search != _computed_restrict.end()) {
+            return _source->linkNode(search->second);
+        }
+
+        if (level1 > level2) {
+            unpacked_node* nr = unpacked_node::newFromNode(_source, p, FULL_ONLY);
+
+            int size = _source->getVariableSize(_source->getVarByLevel(level1));
+            unpacked_node* nb = unpacked_node::newWritable(_source, level1, size, FULL_ONLY);
+            for (int i = 0; i < size; i++) {
+                MEDDLY_DCASSERT(size==2);
+                nb->setFull(i, restrict(nr->down(i), pa));
+            }
+            unpacked_node::Recycle(nr);
+
+            node_handle pr = _source->createReducedNode(-1, nb);
+
+            // Saved in the computed table
+            _computed_restrict.insert( { { p, var, idx }, pr });
+            return pr;
+        } else {
+            node_handle d = _source->getDownPtr(p, idx);
+            return _source->linkNode(d);
+        }
     }
-  }
 }
 
 /*
@@ -336,117 +336,117 @@ MEDDLY::node_handle MEDDLY::global_rebuilder::restrict(node_handle p,
 //}
 
 bool MEDDLY::global_rebuilder::restrict_exist(node_handle p,
-    const std::vector<int>& pa, unsigned start, node_handle& result) {
-  if (_source->isTerminalNode(p)) {
-    result = p;
-    return true;
-  }
-
-  MEDDLY_DCASSERT(start <= pa.size());
-  if (start == pa.size()) {
-    result = _source->linkNode(p);
-    return true;
-  }
-
-  int var = ABS(pa[start]);
-  int level1 = _source->getNodeLevel(p);
-  int level2 = _source->getLevelByVar(var);
-  if (level1 < level2) {
-    return restrict_exist(p, pa, start + 1, result);
-  } else {
-    int idx = (pa[start] < 0 ? 0 : 1);
-
-    auto search = _computed_restrict.find( { p, var, idx });
-    if (search != _computed_restrict.end()) {
-      result = _source->linkNode(search->second);
-      return true;
+        const std::vector<int>& pa, unsigned start, node_handle& result) {
+    if (_source->isTerminalNode(p)) {
+        result = p;
+        return true;
     }
 
-    if (level1 > level2) {
-      unpacked_node* nr = unpacked_node::newFromNode(_source, p, FULL_ONLY);
+    MEDDLY_DCASSERT(start <= pa.size());
+    if (start == pa.size()) {
+        result = _source->linkNode(p);
+        return true;
+    }
 
-      int size = _source->getVariableSize(_source->getVarByLevel(level1));
-      unpacked_node* nb = unpacked_node::newWritable(_source, level1, size, FULL_ONLY);
-      for (int i = 0; i < size; i++) {
-        if (restrict_exist(nr->down(i), pa, start, result)) {
-          nb->setFull(i, result);
-        } else {
-          for (int j = 0; j < i; j++) {
-            _source->unlinkNode(nb->down(j));
-          }
-          unpacked_node::Recycle(nr);
-          unpacked_node::Recycle(nb);
-          return false;
-        }
-      }
-      unpacked_node::Recycle(nr);
-
-      result = _source->createReducedNode(-1, nb);
-      if (!_source->isTerminalNode(result)
-          && _source->getNodeInCount(result) == 1) {
-        // Newly created node
-        return false;
-      }
-
-      // Saved in the computed table
-      _computed_restrict.insert( { { p, var, idx }, result });
-      return true;
+    int var = ABS(pa[start]);
+    int level1 = _source->getNodeLevel(p);
+    int level2 = _source->getLevelByVar(var);
+    if (level1 < level2) {
+        return restrict_exist(p, pa, start + 1, result);
     } else {
-      node_handle d = _source->getDownPtr(p, idx);
-      return restrict_exist(d, pa, start + 1, result);
+        int idx = (pa[start] < 0 ? 0 : 1);
+
+        auto search = _computed_restrict.find( { p, var, idx });
+        if (search != _computed_restrict.end()) {
+            result = _source->linkNode(search->second);
+            return true;
+        }
+
+        if (level1 > level2) {
+            unpacked_node* nr = unpacked_node::newFromNode(_source, p, FULL_ONLY);
+
+            int size = _source->getVariableSize(_source->getVarByLevel(level1));
+            unpacked_node* nb = unpacked_node::newWritable(_source, level1, size, FULL_ONLY);
+            for (int i = 0; i < size; i++) {
+                if (restrict_exist(nr->down(i), pa, start, result)) {
+                    nb->setFull(i, result);
+                } else {
+                    for (int j = 0; j < i; j++) {
+                        _source->unlinkNode(nb->down(j));
+                    }
+                    unpacked_node::Recycle(nr);
+                    unpacked_node::Recycle(nb);
+                    return false;
+                }
+            }
+            unpacked_node::Recycle(nr);
+
+            result = _source->createReducedNode(-1, nb);
+            if (!_source->isTerminalNode(result)
+                    && _source->getNodeInCount(result) == 1) {
+                // Newly created node
+                return false;
+            }
+
+            // Saved in the computed table
+            _computed_restrict.insert( { { p, var, idx }, result });
+            return true;
+        } else {
+            node_handle d = _source->getDownPtr(p, idx);
+            return restrict_exist(d, pa, start + 1, result);
+        }
     }
-  }
 }
 
 void MEDDLY::global_rebuilder::clearCache() {
-  _computed_restrict.clear();
+    _computed_restrict.clear();
 
-//  printf("Size: %d\n", _computed_transform.size());
-//  printf("Load factor: %f\n", _computed_transform.load_factor());
-//  size_t max = 0;
-//  size_t total = 0;
-//  size_t num_non_empty = 0;
-//  for (size_t i = 0; i < _computed_transform.bucket_count(); i++) {
-//    size_t size = _computed_transform.bucket_size(i);
-//    if (size > 0) {
-//      total += size;
-//      num_non_empty++;
-//      if (max < size) {
-//        max = size;
-//      }
-//    }
-//
-//  }
-//  printf("Avg non-empty bucket size: %f\n", (float) total / num_non_empty);
-//  printf("Max bucket size: %d\n", max);
+    //  printf("Size: %d\n", _computed_transform.size());
+    //  printf("Load factor: %f\n", _computed_transform.load_factor());
+    //  size_t max = 0;
+    //  size_t total = 0;
+    //  size_t num_non_empty = 0;
+    //  for (size_t i = 0; i < _computed_transform.bucket_count(); i++) {
+    //    size_t size = _computed_transform.bucket_size(i);
+    //    if (size > 0) {
+    //      total += size;
+    //      num_non_empty++;
+    //      if (max < size) {
+    //        max = size;
+    //      }
+    //    }
+    //
+    //  }
+    //  printf("Avg non-empty bucket size: %f\n", (float) total / num_non_empty);
+    //  printf("Max bucket size: %d\n", max);
 
-//  std::unordered_set<node_handle> seen;
-//  for(auto e : _computed_transform) {
-//    printf("(%d) -> (%d)\n", e.first.sig, e.second.p);
-//    if(seen.find(e.second.p) != seen.end()) {
-//      printf("Error!\n");
-//    }
-//    else {
-//      seen.emplace(e.second.p);
-//    }
-////    printf("(%d, %d) -> (%d)\n", e.first.sig, e.first.var, e.second.p);
-//  }
+    //  std::unordered_set<node_handle> seen;
+    //  for(auto e : _computed_transform) {
+    //    printf("(%d) -> (%d)\n", e.first.sig, e.second.p);
+    //    if(seen.find(e.second.p) != seen.end()) {
+    //      printf("Error!\n");
+    //    }
+    //    else {
+    //      seen.emplace(e.second.p);
+    //    }
+    ////    printf("(%d, %d) -> (%d)\n", e.first.sig, e.first.var, e.second.p);
+    //  }
 
-  _computed_transform.clear();
+    _computed_transform.clear();
 }
 
 int MEDDLY::global_rebuilder::signature(node_handle p) const {
-  return _sg->signature(p);
+    return _sg->signature(p);
 }
 
 double MEDDLY::global_rebuilder::hitRate() const {
-  return (double) _hit / _total;
+    return (double) _hit / _total;
 }
 
 MEDDLY::global_rebuilder::SignatureGenerator::SignatureGenerator(
-    global_rebuilder& gr) :
+        global_rebuilder& gr) :
     _gr(gr) {
-}
+    }
 
 MEDDLY::global_rebuilder::SignatureGenerator::~SignatureGenerator()
 {
@@ -535,145 +535,145 @@ static int PRIMES[] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43,
     7877, 7879, 7883, 7901, 7907, 7919 };
 
 MEDDLY::global_rebuilder::TopDownSignatureGenerator::TopDownSignatureGenerator(
-    global_rebuilder& gr) :
+        global_rebuilder& gr) :
     SignatureGenerator(gr) {
-}
+    }
 
 void MEDDLY::global_rebuilder::TopDownSignatureGenerator::precompute()
 {
 }
 
 int MEDDLY::global_rebuilder::TopDownSignatureGenerator::signature(
-    node_handle p) {
-  forest* source = _gr._source;
-  if (source->getNumVariables() > 999) {
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-  }
-  if (!source->isActiveNode(p)) {
-    throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
-  }
-
-  auto comp =
-      [this](const node_handle& x, const node_handle& y) {
-        return isLevelAbove(this->_gr._source->getNodeLevel(y), this->_gr._source->getNodeLevel(x));
-      };
-  std::priority_queue<node_handle, std::vector<node_handle>, decltype(comp)> s(comp);
-  std::unordered_set<node_handle> visited;
-  std::unordered_map<node_handle, long> values;
-
-  int sig = 0;
-
-  s.emplace(p);
-  values.emplace(p, 1);
-  visited.emplace(p);
-  while (!s.empty()) {
-    node_handle pv = s.top();
-    s.pop();
-
-    int level = source->getNodeLevel(pv);
-    int size = source->getVariableSize(source->getVarByLevel(level));
-    MEDDLY_DCASSERT(size == 2);
-
-    unpacked_node* nr = unpacked_node::newFromNode(source, pv, FULL_ONLY);
-    for (int i = 0; i < size; i++) {
-      if (source->isTerminalNode(nr->down(i))) {
-        if (nr->down(i) != 0) {
-          sig += (i == 0 ? 1 - PRIMES[level] : PRIMES[level]) * values[pv];
-        }
-      } else {
-        values[nr->down(i)] += (i == 0 ? 1 - PRIMES[level] : PRIMES[level])
-            * values[pv];
-        if (visited.find(nr->down(i)) == visited.end()) {
-          visited.emplace(nr->down(i));
-          s.emplace(nr->down(i));
-        }
-      }
+        node_handle p) {
+    forest* source = _gr._source;
+    if (source->getNumVariables() > 999) {
+        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
-    unpacked_node::Recycle(nr);
-  }
+    if (!source->isActiveNode(p)) {
+        throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    }
 
-  return sig;
+    auto comp =
+        [this](const node_handle& x, const node_handle& y) {
+            return isLevelAbove(this->_gr._source->getNodeLevel(y), this->_gr._source->getNodeLevel(x));
+        };
+    std::priority_queue<node_handle, std::vector<node_handle>, decltype(comp)> s(comp);
+    std::unordered_set<node_handle> visited;
+    std::unordered_map<node_handle, long> values;
+
+    int sig = 0;
+
+    s.emplace(p);
+    values.emplace(p, 1);
+    visited.emplace(p);
+    while (!s.empty()) {
+        node_handle pv = s.top();
+        s.pop();
+
+        int level = source->getNodeLevel(pv);
+        int size = source->getVariableSize(source->getVarByLevel(level));
+        MEDDLY_DCASSERT(size == 2);
+
+        unpacked_node* nr = unpacked_node::newFromNode(source, pv, FULL_ONLY);
+        for (int i = 0; i < size; i++) {
+            if (source->isTerminalNode(nr->down(i))) {
+                if (nr->down(i) != 0) {
+                    sig += (i == 0 ? 1 - PRIMES[level] : PRIMES[level]) * values[pv];
+                }
+            } else {
+                values[nr->down(i)] += (i == 0 ? 1 - PRIMES[level] : PRIMES[level])
+                    * values[pv];
+                if (visited.find(nr->down(i)) == visited.end()) {
+                    visited.emplace(nr->down(i));
+                    s.emplace(nr->down(i));
+                }
+            }
+        }
+        unpacked_node::Recycle(nr);
+    }
+
+    return sig;
 }
 
 MEDDLY::global_rebuilder::BottomUpSignatureGenerator::BottomUpSignatureGenerator(global_rebuilder& gr)
-  : SignatureGenerator(gr)
+    : SignatureGenerator(gr)
 {
 }
 
 void MEDDLY::global_rebuilder::BottomUpSignatureGenerator::precompute()
 {
-  forest* source = _gr._source;
-  int num_vars = (int) source->getNumVariables();
-  for(int i = 1; i <= num_vars; i++) {
-    int var = source->getVarByLevel(i);
-    int size = source->getUT()->getSize(var);
-    node_handle* nodes = new node_handle[size];
-    source->getUT()->getItems(var, nodes, size);
-    for(int j = 0; j < size; j++) {
-      if(source->isActiveNode(nodes[j])) {
-        _cache_sig.emplace(nodes[j], signature(nodes[j]));
-      }
+    forest* source = _gr._source;
+    int num_vars = (int) source->getNumVariables();
+    for(int i = 1; i <= num_vars; i++) {
+        int var = source->getVarByLevel(i);
+        int size = source->getUT()->getSize(var);
+        node_handle* nodes = new node_handle[size];
+        source->getUT()->getItems(var, nodes, size);
+        for(int j = 0; j < size; j++) {
+            if(source->isActiveNode(nodes[j])) {
+                _cache_sig.emplace(nodes[j], signature(nodes[j]));
+            }
+        }
+        delete[] nodes;
     }
-    delete[] nodes;
-  }
 }
 
 int MEDDLY::global_rebuilder::BottomUpSignatureGenerator::signature(node_handle p)
 {
-  forest* source = _gr._source;
-  if (source->getNumVariables() > 999) {
-    throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
-  }
-  if (!source->isActiveNode(p)) {
-    throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
-  }
+    forest* source = _gr._source;
+    if (source->getNumVariables() > 999) {
+        throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
+    }
+    if (!source->isActiveNode(p)) {
+        throw error(error::INVALID_ARGUMENT, __FILE__, __LINE__);
+    }
 
-  int sig = rec_signature(p);
+    int sig = rec_signature(p);
 
-//  if(p==546 && source->isActiveNode(112)) {
-//    FILE_output output(stdout);
-//    source->showNodeGraph(output, &p, 1);
-//    int pp = 112;
-//    source->showNodeGraph(output, &pp, 1);
-//  }
+    //  if(p==546 && source->isActiveNode(112)) {
+    //    FILE_output output(stdout);
+    //    source->showNodeGraph(output, &p, 1);
+    //    int pp = 112;
+    //    source->showNodeGraph(output, &pp, 1);
+    //  }
 
-  _cache_rec_sig.clear();
-  return sig;
+    _cache_rec_sig.clear();
+    return sig;
 }
 
 int MEDDLY::global_rebuilder::BottomUpSignatureGenerator::rec_signature(node_handle p)
 {
-  forest* source = _gr._source;
+    forest* source = _gr._source;
 
-  if(source->isTerminalNode(p)) {
-    return (p == 0 ? 0 : PRIMES[0]);
-  }
+    if(source->isTerminalNode(p)) {
+        return (p == 0 ? 0 : PRIMES[0]);
+    }
 
-  auto rec_search = _cache_rec_sig.find(p);
-  if(rec_search != _cache_rec_sig.end()) {
-//    printf("Rec Hit\n");
-    return rec_search->second;
-  }
+    auto rec_search = _cache_rec_sig.find(p);
+    if(rec_search != _cache_rec_sig.end()) {
+        //    printf("Rec Hit\n");
+        return rec_search->second;
+    }
 
-  auto search = _cache_sig.find(p);
-  if(search != _cache_sig.end()) {
-//    printf("Hit\n");
-    return search->second;
-  }
+    auto search = _cache_sig.find(p);
+    if(search != _cache_sig.end()) {
+        //    printf("Hit\n");
+        return search->second;
+    }
 
-  int sig = 0;
+    int sig = 0;
 
-  int level = source->getNodeLevel(p);
-  int size = source->getVariableSize(source->getVarByLevel(level));
-  MEDDLY_DCASSERT(size == 2);
+    int level = source->getNodeLevel(p);
+    int size = source->getVariableSize(source->getVarByLevel(level));
+    MEDDLY_DCASSERT(size == 2);
 
-  unpacked_node* nr = unpacked_node::newFromNode(source, p, FULL_ONLY);
-  for (int i = 0; i < size; i++) {
-    sig += (i == 0 ? 1 - PRIMES[level] : PRIMES[level]) * rec_signature(nr->down(i));
-  }
-  unpacked_node::Recycle(nr);
+    unpacked_node* nr = unpacked_node::newFromNode(source, p, FULL_ONLY);
+    for (int i = 0; i < size; i++) {
+        sig += (i == 0 ? 1 - PRIMES[level] : PRIMES[level]) * rec_signature(nr->down(i));
+    }
+    unpacked_node::Recycle(nr);
 
-  _cache_rec_sig.emplace(p, sig);
+    _cache_rec_sig.emplace(p, sig);
 
-  return sig;
+    return sig;
 }

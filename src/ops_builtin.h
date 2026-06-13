@@ -32,6 +32,10 @@ namespace MEDDLY {
 
     class unary_factory;
 
+    /// Bogus unary operation that always fails.
+    /// Useful for defaults or errors.
+    unary_factory& BOGUS_UNARY();
+
     /// Return the number of variable assignments
     /// so that the function evaluates to non-zero.
     unary_factory& CARDINALITY();
@@ -70,6 +74,10 @@ namespace MEDDLY {
 
     class binary_operation; // to be removed
     class binary_factory;
+
+    /// Bogus unary operation that always fails.
+    /// Useful for defaults or errors.
+    binary_factory& BOGUS_BINARY();
 
     /// Set difference
     binary_factory& DIFFERENCE();
@@ -125,10 +133,10 @@ namespace MEDDLY {
     /// Compare for >=, two functions with range type INTEGER or REAL
     binary_factory& GREATER_THAN_EQUAL();
 
-    /// Follow a transition relation, backwards.
+    /// Follow a transition relation, backwards, for one step.
     binary_factory& PRE_IMAGE();
 
-    /// Follow a transition relation, forwards.
+    /// Follow a transition relation, forwards, for one step.
     binary_factory& POST_IMAGE();
 
     /// Vector-matrix multiplication.
@@ -136,6 +144,42 @@ namespace MEDDLY {
 
     /// Matrix-vector multiplication.
     binary_factory& MV_MULTIPLY();
+
+    /*
+        Forward and backward reachability.
+        Repeated application of PRE_IMAGE or POST_IMAGE, until fixed point.
+
+        These should all take a boolean parameter, for forward (true)
+        or backward (false).
+
+        Names should be REACHABLE_(algorithm description)
+
+    */
+
+    /// Reachability using traditional algorithm, with frontier set.
+    binary_factory& REACHABLE_TRAD_FS(bool fwd);
+
+    /// Reachability using traditional algorithm, without frontier set.
+    binary_factory& REACHABLE_TRAD_NOFS(bool fwd);
+
+    /// Forward reachability using saturation
+    binary_factory& REACHABLE_SATUR(bool fwd, int version=1);
+
+
+#ifdef ALLOW_DEPRECATED_0_18_1
+
+    /// Deprecated; use REACHABLE_TRAD_NOFS(true)
+    binary_factory& REACHABLE_STATES_BFS();
+
+    /// Deprecated; use REACHABLE_TRAD_NOFS(false)
+    binary_factory& REVERSE_REACHABLE_BFS();
+
+    /// Deprecated; use REACHABLE_SATUR(true, 1)
+    binary_operation* REACHABLE_STATES_DFS(forest* a, forest* b, forest* c);
+
+    /// Deprecated; use REACHABLE_SATUR(false, 1)
+    binary_operation* REVERSE_REACHABLE_DFS(forest* a, forest* b, forest* c);
+#endif
 
     // ======================================================================
 
@@ -158,10 +202,6 @@ namespace MEDDLY {
         REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
     */
     binary_operation* TC_POST_IMAGE(forest* a, forest* b, forest* c);
-    binary_operation* REACHABLE_STATES_DFS(forest* a, forest* b, forest* c);
-    binary_operation* REACHABLE_STATES_BFS(forest* a, forest* b, forest* c);
-    binary_operation* REVERSE_REACHABLE_DFS(forest* a, forest* b, forest* c);
-    binary_operation* REVERSE_REACHABLE_BFS(forest* a, forest* b, forest* c);
 
     /** Matrix multiplication, where the first argument is a matrix (MXD),
         the second argument is a matrix (MXD),

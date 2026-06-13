@@ -230,19 +230,19 @@ class MEDDLY::sccgraph {
 // Inlined stuff
 //
 
-unsigned MEDDLY::sccgraph::edge_iterator::to() const
+inline unsigned MEDDLY::sccgraph::edge_iterator::to() const
 {
   MEDDLY_DCASSERT(edgeptr);
   return parent.graph_edges[edgeptr].to;
 }
 
-const MEDDLY::sccgraph::edge_label* MEDDLY::sccgraph::edge_iterator::edge() const
+inline const MEDDLY::sccgraph::edge_label* MEDDLY::sccgraph::edge_iterator::edge() const
 {
   MEDDLY_DCASSERT(edgeptr);
   return parent.graph_edges[edgeptr].edge;
 }
 
-MEDDLY::sccgraph::edge_iterator& MEDDLY::sccgraph::edge_iterator::operator++()
+inline MEDDLY::sccgraph::edge_iterator& MEDDLY::sccgraph::edge_iterator::operator++()
 {
   if (edgeptr) {
     // TBD - sanity checks
@@ -251,20 +251,20 @@ MEDDLY::sccgraph::edge_iterator& MEDDLY::sccgraph::edge_iterator::operator++()
   return *this;
 }
 
-bool MEDDLY::sccgraph::edge_iterator::operator==(const edge_iterator& ei) const
+inline bool MEDDLY::sccgraph::edge_iterator::operator==(const edge_iterator& ei) const
 {
   // MEDDLY_DCASSERT(parent == ei.parent);
   return edgeptr == ei.edgeptr;
 }
 
-MEDDLY::sccgraph::edge_iterator MEDDLY::sccgraph::begin_from(unsigned I) const
+inline MEDDLY::sccgraph::edge_iterator MEDDLY::sccgraph::begin_from(unsigned I) const
 {
     MEDDLY_CHECK_RANGE(0u, I, graph_vertices_used);
   MEDDLY_DCASSERT(graph_from);
   return edge_iterator(*this, graph_from[I]);
 }
 
-MEDDLY::sccgraph::edge_iterator MEDDLY::sccgraph::end() const
+inline MEDDLY::sccgraph::edge_iterator MEDDLY::sccgraph::end() const
 {
   return edge_iterator(*this, 0);
 }

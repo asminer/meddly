@@ -17,12 +17,12 @@
 */
 
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <cassert>
 
 #include "../src/meddly.h"
 #include "../timing/timer.h"
-#include "simple_model.h"
 
 // #define SHOW_EVENTS
 
@@ -34,6 +34,19 @@ bool approx_count;
 
 // Verbose output: show iteration details
 bool verbose;
+
+void my_progress(unsigned iter, char st)
+{
+    if (' ' == st) {
+        std::cerr << "    Iteration " << std::setw(10) << iter << ": ";
+        return;
+    }
+    if (';' == st) {
+        std::cerr << std::endl;
+        return;
+    }
+    std::cerr << st << " ";
+}
 
 // **********************************************************************
 // build an event to move a ring
@@ -133,9 +146,9 @@ void buildRelation(std::vector <int> &ring2level, MEDDLY::pregen_relation& prel)
 // **********************************************************************
 // build reachable states or whatever was asked for
 //    @param method         What to do:
-//                              'd': saturation for distances
 //                              'k': saturation, partitioned by level
 //                              'm': saturation, monolithic
+//                              '1': saturation new version 1
 //
 //                              'f': BFS with frontier
 //                              'b': BFS without frontier
@@ -178,42 +191,56 @@ void buildReachable(char method, MEDDLY::pregen_relation* prel,
     watch.note_time();
 
     saturation_operation* sat = nullptr;
+    binary_operation* bfs = nullptr;
     ostream_output merr(std::cerr);
     merr.indent_more();
+
+    forest* arg1F = initial.getForest();
+    forest* arg2F = prel->getRelForest();
+    forest* resF  = reachable.getForest();
 
     switch (method) {
         case 'k':
                     std::cout << "Building " << what << " using saturation..." << std::endl;
-                    sat = SATURATION_FORWARD(initial.getForest(), prel, reachable.getForest());
+                    sat = SATURATION_FORWARD(arg1F, prel, resF);
                     if (!sat) {
                         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
                     }
                     sat->compute(initial, reachable);
                     break;
 
+#ifdef ALLOW_DEPRECATED_0_18_1
         case 'm':
-        case 'd':
                     std::cout << "Building " << what << " using saturation..." << std::endl;
                     apply(REACHABLE_STATES_DFS, initial, monolithic, reachable);
                     break;
-
-        case 'f':
-                    if (verbose) {
-                        buildReachsetFrontier(&merr, monolithic, initial, reachable);
-                    } else {
-                        std::cout << "Building " << what << " using traditional with frontier..." << std::endl;
-                        buildReachsetFrontier(nullptr, monolithic, initial, reachable);
-                    }
+#endif
+        case 'd':
+                    std::cout << "Building " << what << " using default saturation..." << std::endl;
+                    apply(REACHABLE_SATUR(true), initial, monolithic, reachable);
                     break;
 
-        case 'b':
-                    if (verbose) {
-                        buildReachsetBFS(&merr, monolithic, initial, reachable);
-                    } else {
-                        std::cout << "Building " << what << " using traditional without frontier..." << std::endl;
-                        buildReachsetBFS(nullptr, monolithic, initial, reachable);
-                    }
+        case '1':
+                    std::cout << "Building " << what << " using saturation (new v1)..." << std::endl;
+                    apply(REACHABLE_SATUR(true, 1), initial, monolithic, reachable);
                     break;
+
+        case 't':
+                    std::cout << "Building " << what << " using (new) traditional without frontier..." << std::endl;
+                    bfs = build(REACHABLE_TRAD_NOFS(true), arg1F, arg2F, resF);
+                    if (!bfs) throw "null bfs";
+                    if (verbose) bfs->setProgressNotifier(my_progress);
+                    bfs->compute(initial, monolithic, reachable);
+                    break;
+
+        case 'F':
+                    std::cout << "Building " << what << " using (new) traditional with frontier..." << std::endl;
+                    bfs = build(REACHABLE_TRAD_FS(true), arg1F, arg2F, resF);
+                    if (!bfs) throw "null bfs";
+                    if (verbose) bfs->setProgressNotifier(my_progress);
+                    bfs->compute(initial, monolithic, reachable);
+                    break;
+
 
         default:
                     throw "unknown method";
@@ -350,13 +377,20 @@ int usage(const char* exe)
     cerr << "    -v:    Verbose. Show BFS iteration details.\n";
     cerr << "\n";
 
-    cerr << "    --dsat     Saturation for distance\n";
+    cerr << "    --dist     Build distance function\n";
+    cerr << "    --reach    Build reachable states (default)\n";
+    cerr << "\n";
     cerr << "    --ksat     Saturation, relation partitioned by levels (default)\n";
+
+#ifdef ALLOW_DEPRECATED_0_18_1
     cerr << "    --msat     Saturation, monolithic relation\n";
+#endif
     cerr << "\n";
 
-    cerr << "    --bfs      BFS without frontier set\n";
-    cerr << "    --fbfs     BFS with frontier set\n";
+    cerr << "    --dfs      Use default saturation\n";
+    cout << "    --sat1     Saturation v1 (new implementation)\n";
+    cerr << "    --trad     Traditional BFS without frontier set\n";
+    cerr << "    --front    Traditional BFS with frontier set\n";
     cerr << "\n";
     return 1;
 }
@@ -381,6 +415,7 @@ int main(int argc, const char** argv)
     verbose = false;
     bool reverse_order = false;
     char satmethod = 'k';
+    bool distances = false;
     //
     // Process command line
     //
@@ -425,25 +460,38 @@ int main(int argc, const char** argv)
             }
             // double dash switches
             if ('-' == arg[1]) {
-                if (0==strcmp("--dsat", arg)) {
-                    satmethod = 'd';
+                if (0==strcmp("--dist", arg)) {
+                    distances = true;
+                    continue;
+                }
+                if (0==strcmp("--reach", arg)) {
+                    distances = false;
                     continue;
                 }
                 if (0==strcmp("--ksat", arg)) {
                     satmethod = 'k';
                     continue;
                 }
+#ifdef ALLOW_DEPRECATED_0_18_1
                 if (0==strcmp("--msat", arg)) {
                     satmethod = 'm';
                     continue;
                 }
-
-                if (0==strcmp("--bfs", arg)) {
-                    satmethod = 'b';
+#endif
+                if (0==strcmp("--dfs", arg)) {
+                    satmethod = 'd';
                     continue;
                 }
-                if (0==strcmp("--fbfs", arg)) {
-                    satmethod = 'f';
+                if (0==strcmp("--sat1", arg)) {
+                    satmethod = '1';
+                    continue;
+                }
+                if (0==strcmp("--trad", arg)) {
+                    satmethod = 't';
+                    continue;
+                }
+                if (0==strcmp("--front", arg)) {
+                    satmethod = 'F';
                     continue;
                 }
             }
@@ -514,7 +562,7 @@ int main(int argc, const char** argv)
         // any policy changes?
         forest* mdd = nullptr;
 
-        if ('d' == satmethod) {
+        if (distances) {
             mdd = forest::create(d, false, range_type::INTEGER, edge_labeling::EVPLUS, pmdd);
         } else {
             mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
@@ -528,7 +576,7 @@ int main(int argc, const char** argv)
         minterm init_minterm(mdd);
         init_minterm.setAllVars(0);
         dd_edge initial(mdd);
-        if ('d' == satmethod) {
+        if (distances) {
             init_minterm.setValue(0);
             init_minterm.buildFunction(rangeval(range_special::PLUS_INFINITY, range_type::INTEGER), initial);
         } else {
@@ -559,7 +607,7 @@ int main(int argc, const char** argv)
         mxd->reportStats(meddlyout, "    ",
                 HUMAN_READABLE_MEMORY | BASIC_STATS
         );
-        if ('d' == satmethod) {
+        if (distances) {
             meddlyout << "EV+MDD stats:\n";
         } else {
             meddlyout << "MDD stats:\n";
@@ -568,6 +616,7 @@ int main(int argc, const char** argv)
             HUMAN_READABLE_MEMORY | BASIC_STATS | EXTRA_STATS
         );
 
+        compute_table::showAll(meddlyout, 2);
 
         cout << "Done!\n";
         return 0;

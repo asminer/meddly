@@ -170,7 +170,7 @@ class MEDDLY::unique_table {
                         unsigned hash():    return the hash value for this item.
                         bool equals(int p): return true iff this item equals node p.
                 */
-                template <typename T> int find(const T &key) const
+                template <typename T> node_handle find(const T &key) const
                 {
                     unsigned h = key.hash() % size;
                     MEDDLY_CHECK_RANGE(0u, h, size);
@@ -207,7 +207,7 @@ class MEDDLY::unique_table {
                     I.e., the exact key.
                     Otherwise, return 0.
                 */
-                int remove(unsigned hash, node_handle item);
+                node_handle remove(unsigned hash, node_handle item);
 
                 /**
                     Remove all the items in the table and reset the state.

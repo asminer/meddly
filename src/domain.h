@@ -66,6 +66,18 @@ class MEDDLY::domain {
         */
         static domain* create(variable** vars=nullptr, unsigned N=0);
 
+
+        /**
+            Front-end function to create a domain from data in a file.
+            Allows reconstruction of a domain that we saved using \a write().
+                @param  s   Stream to read from
+
+                @throws     INVALID_FILE, if the file does not match
+                            what we expect
+        */
+        static domain* create(input &s);
+
+
         /** Front-end function to create a domain with given variable bounds.
             Equivalent to creating an empty domain and then building the
             domain bottom up.
@@ -207,7 +219,19 @@ class MEDDLY::domain {
                 @throws     INVALID_FILE, if the file does not match
                             what we expect
         */
-        void read(input &s);
+        // void read(input &s);
+
+        /**
+            Check that the domain matches the one in a file.
+            Allows us to compare against a domain that we
+            saved using \a write().
+                @param  s   Stream to read from
+
+                @throws     INVALID_FILE, if the file does not match
+                            what we expect.
+                            DOMAIN_MISMATCH, if the domains do not match.
+        */
+        void verify(input &s) const;
 
         /**
             Display lots of information about the domain.

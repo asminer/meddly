@@ -149,13 +149,14 @@ unsigned checkEntries(const char* name, ct_entry_type* CTE, const std::vector <n
             CTE->noaddCT(key);
 
             if (!res) continue;
-            int answer = res.readI();
-            if (answer != i + N[j]) {
-                std::cerr << "Wrong CT entry.\n";
+            const int answer = res.readI();
+            const int expected = i + N[j];
+            if (answer != expected) {
+                std::cerr << "Wrong CT entry (type IN:I).\n";
                 std::cerr << "    got     : " << i << ", " << N[j]
                           << " : " << answer << "\n";
                 std::cerr << "    expected: " << i << ", " << N[j]
-                          << " : " << i+N[j] << "\n";
+                          << " : " << expected << "\n";
                 throw "cache error";
             }
             hits++;
@@ -231,7 +232,7 @@ unsigned checkEntries(const char* name, ct_entry_type* CTE,
             node_handle answer = res.readN();
             node_handle max = MAX(N1[i], N2[j]);
             if (answer != max) {
-                std::cerr << "Wrong CT entry.\n";
+                std::cerr << "Wrong CT entry (type NN:N).\n";
                 std::cerr << "    got     : " << N1[i]
                           << ", " << N2[j]
                           << " : " << answer << "\n";

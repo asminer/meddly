@@ -72,9 +72,6 @@ void MEDDLY::generic_binary_evplus
   b.getEdgeValue(bev);
   compute(aev, a.getNode(), bev, b.getNode(), ev, result);
   c.set(ev, result);
-#ifdef DEVELOPMENT_CODE
-  resF->validateIncounts(true, __FILE__, __LINE__);
-#endif
 }
 
 void MEDDLY::generic_binary_evplus
