@@ -611,6 +611,12 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
             break;
 #endif
 
+        case 'd':
+            printf("Building reachability set using default saturation, monolithic relation\n");
+            fflush(stdout);
+            apply(REACHABLE_SATUR(true), initialStates, nsf, reachableStates);
+            break;
+
         case '1':
             printf("Building reachability set using saturation v1, monolithic relation\n");
             fflush(stdout);
@@ -733,8 +739,8 @@ int usage(const char* who)
     printf("\t-trad:      use traditional iterations without frontier (default)\n");
     printf("\t-front:     use traditional iterations with frontier\n\n");
 
+    printf("\t-dfs:       use default saturation\n");
 #ifdef ALLOW_DEPRECATED_0_18_1
-    printf("\t-dfs:       use fastest saturation (currently, -msat)\n");
     printf("\t-msat:      use monolithic saturation\n");
 #endif
     printf("\t-esat:      use saturation by events\n");
@@ -816,11 +822,11 @@ int main(int argc, char *argv[])
             continue;
         }
 
-#ifdef ALLOW_DEPRECATED_0_18_1
         if (strcmp(cmd, "-dfs") == 0) {
-            sw.method = 'm';
+            sw.method = 'd';
             continue;
         }
+#ifdef ALLOW_DEPRECATED_0_18_1
         if (strcmp(cmd, "-msat") == 0) {
             sw.method = 'm';
             continue;

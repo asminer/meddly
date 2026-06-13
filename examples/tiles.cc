@@ -446,6 +446,11 @@ void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
     forest* relF = relation.getForest();
 
     switch (method) {
+        case 'd':
+                    std::cout << "default saturation..." << std::endl;
+                    apply(REACHABLE_SATUR(true), initial, relation, reachable);
+                    break;
+
         case '1':
                     std::cout << "saturation v1..." << std::endl;
                     apply(REACHABLE_SATUR(true, 1), initial, relation, reachable);
@@ -633,6 +638,7 @@ int usage(const char* exe)
     cerr << "    --dist:    Build the distance function.\n";
     cerr << "\n";
 
+    cerr << "    --dfs      Use default saturation\n";
     cerr << "    --sat1     Saturation v1 (new), monolithic relation (default)\n";
 #ifdef ALLOW_DEPRECATED_0_18_1
     cerr << "    --msat     Saturation, monolithic relation\n";
@@ -761,6 +767,10 @@ int main(int argc, const char** argv)
                     continue;
                 }
 #endif
+                if (0==strcmp("--dfs", arg)) {
+                    satmethod = 'd';
+                    continue;
+                }
                 if (0==strcmp("--trad", arg)) {
                     satmethod = 't';
                     continue;

@@ -236,8 +236,8 @@ int usage(const char* who)
     printf("\tnnnn: array size\n\n");
     printf("\t-front: use traditional iterations with frontier\n");
     printf("\t-trad:  use traditional iterations, no frontier\n\n");
+    printf("\t-dfs: use default saturation\n");
 #ifdef ALLOW_DEPRECATED_0_18_1
-    printf("\t-dfs: use fastest saturation (currently, -msat)\n");
     printf("\t-msat: use monolithic saturation\n");
 #endif
     printf("\t-sat1: use saturation v1, new implementation (default)\n\n");
@@ -355,6 +355,17 @@ void runWithArgs(int N, char method, bool alternate)
             apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
             break;
 #endif
+        case 'd':
+            printf("Building reachability set using default saturation\n");
+            fflush(stdout);
+            apply(REACHABLE_SATUR(true), init_state, nsf, reachable);
+            break;
+
+        case '1':
+            printf("Building reachability set using saturation v1\n");
+            fflush(stdout);
+            apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
+            break;
 
         case 'k':
         case 's':
@@ -415,11 +426,15 @@ int main(int argc, const char** argv)
             method = 't';
             continue;
         }
-#ifdef ALLOW_DEPRECATED_0_18_1
         if (strcmp("-dfs", argv[i])==0) {
-            method = 'm';
+            method = 'd';
             continue;
         }
+        if (strcmp("-sat1", argv[i])==0) {
+            method = '1';
+            continue;
+        }
+#ifdef ALLOW_DEPRECATED_0_18_1
         if (strcmp("-msat", argv[i])==0) {
             method = 'm';
             continue;

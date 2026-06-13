@@ -215,6 +215,11 @@ void buildReachable(char method, MEDDLY::pregen_relation* prel,
                     apply(REACHABLE_STATES_DFS, initial, monolithic, reachable);
                     break;
 #endif
+        case 'd':
+                    std::cout << "Building " << what << " using default saturation..." << std::endl;
+                    apply(REACHABLE_SATUR(true), initial, monolithic, reachable);
+                    break;
+
         case '1':
                     std::cout << "Building " << what << " using saturation (new v1)..." << std::endl;
                     apply(REACHABLE_SATUR(true, 1), initial, monolithic, reachable);
@@ -382,6 +387,7 @@ int usage(const char* exe)
 #endif
     cerr << "\n";
 
+    cerr << "    --dfs      Use default saturation\n";
     cout << "    --sat1     Saturation v1 (new implementation)\n";
     cerr << "    --trad     Traditional BFS without frontier set\n";
     cerr << "    --front    Traditional BFS with frontier set\n";
@@ -472,6 +478,10 @@ int main(int argc, const char** argv)
                     continue;
                 }
 #endif
+                if (0==strcmp("--dfs", arg)) {
+                    satmethod = 'd';
+                    continue;
+                }
                 if (0==strcmp("--sat1", arg)) {
                     satmethod = '1';
                     continue;

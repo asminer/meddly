@@ -84,9 +84,9 @@ int usage(const char* who)
     cout << "\t-esat : use saturation by events\n";
     cout << "\t-ksat : use saturation by levels\n";
 #ifdef ALLOW_DEPRECATED_0_18_1
-    cout << "\t-dfs  : use saturation\n";
     cout << "\t-msat : use monolithic saturation\n";
 #endif
+    cout << "\t-dfs  : use default saturation\n";
     cout << "\t-sat1 : Saturation v1, new implementation (default)\n";
     cout << "\n";
 
@@ -162,11 +162,11 @@ int main(int argc, const char** argv)
             method = 'f';
             continue;
         }
-#ifdef ALLOW_DEPRECATED_0_18_1
         if (strcmp("-dfs", argv[i])==0) {
-            method = 'm';
+            method = 'd';
             continue;
         }
+#ifdef ALLOW_DEPRECATED_0_18_1
         if (strcmp("-msat", argv[i])==0) {
             method = 'm';
             continue;
@@ -385,6 +385,12 @@ int main(int argc, const char** argv)
                 apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
                 break;
 #endif
+
+            case 'd':
+                cout << "Building reachability set using default saturation"
+                     << endl;
+                apply(REACHABLE_SATUR(true), init_state, nsf, reachable);
+                break;
 
             case '1':
                 cout << "Building reachability set using saturation v1, monolithic relation"
