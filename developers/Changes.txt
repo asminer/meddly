@@ -1,28 +1,6 @@
 
 TO DO list
 
-
-    * saturation 1 monolithic relation
-        states only
-        distances
-
-
-saturation helper with abstraction: old
-
-    add indexes that need to be explored from
-    remove an index to explore from
-
-
-saturation helper with abstraction: new
-    initialize from a node handle (and indication of forward/backward)
-    add indexes that were updated (to be explored)
-
-    get an edge to fire (i, j, downnode)
-    get diagonal i,i
-
-
-========= (release?)
-
     * saturation 2 monolithic relation
         'saturate after' but on diagonal
         states only
