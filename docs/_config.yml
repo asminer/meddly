@@ -30,6 +30,9 @@ collections:
   releases:
     output: true
     permalink: /:collection/:path
+  oldreleases:
+    output: true
+    permalink: /:collection/:path
 
 defaults:
   # _pages
@@ -56,6 +59,15 @@ defaults:
       type: releases
     values:
       layout: singdate
+      classes: wide
+      sidebar:
+        nav: "side"
+  # _oldreleases
+  - scope:
+      path: ""
+      type: oldreleases
+    values:
+      layout: single
       classes: wide
       sidebar:
         nav: "side"

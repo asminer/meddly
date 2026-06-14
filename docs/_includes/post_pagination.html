@@ -7,12 +7,12 @@
     {% if next %}
     <a href="{{ next.url | absolute_url }}" class="pagination--pager" title="{{ next.title | markdownify | strip_html }}">&laquo;&nbsp;{{ next.shorttitle }}</a>
     {% else %}
-    <a href="#" class="pagination--pager disabled">&laquo;</a>
+    <a href="#" class="pagination--pager disabled">&raquo;</a>
     {% endif %}
     {% if previous %}
     <a href="{{ previous.url | absolute_url }}" class="pagination--pager" title="{{ previous.title | markdownify | strip_html }}">{{ previous.shorttitle }}&nbsp;&raquo;</a>
     {% else %}
-    <a href="#" class="pagination--pager disabled">&raquo;</a>
+    <a href="{{ 'old_releases.html' | absolute_url }}" class="pagination--pager" title="Older versions">Older versions&nbsp;&raquo;</a>
     {% endif %}
   {% else %}
     {% if previous %}
