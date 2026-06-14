@@ -9,7 +9,8 @@ layout: single
 
 * Users can build an arbitrary unary operation by writing a function
     of the form ```void F(const rangeval &in, rangeval &out)```,
-    creating an instance of object ```user_unary_factory```,
+    creating an instance of object ```user_unary_factory```
+    (passing a name and the custom function to the constructor),
     and then using ```apply``` on that object.
     See the test file ```tests/ops_user_un.cc```.
 
