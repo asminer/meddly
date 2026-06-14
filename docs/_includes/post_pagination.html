@@ -15,7 +15,9 @@
     <a href="{{ 'old_releases.html' | absolute_url }}" class="pagination--pager" title="Older versions">Older versions&nbsp;&raquo;</a>
     {% endif %}
   {% else %}
-    {% if previous %}
+    {% if page.custom_prev_url %}
+    <a href="{{ page.custom_prev_url | absolute_url }}" class="pagination--pager" title="{{ page.custom_prev_title }}">&laquo;&nbsp;{{ page.custom_prev_title }}</a>
+    {% elsif previous %}
     <a href="{{ previous.url | absolute_url }}" class="pagination--pager" title="{{ previous.title | markdownify | strip_html }}">&laquo;&nbsp;{{ previous.shorttitle }}</a>
     {% else %}
     <a href="#" class="pagination--pager disabled">&laquo;</a>

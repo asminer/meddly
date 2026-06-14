@@ -1,7 +1,7 @@
 ---
 title: Older Versions
 custom_prev_url: "releases/0.16.0"
-custom_prev_title: "Thingy"
+custom_prev_title: "Version 0.16.0"
 ---
 
 {% for rel in site.oldreleases reversed %}
