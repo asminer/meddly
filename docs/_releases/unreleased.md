@@ -21,20 +21,18 @@ number: changes
     use instead ```REACHABLE_TRAD_NOFS(true)```
     and ```REACHABLE_TRAD_NOFS(false)```, respectively.
 
+* Built-in operations ```REACHABLE_STATES_DFS```
+    and ```REVERSE_REACHABLE_DFS```
+    are deprecated;
+    use instead ```REACHABLE_SATUR(true)```
+    and ```REACHABLE_SATUR(false)```, respectively.
+    A second argument may be passed to these functions,
+    to specify the version number of saturation.
+    Currently, only version 1 is supported.
+
 * To read a domain from a file,
     method ```domain::read()``` has been replaced by
     an overloaded static method ```domain::create()```.
-
-* Added "options" to operations.
-    This is the mechanism to adjust algorithms, for example,
-    different versions of saturation. Options are used only for
-    adjustments that do not affect the final answer.
-
-* Added ```REACHABLE_SATUR(fwd, version)``` operation
-    as a replacement for old saturation for monolithic relations
-    (and eventually, partitioned relations, etc., through
-    the relation node abstraction).
-    Version 1 is currently supported.
 
 * Added bogus built-in unary and binary operations,
     that always fail.
