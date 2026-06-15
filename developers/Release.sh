@@ -117,12 +117,21 @@ usage()
 }
 
 #
-# Checks
+# Fatal error checks
 #
 
 if [ $# -ne 1 ]; then
     usage $0
 fi
+
+if [ ! -f ../configure.ac ]; then
+    printf "\nRun this in the developers directory.\n\n"
+    exit 1
+fi
+
+#
+# Parse command line
+#
 
 major="x"
 if [ "x-m" == "x$1" ]; then
@@ -135,10 +144,26 @@ if [ "x" == "$major" ]; then
     usage $0
 fi
 
-if [ ! -f ../configure.ac ]; then
-    printf "\nRun this in the developers directory.\n\n"
-    exit 1
+#
+# Build version numbers
+#
+
+version=`awk -F, '/AC_INIT/{print $2}' ../configure.ac | tr -d '[],'`
+oldversion="$version"
+if [ "$major" ]; then
+    version=`awk -F. '{for (i=1; i<NF-1; i++) printf($i"."); print $(NF-1)+1".0"}' <<< $version`
 fi
+nextver=`awk -F. '{for (i=1; i<NF; i++) printf($i"."); print $NF+1}' <<< $version`
+printf "Creating release for version $version\n"
+printf "Next version will be $nextver\n\n"
+
+confirm_or_quit
+
+printf "Checking release...\n"
+
+#
+# Release checks and whatnot
+#
 
 if [ ! -f ../$UNRELNOTES ]; then
     printf "Missing release docs; check file $UNRELNOTES\n\n"
@@ -158,30 +183,16 @@ for r in origin sourceforge; do
     fi
 done
 
-#
-# Determine version number
-#
-
-version=`awk '/AC_INIT/{print $2}' ../configure.ac | tr -d '[],'`
-oldversion="$version"
-if [ "$major" ]; then
-    version=`awk -F. '{for (i=1; i<NF-1; i++) printf($i"."); print $(NF-1)+1".0"}' <<< $version`
-fi
-
 if [ -f ../$RELDIR/$version.md ]; then
     printf "Can't update documentation; file $RELDIR/$version.md exists\n"
     exit 1
 fi
 
-
-printf "Creating release for version $version\n"
-nextver=`awk -F. '{for (i=1; i<NF; i++) printf($i"."); print $NF+1}' <<< $version`
-printf "\nNext version will be $nextver\n"
-
-confirm_or_quit
+printf "Preparing relase\n"
 
 cp ../configure.ac ../configure.ac.old
 if [ "$version" != "$oldversion" ]; then
+    printf "    updating configure.ac\n"
     update_config $version > ../configure.ac.new
     mv -f ../configure.ac.new ../configure.ac
 fi
