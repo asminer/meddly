@@ -143,7 +143,6 @@ libmeddly_la_SOURCES = \
     operations/sat_otf.h                operations/sat_otf.cc      \
     operations/sat_pregen.h             operations/sat_pregen.cc   \
     operations/sccgraph.h               operations/sccgraph.cc     \
-    operations/select.h                 operations/select.cc       \
     operations/transitive_closure.h     operations/transitive_closure.cc \
     operations/union.h                  operations/union.cc        \
     operations/user_unary.h             operations/user_unary.cc   \

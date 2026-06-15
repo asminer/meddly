@@ -61,11 +61,6 @@ namespace MEDDLY {
     /// Find the smallest value returned by the function.
     unary_factory& MIN_RANGE();
 
-#ifdef ALLOW_DEPRECATED_0_17_8
-    /// Randomly select one state from a set of states
-    unary_factory& SELECT();
-#endif
-
     // ******************************************************************
     // *                                                                *
     // *                  "built-in" binary operations                  *

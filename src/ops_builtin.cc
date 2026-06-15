@@ -36,10 +36,6 @@ namespace MEDDLY {
 #include "operations/mdd2index.h"
 #include "operations/cycle.h"
 
-#ifdef ALLOW_DEPRECATED_0_17_8
-#include "operations/select.h"
-#endif
-
 //
 // For initializing binary operations
 //
@@ -102,9 +98,6 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
     all_unary.push_back( &DIST_INC()                );
     all_unary.push_back( &MAX_RANGE()               );
     all_unary.push_back( &MIN_RANGE()               );
-#ifdef ALLOW_DEPRECATED_0_17_8
-    all_unary.push_back( &SELECT()                  );
-#endif
 
     //
     // Add all binary factories here

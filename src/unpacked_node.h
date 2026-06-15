@@ -85,24 +85,8 @@ class MEDDLY::unpacked_node {
         unpacked_node(const forest* f, node_storage_flags fs);
 
     public:
-#ifdef ALLOW_DEPRECATED_0_17_8
-        /** Constructor.
-            The class must be "filled" by a forest before
-            it can be used, however.
-                @param  f   Parent forest.
-                            If null, we must call attach()
-                            before use.
-        */
-        unpacked_node(const forest* f = nullptr);
-#endif
-
         /// Destructor.
         ~unpacked_node();
-
-#ifdef ALLOW_DEPRECATED_0_17_8
-        /// Attach the parent forest.
-        void attach(const forest* f);
-#endif
 
         /// Are we attached to f
         inline bool isAttachedTo(const forest* f) {
@@ -152,31 +136,6 @@ class MEDDLY::unpacked_node {
         void _initRedundant(int k, const edge_value &ev, node_handle node);
 
     public:
-
-#ifdef ALLOW_DEPRECATED_0_17_8
-        inline void initRedundant(const forest *f, int k,
-                node_handle node, node_storage_flags fs)
-        {
-            MEDDLY_DCASSERT(isAttachedTo(f));
-            MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
-            if (FULL_OR_SPARSE == nodestor) {
-                is_full = (FULL_ONLY == fs);
-            }
-            initRedundant(k, node);
-        }
-
-        inline void initRedundant(const forest *f, int k,
-                const edge_value &ev, node_handle node, node_storage_flags fs)
-        {
-            MEDDLY_DCASSERT(isAttachedTo(f));
-            MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
-            if (FULL_OR_SPARSE == nodestor) {
-                is_full = (FULL_ONLY == fs);
-            }
-            initRedundant(k, ev, node);
-        }
-#endif
-
         //
         // Build identity nodes
         //
@@ -209,32 +168,6 @@ class MEDDLY::unpacked_node {
     protected:
         void _initIdentity(int k, unsigned i, const edge_value &ev,
                 node_handle node);
-
-    public:
-
-#ifdef ALLOW_DEPRECATED_0_17_8
-        inline void initIdentity(const forest *f, int k, unsigned i,
-                node_handle node, node_storage_flags fs)
-        {
-            MEDDLY_DCASSERT(isAttachedTo(f));
-            MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
-            if (FULL_OR_SPARSE == nodestor) {
-                is_full = (FULL_ONLY == fs);
-            }
-            initIdentity(k, i, node);
-        }
-
-        inline void initIdentity(const forest *f, int k, unsigned i,
-                const edge_value &ev, node_handle node, node_storage_flags fs)
-        {
-            MEDDLY_DCASSERT(isAttachedTo(f));
-            MEDDLY_DCASSERT((fs == nodestor) || (FULL_OR_SPARSE == nodestor));
-            if (FULL_OR_SPARSE == nodestor) {
-                is_full = (FULL_ONLY == fs);
-            }
-            initIdentity(k, i, ev, node);
-        }
-#endif
 
     public:
         //
@@ -320,38 +253,6 @@ class MEDDLY::unpacked_node {
          */
         static unpacked_node* newWritable(forest* f, int lvl,
                 node_storage_flags fs);
-
-#ifdef ALLOW_DEPRECATED_0_17_8
-        /** Create a zeroed-out full node of a given size */
-        template <class T>
-        static inline unpacked_node* newFull(forest *f,
-                int levl, T tsz)
-        {
-            unpacked_node* U = New(f, FULL_ONLY);
-            MEDDLY_DCASSERT(U);
-            MEDDLY_DCASSERT(tsz >= 0);
-            U->level = levl;
-            U->resize(unsigned(tsz));
-            U->clear(0, unsigned(tsz));
-            U->setFull();
-            U->allowWrites(f);
-            return U;
-        }
-
-        /** Create a sparse node */
-        template <class T>
-        static inline unpacked_node* newSparse(forest *f,
-                int levl, T nnzs)
-        {
-            unpacked_node* U = New(f, SPARSE_ONLY);
-            MEDDLY_DCASSERT(U);
-            U->level = levl;
-            U->resize(unsigned(nnzs));
-            U->setSparse();
-            U->allowWrites(f);
-            return U;
-        }
-#endif
 
     public:
         //
@@ -470,37 +371,6 @@ class MEDDLY::unpacked_node {
             return _down[n];
         }
 
-
-#ifdef ALLOW_DEPRECATED_0_17_8
-        /** Get a downward pointer.
-            @param  n   Which pointer.
-            @return     If this is a full node,
-                        return pointer with index n.
-                        If this is a sparse node,
-                        return the nth non-zero pointer.
-        */
-        inline node_handle down(int n) const
-        {
-            MEDDLY_CHECK_RANGE(0, n, int(size));
-            MEDDLY_DCASSERT(_down);
-            return _down[n];
-        }
-
-        /** Get a downward pointer reference.
-            @param  n   Which pointer.
-            @return     If this is a full node,
-                        return pointer with index n.
-                        If this is a sparse node,
-                        return the nth non-zero pointer.
-        */
-        inline node_handle& down(int n)
-        {
-            MEDDLY_CHECK_RANGE(0, n, int(size));
-            MEDDLY_DCASSERT(_down);
-            return _down[n];
-        }
-#endif
-
         /** Get the index of the nth non-zero pointer.
             Use only for sparse nodes.
             @param  n   Which pointer
@@ -527,34 +397,6 @@ class MEDDLY::unpacked_node {
             return _index[n];
         }
 
-#ifdef ALLOW_DEPRECATED_0_17_8
-        /** Get the index of the nth non-zero pointer.
-            Use only for sparse nodes.
-            @param  n   Which pointer
-            @return     The index of the pointer
-        */
-        inline unsigned index(int n) const
-        {
-            MEDDLY_DCASSERT(!is_full);
-            MEDDLY_CHECK_RANGE(0, n, int(size));
-            MEDDLY_DCASSERT(_index);
-            return _index[n];
-        }
-
-        /** Get a reference to the index of the nth non-zero pointer.
-            Use only for sparse nodes.
-            @param  n   Which pointer
-            @return     The index of the pointer
-        */
-        inline unsigned& index(int n)
-        {
-            MEDDLY_DCASSERT(!is_full);
-            MEDDLY_CHECK_RANGE(0, n, int(size));
-            MEDDLY_DCASSERT(_index);
-            return _index[n];
-        }
-#endif
-
         /** Get the nth edge value.
             @param  n   Which pointer
             @return     The edge value
@@ -574,75 +416,6 @@ class MEDDLY::unpacked_node {
             MEDDLY_DCASSERT(_edge);
             return _edge[n];
         }
-
-#ifdef ALLOW_DEPRECATED_0_17_8
-        /** Get the nth edge value.
-            @param  n   Which pointer
-            @return     The edge value
-        */
-        inline const edge_value& edgeval(int n) const {
-            MEDDLY_CHECK_RANGE(0, n, int(size));
-            MEDDLY_DCASSERT(_edge);
-            return _edge[n];
-        }
-
-        /** Get a modifiable reference to the nth edge value.
-            @param  n   Which pointer
-            @return     The edge value
-        */
-        inline edge_value& edgeval(int n) {
-            MEDDLY_CHECK_RANGE(0, n, int(size));
-            MEDDLY_DCASSERT(_edge);
-            return _edge[n];
-        }
-
-        /** Subtract from an edge value.
-            @param  n       Which pointer
-            @param  v       Value to subtract
-        */
-        template <class T>
-        inline void subtractFromEdge(unsigned n, T v) {
-            MEDDLY_CHECK_RANGE(0u, n, size);
-            MEDDLY_DCASSERT(_edge);
-            _edge[n].subtract(v);
-        }
-
-
-        /** Divide an edge value.
-            @param  n       Which pointer
-            @param  v       Value to divide by
-        */
-        template <class T>
-        inline void divideEdge(unsigned n, T v) {
-            MEDDLY_CHECK_RANGE(0u, n, size);
-            MEDDLY_DCASSERT(_edge);
-            _edge[n].divide(v);
-        }
-
-        /// Get the nth edge value, as a long.
-        inline long edge_long(unsigned n) const {
-            return edgeval(n).getLong();
-        }
-
-        /// Get the edge value, as a float.
-        inline float edge_float(unsigned n) const {
-            return edgeval(n).getFloat();
-        }
-
-        /**
-            Set just the edge value.
-            If you're setting the down pointer also,
-            probably you want to use setFull() or setSparse().
-            @param  n   Which pointer
-            @param  ev  New edge value
-        */
-        inline void setEdgeval(unsigned n, const edge_value &ev) {
-            MEDDLY_DCASSERT(ev.hasType(the_edge_type));
-            MEDDLY_CHECK_RANGE(0u, n, size);
-            MEDDLY_DCASSERT(_edge);
-            _edge[n] = ev;
-        }
-#endif
 
         /**
             Set a full edge.
@@ -1070,14 +843,8 @@ class MEDDLY::unpacked_node {
         /// Modifiable parent forest; required for writable nodes
         forest* modparent;
 
-#ifdef ALLOW_DEPRECATED_0_17_8
-        /// FID of the parent
-        unsigned pFID;
-#else
         /// FID of the parent
         const unsigned pFID;
-#endif
-
 
         /// Down pointers
         node_handle* _down;
@@ -1100,24 +867,14 @@ class MEDDLY::unpacked_node {
         /// Extra header information that is not hashed
         void* extra_unhashed;
 
-#ifdef ALLOW_DEPRECATED_0_17_8
-        /// Number of bytes in extra unhashed header
-        unsigned extra_unhashed_size;
-#else
         /// Number of bytes in extra unhashed header
         const unsigned extra_unhashed_size;
-#endif
 
         /// Extra header information that is hashed
         void* extra_hashed;
 
-#ifdef ALLOW_DEPRECATED_0_17_8
-        /// Number of bytes in extra hashed header
-        unsigned extra_hashed_size;
-#else
         /// Number of bytes in extra hashed header
         const unsigned extra_hashed_size;
-#endif
 
         /// Level of the node
         int level;
@@ -1141,11 +898,7 @@ class MEDDLY::unpacked_node {
         bool has_hash;
 #endif
 
-#ifdef ALLOW_DEPRECATED_0_17_8
-        edge_type the_edge_type;
-#else
         const edge_type the_edge_type;
-#endif
 
         /// True iff this was expanded from an identity-reduced edge
         bool orig_was_identity;

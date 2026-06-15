@@ -166,29 +166,6 @@ class MEDDLY::forest {
         rel_node* free_relnodes;
 
 
-#ifdef ALLOW_DEPRECATED_0_17_8
-        /*
-         * Deprecated; use unpacked_node::initFromNode() instead
-         */
-
-        /// Copy into an unpacked node.
-        ///     @param  un      Unpacked node to copy into
-        ///     @param  p       Handle of node to retrieve
-        ///     @param  st2     Storage: full only, sparse only, or
-        ///                     whatever is easier.
-        void unpackNode(unpacked_node* un, node_handle p,
-                node_storage_flags st2) const;
-
-        /// Copy into a new unpacked node.
-        inline unpacked_node* newUnpacked(node_handle p,
-                node_storage_flags f) const
-        {
-            unpacked_node* un = unpacked_node::New(this, f);
-            unpackNode(un, p, f);
-            return un;
-        }
-#endif
-
     // ------------------------------------------------------------
     public: // Add /remove a node to the forest
     // ------------------------------------------------------------

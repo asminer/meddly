@@ -508,22 +508,6 @@ MEDDLY::rel_node* MEDDLY::forest::_buildRelNode(node_handle n)
     return new rel_node_from_dd(this, n);
 }
 
-#ifdef ALLOW_DEPRECATED_0_17_8
-
-void MEDDLY::forest::unpackNode(MEDDLY::unpacked_node* un,
-    node_handle node, node_storage_flags st2) const
-{
-    MEDDLY_DCASSERT(un);
-    MEDDLY_DCASSERT(un->isAttachedTo(this));
-    un->setLevel( getNodeLevel(node) );
-    MEDDLY_DCASSERT(un->getLevel() != 0);
-    un->resize( getLevelSize( un->getLevel() ) );
-    MEDDLY_DCASSERT(getNodeAddress(node));
-    nodeMan->fillUnpacked(*un, getNodeAddress(node), st2);
-}
-
-#endif
-
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Methods to add/remove nodes
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

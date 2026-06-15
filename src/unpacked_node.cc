@@ -168,45 +168,6 @@ MEDDLY::unpacked_node::unpacked_node(const forest* f, node_storage_flags fs)
     orig_was_identity = false;
 }
 
-#ifdef ALLOW_DEPRECATED_0_17_8
-
-MEDDLY::unpacked_node::unpacked_node(const forest* f)
-    : nodestor(FULL_OR_SPARSE)
-{
-    next = nullptr;
-    prev = nullptr;
-
-    parent = nullptr;
-    modparent = nullptr;
-    pFID = 0;
-
-    _down = nullptr;
-    _index = nullptr;
-    _edge = nullptr;
-
-    mark_extra = 0;
-
-    alloc = 0;
-    size = 0;
-
-    extra_unhashed = nullptr;
-    extra_unhashed_size = 0;
-
-    extra_hashed = nullptr;
-    extra_hashed_size = 0;
-
-    level = 0;
-
-#ifdef DEVELOPMENT_CODE
-    can_be_recycled = false;
-    has_hash = false;
-#endif
-
-    if (f) attach(f);
-}
-
-#endif
-
 MEDDLY::unpacked_node::~unpacked_node()
 {
     free(_down);
@@ -216,43 +177,6 @@ MEDDLY::unpacked_node::~unpacked_node()
     free(extra_unhashed);
     free(extra_hashed);
 }
-
-#ifdef ALLOW_DEPRECATED_0_17_8
-
-void MEDDLY::unpacked_node::attach(const forest* f)
-{
-    MEDDLY_DCASSERT(!parent);
-    MEDDLY_DCASSERT(f);
-
-    parent = f;
-    modparent = nullptr;
-    pFID = f->FID();
-    the_edge_type = parent->getEdgeType();
-
-    //
-    // Allocate extra headers if needed
-    //
-
-    extra_unhashed_size =   f->unhashedHeaderBytes();
-    extra_hashed_size =     f->hashedHeaderBytes();
-
-    if (extra_unhashed_size) {
-        extra_unhashed = malloc(extra_unhashed_size);
-        if (!extra_unhashed) {
-            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-        }
-    }
-    if (extra_hashed_size) {
-        extra_hashed = malloc(extra_hashed_size);
-        if (!extra_hashed) {
-            throw error(error::INSUFFICIENT_MEMORY, __FILE__, __LINE__);
-        }
-    }
-
-    orig_was_identity = false;
-}
-
-#endif
 
 void MEDDLY::unpacked_node::initFrom(const unpacked_node &u)
 {
