@@ -260,7 +260,9 @@ kan_batch_SOURCES = kan_batch.cc simple_model.h simple_model.cc \
                   kan_rs1.h kan_rs2.h kan_rs3.h
 kan_batch_LDADD = ../src/libmeddly.la
 
-kan_chkrs_SOURCES = kan_chkrs.cc simple_model.h simple_model.cc
+kan_chkrs_SOURCES = kan_chkrs.cc simple_model.h simple_model.cc \
+                    kan_fwd_df1.h kan_fwd_df2.h kan_fwd_df3.h \
+                    kan_bwd_df1.h kan_bwd_df2.h kan_bwd_df3.h
 kan_chkrs_LDADD = ../src/libmeddly.la
 
 kan_index_SOURCES = kan_index.cc simple_model.h simple_model.cc
@@ -269,7 +271,8 @@ kan_index_LDADD = ../src/libmeddly.la
 kan_io_SOURCES = kan_io.cc simple_model.h simple_model.cc
 kan_io_LDADD = ../src/libmeddly.la
 
-kan_relprod_SOURCES = kan_relprod.cc simple_model.h simple_model.cc
+kan_relprod_SOURCES = kan_relprod.cc simple_model.h simple_model.cc \
+                      kan_dist1.h
 kan_relprod_LDADD = ../src/libmeddly.la
 
 kan_show_SOURCES = kan_show.cc simple_model.h simple_model.cc \
