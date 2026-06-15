@@ -271,7 +271,8 @@ kan_index_LDADD = ../src/libmeddly.la
 kan_io_SOURCES = kan_io.cc simple_model.h simple_model.cc
 kan_io_LDADD = ../src/libmeddly.la
 
-kan_relprod_SOURCES = kan_relprod.cc simple_model.h simple_model.cc
+kan_relprod_SOURCES = kan_relprod.cc simple_model.h simple_model.cc \
+                      kan_dist1.h
 kan_relprod_LDADD = ../src/libmeddly.la
 
 kan_show_SOURCES = kan_show.cc simple_model.h simple_model.cc \
