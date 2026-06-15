@@ -810,7 +810,7 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
         //
         // Redundant node check
         //
-        bool redundant = (nnz == getLevelSize(un->getLevel()));
+        bool redundant = (int(nnz) == getLevelSize(un->getLevel()));
         if (redundant) {
             node = un->down(0);
             for (unsigned i=1; i<nnz; i++) {
@@ -2257,7 +2257,7 @@ void MEDDLY::forest::createEdgeForVar(int vh, bool pr,
     //
     // Sanity checks
     //
-    if (vh < 0 || vh > getNumVariables())
+    if (vh < 0 || vh > int(getNumVariables()))
         throw error(error::INVALID_VARIABLE, __FILE__, __LINE__);
     if (!result.isAttachedTo(this))
         throw error(error::INVALID_OPERATION, __FILE__, __LINE__);

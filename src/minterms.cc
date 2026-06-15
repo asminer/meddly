@@ -865,7 +865,7 @@ MEDDLY::fbuilder_forest::fbuilder_forest(forest* f, const rangeval &def)
             dp_pri = new node_handle[L+1];
             dp_unp[0] = dp;
             dp_pri[0] = 0;
-            for (int k=1; k<=L; k++) {
+            for (int k=1; k<=int(L); k++) {
                 dp_pri[k] = F->makeRedundantsTo(dp_unp[k-1], k-1, -k);
                 dp_unp[k] = F->makeRedundantsTo(dp_pri[k], -k, k);
             }

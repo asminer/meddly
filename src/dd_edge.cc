@@ -318,7 +318,7 @@ bool MEDDLY::iterator_templ<EOP>::first_unpr(unsigned k, node_handle p)
     // Free variable.
     // Set up the unpacked node.
     //
-    if (k != plvl) {
+    if (int(k) != plvl) {
         if (EOP::hasEdgeValues()) {
             edge_value zero;
             EOP::clear(zero);
@@ -404,7 +404,7 @@ bool MEDDLY::iterator_templ<EOP>::first_pri(unsigned k, node_handle p)
             //
             const edge_value& up = ev_from(k);
 
-            if (k == -plvl) {
+            if (int(k) == -plvl) {
                 //
                 // Node at this level.
                 //
@@ -428,7 +428,7 @@ bool MEDDLY::iterator_templ<EOP>::first_pri(unsigned k, node_handle p)
             //
             // No edge values
             //
-            if (k == -plvl) {
+            if (int(k) == -plvl) {
                 return first_unpr(k-1, F()->getDownPtr(p, i));
             }
             if (F()->isFullyReduced() || (M_from(k) == M_to(k))) {
@@ -442,7 +442,7 @@ bool MEDDLY::iterator_templ<EOP>::first_pri(unsigned k, node_handle p)
     // Free variable.
     // Set up the unpacked node.
     //
-    if (k != -plvl) {
+    if (int(k) != -plvl) {
         if (EOP::hasEdgeValues()) {
             edge_value zero;
             EOP::clear(zero);
@@ -512,7 +512,7 @@ bool MEDDLY::iterator_templ<EOP>::random_unpr(unsigned k, node_handle p)
     // Free variable.
     // Set up the unpacked node.
     //
-    if (k != plvl) {
+    if (int(k) != plvl) {
         if (EOP::hasEdgeValues()) {
             edge_value zero;
             EOP::clear(zero);
@@ -566,7 +566,7 @@ bool MEDDLY::iterator_templ<EOP>::random_pri(unsigned k, node_handle p)
     // Free variable.
     // Set up the unpacked node.
     //
-    if (k != -plvl) {
+    if (int(k) != -plvl) {
         if (EOP::hasEdgeValues()) {
             edge_value zero;
             EOP::clear(zero);
