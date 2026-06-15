@@ -75,7 +75,7 @@ namespace MEDDLY {
                 return (head >= 0) ? (int(i) == head) : false;
             }
             inline void add(int i) {
-                if (i >= data.size()) {
+                if (i >= int(data.size())) {
                     data.resize(i+1, NOTINQ());
                 }
                 if (NOTINQ() != data[i]) {

@@ -90,23 +90,23 @@ MEDDLY::mt_mxd_bool::checkTerminalMinterm(node_handle a,  int* from,  int* to, i
                      level_to, level_to_size, FULL_ONLY);
 
               if(b_to >= 0){
-              for(int j = 0; j < level_to_size; j++ )
+              for(unsigned j = 0; j < level_to_size; j++ )
                 {
-                  P_node->setFull(j, (j!=b_to) ? 0 : linkNode(below));
+                  P_node->setFull(j, (int(j)!=b_to) ? 0 : linkNode(below));
                 }
 
-                for(int j = 0; j < level_from_size; j++ )
+                for(unsigned j = 0; j < level_from_size; j++ )
                 {
                   UP_node->setFull(j,
-                          (j!=b_from) ? 0 : createReducedNode(j, P_node)
+                          (int(j)!=b_from) ? 0 : createReducedNode(j, P_node)
                   );
                 }
                 below = createReducedNode(-1, UP_node);
                } else {
 
-                for(int j = 0; j < level_from_size; j++ )
+                for(unsigned j = 0; j < level_from_size; j++ )
                 {
-                  UP_node->setFull(j, (j!=b_from) ? 0 : below);
+                  UP_node->setFull(j, (int(j)!=b_from) ? 0 : below);
                 }
                 below = createReducedNode(-1, UP_node);
                }
@@ -185,7 +185,7 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a,  int* from,
       }
       else {
         for (unsigned j=0; j<resultSize; j++) {
-            if(j == to[bLevel]) {
+            if(int(j) == to[bLevel]) {
                 C->setFull(j, unionOneMinterm(a, from, to, MXD_levels::downLevel(k)));
             } else {
                 C->setFull(j, 0);
@@ -228,7 +228,7 @@ MEDDLY::mt_mxd_bool::unionOneMinterm_r(int in, int k, node_handle a,  int* from,
 
 
   for (unsigned j=0; j<resultSize; j++) {
-    if(j==b_to) {
+    if(int(j)==b_to) {
         C->setFull(j, unionOneMinterm(A->down(j), from, to, MXD_levels::downLevel(k)));
     } else {
         C->setFull(j, linkNode(A->down(j)));

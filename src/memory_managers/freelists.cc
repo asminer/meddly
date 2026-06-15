@@ -140,7 +140,7 @@ MEDDLY::node_address MEDDLY::freelist_manager<INT>::requestChunk(size_t &numSlot
     incMemUsed(numSlots * sizeof(INT));
     return h;
   }
-  if (entriesSize + numSlots > entriesAlloc) {
+  if (entriesSize + numSlots > size_t(entriesAlloc)) {
     // Expand by a factor of 1.5
     size_t neA = entriesAlloc + (entriesAlloc/2);
     INT* ne = (INT*) realloc(entries, neA * sizeof(INT));
@@ -157,7 +157,7 @@ MEDDLY::node_address MEDDLY::freelist_manager<INT>::requestChunk(size_t &numSlot
 
     setChunkBase(entries);
   }
-  MEDDLY_DCASSERT(entriesSize + numSlots <= entriesAlloc);
+  MEDDLY_DCASSERT(entriesSize + numSlots <= size_t(entriesAlloc));
   node_address h = entriesSize;
   entriesSize += numSlots;
 #ifdef DEBUG_FREELISTS
@@ -186,7 +186,7 @@ void MEDDLY::freelist_manager<INT>::recycleChunk(node_address h, size_t numSlots
 template <class INT>
 bool MEDDLY::freelist_manager<INT>::isValidHandle(node_address h) const
 {
-  return (h >= 1) && (h < entriesSize);
+  return (h >= 1) && (h < node_address(entriesSize));
 }
 
 // ******************************************************************

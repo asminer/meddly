@@ -70,7 +70,7 @@ void findConfirmedStates(REL* rel,
         MEDDLY::unpacked_node *nr =
             MEDDLY::unpacked_node::newFromNode(outsetF, mdd, MEDDLY::SPARSE_ONLY);
             // outsetF->newUnpacked(mdd, MEDDLY::SPARSE_ONLY);
-        for (int i = 0; i < nr->getSize(); i++) {
+        for (int i = 0; i < int(nr->getSize()); i++) {
             if (!confirmed[level][nr->index(i)]) {
                 rel->confirm(level, nr->index(i));
             }
@@ -286,10 +286,10 @@ void MEDDLY::pregen_relation::splitMxd(splittingOption split)
 
   if (split == SplitSubtractAll) {
     // Subtract event[i] from all event[j], where j > i.
-    for (int i = 1; i < K; i++) {
+    for (int i = 1; i < int(K); i++) {
       if (0==events[i].getNode()) continue;
 
-      for (int j = i + 1; j <= K; j++) {
+      for (int j = i + 1; j <= int(K); j++) {
         if (0==events[j].getNode()) continue;
 
         mxdDifference->computeTemp(events[j], events[i], events[j]);

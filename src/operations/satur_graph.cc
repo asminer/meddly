@@ -200,8 +200,12 @@ void MEDDLY::satur_graph::buildTranspose()
     //
     // Go through and count number of elements per column
     //
-    std::vector <int> col_counts(var->getBound(true), 0);
-    for (unsigned i=0; i<var->getBound(false); i++) {
+    MEDDLY_DCASSERT(var->getBound(false) >= 0);
+    MEDDLY_DCASSERT(var->getBound(true) >= 0);
+    const unsigned num_rows = var->getBound(false);
+    const unsigned num_cols = var->getBound(true);
+    std::vector <int> col_counts(num_cols, 0);
+    for (unsigned i=0; i<num_rows; i++) {
         if (RN->outgoing(i, *U)) {
             for (unsigned z=0; z<U->getSize(); z++) {
                 const unsigned j = U->index(z);
@@ -241,7 +245,7 @@ void MEDDLY::satur_graph::buildTranspose()
     // Go through and add elements in transpose order.
     // This will update the rowptr array, so we will correct it after.
     //
-    for (unsigned i=0; i<var->getBound(false); i++) {
+    for (unsigned i=0; i<num_rows; i++) {
         if (RN->outgoing(i, *U)) {
             for (unsigned z=0; z<U->getSize(); z++) {
                 const unsigned j = U->index(z);
