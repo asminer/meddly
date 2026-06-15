@@ -6,7 +6,7 @@ AC_PREREQ([2.70])
 #
 # Set version number
 #
-AC_INIT([MEDDLY],[0.18.1],[asminer@iastate.edu],[meddly],[https://asminer.github.io/meddly/])
+AC_INIT([MEDDLY],[0.18.2],[asminer@iastate.edu],[meddly],[https://asminer.github.io/meddly/])
 
 #
 # Library version number used by libtool

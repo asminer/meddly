@@ -1,38 +1,39 @@
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
-  "06/15/2026"
+/*
+    Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
+    Copyright (C) 2009, Iowa State University Research Foundation, Inc.
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef MEDDLY_DEFINES_H
+#define MEDDLY_DEFINES_H
+
+// #ifdef HAVE_CONFIG_H
+#include "config.h"
+// #endif
+
+#define ALLOW_DEPRECATED_0_17_6     "11/11/2024"
+#define ALLOW_OLD_UNARY_0_17_6      "11/11/2024"
+#define ALLOW_OLD_BINARY_0_17_6     "11/11/2024"
+#define ALLOW_OLD_TERNARY_0_17_6    "11/11/2024"
+//
+// #define ALLOW_DEPRECATED_0_17_8  "05/25/2025"
+// #define ALLOW_DEPRECATED_0_18_0  "01/18/2025"
+// #define ALLOW_DEPRECATED_0_18_1  "06/15/2026"
+// #define ALLOW_DEPRECATED_0_18_2
+
+// ==================================================================
 // ^ This line is important for the release script, don't remove it
 
 // Reference counts on for now

@@ -9,6 +9,25 @@ UNRELNOTES="$RELDIR/unreleased.md"
 NAVFILE="docs/_data/navigation.yml"
 
 #
+#
+confirm_or_quit()
+{
+    while [ 0 ]
+    do
+        printf "Is this OK? Type yes to continue, no to quit\n"
+        read resp
+        if [ "$resp" == "no" ]
+        then
+            exit 1
+        fi
+        if [ "$resp" == "yes" ]
+        then
+            return
+        fi
+    done
+}
+
+#
 # Arg1: version
 #
 update_revision()
@@ -156,6 +175,10 @@ fi
 
 
 printf "Creating release for version $version\n"
+nextver=`awk -F. '{for (i=1; i<NF; i++) printf($i"."); print $NF+1}' <<< $version`
+printf "\nNext version will be $nextver\n"
+
+confirm_or_quit
 
 cp ../configure.ac ../configure.ac.old
 if [ "$version" != "$oldversion" ]; then
@@ -174,9 +197,6 @@ printf "    updating $NAVFILE\n"
 update_nav $version > newnav.yml
 mv -f newnav.yml ../$NAVFILE
 
-nextver=`awk -F. '{for (i=1; i<NF; i++) printf($i"."); print $NF+1}' <<< $version`
-
-printf "\nNext version will be $nextver\n"
 
 #
 # Save changes
