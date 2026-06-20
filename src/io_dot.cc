@@ -17,7 +17,9 @@
 */
 
 #include "dd_edge.h"
+#include "forest.h"
 #include "node_marker.h"
+#include "terminal.h"
 
 #include "io.h"
 #include "io_dot.h"

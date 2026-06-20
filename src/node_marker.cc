@@ -16,9 +16,12 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "forest.h"
+#include "forest_levels.h"
 #include "node_marker.h"
 #include "operators.h"
-#include "forest_levels.h"
+
+#ifdef ALLOW_DEPRECATED_0_18_2
 
 // #define DEBUG_MARK
 
@@ -30,7 +33,7 @@ MEDDLY::node_marker::node_marker(const forest* F, array_watcher* w)
 
     For = F;
     if (For) {
-        marked.expand(unsigned(For->getLastNode() + 2));
+        marked.expand(size_t(For->getLastNode() + 2));
     }
     marked.clearAll();
 }
@@ -232,9 +235,12 @@ void MEDDLY::node_marker::_mark(node_handle p)
 void MEDDLY::node_marker::debug(const mystack *s)
 {
     std::cerr << "Exploring " << s << ": {";
-    for (unsigned i=0; i<s->queue.size(); i++) {
+    for (size_t i=0; i<s->queue.size(); i++) {
         if (i) std::cerr << ", ";
         std::cerr << s->queue[i];
     }
     std::cerr << "}\n";
 }
+
+#endif // allow_deprecated_0_18_2
+
