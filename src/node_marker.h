@@ -27,105 +27,9 @@ namespace MEDDLY {
     class forest;
     class unpacked_node;
 
-    class node_voyager;
-    class node_counter;
-    class edge_counter;
-    class forest_writer;
-
-    void exploreNodes(node_voyager &x,  node_handle p);
-    void exploreNodes(node_counter &x,  node_handle p);
-    void exploreNodes(edge_counter &x,  node_handle p);
-    void exploreNodes(forest_writer &x, node_handle p);
-
-#ifdef ALLOW_DEPRECATED_0_18_2
     class node_marker;
-#endif
 };
 
-/*
-    Objects used in node exploration should provide the following methods:
-
-        const forest* getParent();
-
-        static bool needsPreVisit();
-        static bool needsPostVisit();
-
-        bool isMarked(node_handle p) const;
-        void setMarked(node_handle p);
-
-        void preVisit(node_handle p, unpacked_node &u);
-        void postVisit(node_handle p, unpacked_node &u);
-
-    The above methods must support only the case p>0.
-
-*/
-
-/**
-    Class to just visit (and mark) nodes.
-*/
-class MEDDLY::node_voyager {
-    public:
-        node_voyager(const forest* F, array_watcher* w = nullptr);
-        ~node_voyager();
-
-        inline const forest* getParent() const {
-            return For;
-        }
-
-        inline void expand(size_t ns) {
-            marked.expand(ns);
-        }
-
-        inline void shrink(size_t ns) {
-            marked.shrink(ns);
-        }
-
-        inline void unmarkAll() {
-            marked.clearAll();
-        }
-
-        inline bool isMarked(node_handle p) const {
-            MEDDLY_DCASSERT(p>0);
-            return marked.get(size_t(p));
-        }
-
-        inline void setMarked(node_handle p) {
-            MEDDLY_DCASSERT(p>0);
-            marked.set(size_t(p), true);
-        }
-
-        static inline bool needsPreVisit() {
-            return false;
-        }
-
-        static inline bool needsPostVisit() {
-            return false;
-        }
-
-        inline void preVisit(node_handle p, unpacked_node &u) {
-            MEDDLY_DCASSERT(false);
-        }
-
-        inline void postVisit(node_handle p, unpacked_node &u) {
-            MEDDLY_DCASSERT(false);
-        }
-
-        inline bitvector* linkBits() {
-            return &marked;
-        }
-
-    private:
-        bitvector marked;
-        const forest* For;
-};
-
-// ==========================================================================
-
-/*
- * OLD node_marker class below here
- */
-
-#ifdef ALLOW_DEPRECATED_0_18_2
 
 /**
     Helper object used for anything requiring node marking.
@@ -263,7 +167,5 @@ class MEDDLY::node_marker {
         friend class MEDDLY::forest;
 
 };
-
-#endif // allow_deprecated_0_18_2
 
 #endif

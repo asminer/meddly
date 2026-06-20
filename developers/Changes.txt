@@ -1,6 +1,25 @@
 
 TO DO list
 
+For I/O:
+    updates to node_marker:
+
+        deprecate showByLevels()
+
+        // null writing style: use the default
+        showByLevelsTopDown(output &s, writing_style *st=nullptr);
+        showByLevelsBottomUp(output &s, writing_style *st=nullptr);
+
+        inline void showByLevels(output &s) const {
+            showByLevelsTopDown(s);
+        }
+
+        writing_style:
+            virtual void show_node(node_handle p);
+
+
+
+
     * saturation 2 monolithic relation
         'saturate after' but on diagonal
         states only

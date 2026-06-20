@@ -21,8 +21,6 @@
 #include "node_marker.h"
 #include "operators.h"
 
-#ifdef ALLOW_DEPRECATED_0_18_2
-
 // #define DEBUG_MARK
 
 MEDDLY::node_marker::node_marker(const forest* F, array_watcher* w)
@@ -241,6 +239,4 @@ void MEDDLY::node_marker::debug(const mystack *s)
     }
     std::cerr << "}\n";
 }
-
-#endif // allow_deprecated_0_18_2
 
