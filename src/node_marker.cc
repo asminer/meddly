@@ -30,7 +30,7 @@ MEDDLY::node_marker::node_marker(const forest* F, array_watcher* w)
 
     For = F;
     if (For) {
-        marked.expand(unsigned(For->getLastNode() + 2));
+        marked.expand(size_t(For->getLastNode() + 2));
     }
     marked.clearAll();
 }

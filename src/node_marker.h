@@ -59,24 +59,24 @@ class MEDDLY::node_marker {
 
         inline bool isMarked(node_handle p) const {
             if (p<0) return false;
-            return marked.get(unsigned(p));
+            return marked.get(size_t(p));
         }
 
         inline void setMarked(node_handle p) {
             if (p>0) {
-                marked.set(unsigned(p), true);
+                marked.set(size_t(p), true);
             }
         }
 
         inline void mark(node_handle p) {
-            if (p>0 && !marked.get(unsigned(p))) _mark(p);
+            if (p>0 && !marked.get(size_t(p))) _mark(p);
         }
 
         /// Add a node to the queue to be explored.
         inline void addToQueue(node_handle p) {
-            if (p>0 && !marked.get(unsigned(p))) {
+            if (p>0 && !marked.get(size_t(p))) {
                 MEDDLY_DCASSERT(S_top);
-                marked.set(unsigned(p), true);
+                marked.set(size_t(p), true);
                 S_top->queue.push_back(p);
             }
         }
