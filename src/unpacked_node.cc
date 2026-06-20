@@ -482,12 +482,15 @@ void MEDDLY::unpacked_node::write(output &s, const std::vector <size_t> &map)
         const node_handle d = down(z);
         if (d <= 0) {
             // terminal
+	    if (d<-1) {
+                std::cerr << "Error d is " << d << std::endl;
+	    }
             terminal t(parent->getTerminalType(), d);
             t.write(s);
         } else {
             // non-terminal
             s.put("n ");
-            s.put(map[(unsigned long) d]);
+            s.put(map[(size_t) d]);
         }
     }
 
