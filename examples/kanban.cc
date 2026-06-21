@@ -27,6 +27,8 @@
 #include "../timing/timer.h"
 #include "../src/log_simple.h"
 
+#include "zstream.h"
+
 // #define DUMP_NSF
 // #define DUMP_REACHABLE
 
@@ -97,8 +99,15 @@ int usage(const char* who)
 #endif
     cout << "\t-exp: use explicit (very slow)\n\n";
     cout << "\t--batch b: specify explicit batch size\n\n";
-    cout << "\t -l lfile: Write logging information to specified file\n\n";
-    cout << "\t-pdf: write the MDD representing the reachable states to Kanban.pdf\n\n";
+    cout << "\t-l lfile: Write logging information to specified file\n\n";
+
+    cout << "\t-pdf:    write the MDD representing the reachable states to Kanban.pdf\n";
+    cout << "\t-show:   write the MDD representing the reachable states\n";
+    cout << "\t-o file: write the MDD to the specified file, in an exchange format.\n";
+    cout << "\t         If the output filename ends in .gz or .xz, it will be\n";
+    cout << "\t         compressed using gzip or xz, respectively.\n";
+    cout << "\n";
+
     cout << "\t-ms: mark and sweep\n";
     cout << "\t-opt: optimistic reference counts\n";
     cout << "\t-pess: pessimistic reference counts\n\n";
@@ -143,6 +152,8 @@ int main(int argc, const char** argv)
     unsigned batchsize = 256;
     const char* lfile = 0;
     bool build_pdf = false;
+    bool show_dd = false;
+    const char* outfile = nullptr;
 #ifdef HAVE_LIBGMP
     bool approx_count = true;
 #endif
@@ -217,6 +228,15 @@ int main(int argc, const char** argv)
         }
         if (strcmp("-pdf", argv[i])==0) {
             build_pdf = true;
+            continue;
+        }
+        if (strcmp("-show", argv[i])==0) {
+            show_dd = true;
+            continue;
+        }
+        if (strcmp("-o", argv[i])==0) {
+            outfile = argv[i+1];
+            i++;
             continue;
         }
         if (strcmp("-ms", argv[i])==0) {
@@ -426,10 +446,27 @@ int main(int argc, const char** argv)
              << start.get_last_seconds() << " seconds" << endl;
         cout << "Reachability set uses "
              << reachable.getNodeCount() << " nodes" << endl;
-#ifdef DUMP_REACHABLE
-        cout << "Reachable states:\n";
-        reachable.showGraph(meddlyout);
-#endif
+
+        //
+        // Write to terminal
+        //
+        if (show_dd) {
+            cout << "Reachable states MDD:\n";
+            reachable.showGraph(meddlyout);
+        }
+
+        //
+        // Write to file
+        //
+        compressed_output writer(outfile);
+        if (writer) {
+            cout << "Writing to " << outfile << "\n";
+            d->write(writer.outstream());
+            mdd_writer mywriter(writer.outstream(), mdd);
+            mywriter.writeRootEdge(reachable);
+            mywriter.finish();
+        }
+
 
         printStats("MDD", mdd);
 

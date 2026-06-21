@@ -23,6 +23,65 @@
 
 // #define DEBUG_MARK
 
+// ******************************************************************
+// *                                                                *
+// *               node_marker::writing_style methods               *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::node_marker::writing_style::writing_style(const forest* F)
+    :   level_width(digits(F->getNumVariables())),
+        node_width(digits(F->getCurrentNumNodes()))
+{
+    For = F;
+    U = unpacked_node::New(F, FULL_OR_SPARSE);
+}
+
+MEDDLY::node_marker::writing_style::~writing_style()
+{
+    unpacked_node::Recycle(U);
+}
+
+void MEDDLY::node_marker::writing_style::show_level(output &s, int k)
+{
+    //
+    // Show level name
+    //
+    s << "Level: ";
+    s.put(k, level_width);
+    s << " Var: ";
+    const variable* v = For->getDomain()->getVar(
+            unsigned(For->getVarByLevel(ABS(k)))
+    );
+    char primed = (k>0) ? ' ' : '\'';
+    if (v->hasName()) {
+        s << v->getName() << primed << '\n';
+    } else {
+        s << For->getVarByLevel(ABS(k)) << primed << '\n';
+    }
+}
+
+void MEDDLY::node_marker::writing_style::show_node(output &s, node_handle p)
+{
+    //
+    // Show the node
+    //
+    s << "    node:";
+    s.put(p, node_width);
+    s << " incount: ";
+    s.put(For->getNodeInCount(p));
+    s.put(' ');
+    U->initFromNode(p);
+    U->show(s, true);
+    s.put('\n');
+}
+
+// ******************************************************************
+// *                                                                *
+// *                      node_marker  methods                      *
+// *                                                                *
+// ******************************************************************
+
 MEDDLY::node_marker::node_marker(const forest* F, array_watcher* w)
     : marked(w)
 {
@@ -89,6 +148,75 @@ size_t MEDDLY::node_marker::countNonzeroEdges() const
     return ec;
 }
 
+void MEDDLY::node_marker::showByLevelsTopDown(output &s, writing_style *st)
+    const
+{
+    const bool use_default = !st;
+    if (use_default) {
+        MEDDLY_DCASSERT(nullptr == st);
+        st = new writing_style(getParent());
+    }
+
+    //
+    // visit levels from top down
+    //
+    for (int k=int(For->getNumVariables()); k; k = MXD_levels::downLevel(k)) {
+        if (k<0 && !For->isForRelations()) continue;
+        bool level_printed = false;
+        size_t p=0;
+        while( (p=marked.firstOne(p+1)) < marked.getSize() )
+        {
+            if (For->getNodeLevel(p) != k) continue;
+            if (!level_printed) {
+                level_printed = true;
+                st->show_level(s, k);
+            }
+            st->show_node(s, p);
+        } // for p
+    } // for k
+
+    // cleanup
+    if (use_default) {
+        delete st;
+    }
+}
+
+void MEDDLY::node_marker::showByLevelsBottomUp(output &s, writing_style *st)
+    const
+{
+    const bool use_default = !st;
+    if (use_default) {
+        MEDDLY_DCASSERT(nullptr == st);
+        st = new writing_style(getParent());
+    }
+
+    //
+    // visit levels from top down
+    //
+    for (int k=-1; ABS(k) <= For->getNumVariables(); k = MXD_levels::upLevel(k))
+    {
+        if (k<0 && !For->isForRelations()) continue;
+        bool level_printed = false;
+        size_t p=0;
+        while( (p=marked.firstOne(p+1)) < marked.getSize() )
+        {
+            if (For->getNodeLevel(p) != k) continue;
+            if (!level_printed) {
+                level_printed = true;
+                st->show_level(s, k);
+            }
+            st->show_node(s, p);
+        } // for p
+    } // for k
+
+    // cleanup
+    if (use_default) {
+        delete st;
+    }
+}
+
+/*
+
 void MEDDLY::node_marker::showByLevels(output &s) const
 {
     MEDDLY_DCASSERT(For);
@@ -147,6 +275,7 @@ void MEDDLY::node_marker::showByLevels(output &s) const
     } // for k
     unpacked_node::Recycle(M);
 }
+*/
 
 void MEDDLY::node_marker::getNodesAtLevel(int k, std::vector <node_handle> &v)
     const

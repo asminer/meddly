@@ -54,7 +54,7 @@ graphs_to_mdds_LDADD = ../src/libmeddly.la
 hanoi_SOURCES = hanoi.cc simple_model.h simple_model.cc
 hanoi_LDADD = ../src/libmeddly.la
 
-kanban_SOURCES = kanban.cc simple_model.h simple_model.cc
+kanban_SOURCES = kanban.cc simple_model.h simple_model.cc zstream.h zstream.cc
 kanban_LDADD = ../src/libmeddly.la
 
 knight_SOURCES = knight.cc

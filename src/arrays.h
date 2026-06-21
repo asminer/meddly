@@ -516,6 +516,15 @@ class MEDDLY::bitvector {
             return size;
         }
 
+        /// Return largest index i < start with bit i set
+        inline size_t lastOne(size_t start) const {
+            while (start) {
+                --start;
+                if (1 == data[start]) return start;
+            }
+            return 0;
+        }
+
         /// Return number of bits set
         size_t count() const;
 };

@@ -58,6 +58,9 @@ class MEDDLY::mdd_writer {
         std::vector <dd_edge> roots;
         const forest* For;
         bool finished;
+
+    private:
+        class style;
 };
 
 /**

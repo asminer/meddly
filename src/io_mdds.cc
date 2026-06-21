@@ -27,6 +27,7 @@
 #include <string>
 
 // #define DEBUG_READ
+#define USE_NEW_WRITE
 
 // ******************************************************************
 // *                                                                *
@@ -184,6 +185,60 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
+// *                mdd_writer::writing_style  class                *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::mdd_writer::style : public node_marker::writing_style {
+    public:
+        style(const forest* F, node_marker &nm);
+        virtual ~style();
+
+        virtual void show_level(output &s, int k);
+        virtual void show_node(output &s, node_handle p);
+
+        inline size_t numWritten() const {
+            return written;
+        }
+        const std::vector <size_t>& getH2O() const {
+            return handle2output;
+        }
+
+    private:
+        std::vector <size_t> handle2output;
+        size_t written;
+};
+
+// ******************************************************************
+
+MEDDLY::mdd_writer::style::style(const forest* F, node_marker &nm)
+    : node_marker::writing_style(F)
+{
+    handle2output.resize(1+nm.lastMarked(), 0);
+    written = 0;
+}
+
+MEDDLY::mdd_writer::style::~style()
+{
+}
+
+void MEDDLY::mdd_writer::style::show_level(output &s, int k)
+{
+}
+
+void MEDDLY::mdd_writer::style::show_node(output &s, node_handle p)
+{
+    MEDDLY_DCASSERT(p>0);
+    MEDDLY_DCASSERT(0 == handle2output.at(p));
+    handle2output[p] = ++written;
+
+    s << For->getNodeLevel(p) << " ";
+    U->initFromNode(p);
+    U->write(s, handle2output);
+}
+
+// ******************************************************************
+// *                                                                *
 // *                       mdd_writer methods                       *
 // *                                                                *
 // ******************************************************************
@@ -200,6 +255,55 @@ MEDDLY::mdd_writer::~mdd_writer()
 {
     finish();
 }
+
+#ifdef USE_NEW_WRITE
+
+void MEDDLY::mdd_writer::finish()
+{
+    if (finished) return;
+    finished = true;
+
+    //
+    // Mark all reachable nodes
+    //
+    node_marker M(For);
+    for (unsigned i=0; i<roots.size(); i++) {
+        M.mark(roots[i].getNode());
+    }
+
+    //
+    // Generate code char sequence
+    //
+    char block[CODELEN], revblock[CODELEN];
+    buildCodeChars(For, block, revblock);
+
+    //
+    // Write the nodes
+    //
+    const size_t num_nodes = M.countMarked();
+    out << block << " " << num_nodes << "\n";
+    out.flush();
+    style WS(For, M);
+    M.showByLevelsBottomUp(out, &WS);
+    MEDDLY_DCASSERT(num_nodes == WS.numWritten());
+    out << revblock << "\n";
+
+    //
+    // Write the actual edge pointers
+    //
+    out << "ptrs " << roots.size() << "\n";
+    for (unsigned i=0; i<roots.size(); i++) {
+        out.put('\t');
+        roots[i].write(out, WS.getH2O());
+        out.put('\n');
+    }
+    out << "srtp\n";
+    out.flush();
+}
+
+// ======================================================================
+#else
+// ======================================================================
 
 void MEDDLY::mdd_writer::finish()
 {
@@ -292,6 +396,8 @@ void MEDDLY::mdd_writer::finish()
     out << "srtp\n";
     out.flush();
 }
+
+#endif
 
 // ******************************************************************
 // *                                                                *

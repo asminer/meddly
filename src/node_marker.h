@@ -30,11 +30,33 @@ namespace MEDDLY {
     class node_marker;
 };
 
+// ******************************************************************
+// *                                                                *
+// *                       node_marker  class                       *
+// *                                                                *
+// ******************************************************************
+
 
 /**
     Helper object used for anything requiring node marking.
 */
 class MEDDLY::node_marker {
+    public:
+        class writing_style {
+            public:
+                writing_style(const forest* F);
+                virtual ~writing_style();
+
+                virtual void show_level(output &s, int k);
+                virtual void show_node(output &s, node_handle p);
+
+            protected:
+                const forest* For;
+                unpacked_node* U;
+
+                const int level_width;
+                const int node_width;
+        };
     public:
         node_marker(const forest* F, array_watcher* w = nullptr);
         ~node_marker();
@@ -89,6 +111,10 @@ class MEDDLY::node_marker {
             return (node_handle) marked.firstOne( (size_t) i );
         }
 
+        inline size_t lastMarked() const {
+            return marked.lastOne(marked.getSize());
+        }
+
         inline size_t getSize() const {
             return marked.getSize();
         }
@@ -103,8 +129,18 @@ class MEDDLY::node_marker {
         /// Count the number of non-transparent outgoing edges for marked nodes.
         size_t countNonzeroEdges() const;
 
+        /// Display all marked nodes, by levels, from top to bottom.
+        void showByLevelsTopDown(output &s, writing_style *st = nullptr) const;
+
+        /// Display all marked nodes, by levels, from bottom to top.
+        void showByLevelsBottomUp(output &s, writing_style *st = nullptr) const;
+
+#ifdef ALLOW_DEPRECATED_0_18_2
         /// Display all marked nodes, by levels.
-        void showByLevels(output &s) const;
+        inline void showByLevels(output &s) const {
+            showByLevelsTopDown(s);
+        }
+#endif
 
         /**
             Add marked nodes at the specified level, to the list.

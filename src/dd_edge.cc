@@ -1208,7 +1208,7 @@ void MEDDLY::dd_edge::showGraph(output &s) const
 
     node_marker M(efp);
     M.mark(node);
-    M.showByLevels(s);
+    M.showByLevelsTopDown(s);
 }
 
 
