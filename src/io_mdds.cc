@@ -194,8 +194,9 @@ class MEDDLY::mdd_writer::style : public node_marker::writing_style {
         style(const forest* F, node_marker &nm);
         virtual ~style();
 
-        virtual void show_level(output &s, int k);
+        virtual void begin_level(output &s, int k);
         virtual void show_node(output &s, node_handle p);
+        virtual void end_level(output &s, int k);
 
         inline size_t numWritten() const {
             return written;
@@ -212,7 +213,7 @@ class MEDDLY::mdd_writer::style : public node_marker::writing_style {
 // ******************************************************************
 
 MEDDLY::mdd_writer::style::style(const forest* F, node_marker &nm)
-    : node_marker::writing_style(F)
+    : node_marker::writing_style(F, FULL_OR_SPARSE)
 {
     handle2output.resize(1+nm.lastMarked(), 0);
     written = 0;
@@ -222,7 +223,7 @@ MEDDLY::mdd_writer::style::~style()
 {
 }
 
-void MEDDLY::mdd_writer::style::show_level(output &s, int k)
+void MEDDLY::mdd_writer::style::begin_level(output &s, int k)
 {
 }
 
@@ -235,6 +236,10 @@ void MEDDLY::mdd_writer::style::show_node(output &s, node_handle p)
     s << For->getNodeLevel(p) << " ";
     U->initFromNode(p);
     U->write(s, handle2output);
+}
+
+void MEDDLY::mdd_writer::style::end_level(output &s, int k)
+{
 }
 
 // ******************************************************************

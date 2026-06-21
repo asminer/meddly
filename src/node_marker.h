@@ -44,11 +44,12 @@ class MEDDLY::node_marker {
     public:
         class writing_style {
             public:
-                writing_style(const forest* F);
+                writing_style(const forest* F, node_storage_flags fs);
                 virtual ~writing_style();
 
-                virtual void show_level(output &s, int k);
+                virtual void begin_level(output &s, int k);
                 virtual void show_node(output &s, node_handle p);
+                virtual void end_level(output &s, int k);
 
             protected:
                 const forest* For;

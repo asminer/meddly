@@ -31,6 +31,12 @@ namespace MEDDLY {
     class dot_maker;
 };
 
+// ******************************************************************
+// *                                                                *
+// *                        dot_maker  class                        *
+// *                                                                *
+// ******************************************************************
+
 /**
     Helper object for creating graphs from MDDs.
 
@@ -97,6 +103,9 @@ class MEDDLY::dot_maker {
 
         const forest* For;
         node_marker* nm;
+
+    private:
+        class style;
 };
 
 

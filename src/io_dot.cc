@@ -21,8 +21,133 @@
 #include "node_marker.h"
 #include "terminal.h"
 
-#include "io.h"
 #include "io_dot.h"
+#include "operators.h"
+
+#define USE_NEW_WRITE
+
+// ******************************************************************
+// *                                                                *
+// *                 dot_maker::writing_style class                 *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::dot_maker::style : public node_marker::writing_style {
+    public:
+        style(const forest* F, node_marker &nm);
+        virtual ~style();
+
+        virtual void begin_level(output &s, int k);
+        virtual void show_node(output &s, node_handle p);
+        virtual void end_level(output &s, int k);
+
+    private:
+        std::vector <node_handle> nodes_at_this_level;
+        int prev_level;
+        const char* edgecolor;
+};
+
+// ******************************************************************
+
+MEDDLY::dot_maker::style::style(const forest* F, node_marker &nm)
+    : node_marker::writing_style(F, SPARSE_ONLY)
+{
+    prev_level = 0;
+    edgecolor = "blue";
+}
+
+MEDDLY::dot_maker::style::~style()
+{
+}
+
+void MEDDLY::dot_maker::style::begin_level(output &s, int k)
+{
+    nodes_at_this_level.clear();
+
+    const int k_rank = (k<0) ? (-k*2) -1 : k*2;
+    MEDDLY_DCASSERT(k_rank > 0);
+
+    //
+    // Write the level label
+    //
+    s << "\n";
+    s << "    L" << k_rank << " [shape=plaintext, label=\"Level: ";
+    const domain* D = For->getDomain();
+    const variable* v = D->getVar(unsigned(For->getVarByLevel(ABS(k))));
+    if (v->hasName()) {
+        s << v->getName();
+    } else {
+        s << ABS(k);
+    }
+    if (k<0) s << "'";
+    s << "\"];\n";
+
+    //
+    // Chain the levels
+    //
+    s << "    edge[color=transparent];\n";
+    s << "    L" << k_rank << " -> L" << prev_level << ";\n";
+    s << "    edge [color=" << edgecolor << "];\n";
+}
+
+void MEDDLY::dot_maker::style::show_node(output &s, node_handle p)
+{
+    MEDDLY_DCASSERT(p>0);
+
+    nodes_at_this_level.push_back(p);
+
+    U->initFromNode(p);
+
+    //
+    // Draw the node
+    //
+    const double nodewidth = 0.25 * U->getSize();
+    s << "        N" << p << " [";
+    if (U->getSize()) s << "width=" << nodewidth << ", ";
+    s << "label=\"";
+    for (unsigned j=0; j<U->getSize(); j++) {
+        if (j) s << "|";
+        s << "<" << j << ">" << U->index(j);
+    }
+    s << "\"];\n";
+
+    //
+    // Draw the outgoing edges
+    //
+    for (unsigned j=0; j<U->getSize(); j++) {
+        s << "            N" << p << ":" << j << " -> ";
+        if (U->down(j)>0) {
+            s << "N" << U->down(j);
+        } else {
+            s << "T" << -U->down(j);
+        }
+        s << " [samehead = true];\n";
+    }
+}
+
+void MEDDLY::dot_maker::style::end_level(output &s, int k)
+{
+    const int k_rank = (k<0) ? (-k*2) -1 : k*2;
+    MEDDLY_DCASSERT(k_rank > 0);
+
+    //
+    // Set these nodes to have the same rank.
+    //
+    s << "    { rank=same; L" << k_rank;
+    for (size_t i=0; i<nodes_at_this_level.size(); i++) {
+        s << " N" << nodes_at_this_level[i];
+    }
+    s << "; }\n";
+
+    prev_level = k_rank;
+}
+
+
+// ******************************************************************
+// *                                                                *
+// *                       dot_maker  methods                       *
+// *                                                                *
+// ******************************************************************
 
 MEDDLY::dot_maker::dot_maker(const forest* F, const char* bn)
 {
@@ -54,6 +179,139 @@ void MEDDLY::dot_maker::addRootEdge(const dd_edge &E)
     roots.push_back(E);
     nm->mark(E.getNode());
 }
+
+#ifdef USE_NEW_WRITE
+
+void MEDDLY::dot_maker::doneGraph()
+{
+    if (!nm) {
+        throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
+
+    if (!outfile) {
+        throw error(error::COULDNT_WRITE, __FILE__, __LINE__);
+    }
+
+    //
+    // create output helper
+    style WS(For, *nm);
+
+    //
+    // Some default options
+    //
+    const char* edgecolor = "blue";
+
+
+    //
+    // initialize the dot file
+    //
+    outfile << "digraph structs {\n";
+    outfile << "    size=\"5,5\";\n";
+    outfile << "    node [shape=record, height=0.5];\n";
+
+    //
+    // Build set of terminal nodes
+    //
+    std::set <node_handle> terms;
+    nm->getTerminals(terms);
+    for (unsigned i=0; i<roots.size(); i++) {
+        if (roots[i].getNode() <= 0) {
+            terms.insert(roots[i].getNode());
+        }
+    }
+
+    //
+    // Write the terminal nodes
+    //
+    outfile << "\n";
+    outfile << "    L0 [shape=plaintext, label=\"Terminals\"];\n";
+    outfile << "    { rank=same; L0";
+    for (auto t = terms.begin(); t != terms.end(); t++)
+    {
+        outfile << " T" << -(*t);
+    }
+    outfile << "; }\n";
+    for (auto t = terms.begin(); t != terms.end(); t++)
+    {
+        outfile << "        T" << -(*t);
+        outfile << " [shape=box, style=bold, label=\"";
+        terminal T(For->getTerminalType(), *t);
+
+        switch (For->getTerminalType()) {
+            case terminal_type::OMEGA:
+                outfile << T.getOmega();
+                break;
+
+            case terminal_type::BOOLEAN:
+                outfile << (T.getBoolean() ? "true" : "false");
+                break;
+
+            case terminal_type::INTEGER:
+                outfile << T.getInteger();
+                break;
+
+            case terminal_type::REAL:
+                outfile << T.getReal();
+                break;
+
+            default:
+                FAIL(__FILE__, __LINE__, "Unknown terminal type");
+        }
+
+        outfile << "\"];\n";
+    }
+
+    //
+    // Write all other nodes
+    //
+    ostream_output mout(outfile);
+    nm->showByLevelsBottomUp(mout, &WS);
+
+    //
+    // Write all the root labels
+    //
+    outfile << "\n";
+    const int rootlevel = int(2 * (For->getNumVariables()+1));
+    outfile << "    L" << rootlevel << "[shape=plaintext, label=\"\"];\n";
+    outfile << "    edge [color=transparent];\n";
+    outfile << "    L" << rootlevel << " -> L" << rootlevel-2 << ";\n";
+    outfile << "    {rank=same; L" << rootlevel;
+    for (unsigned i=0; i<roots.size(); i++) {
+        outfile << " R" << i;
+    }
+    outfile << "; }\n";
+    for (unsigned i=0; i<roots.size(); i++) {
+        outfile << "        R" << i << " [shape=plaintext, label=\"";
+        if (roots[i].getLabel()) {
+            outfile << roots[i].getLabel();
+        }
+        outfile << "\"];\n";
+    }
+
+    //
+    // Root edges
+    //
+    outfile << "    edge [color=" << edgecolor << "];\n";
+    for (unsigned i=0; i<roots.size(); i++) {
+        outfile << "        R" << i << " -> ";
+        if (roots[i].getNode() > 0) {
+            outfile << "N" << roots[i].getNode();
+        } else {
+            outfile << "T" << -roots[i].getNode();
+        }
+        outfile << " [samehead = true];\n";
+    }
+
+    outfile << "}\n";
+    outfile.close();
+
+    delete nm;
+    nm = nullptr;
+}
+
+// ======================================================================
+#else
+// ======================================================================
 
 void MEDDLY::dot_maker::doneGraph()
 {
@@ -281,6 +539,8 @@ void MEDDLY::dot_maker::doneGraph()
     delete nm;
     nm = nullptr;
 }
+
+#endif
 
 void MEDDLY::dot_maker::runDot(const char* ext)
 {
