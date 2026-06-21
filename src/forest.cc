@@ -816,6 +816,11 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
 #endif
             unlinkAllDown(*un, 1);  // unlink all children but one
             unpacked_node::Recycle(un);
+   		// TBD: debugging code here
+    		if (node<0) {
+	    		std::cerr << "negative redundant node: " << node << std::endl;
+	    		throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    		}
             return;
         }
     } // isFullyReduced()
@@ -833,6 +838,11 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
         unlinkAllDown(*un);
         unpacked_node::Recycle(un);
         linkNode(node);
+    	// TBD: debugging code here
+    	if (node<0) {
+	    std::cerr << "negative node in ut find: " << node << std::endl;
+	    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    	}
         return;
     }
 
@@ -840,6 +850,13 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     // This node is new. Grab a node handle we can use.
     //
     node = nodeHeaders.getFreeNodeHandle();
+    
+    // TBD: debugging code here
+    if (node<0) {
+	    std::cerr << "negative node in reduce: " << node << std::endl;
+	    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
+
     nodeHeaders.setNodeLevel(node, un->getLevel());
     if (reachable) {
         reachable->setMarked(node);
@@ -906,6 +923,12 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     // Cleanup
     //
     unpacked_node::Recycle(un);
+   
+    // TBD: debugging code here
+    if (node<0) {
+	    std::cerr << "negative node at end of reduce: " << node << std::endl;
+	    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+    }
 }
 
 void MEDDLY::forest::deleteNode(node_handle p)
