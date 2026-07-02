@@ -68,6 +68,7 @@
 // #define DEBUG_GC
 // #define DEBUG_WRITE
 // #define DEBUG_READ
+// #define DEBUG_OVERFLOW
 
 // #define TRACK_DELETIONS
 
@@ -816,11 +817,12 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
 #endif
             unlinkAllDown(*un, 1);  // unlink all children but one
             unpacked_node::Recycle(un);
-   		// TBD: debugging code here
+#ifdef DEBUG_OVERFLOW
     		if (node<0) {
 	    		std::cerr << "negative redundant node: " << node << std::endl;
 	    		throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     		}
+#endif
             return;
         }
     } // isFullyReduced()
@@ -838,11 +840,13 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
         unlinkAllDown(*un);
         unpacked_node::Recycle(un);
         linkNode(node);
-    	// TBD: debugging code here
+#ifdef DEBUG_OVERFLOW
     	if (node<0) {
-	    std::cerr << "negative node in ut find: " << node << std::endl;
-	    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
+            std::cerr << "negative node in ut find: " << node << std::endl;
+            throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     	}
+#endif
+        MEDDLY_DCASSERT(node > 0);
         return;
     }
 
@@ -850,7 +854,7 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     // This node is new. Grab a node handle we can use.
     //
     node = nodeHeaders.getFreeNodeHandle();
-    
+
     // TBD: debugging code here
     if (node<0) {
 	    std::cerr << "negative node in reduce: " << node << std::endl;
@@ -923,12 +927,14 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     // Cleanup
     //
     unpacked_node::Recycle(un);
-   
-    // TBD: debugging code here
+
+#ifdef DEBUG_OVERFLOW
     if (node<0) {
 	    std::cerr << "negative node at end of reduce: " << node << std::endl;
 	    throw error(error::MISCELLANEOUS, __FILE__, __LINE__);
     }
+#endif
+    MEDDLY_DCASSERT(node > 0);
 }
 
 void MEDDLY::forest::deleteNode(node_handle p)

@@ -40,7 +40,7 @@
 
 // #define COUNT_CALLS
 
-// #define SAT1_USING_2
+#define SAT1_USING_2
 
 // ************************************************************************
 // ************************************************************************
@@ -100,7 +100,7 @@ namespace MEDDLY {
              * with respect to level L relation(s).
              * will saturate children.
              */
-            void saturate_1(int L, const edge_value &av, node_handle A,
+            void satbelow_1(int L, const edge_value &av, node_handle A,
 #ifdef SAT1_USING_2
                     node_handle B,      // relation to use for saturation
 #endif
@@ -359,9 +359,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     //
     if (1==VERSN) {
 #ifdef SAT1_USING_2
-        saturate_1(L, acv, acp, top_at_or_below[L].getNode(), cv, cp);
+        satbelow_1(L, acv, acp, top_at_or_below[L].getNode(), cv, cp);
 #else
-        saturate_1(L, acv, acp, cv, cp);
+        satbelow_1(L, acv, acp, cv, cp);
 #endif
     } else {
         MEDDLY_DCASSERT(false);
@@ -381,12 +381,12 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
 
 // ************************************************************************
 //
-// saturate_1
+// satbelow_1
 //
 // ************************************************************************
 
 template <class EOP, class ATYPE>
-void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
+void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::satbelow_1(int L,
         const edge_value &av, node_handle A,
 #ifdef SAT1_USING_2
         const node_handle B,
@@ -494,11 +494,11 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
 #endif
 
 #ifdef SAT1_USING_2
-    const node_handle Bii = top_exactly[L-1].getNode();
+    const node_handle Bii = top_at_or_below[L-1].getNode();
     for (unsigned z = 0; z<Au->getSize(); z++) {
         node_handle cdp;
         edge_value cdv;
-        saturate_1(L-1, edgeval(Au, z), Au->down(z), Bii, cdv, cdp);
+        satbelow_1(L-1, edgeval(Au, z), Au->down(z), Bii, cdv, cdp);
         const unsigned i = Au->index(z);
         Cu->setFull(i, cdv, cdp);
     }
@@ -506,7 +506,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
     for (unsigned z = 0; z<Au->getSize(); z++) {
         node_handle cdp;
         edge_value cdv;
-        saturate_1(L-1, edgeval(Au, z), Au->down(z), cdv, cdp);
+        satbelow_1(L-1, edgeval(Au, z), Au->down(z), cdv, cdp);
         const unsigned i = Au->index(z);
         Cu->setFull(i, cdv, cdp);
     }
@@ -733,7 +733,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
 
 #ifdef RECFIRE_THEN_SAT
         node_handle oldC = C;
-        saturate_1(L, cv, C, cv, C);
+        satbelow_1(L, cv, C, cv, C);
         resF->unlinkNode(oldC);
 #endif
         return;
@@ -1008,7 +1008,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     // Saturate result
     //
     node_handle oldC = C;
-    saturate_1(L, cv, C, cv, C);
+    satbelow_1(L, cv, C, cv, C);
     resF->unlinkNode(oldC);
 #endif
 
