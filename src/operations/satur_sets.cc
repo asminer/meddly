@@ -40,6 +40,8 @@
 
 // #define COUNT_CALLS
 
+// #define SAT1_USING_2
+
 // ************************************************************************
 // ************************************************************************
 
@@ -99,11 +101,23 @@ namespace MEDDLY {
              * will saturate children.
              */
             void saturate_1(int L, const edge_value &av, node_handle A,
+#ifdef SAT1_USING_2
+                    node_handle B,      // relation to use for saturation
+#endif
                     edge_value &cv, node_handle &C);
 
             /*
              * core of saturate_1. will NOT saturate children.
              */
+#ifdef SAT1_USING_2
+            inline void saturate_1(unpacked_node *C, node_handle R)
+            {
+                MEDDLY_DCASSERT(C);
+                if (R) {
+                    _saturate_1(C, R);
+                }
+            }
+#else
             inline void saturate_1(unpacked_node *C)
             {
                 MEDDLY_DCASSERT(C);
@@ -111,8 +125,13 @@ namespace MEDDLY {
                     _saturate_1(C);
                 }
             }
+#endif
 
+#ifdef SAT1_USING_2
+            void _saturate_1(unpacked_node *C, node_handle R);
+#else
             void _saturate_1(unpacked_node *C);
+#endif
 
             /* For an input set (av, A) in resF,
              * fire relation B, and in some cases saturate the result
@@ -339,7 +358,11 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
     // Saturate
     //
     if (1==VERSN) {
+#ifdef SAT1_USING_2
+        saturate_1(L, acv, acp, top_at_or_below[L].getNode(), cv, cp);
+#else
         saturate_1(L, acv, acp, cv, cp);
+#endif
     } else {
         MEDDLY_DCASSERT(false);
     }
@@ -365,9 +388,14 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>
 template <class EOP, class ATYPE>
 void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
         const edge_value &av, node_handle A,
+#ifdef SAT1_USING_2
+        const node_handle B,
+#endif
         edge_value &cv, node_handle &C)
 {
+#ifndef SAT1_USING_2
     const node_handle B = top_at_or_below[L].getNode();
+#endif
 
     // **************************************************************
     //
@@ -465,6 +493,16 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
     out << "\n";
 #endif
 
+#ifdef SAT1_USING_2
+    const node_handle Bii = top_exactly[L-1].getNode();
+    for (unsigned z = 0; z<Au->getSize(); z++) {
+        node_handle cdp;
+        edge_value cdv;
+        saturate_1(L-1, edgeval(Au, z), Au->down(z), Bii, cdv, cdp);
+        const unsigned i = Au->index(z);
+        Cu->setFull(i, cdv, cdp);
+    }
+#else
     for (unsigned z = 0; z<Au->getSize(); z++) {
         node_handle cdp;
         edge_value cdv;
@@ -472,6 +510,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
         const unsigned i = Au->index(z);
         Cu->setFull(i, cdv, cdp);
     }
+#endif
 
     unpacked_node::Recycle(Au);
 #ifdef DEVELOPMENT_CODE
@@ -486,7 +525,11 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
     out.put('\n');
 #endif
 
+#ifdef SAT1_USING_2
+    saturate_1(Cu, top_exactly[L].getNode());
+#else
     saturate_1(Cu);
+#endif
 
 #ifdef TRACE
     out.indent_less();
@@ -533,7 +576,11 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::saturate_1(int L,
 // ************************************************************************
 template <class EOP, class ATYPE>
 void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::
+#ifdef SAT1_USING_2
+    _saturate_1(unpacked_node *Cu, node_handle R)
+#else
     _saturate_1(unpacked_node *Cu)
+#endif
 {
     //
     // Initialize explorer
@@ -541,6 +588,9 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::
     const int L = Cu->getLevel();
     unsigned i, j;
     node_handle d;
+#ifdef SAT1_USING_2
+    explorers[L].restart(R);
+#endif
     for (i=0; i<Cu->getSize(); i++) {
         if (Cu->down(i)) {
             explorers[L].wasUpdated(i);
@@ -909,8 +959,13 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::recFire(int L,
     //
     // Saturate the unpacked node
     //
+#ifdef SAT1_USING_2
+    saturate_1(Cu, top_exactly[L].getNode());
+#else
     saturate_1(Cu);
 #endif
+
+#endif // RECFIRE_THEN_SAT
 
     //
     // Reduce
@@ -1107,10 +1162,12 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
      * Set the explorers. We only need to do this once per split.
      */
 
+#ifndef SAT1_USING_2
     for (unsigned k=1; k<=arg2F->getNumVariables(); k++) {
         const node_handle n = top_exactly[k].getNode();
         explorers[k].restart(n);
     }
+#endif
 }
 
 // ******************************************************************
