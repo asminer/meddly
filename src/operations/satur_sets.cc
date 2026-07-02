@@ -1092,7 +1092,7 @@ void MEDDLY::saturation_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
         rel_node* Brn = arg2F->buildRelNode(mxdn);
 
         // Determine common diagonal
-        diag.set(Brn->getDiagonal(0));
+        diag.set(arg2F->linkNode(Brn->getDiagonal(0)));
         const unsigned maxi = arg2F->getLevelSize(k);
         for (unsigned i=1; i<maxi; i++) {
             mxdIntersection->compute(k, ~0,
