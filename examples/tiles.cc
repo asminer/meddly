@@ -456,6 +456,11 @@ void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
                     apply(REACHABLE_SATUR(true, 1), initial, relation, reachable);
                     break;
 
+        case '2':
+                    std::cout << "saturation v2..." << std::endl;
+                    apply(REACHABLE_SATUR(true, 2), initial, relation, reachable);
+                    break;
+
 #ifdef ALLOW_DEPRECATED_0_18_1
         case 'm':
                     std::cout << "saturation..." << std::endl;
@@ -640,6 +645,7 @@ int usage(const char* exe)
 
     cerr << "    --dfs      Use default saturation\n";
     cerr << "    --sat1     Saturation v1 (new), monolithic relation (default)\n";
+    cerr << "    --sat2     Saturation v2, monolithic relation\n";
 #ifdef ALLOW_DEPRECATED_0_18_1
     cerr << "    --msat     Saturation, monolithic relation\n";
 #endif
@@ -759,6 +765,10 @@ int main(int argc, const char** argv)
 
                 if (0==strcmp("--sat1", arg)) {
                     satmethod = '1';
+                    continue;
+                }
+                if (0==strcmp("--sat2", arg)) {
+                    satmethod = '2';
                     continue;
                 }
 #ifdef ALLOW_DEPRECATED_0_18_1

@@ -126,6 +126,8 @@ MEDDLY::builtin_init::builtin_init(initializer_list* p)
 
     all_binary.push_back( &REACHABLE_SATUR(true, 1)     );
     all_binary.push_back( &REACHABLE_SATUR(false, 1)    );
+    all_binary.push_back( &REACHABLE_SATUR(true, 2)     );
+    all_binary.push_back( &REACHABLE_SATUR(false, 2)    );
     all_binary.push_back( &REACHABLE_TRAD_FS(true)      );
     all_binary.push_back( &REACHABLE_TRAD_FS(false)     );
     all_binary.push_back( &REACHABLE_TRAD_NOFS(true)    );

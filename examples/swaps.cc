@@ -240,7 +240,8 @@ int usage(const char* who)
 #ifdef ALLOW_DEPRECATED_0_18_1
     printf("\t-msat: use monolithic saturation\n");
 #endif
-    printf("\t-sat1: use saturation v1, new implementation (default)\n\n");
+    printf("\t-sat1: use saturation v1, new implementation (default)\n");
+    printf("\t-sat2: use saturation v2\n\n");
     //  printf("\t-esat: use saturation by events\n");
     //  printf("\t-ksat: use saturation by levels\n");
     printf("\t-alt: use alternate description\n\n");
@@ -367,6 +368,12 @@ void runWithArgs(int N, char method, bool alternate)
             apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
             break;
 
+        case '2':
+            printf("Building reachability set using saturation v2\n");
+            fflush(stdout);
+            apply(REACHABLE_SATUR(true, 2), init_state, nsf, reachable);
+            break;
+
         case 'k':
         case 's':
             printf("Building reachability set using saturation, relation");
@@ -432,6 +439,10 @@ int main(int argc, const char** argv)
         }
         if (strcmp("-sat1", argv[i])==0) {
             method = '1';
+            continue;
+        }
+        if (strcmp("-sat2", argv[i])==0) {
+            method = '2';
             continue;
         }
 #ifdef ALLOW_DEPRECATED_0_18_1

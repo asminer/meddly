@@ -90,6 +90,7 @@ int usage(const char* who)
 #endif
     cout << "\t-dfs  : use default saturation\n";
     cout << "\t-sat1 : Saturation v1, new implementation (default)\n";
+    cout << "\t-sat2 : Saturation v2\n";
     cout << "\n";
 
     cout << "\t-edges:  count number of (actual) edges in reachability graph\n\n";
@@ -193,6 +194,10 @@ int main(int argc, const char** argv)
         }
         if (strcmp("-sat1", argv[i])==0) {
             method = '1';
+            continue;
+        }
+        if (strcmp("-sat2", argv[i])==0) {
+            method = '2';
             continue;
         }
         if (strcmp("-exp", argv[i])==0) {
@@ -416,6 +421,12 @@ int main(int argc, const char** argv)
                 cout << "Building reachability set using saturation v1, monolithic relation"
                      << endl;
                 apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
+                break;
+
+            case '2':
+                cout << "Building reachability set using saturation v2, monolithic relation"
+                     << endl;
+                apply(REACHABLE_SATUR(true, 2), init_state, nsf, reachable);
                 break;
 
             case 'e':

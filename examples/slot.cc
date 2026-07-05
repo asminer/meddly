@@ -47,7 +47,8 @@ int usage(const char* who)
     printf("\t-msat: use monolithic saturation\n");
 #endif
     printf("\t-dfs: use default saturation\n");
-    printf("\t-sat1 : Saturation v1, new implementation (default)\n\n");
+    printf("\t-sat1 : Saturation v1, new implementation (default)\n");
+    printf("\t-sat2 : Saturation v2\n\n");
     printf("\t-exp: use explicit (very slow)\n");
     printf("\t-pdf: Write MDD for reachable states to out.pdf\n\n");
     printf("\t--batch b: specify explicit batch size\n\n");
@@ -307,6 +308,12 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
             apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
             break;
 
+        case '2':
+            printf("Building reachability set using saturation v2, monolithic relation\n");
+            fflush(stdout);
+            apply(REACHABLE_SATUR(true, 2), init_state, nsf, reachable);
+            break;
+
         case 'e':
             printf("Building reachability set using explicit search\n");
             printf("Using batch size: %d\n", batchsize);
@@ -395,6 +402,10 @@ int main(int argc, const char** argv)
         }
         if (strcmp("-sat1", argv[i])==0) {
             method = '1';
+            continue;
+        }
+        if (strcmp("-sat2", argv[i])==0) {
+            method = '2';
             continue;
         }
         if (strcmp("-esat", argv[i])==0) {

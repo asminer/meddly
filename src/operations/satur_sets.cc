@@ -30,6 +30,7 @@
 // #define COUNT_CALLS
 
 #include "satur_sets_v1.h"
+#include "satur_sets_v2.h"
 
 
 // ******************************************************************
@@ -46,6 +47,24 @@ namespace MEDDLY {
 
             virtual binary_operation*
                 build_new(forest* a, forest* b, forest* c);
+
+            template <class EOP, class ATYPE>
+            inline static binary_operation* new_sat_set_mt(bool fwd,
+                    forest* a, forest* b, forest* c)
+            {
+                switch (VER) {
+                    case 1:
+                        return new saturation1_set_mtrel<EOP, ATYPE>
+                            (FWD, a, b, c);
+
+                    case 2:
+                        return new saturation2_set_mtrel<EOP, ATYPE>
+                            (FWD, a, b, c);
+                    default:
+                        MEDDLY_DCASSERT(false);
+                        return nullptr;
+                }
+            }
     };
 };
 
@@ -60,6 +79,14 @@ void MEDDLY::reachset_satur_factory <FWD, VER>::setup()
                 _setup(__FILE__, "REACHABLE_SATUR(true, 1)", "Build forward reachability set using saturation version 1 (the algorithm of Ciardo, Lüttgen, and Siminiceanu, 2001). The first argument is the set of initial states, and the second argument is the transition relation.");
             } else {
                 _setup(__FILE__, "REACHABLE_SATUR(false, 1)", "Build backward reachability set using saturation version 1 (the algorithm of Ciardo, Lüttgen, and Siminiceanu, 2001). The first argument is the set of initial states, and the second argument is the transition relation.");
+            }
+            return;
+
+        case 2:
+            if (FWD) {
+                _setup(__FILE__, "REACHABLE_SATUR(true, 2)", "Build forward reachability set using saturation version 2 (the algorithm of Molnár and Majzik, 2019). The first argument is the set of initial states, and the second argument is the transition relation.");
+            } else {
+                _setup(__FILE__, "REACHABLE_SATUR(false, 2)", "Build backward reachability set using saturation version 2 (the algorithm of Molnár and Majzik, 2019). The first argument is the set of initial states, and the second argument is the transition relation.");
             }
             return;
 
@@ -83,13 +110,13 @@ MEDDLY::reachset_satur_factory <FWD, VER>::build_new(forest* a, forest* b, fores
 
         switch (c->getRangeType()) {
             case range_type::BOOLEAN:
-                return new saturation1_set_mtrel<EdgeOp_none,
-                            mt_prepost>(FWD, a, b, c);
+                return new_sat_set_mt<EdgeOp_none, mt_prepost>
+                    (FWD, a, b, c);
 
             case range_type::INTEGER:
                 if (c->isFullyReduced())  {
-                    return new saturation1_set_mtrel<EdgeOp_none,
-                            mt_distance>(FWD, a, b, c);
+                    return new_sat_set_mt<EdgeOp_none, mt_distance>
+                        (FWD, a, b, c);
                 }
 
             default:
@@ -101,12 +128,12 @@ MEDDLY::reachset_satur_factory <FWD, VER>::build_new(forest* a, forest* b, fores
 
         switch (a->getEdgeType()) {
             case edge_type::INT:
-                return new saturation1_set_mtrel<EdgeOp_plus<int>,
-                            ev_prepost<int> > (FWD, a, b, c);
+                return new_sat_set_mt<EdgeOp_plus<int>, ev_prepost<int> >
+                    (FWD, a, b, c);
 
             case edge_type::LONG:
-                return new saturation1_set_mtrel<EdgeOp_plus<long>,
-                            ev_prepost<long> > (FWD, a, b, c);
+                return new_sat_set_mt<EdgeOp_plus<long>, ev_prepost<long> >
+                    (FWD, a, b, c);
 
             default:
                 return nullptr;
@@ -136,12 +163,17 @@ MEDDLY::binary_factory& MEDDLY::REACHABLE_SATUR(bool fwd, int version)
     // Version 2
     //
 
-    // TBD
+    static reachset_satur_factory<true, 2>  forwd2;
+    static reachset_satur_factory<false, 2> bckwd2;
 
     switch (version) {
         case 1:
             if (fwd) return forwd1;
             else     return bckwd1;
+
+        case 2:
+            if (fwd) return forwd2;
+            else     return bckwd2;
 
         default:
             return BOGUS_BINARY();
