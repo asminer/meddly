@@ -137,6 +137,7 @@ libmeddly_la_SOURCES = \
     operations/satur_graph.h            operations/satur_graph.cc  \
     operations/satur_queue.h            operations/satur_queue.cc  \
     operations/satur_sets.h             operations/satur_sets.cc   \
+    operations/satur_sets_v1.h          \
     \
     operations/sat_hyb.h                operations/sat_hyb.cc      \
     operations/sat_impl.h               operations/sat_impl.cc     \
