@@ -104,8 +104,6 @@ template <bool FWD, int VER>
 MEDDLY::binary_operation*
 MEDDLY::reachset_satur_factory <FWD, VER>::build_new(forest* a, forest* b, forest* c)
 {
-    MEDDLY_DCASSERT(1==VER);
-
     if (a->getEdgeLabeling() == edge_labeling::MULTI_TERMINAL) {
 
         switch (c->getRangeType()) {
