@@ -666,11 +666,6 @@ void MEDDLY::saturation1_set_mtrel<EOP, ATYPE>::recFire(int L,
 #endif
         C = resF->makeRedundantsTo(C, Clevel, L);
 
-#ifdef RECFIRE_THEN_SAT
-        node_handle oldC = C;
-        satbelow_1(L, cv, C, cv, C);
-        resF->unlinkNode(oldC);
-#endif
         return;
         //
         // done compute table hit
@@ -890,13 +885,10 @@ void MEDDLY::saturation1_set_mtrel<EOP, ATYPE>::recFire(int L,
     std::cout << "saturate recfire(" << A << ", " << B << ")\n";
 #endif
 
-#ifndef RECFIRE_THEN_SAT
     //
     // Saturate the unpacked node
     //
     saturate(Cu);
-
-#endif // RECFIRE_THEN_SAT
 
     //
     // Reduce
@@ -933,15 +925,6 @@ void MEDDLY::saturation1_set_mtrel<EOP, ATYPE>::recFire(int L,
     C = resF->makeRedundantsTo(C, Clevel, L);
     EOP::accumulateOp(cv, av);
     EOP::normalize(cv, C);
-
-#ifdef RECFIRE_THEN_SAT
-    //
-    // Saturate result
-    //
-    node_handle oldC = C;
-    satbelow(L, cv, C, cv, C);
-    resF->unlinkNode(oldC);
-#endif
 
 #ifdef TRACE_RECFIRE
     std::cout << "computed recfire(" << A << ", " << B << ") = " << C << "\n";

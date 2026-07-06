@@ -20,8 +20,6 @@
 #include "satur_sets.h"
 #include "satur_index.h"
 
-// #define RECFIRE_THEN_SAT
-
 // #define TRACE
 // #define DEBUG_SPLIT
 // #define DEBUG_SPLIT_FULL

@@ -88,32 +88,31 @@ namespace MEDDLY {
 
             /* For an input set (av, A) in resF,
              * determine saturated node (cv, C) in resF,
-             * with respect to level L relation(s).
+             * with respect to relation R.
              * will saturate children.
              */
-            void satbelow(int L, const edge_value &av, node_handle A,
+            void satbelow(int L, const edge_value &av, node_handle A, node_handle R,
                     edge_value &cv, node_handle &C);
 
             /*
              * core of saturate. will NOT saturate children.
              */
-            inline void saturate(unpacked_node *C)
+            inline void saturate(unpacked_node *C, node_handle R)
             {
                 MEDDLY_DCASSERT(C);
-                if (top_exactly[C->getLevel()].getNode()) {
-                    _saturate(C);
+                if (R) {
+                    _saturate(C, R);
                 }
             }
 
-            void _saturate(unpacked_node *C);
+            void _saturate(unpacked_node *C, node_handle R);
 
             /* For an input set (av, A) in resF,
-             * fire relation B, and in some cases saturate the result
-             * with respect to level L relation(s),
+             * fire relation B, saturate the result using relation R,
              * and store the result in (cv, C) in resF.
              */
             void recFire(int L, const edge_value &av, node_handle A,
-                    node_handle B, edge_value &cv, node_handle &c);
+                    node_handle B, node_handle R, edge_value &cv, node_handle &c);
 
             inline const char* opName() {
                 return FORWD ? "fwd-sat2" : "bck-sat2";
@@ -163,11 +162,6 @@ namespace MEDDLY {
             }
 
         private:
-            /// Split relation: events whose top is exactly k
-            std::vector <dd_edge> top_exactly;
-            /// Split relation: events whose top is at k or below
-            std::vector <dd_edge> top_at_or_below;
-
             /// Helper for exploring indexes, by level.
             /// TBD: make this a template
             std::vector <satur_index_basic> explorers;
@@ -222,8 +216,6 @@ MEDDLY::saturation2_set_mtrel<EOP, ATYPE>
     if (arg1F->getRangeType() != resF->getRangeType()) {
         throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
     }
-
-    initSplit();
 
     //
     // Helper operations
@@ -304,11 +296,6 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>
 {
     MEDDLY_DCASSERT(bv.isVoid());
 
-    //
-    // Split the relation
-    //
-    fillSplit(L, bp);
-
 #ifdef TRACE
     out.indentation(0);
     ++top_count;
@@ -329,7 +316,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>
     //
     // Saturate
     //
-    satbelow(L, acv, acp, cv, cp);
+    satbelow(L, acv, acp, bp, cv, cp);
     resF->unlinkNode(acp);
 
 #ifdef TRACE
@@ -349,11 +336,9 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>
 
 template <class EOP, class ATYPE>
 void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::satbelow(int L,
-        const edge_value &av, node_handle A,
+        const edge_value &av, node_handle A, node_handle R,
         edge_value &cv, node_handle &C)
 {
-    const node_handle B = top_at_or_below[L].getNode();
-
     // **************************************************************
     //
     // Check terminal cases
@@ -364,7 +349,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::satbelow(int L,
         C = resF->makeRedundantsTo(C, 0, L);
         return;
     }
-    if (0==B) {
+    if (0==R) {
         cv = av;
         C = resF->linkNode(A);
         return;
@@ -375,9 +360,9 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::satbelow(int L,
 #endif
 
 #ifdef TRACE
-    out << ATYPE::name(FORWD) << " saturate_1(" << L << ", ";
+    out << ATYPE::name(FORWD) << " saturate_2(" << L << ", ";
     resF->showEdge(out, av, A);
-    out << ", " << B << ")\n";
+    out << ", " << R << ")\n";
 #endif
 
     // **************************************************************
@@ -390,10 +375,10 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::satbelow(int L,
     if (store_levels) {
         key[0].setI(L);
         key[1].setN(A);
-        key[2].setN(B);
+        key[2].setN(R);
     } else {
         key[0].setN(A);
-        key[1].setN(B);
+        key[1].setN(R);
     }
 
     if (sat_ct->findCT(key, res)) {
@@ -429,6 +414,12 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::satbelow(int L,
     // **************************************************************
 
     //
+    // We'll need this eventually anyway, so let's use it
+    // here for getting diagonals of R.
+    //
+    explorers[L].restart(R);
+
+    //
     // Copy A to C, saturating children as we go
     //
     unpacked_node* Au = unpacked_node::New(resF, SPARSE_ONLY);
@@ -453,8 +444,8 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::satbelow(int L,
     for (unsigned z = 0; z<Au->getSize(); z++) {
         node_handle cdp;
         edge_value cdv;
-        satbelow(L-1, edgeval(Au, z), Au->down(z), cdv, cdp);
         const unsigned i = Au->index(z);
+        satbelow(L-1, edgeval(Au, z), Au->down(z), explorers[L].getDiagonal(i), cdv, cdp);
         Cu->setFull(i, cdv, cdp);
     }
 
@@ -471,7 +462,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::satbelow(int L,
     out.put('\n');
 #endif
 
-    saturate(Cu);
+    saturate(Cu, R);
 
 #ifdef TRACE
     out.indent_less();
@@ -518,7 +509,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::satbelow(int L,
 // ************************************************************************
 template <class EOP, class ATYPE>
 void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::
-    _saturate(unpacked_node *Cu)
+    _saturate(unpacked_node *Cu, node_handle R)
 {
     //
     // Initialize explorer
@@ -526,6 +517,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::
     const int L = Cu->getLevel();
     unsigned i, j;
     node_handle d;
+    explorers[L].restart(R);
     for (i=0; i<Cu->getSize(); i++) {
         if (Cu->down(i)) {
             explorers[L].wasUpdated(i);
@@ -549,7 +541,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::
         }
         node_handle rfp;
         edge_value  rfv;
-        recFire(L-1, edgeval(Cu, i), Cu->down(i), d, rfv, rfp);
+        recFire(L-1, edgeval(Cu, i), Cu->down(i), d, explorers[L].getDiagonal(j), rfv, rfp);
         if (addToCi(L-1, Cu, j, rfv, rfp)) {
 #ifdef TRACE
             out << "element " << j << " was updated\n";
@@ -575,8 +567,8 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::
 
 template <class EOP, class ATYPE>
 void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
-        const edge_value &av, node_handle A,
-        node_handle B, edge_value &cv, node_handle &C)
+        const edge_value &av, node_handle A, node_handle B,
+        node_handle R, edge_value &cv, node_handle &C)
 {
     // **************************************************************
     //
@@ -616,12 +608,15 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
 #ifdef TRACE
     out << ATYPE::name(FORWD) << " recFire(" << L << ", ";
     resF->showEdge(out, av, A);
-    out << ", " << B << ")\n";
+    out << ", " << B << ", " << R << ")\n";
     out << "A: #" << A << " ";
     resF->showNode(out, A, SHOW_DETAILS);
     out << "\n";
     out << "B: #" << B << " ";
     arg2F->showNode(out, B, SHOW_DETAILS);
+    out << "\n";
+    out << "R: #" << R << " ";
+    arg2F->showNode(out, R, SHOW_DETAILS);
     out << "\n";
     // out << A << " level " << Alevel << "\n";
     // out << B << " level " << Blevel << "\n";
@@ -639,9 +634,11 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
         key[0].setI(L);
         key[1].setN(A);
         key[2].setN(B);
+        key[3].setN(R);
     } else {
         key[0].setN(A);
         key[1].setN(B);
+        key[1].setN(R);
     }
 
     if (fire_ct->findCT(key, res)) {
@@ -666,11 +663,6 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
 #endif
         C = resF->makeRedundantsTo(C, Clevel, L);
 
-#ifdef RECFIRE_THEN_SAT
-        node_handle oldC = C;
-        satbelow_1(L, cv, C, cv, C);
-        resF->unlinkNode(oldC);
-#endif
         return;
         //
         // done compute table hit
@@ -684,8 +676,14 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
     // **************************************************************
 
 #ifdef TRACE_RECFIRE
-    std::cout << "starting recfire(" << A << ", " << B << ")\n";
+    std::cout << "starting recfire(" << A << ", " << B << ", " << R << ")\n";
 #endif
+
+    //
+    // We'll need this eventually anyway, so let's use it
+    // here for getting diagonals of R.
+    //
+    explorers[L].restart(R);
 
     //
     // Set up unpacked nodes
@@ -749,7 +747,9 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
                 }
                 node_handle ab_p;
                 edge_value  ab_v;
-                recFire(nextL, edgeval(Au, i), Au->down(i), B, ab_v, ab_p);
+                recFire(nextL, edgeval(Au, i), Au->down(i), B,
+                            explorers[L].getDiagonal(i), ab_v, ab_p);
+
                 if (ATYPE::isUnreachable(ab_v, ab_p)) {
                     continue;
                 }
@@ -776,7 +776,8 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
                 }
                 edge_value  ab_v;
                 node_handle ab_p;
-                recFire(nextL, edgeval(Au, i), Au->down(i), B, ab_v, ab_p);
+                recFire(nextL, edgeval(Au, i), Au->down(i), B,
+                            explorers[L].getDiagonal(i), ab_v, ab_p);
                 Cu->setFull(i, ab_v, ab_p);
             }
         }
@@ -808,8 +809,8 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
                         // C[j] = C[j] + A[i] * B[i,j]
                         node_handle cdp;
                         edge_value  cdv;
-                        recFire(nextL, edgeval(Au, i), Au->down(i),
-                                Bu->down(zj), cdv, cdp);
+                        recFire(nextL, edgeval(Au, i), Au->down(i), Bu->down(zj),
+                                    explorers[L].getDiagonal(j), cdv, cdp);
                         if (!ATYPE::isUnreachable(cdv, cdp)) {
                             addToCi(nextL, Cu, j, cdv, cdp);
                         }
@@ -849,7 +850,8 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
                             node_handle cdp;
                             edge_value  cdv;
                             recFire(nextL, edgeval(Au, j), Au->down(j),
-                                    Bu->down(j), cdv, cdp);
+                                    Bu->down(j), explorers[L].getDiagonal(i),
+                                    cdv, cdp);
                             if (!ATYPE::isUnreachable(cdv, cdp)) {
                                 addToCi(nextL, Cu, i, cdv, cdp);
                             }
@@ -887,16 +889,13 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
     out << "\n";
 #endif
 #ifdef TRACE_RECFIRE
-    std::cout << "saturate recfire(" << A << ", " << B << ")\n";
+    std::cout << "saturate2 recfire(" << A << ", " << B << ", " << R << ")\n";
 #endif
 
-#ifndef RECFIRE_THEN_SAT
     //
     // Saturate the unpacked node
     //
-    saturate(Cu);
-
-#endif // RECFIRE_THEN_SAT
+    saturate(Cu, R);
 
     //
     // Reduce
@@ -934,157 +933,9 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
     EOP::accumulateOp(cv, av);
     EOP::normalize(cv, C);
 
-#ifdef RECFIRE_THEN_SAT
-    //
-    // Saturate result
-    //
-    node_handle oldC = C;
-    satbelow(L, cv, C, cv, C);
-    resF->unlinkNode(oldC);
-#endif
-
 #ifdef TRACE_RECFIRE
     std::cout << "computed recfire(" << A << ", " << B << ") = " << C << "\n";
 #endif
-}
-
-// ************************************************************************
-// initSplit()
-// ************************************************************************
-
-template <class EOP, class ATYPE>
-void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::initSplit()
-{
-    //
-    // Set up space for relation split by top levels
-    //
-    top_exactly.resize(arg2F->getNumVariables()+1);
-    top_at_or_below.resize(arg2F->getNumVariables()+1);
-
-    for (unsigned i=1; i<=arg2F->getNumVariables(); i++) {
-        top_exactly[i].attach(arg2F);
-        top_at_or_below[i].attach(arg2F);
-    }
-}
-
-// ************************************************************************
-// fillSplit()
-// ************************************************************************
-
-template <class EOP, class ATYPE>
-void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::fillSplit(int L, node_handle bp)
-{
-#ifdef DEBUG_SPLIT
-    ostream_output splout(std::cout);
-#endif
-
-    //
-    // fill split relation by levels
-    //
-    dd_edge diag(arg2F);
-    dd_edge mxd(arg2F);
-    mxd.set(arg2F->linkNode(bp));
-    for (int k=L; k; --k)
-    {
-#ifdef DEBUG_SPLIT_FULL
-        splout << "Splitting relation, at level " << k << "\n";
-#endif
-        node_handle resp;
-        //
-        // Get relation node for current mxd
-        //
-        const node_handle mxdn = mxd.getNode();
-        top_at_or_below[k] = mxd;
-#ifdef DEBUG_SPLIT_FULL
-        splout << "    at or below: ";
-        top_at_or_below[k].show(splout);
-        splout << "\n";
-#endif
-
-        if (ABS(arg2F->getNodeLevel(mxdn)) < k) {
-#ifdef DEBUG_SPLIT_FULL
-            splout << "    no dependency on this level\n";
-            splout << "    exactly: 0\n";
-#endif
-            top_exactly[k].set(0);
-            continue;
-        }
-
-        rel_node* Brn = arg2F->buildRelNode(mxdn);
-
-        // Determine common diagonal
-        diag.set(arg2F->linkNode(Brn->getDiagonal(0)));
-        const unsigned maxi = arg2F->getLevelSize(k);
-        for (unsigned i=1; i<maxi; i++) {
-            mxdIntersection->compute(k, ~0,
-                    nothing, diag.getNode(),
-                    nothing, Brn->getDiagonal(i),
-                    diag.setEdgeValue(), resp
-            );
-            diag.set(resp);
-        }
-
-#ifdef DEBUG_SPLIT_FULL
-        splout << "    diagonals: ";
-        for (unsigned i=0; i<maxi; i++) {
-            if (i) splout << ", ";
-            splout << Brn->getDiagonal(i);
-        }
-        splout << "\n";
-        splout << "    common  : ";
-        diag.show(splout);
-        splout << "\n";
-#endif
-
-
-        // Set relation with top=k to relation minus common diagonal
-        // and continue the iteration with the common diagonal
-        mxdDifference->compute(k, ~0,
-            nothing, mxd.getNode(),
-            nothing, diag.getNode(),
-            top_exactly[k].setEdgeValue(), resp
-        );
-        top_exactly[k].set(resp);
-        mxd = diag;
-
-        // cleanup
-        arg2F->doneRelNode(Brn);
-    }
-    top_at_or_below[0].set(0);
-    top_exactly[0].set(0);
-
-
-#ifdef DEBUG_SPLIT_FULL
-    splout << "After splitting monolithic event in " << opName() << "\n";
-    for (unsigned k=0; k <= arg2F->getNumVariables(); k++) {
-        splout << "Relation with top level<=" << k << ": ";
-        top_at_or_below[k].show(splout);
-        splout << "\n";
-        if (ABS(arg2F->getNodeLevel(top_at_or_below[k].getNode())) == k) {
-            top_at_or_below[k].showGraph(splout);
-        }
-        splout << "======================================================================\n";
-    }
-#endif
-#ifdef DEBUG_SPLIT
-    for (unsigned k=1; k <= arg2F->getNumVariables(); k++) {
-        splout << "Relation with top level=" << k << ": ";
-        top_exactly[k].show(splout);
-        splout << "\n";
-#ifdef DEBUG_SPLIT_FULL
-        top_exactly[k].showGraph(splout);
-        splout << "======================================================================\n";
-#endif
-    }
-#endif
-
-
-    /*
-     * Set the explorers. We only need to do this once per split.
-     */
-    for (unsigned k=1; k<=arg2F->getNumVariables(); k++) {
-        explorers[k].restart( top_exactly[k].getNode() );
-    }
 }
 
 
