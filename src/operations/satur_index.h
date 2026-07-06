@@ -100,6 +100,9 @@ class MEDDLY::satur_index_basic {
                 queue.add(int(i));
             }
         }
+        inline void confirm(unsigned i) {
+            graph.ensureRowExplored(i);
+        }
         bool nextEdge(unsigned &i, unsigned &j, node_handle &down);
         inline node_handle getDiagonal(unsigned i) {
             return graph.getDiagonal(i);

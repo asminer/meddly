@@ -243,10 +243,10 @@ MEDDLY::saturation2_set_mtrel<EOP, ATYPE>
     sat_ct  = new ct_entry_type("saturate");
 
     if (store_levels) {
-        fire_ct->setFixed('I', resF, arg2F);
+        fire_ct->setFixed('I', resF, arg2F, arg2F);
         sat_ct->setFixed('I', resF, arg2F);
     } else {
-        fire_ct->setFixed(resF, arg2F);
+        fire_ct->setFixed(resF, arg2F, arg2F);
         sat_ct->setFixed(resF, arg2F);
     }
 
@@ -300,6 +300,11 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>
     out.indentation(0);
     ++top_count;
     out << opName() << " #" << top_count << " begin\n";
+
+    out << "Relation:\n";
+    dd_edge B(arg2F);
+    B.set(bv, bp);
+    B.showGraph(out);
 #endif
 #ifdef COUNT_CALLS
     sat_calls = 0;
@@ -434,6 +439,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::satbelow(int L,
 
     unpacked_node* Cu = unpacked_node::newWritable(resF, L, FULL_ONLY);
     ATYPE::setAllUnreachable(Cu);
+    bool Cempty = true;
 
 #ifdef TRACE
     out << "saturating children, node A: ";
@@ -445,8 +451,14 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::satbelow(int L,
         node_handle cdp;
         edge_value cdv;
         const unsigned i = Au->index(z);
-        satbelow(L-1, edgeval(Au, z), Au->down(z), explorers[L].getDiagonal(i), cdv, cdp);
-        Cu->setFull(i, cdv, cdp);
+        explorers[L].confirm(i);
+        satbelow(L-1, edgeval(Au, z), Au->down(z),
+                explorers[L].getDiagonal(i), cdv, cdp);
+
+        if (!ATYPE::isUnreachable(cdv, cdp)) {
+            Cu->setFull(i, cdv, cdp);
+            Cempty = false;
+        }
     }
 
     unpacked_node::Recycle(Au);
@@ -457,20 +469,27 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::satbelow(int L,
 #ifdef TRACE
     out << "done saturating children, node C: ";
     Cu->show(out, true);
-    out << "\nsaturating this node";
-    out.indent_more();
     out.put('\n');
 #endif
 
-    saturate(Cu, R);
+    if (!Cempty) {
 
 #ifdef TRACE
-    out.indent_less();
-    out.put('\n');
-    out << "done saturating node C: ";
-    Cu->show(out, true);
-    out << "\n";
+        out << "saturating this node";
+        out.indent_more();
+        out.put('\n');
 #endif
+
+        saturate(Cu, R);
+
+#ifdef TRACE
+        out.indent_less();
+        out.put('\n');
+        out << "done saturating node C: ";
+        Cu->show(out, true);
+        out << "\n";
+#endif
+    }
 
     //
     // Reduce
@@ -511,6 +530,8 @@ template <class EOP, class ATYPE>
 void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::
     _saturate(unpacked_node *Cu, node_handle R)
 {
+    MEDDLY_DCASSERT(R);
+
     //
     // Initialize explorer
     //
@@ -530,6 +551,8 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::
     // Saturation loop :)
     //
     while (explorers[L].nextEdge(i, j, d)) {
+        if (i == j) continue;
+
 #ifdef TRACE
         out << "firing " << i << "->" << j << " down " << d << "\n";
 #endif
@@ -723,6 +746,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
     //
     unpacked_node* Cu = unpacked_node::newWritable(resF, Clevel, FULL_ONLY);
     ATYPE::setAllUnreachable(Cu);
+    bool Cempty = true;
 
     //
     // Recurse
@@ -758,6 +782,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
                         continue;
                     }
                     addToCi(nextL, Cu, j, ab_v, resF->linkNode(ab_p));
+                    Cempty = false;
                 }
                 resF->unlinkNode(ab_p);
             } // for zi
@@ -778,7 +803,11 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
                 node_handle ab_p;
                 recFire(nextL, edgeval(Au, i), Au->down(i), B,
                             explorers[L].getDiagonal(i), ab_v, ab_p);
-                Cu->setFull(i, ab_v, ab_p);
+
+                if (!ATYPE::isUnreachable(ab_v, ab_p)) {
+                    Cu->setFull(i, ab_v, ab_p);
+                    Cempty = false;
+                }
             }
         }
     } else {
@@ -813,6 +842,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
                                     explorers[L].getDiagonal(j), cdv, cdp);
                         if (!ATYPE::isUnreachable(cdv, cdp)) {
                             addToCi(nextL, Cu, j, cdv, cdp);
+                            Cempty = false;
                         }
 #ifdef TRACE
                         out << A << "x" << B << " completed "
@@ -854,6 +884,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
                                     cdv, cdp);
                             if (!ATYPE::isUnreachable(cdv, cdp)) {
                                 addToCi(nextL, Cu, i, cdv, cdp);
+                                Cempty = false;
                             }
                         } // if bu[j]
 #ifdef TRACE
@@ -888,14 +919,18 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
     Cu->show(out, true);
     out << "\n";
 #endif
+
+    if (!Cempty) {
+
 #ifdef TRACE_RECFIRE
-    std::cout << "saturate2 recfire(" << A << ", " << B << ", " << R << ")\n";
+        std::cout << "saturate2 recfire(" << A << ", " << B << ", " << R << ")\n";
 #endif
 
-    //
-    // Saturate the unpacked node
-    //
-    saturate(Cu, R);
+        //
+        // Saturate the unpacked node
+        //
+        saturate(Cu, R);
+    }
 
     //
     // Reduce

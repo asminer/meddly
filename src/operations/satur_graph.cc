@@ -91,6 +91,7 @@ void MEDDLY::satur_graph::attach(forest* F, int lvl, bool fwd)
 
     var = For->getDomain()->getVar(level);
     U = unpacked_node::New(For, SPARSE_ONLY);
+    expandRows(var->getBound(!forwd));
 }
 
 void MEDDLY::satur_graph::show(output &s) const
