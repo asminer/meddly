@@ -84,6 +84,9 @@ MEDDLY::satur_graph::~satur_graph()
 
 void MEDDLY::satur_graph::attach(forest* F, int lvl, bool fwd)
 {
+    MEDDLY_DCASSERT(F);
+    MEDDLY_DCASSERT(lvl > 0);
+
     MEDDLY_DCASSERT(!For);
     For = F;
     level = lvl;
@@ -129,46 +132,83 @@ void MEDDLY::satur_graph::show(output &s) const
 
 void MEDDLY::satur_graph::_restart(node_handle n)
 {
-    node = n;
-
-#ifdef TRACE
-    std::cout << "saturating level " << level
-              << " (mxd " << n << ")\n";
-#endif
     //
-    // Clear old
+    // Clear out old RN
     //
-    for (unsigned i=0; i<diagonals.size(); i++) {
-        diagonals[i] = 0;
-    }
-    elements.clear();
-    for (unsigned i=0; i<rowptr.size(); i++) {
-        rowptr[i] = -1;
-    }
     if (RN) {
         For->doneRelNode(RN);
         RN = nullptr;
     }
 
-    if (0==n) return;
-
-    //
-    // Build new
-    //
-    RN = For->buildRelNode(n);
-
-    // update size
+    node = n;
     expandRows(var->getBound(!forwd));
 
-    //
-    // Backward exploration: build the entire transpose, now
-    //
-    if (!forwd) buildTranspose();
+#ifdef TRACE
+    std::cout << "saturating level " << level
+              << " (mxd " << n << ")\n";
+#endif
 
+    const int nlvl = For->getNodeLevel(n);
+    MEDDLY_DCASSERT( ABS(nlvl) <= level );
+
+    if (ABS(nlvl) < level) {
+        //
+        // Initialize graph from an identity node.
+        //
+        // diagonals = node
+        // all rows empty
+        //
+        for (unsigned i=0; i<diagonals.size(); i++) {
+            diagonals[i] = node;
+        }
+        elements.clear();
+        elements.push_back(sparse_element(-1, 0));
+        for (unsigned i=0; i<rowptr.size(); i++) {
+            rowptr[i] = 0;
+        }
+
+    } else {
+        //
+        // Initialize graph from a proper node.
+        //
+        // Clear out diagonals and set all rows to unexplored
+        //
+        for (unsigned i=0; i<diagonals.size(); i++) {
+            diagonals[i] = 0;
+        }
+        elements.clear();
+        for (unsigned i=0; i<rowptr.size(); i++) {
+            rowptr[i] = -1;
+        }
+
+        //
+        // Build new
+        //
+        MEDDLY_DCASSERT(node>0);
+        RN = For->buildRelNode(node);
+
+        // update size
+        expandRows(var->getBound(!forwd));
+
+        //
+        // Backward exploration: build the entire transpose, now
+        //
+        if (!forwd) buildTranspose();
+    }
 }
 
 void MEDDLY::satur_graph::exploreRow(unsigned i)
 {
+    if (!RN) {
+        //
+        // We must be an identity node.
+        //
+        MEDDLY_DCASSERT( ABS(For->getNodeLevel(node)) < level);
+        diagonals[i] = node;
+        rowptr[i] = 0;
+        return;
+    }
+
     unsigned max_index = i;
     rowptr[i] = elements.size();
 
@@ -192,6 +232,8 @@ void MEDDLY::satur_graph::exploreRow(unsigned i)
 
 void MEDDLY::satur_graph::buildTranspose()
 {
+    MEDDLY_DCASSERT(RN);
+
 #ifdef DEBUG_TRANSPOSE
     ostream_output out(std::cout);
     out.put("Transposing relation:\n");

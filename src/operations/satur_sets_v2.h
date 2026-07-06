@@ -423,6 +423,13 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::satbelow(int L,
     // here for getting diagonals of R.
     //
     explorers[L].restart(R);
+#ifdef TRACE
+    out.indent_more();
+    out << "Level " << L << " explorer:\n";
+    explorers[L].show(out);
+    out.indent_less();
+    out.put('\n');
+#endif
 
     //
     // Copy A to C, saturating children as we go
@@ -472,7 +479,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::satbelow(int L,
     out.put('\n');
 #endif
 
-    if (!Cempty) {
+    if (!Cempty && R) {
 
 #ifdef TRACE
         out << "saturating this node";
@@ -564,6 +571,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::
         }
         node_handle rfp;
         edge_value  rfv;
+        explorers[L].confirm(j);
         recFire(L-1, edgeval(Cu, i), Cu->down(i), d, explorers[L].getDiagonal(j), rfv, rfp);
         if (addToCi(L-1, Cu, j, rfv, rfp)) {
 #ifdef TRACE
@@ -771,6 +779,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
                 }
                 node_handle ab_p;
                 edge_value  ab_v;
+                explorers[L].confirm(i);
                 recFire(nextL, edgeval(Au, i), Au->down(i), B,
                             explorers[L].getDiagonal(i), ab_v, ab_p);
 
@@ -801,6 +810,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
                 }
                 edge_value  ab_v;
                 node_handle ab_p;
+                explorers[L].confirm(i);
                 recFire(nextL, edgeval(Au, i), Au->down(i), B,
                             explorers[L].getDiagonal(i), ab_v, ab_p);
 
@@ -838,6 +848,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
                         // C[j] = C[j] + A[i] * B[i,j]
                         node_handle cdp;
                         edge_value  cdv;
+                        explorers[L].confirm(j);
                         recFire(nextL, edgeval(Au, i), Au->down(i), Bu->down(zj),
                                     explorers[L].getDiagonal(j), cdv, cdp);
                         if (!ATYPE::isUnreachable(cdv, cdp)) {
@@ -879,6 +890,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
                             // C[i] = C[i] + B[i,j] * A[j]
                             node_handle cdp;
                             edge_value  cdv;
+                            explorers[L].confirm(i);
                             recFire(nextL, edgeval(Au, j), Au->down(j),
                                     Bu->down(j), explorers[L].getDiagonal(i),
                                     cdv, cdp);
@@ -920,7 +932,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::recFire(int L,
     out << "\n";
 #endif
 
-    if (!Cempty) {
+    if (!Cempty && R) {
 
 #ifdef TRACE_RECFIRE
         std::cout << "saturate2 recfire(" << A << ", " << B << ", " << R << ")\n";
