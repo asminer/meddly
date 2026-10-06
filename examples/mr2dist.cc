@@ -34,6 +34,58 @@ void myConv(const MEDDLY::rangeval &x, MEDDLY::rangeval &y)
     }
 }
 
+void show_node_count(std::ostream &sout, long x, const char* desc)
+{
+    sout << "        ";
+    if (x<0) {
+        sout << "-";
+        x = -x;
+    } else {
+        sout << " ";
+    }
+    long grouping = 1000000000000L;
+    char filler = ' ';
+    while (grouping) {
+        if (filler != ' ') {
+            sout << ",";
+        } else {
+            sout << " ";
+        }
+        const long d = x / grouping;
+        if (d) {
+            if (d < 100) {
+                sout << filler;
+            }
+            if (d < 10) {
+                sout << filler;
+            }
+            sout << d;
+            x %= grouping;
+            filler = '0';
+        } else {
+            sout << filler << filler << filler;
+        }
+        grouping /= 1000;
+    }
+    sout << " nodes " << desc << "\n";
+    sout.flush();
+}
+
+void show_forest_memory(std::ostream &sout, long mem, const char* desc)
+{
+    sout << "        ";
+    sout << "                ";
+    unsigned units = 0;
+    while (mem >= 1024) {
+        mem /= 1024;
+        ++units;
+    }
+    const char* uletters = " KMGTPEZYabcdefgh";
+    sout << std::setw(5) << mem << " " << uletters[units] << "bytes " << desc << "\n";
+    sout.flush();
+}
+
+
 // **********************************************************************
 // get distance from a pathname.
 // If the pathname does not match the required pattern, returns negative.
@@ -142,6 +194,7 @@ int main(int argc, const char** argv)
                 return 1;
             }
             cout << "Input file " << argv[i] << ": distance " << dist << "\n";
+            cout.flush();
 
             compressed_input reader(argv[i]);
             if (!reader) {
@@ -166,10 +219,14 @@ int main(int argc, const char** argv)
                 outF->createConstant(infty, outdd);
             }
             cout << "    " << mddr->getFileNodes() << " nodes\n";
+            cout.flush();
 
             dd_edge curr(outF);
             apply(MyConversion, mddr->getRoot(0), curr);
             curr.setEdgeValue(dist);
+
+            cout << "    converted to single ev+mdd\n";
+            cout.flush();
 
             /*
             ostream_output mout(cout);
@@ -184,6 +241,12 @@ int main(int argc, const char** argv)
             delete mddr;
 
             apply(MINIMUM, outdd, curr, outdd);
+            cout << "    incorporated into distance function\n";
+            show_node_count(cout, outdd.getNodeCount(), " (function)");
+            if (outF) {
+                show_node_count(cout, outF->getCurrentNumNodes(), " (forest)");
+                show_forest_memory(cout, outF->getCurrentMemoryUsed(), "(forest)");
+            }
 
         } // for i
 
