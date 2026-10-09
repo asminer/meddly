@@ -623,6 +623,12 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
             apply(REACHABLE_SATUR(true, 1), initialStates, nsf, reachableStates);
             break;
 
+        case '2':
+            printf("Building reachability set using saturation v2, monolithic relation\n");
+            fflush(stdout);
+            apply(REACHABLE_SATUR(true, 2), initialStates, nsf, reachableStates);
+            break;
+
         case 'k':
         case 's':
             printf("Building reachability set using saturation, relation");
@@ -747,6 +753,7 @@ int usage(const char* who)
     printf("\t-ksat:      use saturation by levels\n");
     printf("\n");
     printf("\t-sat1:      Saturation v1 (new implementation)\n");
+    printf("\t-sat2:      Saturation v2\n");
     printf("\n");
 
     printf("\t-l lfile:   Write logging information to specified file\n");
@@ -835,6 +842,10 @@ int main(int argc, char *argv[])
 
         if (strcmp(cmd, "-sat1") == 0) {
             sw.method = '1';
+            continue;
+        }
+        if (strcmp(cmd, "-sat2") == 0) {
+            sw.method = '2';
             continue;
         }
         if (strcmp(cmd, "-esat") == 0) {

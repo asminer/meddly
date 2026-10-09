@@ -1211,6 +1211,44 @@ void MEDDLY::dd_edge::showGraph(output &s) const
     M.showByLevelsTopDown(s);
 }
 
+void MEDDLY::dd_edge::showRelation(output &s) const
+{
+    forest* efp = forest::getForestWithID(parentFID);
+    if (!efp) {
+        s.put("null graph\n");
+        return;
+    }
+    if (efp->isMultiTerminal()) {
+        s.put("MT");
+    }
+    if (efp->isEVPlus()) {
+        s.put("EV+");
+    }
+    if (efp->isEVTimes()) {
+        s.put("EV*");
+    }
+    if (efp->isForRelations()) {
+        s.put("MxD");
+    } else {
+        s.put("MDD");
+    }
+    if (efp->isIdentityReduced()) {
+        s.put(" (identity reduced)");
+    }
+    if (efp->isFullyReduced()) {
+        s.put(" (fully reduced)");
+    }
+    if (efp->isQuasiReduced()) {
+        s.put(" (quasi reduced)");
+    }
+    s.put(" rooted at edge ");
+    efp->showEdge(s, edgeval, node);
+    s.put('\n');
+
+    node_marker M(efp);
+    M.mark(node);
+    M.showAsMatrixTopDown(s);
+}
 
 void MEDDLY::dd_edge::write(output &s, const std::vector <size_t> &map) const
 {

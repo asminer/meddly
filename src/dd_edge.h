@@ -283,6 +283,11 @@ class MEDDLY::dd_edge {
         void showGraph(output &s) const;
 
         /**
+            Display the graph rooted at this node, but as a relation.
+        */
+        void showRelation(output &s) const;
+
+        /**
             Write the edge information to a file (stream).
                 @param  s       Stream to write to
                 @param  map     Translation from node handle to file node#

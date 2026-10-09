@@ -59,7 +59,7 @@ class MEDDLY::node_marker {
                 const int node_width;
         };
     public:
-        node_marker(const forest* F, array_watcher* w = nullptr);
+        node_marker(forest* F, array_watcher* w = nullptr);
         ~node_marker();
 
         inline bool hasParent(const forest* f) const {
@@ -142,6 +142,10 @@ class MEDDLY::node_marker {
             showByLevelsTopDown(s);
         }
 #endif
+        /**
+            Display all marked nodes, in matrix style, from top to bottom.
+        */
+        void showAsMatrixTopDown(output &s) const;
 
         /**
             Add marked nodes at the specified level, to the list.
@@ -191,7 +195,7 @@ class MEDDLY::node_marker {
 
     private:
         bitvector marked;
-        const forest* For;
+        forest* For;
 
         mystack* S_top;
         mystack* S_free;

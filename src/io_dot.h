@@ -70,7 +70,7 @@ class MEDDLY::dot_maker {
                 @param  basename    Base name of the file;
                                     will add .dot for the dot input file.
          */
-        dot_maker(const forest* F, const char* basename);
+        dot_maker(forest* F, const char* basename);
 
         /// Destructor for cleanup.
         ~dot_maker();

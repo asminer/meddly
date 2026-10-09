@@ -641,6 +641,7 @@ int usage(const char* exe)
 
     cerr << "    --reach:   Build the reachability set (default).\n";
     cerr << "    --dist:    Build the distance function.\n";
+    cerr << "    --showrel: Show the relation and quit.\n";
     cerr << "\n";
 
     cerr << "    --dfs      Use default saturation\n";
@@ -688,6 +689,7 @@ int main(int argc, const char** argv)
     distances = false;
     const char* outfile = nullptr;
     DIR* thedir = nullptr;
+    bool show_relation = false;
 
     //
     // Process command line
@@ -756,10 +758,16 @@ int main(int argc, const char** argv)
 
                 if (0==strcmp("--reach", arg)) {
                     distances = false;
+                    show_relation = false;
                     continue;
                 }
                 if (0==strcmp("--dist", arg)) {
                     distances = true;
+                    show_relation = false;
+                    continue;
+                }
+                if (0==strcmp("--showrel", arg)) {
+                    show_relation = true;
                     continue;
                 }
 
@@ -870,6 +878,12 @@ int main(int argc, const char** argv)
         //
         dd_edge rel(mxd);
         buildRelation(rel);
+
+        if (show_relation) {
+            ostream_output out(cout);
+            rel.showRelation(out);
+            return 0;
+        }
 
         //
         // Build reachable states

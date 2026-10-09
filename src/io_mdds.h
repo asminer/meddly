@@ -45,7 +45,7 @@ namespace MEDDLY {
 */
 class MEDDLY::mdd_writer {
     public:
-        mdd_writer(output &s, const forest* F);
+        mdd_writer(output &s, forest* F);
         ~mdd_writer();
         inline void writeRootEdge(const dd_edge &E) {
             MEDDLY_DCASSERT(!finished);
@@ -56,7 +56,7 @@ class MEDDLY::mdd_writer {
     private:
         output &out;
         std::vector <dd_edge> roots;
-        const forest* For;
+        forest* For;
         bool finished;
 
     private:

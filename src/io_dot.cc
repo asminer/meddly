@@ -149,7 +149,7 @@ void MEDDLY::dot_maker::style::end_level(output &s, int k)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::dot_maker::dot_maker(const forest* F, const char* bn)
+MEDDLY::dot_maker::dot_maker(forest* F, const char* bn)
 {
     basename = bn;
     std::string fname = basename + ".dot";
@@ -158,7 +158,7 @@ MEDDLY::dot_maker::dot_maker(const forest* F, const char* bn)
     For = F;
     MEDDLY_DCASSERT(For);
 
-    nm = new node_marker(For);
+    nm = new node_marker(F);
     MEDDLY_DCASSERT(nm);
 }
 

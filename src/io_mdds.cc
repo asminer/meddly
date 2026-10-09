@@ -248,7 +248,7 @@ void MEDDLY::mdd_writer::style::end_level(output &s, int k)
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::mdd_writer::mdd_writer(output &s, const forest* F)
+MEDDLY::mdd_writer::mdd_writer(output &s, forest* F)
     : out(s)
 {
     MEDDLY_DCASSERT(F);
