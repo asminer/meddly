@@ -71,24 +71,17 @@ void showRelMinterms(std::ostream &out, const std::vector <bool> &elems)
 }
 
 
-inline void fillMinterm(unsigned x, int* un, int* pr)
+inline void fillMinterm(unsigned x, minterm &m)
 {
-#ifdef DEBUG_MINTERMS
-    std::cout << std::hex << x << ": [";
-#endif
     for (unsigned j=1; j<=VARS; j++) {
-        un[j] = x % RELDOM;
+        unsigned un, pr;
+        un = x % RELDOM;
         x /= RELDOM;
-        pr[j] = x % RELDOM;
+        pr = x % RELDOM;
         x /= RELDOM;
+        m.setVars(j, un, pr);
     }
-#ifdef DEBUG_MINTERMS
-    for (unsigned j=VARS; j; j--) {
-        if (j<VARS) std::cout << ", ";
-        std::cout << un[j] << "->" << pr[j];
-    }
-    std::cout << "]\n";
-#endif
+    m.setValue(true);
 }
 
 inline unsigned whichMinterm(const int* un, const int* pr)
@@ -114,31 +107,18 @@ void set2mxd(const std::vector<bool> &S, forest *F, dd_edge &s)
 
     // Special case - empty set
     if (0==card) {
-        F->createEdge(false, s);
+        F->createConstant(false, s);
         return;
     }
 
     // Convert set S to list of minterms
-    int** unlist = new int* [card];
-    int** prlist = new int* [card];
-    card = 0;
+    minterm_coll mtc(card, F);
     for (unsigned i=0; i<S.size(); i++) {
         if (!S[i]) continue;
-        unlist[card] = new int[VARS+1];
-        prlist[card] = new int[VARS+1];
-        fillMinterm(i, unlist[card], prlist[card]);
-        ++card;
+        fillMinterm(i, mtc.unused());
+        mtc.pushUnused();
     }
-
-    F->createEdge(unlist, prlist, card, s);
-
-    // Cleanup
-    for (unsigned i=0; i<card; i++) {
-        delete[] unlist[i];
-        delete[] prlist[i];
-    }
-    delete[] unlist;
-    delete[] prlist;
+    mtc.buildFunctionMax(false, s);
 }
 
 

@@ -9,6 +9,8 @@ noinst_PROGRAMS = \
     bug_00 \
     bug_01 \
     bug_02 \
+    bug_03 \
+    bug_04 \
     check_xA \
     chk_copy \
     chk_cross \
@@ -47,6 +49,8 @@ TESTS = \
     bug_00 \
     bug_01 \
     bug_02 \
+    bug_03 \
+    bug_04 \
     check_xA \
     chk_copy \
     chk_cross \
@@ -222,6 +226,12 @@ bug_01_LDADD = ../src/libmeddly.la
 
 bug_02_SOURCES = bug_02.cc
 bug_02_LDADD = ../src/libmeddly.la
+
+bug_03_SOURCES = bug_03.cc
+bug_03_LDADD = ../src/libmeddly.la
+
+bug_04_SOURCES = bug_04.cc
+bug_04_LDADD = ../src/libmeddly.la
 
 check_xA_SOURCES = check_xA.cc
 check_xA_LDADD = ../src/libmeddly.la

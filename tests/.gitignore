@@ -5,9 +5,7 @@
 *.trs
 *._sh
 .libs
-bug_00
-bug_01
-bug_02
+bug_0?
 check_xA
 chk_copy
 chk_cross
