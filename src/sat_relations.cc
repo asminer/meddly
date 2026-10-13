@@ -229,7 +229,7 @@ void MEDDLY::pregen_relation::splitMxd(splittingOption split)
     for (unsigned i = 0; i < Mu->getSize(); i++) {
       // Initialize column reader
       if (isLevelAbove(-k, mxdF->getNodeLevel(Mu->down(i)))) {
-        Mp->initIdentity(-k, i, Mu->down(i), FULL_ONLY);
+        Mp->initIdentity(-k, i, Mu->down(i));
       } else {
         Mp->initFromNode(Mu->down(i));
       }
