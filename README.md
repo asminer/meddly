@@ -4,7 +4,7 @@
 MEDDLY stands for Multi-terminal and Edge-valued Decision Diagram LibrarY.
 It is an open-source software library that supports several types of
 decision diagrams, including binary decision diagrams (BDDs).
-See the [MEDDLY webpage](https://asminer.github.io/meddly/)
+See the [MEDDLY webpage](https://asminer.github.io/meddly/){:target="_blank"}
 for more information.
 
 # Building the library
