@@ -1194,10 +1194,17 @@ void MEDDLY::otf_relation::bindExtensibleVariables() {
   domain* ed = mxdF->getDomain();
   for (int k = 1; k < num_levels; k++) {
     int bound = 0;
+#ifdef DEVELOPMENT_CODE
     int n_confirmed = 0;
+#endif
 
     for (int j = 0; j < size_confirmed[k]; j++) {
-      if (confirmed[k][j]) { bound = j+1; n_confirmed++; }
+      if (confirmed[k][j]) {
+        bound = j+1;
+#ifdef DEVELOPMENT_CODE
+        n_confirmed++;
+#endif
+      }
     }
 
     MEDDLY_DCASSERT(bound > 0);
@@ -1673,10 +1680,17 @@ void MEDDLY::implicit_relation::bindExtensibleVariables() {
 
   for (int k = 1; k <= num_levels; k++) {
     int bound = 0;
+#ifdef DEVELOPMENT_CODE
     int n_confirmed = 0;
+#endif
 
     for (int j = 0; j < confirmed_array_size[k]; j++) {
-      if (confirmed[k][j]) { bound = j+1; n_confirmed++; }
+      if (confirmed[k][j]) {
+        bound = j+1;
+#ifdef DEVELOPMENT_CODE
+        n_confirmed++;
+#endif
+      }
     }
 
     MEDDLY_DCASSERT(bound > 0);
@@ -3021,10 +3035,17 @@ void MEDDLY::hybrid_relation::bindExtensibleVariables() {
 
   for (int k = 1; k < num_levels; k++) {
     int bound = 0;
+#ifdef DEVELOPMENT_CODE
     int n_confirmed = 0;
+#endif
 
     for (int j = 0; j < confirmed_array_size[k]; j++) {
-      if (confirmed[k][j]) { bound = j+1; n_confirmed++; }
+      if (confirmed[k][j]) {
+        bound = j+1;
+#ifdef DEVELOPMENT_CODE
+        n_confirmed++;
+#endif
+      }
     }
 
     MEDDLY_DCASSERT(bound > 0);
