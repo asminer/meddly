@@ -276,6 +276,9 @@ void buildRelation(MEDDLY::dd_edge& trel)
     stopwatch.note_time();
     std::cout << "    relation construction took "
               << stopwatch.get_last_seconds() << " seconds" << std::endl;
+
+    std::cout << "MXD for relation requires "
+              << trel.getNodeCount() << " nodes" << std::endl;
 }
 
 // **********************************************************************
