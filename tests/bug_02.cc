@@ -32,7 +32,7 @@
 
 using namespace MEDDLY;
 
-int main(int argc, char *argv[])
+int main()
 {
     // Initialize MEDDLY
     MEDDLY::initialize();

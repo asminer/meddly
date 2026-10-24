@@ -63,7 +63,7 @@
 
 using namespace MEDDLY;
 
-int main(int argv, char *argc[])
+int main()
 {
   ostream_output meddlyout(std::cout);
   initialize();

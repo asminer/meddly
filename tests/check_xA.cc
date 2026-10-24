@@ -291,7 +291,7 @@ void expl_Ax_check(const dd_edge &ss, const dd_edge &P)
     operation::destroy(MV);
 }
 
-int main(int argc, const char** argv)
+int main()
 {
     try {
         initialize();

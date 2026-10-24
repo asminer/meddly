@@ -313,7 +313,7 @@ MEDDLY::simple_separated::~simple_separated()
   delete MM;
 }
 
-void MEDDLY::simple_separated::collectGarbage(bool shrink)
+void MEDDLY::simple_separated::collectGarbage(bool /*shrink*/)
 {
   // TBD
 }
@@ -355,8 +355,8 @@ MEDDLY::node_address MEDDLY::simple_separated
   //
   // Determine truncsize and nnzs
   //
-  int nnzs = 0;
-  int truncsize = 0;
+  unsigned nnzs = 0;
+  unsigned truncsize = 0;
   if (nb.isSparse()) {
     //
     // nb is sparse, easy to get nnzs
@@ -372,7 +372,7 @@ MEDDLY::node_address MEDDLY::simple_separated
       //
       // EV, check for transparent edges
       //
-      for (int i=0; i<nb.getSize(); i++) {
+      for (unsigned i=0; i<nb.getSize(); i++) {
         if (!getParent()->isTransparentEdge(nb.edgeval(i), nb.down(i))) {
           nnzs++;
           truncsize = i+1;
@@ -383,7 +383,7 @@ MEDDLY::node_address MEDDLY::simple_separated
       // MT, check for pointers to transparent nodes
       //
       const node_handle tv = getParent()->getTransparentNode();
-      for (int i=0; i<nb.getSize(); i++) {
+      for (unsigned i=0; i<nb.getSize(); i++) {
         if (nb.down(i) != tv) {
           nnzs++;
           truncsize = i+1;
@@ -547,7 +547,7 @@ bool MEDDLY::simple_separated
       //
       node_handle i = 0;
       for (unsigned int z=0; z<nnz; z++) {
-        if (index[z] >= n.getSize()) return false;  // too large
+        if (index[z] >= int(n.getSize())) return false;  // too large
         // loop - skipped edges must be transparent
         for (; i<index[z]; i++) {
           if (n.down(i)!=tv) return false;
@@ -558,7 +558,7 @@ bool MEDDLY::simple_separated
       } // for z
       //
       // Anything beyond must be transparent
-      for (; i<n.getSize(); i++) {
+      for (; i<int(n.getSize()); i++) {
         if (n.down(i)!=tv) {
           return false;
         }
@@ -582,7 +582,7 @@ bool MEDDLY::simple_separated
       if (unsigned(n.getSize()) != nnz) return false;
       // check that down matches
       for (unsigned int z=0; z<nnz; z++) {
-        if (index[z] != n.index(z)) return false;
+        if (index[z] != int(n.index(z))) return false;
         if (down[z] != n.down(z))  return false;
       }
       // check that edges match
@@ -629,9 +629,9 @@ bool MEDDLY::simple_separated
       //
       // n is sparse
       //
-      int i = 0;
+      unsigned i = 0;
       // check down
-      for (int z=0; z<n.getSize(); z++) {
+      for (unsigned z=0; z<n.getSize(); z++) {
         if (unsigned(n.index(z)) >= size) return false;
         // loop - skipped edges must be transparent
         for (; i<n.index(z); i++) {
@@ -645,7 +645,7 @@ bool MEDDLY::simple_separated
       // check edges
       //
       if (n.hasEdges()) {
-        for (int z=0; z<n.getSize(); z++) {
+        for (unsigned z=0; z<n.getSize(); z++) {
           if (! n.edgeval(z).equals(edge + n.index(z) * slots_per_edge)) {
             return false;
           }
@@ -856,7 +856,8 @@ void MEDDLY::simple_separated
 }
 
 
-unsigned MEDDLY::simple_separated::hashNode(int level, node_address addr) const
+unsigned MEDDLY::simple_separated::hashNode(int /*level*/,
+        node_address addr) const
 {
   const node_handle* chunk = getChunkAddress(addr);
   MEDDLY_DCASSERT(chunk);
@@ -1077,7 +1078,7 @@ void MEDDLY::simple_separated
 }
 
 
-void MEDDLY::simple_separated::updateData(node_handle* d)
+void MEDDLY::simple_separated::updateData(node_handle*)
 {
     FAIL(__FILE__, __LINE__);
 
@@ -1335,7 +1336,7 @@ MEDDLY::node_address MEDDLY::simple_separated
           down[i] = tv;
           te.get(parent->getEdgeType(), edge + i * edge_bytes);
         }
-        for (int z=0; z<nb.getSize(); z++) {
+        for (unsigned z=0; z<nb.getSize(); z++) {
           int i = nb.index(z);
           MEDDLY_CHECK_RANGE(0, i, size);
           down[i] = nb.down(z);
@@ -1357,8 +1358,8 @@ MEDDLY::node_address MEDDLY::simple_separated
         for (int i=0; i<size; i++) {
           down[i] = tv;
         }
-        for (int z=0; z<nb.getSize(); z++) {
-          MEDDLY_CHECK_RANGE(0, nb.index(z), size);
+        for (unsigned z=0; z<nb.getSize(); z++) {
+          MEDDLY_CHECK_RANGE(0, nb.index(z), unsigned(size));
           down[nb.index(z)] = nb.down(z);
         }
       } else {
@@ -1463,7 +1464,7 @@ MEDDLY::node_address MEDDLY::simple_separated
         }
       } else {
         int z = 0;
-        for (int i=0; i<nb.getSize(); i++) {
+        for (unsigned i=0; i<nb.getSize(); i++) {
           if (getParent()->isTransparentEdge(nb.edgeval(i), nb.down(i))) continue;
           MEDDLY_CHECK_RANGE(0, z, size);
           down[z] = nb.down(i);
@@ -1486,7 +1487,7 @@ MEDDLY::node_address MEDDLY::simple_separated
       } else {
         int z = 0;
         const node_handle tv = getParent()->getTransparentNode();
-        for (int i=0; i<nb.getSize(); i++) {
+        for (unsigned i=0; i<nb.getSize(); i++) {
           if (nb.down(i)!=tv) {
             MEDDLY_CHECK_RANGE(0, z, size);
             down[z] = nb.down(i);

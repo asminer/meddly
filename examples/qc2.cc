@@ -757,8 +757,8 @@ int usage(const char* who)
   printf("                    s - `square root'.  Collect by N. (default)\n");
 #ifdef ALLOW_DEPRECATED_0_18_2
   printf("     -l lfile:  Write logging information to specified file\n");
-#endif
   printf("     -L count:  Aggregate count items per log entry\n");
+#endif
   printf("         -m M:  specify maximum number of queens (default is N)\n");
   printf("         -n N:  specify board dimension as NxN\n");
   printf("           -o:  Optimistic node deletion\n");
@@ -779,8 +779,8 @@ int main(int argc, const char** argv)
   p.setPessimistic();
 #ifdef ALLOW_DEPRECATED_0_18_2
   const char* lfile = 0;
-#endif
   int lagg = 16;
+#endif
   const char* ofile = 0;
   int N = -1;
   int M = -1;
@@ -798,11 +798,11 @@ int main(int argc, const char** argv)
         case 'l': i++;
                   lfile = argv[i];
                   continue;
-#endif
 
         case 'L': i++;
                   if (argv[i]) lagg = atoi(argv[i]);
                   continue;
+#endif
 
         case 'm': i++;
                   if (argv[i]) M = atoi(argv[i]);

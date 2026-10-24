@@ -372,9 +372,9 @@ void show_solution(std::ostream &s, const MEDDLY::minterm &M)
     coord c;
     for (c.n=1; c.n<=B.getN(); c.n++) {
         for (c.m=1; c.m<=B.getM(); c.m++) {
-            cout << setfill(' ') << setw(3) << M.from(B.get_var(c)) << ' ';
+            s << setfill(' ') << setw(3) << M.from(B.get_var(c)) << ' ';
         }
-        cout << '\n';
+        s << '\n';
     }
 }
 

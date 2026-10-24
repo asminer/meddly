@@ -143,7 +143,9 @@ int main(int argc, const char** argv)
     int N = -1;
     char method = '1';
     unsigned batchsize = 256;
+#ifdef ALLOW_DEPRECATED_0_18_2
     const char* lfile = 0;
+#endif
     bool build_pdf = false;
 #ifdef HAVE_LIBGMP
     bool approx_count = true;
@@ -204,11 +206,13 @@ int main(int argc, const char** argv)
             continue;
         }
 #endif
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (strcmp("-l", argv[i])==0) {
             lfile = argv[i+1];
             i++;
             continue;
         }
+#endif
         if (strcmp("--batch", argv[i])==0) {
             i++;
             if (argv[i]) {

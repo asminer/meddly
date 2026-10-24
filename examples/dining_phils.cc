@@ -786,7 +786,9 @@ int main(int argc, char *argv[])
     int nPhilosophers = 0; // number of philosophers
     switches sw;
     int cacheSize = 0;
+#ifdef ALLOW_DEPRECATED_0_18_2
     const char* lfile = 0;
+#endif
     verbose = false;
 
     for (int i=1; i<argc; i++) {
@@ -937,7 +939,7 @@ int main(int argc, char *argv[])
 #ifdef ALLOW_DEPRECATED_0_18_2
         domain* d = runWithOptions(nPhilosophers, sw, LOG);
 #else
-        domain* d = runWithOptions(nPhilosophers, sw);
+        runWithOptions(nPhilosophers, sw);
 #endif
         printf("Cleaning up\n");
         fflush(stdout);

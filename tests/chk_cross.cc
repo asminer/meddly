@@ -36,16 +36,16 @@ using namespace MEDDLY;
 void randomizeMinterm(minterm &m, bool rows=true)
 {
     if (m.isForSets()) {
-        for (int i=1; i<=m.getNumVars(); i++) {
+        for (unsigned i=1; i<=m.getNumVars(); i++) {
             m.setVar(i, vectorgen::Equilikely_I(-1, 3));
         }
     } else {
         if (rows) {
-            for (int i=1; i<=m.getNumVars(); i++) {
+            for (unsigned i=1; i<=m.getNumVars(); i++) {
                 m.setVars(i, vectorgen::Equilikely_I(-1, 3), DONT_CARE);
             }
         } else {
-            for (int i=1; i<=m.getNumVars(); i++) {
+            for (unsigned i=1; i<=m.getNumVars(); i++) {
                 m.setVars(i, DONT_CARE, vectorgen::Equilikely_I(-1, 3));
             }
         }

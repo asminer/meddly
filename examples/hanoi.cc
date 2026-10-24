@@ -315,7 +315,7 @@ void showCardinality(const MEDDLY::dd_edge &reachable)
              << " reachable states" << endl;
 
         double theory = 1.0;
-        for (unsigned i=0; i<N; i++) {
+        for (int i=0; i<N; i++) {
             theory *= 3.0;
         }
         cout << "Theory: " << theory << " reachable states" << endl;
@@ -327,7 +327,7 @@ void showCardinality(const MEDDLY::dd_edge &reachable)
 
         mpz_t theory;
         mpz_init_set_ui(theory, 1);
-        for (unsigned i=0; i<N; i++) {
+        for (int i=0; i<N; i++) {
             mpz_mul_ui(theory, theory, 3);
         }
         cout << "Theory: ";
@@ -419,7 +419,7 @@ int main(int argc, const char** argv)
     //
     // Process command line
     //
-    for (unsigned i=1; i<argc; i++)
+    for (int i=1; i<argc; i++)
     {
         const char *arg = argv[i];
         if ('-' == arg[0])
