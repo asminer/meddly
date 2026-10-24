@@ -31,7 +31,6 @@
 #include "meddly/memory_managers/init_managers.h"
 #include "meddly/storage/init_storage.h"
 #include "meddly/init_forests.h"
-#include "meddly/revision.h"
 #include "meddly/version.h"
 
 // #define DEBUG_INITLIST
