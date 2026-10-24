@@ -20,7 +20,7 @@
 #include <iostream>
 #include <fstream>
 #include <map>  // for symbol table
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 
 // #define DEBUG_PARSER
 

@@ -19,7 +19,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "zstream.h"
 
 // **********************************************************************

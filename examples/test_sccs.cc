@@ -17,8 +17,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../src/meddly.h"
-#include "../src/operations/sccgraph.h"
+#include "meddly/meddly.h"
+#include "meddly/operations/sccgraph.h"
 
 #include <iostream>
 

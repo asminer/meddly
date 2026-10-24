@@ -23,7 +23,7 @@
 #include <cassert>
 #include <dirent.h>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "../timing/timer.h"
 
 #include "zstream.h"

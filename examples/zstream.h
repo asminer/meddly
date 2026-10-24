@@ -19,7 +19,7 @@
 #ifndef ZSTREAM_H
 #define ZSTREAM_H
 
-#include "../src/io.h"
+#include "meddly/io.h"
 
 
 /**

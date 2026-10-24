@@ -29,7 +29,7 @@
 #include <iostream>
 #include <string.h>
 #include <cassert>
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "reorder.h"
 
 using namespace MEDDLY;

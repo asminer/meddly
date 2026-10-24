@@ -21,7 +21,7 @@
 #include <vector>
 #include <cassert>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "../timing/timer.h"
 
 // #define SHOW_EVENTS

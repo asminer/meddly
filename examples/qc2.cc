@@ -36,8 +36,8 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "../src/meddly.h"
-#include "../src/log_simple.h"
+#include "meddly/meddly.h"
+#include "meddly/log_simple.h"
 
 // #define SET_VAR_NAMES
 // #define DEBUG_VARS

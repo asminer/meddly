@@ -21,10 +21,10 @@
 #include <cstdlib>
 #include <string.h>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "simple_model.h"
 #include "../timing/timer.h"
-#include "../src/log_simple.h"
+#include "meddly/log_simple.h"
 
 using namespace MEDDLY;
 

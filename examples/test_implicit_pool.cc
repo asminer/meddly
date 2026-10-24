@@ -23,7 +23,7 @@
 
 #define _MEDDLY_WITHOUT_IOSTREAM_
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "simple_model.h"
 #include "../timing/timer.h"
 

@@ -93,9 +93,9 @@
 #include <gmp.h>
 #endif
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "../timing/timer.h"
-#include "../src/log_simple.h"
+#include "meddly/log_simple.h"
 
 using namespace MEDDLY;
 

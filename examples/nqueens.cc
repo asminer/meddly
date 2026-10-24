@@ -31,9 +31,9 @@
 #include <cstdio>
 #include <cassert>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "../timing/timer.h"
-#include "../src/log_simple.h"
+#include "meddly/log_simple.h"
 
 // #define SHOW_ALL_SOLUTIONS
 

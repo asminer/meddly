@@ -22,7 +22,7 @@
     with operations to swap neighboring elements.
 */
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "../timing/timer.h"
 
 using namespace MEDDLY;

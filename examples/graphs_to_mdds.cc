@@ -59,7 +59,7 @@
 #include <iostream>
 #include <string.h>
 #include <cassert>
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 
 using namespace MEDDLY;
 

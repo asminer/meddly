@@ -30,7 +30,7 @@
   Initial state: A = N, B = 0
 */
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include <cassert>
 
 using namespace MEDDLY;

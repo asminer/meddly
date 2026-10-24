@@ -21,7 +21,7 @@
 #include <fstream>
 #include <string.h>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "zstream.h"
 
 

@@ -36,8 +36,8 @@
 #include <cstdlib>
 #include <cassert>
 
-#include "../src/meddly.h"
-#include "../src/log_simple.h"
+#include "meddly/meddly.h"
+#include "meddly/log_simple.h"
 #include "../timing/timer.h"
 
 using namespace MEDDLY;
