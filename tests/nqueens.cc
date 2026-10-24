@@ -22,7 +22,7 @@
     our expectations.
 */
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 
 #include <cassert>
 

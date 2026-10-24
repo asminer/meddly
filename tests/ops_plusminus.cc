@@ -24,7 +24,7 @@
 #include <cstdlib>
 #include <cassert>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 
 #include "randomize.h"
 
