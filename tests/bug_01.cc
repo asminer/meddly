@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -25,7 +24,7 @@
   Test1: Test fully reduced MDDs with Saturation.
 */
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include <cstdlib>
 #include <cassert>
 

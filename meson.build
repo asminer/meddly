@@ -194,6 +194,6 @@ meddly_dep = declare_dependency(
 
 subdir('examples')
 subdir('timing')
-# subdir('tests')
+subdir('tests')
 
 

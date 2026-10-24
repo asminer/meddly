@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2009, Iowa State University Research Foundation, Inc.
@@ -25,7 +24,7 @@
 #include <cstdlib>
 #include <cassert>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 
 #define CHECK_ALL_MTMDDS
 #define CHECK_ALL_MTMXDS

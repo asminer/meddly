@@ -24,7 +24,7 @@
 #include <cstdlib>
 #include <cassert>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 
 const unsigned VARS = 5;
 const unsigned RELDOM = 2;

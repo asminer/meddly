@@ -19,7 +19,7 @@
 #ifndef RANDOMIZE_H
 #define RANDOMIZE_H
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include <vector>
 
 class vectorgen {
