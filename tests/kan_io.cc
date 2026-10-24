@@ -21,7 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "simple_model.h"
 
 #define WRITE_MXD
