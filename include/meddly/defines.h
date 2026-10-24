@@ -19,10 +19,6 @@
 #ifndef MEDDLY_DEFINES_H
 #define MEDDLY_DEFINES_H
 
-// #ifdef HAVE_CONFIG_H
-#include "config.h"
-// #endif
-
 #define ALLOW_DEPRECATED_0_17_6     "11/11/2024"
 #define ALLOW_OLD_UNARY_0_17_6      "11/11/2024"
 #define ALLOW_OLD_BINARY_0_17_6     "11/11/2024"

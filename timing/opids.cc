@@ -20,7 +20,7 @@
 #include <iomanip>
 #include <vector>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "timer.h"
 #include "reporting.h"
 #include "park_random.h"

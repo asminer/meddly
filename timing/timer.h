@@ -31,8 +31,6 @@
 #ifndef TIMERS_H
 #define TIMERS_H
 
-#include "../config.h"
-
 // #define SHOW_WHICH_TIMER
 
 #ifdef SHOW_WHICH_TIMER

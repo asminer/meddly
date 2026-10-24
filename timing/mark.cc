@@ -23,7 +23,7 @@
 #include <iostream>
 #include <iomanip>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "simple_model.h"
 #include "timer.h"
 #include "reporting.h"

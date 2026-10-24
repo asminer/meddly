@@ -23,25 +23,30 @@
 
 #include <iostream>
 #include <stdlib.h>
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 
 int main(int argc, const char** argv)
 {
-  using namespace std;
-  using namespace MEDDLY;
-  int i;
-  if (1==argc) {
-    cout << getLibraryInfo(0) << "\n";
-  } else {
-    for (i=1; i<argc; i++) {
-      long N = atol(argv[i]);
-      const char* info = getLibraryInfo(N);
-      if (info) {
-        cout << info << "\n";
-      } else {
-        cout << "(null string)\n";
-      }
+    using namespace std;
+    using namespace MEDDLY;
+    int i;
+    if (1==argc) {
+        cout << getLibraryInfo(0) << "\n";
+#ifdef HAVE_LIBGMP
+        cout << "    with GMP support\n";
+#else
+        cout << "    without GMP support\n";
+#endif
+    } else {
+        for (i=1; i<argc; i++) {
+            long N = atol(argv[i]);
+            const char* info = getLibraryInfo(N);
+            if (info) {
+                cout << info << "\n";
+            } else {
+                cout << "(null string)\n";
+            }
+        }
     }
-  }
-  return 0;
+    return 0;
 }

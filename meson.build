@@ -6,34 +6,37 @@ project(
     default_options: ['warning_level=2']
 )
 
-my_args = [ ]
-
 if get_option('buildtype') == 'debug'
-    my_args += [ '-DDEVELOPMENT_CODE' ]
+    add_project_arguments('-DDEVELOPMENT_CODE', language: 'cpp')
 endif
 
-add_project_arguments(my_args, language: 'cpp')
+# add_project_arguments(my_args, language: 'cpp')
 
 deplist = [ ]
 
 #
-# Figure out dependencies and write to a config file
+# Check for GMP
 #
 
-conf_data = configuration_data()
 gmp_dep = dependency('gmp', required: false)
-
 if gmp_dep.found()
-    conf_data.set('HAVE_GMP', 1)
-    deplist += [ gmp_dep ]
+    add_project_arguments('-DHAVE_LIBGMP', language: 'cpp')
 else
-    conf_data.set('HAVE_GMP', 0)
+    message('GMP library not found, disabling')
 endif
 
-configure_file(
-    output: 'config.h',
-    configuration: conf_data
-)
+
+#
+# Check for timer support
+#
+
+mycc = meson.get_compiler('cpp')
+if mycc.has_function('getrusage', prefix: '#include <sys/resource.h>')
+    add_project_arguments('-DHAVE_GETRUSAGE', language: 'cpp')
+endif
+if mycc.has_function('gettimeofday', prefix: '#include <sys/time.h>')
+    add_project_arguments('-DHAVE_SYS_TIME_H', language: 'cpp')
+endif
 
 #
 # Set up files
@@ -169,6 +172,7 @@ meddly_src = files(
 
 meddly_lib = library('meddly',
     meddly_src,
+    dependencies: gmp_dep,
     include_directories: meddly_inc,
     install: true
 )
@@ -178,9 +182,18 @@ meddly_dep = declare_dependency(
     link_with: meddly_lib
 )
 
+#
+# TBD: figure out how to install headers
+#
 # install_headers(headers, subdir: 'meddly')
+#
 
 #
-# TBD: recurse into subdirectories
+# Build examples and tests
 #
+
+subdir('examples')
+subdir('timing')
+# subdir('tests')
+
 

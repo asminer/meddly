@@ -16,7 +16,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include "timer.h"
 #include "reporting.h"
 #include "park_random.h"

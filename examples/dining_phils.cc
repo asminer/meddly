@@ -89,7 +89,6 @@
 #include <cassert>
 #include <fstream>
 
-#include "../config.h"
 #if HAVE_LIBGMP
 #include <gmp.h>
 #endif
