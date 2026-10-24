@@ -16,12 +16,12 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "sat_relations.h"
-#include "ops_builtin.h"
-#include "operators.h"
-#include "minterms.h"
-#include "relation_node.h"
-#include "forest_levels.h"
+#include "meddly/sat_relations.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/operators.h"
+#include "meddly/minterms.h"
+#include "meddly/relation_node.h"
+#include "meddly/forest_levels.h"
 
 #include <algorithm>    // for std::sort
 

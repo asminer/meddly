@@ -19,7 +19,7 @@
 #ifndef MEDDLY_ARRAYS_H
 #define MEDDLY_ARRAYS_H
 
-#include "defines.h"
+#include "meddly/defines.h"
 #include <cstring>  // for memset
 
 namespace MEDDLY {

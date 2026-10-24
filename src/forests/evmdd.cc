@@ -16,7 +16,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "evmdd.h"
+#include "meddly/forests/evmdd.h"
 
 MEDDLY::evmdd_forest
 ::evmdd_forest(domain* d, range_type t, edge_labeling ev,

@@ -20,15 +20,15 @@
 
 // TODO: Testing
 
-#include "simple.h"
+#include "meddly/storage/simple.h"
 
-#include "../defines.h"
-#include "../hash_stream.h"
-#include "../unpacked_node.h"
-#include "../memory.h"
-#include "../forest.h"
-#include "../operators.h"
-#include "../node_marker.h"
+#include "meddly/defines.h"
+#include "meddly/hash_stream.h"
+#include "meddly/unpacked_node.h"
+#include "meddly/memory.h"
+#include "meddly/forest.h"
+#include "meddly/operators.h"
+#include "meddly/node_marker.h"
 
 #include <cassert>
 

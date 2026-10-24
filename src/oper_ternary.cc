@@ -16,9 +16,9 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "oper_ternary.h"
-#include "error.h"
-#include "forest.h"
+#include "meddly/oper_ternary.h"
+#include "meddly/error.h"
+#include "meddly/forest.h"
 
 // ******************************************************************
 // *                    ternary_operation methods                    *

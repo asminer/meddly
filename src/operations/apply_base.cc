@@ -16,9 +16,9 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "../forests/mt.h"
-#include "apply_base.h"
+#include "meddly/defines.h"
+#include "meddly/forests/mt.h"
+#include "meddly/operations/apply_base.h"
 
 // #define TRACE_ALL_OPS
 // #define DISABLE_CACHE

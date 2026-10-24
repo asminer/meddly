@@ -16,9 +16,9 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "freelists.h"
-#include "../operators.h"
-#include "../error.h"
+#include "meddly/memory_managers/freelists.h"
+#include "meddly/operators.h"
+#include "meddly/error.h"
 
 // #define DEBUG_FREELISTS
 

@@ -17,8 +17,8 @@
 */
 
 
-#include "ev.h"
-#include "../unique_table.h"
+#include "meddly/forests/ev.h"
+#include "meddly/unique_table.h"
 
 // ******************************************************************
 // *                                                                *

@@ -16,8 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "relation_node.h"
-#include "forest.h"
+#include "meddly/relation_node.h"
+#include "meddly/forest.h"
 
 // TBD: move this!
 #define NOT_KNOWN -2

@@ -19,8 +19,8 @@
 #include <vector>
 #include <unordered_map>
 
-#include "mtmxd.h"
-#include "../unique_table.h"
+#include "meddly/forests/mtmxd.h"
+#include "meddly/unique_table.h"
 
 MEDDLY::mtmxd_forest
 ::mtmxd_forest(domain* d, range_type t, const policies &p)

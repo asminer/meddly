@@ -16,8 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "rangeval.h"
-#include "io.h"
+#include "meddly/rangeval.h"
+#include "meddly/io.h"
 
 void MEDDLY::rangeval::write(output &s) const
 {

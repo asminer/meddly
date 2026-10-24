@@ -16,9 +16,9 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "unique_table.h"
-#include "forest.h"
-#include "operators.h"
+#include "meddly/unique_table.h"
+#include "meddly/forest.h"
+#include "meddly/operators.h"
 
 // ******************************************************************
 // *                                                                *

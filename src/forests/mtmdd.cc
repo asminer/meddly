@@ -20,8 +20,8 @@
 #include <vector>
 #include <algorithm>
 
-#include "mtmdd.h"
-#include "../unique_table.h"
+#include "meddly/forests/mtmdd.h"
+#include "meddly/unique_table.h"
 
 MEDDLY::mtmdd_forest
 ::mtmdd_forest(domain* d, range_type t, const policies &p)

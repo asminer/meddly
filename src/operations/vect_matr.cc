@@ -16,12 +16,12 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "vect_matr.h"
+#include "meddly/defines.h"
+#include "meddly/operations/vect_matr.h"
 
-#include "../forest.h"
-#include "../forest_levels.h"
-#include "../oper_numer.h"
+#include "meddly/forest.h"
+#include "meddly/forest_levels.h"
+#include "meddly/oper_numer.h"
 
 namespace MEDDLY {
     class base_evplus_mt;

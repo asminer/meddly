@@ -16,11 +16,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "dd_edge.h"
-#include "node_marker.h"
+#include "meddly/dd_edge.h"
+#include "meddly/node_marker.h"
 
-#include "io.h"
-#include "io_dot.h"
+#include "meddly/io.h"
+#include "meddly/io_dot.h"
 
 MEDDLY::dot_maker::dot_maker(const forest* F, const char* bn)
 {

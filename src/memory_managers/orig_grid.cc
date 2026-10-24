@@ -23,9 +23,9 @@
 // #define DONT_RECYCLE_FROM_GRID
 // #define DONT_RECYCLE_FROM_LARGE
 
-#include "hole_base.h"
-#include "orig_grid.h"
-#include "../operators.h"
+#include "meddly/memory_managers/hole_base.h"
+#include "meddly/memory_managers/orig_grid.h"
+#include "meddly/operators.h"
 
 namespace MEDDLY {
 

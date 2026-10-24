@@ -16,8 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "defines.h"
-#include "varorder.h"
+#include "meddly/defines.h"
+#include "meddly/varorder.h"
 
 // ******************************************************************
 // *                                                                *

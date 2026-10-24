@@ -16,19 +16,23 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "defines.h"
-#include "initializer.h"
-#include "error.h"
-#include "domain.h"
-#include "oper.h"
-#include "unpacked_node.h"
-#include "ct_initializer.h"
-#include "ct_vector.h"
-#include "ops_builtin.h"
-#include "memory_managers/init_managers.h"
-#include "storage/init_storage.h"
-#include "init_forests.h"
-#include "revision.h"
+#define PACKAGE_NAME "MEDDLY"
+#define PACKAGE_URL  "https://asminer.github.io/meddly/"
+
+#include "meddly/defines.h"
+#include "meddly/initializer.h"
+#include "meddly/error.h"
+#include "meddly/domain.h"
+#include "meddly/oper.h"
+#include "meddly/unpacked_node.h"
+#include "meddly/ct_initializer.h"
+#include "meddly/ct_vector.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/memory_managers/init_managers.h"
+#include "meddly/storage/init_storage.h"
+#include "meddly/init_forests.h"
+#include "meddly/revision.h"
+#include "meddly/version.h"
 
 // #define DEBUG_INITLIST
 

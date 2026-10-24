@@ -16,25 +16,25 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "prepost_rels.h"
+#include "meddly/defines.h"
+#include "meddly/operations/prepost_rels.h"
 
-#include "../ops_builtin.h"
-#include "../ct_vector.h"
-#include "../oper_unary.h"
-#include "../oper_binary.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/ct_vector.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
 
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
-#include "../forest_levels.h"
-#include "../forest_edgerules.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/forest_levels.h"
+#include "meddly/forest_edgerules.h"
 
 // #define TRACE_ALL_OPS
 // #define TRACE
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 namespace MEDDLY {

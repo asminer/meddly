@@ -16,20 +16,20 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "satur_sets.h"
-#include "satur_index.h"
+#include "meddly/defines.h"
+#include "meddly/operations/satur_sets.h"
+#include "meddly/operations/satur_index.h"
 
-#include "../forest.h"
-#include "../oper_unary.h"
-#include "../oper_binary.h"
-#include "../ops_builtin.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
-#include "../forest_edgerules.h"
+#include "meddly/forest.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/ct_vector.h"
+#include "meddly/forest_levels.h"
+#include "meddly/forest_edgerules.h"
 
-#include "prepost_common.h"
-#include "../operators.h"
+#include "meddly/operations/prepost_common.h"
+#include "meddly/operators.h"
 
 // #define RECFIRE_THEN_SAT
 

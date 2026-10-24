@@ -17,10 +17,10 @@
 */
 
 
-#include "defines.h"
-#include "log_json.h"
-#include "forest.h"
-#include "operators.h"
+#include "meddly/defines.h"
+#include "meddly/log_json.h"
+#include "meddly/forest.h"
+#include "meddly/operators.h"
 
 #define BATCH
 

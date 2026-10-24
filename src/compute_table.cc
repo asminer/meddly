@@ -17,13 +17,13 @@
 */
 
 
-#include "defines.h"
-#include "error.h"
+#include "meddly/defines.h"
+#include "meddly/error.h"
 
-#include "ct_initializer.h"
-#include "compute_table.h"
-#include "ct_entry_type.h"
-#include "ct_entry_key.h"
+#include "meddly/ct_initializer.h"
+#include "meddly/compute_table.h"
+#include "meddly/ct_entry_type.h"
+#include "meddly/ct_entry_key.h"
 
 // **********************************************************************
 // *                                                                    *

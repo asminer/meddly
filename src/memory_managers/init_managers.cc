@@ -16,13 +16,13 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "init_managers.h"
+#include "meddly/memory_managers/init_managers.h"
 
-#include "orig_grid.h"
-#include "array_grid.h"
-#include "malloc_style.h"
-#include "heap_manager.h"
-#include "freelists.h"
+#include "meddly/memory_managers/orig_grid.h"
+#include "meddly/memory_managers/array_grid.h"
+#include "meddly/memory_managers/malloc_style.h"
+#include "meddly/memory_managers/heap_manager.h"
+#include "meddly/memory_managers/freelists.h"
 
 namespace MEDDLY {
   const memory_manager_style* ORIGINAL_GRID = 0;

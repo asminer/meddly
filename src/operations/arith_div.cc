@@ -16,16 +16,16 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "arith_div.h"
+#include "meddly/defines.h"
+#include "meddly/operations/arith_div.h"
 
 // #define TRACE
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
-#include "arith_templ.h"
+#include "meddly/operations/arith_templ.h"
 
 namespace MEDDLY {
     class DIV_factory;

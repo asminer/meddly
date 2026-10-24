@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "oper_binary.h"
-#include "error.h"
-#include "forest.h"
-#include "forest_levels.h"
+#include "meddly/oper_binary.h"
+#include "meddly/error.h"
+#include "meddly/forest.h"
+#include "meddly/forest_levels.h"
 
 #define DEBUG_THROWS
 

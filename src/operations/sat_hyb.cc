@@ -16,27 +16,27 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "relation_node.h"
+#include "meddly/defines.h"
+#include "meddly/relation_node.h"
 //#include "event_ordering.h"
-#include "sat_hyb.h"
+#include "meddly/operations/sat_hyb.h"
 #include <typeinfo> // for "bad_cast" exception
 #include <set>
 #include <map>
 #include <vector>
 #include <algorithm>
 
-#include "../operators.h"
-#include "../minterms.h"
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
-#include "../oper_unary.h"
-#include "../oper_binary.h"
-#include "../oper_satur.h"
-#include "../ops_builtin.h"
-#include "../sat_relations.h"
-#include "../forest_levels.h"
+#include "meddly/operators.h"
+#include "meddly/minterms.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
+#include "meddly/oper_satur.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/sat_relations.h"
+#include "meddly/forest_levels.h"
 
    #define OUT_OF_BOUNDS -1
    #define NOT_KNOWN -2

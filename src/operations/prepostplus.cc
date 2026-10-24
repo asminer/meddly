@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "prepostplus.h"
-#include "apply_base.h"
-#include "../forest_levels.h"
+#include "meddly/defines.h"
+#include "meddly/operations/prepostplus.h"
+#include "meddly/operations/apply_base.h"
+#include "meddly/forest_levels.h"
 
 namespace MEDDLY {
     class prepostplus_evplus;

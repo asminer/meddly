@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "../error.h"
+#include "meddly/defines.h"
+#include "meddly/error.h"
 
-#include "sccgraph.h"
+#include "meddly/operations/sccgraph.h"
 
 #define DEBUG
 #define DEBUG_SCC

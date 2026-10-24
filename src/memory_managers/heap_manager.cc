@@ -21,9 +21,9 @@
 // #define MEMORY_TRACE_DETAILS
 // #define DEBUG_HEAP
 
-#include "hole_base.h"
-#include "heap_manager.h"
-#include "../operators.h"
+#include "meddly/memory_managers/hole_base.h"
+#include "meddly/memory_managers/heap_manager.h"
+#include "meddly/operators.h"
 
 namespace MEDDLY {
 

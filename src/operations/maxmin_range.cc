@@ -16,14 +16,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "maxmin_range.h"
+#include "meddly/defines.h"
+#include "meddly/operations/maxmin_range.h"
 
-#include "../oper_item.h"
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../ct_generics.h"
-#include "../forest_levels.h"
+#include "meddly/oper_item.h"
+#include "meddly/oper_unary.h"
+#include "meddly/ct_vector.h"
+#include "meddly/ct_generics.h"
+#include "meddly/forest_levels.h"
 
 
 namespace MEDDLY {

@@ -16,15 +16,15 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "mm_mult.h"
+#include "meddly/defines.h"
+#include "meddly/operations/mm_mult.h"
 
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
-#include "../oper_binary.h"
-#include "../ops_builtin.h"
-#include "../forest_levels.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_binary.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/forest_levels.h"
 
 // #define TRACE_ALL_OPS
 

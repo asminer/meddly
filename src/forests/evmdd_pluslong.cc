@@ -16,9 +16,9 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "evmdd_pluslong.h"
+#include "meddly/forests/evmdd_pluslong.h"
 
-#include "../unique_table.h"
+#include "meddly/unique_table.h"
 
 // ******************************************************************
 // *                                                                *

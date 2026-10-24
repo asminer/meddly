@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "oper_satur.h"
-#include "error.h"
-#include "forest.h"
-#include "dd_edge.h"
+#include "meddly/oper_satur.h"
+#include "meddly/error.h"
+#include "meddly/forest.h"
+#include "meddly/dd_edge.h"
 
 // ******************************************************************
 // *                  saturation_operation methods                  *

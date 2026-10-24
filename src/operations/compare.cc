@@ -16,18 +16,18 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "compare.h"
+#include "meddly/defines.h"
+#include "meddly/operations/compare.h"
 
-#include "../oper_binary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
-#include "../forest_edgerules.h"
+#include "meddly/oper_binary.h"
+#include "meddly/ct_vector.h"
+#include "meddly/forest_levels.h"
+#include "meddly/forest_edgerules.h"
 
 // #define TRACE
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 //

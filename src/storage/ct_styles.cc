@@ -17,18 +17,18 @@
 */
 
 
-#include "ct_styles.h"
+#include "meddly/storage/ct_styles.h"
 
-#include "../memory.h"
-#include "../hash_stream.h"
-#include "../node_storage.h"
-#include "../compute_table.h"
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../ct_vector.h"
-#include "../ct_generics.h"
-#include "../ct_initializer.h"
-#include "../operators.h"
+#include "meddly/memory.h"
+#include "meddly/hash_stream.h"
+#include "meddly/node_storage.h"
+#include "meddly/compute_table.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/ct_vector.h"
+#include "meddly/ct_generics.h"
+#include "meddly/ct_initializer.h"
+#include "meddly/operators.h"
 
 // #define DEBUG_FIND
 // #define DEBUG_REHASH

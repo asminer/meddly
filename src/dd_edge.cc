@@ -16,21 +16,19 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "meddly/defines.h"
+#include "meddly/dd_edge.h"
+#include "meddly/forest.h"
+#include "meddly/forest_levels.h"
+#include "meddly/forest_edgerules.h"
+#include "meddly/minterms.h"
+#include "meddly/io.h"
 
+#include "meddly/node_marker.h"
 
-#include "defines.h"
-#include "dd_edge.h"
-#include "forest.h"
-#include "forest_levels.h"
-#include "forest_edgerules.h"
-#include "minterms.h"
-#include "io.h"
-
-#include "node_marker.h"
-
-#include "oper_binary.h"
-#include "ops_builtin.h"
-#include "operators.h"
+#include "meddly/oper_binary.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/operators.h"
 
 #include <cstdlib>  // for random()
 

@@ -16,8 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "malloc_style.h"
-#include "../operators.h"
+#include "meddly/memory_managers/malloc_style.h"
+#include "meddly/operators.h"
 
 // #define MEMORY_TRACE
 

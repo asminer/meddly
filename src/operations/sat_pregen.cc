@@ -16,19 +16,19 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "sat_pregen.h"
+#include "meddly/defines.h"
+#include "meddly/operations/sat_pregen.h"
 #include <typeinfo> // for "bad_cast" exception
 
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
-#include "../oper_unary.h"
-#include "../oper_binary.h"
-#include "../oper_satur.h"
-#include "../ops_builtin.h"
-#include "../sat_relations.h"
-#include "../forest_levels.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
+#include "meddly/oper_satur.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/sat_relations.h"
+#include "meddly/forest_levels.h"
 
 #define DEBUG_FINALIZE
 // #define DEBUG_FINALIZE_SPLIT

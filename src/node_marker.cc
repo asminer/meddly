@@ -16,9 +16,9 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "node_marker.h"
-#include "operators.h"
-#include "forest_levels.h"
+#include "meddly/node_marker.h"
+#include "meddly/operators.h"
+#include "meddly/forest_levels.h"
 
 // #define DEBUG_MARK
 

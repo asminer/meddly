@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "defines.h"
-#include "node_storage.h"
-#include "io.h"
-#include "operators.h"
+#include "meddly/defines.h"
+#include "meddly/node_storage.h"
+#include "meddly/io.h"
+#include "meddly/operators.h"
 
 // ******************************************************************
 // *                                                                *

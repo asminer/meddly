@@ -16,11 +16,9 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
-#include "edge_value.h"
-#include "terminal.h"
-#include "io.h"
+#include "meddly/edge_value.h"
+#include "meddly/terminal.h"
+#include "meddly/io.h"
 
 // ******************************************************************
 // *                                                                *

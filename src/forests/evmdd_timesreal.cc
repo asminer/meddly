@@ -16,7 +16,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "evmdd_timesreal.h"
+#include "meddly/forests/evmdd_timesreal.h"
 
 // ******************************************************************
 // *                                                                *

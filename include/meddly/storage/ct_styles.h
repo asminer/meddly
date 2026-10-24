@@ -19,8 +19,8 @@
 #ifndef MEDDLY_CT_STYLES_H
 #define MEDDLY_CT_STYLES_H
 
-#include "node_storage.h"
-#include "compute_table.h"
+#include "meddly/node_storage.h"
+#include "meddly/compute_table.h"
 
 
 // **********************************************************************

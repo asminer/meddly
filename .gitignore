@@ -5,13 +5,13 @@ aclocal.m4
 ar-lib
 autom4te.cache
 benchdata
+build*
 compile
 config.*
 configure
 configure~
 configure.ac.old
 depcomp
-include/
 INSTALL
 install-sh
 lib/

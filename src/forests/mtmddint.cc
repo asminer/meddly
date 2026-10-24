@@ -17,7 +17,7 @@
 */
 
 
-#include "mtmddint.h"
+#include "meddly/forests/mtmddint.h"
 
 MEDDLY::mt_mdd_int::mt_mdd_int(domain *d, const policies &p)
 : mtmdd_forest(d, range_type::INTEGER, p)

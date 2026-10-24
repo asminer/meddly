@@ -19,16 +19,16 @@
 #include <deque>
 #include <vector>
 
-#include "../defines.h"
-#include "constrained.h"
+#include "meddly/defines.h"
+#include "meddly/operations/constrained.h"
 
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
-#include "../oper_binary.h"
-#include "../oper_ternary.h"
-#include "../ops_builtin.h"
-#include "../forest_levels.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_binary.h"
+#include "meddly/oper_ternary.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/forest_levels.h"
 
 
 namespace MEDDLY {

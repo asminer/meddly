@@ -16,51 +16,48 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
 // TODO: Testing
 
 #include <fstream>
 #include <sstream>
 #include <cmath>  // for round()
 
-#include "defines.h"
-#include "initializer.h"
-#include "unique_table.h"
-#include "relation_node.h"
-#include "impl_unique_table.h"
-#include "hash_stream.h"
-// #include "storage/bytepack.h"
-#include "reordering/reordering_factory.h"
+#include "meddly/defines.h"
+#include "meddly/initializer.h"
+#include "meddly/unique_table.h"
+#include "meddly/relation_node.h"
+#include "meddly/impl_unique_table.h"
+#include "meddly/hash_stream.h"
+#include "meddly/reordering/reordering_factory.h"
 
-#include "oper.h"
-#include "operators.h"
-#include "node_marker.h"
-#include "logger.h"
-#include "compute_table.h"
-#include "ct_entry_type.h"  // for invalidateAllWithForest
+#include "meddly/oper.h"
+#include "meddly/operators.h"
+#include "meddly/node_marker.h"
+#include "meddly/logger.h"
+#include "meddly/compute_table.h"
+#include "meddly/ct_entry_type.h"  // for invalidateAllWithForest
 
-#include "rel_node.h"
+#include "meddly/rel_node.h"
 
-#include "forest_levels.h"
-#include "forest_edgerules.h"
+#include "meddly/forest_levels.h"
+#include "meddly/forest_edgerules.h"
 
 //
 // For constructing forests.
 //
-#include "forests/mtmddbool.h"
-#include "forests/mtmddint.h"
-#include "forests/mtmddreal.h"
+#include "meddly/forests/mtmddbool.h"
+#include "meddly/forests/mtmddint.h"
+#include "meddly/forests/mtmddreal.h"
 
-#include "forests/mtmxdbool.h"
-#include "forests/mtmxdint.h"
-#include "forests/mtmxdreal.h"
+#include "meddly/forests/mtmxdbool.h"
+#include "meddly/forests/mtmxdint.h"
+#include "meddly/forests/mtmxdreal.h"
 
-#include "forests/evmdd_pluslong.h"
-#include "forests/evmdd_timesreal.h"
+#include "meddly/forests/evmdd_pluslong.h"
+#include "meddly/forests/evmdd_timesreal.h"
 
-#include "forests/evmxd_pluslong.h"
-#include "forests/evmxd_timesreal.h"
+#include "meddly/forests/evmxd_pluslong.h"
+#include "meddly/forests/evmxd_timesreal.h"
 
 
 // #define DEBUG_ADDRESS_RESIZE

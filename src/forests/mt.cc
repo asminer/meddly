@@ -17,8 +17,8 @@
 */
 
 
-#include "mt.h"
-#include "../unique_table.h"
+#include "meddly/forests/mt.h"
+#include "meddly/unique_table.h"
 
 #define ENABLE_CACHE_COUNTING 0
 #define ENABLE_IN_COUNTING 0

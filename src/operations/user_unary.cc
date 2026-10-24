@@ -16,22 +16,22 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "../ct_vector.h"
-#include "../compute_table.h"
-#include "../oper_unary.h"
-#include "../forest_levels.h"
-#include "../forest_edgerules.h"
-#include "user_unary.h"
+#include "meddly/defines.h"
+#include "meddly/ct_vector.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_unary.h"
+#include "meddly/forest_levels.h"
+#include "meddly/forest_edgerules.h"
+#include "meddly/operations/user_unary.h"
 
 // #define TRACE
 // #define TRACE_FI
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 #ifdef TRACE_FI
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 // ******************************************************************

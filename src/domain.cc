@@ -16,17 +16,17 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "defines.h"
-#include "domain.h"
-#include "io.h"
-#include "forest.h"
+#include "meddly/defines.h"
+#include "meddly/domain.h"
+#include "meddly/io.h"
+#include "meddly/forest.h"
 
-#include "initializer.h"
+#include "meddly/initializer.h"
 
-#include "unique_table.h"
-#include "operators.h"
+#include "meddly/unique_table.h"
+#include "meddly/operators.h"
 
-#include "oper.h"
+#include "meddly/oper.h"
 
 // #define DUMP_ON_FOREST_DESTROY
 

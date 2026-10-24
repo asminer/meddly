@@ -16,14 +16,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
 // TODO: Testing
 
-#include "defines.h"
-
-#include "io.h"
-#include "error.h"
+#include "meddly/defines.h"
+#include "meddly/io.h"
+#include "meddly/error.h"
 
 // ******************************************************************
 // *                                                                *

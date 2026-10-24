@@ -16,12 +16,12 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "oper_unary.h"
-#include "error.h"
-#include "forest.h"
-#include "dd_edge.h"
+#include "meddly/oper_unary.h"
+#include "meddly/error.h"
+#include "meddly/forest.h"
+#include "meddly/dd_edge.h"
 
-#include "operations/user_unary.h"
+#include "meddly/operations/user_unary.h"
 
 // ******************************************************************
 // *                    unary_operation  methods                    *

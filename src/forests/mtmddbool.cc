@@ -17,8 +17,8 @@
 */
 
 
-#include "mtmddbool.h"
-#include "../terminal.h"
+#include "meddly/forests/mtmddbool.h"
+#include "meddly/terminal.h"
 
 MEDDLY::mt_mdd_bool::mt_mdd_bool(domain *d, const policies &p)
 : mtmdd_forest(d, range_type::BOOLEAN, p)

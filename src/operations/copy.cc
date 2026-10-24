@@ -16,13 +16,13 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "copy.h"
+#include "meddly/defines.h"
+#include "meddly/operations/copy.h"
 
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
-#include "../forest_edgerules.h"
+#include "meddly/oper_unary.h"
+#include "meddly/ct_vector.h"
+#include "meddly/forest_levels.h"
+#include "meddly/forest_edgerules.h"
 
 namespace MEDDLY {
     class copy_inforest;
@@ -36,7 +36,7 @@ namespace MEDDLY {
 // #define NEVER_USE_RELNODES
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 // ******************************************************************

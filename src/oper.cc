@@ -16,11 +16,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "oper.h"
+#include "meddly/oper.h"
 
-#include "ct_entry_result.h"
-#include "compute_table.h"
-#include "ct_initializer.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/ct_initializer.h"
 
 // ******************************************************************
 // *                       operation  statics                       *

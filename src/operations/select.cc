@@ -16,14 +16,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "select.h"
+#include "meddly/defines.h"
+#include "meddly/operations/select.h"
 
 #ifdef ALLOW_DEPRECATED_0_17_8
 
-#include "../forest.h"
-#include "../forest_levels.h"
-#include "../oper_unary.h"
+#include "meddly/forest.h"
+#include "meddly/forest_levels.h"
+#include "meddly/oper_unary.h"
 
 namespace MEDDLY {
     class select;

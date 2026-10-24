@@ -16,14 +16,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "difference.h"
+#include "meddly/defines.h"
+#include "meddly/operations/difference.h"
 
-#include "../ops_builtin.h" // for COPY
-#include "../oper_binary.h"
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
+#include "meddly/ops_builtin.h" // for COPY
+#include "meddly/oper_binary.h"
+#include "meddly/oper_unary.h"
+#include "meddly/ct_vector.h"
+#include "meddly/forest_levels.h"
 
 namespace MEDDLY {
     class diffr_mt;
@@ -33,7 +33,7 @@ namespace MEDDLY {
 // #define TRACE
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 // ******************************************************************
