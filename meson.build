@@ -39,10 +39,8 @@ if mycc.has_function('gettimeofday', prefix: '#include <sys/time.h>')
 endif
 
 #
-# Set up files
+# Set up source files
 #
-
-meddly_inc = include_directories('include')
 
 meddly_src = files(
     'src/arrays.cc',
@@ -167,6 +165,67 @@ meddly_src = files(
 )
 
 #
+# Set up header files
+#
+
+meddly_inc = include_directories('include')
+
+headers_meddly = files(
+    'include/meddly/arrays.h',
+    'include/meddly/compute_table.h',
+    'include/meddly/ct_entry_key.h',
+    'include/meddly/ct_entry_result.h',
+    'include/meddly/ct_entry_type.h',
+    'include/meddly/ct_initializer.h',
+    'include/meddly/ct_vector.h',
+    'include/meddly/dd_edge.h',
+    'include/meddly/defines.h',
+    'include/meddly/domain.h',
+    'include/meddly/edge_value.h',
+    'include/meddly/error.h',
+    'include/meddly/forest.h',
+    'include/meddly/forest_edgerules.h',
+    'include/meddly/forest_levels.h',
+    'include/meddly/global_rebuilder.h',
+    'include/meddly/hash_stream.h',
+    'include/meddly/heap.h',
+    'include/meddly/initializer.h',
+    'include/meddly/io.h',
+    'include/meddly/io_dot.h',
+    'include/meddly/io_mdds.h',
+    'include/meddly/meddly.h',
+    'include/meddly/memory.h',
+    'include/meddly/memstats.h',
+    'include/meddly/minterms.h',
+    'include/meddly/node_headers.h',
+    'include/meddly/node_marker.h',
+    'include/meddly/node_storage.h',
+    'include/meddly/oper.h',
+    'include/meddly/oper_binary.h',
+    'include/meddly/oper_item.h',
+    'include/meddly/oper_numer.h',
+    'include/meddly/oper_satur.h',
+    'include/meddly/oper_ternary.h',
+    'include/meddly/oper_unary.h',
+    'include/meddly/operators.h',
+    'include/meddly/ops_builtin.h',
+    'include/meddly/policies.h',
+    'include/meddly/rangeval.h',
+    'include/meddly/rel_node.h',
+    'include/meddly/relation_node.h',
+    'include/meddly/sat_relations.h',
+    'include/meddly/revision.h',
+    'include/meddly/statset.h',
+    'include/meddly/terminal.h',
+    'include/meddly/unique_table.h',
+    'include/meddly/unpacked_node.h',
+    'include/meddly/variable.h',
+    'include/meddly/varorder.h'
+)
+
+install_headers(headers_meddly, subdir: 'meddly')
+
+#
 # Set up library
 #
 
@@ -181,12 +240,6 @@ meddly_dep = declare_dependency(
     include_directories: meddly_inc,
     link_with: meddly_lib
 )
-
-#
-# TBD: figure out how to install headers
-#
-# install_headers(headers, subdir: 'meddly')
-#
 
 #
 # Build examples and tests

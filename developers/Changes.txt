@@ -2,7 +2,7 @@
 TO DO list
 
 Finishing the switch to meson:
-    * get headers installed correctly
+    * update build instructions on github pages
     * update benchmark scripts
     * update release scripts
         + including - building the tarball
