@@ -20,6 +20,7 @@
 #include <iomanip>
 #include <fstream>
 #include <string.h>
+#include <cassert>
 
 #include "meddly/meddly.h"
 #include "zstream.h"
