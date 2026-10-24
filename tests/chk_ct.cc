@@ -116,7 +116,7 @@ unsigned addEntries(ct_entry_type &CTE, const std::vector <node_handle> &N)
     unsigned cnt=0;
     ct_vector key(2);
     ct_vector res(1);
-    for (int i=0; i<N.size(); i++) {
+    for (unsigned i=0; i<N.size(); i++) {
         for (unsigned j=0; j<N.size(); j++) {
             key[0].setI(i);
             key[1].setN(N[j]);
@@ -143,7 +143,7 @@ unsigned checkEntries(const char* name, ct_entry_type &CTE, const std::vector <n
     unsigned hits = 0;
     ct_vector key(2);
     ct_vector res(1);
-    for (int i=0; i<N.size(); i++) {
+    for (unsigned i=0; i<N.size(); i++) {
         for (unsigned j=0; j<N.size(); j++) {
             key[0].setI(i);
             key[1].setN(N[j]);
@@ -284,7 +284,7 @@ inline void check_new_hits(unsigned oldhits, unsigned newhits)
 //
 // Run CT tests.
 //
-void check_CT(bool monolithic)
+void check_CT()
 {
     using namespace std;
 
@@ -394,32 +394,32 @@ void check_CT(bool monolithic)
     //
 }
 
-bool setStyleNumber(unsigned i)
+void setStyleNumber(unsigned i)
 {
     switch (i) {
         case 0:
             std::cout << "Monolithic chained ";
             ct_initializer::setBuiltinStyle(
                     ct_initializer::MonolithicChainedHash);
-            return true;
+            return;
 
         case 1:
             std::cout << "Monolithic unchained ";
             ct_initializer::setBuiltinStyle(
                     ct_initializer::MonolithicUnchainedHash);
-            return true;
+            return;
 
         case 2:
             std::cout << "Operation chained ";
             ct_initializer::setBuiltinStyle(
                     ct_initializer::OperationChainedHash);
-            return false;
+            return;
 
         case 3:
             std::cout << "Operation unchained ";
             ct_initializer::setBuiltinStyle(
                     ct_initializer::OperationUnchainedHash);
-            return false;
+            return;
 
         default:
             throw "Bad style number";
@@ -445,11 +445,10 @@ void setCompressionNumber(unsigned i)
     }
 }
 
-int main(int argc, const char** argv)
+int main(int, const char**)
 {
     using namespace std;
     try {
-        bool mono;
         // unsigned st=2;
         // unsigned cmp=0;
         for (unsigned st=0; st<4; st++) {
@@ -457,12 +456,12 @@ int main(int argc, const char** argv)
                 MEDDLY::initializer_list* IL = defaultInitializerList(nullptr);
                 cout << "=================================================================\n";
                 cout << "    Testing ";
-                mono = setStyleNumber(st);
+                setStyleNumber(st);
                 setCompressionNumber(cmp);
                 cout << " style CTs\n";
                 cout << "=================================================================\n";
                 MEDDLY::initialize(IL);
-                check_CT(mono);
+                check_CT();
                 MEDDLY::cleanup();
 
             } // compression
