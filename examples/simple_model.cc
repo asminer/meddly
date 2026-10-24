@@ -297,7 +297,7 @@ void buildNextStateFunction(const char* const* events, unsigned nEvents,
 }
 
 inline void showResult(MEDDLY::output *fout, const char* what,
-        const MEDDLY::dd_edge &S, const timer &watch)
+        const MEDDLY::dd_edge &, const timer &watch)
 {
     if (fout) {
             *fout << "    " << what << ": ";
@@ -440,7 +440,8 @@ public:
 };
 
 
-void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::forest* mddF, MEDDLY::forest* mxdF, MEDDLY::implicit_relation* T)
+// int bounds, forest* mddF
+void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, int , MEDDLY::forest*, MEDDLY::forest* mxdF, MEDDLY::implicit_relation* T)
 {
 
   unsigned node_count = 0;
@@ -489,7 +490,8 @@ void buildImplicitRelation(const int* const* events, int nEvents,int nPlaces, in
 }
 
 
-MEDDLY::hybrid_event** buildHybridRelation(const int* const* events, int nEvents,int nPlaces, int bounds, MEDDLY::forest* mddF, MEDDLY::forest* mxdF) {
+// int bounds, forest* mddF, forest* mxdF
+MEDDLY::hybrid_event** buildHybridRelation(const int* const* events, int nEvents,int nPlaces, int, MEDDLY::forest*, MEDDLY::forest* mxdF) {
 
   unsigned node_count = 0;
   int* tops_of_events = (int*)malloc(size_t(nEvents)*sizeof(int));

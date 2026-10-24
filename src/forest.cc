@@ -33,7 +33,9 @@
 #include "meddly/oper.h"
 #include "meddly/operators.h"
 #include "meddly/node_marker.h"
+#ifdef ALLOW_DEPRECATED_0_18_2
 #include "meddly/logger.h"
+#endif
 #include "meddly/compute_table.h"
 #include "meddly/ct_entry_type.h"  // for invalidateAllWithForest
 
@@ -864,9 +866,11 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     }
 
     stats.incActive(1);
+#ifdef ALLOW_DEPRECATED_0_18_2
     if (theLogger && theLogger->recordingNodeCounts()) {
         theLogger->addToActiveNodeCount(this, un->getLevel(), 1);
     }
+#endif
 
     //
     // Copy the temp node into long-term node storage
@@ -1008,9 +1012,11 @@ MEDDLY::node_handle MEDDLY::forest
   MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
 
   stats.incActive(1);
+#ifdef ALLOW_DEPRECATED_0_18_2
   if (theLogger && theLogger->recordingNodeCounts()) {
     theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
   }
+#endif
 
   #if 0
   // All of the work is in satimpl_opname::implicit_relation now :^)
@@ -2025,13 +2031,15 @@ void MEDDLY::forest::showInfo(output &s, int verb)
   s << long(unique->getNumEntries()) << "\n";
 }
 
+#ifdef ALLOW_DEPRECATED_0_18_2
 void MEDDLY::forest::setLogger(logger* L, const char* name)
 {
     theLogger = L;
     if (theLogger) theLogger->logForestInfo(this, name);
 }
+#endif
 
-void MEDDLY::forest::reportForestStats(output &s, const char* pad) const
+void MEDDLY::forest::reportForestStats(output &, const char*) const
 {
   // default - do nothing
 }
@@ -2112,10 +2120,12 @@ MEDDLY::forest::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
     //
     free_relnodes = nullptr;
 
+#ifdef ALLOW_DEPRECATED_0_18_2
     //
     // Empty logger
     //
     theLogger = nullptr;
+#endif
 
     //
     // Unique table(s)

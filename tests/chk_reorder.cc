@@ -362,7 +362,7 @@ void test_rels(domain *D, range_type r, edge_labeling el)
  *
  */
 
-int main(int argc, const char** argv)
+int main(int, const char** argv)
 {
     using namespace std;
 

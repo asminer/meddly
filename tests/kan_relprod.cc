@@ -96,7 +96,8 @@ void compare_states(const bool fwd, unsigned dist, const dd_edge &ftr,
 {
     using namespace std;
 
-    cout << "    checking distance " << dist << "\n";
+    cout << "    checking " << (fwd?"forward":"backward")
+         << " distance " << dist << "\n";
     unsigned card = 0;
 
     ostream_output mout(cout);

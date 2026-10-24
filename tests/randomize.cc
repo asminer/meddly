@@ -97,7 +97,7 @@ MEDDLY::domain* vectorgen::makeDomain()
     return d;
 }
 
-void vectorgen::randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt)
+void vectorgen::randomizeMinterm(MEDDLY::minterm &m)
 {
     const int X = MEDDLY::DONT_CARE;
     const int I = MEDDLY::DONT_CHANGE;

@@ -84,7 +84,7 @@ class vectorgen {
             if (m.isForSets()) {
                 for (unsigned i=1; i<=m.getNumVars(); ++i)
                 {
-                    if (++m.from(i) < dom()) {
+                    if (unsigned(++m.from(i)) < dom()) {
                         return true;
                     }
                     m.from(i) = 0;
@@ -93,11 +93,11 @@ class vectorgen {
             } else {
                 for (unsigned i=1; i<=m.getNumVars(); ++i)
                 {
-                    if (++m.to(i) < dom()) {
+                    if (unsigned(++m.to(i)) < dom()) {
                         return true;
                     }
                     m.to(i) = 0;
-                    if (++m.from(i) < dom()) {
+                    if (unsigned(++m.from(i)) < dom()) {
                         return true;
                     }
                     m.from(i) = 0;
@@ -110,7 +110,7 @@ class vectorgen {
         /// Generate a random minterm.
         /// There may be don't care or don't change values.
         ///
-        void randomizeMinterm(MEDDLY::minterm &m, MEDDLY::range_type rt);
+        void randomizeMinterm(MEDDLY::minterm &m);
 
 
         ///

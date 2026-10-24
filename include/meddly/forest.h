@@ -47,7 +47,9 @@ namespace MEDDLY {
     class relation_node;
     class global_rebuilder;
 
+#ifdef ALLOW_DEPRECATED_0_18_2
     class logger;
+#endif
 };
 
 // ******************************************************************
@@ -1397,7 +1399,7 @@ class MEDDLY::forest {
          */
         virtual void moveUpVariable(int low, int high) = 0;
 
-        virtual void dynamicReorderVariables(int top, int bottom) {
+        virtual void dynamicReorderVariables(int, int) {
             throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
         }
 
@@ -1739,6 +1741,7 @@ class MEDDLY::forest {
         virtual void showInfo(output &strm, int verbosity=0);
 
 
+#ifdef ALLOW_DEPRECATED_0_18_2
         /** Start logging stats.
                 @param  L       Logger to use; if 0, we don't log anything.
                                 Will overwrite the old logger.
@@ -1748,6 +1751,7 @@ class MEDDLY::forest {
                 @param  name    Name to use for the forest (for display only).
         */
         void setLogger(logger* L, const char* name);
+#endif
 
     // ------------------------------------------------------------
     protected: // protected methods for debugging
@@ -1765,7 +1769,9 @@ class MEDDLY::forest {
     private: // private members for debugging
     // ------------------------------------------------------------
 
+#ifdef ALLOW_DEPRECATED_0_18_2
         logger *theLogger;
+#endif
         int delete_depth;
 
 // ===================================================================

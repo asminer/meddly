@@ -208,7 +208,7 @@ class MEDDLY::compute_table {
             Indicate that we are done with a key.
             Might be needed if we do a find but then do NOT use addEntry.
          */
-        virtual void doneKey(ct_entry_key* key) { };
+        virtual void doneKey(ct_entry_key*) { };
 #endif
 
         // **********************************************************

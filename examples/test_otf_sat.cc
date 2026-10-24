@@ -417,7 +417,8 @@ void enabling_subevent::initializeMinterm() {
   }
 }
 
-void enabling_subevent::confirm(otf_relation &rel, int v, int index) {
+// otf_relation &rel
+void enabling_subevent::confirm(otf_relation &, int v, int index) {
   std::cout << "Confirming (enabling): (" << v << ", " << index << ")\n";
   // add minterm:
   // if (value(v[index]) > 0)
@@ -485,7 +486,8 @@ void firing_subevent::initializeMinterm() {
   }
 }
 
-void firing_subevent::confirm(otf_relation &rel, int v, int index) {
+// otf_relation &rel
+void firing_subevent::confirm(otf_relation &, int v, int index) {
   std::cout << "Confirming (firing): (" << v << ", " << index << ")\n";
   // add minterm:
   // if it is a known index

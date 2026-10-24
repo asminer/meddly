@@ -97,7 +97,9 @@ int usage(const char* who)
 #endif
     cout << "\t-exp: use explicit (very slow)\n\n";
     cout << "\t--batch b: specify explicit batch size\n\n";
+#ifdef ALLOW_DEPRECATED_0_18_2
     cout << "\t -l lfile: Write logging information to specified file\n\n";
+#endif
     cout << "\t-pdf: write the MDD representing the reachable states to Kanban.pdf\n\n";
     cout << "\t-ms: mark and sweep\n";
     cout << "\t-opt: optimistic reference counts\n";
@@ -289,6 +291,7 @@ int main(int argc, const char** argv)
         forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
         forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
 
+#ifdef ALLOW_DEPRECATED_0_18_2
         // associate loggers
         FILE_output log;
         logger* LOG = nullptr;
@@ -310,11 +313,12 @@ int main(int argc, const char** argv)
             }
         }
 
+        if (LOG) LOG->newPhase(mdd, "Building initial state");
+#endif
+
         //
         // Build initial state
         //
-        if (LOG) LOG->newPhase(mdd, "Building initial state");
-
         minterm initial(mdd);
         dd_edge init_state(mdd);
         initial.setAllVars(0);
@@ -327,7 +331,9 @@ int main(int argc, const char** argv)
         //
         // Build next-state function
         //
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (LOG) LOG->newPhase(mxd, "Building next-state function");
+#endif
         dd_edge nsf(mxd);
         pregen_relation* ensf = nullptr;
         saturation_operation* sat = nullptr;
@@ -359,7 +365,9 @@ int main(int argc, const char** argv)
             printStats("MxD", mxd);
         }
 
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (LOG) LOG->newPhase(mdd, "Building reachability set");
+#endif
         dd_edge reachable(mdd);
         start.note_time();
         binary_operation* rsgen = nullptr;
@@ -489,12 +497,14 @@ int main(int argc, const char** argv)
         }
 
         // cleanup
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (LOG) {
             LOG->newPhase(mdd, "Cleanup");
             LOG->newPhase(mxd, "Cleanup");
             domain::destroy(d);
             delete LOG;
         }
+#endif
         MEDDLY::cleanup();
         return 0;
     }

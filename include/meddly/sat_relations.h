@@ -790,7 +790,7 @@ class MEDDLY::hybrid_subevent {
       }
 
       /// Get the node_handle of this function
-      inline const node_handle getRootHandle() const {
+      inline node_handle getRootHandle() const {
           // getID() for implicit node
         return root_handle;
       }

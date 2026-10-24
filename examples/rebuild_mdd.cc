@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 
   int nVariables = 0;
   int variableBound = 0;
-  int nElements = 0;
+  unsigned nElements = 0;
   int nTerms = 0;
 
   sscanf(argv[1], "%d", &nVariables);
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
   sscanf(argv[2], "%d", &variableBound);
   assert(variableBound > 0);
 
-  sscanf(argv[3], "%d", &nElements);
+  sscanf(argv[3], "%u", &nElements);
   assert(nElements > 0);
 
   if (argc == 5) {
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
     nTerms = variableBound;
   }
 
-  printf("#variables: %d, variable bound: %d, #elements: %d\n",
+  printf("#variables: %d, variable bound: %d, #elements: %u\n",
       nVariables, variableBound, nElements);
 
   // initialize the variable bounds array to provide to the domain

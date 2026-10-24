@@ -200,7 +200,7 @@ void test_sets(forest* F, rangeval deflt, std::vector <rangeval> fvals)
 
         // more random minterms
         while (MC.size() < i) {
-            SG.randomizeMinterm(MC.unused(), range_type::BOOLEAN);
+            SG.randomizeMinterm(MC.unused());
             MC.unused().setValue( fvals[ MC.size() % fvals.size() ] );
             MC.pushUnused();
         }
@@ -458,7 +458,7 @@ void test_rels(forest* F, rangeval deflt, std::vector <rangeval> fvals)
 
         // more random minterms
         while (MC.size() < i) {
-            RG.randomizeMinterm(MC.unused(), range_type::BOOLEAN);
+            RG.randomizeMinterm(MC.unused());
             MC.unused().setValue( fvals[ MC.size() % fvals.size() ] );
             MC.pushUnused();
         }

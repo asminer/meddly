@@ -279,7 +279,7 @@ class MEDDLY::edge_value {
         //
         // Setters, for low-level storage objects
         //
-        inline void setVoid(const void *p) {
+        inline void setVoid(const void *) {
             mytype = edge_type::VOID;
         }
         inline void setInt(const void *p) {

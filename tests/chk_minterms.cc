@@ -136,7 +136,7 @@ void test_sets(forest* F, rangeval deflt, rangeval fval)
     {
         out << "r ";
         out.flush();
-        SG.randomizeMinterm(m, range_type::BOOLEAN);
+        SG.randomizeMinterm(m);
         m.setValue(fval);
 #ifdef SHOW_MINTERMS
         out << "\n  minterm: ";
@@ -322,7 +322,7 @@ void test_rels(forest* F, rangeval deflt, rangeval fval)
     {
         out << "r ";
         out.flush();
-        RG.randomizeMinterm(m, range_type::BOOLEAN);
+        RG.randomizeMinterm(m);
         m.setValue(fval);
 #ifdef SHOW_MINTERMS
         out << "\n  minterm: ";
