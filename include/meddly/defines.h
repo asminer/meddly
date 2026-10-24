@@ -179,9 +179,9 @@ namespace MEDDLY {
     // ***********************************************************************
     // *                         Sanity check  macros                        *
     // ***********************************************************************
+#ifdef DEVELOPMENT_CODE
     inline void FAIL(const char* fn, unsigned ln, const char* why = nullptr)
     {
-#ifdef DEVELOPMENT_CODE
         if (why) {
             std::cerr   << "\nFATAL: " << why << " at " << fn << " line "
                         << ln << "\n";
@@ -190,8 +190,13 @@ namespace MEDDLY {
                         << ln << "\n";
         }
         exit(1);
-#endif
     }
+#else
+    inline void FAIL(const char*, unsigned, const char* why = nullptr)
+    {
+        (void) why;
+    }
+#endif
 
 } // namespace MEDDLY
 

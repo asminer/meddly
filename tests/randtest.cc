@@ -32,7 +32,7 @@ const unsigned SETDOM = RELDOM * RELDOM;
 
 const unsigned SETBITS = 2;
 
-inline void fillMinterm(unsigned x, int* mt)
+inline void fillMinterm(unsigned x, unsigned* mt)
 {
     for (unsigned j=1; j<=VARS; j++) {
         mt[j] = x % SETDOM;
@@ -47,7 +47,7 @@ inline void fillMinterm(unsigned x, int* mt)
     */
 }
 
-inline void fillMinterm(unsigned x, int* un, int* pr)
+inline void fillMinterm(unsigned x, unsigned* un, unsigned* pr)
 {
     for (unsigned j=1; j<=VARS; j++) {
         pr[j] = x % RELDOM;
@@ -65,7 +65,7 @@ inline void fillMinterm(unsigned x, int* un, int* pr)
 */
 }
 
-inline unsigned whichMinterm(const int* mt)
+inline unsigned whichMinterm(const unsigned* mt)
 {
     unsigned x=0;
     for (unsigned j=VARS; j; j--) {
@@ -82,7 +82,7 @@ inline unsigned whichMinterm(const int* mt)
     return x;
 }
 
-inline unsigned whichMinterm(const int* un, const int* pr)
+inline unsigned whichMinterm(const unsigned* un, const unsigned* pr)
 {
     unsigned x=0;
     for (unsigned j=VARS; j; j--) {
@@ -96,7 +96,7 @@ void flipFullyElements(std::vector <bool> &elems, unsigned seed, unsigned k,
         bool on)
 {
     // Convert 'seed' to minterm
-    int tmp[VARS+1];
+    unsigned tmp[VARS+1];
     fillMinterm(seed, tmp);
     // Replace variable k with all possible values in minterm,
     // and convert back to unsigned
@@ -110,7 +110,7 @@ void flipFullyElements(std::vector <bool> &elems, unsigned seed, unsigned k1,
         unsigned k2, bool on)
 {
     // Convert 'seed' to minterm
-    int tmp[VARS+1];
+    unsigned tmp[VARS+1];
     fillMinterm(seed, tmp);
     // Replace variable k with all possible values in minterm,
     // and convert back to unsigned
@@ -127,8 +127,8 @@ void flipIdentityElements(std::vector <bool> &elems, unsigned seed,
         unsigned k, bool on)
 {
     // Convert 'seed' to minterm
-    int untmp[VARS+1];
-    int prtmp[VARS+1];
+    unsigned untmp[VARS+1];
+    unsigned prtmp[VARS+1];
     fillMinterm(seed, untmp, prtmp);
     for (unsigned v=0; v<RELDOM; v++) {
         untmp[k] = v;
@@ -143,8 +143,8 @@ void flipIdentityElements(std::vector <bool> &elems, unsigned seed,
         unsigned k1, unsigned k2, bool on)
 {
     // Convert 'seed' to minterm
-    int untmp[VARS+1];
-    int prtmp[VARS+1];
+    unsigned untmp[VARS+1];
+    unsigned prtmp[VARS+1];
     fillMinterm(seed, untmp, prtmp);
     for (unsigned v1=0; v1<RELDOM; v1++) {
         untmp[k1] = v1;
@@ -209,7 +209,7 @@ void show(std::ostream &out, const std::vector <unsigned> &list)
     out << "]";
 }
 
-int main(int argc, const char** argv)
+int main(int, const char** argv)
 {
     using namespace std;
 

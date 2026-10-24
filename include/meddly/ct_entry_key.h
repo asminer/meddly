@@ -145,11 +145,17 @@ class MEDDLY::ct_entry_key {
         }
 
     private:
+#ifdef DEVELOPMENT_CODE
         inline void WRITE_SLOT(ct_typeID t)
         {
             MEDDLY_DCASSERT(currslot < total_slots);
             MEDDLY_DCASSERT(etype->getKeyType(currslot).hasType(t));
         }
+#else
+        inline void WRITE_SLOT(ct_typeID)
+        {
+        }
+#endif
 
 
 

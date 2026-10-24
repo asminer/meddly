@@ -214,7 +214,6 @@ headers_meddly = files(
     'include/meddly/rel_node.h',
     'include/meddly/relation_node.h',
     'include/meddly/sat_relations.h',
-    'include/meddly/revision.h',
     'include/meddly/statset.h',
     'include/meddly/terminal.h',
     'include/meddly/unique_table.h',

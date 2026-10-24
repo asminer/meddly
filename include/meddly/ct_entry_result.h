@@ -179,6 +179,7 @@ class MEDDLY::ct_entry_result {
         }
 
     private:
+#ifdef DEVELOPMENT_CODE
         inline void READ_SLOT(ct_typeID t)
         {
             MEDDLY_DCASSERT(data);
@@ -191,6 +192,10 @@ class MEDDLY::ct_entry_result {
             MEDDLY_DCASSERT(currslot < dataLength());
             MEDDLY_DCASSERT(etype->getResultType(currslot).hasType(t));
         }
+#else
+        inline void READ_SLOT(ct_typeID) { }
+        inline void WRITE_SLOT(ct_typeID) { }
+#endif
 
 
     private:
