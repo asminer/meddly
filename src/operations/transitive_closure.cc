@@ -286,7 +286,7 @@ MEDDLY::transitive_closure_dfs::transitive_closure_dfs(ternary_list &c,
   buildCTs();
 }
 
-bool MEDDLY::transitive_closure_dfs::checkTerminals(int aev, node_handle a, int bev, node_handle b, node_handle c,
+bool MEDDLY::transitive_closure_dfs::checkTerminals(int, node_handle a, int bev, node_handle b, node_handle c,
   long& dev, node_handle& d)
 {
   if (a == -1 && b == -1 && c == -1) {
@@ -333,7 +333,7 @@ MEDDLY::ct_entry_key* MEDDLY::transitive_closure_dfs::findResult(long aev, node_
 }
 
 void MEDDLY::transitive_closure_dfs::saveResult(ct_entry_key* key,
-  long aev, node_handle a, long bev, node_handle b, node_handle c, long dev, node_handle d)
+  long, node_handle, long bev, node_handle, node_handle, long dev, node_handle d)
 {
   CTresult[0].reset();
   if (d == 0) {
@@ -378,7 +378,7 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
     bool first = true;
 
     // Read "rows"
-    for (int i = 0; i < Ru->getSize(); i++) {
+    for (unsigned i = 0; i < Ru->getSize(); i++) {
       // Initialize column reader
       int mxdPLevel = arg3F->getNodeLevel(Ru->down(i));
       unpacked_node* Rp = isLevelAbove(-level, mxdPLevel)
@@ -417,7 +417,7 @@ void MEDDLY::transitive_closure_dfs::splitMxd(const dd_edge& mxd)
 #endif
 }
 
-void MEDDLY::transitive_closure_dfs::computeDDEdge(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res, bool uf)
+void MEDDLY::transitive_closure_dfs::computeDDEdge(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res, bool)
 {
   MEDDLY_DCASSERT(arg1F == a.getForest());
   MEDDLY_DCASSERT(arg2F == b.getForest());
@@ -438,7 +438,7 @@ void MEDDLY::transitive_closure_dfs::computeDDEdge(const dd_edge& a, const dd_ed
   res.set(cev, c);
 }
 
-void MEDDLY::transitive_closure_dfs::_compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
+void MEDDLY::transitive_closure_dfs::_compute(int aev, node_handle a, int bev, node_handle b, node_handle,
   long& cev, node_handle& c)
 {
   // Execute saturation operation
@@ -470,7 +470,7 @@ MEDDLY::transitive_closure_forwd_dfs::transitive_closure_forwd_dfs(
 {
 }
 
-void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle a, int in, unpacked_node& nb)
+void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle a, int, unpacked_node& nb)
 {
   MEDDLY_DCASSERT(a != 0);
   // nb is at a primed level
@@ -525,7 +525,7 @@ void MEDDLY::transitive_closure_forwd_dfs::saturateHelper(long aev, node_handle 
       Rp->initIdentity(-Ru->getLevel(), ip, Ru->down(ip));
     }
 
-    for (int jpz = 0; jpz < Rp->getSize(); jpz++) {
+    for (unsigned jpz = 0; jpz < Rp->getSize(); jpz++) {
       const int jp = Rp->index(jpz);
       if (A->down(jp) == 0) {
         MEDDLY_DCASSERT(long(A->edgeval(jp)) == 0);
@@ -703,7 +703,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
       unpacked_node* Rp = unpacked_node::New(arg3F, SPARSE_ONLY);
 
       // loop over mxd "rows"
-      for (int ipz = 0; ipz < Ru->getSize(); ipz++) {
+      for (unsigned ipz = 0; ipz < Ru->getSize(); ipz++) {
         const int ip = Ru->index(ipz);
         if (D->down(ip) == 0) {
           continue;
@@ -717,7 +717,7 @@ void MEDDLY::transitive_closure_forwd_dfs::recFire(long aev, node_handle a, long
         }
 
         // loop over mxd "columns"
-        for (int jpz = 0; jpz < Rp->getSize(); jpz++) {
+        for (unsigned jpz = 0; jpz < Rp->getSize(); jpz++) {
           const int jp = Rp->index(jpz);
           if (A->down(jp) == 0) {
             MEDDLY_DCASSERT(long(A->edgeval(jp)) == 0);
@@ -847,7 +847,7 @@ bool MEDDLY::transitive_closure_evplus::checkForestCompatibility() const
     && o1->is_compatible_with(*o3);
 }
 
-bool MEDDLY::transitive_closure_evplus::checkTerminals(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
+bool MEDDLY::transitive_closure_evplus::checkTerminals(int, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
 {
   if (a == -1 && b == -1) {
     c = -1;
@@ -892,7 +892,7 @@ MEDDLY::ct_entry_key* MEDDLY::transitive_closure_evplus::findResult(long aev, no
 }
 
 void MEDDLY::transitive_closure_evplus::saveResult(ct_entry_key* key,
-  long aev, node_handle a, long bev, node_handle b, int level, long cev, node_handle c)
+  long, node_handle, long bev, node_handle, int, long cev, node_handle c)
 {
   CTresult[0].reset();
   if (c == 0) {

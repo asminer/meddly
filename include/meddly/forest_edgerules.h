@@ -49,33 +49,33 @@ namespace MEDDLY {
                 v.set();
             }
             /// Return a + b
-            static inline edge_value applyOp(const edge_value &a,
-                    const edge_value &b)
+            static inline edge_value applyOp(const edge_value &,
+                    const edge_value &)
             {
                 return edge_value();
             }
             /// Accumulate a += b
-            static inline void accumulateOp(edge_value &a,
-                    const edge_value &b)
+            static inline void accumulateOp(edge_value &,
+                    const edge_value &)
             {
             }
             /// Accumulate a += -b
-            static inline void accumulateInverse(edge_value &a,
-                    const edge_value &b)
+            static inline void accumulateInverse(edge_value &,
+                    const edge_value &)
             {
             }
             /// Normalize edge value
-            static inline void normalize(edge_value &ev, node_handle p)
+            static inline void normalize(edge_value &, node_handle)
             {
             }
             static inline terminal buildTerm(
-                            const edge_value &val, node_handle p)
+                            const edge_value &, node_handle p)
             {
                 FAIL(__FILE__, __LINE__, "shouldn't be called");
                 // Keep compiler happy:
                 return terminal(p, terminal_type::OMEGA);
             }
-            static inline bool isZeroFunction(const edge_value &val,
+            static inline bool isZeroFunction(const edge_value &,
                     node_handle p)
             {
                 return (0==p);
@@ -228,7 +228,7 @@ namespace MEDDLY {
                 }
                 return terminal(p, terminal_type::OMEGA);
             }
-            static inline bool isZeroFunction(const edge_value &val,
+            static inline bool isZeroFunction(const edge_value &,
                     node_handle p)
             {
                 return (OMEGA_ZERO == p);
