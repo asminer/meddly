@@ -181,7 +181,7 @@ void MEDDLY::operation::registerInForest(MEDDLY::forest* f)
     FList.push_back(f->FID());
 }
 
-void MEDDLY::operation::unregisterInForest(MEDDLY::forest* f)
+void MEDDLY::operation::unregisterInForest(MEDDLY::forest*)
 {
     //
     // It is safe to NOT update FList

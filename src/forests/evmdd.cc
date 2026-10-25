@@ -24,17 +24,17 @@ MEDDLY::evmdd_forest
 {
 }
 
-void MEDDLY::evmdd_forest::swapAdjacentVariables(int level)
+void MEDDLY::evmdd_forest::swapAdjacentVariables(int)
 {
 	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-void MEDDLY::evmdd_forest::moveDownVariable(int high, int low)
+void MEDDLY::evmdd_forest::moveDownVariable(int, int)
 {
 	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-void MEDDLY::evmdd_forest::moveUpVariable(int low, int high)
+void MEDDLY::evmdd_forest::moveUpVariable(int, int)
 {
 	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }

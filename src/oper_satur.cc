@@ -51,7 +51,7 @@ MEDDLY::saturation_operation::checkForestCompatibility() const
 }
 
 bool
-MEDDLY::saturation_operation::isReachable(const dd_edge& a, const dd_edge& c)
+MEDDLY::saturation_operation::isReachable(const dd_edge&, const dd_edge&)
 {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }

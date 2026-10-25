@@ -154,7 +154,7 @@ void MEDDLY::unary_operation::computeTemp(const dd_edge &arg, dd_edge &res)
     }
 }
 
-void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res, bool userFlag)
+void MEDDLY::unary_operation::computeDDEdge(const dd_edge &, dd_edge &, bool)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -162,14 +162,14 @@ void MEDDLY::unary_operation::computeDDEdge(const dd_edge &arg, dd_edge &res, bo
 
 // new compute methods
 
-void MEDDLY::unary_operation::compute(int L, unsigned in,
-        const edge_value &av, node_handle ap, edge_value &cv, node_handle &cp)
+void MEDDLY::unary_operation::compute(int, unsigned,
+        const edge_value &, node_handle, edge_value &, node_handle &)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
-void MEDDLY::unary_operation::compute(int L, unsigned in,
-        const edge_value &av, node_handle ap, oper_item &res)
+void MEDDLY::unary_operation::compute(int, unsigned,
+        const edge_value &, node_handle, oper_item &)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
@@ -185,13 +185,13 @@ void MEDDLY::unary_factory::cleanup()
 }
 
 MEDDLY::unary_operation*
-MEDDLY::unary_factory::build_new(forest* arg, forest* res)
+MEDDLY::unary_factory::build_new(forest*, forest*)
 {
     return nullptr;
 }
 
 MEDDLY::unary_operation*
-MEDDLY::unary_factory::build_new(forest* arg, opnd_type res)
+MEDDLY::unary_factory::build_new(forest*, opnd_type)
 {
     return nullptr;
 }

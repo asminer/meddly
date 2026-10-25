@@ -33,10 +33,7 @@ MEDDLY::mtmdd_forest
 void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
 {
   MEDDLY_DCASSERT(level >= 1);
-  MEDDLY_DCASSERT(level < getNumVariables());
-
-  MEDDLY_DCASSERT(level >= 1);
-  MEDDLY_DCASSERT(level < getNumVariables());
+  MEDDLY_DCASSERT(level < int(getNumVariables()));
 
   int hvar = getVarByLevel(level + 1);  // The variable at the higher level
   int lvar = getVarByLevel(level);    // The variable at the lower level
@@ -62,7 +59,7 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
     unpacked_node* nr = unpacked_node::newFromNode(this, hnodes[i], FULL_ONLY);
 
     MEDDLY_DCASSERT(nr->getLevel() == level + 1);
-    MEDDLY_DCASSERT(nr->getSize() == hsize);
+    MEDDLY_DCASSERT(int(nr->getSize()) == hsize);
 
     for (int j = 0; j < hsize; j++) {
       if (isLevelAbove(getNodeLevel(nr->down(j)), level - 1)) {
@@ -112,7 +109,7 @@ void MEDDLY::mtmdd_forest::swapAdjacentVariables(int level)
         unpacked_node* nr =
             unpacked_node::newFromNode(this, high_nr->down(j), FULL_ONLY);
 
-        MEDDLY_DCASSERT(nr->getSize() == lsize);
+        MEDDLY_DCASSERT(int(nr->getSize()) == lsize);
         for (int k = 0; k < lsize; k++) {
           children[j][k] = nr->down(k);
         }
@@ -157,7 +154,7 @@ void MEDDLY::mtmdd_forest::moveDownVariable(int high, int low)
 {
   MEDDLY_DCASSERT(low<high);
   MEDDLY_DCASSERT(low>=1);
-  MEDDLY_DCASSERT(high<=getNumVariables());
+  MEDDLY_DCASSERT(high<=int(getNumVariables()));
 
   removeAllComputeTableEntries();
 
@@ -170,7 +167,7 @@ void MEDDLY::mtmdd_forest::moveUpVariable(int low, int high)
 {
   MEDDLY_DCASSERT(low<high);
   MEDDLY_DCASSERT(low>=1);
-  MEDDLY_DCASSERT(high<=getNumVariables());
+  MEDDLY_DCASSERT(high<=int(getNumVariables()));
 
   removeAllComputeTableEntries();
 
@@ -182,7 +179,7 @@ void MEDDLY::mtmdd_forest::moveUpVariable(int low, int high)
 void MEDDLY::mtmdd_forest::dynamicReorderVariables(int top, int bottom)
 {
   MEDDLY_DCASSERT(top > bottom);
-  MEDDLY_DCASSERT(top <= getNumVariables());
+  MEDDLY_DCASSERT(top <= int(getNumVariables()));
   MEDDLY_DCASSERT(bottom >= 1);
 
   removeAllComputeTableEntries();

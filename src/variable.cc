@@ -81,7 +81,7 @@ void MEDDLY::variable::enlargeBound(bool prime, int b)
     }
 }
 
-void MEDDLY::variable::shrinkBound(int b, bool force)
+void MEDDLY::variable::shrinkBound(int, bool)
 {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }

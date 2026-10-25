@@ -193,7 +193,7 @@ bool MEDDLY::freelist_manager<INT>::isValidHandle(node_address h) const
 
 template <class INT>
 void MEDDLY::freelist_manager<INT>::reportStats(output &s, const char* pad,
-  bool human, bool details) const
+  bool /*human*/, bool details) const
 {
   s << pad << "Report for freelist memory manager:\n";
   if (details) {
@@ -256,7 +256,7 @@ MEDDLY::node_address MEDDLY::freelist_manager<INT>::getFirstAddress() const
 // ******************************************************************
 
 template <class INT>
-bool MEDDLY::freelist_manager<INT>::isAddressInUse(node_address addr) const
+bool MEDDLY::freelist_manager<INT>::isAddressInUse(node_address) const
 {
   return false;   // Can't tell, don't even try
 }
@@ -264,7 +264,7 @@ bool MEDDLY::freelist_manager<INT>::isAddressInUse(node_address addr) const
 // ******************************************************************
 
 template <class INT>
-MEDDLY::node_address MEDDLY::freelist_manager<INT>::getNextAddress(node_address addr) const
+MEDDLY::node_address MEDDLY::freelist_manager<INT>::getNextAddress(node_address ) const
 {
   return 0;
 }
@@ -297,21 +297,21 @@ MEDDLY::freelist_style::~freelist_style()
 
 MEDDLY::memory_manager*
 MEDDLY::freelist_style::initManager(unsigned char granularity,
-  unsigned char minsize, memstats &stats) const
+  unsigned char /*minsize*/, memstats &stats) const
 {
-  switch (granularity) {
+    switch (granularity) {
 
-    case sizeof(short):
-      return new freelist_manager<short>(getName(), stats);
+        case sizeof(short):
+            return new freelist_manager<short>(getName(), stats);
 
-    case sizeof(int):
-      return new freelist_manager<int>(getName(), stats);
+        case sizeof(int):
+            return new freelist_manager<int>(getName(), stats);
 
-    case sizeof(long):
-      return new freelist_manager<long>(getName(), stats);
+        case sizeof(long):
+            return new freelist_manager<long>(getName(), stats);
 
-    default:
-      return 0;
-  }
+        default:
+            return 0;
+    }
 }
 

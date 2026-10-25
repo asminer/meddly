@@ -505,7 +505,7 @@ void MEDDLY::otf_subevent::clearMinterms()
 }
 
 
-void MEDDLY::otf_subevent::confirm(otf_relation& rel, int v, int i) {
+void MEDDLY::otf_subevent::confirm(otf_relation&, int, int) {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
@@ -1284,7 +1284,7 @@ double MEDDLY::otf_relation::getArcCount(
 }
 
 
-void MEDDLY::otf_relation::getBoundedMonolithicNSF(dd_edge &root) const
+void MEDDLY::otf_relation::getBoundedMonolithicNSF(dd_edge &) const
 {
   fprintf(stderr, "otf_relation::getBoundedMonolithicNSF not implemented yet\n");
   throw 42;
@@ -1939,7 +1939,7 @@ void MEDDLY::hybrid_subevent::clearMinterms()
 }
 
 
-void MEDDLY::hybrid_subevent::confirm(hybrid_relation& rel, int v, int i) {
+void MEDDLY::hybrid_subevent::confirm(hybrid_relation&, int, int) {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 

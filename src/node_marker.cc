@@ -189,7 +189,7 @@ void MEDDLY::node_marker::_mark(node_handle p)
 {
     MEDDLY_DCASSERT(For);
 
-    MEDDLY_CHECK_RANGE(1, p, marked.getSize());
+    MEDDLY_CHECK_RANGE(1, p, long(marked.getSize()));
     const node_storage* nodeMan = For->getNodeManager();
     MEDDLY_DCASSERT(nodeMan);
 
@@ -215,7 +215,7 @@ void MEDDLY::node_marker::_mark(node_handle p)
 #ifdef DEBUG_MARK
         std::cerr << "\texploring " << p << "\n";
 #endif
-        MEDDLY_CHECK_RANGE(1, p, marked.getSize());
+        MEDDLY_CHECK_RANGE(1, p, long(marked.getSize()));
 
         //
         // If S_top is empty, we can re-use it; otherwise

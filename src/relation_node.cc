@@ -46,7 +46,7 @@ MEDDLY::relation_node::~relation_node()
 }
 
 
-long MEDDLY::relation_node::nextOf(long i)
+long MEDDLY::relation_node::nextOf(long)
 {
   //to be defined for the example you use & comment this definition
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);

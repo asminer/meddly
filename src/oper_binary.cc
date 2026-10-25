@@ -140,8 +140,8 @@ void MEDDLY::binary_operation::computeTemp(const dd_edge &ar1,
 }
 
 
-void MEDDLY::binary_operation::computeDDEdge(const dd_edge &ar1,
-        const dd_edge &ar2, dd_edge &res, bool userFlag)
+void MEDDLY::binary_operation::computeDDEdge(const dd_edge &,
+        const dd_edge &, dd_edge &, bool)
 {
 #ifdef DEBUG_THROWS
     std::cerr << "default computeDDEdge for binary operation " << getName() << "\n";
@@ -150,10 +150,10 @@ void MEDDLY::binary_operation::computeDDEdge(const dd_edge &ar1,
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-void MEDDLY::binary_operation::compute(int L, unsigned in,
-        const edge_value &av, node_handle ap,
-        const edge_value &bv, node_handle bp,
-        edge_value &cv, node_handle &cp)
+void MEDDLY::binary_operation::compute(int, unsigned,
+        const edge_value &, node_handle,
+        const edge_value &, node_handle,
+        edge_value &, node_handle &)
 {
 #ifdef DEBUG_THROWS
     std::cerr << "default compute for binary operation " << getName() << "\n";
@@ -174,7 +174,7 @@ void MEDDLY::binary_factory::cleanup()
 }
 
 MEDDLY::binary_operation*
-MEDDLY::binary_factory::build_new(forest* a, forest* b, forest* c)
+MEDDLY::binary_factory::build_new(forest*, forest*, forest*)
 {
     return nullptr;
 }

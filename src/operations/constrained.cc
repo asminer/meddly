@@ -288,7 +288,7 @@ MEDDLY::constrained_bckwd_bfs_evplus::constrained_bckwd_bfs_evplus(
 }
 
 void MEDDLY::constrained_bckwd_bfs_evplus::computeDDEdge(const dd_edge& a,
-        const dd_edge& b, const dd_edge& r, dd_edge& res, bool f)
+        const dd_edge& b, const dd_edge& r, dd_edge& res, bool)
 {
     MEDDLY_DCASSERT(res.getForest() == resF);
 
@@ -379,7 +379,7 @@ MEDDLY::ct_entry_key* MEDDLY::constrained_dfs_mt::findResult(
 }
 
 void MEDDLY::constrained_dfs_mt::saveResult(ct_entry_key* key,
-  node_handle a, node_handle b, node_handle r, node_handle c)
+  node_handle, node_handle, node_handle, node_handle c)
 {
   CTresult[0].reset();
   CTresult[0].writeN(c);
@@ -417,7 +417,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
     bool first = true;
 
     // Read "rows"
-    for (int i = 0; i < Ru->getSize(); i++) {
+    for (int i = 0; i < int(Ru->getSize()); i++) {
       // Initialize column reader
       int mxdPLevel = arg3F->getNodeLevel(Ru->down(i));
       unpacked_node* Rp = isLevelAbove(-level, mxdPLevel)
@@ -456,7 +456,7 @@ void MEDDLY::constrained_dfs_mt::splitMxd(const dd_edge& mxd)
 #endif
 }
 
-void MEDDLY::constrained_dfs_mt::computeDDEdge(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res, bool uf)
+void MEDDLY::constrained_dfs_mt::computeDDEdge(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res, bool)
 {
   MEDDLY_DCASSERT(res.getForest() == resF);
 
@@ -472,7 +472,7 @@ void MEDDLY::constrained_dfs_mt::computeDDEdge(const dd_edge& a, const dd_edge& 
   res.set(c);
 }
 
-void MEDDLY::constrained_dfs_mt::_compute(node_handle a, node_handle b, node_handle r,
+void MEDDLY::constrained_dfs_mt::_compute(node_handle a, node_handle b, node_handle,
   node_handle& c)
 {
   // Execute saturation operation
@@ -526,7 +526,7 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
   // indices to explore
   std::deque<int> queue;
   std::vector<bool> waiting(nb.getSize(), false);
-  for (int i = 0; i < nb.getSize(); i++) {
+  for (int i = 0; i < int(nb.getSize()); i++) {
     if (nb.down(i) != 0 && Ru->down(i) != 0) {
       queue.push_back(i);
       waiting[i] = true;
@@ -534,7 +534,7 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
   }
 
   unpacked_node** Rps = new unpacked_node*[Ru->getSize()];
-  for (int i = 0; i < Ru->getSize(); i++) {
+  for (int i = 0; i < int(Ru->getSize()); i++) {
     if (Ru->down(i) == 0) {
       Rps[i] = nullptr;
     }
@@ -553,7 +553,7 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
 
     MEDDLY_DCASSERT(nb.down(i) != 0 && Rps[i] != nullptr);
 
-    for (int jz = 0; jz < Rps[i]->getSize(); jz++) {
+    for (int jz = 0; jz < int(Rps[i]->getSize()); jz++) {
       const int j = Rps[i]->index(jz);
       if (A->down(j) == 0) {
         continue;
@@ -605,7 +605,7 @@ void MEDDLY::constrained_forwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
   }
 
   unpacked_node::Recycle(Ru);
-  for (int i = 0; i < Ru->getSize(); i++) {
+  for (int i = 0; i < int(Ru->getSize()); i++) {
     if (Rps[i] != nullptr) {
       unpacked_node::Recycle(Rps[i]);
     }
@@ -674,7 +674,7 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
       : unpacked_node::newFromNode(arg3F, r, SPARSE_ONLY);
 
     // loop over mxd "rows"
-    for (int iz = 0; iz < Ru->getSize(); iz++) {
+    for (int iz = 0; iz < int(Ru->getSize()); iz++) {
       const int i = Ru->index(iz);
 
       unpacked_node* Rp = isLevelAbove(-level, arg3F->getNodeLevel(Ru->down(iz)))
@@ -682,7 +682,7 @@ void MEDDLY::constrained_forwd_dfs_mt::recFire(node_handle a, node_handle b, nod
         : unpacked_node::newFromNode(arg3F, Ru->down(iz), SPARSE_ONLY);
 
       // loop over mxd "columns"
-      for (int jz = 0; jz < Rp->getSize(); jz++) {
+      for (int jz = 0; jz < int(Rp->getSize()); jz++) {
         const int j = Rp->index(jz);
         if (A->down(j) == 0) {
           continue;
@@ -766,7 +766,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
   // indices to explore
   std::deque<int> queue;
   std::vector<bool> waiting(nb.getSize(), false);
-  for (int j = 0; j < nb.getSize(); j++) {
+  for (int j = 0; j < int(nb.getSize()); j++) {
     if (nb.down(j) != 0) {
       queue.push_back(j);
       waiting[j] = true;
@@ -774,7 +774,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
   }
 
   unpacked_node** Rps = new unpacked_node*[Ru->getSize()];
-  for (int iz = 0; iz < Ru->getSize(); iz++) {
+  for (int iz = 0; iz < int(Ru->getSize()); iz++) {
     const int i = Ru->index(iz);
     if (A->down(i) == 0) {
       Rps[iz] = nullptr;
@@ -794,7 +794,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
 
     MEDDLY_DCASSERT(nb.down(j) != 0);
 
-    for (int iz = 0; iz < Ru->getSize(); iz++) {
+    for (int iz = 0; iz < int(Ru->getSize()); iz++) {
       const int i = Ru->index(iz);
       if (A->down(i) == 0) {
         continue;
@@ -848,7 +848,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::saturateHelper(node_handle a, unpacked_no
   }
 
   unpacked_node::Recycle(Ru);
-  for (int iz = 0; iz < Ru->getSize(); iz++) {
+  for (int iz = 0; iz < int(Ru->getSize()); iz++) {
     unpacked_node::Recycle(Rps[iz]);
   }
   delete[] Rps;
@@ -915,7 +915,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
       : unpacked_node::newFromNode(arg3F, r, SPARSE_ONLY);
 
     // loop over mxd "rows"
-    for (int iz = 0; iz < Ru->getSize(); iz++) {
+    for (int iz = 0; iz < int(Ru->getSize()); iz++) {
       const int i = Ru->index(iz);
       if (A->down(i) == 0) {
         continue;
@@ -926,7 +926,7 @@ void MEDDLY::constrained_bckwd_dfs_mt::recFire(node_handle a, node_handle b, nod
         : unpacked_node::newFromNode(arg3F, Ru->down(iz), SPARSE_ONLY);
 
       // loop over mxd "columns"
-      for (int jz = 0; jz < Rp->getSize(); jz++) {
+      for (int jz = 0; jz < int(Rp->getSize()); jz++) {
         const int j = Rp->index(jz);
 
         // ok, there is an i->j "edge".
@@ -1028,7 +1028,7 @@ bool MEDDLY::constrained_saturation_mt::checkForestCompatibility() const
     && o1->is_compatible_with(*o3);
 }
 
-bool MEDDLY::constrained_saturation_mt::checkTerminals(node_handle a, node_handle b, node_handle& c)
+bool MEDDLY::constrained_saturation_mt::checkTerminals(node_handle, node_handle b, node_handle& c)
 {
   if (argF->isTerminalNode(b)) {
     c = b;
@@ -1058,7 +1058,7 @@ MEDDLY::ct_entry_key* MEDDLY::constrained_saturation_mt::findResult(
 }
 
 void MEDDLY::constrained_saturation_mt::saveResult(ct_entry_key* key,
-  node_handle a, node_handle b, int level, node_handle c)
+  node_handle, node_handle, int, node_handle c)
 {
   CTresult[0].reset();
   CTresult[0].writeN(c);
@@ -1179,7 +1179,7 @@ MEDDLY::ct_entry_key* MEDDLY::constrained_bckwd_dfs_evplus::findResult(long aev,
 }
 
 void MEDDLY::constrained_bckwd_dfs_evplus::saveResult(ct_entry_key* key,
-  long aev, node_handle a, long bev, node_handle b, node_handle r, long cev, node_handle c)
+  long, node_handle, long bev, node_handle, node_handle, long cev, node_handle c)
 {
   CTresult[0].reset();
   if (c == 0) {
@@ -1224,7 +1224,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
     bool first = true;
 
     // Read "rows"
-    for (int i = 0; i < Ru->getSize(); i++) {
+    for (int i = 0; i < int(Ru->getSize()); i++) {
       // Initialize column reader
       int mxdPLevel = arg3F->getNodeLevel(Ru->down(i));
       unpacked_node* Rp = isLevelAbove(-level, mxdPLevel)
@@ -1263,7 +1263,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::splitMxd(const dd_edge& mxd)
 #endif
 }
 
-void MEDDLY::constrained_bckwd_dfs_evplus::computeDDEdge(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res, bool uf)
+void MEDDLY::constrained_bckwd_dfs_evplus::computeDDEdge(const dd_edge& a, const dd_edge& b, const dd_edge& r, dd_edge& res, bool)
 {
   MEDDLY_DCASSERT(res.getForest() == resF);
 
@@ -1281,7 +1281,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::computeDDEdge(const dd_edge& a, const
   res.set(cev, c);
 }
 
-void MEDDLY::constrained_bckwd_dfs_evplus::_compute(int aev, node_handle a, int bev, node_handle b, node_handle r,
+void MEDDLY::constrained_bckwd_dfs_evplus::_compute(int aev, node_handle a, int bev, node_handle b, node_handle,
   long& cev, node_handle& c)
 {
   // Execute saturation operation
@@ -1321,7 +1321,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
   // indices to explore
   std::deque<int> queue;
   std::vector<bool> waiting(nb.getSize(), false);
-  for (int j = 0; j < nb.getSize(); j++) {
+  for (int j = 0; j < int(nb.getSize()); j++) {
     if (nb.down(j) != 0) {
       queue.push_back(j);
       waiting[j] = true;
@@ -1329,7 +1329,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
   }
 
   unpacked_node** Rps = new unpacked_node*[Ru->getSize()];
-  for (int iz = 0; iz < Ru->getSize(); iz++) {
+  for (int iz = 0; iz < int(Ru->getSize()); iz++) {
     const int i = Ru->index(iz);
     if (A->down(i) == 0) {
       Rps[iz] = nullptr;
@@ -1351,7 +1351,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
 
     MEDDLY_DCASSERT(nb.down(j) != 0);
 
-    for (int iz = 0; iz < Ru->getSize(); iz++) {
+    for (int iz = 0; iz < int(Ru->getSize()); iz++) {
       const unsigned i = Ru->index(iz);
       if (A->down(i) == 0) {
         MEDDLY_DCASSERT(long(A->edgeval(i)) == 0);
@@ -1413,7 +1413,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
         }
 
         if (updated) {
-          if (j == i) {
+          if (j == int(i)) {
             // Restart inner for-loop.
             iz = -1;
           }
@@ -1430,7 +1430,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::saturateHelper(long aev, node_handle 
   }
 
   unpacked_node::Recycle(Ru);
-  for (int iz = 0; iz < Ru->getSize(); iz++) {
+  for (int iz = 0; iz < int(Ru->getSize()); iz++) {
     unpacked_node::Recycle(Rps[iz]);
   }
   delete[] Rps;
@@ -1501,7 +1501,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
       : unpacked_node::newFromNode(arg3F, r, SPARSE_ONLY);
 
     // loop over mxd "rows"
-    for (int iz = 0; iz < Ru->getSize(); iz++) {
+    for (int iz = 0; iz < int(Ru->getSize()); iz++) {
       const int i = Ru->index(iz);
       if (A->down(i) == 0) {
         MEDDLY_DCASSERT(long(A->edgeval(i)) == 0);
@@ -1513,7 +1513,7 @@ void MEDDLY::constrained_bckwd_dfs_evplus::recFire(long aev, node_handle a, long
         : unpacked_node::newFromNode(arg3F, Ru->down(iz), SPARSE_ONLY);
 
       // loop over mxd "columns"
-      for (int jz = 0; jz < Rp->getSize(); jz++) {
+      for (int jz = 0; jz < int(Rp->getSize()); jz++) {
         int j = Rp->index(jz);
 
         // ok, there is an i->j "edge".
@@ -1632,7 +1632,7 @@ bool MEDDLY::constrained_saturation_evplus::checkForestCompatibility() const
     && o1->is_compatible_with(*o3);
 }
 
-bool MEDDLY::constrained_saturation_evplus::checkTerminals(int aev, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
+bool MEDDLY::constrained_saturation_evplus::checkTerminals(int, node_handle a, int bev, node_handle b, long& cev, node_handle& c)
 {
   if (a == -1 && b == -1) {
     c = -1;
@@ -1678,7 +1678,7 @@ MEDDLY::ct_entry_key* MEDDLY::constrained_saturation_evplus::findResult(long aev
 }
 
 void MEDDLY::constrained_saturation_evplus::saveResult(ct_entry_key* key,
-  long aev, node_handle a, long bev, node_handle b, int level, long cev, node_handle c)
+  long, node_handle, long bev, node_handle, int, long cev, node_handle c)
 {
   CTresult[0].reset();
   if (c == 0) {
