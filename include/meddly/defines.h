@@ -180,7 +180,7 @@ namespace MEDDLY {
     // *                         Keep compilers happy                        *
     // ***********************************************************************
     template <class T>
-    inline void IGNORE_UNUSED(T a) {
+    inline void IGNORE_UNUSED(T& a) {
         (void) a;
     }
 

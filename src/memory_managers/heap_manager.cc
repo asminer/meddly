@@ -887,20 +887,21 @@ MEDDLY::memory_manager*
 MEDDLY::heap_style::initManager(unsigned char granularity,
   unsigned char minsize, memstats &stats) const
 {
-  if (sizeof(int) == granularity) {
-    return new heap_manager <int>(getName(), stats);
-  }
+    IGNORE_UNUSED(minsize);
+    if (sizeof(int) == granularity) {
+        return new heap_manager <int>(getName(), stats);
+    }
 
-  if (sizeof(long) == granularity) {
-    return new heap_manager <long>(getName(), stats);
-  }
+    if (sizeof(long) == granularity) {
+        return new heap_manager <long>(getName(), stats);
+    }
 
-  if (sizeof(short) == granularity) {
-    return new heap_manager <short>(getName(), stats);
-  }
+    if (sizeof(short) == granularity) {
+        return new heap_manager <short>(getName(), stats);
+    }
 
-  // unsupported granularity
+    // unsupported granularity
 
-  return 0;
+    return 0;
 }
 

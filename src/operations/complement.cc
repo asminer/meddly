@@ -93,6 +93,10 @@ class MEDDLY::compl_mt : public unary_operation {
                 out << " incount " << resF->getNodeInCount(p);
             }
             out << '\n';
+#else
+            IGNORE_UNUSED(out);
+            IGNORE_UNUSED(w);
+            IGNORE_UNUSED(p);
 #endif
         }
 
@@ -138,6 +142,7 @@ void MEDDLY::compl_mt::compute(int L, unsigned in,
     out.indentation(0);
     out << "Starting top-level compl_mt::compute #" << top_count << "\n";
 #endif
+    IGNORE_UNUSED(av);
     MEDDLY_DCASSERT(av.isVoid());
     cv.set();
     _compute(L, in, ap, cp);

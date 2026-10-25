@@ -70,7 +70,7 @@ MEDDLY::copy_inforest::~copy_inforest()
 {
 }
 
-void MEDDLY::copy_inforest::compute(int L, unsigned in,
+void MEDDLY::copy_inforest::compute(int, unsigned,
         const edge_value &av, node_handle ap, edge_value &cv, node_handle &cp)
 {
     cv = av;
@@ -112,6 +112,9 @@ class MEDDLY::copy_MT : public unary_operation {
                 v.show(out);
                 out << ", " << p << ">";
             }
+#else
+            IGNORE_UNUSED(v);
+            IGNORE_UNUSED(p);
 #endif
         }
 
@@ -168,6 +171,7 @@ void MEDDLY::copy_MT::compute(int L, unsigned in,
 #ifdef TRACE
     out.indentation(0);
 #endif
+    IGNORE_UNUSED(av);
     MEDDLY_DCASSERT(av.isVoid());
     cv.set();
     _compute(L, in, ap, cv, cp);
@@ -513,6 +517,9 @@ class MEDDLY::copy_EV_fast : public unary_operation {
                 v.show(out);
                 out << ", " << p << ">";
             }
+#else
+            IGNORE_UNUSED(v);
+            IGNORE_UNUSED(p);
 #endif
         }
 
@@ -746,6 +753,9 @@ namespace MEDDLY {
                     v.show(out);
                     out << ", " << p << ">";
                 }
+#else
+                IGNORE_UNUSED(v);
+                IGNORE_UNUSED(p);
 #endif
             }
 

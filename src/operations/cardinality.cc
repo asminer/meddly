@@ -134,8 +134,8 @@ MEDDLY::card_templ<RTYPE>::~card_templ()
 }
 
 template <class RTYPE>
-void MEDDLY::card_templ<RTYPE>::compute(int L, unsigned in,
-        const edge_value &av, node_handle ap, oper_item &result)
+void MEDDLY::card_templ<RTYPE>::compute(int L, unsigned,
+        const edge_value &, node_handle ap, oper_item &result)
 {
     MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
 #ifdef TRACE
@@ -275,7 +275,7 @@ class MEDDLY::intcard {
             temp.init(0L);
         }
 
-        static inline void doneTemp(oper_item& temp) {
+        static inline void doneTemp(oper_item&) {
             // nothing to do
         }
 
@@ -324,7 +324,7 @@ class MEDDLY::realcard {
             temp.init(0.0);
         }
 
-        static inline void doneTemp(oper_item& temp) {
+        static inline void doneTemp(oper_item&) {
             // nothing to do
         }
 

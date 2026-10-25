@@ -113,25 +113,25 @@ MEDDLY::node_address MEDDLY::malloc_manager::requestChunk(size_t &numSlots)
 
 void MEDDLY::malloc_manager::recycleChunk(node_address h, size_t numSlots)
 {
-  size_t bytes = numSlots * granularity;
-  void* chunk = (void*) h;
-  free(chunk);
-  bytes_allocd_not_freed -= bytes;
-  decMemUsed(bytes);
-  decMemAlloc(bytes);
+    size_t bytes = numSlots * granularity;
+    void* chunk = (void*) h;
+    free(chunk);
+    bytes_allocd_not_freed -= bytes;
+    decMemUsed(bytes);
+    decMemAlloc(bytes);
 }
 
 // ******************************************************************
 
 bool MEDDLY::malloc_manager::isValidHandle(node_address h) const
 {
-  return h;
+    return h;
 }
 
 // ******************************************************************
 
-void MEDDLY::malloc_manager::reportStats(output &s, const char* pad,
-  bool human, bool details) const
+void MEDDLY::malloc_manager::reportStats(output &, const char*,
+    bool, bool) const
 {
 }
 
@@ -139,36 +139,36 @@ void MEDDLY::malloc_manager::reportStats(output &s, const char* pad,
 
 void MEDDLY::malloc_manager::dumpInternal(output &s) const
 {
-  s << "Malloc manager: uses malloc, nothing to display\n";
+    s << "Malloc manager: uses malloc, nothing to display\n";
 }
 
 // ******************************************************************
 
 MEDDLY::node_address MEDDLY::malloc_manager::getFirstAddress() const
 {
-  return 0;
+    return 0;
 }
 
 // ******************************************************************
 
-bool MEDDLY::malloc_manager::isAddressInUse(node_address addr) const
+bool MEDDLY::malloc_manager::isAddressInUse(node_address) const
 {
-  return false;
-  // we have no way of knowing
+    return false;
+    // we have no way of knowing
 }
 
 // ******************************************************************
 
-MEDDLY::node_address MEDDLY::malloc_manager::getNextAddress(node_address addr) const
+MEDDLY::node_address MEDDLY::malloc_manager::getNextAddress(node_address) const
 {
-  return 0;
+    return 0;
 }
 
 // ******************************************************************
 
-void MEDDLY::malloc_manager::dumpInternalUnused(output &s, node_address addr) const
+void MEDDLY::malloc_manager::dumpInternalUnused(output &s, node_address) const
 {
-  s << "Malloc manager: uses malloc, nothing unused\n";
+    s << "Malloc manager: uses malloc, nothing unused\n";
 }
 
 
@@ -193,6 +193,7 @@ MEDDLY::memory_manager*
 MEDDLY::malloc_style::initManager(unsigned char granularity,
   unsigned char minsize, memstats &stats) const
 {
-  return new malloc_manager(getName(), stats, granularity);
+    IGNORE_UNUSED(minsize);
+    return new malloc_manager(getName(), stats, granularity);
 }
 
