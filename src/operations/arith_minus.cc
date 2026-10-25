@@ -50,23 +50,23 @@ namespace MEDDLY {
         inline static bool stopOnEqualArgs() {
             return true;
         }
-        inline static void makeEqualResult(int L, unsigned in,
-                const forest* fa, node_handle a,
+        inline static void makeEqualResult(int, unsigned,
+                const forest*, node_handle,
                 forest* fc, edge_value &cv, node_handle &c,
-                unary_operation* copier)
+                unary_operation*)
         {
             cv.set();
             c = fc->handleForValue(RANGE(0));
         }
-        inline static bool simplifiesToFirstArg(int L,
-                const forest* fa, node_handle &a,
-                const forest* fb, node_handle b)
+        inline static bool simplifiesToFirstArg(int,
+                const forest*, node_handle &,
+                const forest*, node_handle b)
         {
             return (0 == b);
         }
-        inline static bool simplifiesToSecondArg(int L,
-                const forest* fa, node_handle a,
-                const forest* fb, node_handle &b)
+        inline static bool simplifiesToSecondArg(int,
+                const forest*, node_handle,
+                const forest*, node_handle &)
         {
             return false;
         }
@@ -84,6 +84,8 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
+            IGNORE_UNUSED(a);
+            IGNORE_UNUSED(b);
             MEDDLY_DCASSERT(a.isVoid());
             MEDDLY_DCASSERT(b.isVoid());
             c.set();
@@ -109,34 +111,36 @@ namespace MEDDLY {
         inline static bool stopOnEqualArgs() {
             return true;
         }
-        inline static void makeEqualResult(int L, unsigned in,
-                const forest* fa, node_handle a,
+        inline static void makeEqualResult(int L, unsigned,
+                const forest*, node_handle,
                 forest* fc, edge_value &cv, node_handle &c,
-                unary_operation* copier)
+                unary_operation*)
         {
             cv.set(EDGETYPE(0));
             c = fc->makeRedundantsTo(OMEGA_NORMAL, 0, L);
         }
 
-        inline static bool simplifiesToFirstArg(int L,
+        inline static bool simplifiesToFirstArg(int,
                 const forest* fa, node_handle &a,
-                const forest* fb, node_handle b)
+                const forest*, node_handle b)
         {
+            IGNORE_UNUSED(b);
             MEDDLY_DCASSERT(OMEGA_INFINITY != b);
             if (fa->isIdentityReduced()) return false;
             return (OMEGA_INFINITY == a) || (OMEGA_NORMAL == b);
         }
-        inline static bool simplifiesToSecondArg(int L,
-                const forest* fa, node_handle a,
-                const forest* fb, node_handle &b)
+        inline static bool simplifiesToSecondArg(int,
+                const forest*, node_handle,
+                const forest*, node_handle &b)
         {
+            IGNORE_UNUSED(b);
             MEDDLY_DCASSERT(b != OMEGA_INFINITY);
             return false;
         }
 
-        inline static void apply(const forest* fa, node_handle a,
-                const forest* fb, node_handle b,
-                const forest* fc, node_handle &c)
+        inline static void apply(const forest*, node_handle a,
+                const forest*, node_handle b,
+                const forest*, node_handle &c)
         {
             if (OMEGA_INFINITY == b) {
                 throw error(error::SUBTRACT_INFINITY, __FILE__, __LINE__);
@@ -183,23 +187,23 @@ namespace MEDDLY {
         {
             return true;
         }
-        inline static void makeEqualResult(int L, unsigned in,
-                const edge_value &av, const node_handle &a,
-                forest* fc, edge_value &cv, node_handle &c,
-                unary_operation* copyop)
+        inline static void makeEqualResult(int, unsigned,
+                const edge_value &, const node_handle &,
+                forest*, edge_value &cv, node_handle &c,
+                unary_operation*)
         {
             cv = EDGETYPE(0);
             c = OMEGA_ZERO;
         }
-        inline static bool simplifiesToFirstArg(int L,
-                const forest*, const edge_value &av, node_handle &a,
-                const forest*, const edge_value &bv, node_handle b)
+        inline static bool simplifiesToFirstArg(int,
+                const forest*, const edge_value &, node_handle &,
+                const forest*, const edge_value &, node_handle b)
         {
             return (OMEGA_ZERO == b);
         }
-        inline static bool simplifiesToSecondArg(int L,
-                const forest*, const edge_value &av, node_handle a,
-                const forest*, const edge_value &bv, node_handle &b)
+        inline static bool simplifiesToSecondArg(int,
+                const forest*, const edge_value &, node_handle,
+                const forest*, const edge_value &, node_handle &)
         {
             return false;
         }
@@ -237,8 +241,8 @@ namespace MEDDLY {
             return true;
         }
 
-        inline static void apply(const edge_value &c, node_handle d,
-                          const edge_value &e, node_handle f,
+        inline static void apply(const edge_value &c, node_handle,
+                          const edge_value &e, node_handle,
                           edge_value &a, node_handle &b)
         {
             EDGETYPE av = EDGETYPE(c) - EDGETYPE(e);

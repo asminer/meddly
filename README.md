@@ -65,10 +65,8 @@ You will need doxygen to build the documentation.
 | `doxygen/`    | Generated doxygen docs from source code |
 | `examples/`   | Stand-alone applications that use the library |
 | `include/`    | Include files |
-| `m4/`         | Directory of configuration helper scripts |
-| `src/`        | Library source code |
+| `src/`        | Soource files |
 | `tests/`      | Test applications used by "meson test" |
 | `timing/`     | Some timing benchmarks |
-| `visual/`     | Visualization utilities that work with the library. |
 | `www/`        | Sourceforge web page sources |
 

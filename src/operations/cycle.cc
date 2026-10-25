@@ -120,7 +120,7 @@ MEDDLY::cycle_EV2EV::~cycle_EV2EV()
     ct->markForDestroy();
 }
 
-void MEDDLY::cycle_EV2EV::compute(int L, unsigned in,
+void MEDDLY::cycle_EV2EV::compute(int L, unsigned /*in*/,
                 const edge_value &av, node_handle ap,
                 edge_value &cv, node_handle &cp)
 {

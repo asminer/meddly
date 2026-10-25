@@ -73,7 +73,7 @@ class MEDDLY::otfsat_by_events_op : public saturation_operation {
       return 0;
     }
     inline node_handle saveSaturateResult(ct_entry_key* Key,
-      node_handle a, node_handle b)
+      node_handle, node_handle b)
     {
       CTresult[0].reset();
       CTresult[0].writeN(b);
@@ -113,7 +113,7 @@ class MEDDLY::common_otf_dfs_by_events_mt : public saturation_operation {
       return 0;
     }
     inline node_handle saveResult(ct_entry_key* Key,
-      node_handle a, node_handle b, node_handle c)
+      node_handle, node_handle, node_handle c)
     {
       CTresult[0].reset();
       CTresult[0].writeN(c);
@@ -862,7 +862,7 @@ MEDDLY::SATURATION_OTF_FORWARD(forest* inF, otf_relation* nsf, forest* outF)
 }
 
 MEDDLY::saturation_operation*
-MEDDLY::SATURATION_OTF_BACKWARD(forest* inF, otf_relation* nsf, forest* outf)
+MEDDLY::SATURATION_OTF_BACKWARD(forest*, otf_relation*, forest*)
 {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }

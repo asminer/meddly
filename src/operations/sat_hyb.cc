@@ -97,7 +97,7 @@ protected:
     CT0->recycle(CTsrch);
   }
   inline node_handle saveSaturateResult(ct_entry_key* Key,
-                                        node_handle a, node_handle b)
+                                        node_handle, node_handle b)
   {
     CTresult[0].reset();
     CTresult[0].writeN(b);
@@ -142,7 +142,7 @@ protected:
     CT0->recycle(CTsrch);
   }
   inline node_handle saveResult(ct_entry_key* Key,
-                                node_handle a, node_handle* b, int num_se, node_handle c)
+                                node_handle, node_handle*, int, node_handle c)
   {
     CTresult[0].reset();
     CTresult[0].writeN(c);
@@ -360,7 +360,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
-  for (int i = 0; i < nb.getSize(); i++) {
+  for (int i = 0; i < int(nb.getSize()); i++) {
     if (nb.down(i)) {
       queue->add(i);
     }
@@ -437,12 +437,12 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         if(imFlag) {
          j =  Rn[event_Ru_Rn_index[ei]]->nextOf(i);
          if(j==-1) continue; // Not enabled
-         if (j < nb.getSize() && -1==nb.down(j)) continue;
+         if (j < int(nb.getSize()) && -1==nb.down(j)) continue;
          seHandlesForRecursion[0]=Rn[event_Ru_Rn_index[ei]]->getDown();
         } else {
           j = Rp->index(jz);
           if(j==-1) continue; // Not enabled
-          if (j < nb.getSize() && -1==nb.down(j)) continue;
+          if (j < int(nb.getSize()) && -1==nb.down(j)) continue;
           seHandlesForRecursion[which_se+does_rn_exist] = Rp->down(jz);
         }
 
@@ -454,7 +454,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         if(!rel->isConfirmedState(level,j))
            rel->confirm(level,j);
 
-        if(j>=nb.getSize())
+        if(j>=int(nb.getSize()))
           {
           int new_var_bound = j+1;
           dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
@@ -675,7 +675,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
   int j,
   int num_se, int which_se)
 {
-
+  IGNORE_UNUSED(i);
 
   if(!imFlag) {
   if(-rLevel == relF()->getNodeLevel(Ru_i))
@@ -707,7 +707,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
       if(!rel->isConfirmedState(rLevel,j)) // if not confirmed before
       {
         rel->confirm(rLevel,j); // confirm and enlarge
-        if (j >= nb->getSize()) {
+        if (j >= int(nb->getSize())) {
           int new_var_bound = j+1;
           domain* dm = resF->getDomain();
           dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);

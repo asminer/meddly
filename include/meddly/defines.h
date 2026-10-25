@@ -177,6 +177,14 @@ namespace MEDDLY {
     }
 
     // ***********************************************************************
+    // *                         Keep compilers happy                        *
+    // ***********************************************************************
+    template <class T>
+    inline void IGNORE_UNUSED(T a) {
+        (void) a;
+    }
+
+    // ***********************************************************************
     // *                         Sanity check  macros                        *
     // ***********************************************************************
 #ifdef DEVELOPMENT_CODE
@@ -194,7 +202,7 @@ namespace MEDDLY {
 #else
     inline void FAIL(const char*, unsigned, const char* why = nullptr)
     {
-        (void) why;
+        IGNORE_UNUSED(why);
     }
 #endif
 

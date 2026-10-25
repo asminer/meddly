@@ -162,7 +162,7 @@ class MEDDLY::node_headers : public array_watcher {
         inline void moveNodeAddress(node_handle p, node_address old_addr,
                 node_address new_addr)
         {
-            (void) old_addr;    // shuts compiler up
+            IGNORE_UNUSED(old_addr);
             MEDDLY_DCASSERT(p>0);
             MEDDLY_DCASSERT(addresses);
             MEDDLY_DCASSERT(old_addr == addresses->get(size_t(p)));

@@ -71,7 +71,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
       return 0;
     }
     inline node_handle saveResult(ct_entry_key* Key,
-      node_handle a, node_handle b, node_handle c)
+      node_handle, node_handle, node_handle c)
     {
       CTresult[0].reset();
       CTresult[0].writeN(c);
@@ -106,7 +106,7 @@ MEDDLY::mm_mult_op::mm_mult_op(forest* a1, forest* a2, forest* res,
 }
 
 void MEDDLY::mm_mult_op
-::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
+::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool)
 {
   node_handle cnode;
   cnode = compute(a.getNode(), b.getNode());

@@ -119,8 +119,8 @@ MEDDLY::range_templ<RTYPE>::~range_templ()
 }
 
 template <class RTYPE>
-void MEDDLY::range_templ<RTYPE>::compute(int L, unsigned in,
-        const edge_value &av, node_handle ap, oper_item &result)
+void MEDDLY::range_templ<RTYPE>::compute(int /*L*/, unsigned /*in*/,
+        const edge_value &/*av*/, node_handle ap, oper_item &result)
 {
     MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
 #ifdef TRACE

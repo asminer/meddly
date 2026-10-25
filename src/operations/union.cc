@@ -216,6 +216,8 @@ void MEDDLY::union_mt::compute(int L, unsigned in,
 {
     MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
+    IGNORE_UNUSED(av);
+    IGNORE_UNUSED(bv);
 #ifdef TRACE
     out.indentation(0);
     ++top_count;

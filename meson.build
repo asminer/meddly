@@ -3,7 +3,7 @@ project(
     'cpp',
     version: run_command('head', '-n', '1', 'include/meddly/version.h', check: true).stdout().strip().split()[2].strip('"'),
     meson_version: '>= 0.49',
-    default_options: ['warning_level=2']
+    default_options: ['warning_level=2', 'cpp_std=c++11']
 )
 
 if get_option('buildtype') == 'debug'

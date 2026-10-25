@@ -64,7 +64,7 @@ MEDDLY::generic_binary_evplus::~generic_binary_evplus()
 }
 
 void MEDDLY::generic_binary_evplus
-::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c, bool userFlag)
+::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c, bool)
 {
   node_handle result;
   long ev = Inf<long>(), aev = Inf<long>(), bev = Inf<long>();

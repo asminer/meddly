@@ -89,7 +89,7 @@ MEDDLY::mdd2index_operation::~mdd2index_operation()
     ct->markForDestroy();
 }
 
-void MEDDLY::mdd2index_operation::compute(int L, unsigned in,
+void MEDDLY::mdd2index_operation::compute(int L, unsigned /*in*/,
         const edge_value &av, node_handle ap, edge_value &cv, node_handle &cp)
 {
 #ifdef TRACE

@@ -45,6 +45,7 @@ namespace MEDDLY {
         /// Does the edge correspond to an unreachable state?
         inline static bool isUnreachable(const edge_value &ev, node_handle p)
         {
+            IGNORE_UNUSED(ev);
             MEDDLY_DCASSERT(ev.isVoid());
             return 0==p;
         }
@@ -52,6 +53,7 @@ namespace MEDDLY {
         /// Does the edge correspond to everything is reachable?
         inline static bool areAllReachable(const edge_value &ev, node_handle p)
         {
+            IGNORE_UNUSED(ev);
             MEDDLY_DCASSERT(ev.isVoid());
             return -1==p;
         }
@@ -71,9 +73,10 @@ namespace MEDDLY {
 
         /// Apply the operation when b is a terminal node.
         static void apply(forest* fa, const edge_value &av, node_handle a,
-                          const forest* fb, node_handle b,
+                          const forest*, node_handle b,
                           forest* fc, edge_value &cv, node_handle &c)
         {
+            IGNORE_UNUSED(b);
             MEDDLY_DCASSERT(b<0);
             unary_operation* copy = build(COPY, fa, fc);
             MEDDLY_DCASSERT(copy);
@@ -105,6 +108,7 @@ namespace MEDDLY {
         /// Does the edge correspond to an unreachable state?
         inline static bool isUnreachable(const edge_value &ev, node_handle p)
         {
+            IGNORE_UNUSED(ev);
             MEDDLY_DCASSERT(ev.isVoid());
             if (p >= 0) return false;
             terminal t(terminal_type::INTEGER, p);
@@ -114,6 +118,7 @@ namespace MEDDLY {
         /// Does the edge correspond to everything is reachable?
         inline static bool areAllReachable(const edge_value &ev, node_handle p)
         {
+            IGNORE_UNUSED(ev);
             MEDDLY_DCASSERT(ev.isVoid());
             return 0==p;
         }
@@ -138,9 +143,10 @@ namespace MEDDLY {
 
         /// Apply the operation when b is a terminal node.
         static void apply(forest* fa, const edge_value &av, node_handle a,
-                          const forest* fb, node_handle b,
+                          const forest*, node_handle b,
                           forest* fc, edge_value &cv, node_handle &c)
         {
+            IGNORE_UNUSED(b);
             MEDDLY_DCASSERT(b<0);
             unary_operation* increment = build(DIST_INC, fa, fc);
             MEDDLY_DCASSERT(increment);
@@ -172,7 +178,7 @@ namespace MEDDLY {
         }
 
         /// Does the edge correspond to an unreachable state?
-        inline static bool isUnreachable(const edge_value &ev, node_handle p)
+        inline static bool isUnreachable(const edge_value &, node_handle p)
         {
             return OMEGA_INFINITY == p;
         }
@@ -199,9 +205,10 @@ namespace MEDDLY {
 
         /// Apply the operation when b is a terminal node.
         static void apply(forest* fa, const edge_value &av, node_handle a,
-                          const forest* fb, node_handle b,
+                          const forest*, node_handle b,
                           forest* fc, edge_value &cv, node_handle &c)
         {
+            IGNORE_UNUSED(b);
             MEDDLY_DCASSERT(b<0);
             unary_operation* copy = build(COPY, fa, fc);
             MEDDLY_DCASSERT(copy);

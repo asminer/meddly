@@ -74,7 +74,7 @@ class MEDDLY::image_op_evplus2 : public binary_operation {
       return 0;
     }
     inline void saveResult(ct_entry_key* Key,
-      long ev, node_handle evmdd, node_handle mxd, long resEv, node_handle resEvmdd)
+      long ev, node_handle, node_handle, long resEv, node_handle resEvmdd)
     {
       CTresult[0].reset();
       CTresult[0].writeL(resEvmdd == 0 ? 0L : resEv - ev);
@@ -116,7 +116,7 @@ MEDDLY::image_op_evplus2::image_op_evplus2(binary_list& oc, forest* a1,
   buildCTs();
 }
 
-void MEDDLY::image_op_evplus2::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
+void MEDDLY::image_op_evplus2::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool)
 {
   long cev = Inf<long>();
   node_handle cnode = 0;

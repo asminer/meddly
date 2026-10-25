@@ -86,7 +86,7 @@ class MEDDLY::generic_binary_evplus : public generic_binary_ev {
     }
 
     virtual void saveResult(ct_entry_key* Key,
-      long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
+      long, node_handle, long, node_handle, long cev, node_handle c)
     {
       CTresult[0].reset();
       CTresult[0].writeL(cev);

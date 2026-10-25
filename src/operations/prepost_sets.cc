@@ -218,7 +218,7 @@ MEDDLY::prepost_set_mtrel<EOP, ATYPE>::~prepost_set_mtrel()
 
 template <class EOP, class ATYPE>
 void MEDDLY::prepost_set_mtrel<EOP, ATYPE>
-    ::compute(int L, unsigned in,
+    ::compute(int L, unsigned /* in */,
         const edge_value &av, node_handle ap,
         const edge_value &bv, node_handle bp,
         edge_value &cv, node_handle &cp)
@@ -595,6 +595,7 @@ namespace MEDDLY {
         /// Does the edge correspond to an unreachable state?
         inline static bool isUnreachable(const edge_value &ev, node_handle p)
         {
+            IGNORE_UNUSED(ev);
             MEDDLY_DCASSERT(ev.isVoid());
             return 0==p;
         }
