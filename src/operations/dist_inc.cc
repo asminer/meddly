@@ -101,6 +101,7 @@ void MEDDLY::dist_inc_mt::compute(int L, unsigned in,
     out.indentation(0);
     out << "Starting top-level dist_inc_mt::compute #" << top_count << "\n";
 #endif
+    IGNORE_UNUSED(av);
     MEDDLY_DCASSERT(av.isVoid());
     cv.set();
     _compute(L, in, ap, cp);

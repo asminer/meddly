@@ -794,7 +794,7 @@ void MEDDLY::node_headers::lastUnlink(node_handle p)
 
 // ******************************************************************
 
-void MEDDLY::node_headers::reviveNode(node_handle p)
+void MEDDLY::node_headers::reviveNode(node_handle)
 {
     // Reclaim an unreachable
     stats.reclaimed_nodes++;

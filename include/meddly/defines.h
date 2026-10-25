@@ -179,6 +179,11 @@ namespace MEDDLY {
     // ***********************************************************************
     // *                         Keep compilers happy                        *
     // ***********************************************************************
+
+    /*
+     * Effectively, this "uses" a parameter so that a compiler
+     * will not give a warning that a parameter is unused.
+     */
     template <class T>
     inline void IGNORE_UNUSED(T& a) {
         (void) a;

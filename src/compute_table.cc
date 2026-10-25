@@ -41,15 +41,15 @@ MEDDLY::compute_table_style::~compute_table_style()
 }
 
 MEDDLY::compute_table*
-MEDDLY::compute_table_style::create(const ct_settings &s) const
+MEDDLY::compute_table_style::create(const ct_settings &) const
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 
 MEDDLY::compute_table*
-MEDDLY::compute_table_style::create(const ct_settings &s,
-      unsigned etid) const
+MEDDLY::compute_table_style::create(const ct_settings &,
+      unsigned) const
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }

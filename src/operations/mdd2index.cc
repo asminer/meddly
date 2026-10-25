@@ -95,6 +95,7 @@ void MEDDLY::mdd2index_operation::compute(int L, unsigned /*in*/,
 #ifdef TRACE
     out.indentation(0);
 #endif
+    IGNORE_UNUSED(av);
     MEDDLY_DCASSERT(av.isVoid());
     long lcv;
     _compute(L, ap, lcv, cp);

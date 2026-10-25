@@ -1577,7 +1577,7 @@ bool MEDDLY::dd_edge::getElemInt(long index, minterm &m) const
         //
         // I don't think index sets can skip levels at all
         //
-        MEDDLY_DCASSERT(k == fp->getNodeLevel(p));
+        MEDDLY_DCASSERT(int(k) == fp->getNodeLevel(p));
         U->initFromNode(p);
 
         //
@@ -1634,7 +1634,7 @@ bool MEDDLY::dd_edge::getElemLong(long index, minterm &m) const
         //
         // I don't think index sets can skip levels at all
         //
-        MEDDLY_DCASSERT(k == fp->getNodeLevel(p));
+        MEDDLY_DCASSERT(int(k) == fp->getNodeLevel(p));
         U->initFromNode(p);
 
         //

@@ -563,5 +563,8 @@ void MEDDLY::mdd_reader::handleError(input &s, error &e) const
     }
     std::cerr << std::endl;
     throw e;
+#else
+    IGNORE_UNUSED(s);
+    IGNORE_UNUSED(e);
 #endif
 }

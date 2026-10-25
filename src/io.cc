@@ -153,7 +153,7 @@ int MEDDLY::istream_input::get_char()
     // TBD - how to deal with errors?
 }
 
-void MEDDLY::istream_input::unget(char x)
+void MEDDLY::istream_input::unget(char /*x*/)
 {
     in.unget();
 }

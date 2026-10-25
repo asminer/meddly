@@ -94,6 +94,8 @@ void MEDDLY::cross_bool::compute(int L, unsigned in,
                 const edge_value &bv, node_handle bp,
                 edge_value &cv, node_handle &cp)
 {
+    IGNORE_UNUSED(av);
+    IGNORE_UNUSED(bv);
     MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
 #ifdef TRACE

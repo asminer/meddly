@@ -2253,7 +2253,7 @@ void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const float* terms, dd_ed
 
 #endif
 
-MEDDLY::node_handle MEDDLY::forest::unionOneMinterm(node_handle a,  int* from,  int* to, int level)
+MEDDLY::node_handle MEDDLY::forest::unionOneMinterm(node_handle,  int*,  int*, int)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
