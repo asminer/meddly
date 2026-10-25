@@ -27,8 +27,8 @@ statCmd=(
     "#e/libinfo 0 | awk '{print \$3}'"
     "#e/libinfo 5"
     "ls #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc | wc -l"
-    "wc -l #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc | tail -n 1 | awk '{print \$1}'"
-    "wc -c #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc | tail -n 1 | awk '{print \$1}'"
+    "wc -l #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc #i/meddly/*.h #i/meddly/*/*.h | tail -n 1 | awk '{print \$1}'"
+    "wc -c #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc #i/meddly/*.h #i/meddly/*/*.h | tail -n 1 | awk '{print \$1}'"
 )
 statPrint=(
     "%s"
@@ -247,15 +247,39 @@ runWithTimeout()
     done
 }
 
+
 #
-# Check for a valid directory
+# Check for the directory of executables from the list of arguments, in order.
 #
-checkDir() {
-    if [ ! -d $1 ]; then
-        echo "Can't find `basename $1`/ directory; run this script in"
-        echo "the root directory or within developers/."
-        exit 1
-    fi
+checkExeDir()
+{
+    for arg; do
+        if [ -d $arg ]; then
+            if [ -x $arg/kanban ]; then
+                echo "$arg"
+                return 0
+            fi
+        fi
+    done
+    echo "Can't find directory of executables; run this script in" > /dev/stderr
+    echo "the build directory, the root directory, or within developers/." > /dev/stderr
+    exit 1
+}
+
+#
+# Check for a valid directory from the list of arguments, in order.
+#
+checkDir()
+{
+    for arg; do
+        if [ -d $1 ]; then
+            echo "$1"
+            return 0
+        fi
+    done
+    echo "Can't find `basename $1`/ directory; run this script in" > /dev/stderr
+    echo "the build directory, the root directory, or within developers/." > /dev/stderr
+    exit 1
 }
 
 
@@ -318,15 +342,44 @@ done
 # Find examples and source directories
 #
 
-if [ "$MPATH" ]; then
-    EXDIR="$MPATH/examples"
-    SRCDIR="$MPATH/src"
-elif [ -d "examples" ]; then
-    EXDIR="examples"
-    SRCDIR="src"
+if [ ! "$MPATH" ]; then
+    # No directory given.
+    # Determine if we're in the root directory.
+    if [ -f "AUTHORS" ]; then
+        MPATH="."
+    elif [ -f "../AUTHORS" ]; then
+        MPATH=".."
+    else
+        echo "Not sure which directory we are in."
+        echo "Run from the root directory of the project, the build directory,"
+        echo "or the developers directory."
+        exit 1
+    fi
+fi
+
+# Figure out which directory we were given.
+if [ -f "$MPATH/AUTHORS" ]
+then
+    # probably the root.
+    EXDIR=`checkExeDir $MPATH/build-release/examples $MPATH/examples`
+    SRCDIR=`checkDir $MPATH/src`
+    if [ -f "$SRCDIR/meddly.h" ]; then
+        INCDIR=""
+    else
+        INCDIR=`checkDir $MPATH/include`
+    fi
+elif [ -f "$MPATH/build.ninja" ]; then
+    # probably a build directory.
+    EXDIR=`checkExeDir $MPATH/examples`
+    SRCDIR=`checkDir $MPATH/..`
+    if [ -f "$SRCDIR/meddly.h" ]; then
+        INCDIR=""
+    else
+        INCDIR=`checkDir $MPATH/../include`
+    fi
 else
-    EXDIR="../examples"
-    SRCDIR="../src"
+    echo "Not sure about directory $MPATH"
+    exit 1
 fi
 
 if [ "$BPATH" ]; then
@@ -344,9 +397,6 @@ if [ "$BPATH" ]; then
     TEXTFILE=`printf "%s/bench.%03d.txt" "$BPATH" "$counter"`
 fi
 
-checkDir $EXDIR
-checkDir $SRCDIR
-
 if [ ! -f $EXDIR/kanban ]; then
     echo "Didn't find executable $EXDIR/kanban"
     exit 1
@@ -359,12 +409,18 @@ if [ "$HTMLFILE" ]; then
     echo Writing html summary to file: $HTMLFILE
 fi
 
+echo "Using executable directory $EXDIR"
+echo "Using source directory $SRCDIR"
+if [ "$INCDIR" ]; then
+    echo "Using include directory $INCDIR"
+fi
+
 #
 # Determine stats
 #
 
 for i in ${!statName[@]}; do
-    cmd=`sed "s|#e|$EXDIR|g" <<< "${statCmd[$i]}" | sed "s|#s|$SRCDIR|g"`
+    cmd=`sed "s|#e|$EXDIR|g" <<< "${statCmd[$i]}" | sed "s|#s|$SRCDIR|g" | sed "s|#i|$INCDIR|g"`
     statResult[$i]=`echo "$cmd" | bash 2> /dev/null`
 done
 if [ ! "$MPATH" ]; then

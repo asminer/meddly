@@ -31,7 +31,7 @@
 #include <cstdio>
 #include <cassert>
 
-#include "meddly.h"
+#include "meddly/meddly.h"
 
 // #define SHOW_ALL_SOLUTIONS
 
