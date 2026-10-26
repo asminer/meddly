@@ -6,9 +6,7 @@ shorttitle: Building
 ## Packages required
 
 * gcc and g++, or other C/C++ compiler with support for C++11
-* automake
-* autoconfig
-* libtool
+* meson
 * doxygen, if you want to build documentation
 
 ## Packages strongly recommended
@@ -18,145 +16,52 @@ shorttitle: Building
 
 ## Build Steps
 
-### 1a.  Configure - quick
+### 1. Configure the build directory
 
-There is a configuration script in ```developers/``` that
-should work for most setups. Simply run
+MEDDLY uses `meson` as its configure and build system.
+For configuration, run
 ```bash
-developers/Config_generic.sh
+meson build build-dir (options)
 ```
-for a release version of the library
-(debugging information off, and optimizations on).
-For a development version of the library, run
+with the following suggestions for additional options.
++ Use option `--buildtype=debug` for a debug version of the library
++ Use option `--buildtype=release` for a release version of the library
++ Use option `--prefix=(alternate location)` if you don't want to
+            install Meddly in the usual system location.
+You can run this command more than once, with different build
+directories for different versions (for example, a debugging version
+and a release version).
+
+### 2.  Build
+
+Switch to your build directory and run
 ```bash
-developers/Config_generic.sh --debug
+meson compile
 ```
-(pass ```-h``` to the script to get a list of possible switches).
-
-### 1b.  Configure - detailed
-
-If the quick configuration script does not work for your system,
-or you wish to have more control over the configuration process,
-instead run the following.
-
-Run the script
-```bash
-./autogen.sh
-```
-for the first build,
-and whenever the source code has changes
-in its file or directory layout.
-This should create a ```./configure``` script.
-Then, run
-```bash
-./configure
-```
-to setup the build files.
-This can be used to set various compile options;
-see **Configuration Options** below.
-
-
-### 2.  Run make
-
-```bash
-make
-```
-
-This builds everything.
-The library will be in ```src/```,
-and example applications will be in ```examples/```.
 
 
 ### 3.  Test
 
+To run regression tests, from the build directory run
 ```bash
-make check
+meson test
 ```
-
-This builds and runs several regression tests.
 
 
 ### 4.  Install
 
+From within the build directory, run
 ```bash
-make install
+meson install
 ```
-
-This copies the compiled library into ```lib/```
-and include files into ```include/```.
-These locations can be changed in the ```./configure```
-step by specifying an alternate location;
-see **Configuration Options** below.
-
 
 ### 5.  Build documentation (optional)
 
-For end-user documentation, use directory ```doxygen/```.
-For complete documentation, use directory ```doxygen-devel/```.
-Switch to the documentation directory and run make:
 ```bash
 cd doxygen
-make
+./GenerateDocs.sh
 ```
 This will generate both html and LaTeX documentation.
 You can then view the html documentation by opening ```html/index.html```,
 or you can run LaTeX on ```latex/refman.tex```.
 
-
-## Other make targets
-
-```bash
-make uninstall
-```
-Removes the files installed in ```lib/```.
-
-
-```bash
-make clean
-```
-Removes the results of compilation.
-
-
-
-
-## Configuration Options
-
-Several environment variables may be set before running configure.
-Also, configure accepts parameters to alter the library configuration.
-These are listed below.
-
-To build an optimized version of the library:
-```bash
-./configure CXXFLAGS="-O3"
-```
-
-To build a version of the library with support for
-Extensible Decision Diagrams (XDDs):
-```bash
-./configure CPPFLAGS="-DUSE_XDDS"
-```
-
-To build a debuggable version of the library:
-```bash
-./configure CPPFLAGS="-DDEVELOPMENT_CODE" CXXFLAGS="-ggdb"
-```
-Note that turning on development code may produce
-a significantly slower library.
-
-
-To set the location of the gmp library, by hand
-(only necessary if configure fails to find it):
-```bash
-./configure CPPFLAGS="-I/path/to/gmp/header" LDFLAGS="-L/path/to/gmp/lib"
-```
-
-To disable gmp support in Meddly:
-```bash
-./configure --without-gmp
-```
-
-To change the install locations for the compiled library and include files
-(for example, to ```/path/for/lib``` and ```/path/for/include```):
-```bash
-./configure --prefix=/path/for
-```
