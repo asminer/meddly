@@ -28,9 +28,9 @@
 // #define ALLOW_DEPRECATED_0_18_0  "01/18/2025"
 // #define ALLOW_DEPRECATED_0_18_1  "06/15/2026"
 // #define ALLOW_DEPRECATED_0_18_2
-
+// ==>
 // ==================================================================
-// ^ This line is important for the release script, don't remove it
+// The previous two lines are important for the release script
 
 // Reference counts on for now
 #define REFCOUNTS_ON

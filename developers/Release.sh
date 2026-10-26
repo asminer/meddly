@@ -16,6 +16,14 @@ THISVER=""  # version number of this release
 NEXTVER=""  # next version number after release
 
 #
+# Indent some text
+#
+indent()
+{
+    sed 's/^/    |    /'
+}
+
+#
 # Display usage and exit
 #
 usage()
@@ -57,6 +65,7 @@ determine_versions()
     echo "Current version: $OLDVER"
     echo "Release version: $THISVER"
     echo "Next    version: $NEXTVER"
+    echo
 }
 
 
@@ -66,20 +75,7 @@ determine_versions()
 #
 update_revfile()
 {
-    local tab
-    local outfile
     local rdate
-
-    if [ "$DRYRUN" ]
-    then
-        tab="    "
-        outfile="/dev/stdout"
-        echo "Updated $REVFILE would be:"
-    else
-        tab=""
-        outfile="../$REVFILE"
-        echo "Updating $REVFILE"
-    fi
 
     if [ "$2" ]
     then
@@ -88,12 +84,15 @@ update_revfile()
         rdate=`date +"%Y %B %d"`
     fi
 
-    printf "%s#define VERSION \"%s\"\n%sconst char* MEDDLY_DATE = \"%s\"\n"  "$tab" "$1"  "$tab" "$rdate" > $outfile
+    printf "#define VERSION \"%s\"\nconst char* MEDDLY_DATE = \"%s\"\n"  "$1" "$rdate" > ../$REVFILE.new
 
     if [ "$DRYRUN" ]
     then
-        echo "would now do: git add ../$REVFILE"
+        echo "Updated $REVFILE:"
+        indent < ../$REVFILE.new
+        rm ../$REVFILE.new
     else
+        mv -f ../$REVFILE.new ../$REVFILE
         git add ../$REVFILE
     fi
 }
@@ -127,7 +126,7 @@ update_deprecated()
         if [ "$DRYRUN" ]
         then
             echo "Updating $3:"
-            diff $3 $3.new
+            diff $3 $3.new | indent
             rm $3.new
         else
             mv -f $3.new $3
@@ -155,7 +154,7 @@ update_deffile()
     if [ "$DRYRUN" ]
     then
         echo "The followung updates would be made to $DEFFILE:"
-        diff ../$DEFFILE ../$DEFFILE.new
+        diff ../$DEFFILE ../$DEFFILE.new | indent
         rm ../$DEFFILE.new
     else
         mv -f ../$DEFFILE.new ../$DEFFILE
@@ -169,9 +168,66 @@ update_deffile()
             update_deprecated $oldversid $thisversid $fname
         done
     fi
-
 }
 
+#
+# No arguments
+#
+addto_deffile()
+{
+    if [ ! -f "../$DEFFILE" ]; then
+        echo "Couldn't find $DEFFILE, could not update!"
+        return
+    fi
+    local nextvid=`tr '.' '_' <<< "$NEXTVER"`
+
+    sed "1,/=======/s|==>|#define ALLOW_DEPRECATED_$nextvid\n// ==>|" ../$DEFFILE > ../$DEFFILE.new
+
+    if [ "$DRYRUN" ]
+    then
+        echo "We would add this to $DEFFILE:"
+        diff ../$DEFFILE ../$DEFFILE.new | indent
+        rm ../$DEFFILE.new
+    else
+        mv -f ../$DEFFILE.new ../$DEFFILE
+        git add ../$DEFFILE
+    fi
+}
+
+#
+# No arguments
+#
+update_docs()
+{
+    local ddate=`date +"%Y-%m-%d"`
+    echo "---"
+    echo "title: New in Version $THISVER"
+    echo "shorttitle: Version $THISVER"
+    echo "number: $THISVER"
+    echo "date: $ddate"
+    echo "---"
+
+    sed '/^---$/,/^---$/d' ../$UNRELNOTES
+}
+
+#
+# No arguments
+#
+update_nav()
+{
+    # Copy first part
+    #
+    sed -n '1,/url: "\/releases\/unreleased"/p' ../$NAVFILE
+
+    #
+    # Add new entry
+    echo "      - title: \"Version $THISVER\""
+    echo "        url: \"/releases/$THISVER\""
+
+    # Copy remaining part
+    #
+    sed '1,/url: "\/releases\/unreleased"/d' ../$NAVFILE
+}
 
 
 #
@@ -264,163 +320,69 @@ update_revfile $THISVER
 update_deffile
 
 #
-# TBD HERE
+# update web docs
 #
-
-exit 1
-
-
-#
-#
-confirm_or_quit()
-{
-    while [ 0 ]
-    do
-        printf "Is this OK? Type yes to continue, no to quit\n"
-        read resp
-        if [ "$resp" == "no" ]
-        then
-            exit 1
-        fi
-        if [ "$resp" == "yes" ]
-        then
-            return
-        fi
-    done
-}
-
-#
-# Arg1: version
-#
-update_defines()
-{
-    printf "    updating $DEFFILE\n"
-    if [ ! -f "../$DEFFILE" ]; then
-        printf "\t$DEFFILE not found\n";
-        return
-    fi
-    local ddate=`date +"%m/%d/%Y"`
-    local versid=`tr '.' '_' <<< "$1"`
-    mv -f ../$DEFFILE ../$DEFFILE.old
-    sed "1,/=======/s|$versid.*|$versid  \"$ddate\"|" ../$DEFFILE.old > ../$DEFFILE
-    git add ../$DEFFILE
-}
-
-#
-# Arg1: version
-#
-update_docs()
-{
-    local ddate=`date +"%Y-%m-%d"`
-    echo "---"
-    echo "title: New in Version $1"
-    echo "shorttitle: Version $1"
-    echo "number: $1"
-    echo "date: $ddate"
-    echo "---"
-
-    sed '/^---$/,/^---$/d' ../$UNRELNOTES
-}
-
-#
-# Arg1: version
-#
-update_nav()
-{
-    # Copy first part
-    #
-    sed -n '1,/url: "\/releases\/unreleased"/p' ../$NAVFILE
-
-    #
-    # Add new entry
-    echo "      - title: \"Version $1\""
-    echo "        url: \"/releases/$1\""
-
-    # Copy remaining part
-    #
-    sed '1,/url: "\/releases\/unreleased"/d' ../$NAVFILE
-}
-
-#
-# Arg1: version
-#
-update_config()
-{
-    sed "s|^\(AC_INIT(MEDDLY\), [0-9.]*, \(.*\)|\1, $1, \2|" ../configure.ac
-}
-
-
-#
-# Build version numbers
-#
-
-version=`awk -F, '/AC_INIT/{print $2}' ../configure.ac | tr -d '[],'`
-oldversion="$version"
-if [ "$major" ]; then
-    version=`awk -F. '{for (i=1; i<NF-1; i++) printf($i"."); print $(NF-1)+1".0"}' <<< $version`
-fi
-nextver=`awk -F. '{for (i=1; i<NF; i++) printf($i"."); print $NF+1}' <<< $version`
-printf "Creating release for version $version\n"
-printf "Next version will be $nextver\n\n"
-
-confirm_or_quit
-
-printf "Checking release...\n"
-
-#
-# Release checks and whatnot
-#
-
-printf "Preparing relase\n"
-
-cp ../configure.ac ../configure.ac.old
-if [ "$version" != "$oldversion" ]; then
-    printf "    updating configure.ac\n"
-    update_config $version > ../configure.ac.new
-    mv -f ../configure.ac.new ../configure.ac
+newdoc="$RELDIR/$THISVER.md"
+if [ "$DRYRUN" ]
+then
+    echo "Created $newdoc would be:"
+    update_docs | indent
+else
+    echo "Creating $newdoc"
+    update_docs > ../$newdoc
+    cp -f blank_unreleased.md ../$UNRELNOTES
+    git add ../$newdoc ../$UNRELNOTES
 fi
 
-update_revision "$version"
-update_defines "$version"
-
-printf "    creating $RELDIR/$version.md\n"
-update_docs "$version"  > ../$RELDIR/$version.md
-cp -f blank_unreleased.md ../$UNRELNOTES
-
-printf "    updating $NAVFILE\n"
-update_nav $version > newnav.yml
-mv -f newnav.yml ../$NAVFILE
-
+#
+# update web navigation
+#
+update_nav > newnav.yml
+if [ "$DRYRUN" ]
+then
+    echo "Changes to $NAVFILE:"
+    diff newnav.yml ../$NAVFILE | indent
+    rm -f newnav.yml
+else
+    echo "Updating $NAVFILE"
+    mv -f newnav.yml ../$NAVFILE
+    git add ../$NAVFILE
+fi
 
 #
-# Save changes
+# Commit git changes, tag new release
+#
+if [ "$DRYRUN" ]
+then
+    echo "(git commit)"
+    echo "(git push)"
+    echo "(git tag -a v$THISVER)"
+    echo "(git push)"
+else
+    echo "Committing changes"
+    git commit -m "Updated for $THISVER release"
+    git push
+    git push sourceforge
+
+    echo "Tagging release"
+    git tag -a "v$THISVER" -m "Tag for release $THISVER"
+    git push origin v$THISVER
+    git push sourceforge v$THISVER
+fi
+
+#
+# Build the tarball for this release
 #
 
-git add ../$RELDIR/$version.md ../$UNRELNOTES ../$NAVFILE ../configure.ac
-git commit -m "Updated for $version release"
-git push
-git push sourceforge
-
-#
-# Create and publish a tag for $version
-#
-
-git tag -a "v$version" -m "Tag for release $version"
-git push origin v$version
-git push sourceforge v$version
-
-
-#
-# Build distribution
-#
-
-printf "Building tarball for upload to sourceforge\n"
-make -C .. dist
+tarbase="meddly-$THISVER"
+tarfile="$tarbase.tar.gz"
+echo "Building $tarfile"
+tar czf ../$tarfile -C .. --exclude .OLD -s "|^|$tarbase/|" doxygen/ examples/ include/ src/ tests/ timing/ AUTHORS COPYING COPYING.LESSER meson.build README.md
 
 #
 # Automatically bump the version number
 #
 
-printf "Updating version to $nextver\n"
-update_config "$nextver" > ../configure.ac.new
-mv -f ../configure.ac.new ../configure.ac
+update_revfile $NEXTVER unreleased
+addto_deffile
+
