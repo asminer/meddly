@@ -1974,6 +1974,7 @@ void MEDDLY::forest::validateDownPointers(const unpacked_node &nb) const
                     FAIL(__FILE__, __LINE__);
                 }
             }
+            /* fallthrough */
             // NO break here; we need to fall through to below
 
         case reduction_rule::FULLY_REDUCED:

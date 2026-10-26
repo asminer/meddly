@@ -183,18 +183,18 @@ class MEDDLY::common_dfs : public binary_operation {
           return NULPTR == head;
         }
         inline void add(unsigned i) {
-            MEDDLY_CHECK_RANGE(0, i, size);
-          if (NOTINQ != data[i]) return;
-          if (NULPTR == head) {
-            // empty list
-            head = int(i);
-          } else {
-            // not empty list
-              MEDDLY_CHECK_RANGE(0, (unsigned) tail, size);
-            data[tail] = int(i);
-          }
-          tail = int(i);
-          data[i] = NULPTR;
+            MEDDLY_CHECK_BELOW(i, size);
+            if (NOTINQ != data[i]) return;
+            if (NULPTR == head) {
+                // empty list
+                head = int(i);
+            } else {
+                // not empty list
+                MEDDLY_CHECK_BELOW((unsigned) tail, size);
+                data[tail] = int(i);
+            }
+            tail = int(i);
+            data[i] = NULPTR;
         }
         inline unsigned remove() {
             MEDDLY_CHECK_RANGE(0, head, size);

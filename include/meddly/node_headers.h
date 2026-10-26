@@ -436,7 +436,6 @@ class MEDDLY::node_headers : public array_watcher {
         /// Set next deleted node header.
         inline void setNextOf(size_t p, size_t n) {
             MEDDLY_DCASSERT(isDeleted(p));
-            MEDDLY_DCASSERT(n>=0);
             MEDDLY_DCASSERT(addresses);
             addresses->set(size_t(p), node_address(n));
         }

@@ -173,7 +173,7 @@ class MEDDLY::unique_table {
                 template <typename T> node_handle find(const T &key) const
                 {
                     unsigned h = key.hash() % size;
-                    MEDDLY_CHECK_RANGE(0u, h, size);
+                    MEDDLY_CHECK_BELOW(h, size);
                     node_handle prev = 0;
                     for (node_handle ptr = table[h];
                             ptr != 0;

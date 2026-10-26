@@ -118,7 +118,7 @@ namespace MEDDLY {
     protected:
       inline bool isHole(node_address h) const {
         MEDDLY_DCASSERT(data);
-        MEDDLY_CHECK_RANGE(0, h, 1+last_used_slot);
+        MEDDLY_CHECK_BELOW(h, 1+last_used_slot);
         return data[h] & MSB;
         // Because we set data[0] to 0, this will work
         // correctly also for h=0 (which is not a hole).

@@ -1287,7 +1287,7 @@ unsigned MEDDLY::dd_edge::deflt_RNG(unsigned a)
     X *= a;
     X /= 2147483648u;   // divide by 2**31, X will be less than a
 
-    MEDDLY_CHECK_RANGE(0, X, a);
+    MEDDLY_CHECK_BELOW(X, a);
     return X;
 }
 

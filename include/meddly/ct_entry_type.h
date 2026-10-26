@@ -684,7 +684,7 @@ class MEDDLY::ct_entry_type {
         */
         inline const ct_itemtype& getResultType(unsigned i) const
         {
-            MEDDLY_CHECK_RANGE(0, i, result.size());
+            MEDDLY_CHECK_BELOW(i, result.size());
             return result[i];
         }
 

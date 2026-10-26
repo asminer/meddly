@@ -149,25 +149,25 @@ class MEDDLY::common_dfs_by_events_mt : public saturation_operation {
           return NULPTR == head;
         }
         inline void add(unsigned i) {
-            MEDDLY_CHECK_RANGE(0u, i, size);
-          if (NOTINQ != data[i]) return;
-          if (NULPTR == head) {
-            // empty list
-            head = int(i);
-          } else {
-            // not empty list
-              MEDDLY_CHECK_RANGE(0u, (unsigned) tail, size);
-            data[tail] = int(i);
-          }
-          tail = int(i);
-          data[i] = NULPTR;
+            MEDDLY_CHECK_BELOW(i, size);
+            if (NOTINQ != data[i]) return;
+            if (NULPTR == head) {
+                // empty list
+                head = int(i);
+            } else {
+                // not empty list
+                MEDDLY_CHECK_BELOW((unsigned) tail, size);
+                data[tail] = int(i);
+            }
+            tail = int(i);
+            data[i] = NULPTR;
         }
         inline unsigned remove() {
-          MEDDLY_CHECK_RANGE(0u, (unsigned)head, size);
+          MEDDLY_CHECK_BELOW((unsigned)head, size);
           unsigned ans = unsigned(head);
           head = data[head];
           data[ans] = NOTINQ;
-          MEDDLY_CHECK_RANGE(0u, ans, size);
+          MEDDLY_CHECK_BELOW(ans, size);
           return ans;
         }
     };

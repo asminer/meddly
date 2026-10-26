@@ -60,8 +60,11 @@ class MEDDLY::hash_stream {
             {
                 // all the case statements fall through
                 case 3: c += k[2];
+                        /* fallthrough */
                 case 2: b += k[1];
+                        /* fallthrough */
                 case 1: a += k[0];
+                        /* fallthrough */
                 case 0: // nothing left to add (shouldn't get to this case)
                         final_mix(a,b,c);
                         break;
@@ -94,8 +97,11 @@ class MEDDLY::hash_stream {
             {
                 // all the case statements fall through
                 case 3: c += k[2];
+                        /* fallthrough */
                 case 2: b += k[1];
+                        /* fallthrough */
                 case 1: a += k[0];
+                        /* fallthrough */
                 case 0: // nothing left to add (shouldn't get to this case)
                         final_mix(a,b,c);
                         break;

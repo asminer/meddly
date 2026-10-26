@@ -1359,7 +1359,7 @@ MEDDLY::node_address MEDDLY::simple_separated
           down[i] = tv;
         }
         for (unsigned z=0; z<nb.getSize(); z++) {
-          MEDDLY_CHECK_RANGE(0, nb.index(z), unsigned(size));
+          MEDDLY_CHECK_BELOW(nb.index(z), unsigned(size));
           down[nb.index(z)] = nb.down(z);
         }
       } else {

@@ -1171,6 +1171,7 @@ MEDDLY::reachset_satur_factory <FWD, VER>::build_new(forest* a, forest* b, fores
                     return new saturation_set_mtrel<EdgeOp_none,
                             mt_distance>(VER, FWD, a, b, c);
                 }
+                /* fallthrough */
 
             default:
                 return nullptr;

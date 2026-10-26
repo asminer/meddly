@@ -278,12 +278,12 @@ class MEDDLY::ct_vector {
         ~ct_vector();
 
         inline const ct_item& operator[](unsigned u) const {
-            MEDDLY_CHECK_RANGE(0u, u, size());
+            MEDDLY_CHECK_BELOW(u, size());
             MEDDLY_DCASSERT(data);
             return data[u];
         }
         inline ct_item& operator[](unsigned u) {
-            MEDDLY_CHECK_RANGE(0u, u, size());
+            MEDDLY_CHECK_BELOW(u, size());
             MEDDLY_DCASSERT(data);
             return data[u];
         }

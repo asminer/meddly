@@ -192,7 +192,7 @@ void MEDDLY::operation::unregisterInForest(MEDDLY::forest*)
 #ifdef ALLOW_DEPRECATED_0_17_6
 void MEDDLY::operation::registerEntryType(unsigned slot, ct_entry_type* et)
 {
-    MEDDLY_CHECK_RANGE(0, slot, num_etids);
+    MEDDLY_CHECK_BELOW(slot, num_etids);
     MEDDLY_DCASSERT(etype);
     MEDDLY_DCASSERT(0==etype[slot]);
     etype[slot] = et;

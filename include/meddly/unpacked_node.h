@@ -451,7 +451,7 @@ class MEDDLY::unpacked_node {
         */
         inline node_handle down(unsigned n) const
         {
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_down);
             return _down[n];
         }
@@ -465,7 +465,7 @@ class MEDDLY::unpacked_node {
         */
         inline node_handle& down(unsigned n)
         {
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_down);
             return _down[n];
         }
@@ -509,7 +509,7 @@ class MEDDLY::unpacked_node {
         inline unsigned index(unsigned n) const
         {
             MEDDLY_DCASSERT(!is_full);
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_index);
             return _index[n];
         }
@@ -522,7 +522,7 @@ class MEDDLY::unpacked_node {
         inline unsigned& index(unsigned n)
         {
             MEDDLY_DCASSERT(!is_full);
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_index);
             return _index[n];
         }
@@ -560,7 +560,7 @@ class MEDDLY::unpacked_node {
             @return     The edge value
         */
         inline const edge_value& edgeval(unsigned n) const {
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_edge);
             return _edge[n];
         }
@@ -570,7 +570,7 @@ class MEDDLY::unpacked_node {
             @return     The edge value
         */
         inline edge_value& edgeval(unsigned n) {
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_edge);
             return _edge[n];
         }
@@ -602,7 +602,7 @@ class MEDDLY::unpacked_node {
         */
         template <class T>
         inline void subtractFromEdge(unsigned n, T v) {
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_edge);
             _edge[n].subtract(v);
         }
@@ -614,7 +614,7 @@ class MEDDLY::unpacked_node {
         */
         template <class T>
         inline void divideEdge(unsigned n, T v) {
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_edge);
             _edge[n].divide(v);
         }
@@ -638,7 +638,7 @@ class MEDDLY::unpacked_node {
         */
         inline void setEdgeval(unsigned n, const edge_value &ev) {
             MEDDLY_DCASSERT(ev.hasType(the_edge_type));
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_edge);
             _edge[n] = ev;
         }
@@ -653,7 +653,7 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(!hasEdges());
             MEDDLY_DCASSERT(isFull());
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_down);
             _down[n] = h;
         }
@@ -668,7 +668,7 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(v.hasType(the_edge_type));
             MEDDLY_DCASSERT(isFull());
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_down);
             _down[n] = h;
             if (_edge) {
@@ -688,7 +688,7 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(E.isAttachedTo(parent));
             MEDDLY_DCASSERT(E.getEdgeValue().hasType(the_edge_type));
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             E.xferNode(_down[n]);
             if (_edge) {
                 _edge[n] = E.getEdgeValue();
@@ -709,7 +709,7 @@ class MEDDLY::unpacked_node {
         inline void setFull(unsigned n, const void* p, node_handle h)
         {
             MEDDLY_DCASSERT(isFull());
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_edge);
             _down[n] = h;
@@ -728,7 +728,7 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(!hasEdges());
             MEDDLY_DCASSERT(isSparse());
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
             _index[n] = i;
@@ -748,7 +748,7 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(v.hasType(the_edge_type));
             MEDDLY_DCASSERT(isSparse());
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
             _index[n] = i;
@@ -772,7 +772,7 @@ class MEDDLY::unpacked_node {
         {
             MEDDLY_DCASSERT(E.getEdgeValue().hasType(the_edge_type));
             MEDDLY_DCASSERT(isSparse());
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
             E.xferNode(_down[n]);
@@ -798,7 +798,7 @@ class MEDDLY::unpacked_node {
                 node_handle h)
         {
             MEDDLY_DCASSERT(isSparse());
-            MEDDLY_CHECK_RANGE(0u, n, size);
+            MEDDLY_CHECK_BELOW(n, size);
             MEDDLY_DCASSERT(_down);
             MEDDLY_DCASSERT(_index);
             MEDDLY_DCASSERT(_edge);
@@ -951,8 +951,8 @@ class MEDDLY::unpacked_node {
         template <class FORST>
         inline void _clear(const FORST &F, unsigned low, unsigned high)
         {
-            MEDDLY_CHECK_RANGE(0u, low, alloc);
-            MEDDLY_CHECK_RANGE(0u, high, alloc+1);
+            MEDDLY_CHECK_BELOW(low, alloc);
+            MEDDLY_CHECK_BELOW(high, alloc+1);
             MEDDLY_DCASSERT(_down);
 
             if (hasEdges()) {

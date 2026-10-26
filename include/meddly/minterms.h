@@ -339,7 +339,7 @@ class MEDDLY::minterm_coll {
 
         /// Get an element
         inline minterm& at(unsigned i) {
-            MEDDLY_CHECK_RANGE(0u, i, 1+first_unused);
+            MEDDLY_CHECK_BELOW(i, 1+first_unused);
             MEDDLY_DCASSERT(_mtlist);
             MEDDLY_DCASSERT(_mtlist[i]);
             return *(_mtlist[i]);
@@ -347,7 +347,7 @@ class MEDDLY::minterm_coll {
 
         /// Get minterm i
         inline const minterm& at(unsigned i) const {
-            MEDDLY_CHECK_RANGE(0u, i, 1+first_unused);
+            MEDDLY_CHECK_BELOW(i, 1+first_unused);
             MEDDLY_DCASSERT(_mtlist);
             MEDDLY_DCASSERT(_mtlist[i]);
             return *(_mtlist[i]);
@@ -392,8 +392,8 @@ class MEDDLY::minterm_coll {
         /// Swap minterms i and j
         inline void swap(unsigned i, unsigned j)
         {
-            MEDDLY_CHECK_RANGE(0u, i, first_unused);
-            MEDDLY_CHECK_RANGE(0u, j, first_unused);
+            MEDDLY_CHECK_BELOW(i, first_unused);
+            MEDDLY_CHECK_BELOW(j, first_unused);
             MEDDLY_DCASSERT(_mtlist);
             MEDDLY_DCASSERT(i != j);
             SWAP(_mtlist[i], _mtlist[j]);

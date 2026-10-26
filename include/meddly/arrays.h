@@ -98,7 +98,7 @@ class MEDDLY::level_array {
         }
 
         inline int get(size_t i) const {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
+            MEDDLY_CHECK_BELOW(i, size);
             if (data8) {
                 MEDDLY_DCASSERT(!data16);
                 MEDDLY_DCASSERT(!data32);
@@ -113,7 +113,7 @@ class MEDDLY::level_array {
         }
 
         inline void set(size_t i, int v) {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
+            MEDDLY_CHECK_BELOW(i, size);
             if (data8) {
                 MEDDLY_CHECK_RANGE(-128, v, 128);
                 MEDDLY_DCASSERT(!data16);
@@ -132,8 +132,8 @@ class MEDDLY::level_array {
         }
 
         inline void swap(size_t i, size_t j) {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
-            MEDDLY_CHECK_RANGE(size_t(0), j, size);
+            MEDDLY_CHECK_BELOW(i, size);
+            MEDDLY_CHECK_BELOW(j, size);
             if (data8) {
                 MEDDLY_DCASSERT(!data16);
                 MEDDLY_DCASSERT(!data32);
@@ -183,7 +183,7 @@ class MEDDLY::counter_array {
         inline size_t entry_bits() const { return bytes * 8; }
 
         inline unsigned int get(size_t i) const {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
+            MEDDLY_CHECK_BELOW(i, size);
             if (data8) {
                 MEDDLY_DCASSERT(!data16);
                 MEDDLY_DCASSERT(!data32);
@@ -198,8 +198,8 @@ class MEDDLY::counter_array {
         }
 
         inline void swap(size_t i, size_t j) {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
-            MEDDLY_CHECK_RANGE(size_t(0), j, size);
+            MEDDLY_CHECK_BELOW(i, size);
+            MEDDLY_CHECK_BELOW(j, size);
             if (data8) {
                 MEDDLY_DCASSERT(!data16);
                 MEDDLY_DCASSERT(!data32);
@@ -216,7 +216,7 @@ class MEDDLY::counter_array {
         }
 
         inline void increment(size_t i) {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
+            MEDDLY_CHECK_BELOW(i, size);
             if (data8) {
                 MEDDLY_DCASSERT(!data16);
                 MEDDLY_DCASSERT(!data32);
@@ -237,7 +237,7 @@ class MEDDLY::counter_array {
         }
 
         inline void decrement(size_t i) {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
+            MEDDLY_CHECK_BELOW(i, size);
             if (data8) {
                 MEDDLY_DCASSERT(!data16);
                 MEDDLY_DCASSERT(!data32);
@@ -269,7 +269,7 @@ class MEDDLY::counter_array {
         }
 
         inline bool isZeroBeforeIncrement(size_t i) {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
+            MEDDLY_CHECK_BELOW(i, size);
             if (data8) {
                 MEDDLY_DCASSERT(!data16);
                 MEDDLY_DCASSERT(!data32);
@@ -303,7 +303,7 @@ class MEDDLY::counter_array {
         }
 
         inline bool isPositiveAfterDecrement(size_t i) {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
+            MEDDLY_CHECK_BELOW(i, size);
             if (data8) {
                 MEDDLY_DCASSERT(!data16);
                 MEDDLY_DCASSERT(!data32);
@@ -375,7 +375,7 @@ class MEDDLY::address_array {
         inline size_t entry_bits() const { return size_t(bytes) * 8; }
 
         inline unsigned long get(size_t i) const {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
+            MEDDLY_CHECK_BELOW(i, size);
             if (4==bytes) {
                 MEDDLY_DCASSERT(data32);
                 MEDDLY_DCASSERT(!data64);
@@ -389,7 +389,7 @@ class MEDDLY::address_array {
         }
 
         inline void set(size_t i, unsigned long v) {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
+            MEDDLY_CHECK_BELOW(i, size);
             if (4==bytes) {
                 MEDDLY_DCASSERT(data32);
                 MEDDLY_DCASSERT(!data64);
@@ -427,8 +427,8 @@ class MEDDLY::address_array {
         }
 
         inline void swap(size_t i, size_t j) {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
-            MEDDLY_CHECK_RANGE(size_t(0), j, size);
+            MEDDLY_CHECK_BELOW(i, size);
+            MEDDLY_CHECK_BELOW(j, size);
             if (4==bytes) {
                 MEDDLY_DCASSERT(data32);
                 MEDDLY_DCASSERT(!data64);
@@ -475,13 +475,13 @@ class MEDDLY::bitvector {
         inline size_t getSize() const { return size; }
 
         inline bool get(size_t i) const {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
+            MEDDLY_CHECK_BELOW(i, size);
             MEDDLY_DCASSERT(data);
             return data[i];
         }
 
         inline void set(size_t i, bool v) {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
+            MEDDLY_CHECK_BELOW(i, size);
             MEDDLY_DCASSERT(data);
             data[i] = v;
         }
@@ -494,8 +494,8 @@ class MEDDLY::bitvector {
         }
 
         inline void swap(size_t i, size_t j) {
-            MEDDLY_CHECK_RANGE(size_t(0), i, size);
-            MEDDLY_CHECK_RANGE(size_t(0), j, size);
+            MEDDLY_CHECK_BELOW(i, size);
+            MEDDLY_CHECK_BELOW(j, size);
             MEDDLY_DCASSERT(data);
             SWAP(data[i], data[j]);
         }

@@ -678,6 +678,7 @@ MEDDLY::_IMAGE_factory <FWD>::build_new(forest* a, forest* b, forest* c)
                     return new prepost_set_mtrel<EdgeOp_none,
                             mt_distance>(FWD, a, b, c);
                 }
+                /* fallthrough */
 
             default:
                 return nullptr;

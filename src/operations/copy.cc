@@ -1102,6 +1102,7 @@ MEDDLY::COPY_factory::build_new(forest* arg, forest* res)
                 if (res->getRangeType() == range_type::REAL) {
                     return new copy_EV_fast(arg, res);
                 }
+                /* fallthrough */
 
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);

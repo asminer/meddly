@@ -293,7 +293,7 @@ namespace MEDDLY {
                 return all_unary.size();
             }
             inline const unary_factory* getUnary(unsigned i) const {
-                MEDDLY_CHECK_RANGE(0, i, all_unary.size());
+                MEDDLY_CHECK_BELOW(i, all_unary.size());
                 return all_unary[i];
             }
 
@@ -301,7 +301,7 @@ namespace MEDDLY {
                 return all_binary.size();
             }
             inline const binary_factory* getBinary(unsigned i) const {
-                MEDDLY_CHECK_RANGE(0, i, all_binary.size());
+                MEDDLY_CHECK_BELOW(i, all_binary.size());
                 return all_binary[i];
             }
 

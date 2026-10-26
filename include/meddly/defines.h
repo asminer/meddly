@@ -71,6 +71,17 @@
         } \
     } while (0)
 
+#define MEDDLY_CHECK_BELOW(X, U)  \
+    do { \
+        if ( (X) >= (U) ) { \
+            std::cerr << "Check below at " << __FILE__ \
+                      << " line " << __LINE__ \
+                      << " failed:\n    val: " << (X) \
+                      << "\n    max: " << (U) << '\n'; \
+            exit(1); \
+        } \
+    } while (0)
+
 
 // ***********************************************************************
 #else
@@ -83,6 +94,7 @@
 #define smart_cast  static_cast
 #define MEDDLY_DCASSERT(X)
 #define MEDDLY_CHECK_RANGE(L, X, U)
+#define MEDDLY_CHECK_BELOW(X, U)
 
 // ***********************************************************************
 #endif
