@@ -2,11 +2,86 @@
 #
 #
 
+DRYRUN=""   # is this a dry run.
+RELTYPE=""  # release type, m or M.
+
 DEFFILE="src/defines.h"
 REVFILE="src/revision.h"
 RELDIR="docs/_releases"
 UNRELNOTES="$RELDIR/unreleased.md"
 NAVFILE="docs/_data/navigation.yml"
+
+#
+# Display usage and exit
+#
+usage()
+{
+    printf "\nUsage: $1 [-d] -M | -m \n\n"
+    printf "Creates a release.\n"
+    printf "Updates the version number and release date in sources.\n"
+    printf "Creates a tag for the release, named v[version].\n\n"
+    printf "Before running, be sure that all modified files have been committed\n"
+    printf "to the repository.\n\n"
+    printf "Switches:\n"
+    printf "    -d: dry run. Just show what would be done.\n\n"
+
+    printf "    -m: minor release. If configure.ac specifies version x.y.z, then\n"
+    printf "        the current release will be x.y.z, and configure.ac will be\n"
+    printf "        changed to version x.y.z+1.\n\n"
+
+    printf "    -M: major release. If configure.ac specifies version x.y.z, then\n"
+    printf "        the current release will be x.y+1.0, and configure.ac will be\n"
+    printf "        changed to version x.y+1.1.\n\n"
+    exit 1
+}
+
+#
+# Parse command line arguments
+#
+
+for arg; do
+    if [ "-m" == "$arg" ]
+    then
+        RELTYPE="m"
+        continue
+    fi
+    if [ "-M" == "$arg" ]
+    then
+        RELTYPE="M"
+        continue
+    fi
+    if [ "-d" == "$arg" ]
+    then
+        DRYRUN="d"
+        continue
+    fi
+    echo "Unknown argument or switch: $arg"
+    usage $0
+done
+
+#
+# Check command line arguments
+#
+
+if [ ! $RELTYPE ]
+then
+    echo "Missing required -m or -M."
+    usage $0
+fi
+if [ "m" == "$RELTYPE" ]
+then
+    echo "Minor release"
+else
+    echo "Major release"
+fi
+if [ "$DRYRUN" ]
+then
+    echo "DRY RUN - no changes will be made"
+fi
+echo
+
+exit 1
+
 
 #
 #
@@ -98,24 +173,6 @@ update_config()
     sed "s|^\(AC_INIT(MEDDLY\), [0-9.]*, \(.*\)|\1, $1, \2|" ../configure.ac
 }
 
-usage()
-{
-    printf "\nUsage: $1 -M | -m \n\n"
-    printf "Creates a release and update the version number in configure.ac.\n"
-    printf "Automatically updates the revision date in the source,\n"
-    printf "and creates a tag for the release, named v[version].\n\n"
-    printf "Before running, be sure that all modified files have been committed\n"
-    printf "to the repository.\n\n"
-    printf "Switches:\n"
-    printf "    -m: minor release. If configure.ac specifies version x.y.z, then\n"
-    printf "        the current release will be x.y.z, and configure.ac will be\n"
-    printf "        changed to version x.y.z+1.\n\n"
-    printf "    -M: major release. If configure.ac specifies version x.y.z, then\n"
-    printf "        the current release will be x.y+1.0, and configure.ac will be\n"
-    printf "        changed to version x.y+1.1.\n\n"
-    exit 1
-}
-
 #
 # Fatal error checks
 #
@@ -127,21 +184,6 @@ fi
 if [ ! -f ../configure.ac ]; then
     printf "\nRun this in the developers directory.\n\n"
     exit 1
-fi
-
-#
-# Parse command line
-#
-
-major="x"
-if [ "x-m" == "x$1" ]; then
-    major=""
-fi
-if [ "x-M" == "x$1" ]; then
-    major="y"
-fi
-if [ "x" == "$major" ]; then
-    usage $0
 fi
 
 #

@@ -8,10 +8,11 @@ Preferred mechanism to "release" the library:
 (2) Check "make install" headers/library by running ./checkInstall.sh
 
 (3) Run ./Release.sh script, which automatically
-    (a) updates version number in configure.ac
+    (a) updates version number in sources
     (b) updates release documentation in docs/_releases,
         and docs/_data/navigation.yml
     (c) tags release
+    (d) generates a tarball
 
     Probably good to double-check these files.
 
