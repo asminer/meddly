@@ -5,11 +5,15 @@
 DRYRUN=""   # is this a dry run.
 RELTYPE=""  # release type, m or M.
 
-DEFFILE="src/defines.h"
-REVFILE="src/revision.h"
+DEFFILE="include/meddly/defines.h"
+REVFILE="include/meddly/version.h"
 RELDIR="docs/_releases"
 UNRELNOTES="$RELDIR/unreleased.md"
 NAVFILE="docs/_data/navigation.yml"
+
+OLDVER=""   # version number currently
+THISVER=""  # version number of this release
+NEXTVER=""  # next version number after release
 
 #
 # Display usage and exit
@@ -36,10 +40,146 @@ usage()
 }
 
 #
+# Determine current and next version numbers
+#
+determine_versions()
+{
+    OLDVER=`awk -F\" '{print $2}' ../$REVFILE | head -n 1`
+
+    if [ "M" == "$RELTYPE" ]
+    then
+        THISVER=`awk -F. '{print $1"."($2+1)".0"}' <<< "$OLDVER"`
+    else
+        THISVER="$OLDVER"
+    fi
+    NEXTVER=`awk -F. '{print $1"."$2"."($3+1)}' <<< "$THISVER"`
+
+    echo "Current version: $OLDVER"
+    echo "Release version: $THISVER"
+    echo "Next    version: $NEXTVER"
+}
+
+
+#
+# Arg1: new version
+# Arg2: empty string, or "unreleased"
+#
+update_revfile()
+{
+    local tab
+    local outfile
+    local rdate
+
+    if [ "$DRYRUN" ]
+    then
+        tab="    "
+        outfile="/dev/stdout"
+        echo "Updated $REVFILE would be:"
+    else
+        tab=""
+        outfile="../$REVFILE"
+        echo "Updating $REVFILE"
+    fi
+
+    if [ "$2" ]
+    then
+        rdate="($2)"
+    else
+        rdate=`date +"%Y %B %d"`
+    fi
+
+    printf "%s#define VERSION \"%s\"\n%sconst char* MEDDLY_DATE = \"%s\"\n"  "$tab" "$1"  "$tab" "$rdate" > $outfile
+
+    if [ "$DRYRUN" ]
+    then
+        echo "would now do: git add ../$REVFILE"
+    else
+        git add ../$REVFILE
+    fi
+}
+
+#
+# Update version in ALLOW_DEPRECATED
+#
+# Arg1: original version
+# Arg2: updated version
+# Arg3: file to update
+#
+update_deprecated()
+{
+    if [ ! -f $3 ]
+    then
+        return
+    fi
+
+    local srch="ALLOW_DEPRECATED_$1"
+    local repl="ALLOW_DEPRECATED_$2"
+
+    sed "s/$srch/$repl/" $3 > $3.new
+
+    if diff -q $3 $3.new > /dev/null
+    then
+        if [ "$DRYRUN" ]
+        then
+            rm $3.new
+        fi
+    else
+        if [ "$DRYRUN" ]
+        then
+            echo "Updating $3:"
+            diff $3 $3.new
+            rm $3.new
+        else
+            mv -f $3.new $3
+            git add $3
+        fi
+    fi
+}
+
+
+#
+# No arguments
+#
+update_deffile()
+{
+    if [ ! -f "../$DEFFILE" ]; then
+        echo "Couldn't find $DEFFILE, could not update!"
+        return
+    fi
+    local ddate=`date +"%m/%d/%Y"`
+    local oldversid=`tr '.' '_' <<< "$OLDVER"`
+    local thisversid=`tr '.' '_' <<< "$THISVER"`
+
+    sed "1,/=======/s|$oldversid.*|$thisversid  \"$ddate\"|" ../$DEFFILE > ../$DEFFILE.new
+
+    if [ "$DRYRUN" ]
+    then
+        echo "The followung updates would be made to $DEFFILE:"
+        diff ../$DEFFILE ../$DEFFILE.new
+        rm ../$DEFFILE.new
+    else
+        mv -f ../$DEFFILE.new ../$DEFFILE
+        git add ../$DEFFILE
+    fi
+
+    if [ "$oldversid" != "$thisversid" ]
+    then
+        find ../include ../src | while read fname
+        do
+            update_deprecated $oldversid $thisversid $fname
+        done
+    fi
+
+}
+
+
+
+#
 # Parse command line arguments
 #
 
-for arg; do
+for arg
+do
     if [ "-m" == "$arg" ]
     then
         RELTYPE="m"
@@ -80,6 +220,53 @@ then
 fi
 echo
 
+#
+# Sanity checks
+#
+
+if [ ! -f Release.sh ]
+then
+    echo "Run this in the developers directory."
+    exit 1
+fi
+if [ ! -f ../$UNRELNOTES ]
+then
+    echo "Missing release docs; check file $UNRELNOTES"
+    exit 1
+fi
+if diff -q blank_unreleased.md ../$UNRELNOTES > /dev/null
+then
+    echo "Update release documentation $UNRELNOTES"
+    exit 1
+fi
+remotes=`git remote`
+for r in origin sourceforge
+do
+    if ! grep $r > /dev/null <<< $remotes
+    then
+        echo "Missing expected remote: $r"
+        exit 1
+    fi
+done
+
+#
+# Start "making changes"
+#
+
+determine_versions
+
+if [ -f ../$RELDIR/$THISVER.md ]; then
+    printf "Can't update documentation; file $RELDIR/$THISVER.md exists\n"
+    exit 1
+fi
+
+update_revfile $THISVER
+update_deffile
+
+#
+# TBD HERE
+#
+
 exit 1
 
 
@@ -100,17 +287,6 @@ confirm_or_quit()
             return
         fi
     done
-}
-
-#
-# Arg1: version
-#
-update_revision()
-{
-    printf "    updating $REVFILE\n"
-    local rdate=`date +"%Y %B %d"`
-    printf "const char* MEDDLY_DATE = \"%s\";\nconst char* MEDDLY_VERS = \"%s\";\n" "$rdate" "$1" > ../$REVFILE
-    git add ../$REVFILE
 }
 
 #
@@ -173,18 +349,6 @@ update_config()
     sed "s|^\(AC_INIT(MEDDLY\), [0-9.]*, \(.*\)|\1, $1, \2|" ../configure.ac
 }
 
-#
-# Fatal error checks
-#
-
-if [ $# -ne 1 ]; then
-    usage $0
-fi
-
-if [ ! -f ../configure.ac ]; then
-    printf "\nRun this in the developers directory.\n\n"
-    exit 1
-fi
 
 #
 # Build version numbers
@@ -206,29 +370,6 @@ printf "Checking release...\n"
 #
 # Release checks and whatnot
 #
-
-if [ ! -f ../$UNRELNOTES ]; then
-    printf "Missing release docs; check file $UNRELNOTES\n\n"
-    exit 1
-fi
-
-if diff -q blank_unreleased.md ../$UNRELNOTES; then
-    printf "Update release documentation $UNRELNOTES\n\n"
-    exit 1
-fi
-
-remotes=`git remote`
-for r in origin sourceforge; do
-    if ! grep $r > /dev/null <<< $remotes; then
-        printf "Missing expected remote: $r\n\n"
-        exit 1
-    fi
-done
-
-if [ -f ../$RELDIR/$version.md ]; then
-    printf "Can't update documentation; file $RELDIR/$version.md exists\n"
-    exit 1
-fi
 
 printf "Preparing relase\n"
 
