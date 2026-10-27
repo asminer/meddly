@@ -1,48 +1,48 @@
 
 executable(
     'comptab',
-    ['comptab.cc', 'reporting.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    [ 'comptab.cc', '../utils/reporting.cc' ],
+    dependencies: [ gmp_dep, meddly_dep ]
 )
 
 
 executable(
     'ddedge',
-    ['ddedge.cc', 'reporting.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    [ 'ddedge.cc', '../utils/reporting.cc' ],
+    dependencies: [ gmp_dep, meddly_dep ]
 )
 
 
 executable(
     'fids',
-    ['fids.cc', 'reporting.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    [ 'fids.cc', '../utils/reporting.cc' ],
+    dependencies: [ gmp_dep, meddly_dep ]
 )
 
 
 executable(
     'mark',
-    ['mark.cc', 'reporting.cc', 'simple_model.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    [ 'mark.cc', '../utils/reporting.cc', '../utils/simple_model.cc' ],
+    dependencies: [ gmp_dep, meddly_dep ]
 )
 
 
 executable(
     'reduce',
-    ['reduce.cc', 'reporting.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    ['reduce.cc', '../utils/reporting.cc' ],
+    dependencies: [ gmp_dep, meddly_dep ]
 )
 
 
 executable(
     'opids',
-    ['opids.cc', 'reporting.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    [ 'opids.cc', '../utils/reporting.cc' ],
+    dependencies: [ gmp_dep, meddly_dep ]
 )
 
 
 executable(
     'unpacked',
-    ['unpacked.cc', 'reporting.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    [ 'unpacked.cc', '../utils/reporting.cc' ],
+    dependencies: [ gmp_dep, meddly_dep ]
 )

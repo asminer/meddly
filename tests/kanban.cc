@@ -21,7 +21,7 @@
 #include <string.h>
 
 #include "meddly/meddly.h"
-#include "simple_model.h"
+#include "utils/simple_model.h"
 
 #define PROGRESS
 

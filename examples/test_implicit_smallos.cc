@@ -24,8 +24,8 @@ along with this library.  If not, see <http://www.gnu.org/licenses/>.
 #define _MEDDLY_WITHOUT_IOSTREAM_
 
 #include "meddly/meddly.h"
-#include "simple_model.h"
-#include "../timing/timer.h"
+#include "utils/simple_model.h"
+#include "utils/timer.h"
 
 // #define DUMP_NSF
 // #define DUMP_REACHABLE

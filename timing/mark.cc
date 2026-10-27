@@ -24,9 +24,9 @@
 #include <iomanip>
 
 #include "meddly/meddly.h"
-#include "simple_model.h"
-#include "timer.h"
-#include "reporting.h"
+#include "utils/simple_model.h"
+#include "utils/timer.h"
+#include "utils/reporting.h"
 
 using namespace MEDDLY;
 

@@ -22,7 +22,7 @@
 #include <cassert>
 
 #include "meddly/meddly.h"
-#include "../timing/timer.h"
+#include "utils/timer.h"
 
 // #define SHOW_EVENTS
 

@@ -30,7 +30,7 @@
 #define _MEDDLY_WITHOUT_CSTDIO_
 
 #include "meddly/meddly.h"
-#include "../timing/timer.h"
+#include "utils/timer.h"
 
 // #define DEBUG_INPUT
 // #define DEBUG_NUM_TRUE

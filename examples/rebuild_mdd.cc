@@ -42,7 +42,7 @@ using namespace MEDDLY;
 // #include "operation_ext.h"
 
 // Timer class
-#include "../timing/timer.h"
+#include "utils/timer.h"
 
 #define USE_REALS 0
 

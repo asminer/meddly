@@ -23,7 +23,7 @@
 #include <cassert>
 
 #include "meddly/meddly.h"
-#include "zstream.h"
+#include "utils/zstream.h"
 
 
 void myConv(const MEDDLY::rangeval &x, MEDDLY::rangeval &y)

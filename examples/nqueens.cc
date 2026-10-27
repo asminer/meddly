@@ -32,8 +32,10 @@
 #include <cassert>
 
 #include "meddly/meddly.h"
-#include "../timing/timer.h"
+#include "utils/timer.h"
+#ifdef ALLOW_DEPRECATED_0_18_2
 #include "meddly/log_simple.h"
+#endif
 
 // #define SHOW_ALL_SOLUTIONS
 

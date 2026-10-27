@@ -20,8 +20,8 @@
 #include <iomanip>
 
 #include "meddly/meddly.h"
-#include "timer.h"
-#include "reporting.h"
+#include "utils/timer.h"
+#include "utils/reporting.h"
 
 using namespace MEDDLY;
 

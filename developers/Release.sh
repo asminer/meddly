@@ -375,7 +375,7 @@ fi
 tarbase="meddly-$THISVER"
 tarfile="$tarbase.tar.gz"
 echo "Building $tarfile"
-tar czf ../$tarfile -C .. --exclude .OLD -s "|^|$tarbase/|" doxygen/ examples/ include/ src/ tests/ timing/ AUTHORS COPYING COPYING.LESSER meson.build README.md
+tar czf ../$tarfile -C .. --exclude .OLD -s "|^|$tarbase/|" doxygen/ examples/ include/ src/ tests/ timing/ utils/ AUTHORS COPYING COPYING.LESSER meson.build README.md
 
 #
 # Automatically bump the version number

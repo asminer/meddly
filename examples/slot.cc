@@ -22,9 +22,11 @@
 #include <string.h>
 
 #include "meddly/meddly.h"
-#include "simple_model.h"
-#include "../timing/timer.h"
+#include "utils/simple_model.h"
+#include "utils/timer.h"
+#ifdef ALLOW_DEPRECATED_0_18_1
 #include "meddly/log_simple.h"
+#endif
 
 using namespace MEDDLY;
 

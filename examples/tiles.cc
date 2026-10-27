@@ -24,9 +24,8 @@
 #include <dirent.h>
 
 #include "meddly/meddly.h"
-#include "../timing/timer.h"
-
-#include "zstream.h"
+#include "utils/timer.h"
+#include "utils/zstream.h"
 
 // #define SHOW_EVENTS
 

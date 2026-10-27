@@ -22,7 +22,7 @@
 #include <unistd.h>
 
 #include "meddly/meddly.h"
-#include "simple_model.h"
+#include "utils/simple_model.h"
 
 #define WRITE_MXD
 #define WRITE_MDD

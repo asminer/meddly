@@ -20,7 +20,7 @@
 #include <fstream>
 
 #include "meddly/meddly.h"
-#include "zstream.h"
+#include "utils/zstream.h"
 
 // **********************************************************************
 // print usage instructions

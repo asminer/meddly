@@ -37,7 +37,9 @@
 #include <cstdlib>
 
 #include "meddly/meddly.h"
+#ifdef ALLOW_DEPRECATED_0_18_2
 #include "meddly/log_simple.h"
+#endif
 
 // #define SET_VAR_NAMES
 // #define DEBUG_VARS

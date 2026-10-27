@@ -16,8 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "timer.h"
-#include "reporting.h"
+#include "utils/timer.h"
+#include "utils/reporting.h"
 
 #include <cstring>
 #include <iomanip>

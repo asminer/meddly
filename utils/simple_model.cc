@@ -18,8 +18,8 @@
 */
 
 #include "meddly/meddly.h"
-#include "simple_model.h"
-#include "../timing/timer.h"
+#include "utils/simple_model.h"
+#include "utils/timer.h"
 
 #define VERBOSE
 #define NOT_KNOWN     -2
