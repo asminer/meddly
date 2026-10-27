@@ -1,14 +1,6 @@
 
 TO DO list
 
-Finishing the switch to meson:
-    * update build instructions on github pages
-    * update benchmark scripts
-    * update release scripts
-        + including - building the tarball
-
-========= (release?)
-
     * saturation 2 monolithic relation
         'saturate after' but on diagonal
         states only
