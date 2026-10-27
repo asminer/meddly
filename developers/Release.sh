@@ -82,7 +82,7 @@ update_revfile()
         rdate="$2 $rdate"
     fi
 
-    printf "#define VERSION \"%s\"\nconst char* MEDDLY_DATE = \"%s\"\n"  "$1" "$rdate" > ../$REVFILE.new
+    printf "#define VERSION \"%s\"\nconst char* MEDDLY_DATE = \"%s\";\n"  "$1" "$rdate" > ../$REVFILE.new
 
     if [ "$DRYRUN" ]
     then
@@ -116,10 +116,7 @@ update_deprecated()
 
     if diff -q $3 $3.new > /dev/null
     then
-        if [ "$DRYRUN" ]
-        then
-            rm $3.new
-        fi
+        rm $3.new
     else
         if [ "$DRYRUN" ]
         then
