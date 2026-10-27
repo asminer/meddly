@@ -71,17 +71,15 @@ determine_versions()
 
 #
 # Arg1: new version
-# Arg2: empty string, or "unreleased"
+# Arg2: date prefix
 #
 update_revfile()
 {
-    local rdate
+    local rdate=`date +"%Y %B %d"`
 
     if [ "$2" ]
     then
-        rdate="($2)"
-    else
-        rdate=`date +"%Y %B %d"`
+        rdate="$2 $rdate"
     fi
 
     printf "#define VERSION \"%s\"\nconst char* MEDDLY_DATE = \"%s\"\n"  "$1" "$rdate" > ../$REVFILE.new
@@ -383,6 +381,6 @@ tar czf ../$tarfile -C .. --exclude .OLD -s "|^|$tarbase/|" doxygen/ examples/ i
 # Automatically bump the version number
 #
 
-update_revfile $NEXTVER unreleased
+update_revfile $NEXTVER after
 addto_deffile
 
