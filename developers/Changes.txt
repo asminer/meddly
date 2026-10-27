@@ -1,6 +1,12 @@
 
 TO DO list
 
+    * figure out how to make simple_model a static_library...
+    * also zstream
+    * also reporting: no meddly dependency!
+
+========= (release?)
+
     * saturation 2 monolithic relation
         'saturate after' but on diagonal
         states only
