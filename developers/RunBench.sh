@@ -81,6 +81,20 @@ benchTime=("")
 benchPeak=("")
 
 #
+# Args: directories to try
+#
+find_kanban()
+{
+    for arg; do
+        if [ -x "$arg/kanban" ]
+        then
+            echo "$arg"
+            return
+        fi
+    done
+}
+
+#
 # Show all results
 #
 showResults()
@@ -310,7 +324,7 @@ trap bailout INT
 # Process switches (these are new!)
 #
 
-MPATH=""
+MPATH="."
 BPATH=""
 HTMLFILE=""
 TEXTFILE=""
@@ -341,46 +355,24 @@ done
 #
 # Find examples and source directories
 #
-
-if [ ! "$MPATH" ]; then
-    # No directory given.
-    # Determine if we're in the root directory.
-    if [ -f "AUTHORS" ]; then
-        MPATH="."
-    elif [ -f "../AUTHORS" ]; then
-        MPATH=".."
-    else
-        echo "Not sure which directory we are in."
-        echo "Run from the root directory of the project, the build directory,"
-        echo "or the developers directory."
-        exit 1
-    fi
-fi
-
-# Figure out which directory we were given.
-if [ -f "$MPATH/AUTHORS" ]
+EXDIR=`find_kanban examples build-release/examples ../build-release/examples`
+if [ ! "$EXDIR" ]
 then
-    # probably the root.
-    EXDIR=`checkExeDir $MPATH/build-release/examples $MPATH/examples`
-    SRCDIR=`checkDir $MPATH/src`
-    if [ -f "$SRCDIR/meddly.h" ]; then
-        INCDIR=""
-    else
-        INCDIR=`checkDir $MPATH/include`
-    fi
-elif [ -f "$MPATH/build.ninja" ]; then
-    # probably a build directory.
-    EXDIR=`checkExeDir $MPATH/examples`
-    SRCDIR=`checkDir $MPATH/..`
-    if [ -f "$SRCDIR/meddly.h" ]; then
-        INCDIR=""
-    else
-        INCDIR=`checkDir $MPATH/../include`
-    fi
-else
-    echo "Not sure about directory $MPATH"
+    echo
+    echo "Couldn't find examples directory with executables. Run this script in,"
+    echo "or pass using -d, the build directory or the root or developers"
+    echo "directory, if the build directory is build-release/"
+    echo
     exit 1
 fi
+MPATH="`dirname $EXDIR`/.."
+SRCDIR=`checkDir $MPATH/src`
+if [ -f "$SRCDIR/meddly.h" ]; then
+    INCDIR=""
+else
+    INCDIR=`checkDir $MPATH/include`
+fi
+
 
 if [ "$BPATH" ]; then
     if [ ! -d $BPATH ]; then

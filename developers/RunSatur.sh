@@ -9,6 +9,20 @@ first_word()
 }
 
 #
+# Args: directories to try
+#
+find_kanban()
+{
+    for arg; do
+        if [ -x "$arg/kanban" ]
+        then
+            echo "$arg"
+            return
+        fi
+    done
+}
+
+#
 # Arg1: model
 # Arg2: trad time
 # Arg3: front time
@@ -85,18 +99,15 @@ show_table()
     echo
 }
 
-path="examples"
-if [ ! -d examples ]
+path=`find_kanban examples build-release/examples ../build-release/examples`
+if [ ! "$path" ]
 then
-    path="../examples"
-    if [ ! -d ../examples ]
-    then
-        echo
-        echo "Couldn't find examples directory."
-        echo "Run this script in the root or developers directory."
-        echo
-        exit 1
-    fi
+    echo
+    echo "Couldn't find examples directory with executables."
+    echo "Run this script in the build directory, or elsewhere"
+    echo "if the build directory is named build-release/"
+    echo
+    exit 1
 fi
 
 for prog in dining_phils kanban slot tiles
