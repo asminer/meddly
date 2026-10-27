@@ -19,7 +19,7 @@
 #include "meddly/meddly.h"
 #include <iostream>
 
-#include "randomize.h"
+#include "utils/randomize.h"
 
 //
 // Minterm generators :)

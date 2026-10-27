@@ -17,10 +17,10 @@
 */
 
 //
-// Test the randomization stuff in randomize.h/cc
+// Test the randomization stuff in utils/randomize.cc
 //
 
-#include "randomize.h"
+#include "utils/randomize.h"
 
 const unsigned VARS = 5;
 const unsigned RELDOM = 2;

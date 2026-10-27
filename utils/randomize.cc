@@ -16,7 +16,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "randomize.h"
+#include "utils/randomize.h"
 #include <iostream>
 
 long vectorgen::seed;

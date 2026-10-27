@@ -28,7 +28,7 @@
 
 #include "meddly/meddly.h"
 
-#include "randomize.h"
+#include "utils/randomize.h"
 
 // #define SHOW_INITIAL
 // #define SHOW_GRAPH

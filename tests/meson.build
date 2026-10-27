@@ -71,8 +71,8 @@ test('chk_copy', chk_copy)
 
 chk_cross = executable(
     'chk_cross',
-    ['chk_cross.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'chk_cross.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('chk_cross', chk_cross)
@@ -91,8 +91,8 @@ test('chk_ct', chk_ct)
 
 chk_iters = executable(
     'chk_iters',
-    ['chk_iters.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'chk_iters.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('chk_iters', chk_iters)
@@ -101,8 +101,8 @@ test('chk_iters', chk_iters)
 
 chk_minterms = executable(
     'chk_minterms',
-    ['chk_minterms.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'chk_minterms.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('chk_minterms --set --fully', chk_minterms, args: ['--set', '--fully'])
@@ -115,8 +115,8 @@ test('chk_minterms --rel --ident', chk_minterms, args: ['--rel', '--ident'])
 
 chk_mtcoll = executable(
     'chk_mtcoll',
-    ['chk_mtcoll.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'chk_mtcoll.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('chk_mtcoll --set --fully', chk_mtcoll, args: ['--set', '--fully'])
@@ -277,8 +277,8 @@ test('nqueens', nqueens)
 
 ops_comp = executable(
     'ops_comp',
-    ['ops_comp.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'ops_comp.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('ops_comp --set --MT --int', ops_comp,
@@ -301,8 +301,8 @@ test('ops_comp --rel --EVs --float', ops_comp,
 
 ops_distmin = executable(
     'ops_distmin',
-    ['ops_distmin.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'ops_distmin.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('ops_distmin --set --int', ops_distmin, args: ['--set', '--int'])
@@ -314,8 +314,8 @@ test('ops_distmin --rel --float', ops_distmin, args: ['--rel', '--float'])
 
 ops_divmod = executable(
     'ops_divmod',
-    ['ops_divmod.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'ops_divmod.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('ops_divmod --set --MT --int', ops_divmod,
@@ -338,8 +338,8 @@ test('ops_divmod --rel --EVs --float', ops_divmod,
 
 ops_maxmin = executable(
     'ops_maxmin',
-    ['ops_maxmin.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'ops_maxmin.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('ops_maxmin --set --MT --int', ops_maxmin,
@@ -362,8 +362,8 @@ test('ops_maxmin --rel --EVs --float', ops_maxmin,
 
 ops_mult = executable(
     'ops_mult',
-    ['ops_mult.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'ops_mult.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('ops_mult --set --MT --int', ops_mult,
@@ -386,8 +386,8 @@ test('ops_mult --rel --EVs --float', ops_mult,
 
 ops_plusminus = executable(
     'ops_plusminus',
-    ['ops_plusminus.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'ops_plusminus.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('ops_plusminus --set --MT --int', ops_plusminus,
@@ -410,8 +410,8 @@ test('ops_plusminus --rel --EVs --float', ops_plusminus,
 
 ops_prepost = executable(
     'ops_prepost',
-    ['ops_prepost.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'ops_prepost.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('ops_prepost --set --MTb --inF --relI', ops_prepost,
@@ -451,8 +451,8 @@ test('ops_prepost --set --EVp --inQ --relF', ops_prepost,
 
 ops_set = executable(
     'ops_set',
-    ['ops_set.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'ops_set.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('ops_set --set', ops_set, args: ['--set'])
@@ -462,8 +462,8 @@ test('ops_rel --rel', ops_set, args: ['--rel'])
 
 ops_user_un = executable(
     'ops_user_un',
-    ['ops_user_un.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'ops_user_un.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('ops_user_un --set --MT --int', ops_user_un,
@@ -486,8 +486,8 @@ test('ops_user_un --rel --EVs --float', ops_user_un,
 
 ops_vmmult = executable(
     'ops_vmmult',
-    ['ops_vmmult.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'ops_vmmult.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('ops_vmmult --int --vF --mF', ops_vmmult, args: ['--int', '--vF', '--mF'])
@@ -514,8 +514,8 @@ test('ops_vmmult --real --vQ --mQ', ops_vmmult,
 
 randtest = executable(
     'randtest',
-    ['randtest.cc', 'randomize.cc'],
-    dependencies: [ gmp_dep, meddly_dep]
+    'randtest.cc',
+    dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
 test('randtest', randtest)

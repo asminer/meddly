@@ -25,7 +25,7 @@
 #include <cassert>
 
 #include "meddly/meddly.h"
-#include "randomize.h"
+#include "utils/randomize.h"
 
 // #define DEBUG_RANDSET
 

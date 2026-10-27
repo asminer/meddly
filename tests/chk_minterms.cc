@@ -23,7 +23,7 @@
 #define TEST_RELS
 // #define SHOW_MINTERMS
 
-#include "randomize.h"
+#include "utils/randomize.h"
 
 //
 // Minterm generators :)
