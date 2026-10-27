@@ -244,6 +244,7 @@ meddly_dep = declare_dependency(
 # Build in subdirectories
 #
 
+subdir('utils')
 subdir('examples')
 subdir('timing')
 subdir('tests')

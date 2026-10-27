@@ -22,8 +22,8 @@ executable(
 
 executable(
     'mark',
-    [ 'mark.cc', '../utils/reporting.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    [ 'mark.cc', '../utils/reporting.cc' ],
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 

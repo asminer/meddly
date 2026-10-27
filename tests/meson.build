@@ -1,8 +1,8 @@
 
 bug_00 = executable(
     'bug_00',
-    [ 'bug_00.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'bug_00.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 test('bug_00', bug_00)
@@ -159,8 +159,8 @@ test('domain_list', domain_list)
 
 kan_batch = executable(
     'kan_batch',
-    [ 'kan_batch.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'kan_batch.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 test('kan_batch', kan_batch)
@@ -169,8 +169,8 @@ test('kan_batch', kan_batch)
 
 kan_chkrs = executable(
     'kan_chkrs',
-    [ 'kan_chkrs.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'kan_chkrs.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 test('kan_chkrs -f --mtb --front', kan_chkrs,
@@ -207,8 +207,8 @@ test('kan_chkrs -b --ev  --sat1',  kan_chkrs,
 
 kan_index = executable(
     'kan_index',
-    [ 'kan_index.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'kan_index.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 test('kan_index', kan_index)
@@ -217,8 +217,8 @@ test('kan_index', kan_index)
 
 kan_io = executable(
     'kan_io',
-    [ 'kan_io.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'kan_io.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 test('kan_io', kan_io)
@@ -227,8 +227,8 @@ test('kan_io', kan_io)
 
 kan_relprod = executable(
     'kan_relprod',
-    [ 'kan_relprod.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'kan_relprod.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 test('kan_relprod', kan_relprod)
@@ -237,8 +237,8 @@ test('kan_relprod', kan_relprod)
 
 kan_show = executable(
     'kan_show',
-    [ 'kan_show.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'kan_show.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 test('kan_show', kan_show)
@@ -247,8 +247,8 @@ test('kan_show', kan_show)
 
 kanban = executable(
     'kanban',
-    [ 'kanban.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'kanban.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 test('kanban', kanban)

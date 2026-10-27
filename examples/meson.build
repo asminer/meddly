@@ -9,16 +9,16 @@ executable(
 
 executable(
     'dd_info',
-    ['dd_info.cc', '../utils/zstream.cc'],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'dd_info.cc',
+    dependencies: [ gmp_dep, meddly_dep, zstream_dep ]
 )
 
 ######################################################################
 
 executable(
     'diff_dd',
-    ['diff_dd.cc', '../utils/zstream.cc'],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'diff_dd.cc',
+    dependencies: [ gmp_dep, meddly_dep, zstream_dep ]
 )
 
 ######################################################################
@@ -41,16 +41,16 @@ executable(
 
 executable(
     'hanoi',
-    [ 'hanoi.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'hanoi.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 ######################################################################
 
 executable(
     'kanban',
-    [ 'kanban.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'kanban.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 ######################################################################
@@ -89,8 +89,8 @@ executable(
 
 executable(
     'mr2dist',
-    [ 'mr2dist.cc', '../utils/zstream.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'mr2dist.cc',
+    dependencies: [ gmp_dep, meddly_dep, zstream_dep ]
 )
 
 ######################################################################
@@ -121,8 +121,8 @@ executable(
 
 executable(
     'slot',
-    [ 'slot.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'slot.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 ######################################################################
@@ -145,24 +145,24 @@ executable(
 
 executable(
     'test_implicit_kanban',
-    [ 'test_implicit_kanban.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'test_implicit_kanban.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 ######################################################################
 
 executable(
     'test_implicit_pool',
-    [ 'test_implicit_pool.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'test_implicit_pool.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 ######################################################################
 
 executable(
     'test_implicit_smallos',
-    [ 'test_implicit_smallos.cc', '../utils/simple_model.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'test_implicit_smallos.cc',
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
 ######################################################################
@@ -193,7 +193,7 @@ executable(
 
 executable(
     'tiles',
-    ['tiles.cc', '../utils/simple_model.cc', '../utils/zstream.cc' ],
-    dependencies: [ gmp_dep, meddly_dep ]
+    'tiles.cc',
+    dependencies: [ gmp_dep, meddly_dep, zstream_dep, simple_model_dep ]
 )
 
