@@ -1,5 +1,18 @@
 #!/bin/bash
 
+if [ $# -ne 1 ]
+then
+    echo
+    echo "Usage: $0 prefix-dir"
+    echo
+    echo "Check Meddly install into the given prefix directory."
+    echo "This should be the same prefix as passed to meson setup."
+    echo
+    exit 1
+fi
+
+prefix="$1"
+
 #
 # Check for gmp at the given locations
 #   Arg1: path for include file
@@ -47,14 +60,31 @@ find_gmp()
 
 if [ ! -f ../AUTHORS ]
 then
-    printf "\nRun this in the developers directory.\n\n"
+    echo
+    echo "Run this in the developers directory."
+    echo
     exit 1
 fi
+if [ ! -d $prefix/include ]
+then
+    echo
+    echo "Did not find directory $prefix/include, is the prefix correct?"
+    echo
+    exit 1
+fi
+if [ ! -d $prefix/lib ]
+then
+    echo
+    echo "Did not find directory $prefix/lib, is the prefix correct?"
+    echo
+    exit 1
+fi
+
 find_gmp
 
 rm -f nqueens
 printf "Rebuilding nqueens\n"
-if g++ -I$HOME/local/include $gmpincl nqueens.cc -L$HOME/local/lib -lmeddly $gmplink -o nqueens
+if g++ -I$prefix/include $gmpincl nqueens.cc -L$prefix/lib -lmeddly $gmplink -o nqueens
 then
     printf "Build succeeded\n"
 else

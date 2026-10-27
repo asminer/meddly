@@ -68,5 +68,6 @@ You will need doxygen to build the documentation.
 | `src/`        | Soource files |
 | `tests/`      | Test applications used by "meson test" |
 | `timing/`     | Some timing benchmarks |
+| `utils/`      | Misc. utilities used by example, test, or timing programs |
 | `www/`        | Sourceforge web page sources |
 
