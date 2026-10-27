@@ -1,2 +1,2 @@
-#define VERSION "0.19.0"
-const char* MEDDLY_DATE = "2026 October 27";
+#define VERSION "0.19.1"
+const char* MEDDLY_DATE = "after 2026 October 27";
