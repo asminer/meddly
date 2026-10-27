@@ -11,6 +11,8 @@ in the README.
 
 ### Interface Changes
 
+* Deprecating old logger class
+
 ### Implementation
 
 * Bugfix in sat_relations
