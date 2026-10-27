@@ -33,7 +33,7 @@
 #include "meddly/oper.h"
 #include "meddly/operators.h"
 #include "meddly/node_marker.h"
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
 #include "meddly/logger.h"
 #endif
 #include "meddly/compute_table.h"
@@ -866,7 +866,7 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     }
 
     stats.incActive(1);
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     if (theLogger && theLogger->recordingNodeCounts()) {
         theLogger->addToActiveNodeCount(this, un->getLevel(), 1);
     }
@@ -1012,7 +1012,7 @@ MEDDLY::node_handle MEDDLY::forest
   MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
 
   stats.incActive(1);
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
   if (theLogger && theLogger->recordingNodeCounts()) {
     theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
   }
@@ -2032,7 +2032,7 @@ void MEDDLY::forest::showInfo(output &s, int verb)
   s << long(unique->getNumEntries()) << "\n";
 }
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
 void MEDDLY::forest::setLogger(logger* L, const char* name)
 {
     theLogger = L;
@@ -2121,7 +2121,7 @@ MEDDLY::forest::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
     //
     free_relnodes = nullptr;
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     //
     // Empty logger
     //

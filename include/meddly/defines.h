@@ -27,7 +27,7 @@
 // #define ALLOW_DEPRECATED_0_17_8  "05/25/2025"
 // #define ALLOW_DEPRECATED_0_18_0  "01/18/2025"
 // #define ALLOW_DEPRECATED_0_18_1  "06/15/2026"
-// #define ALLOW_DEPRECATED_0_18_2
+// #define ALLOW_DEPRECATED_0_19_0  "10/27/2026"
 // ==>
 // ==================================================================
 // The previous two lines are important for the release script

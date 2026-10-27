@@ -47,7 +47,7 @@ namespace MEDDLY {
     class relation_node;
     class global_rebuilder;
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     class logger;
 #endif
 };
@@ -1741,7 +1741,7 @@ class MEDDLY::forest {
         virtual void showInfo(output &strm, int verbosity=0);
 
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
         /** Start logging stats.
                 @param  L       Logger to use; if 0, we don't log anything.
                                 Will overwrite the old logger.
@@ -1769,7 +1769,7 @@ class MEDDLY::forest {
     private: // private members for debugging
     // ------------------------------------------------------------
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
         logger *theLogger;
 #endif
         int delete_depth;
