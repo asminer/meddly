@@ -36,10 +36,6 @@ namespace MEDDLY {
 #include "meddly/operations/mdd2index.h"
 #include "meddly/operations/cycle.h"
 
-#ifdef ALLOW_DEPRECATED_0_17_8
-#include "meddly/operations/select.h"
-#endif
-
 //
 // For initializing binary operations
 //

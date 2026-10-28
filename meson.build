@@ -153,7 +153,6 @@ meddly_src = files(
     'src/operations/sat_otf.cc',
     'src/operations/sat_pregen.cc',
     'src/operations/sccgraph.cc',
-    'src/operations/select.cc',
     'src/operations/transitive_closure.cc',
     'src/operations/union.cc',
     'src/operations/user_unary.cc',
