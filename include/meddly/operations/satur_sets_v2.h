@@ -289,7 +289,7 @@ MEDDLY::saturation2_set_mtrel<EOP, ATYPE>::~saturation2_set_mtrel()
 
 template <class EOP, class ATYPE>
 void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>
-    ::compute(int L, unsigned in,
+    ::compute(int L, unsigned,
         const edge_value &av, node_handle ap,
         const edge_value &bv, node_handle bp,
         edge_value &cv, node_handle &cp)

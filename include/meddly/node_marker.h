@@ -19,8 +19,8 @@
 #ifndef MEDDLY_NODE_MARKER_H
 #define MEDDLY_NODE_MARKER_H
 
-#include "defines.h"
-#include "arrays.h"
+#include "forest.h"
+#include "terminal.h"
 #include <set>
 
 namespace MEDDLY {

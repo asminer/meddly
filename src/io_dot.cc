@@ -49,7 +49,7 @@ class MEDDLY::dot_maker::style : public node_marker::writing_style {
 
 // ******************************************************************
 
-MEDDLY::dot_maker::style::style(const forest* F, node_marker &nm)
+MEDDLY::dot_maker::style::style(const forest* F, node_marker &)
     : node_marker::writing_style(F, SPARSE_ONLY)
 {
     prev_level = 0;

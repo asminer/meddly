@@ -25,11 +25,11 @@
 #include "meddly/meddly.h"
 #include "utils/simple_model.h"
 #include "utils/timer.h"
+#include "utils/zstream.h"
 #ifdef ALLOW_DEPRECATED_0_18_1
 #include "meddly/log_simple.h"
 #endif
 
-#include "zstream.h"
 
 // #define DUMP_NSF
 // #define DUMP_REACHABLE

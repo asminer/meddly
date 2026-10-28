@@ -3,10 +3,6 @@
 .satur.txt
 benchdata
 build*
-compile
-lib/
-Makefile.in
-Makefile
 *.swp
 *.dot
 *.pdf

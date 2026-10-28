@@ -40,8 +40,8 @@
 
 // #define COUNT_CALLS
 
-#include "satur_sets_v1.h"
-#include "satur_sets_v2.h"
+#include "meddly/operations/satur_sets_v1.h"
+#include "meddly/operations/satur_sets_v2.h"
 
 /*
     Template class for saturation (version 1) operations,
@@ -1136,11 +1136,12 @@ namespace MEDDLY {
                 switch (VER) {
                     case 1:
                         return new saturation1_set_mtrel<EOP, ATYPE>
-                            (FWD, a, b, c);
+                            (fwd, a, b, c);
 
                     case 2:
                         return new saturation2_set_mtrel<EOP, ATYPE>
-                            (FWD, a, b, c);
+                            (fwd, a, b, c);
+
                     default:
                         MEDDLY_DCASSERT(false);
                         return nullptr;

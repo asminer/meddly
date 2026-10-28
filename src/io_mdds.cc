@@ -223,7 +223,7 @@ MEDDLY::mdd_writer::style::~style()
 {
 }
 
-void MEDDLY::mdd_writer::style::begin_level(output &s, int k)
+void MEDDLY::mdd_writer::style::begin_level(output &, int)
 {
 }
 
@@ -238,7 +238,7 @@ void MEDDLY::mdd_writer::style::show_node(output &s, node_handle p)
     U->write(s, handle2output);
 }
 
-void MEDDLY::mdd_writer::style::end_level(output &s, int k)
+void MEDDLY::mdd_writer::style::end_level(output &, int)
 {
 }
 

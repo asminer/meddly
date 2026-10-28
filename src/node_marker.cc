@@ -77,7 +77,7 @@ void MEDDLY::node_marker::writing_style::show_node(output &s, node_handle p)
     s.put('\n');
 }
 
-void MEDDLY::node_marker::writing_style::end_level(output &s, int k)
+void MEDDLY::node_marker::writing_style::end_level(output &s, int)
 {
     s << "\n";
 }
@@ -196,7 +196,9 @@ void MEDDLY::node_marker::showByLevelsBottomUp(output &s, writing_style *st)
     //
     // visit levels from top down
     //
-    for (int k=-1; ABS(k) <= For->getNumVariables(); k = MXD_levels::upLevel(k))
+    for (int k=-1;
+            unsigned(ABS(k)) <= For->getNumVariables();
+            k = MXD_levels::upLevel(k))
     {
         if (k<0 && !For->isForRelations()) continue;
         size_t p=0;
