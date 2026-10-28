@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "defines.h"
-#include "forest.h"
-#include "initializer.h"
-#include "init_forests.h"
+#include "meddly/defines.h"
+#include "meddly/forest.h"
+#include "meddly/initializer.h"
+#include "meddly/init_forests.h"
 
 MEDDLY::forest_initializer::forest_initializer(initializer_list *p)
     : initializer_list(p)

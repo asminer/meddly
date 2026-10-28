@@ -21,10 +21,12 @@
 #include <cstdlib>
 #include <string.h>
 
-#include "../src/meddly.h"
-#include "simple_model.h"
-#include "../timing/timer.h"
-#include "../src/log_simple.h"
+#include "meddly/meddly.h"
+#include "utils/simple_model.h"
+#include "utils/timer.h"
+#ifdef ALLOW_DEPRECATED_0_18_1
+#include "meddly/log_simple.h"
+#endif
 
 using namespace MEDDLY;
 
@@ -52,7 +54,9 @@ int usage(const char* who)
     printf("\t-exp: use explicit (very slow)\n");
     printf("\t-pdf: Write MDD for reachable states to out.pdf\n\n");
     printf("\t--batch b: specify explicit batch size\n\n");
+#ifdef ALLOW_DEPRECATED_0_18_2
     printf("\t -l lfile: Write logging information to specified file\n\n");
+#endif
     printf("\t-v: show iterations\n\n");
     return 1;
 }
@@ -178,7 +182,11 @@ char* Go(int i, int N)
     return t;
 }
 
+#ifdef ALLOW_DEPRECATED_0_18_2
 void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
+#else
+void runWithArgs(int N, char method, int batchsize, bool build_pdf)
+#endif
 {
     timer start;
 
@@ -211,15 +219,19 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
                     edge_labeling::MULTI_TERMINAL);
     forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL);
+#ifdef ALLOW_DEPRECATED_0_18_2
     if (LOG) {
         mdd->setLogger(LOG, "MDD");
         mxd->setLogger(LOG, "MxD");
     }
+#endif
 
     //
     // Build initial state
     //
+#ifdef ALLOW_DEPRECATED_0_18_2
     if (LOG) LOG->newPhase(mdd, "Building initial state");
+#endif
     minterm initial(mdd);
     dd_edge init_state(mdd);
     initial.setAllVars(0);
@@ -232,7 +244,9 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
     //
     // Build next-state function
     //
+#ifdef ALLOW_DEPRECATED_0_18_2
     if (LOG) LOG->newPhase(mxd, "Building next-state function");
+#endif
     dd_edge nsf(mxd);
     pregen_relation* ensf = nullptr;
     saturation_operation* sat = nullptr;
@@ -267,7 +281,9 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
     //
     // Build reachable states
     //
+#ifdef ALLOW_DEPRECATED_0_18_2
     if (LOG) LOG->newPhase(mdd, "Building reachability set");
+#endif
     dd_edge reachable(mdd);
     start.note_time();
     binary_operation* rsgen = nullptr;
@@ -376,11 +392,13 @@ void runWithArgs(int N, char method, int batchsize, bool build_pdf, logger* LOG)
         dm.runDot("pdf");
     }
 
+#ifdef ALLOW_DEPRECATED_0_18_2
     if (LOG) {
         LOG->newPhase(mdd, "Cleanup");
         LOG->newPhase(mxd, "Cleanup");
         domain::destroy(d);
     }
+#endif
 }
 
 int main(int argc, const char** argv)
@@ -388,7 +406,9 @@ int main(int argc, const char** argv)
     int N = -1;
     char method = '1';
     int batchsize = 256;
+#ifdef ALLOW_DEPRECATED_0_18_2
     const char* lfile = 0;
+#endif
     bool build_pdf = false;
 
     for (int i=1; i<argc; i++) {
@@ -430,11 +450,13 @@ int main(int argc, const char** argv)
             method = 'e';
             continue;
         }
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (strcmp("-l", argv[i])==0) {
             lfile = argv[i+1];
             i++;
             continue;
         }
+#endif
         if (strcmp("-pdf", argv[i])==0) {
             build_pdf = true;
             continue;
@@ -460,6 +482,7 @@ int main(int argc, const char** argv)
 
     MEDDLY::initialize();
 
+#ifdef ALLOW_DEPRECATED_0_18_2
     //
     // Set up logger, if any
     //
@@ -479,10 +502,15 @@ int main(int argc, const char** argv)
             LOG->addComment(comment);
         }
     }
+#endif
 
     try {
+#ifdef ALLOW_DEPRECATED_0_18_2
         runWithArgs(N, method, batchsize, build_pdf, LOG);
         delete LOG;
+#else
+        runWithArgs(N, method, batchsize, build_pdf);
+#endif
         MEDDLY::cleanup();
         return 0;
     }

@@ -16,9 +16,9 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "unique_table.h"
-#include "forest.h"
-#include "operators.h"
+#include "meddly/unique_table.h"
+#include "meddly/forest.h"
+#include "meddly/operators.h"
 
 // ******************************************************************
 // *                                                                *
@@ -232,7 +232,7 @@ MEDDLY::node_handle MEDDLY::unique_table::subtable::remove(unsigned hash,
 {
     unsigned h = hash%size;
 
-    MEDDLY_CHECK_RANGE(0, h, size);
+    MEDDLY_CHECK_BELOW(h, size);
 
     node_handle prev = 0;
     for (node_handle ptr = table[h]; ptr!=0; ptr = parent->getNext(ptr)) {

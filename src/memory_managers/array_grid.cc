@@ -22,9 +22,9 @@
 // #define DEBUG_GRID
 // #define REPORT_ALL_MEDIUM_LISTS
 
-#include "../operators.h"
-#include "hole_base.h"
-#include "array_grid.h"
+#include "meddly/operators.h"
+#include "meddly/memory_managers/hole_base.h"
+#include "meddly/memory_managers/array_grid.h"
 
 namespace MEDDLY {
 
@@ -1093,20 +1093,21 @@ MEDDLY::memory_manager*
 MEDDLY::array_grid_style::initManager(unsigned char granularity,
   unsigned char minsize, memstats &stats) const
 {
-  if (sizeof(int) == granularity) {
-    return new array_plus_grid <int>(getName(), stats);
-  }
+    IGNORE_UNUSED(minsize);
+    if (sizeof(int) == granularity) {
+        return new array_plus_grid <int>(getName(), stats);
+    }
 
-  if (sizeof(long) == granularity) {
-    return new array_plus_grid <long>(getName(), stats);
-  }
+    if (sizeof(long) == granularity) {
+        return new array_plus_grid <long>(getName(), stats);
+    }
 
-  if (sizeof(short) == granularity) {
-    return new array_plus_grid <short>(getName(), stats);
-  }
+    if (sizeof(short) == granularity) {
+        return new array_plus_grid <short>(getName(), stats);
+    }
 
-  // unsupported granularity
+    // unsupported granularity
 
-  return 0;
+    return 0;
 }
 

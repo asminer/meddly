@@ -16,7 +16,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "oper_numer.h"
+#include "meddly/oper_numer.h"
 
 // ******************************************************************
 // *                  numerical_operation  methods                  *

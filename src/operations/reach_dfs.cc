@@ -16,21 +16,21 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "reach_dfs.h"
+#include "meddly/defines.h"
+#include "meddly/operations/reach_dfs.h"
 
 #ifdef ALLOW_DEPRECATED_0_18_1
 
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
-#include "../oper_unary.h"
-#include "../oper_binary.h"
-#include "../ops_builtin.h"
-#include "../forest_levels.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/forest_levels.h"
 
-#include "../io.h"
-#include "../operators.h"
+#include "meddly/io.h"
+#include "meddly/operators.h"
 
 // #define TRACE_RECFIRE
 // #define DEBUG_DFS
@@ -183,18 +183,18 @@ class MEDDLY::common_dfs : public binary_operation {
           return NULPTR == head;
         }
         inline void add(unsigned i) {
-            MEDDLY_CHECK_RANGE(0, i, size);
-          if (NOTINQ != data[i]) return;
-          if (NULPTR == head) {
-            // empty list
-            head = int(i);
-          } else {
-            // not empty list
-              MEDDLY_CHECK_RANGE(0, (unsigned) tail, size);
-            data[tail] = int(i);
-          }
-          tail = int(i);
-          data[i] = NULPTR;
+            MEDDLY_CHECK_BELOW(i, size);
+            if (NOTINQ != data[i]) return;
+            if (NULPTR == head) {
+                // empty list
+                head = int(i);
+            } else {
+                // not empty list
+                MEDDLY_CHECK_BELOW((unsigned) tail, size);
+                data[tail] = int(i);
+            }
+            tail = int(i);
+            data[i] = NULPTR;
         }
         inline unsigned remove() {
             MEDDLY_CHECK_RANGE(0, head, size);

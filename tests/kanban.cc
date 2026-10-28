@@ -20,8 +20,8 @@
 #include <cstdlib>
 #include <string.h>
 
-#include "../src/meddly.h"
-#include "simple_model.h"
+#include "meddly/meddly.h"
+#include "utils/simple_model.h"
 
 #define PROGRESS
 

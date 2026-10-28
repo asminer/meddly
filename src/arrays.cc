@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "io.h"
-#include "error.h"
+#include "meddly/io.h"
+#include "meddly/error.h"
 
-#include "arrays.h"
+#include "meddly/arrays.h"
 
 // #define DEBUG_COUNTER_RESIZE
 // #define DEBUG_ADDRESS_RESIZE

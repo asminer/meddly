@@ -16,14 +16,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "satur_index.h"
-#include "../variable.h"
-#include "../domain.h"
-#include "../forest.h"
-#include "../rel_node.h"
-#include "../io.h"
+#include "meddly/operations/satur_index.h"
+#include "meddly/variable.h"
+#include "meddly/domain.h"
+#include "meddly/forest.h"
+#include "meddly/rel_node.h"
+#include "meddly/io.h"
 
-#include "satur_queue.h"
+#include "meddly/operations/satur_queue.h"
 
 // #define TRACE
 

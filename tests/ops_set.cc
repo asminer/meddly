@@ -24,9 +24,9 @@
 #include <cstdlib>
 #include <cassert>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 
-#include "randomize.h"
+#include "utils/randomize.h"
 
 vectorgen SG(MEDDLY::SET, 5, 4);
 vectorgen RG(MEDDLY::RELATION, 5, 2);
@@ -114,7 +114,7 @@ void set_complement(const std::vector <MEDDLY::rangeval> &A,
 }
 
 void checkEqual(const char* what, const dd_edge &e1, const dd_edge &e2,
-        const std::vector<MEDDLY::rangeval> &set)
+        const std::vector<MEDDLY::rangeval> &)
 {
     if (e1 == e2) return;
 

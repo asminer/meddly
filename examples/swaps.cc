@@ -22,8 +22,8 @@
     with operations to swap neighboring elements.
 */
 
-#include "../src/meddly.h"
-#include "../timing/timer.h"
+#include "meddly/meddly.h"
+#include "utils/timer.h"
 
 using namespace MEDDLY;
 

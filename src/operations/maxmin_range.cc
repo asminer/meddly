@@ -16,14 +16,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "maxmin_range.h"
+#include "meddly/defines.h"
+#include "meddly/operations/maxmin_range.h"
 
-#include "../oper_item.h"
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../ct_generics.h"
-#include "../forest_levels.h"
+#include "meddly/oper_item.h"
+#include "meddly/oper_unary.h"
+#include "meddly/ct_vector.h"
+#include "meddly/ct_generics.h"
+#include "meddly/forest_levels.h"
 
 
 namespace MEDDLY {
@@ -119,8 +119,8 @@ MEDDLY::range_templ<RTYPE>::~range_templ()
 }
 
 template <class RTYPE>
-void MEDDLY::range_templ<RTYPE>::compute(int L, unsigned in,
-        const edge_value &av, node_handle ap, oper_item &result)
+void MEDDLY::range_templ<RTYPE>::compute(int /*L*/, unsigned /*in*/,
+        const edge_value &/*av*/, node_handle ap, oper_item &result)
 {
     MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
 #ifdef TRACE

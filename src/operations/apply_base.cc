@@ -16,9 +16,9 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "../forests/mt.h"
-#include "apply_base.h"
+#include "meddly/defines.h"
+#include "meddly/forests/mt.h"
+#include "meddly/operations/apply_base.h"
 
 // #define TRACE_ALL_OPS
 // #define DISABLE_CACHE
@@ -64,7 +64,7 @@ MEDDLY::generic_binary_evplus::~generic_binary_evplus()
 }
 
 void MEDDLY::generic_binary_evplus
-::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c, bool userFlag)
+::computeDDEdge(const dd_edge& a, const dd_edge& b, dd_edge& c, bool)
 {
   node_handle result;
   long ev = Inf<long>(), aev = Inf<long>(), bev = Inf<long>();

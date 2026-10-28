@@ -18,8 +18,8 @@
 
 
 
-#include "terminal.h"
-#include "io.h"
+#include "meddly/terminal.h"
+#include "meddly/io.h"
 
 // ******************************************************************
 // *                                                                *

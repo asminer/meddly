@@ -16,14 +16,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include <iostream>
 
 #define TEST_SETS
 #define TEST_RELS
 // #define SHOW_MINTERMS
 
-#include "randomize.h"
+#include "utils/randomize.h"
 
 //
 // Minterm generators :)
@@ -200,7 +200,7 @@ void test_sets(forest* F, rangeval deflt, std::vector <rangeval> fvals)
 
         // more random minterms
         while (MC.size() < i) {
-            SG.randomizeMinterm(MC.unused(), range_type::BOOLEAN);
+            SG.randomizeMinterm(MC.unused());
             MC.unused().setValue( fvals[ MC.size() % fvals.size() ] );
             MC.pushUnused();
         }
@@ -458,7 +458,7 @@ void test_rels(forest* F, rangeval deflt, std::vector <rangeval> fvals)
 
         // more random minterms
         while (MC.size() < i) {
-            RG.randomizeMinterm(MC.unused(), range_type::BOOLEAN);
+            RG.randomizeMinterm(MC.unused());
             MC.unused().setValue( fvals[ MC.size() % fvals.size() ] );
             MC.pushUnused();
         }

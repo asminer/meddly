@@ -36,15 +36,19 @@
 #include <cstdlib>
 #include <cassert>
 
-#include "../src/meddly.h"
-#include "../src/log_simple.h"
-#include "../timing/timer.h"
+#include "meddly/meddly.h"
+#ifdef ALLOW_DEPRECATED_0_18_2
+#include "meddly/log_simple.h"
+#endif
+#include "utils/timer.h"
 
 using namespace MEDDLY;
 
 int N;
 FILE* outfile;
+#ifdef ALLOW_DEPRECATED_0_18_2
 const char* lfile;
+#endif
 bool build_pdf;
 bool mark_sweep;
 bool pessimistic;
@@ -163,7 +167,9 @@ void queenInDiagM(forest* f, int d, dd_edge &e)
 bool processArgs(int argc, const char** argv)
 {
     build_pdf = false;
+#ifdef ALLOW_DEPRECATED_0_18_2
     lfile = 0;
+#endif
     mark_sweep = true;
     pessimistic = true;
     ct_maxsize = 0;
@@ -192,11 +198,13 @@ bool processArgs(int argc, const char** argv)
             }
             continue;
         }
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (strcmp("-l", argv[i])==0) {
             lfile = argv[i+1];
             i++;
             continue;
         }
+#endif
         if (strcmp("-pdf", argv[i])==0) {
             build_pdf = true;
             continue;
@@ -229,7 +237,9 @@ int usage(const char* who)
     printf("\t      -ms:  Mark and sweep node deletion (default)\n");
     printf("\t     -opt:  Reference counts and Optimistic node deletion\n");
     printf("\t    -pess:  Reference counts and Pessimistic node deletion\n");
+#ifdef ALLOW_DEPRECATED_0_18_2
     printf("\t -l lfile:  Write logging information to specified file\n");
+#endif
     printf("\t     -pdf:  Write MDD of solutions to out.pdf\n\n");
     printf("\t<outfile>:  if specified, we write all solutions to this file\n\n");
     return 1;
@@ -265,6 +275,7 @@ int main(int argc, const char** argv)
 
         forest* f = buildQueenForest(p);
 
+#ifdef ALLOW_DEPRECATED_0_18_2
         FILE_output log;
         logger* LOG = 0;
         if (lfile) {
@@ -283,6 +294,7 @@ int main(int argc, const char** argv)
                 LOG->newPhase(f, "Initializing");
             }
         }
+#endif
 
         dd_edge num_queens(f);
         f->createConstant(0L, num_queens);
@@ -309,7 +321,9 @@ int main(int argc, const char** argv)
             char buffer[80];
             snprintf(buffer, 80, "Trying to cover with %d queens", q);
             printf("\n%s\n", buffer);
+#ifdef ALLOW_DEPRECATED_0_18_2
             if (LOG) LOG->newPhase(f, buffer);
+#endif
 
             // Build all possible placements of q queens:
             dd_edge qqueens(f);
@@ -414,9 +428,13 @@ int main(int argc, const char** argv)
             dm.runDot("pdf");
         }
 
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (LOG) LOG->newPhase(f, "Cleanup");
+#endif
         cleanup();
+#ifdef ALLOW_DEPRECATED_0_18_2
         delete LOG;
+#endif
         return 0;
     }
     catch (MEDDLY::error e) {

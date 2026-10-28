@@ -16,22 +16,22 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "relation_node.h"
-#include "sat_impl.h"
+#include "meddly/defines.h"
+#include "meddly/relation_node.h"
+#include "meddly/operations/sat_impl.h"
 #include <typeinfo> // for "bad_cast" exception
 #include <set>
 #include <map>
 
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
-#include "../oper_unary.h"
-#include "../oper_binary.h"
-#include "../oper_satur.h"
-#include "../sat_relations.h"
-#include "../ops_builtin.h"
-#include "../forest_levels.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
+#include "meddly/oper_satur.h"
+#include "meddly/sat_relations.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/forest_levels.h"
 
 
 namespace MEDDLY {
@@ -87,7 +87,7 @@ protected:
     CT0->recycle(CTsrch);
   }
   inline node_handle saveSaturateResult(ct_entry_key* Key,
-                                        node_handle a, node_handle b)
+                                        node_handle, node_handle b)
   {
     CTresult[0].reset();
     CTresult[0].writeN(b);
@@ -132,7 +132,7 @@ protected:
     CT0->recycle(CTsrch);
   }
   inline node_handle saveResult(ct_entry_key* Key,
-                                node_handle a, rel_node_handle b, node_handle c)
+                                node_handle, rel_node_handle, node_handle c)
   {
     CTresult[0].reset();
     CTresult[0].writeN(c);
@@ -167,25 +167,25 @@ protected:
     }
     inline void add(int i) {
         MEDDLY_CHECK_RANGE(0, i, size);
-      if (NOTINQ != data[i]) return;
-      if (NULPTR == head) {
-        // empty list
-        head = i;
-      } else {
-        // not empty list
-          MEDDLY_CHECK_RANGE(0, tail, size);
-        data[tail] = i;
-      }
-      tail = i;
-      data[i] = NULPTR;
+        if (NOTINQ != data[i]) return;
+        if (NULPTR == head) {
+            // empty list
+            head = i;
+        } else {
+            // not empty list
+            MEDDLY_CHECK_RANGE(0, tail, size);
+            data[tail] = i;
+        }
+        tail = i;
+        data[i] = NULPTR;
     }
     inline int remove() {
         MEDDLY_CHECK_RANGE(0, head, size);
-      int ans = head;
-      head = data[head];
-      data[ans] = NOTINQ;
-      MEDDLY_CHECK_RANGE(0, ans, size);
-      return ans;
+        int ans = head;
+        head = data[head];
+        data[ans] = NOTINQ;
+        MEDDLY_CHECK_RANGE(0, ans, size);
+        return ans;
     }
   };
 
@@ -308,7 +308,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
-  for (int i = 0; i < nb.getSize(); i++) {
+  for (int i = 0; i < int(nb.getSize()); i++) {
     if (nb.down(i)) {
       queue->add(i);
     }
@@ -328,7 +328,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
         int j = Ru[ei]->nextOf(i);
         if(j==-1) continue;
-        if (j < nb.getSize() && -1==nb.down(j)) continue; // nothing can be added to this set
+        if (j < int(nb.getSize()) && -1==nb.down(j)) continue; // nothing can be added to this set
 
         node_handle rec = recFire(nb.down(i), Ru[ei]->getDown());
 
@@ -337,7 +337,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         //confirm local state
         rel->confirm(level,j);
 
-        if(j>=nb.getSize())
+        if(j>=int(nb.getSize()))
           {
           int new_var_bound = j+1;
           dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
@@ -386,7 +386,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
       int j = next;
       if(j==-1) continue;
-      if (j < nb.getSize() && -1==nb.down(j)) continue; // nothing can be added to this set
+      if (j < int(nb.getSize()) && -1==nb.down(j)) continue; // nothing can be added to this set
 
       node_handle rec = recFireSet(nb.down(i), jt->second);
       if (rec == 0) continue;
@@ -394,7 +394,7 @@ void MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
       //confirm local state
       rel->confirm(level,j);
 
-      if(j>=nb.getSize())
+      if(j>=int(nb.getSize()))
         {
         int new_var_bound = j+1;
         dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
@@ -449,7 +449,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFireSet(
 
   dd_edge ans(resF), union_rec(resF);
 
-  for(int rn = 0; rn < vector_mxd.size(); rn ++){
+  for(unsigned rn = 0; rn < vector_mxd.size(); rn ++){
     ans.set( recFire(mdd,vector_mxd[rn]) );
     mddUnion->computeTemp(union_rec, ans, union_rec);
   }
@@ -543,7 +543,7 @@ MEDDLY::node_handle MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
           if(!rel->isConfirmedState(rLevel,j)) // if not confirmed before
             {
             rel->confirm(rLevel,j); // confirm and enlarge
-            if (j >= nb->getSize()) {
+            if (j >= int(nb->getSize())) {
               int new_var_bound = j+1;
               dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);
               const unsigned oldSize = nb->getSize();
@@ -1077,12 +1077,12 @@ MEDDLY::saturation_impl_by_events_op::isReachable(
   const node_handle ext_d = 0;
 
   // Do computation
-  for (int i=0; i<sz; i++) {
+  for (unsigned i=0; i<unsigned(sz); i++) {
     node_handle temp = 0;
     node_handle cons_i = (i < consDptrs->getSize() ? consDptrs->down(i) : ext_d);
     if (isReachable(mddDptrs->down(i), k-1, cons_i, temp)) {
       // found reachable state in constraint, cleanup and return true
-      for (int j = 0; j < i; j++) {
+      for (unsigned j = 0; j < i; j++) {
         if (nb->down(j)) {
             argF->unlinkNode(nb->down(j));
             nb->setFull(j, 0);
@@ -1176,7 +1176,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
 
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
-  for (int i = 0; i < nb.getSize(); i++) {
+  for (int i = 0; i < int(nb.getSize()); i++) {
     if (nb.down(i)) {
       queue->add(i);
     }
@@ -1192,9 +1192,9 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
 
       int j = Ru[ei]->nextOf(i);
       if(j==-1) continue;
-      if (j < nb.getSize() && -1==nb.down(j)) continue; // nothing can be added to this set
+      if (j < int(nb.getSize()) && -1==nb.down(j)) continue; // nothing can be added to this set
 
-      const node_handle cons_j = (j < consDptrs->getSize() ? consDptrs->down(j) : cons_ext_d);
+      const node_handle cons_j = (j < int(consDptrs->getSize()) ? consDptrs->down(j) : cons_ext_d);
       node_handle rec = 0;
       if (recFire(nb.down(i), Ru[ei]->getDown(), cons_j, rec)) {
         // found reachable state in constraint
@@ -1210,7 +1210,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::saturateHelper(
       //confirm local state
       rel->confirm(level,j);
 
-      if(j>=nb.getSize())
+      if(j>=int(nb.getSize()))
       {
         int new_var_bound = j+1;
         dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
@@ -1340,7 +1340,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
     // that's an important special case that we can handle quickly.
 
     for (int i=0; i<rSize; i++) {
-      const node_handle cons_i = (i < consDptrs->getSize() ? consDptrs->down(i) : cons_ext_d);
+      const node_handle cons_i = (i < int(consDptrs->getSize()) ? consDptrs->down(i) : cons_ext_d);
       node_handle temp = 0;
       if (recFire(A->down(i), mxd, cons_i, temp)) {
         // found reachable state in constraint: abort, cleanup and return true
@@ -1377,10 +1377,10 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       if(j==-1) continue;
 
       node_handle newstates = 0;
-      const node_handle cons_j = (j < consDptrs->getSize() ? consDptrs->down(j) : cons_ext_d);
+      const node_handle cons_j = (j < int(consDptrs->getSize()) ? consDptrs->down(j) : cons_ext_d);
       if (recFire(A->down(i), relNode->getDown(), cons_j, newstates)) {
         // found reachable state in constraint: abort, cleanup and return true
-        for (int k = 0; k < nb->getSize(); k++) {
+        for (int k = 0; k < int(nb->getSize()); k++) {
           if (nb->down(k)) {
               argF->unlinkNode(nb->down(k));
               nb->setFull(k, 0);
@@ -1399,7 +1399,7 @@ bool MEDDLY::forwd_impl_dfs_by_events_mt::recFire(
       if(!rel->isConfirmedState(rLevel,j)) // if not confirmed before
       {
         rel->confirm(rLevel,j); // confirm and enlarge
-        if (j >= nb->getSize()) {
+        if (j >= int(nb->getSize())) {
           int new_var_bound = j+1;
           dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);
           int oldSize = nb->getSize();

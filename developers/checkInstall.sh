@@ -1,5 +1,18 @@
 #!/bin/bash
 
+if [ $# -ne 1 ]
+then
+    echo
+    echo "Usage: $0 prefix-dir"
+    echo
+    echo "Check Meddly install into the given prefix directory."
+    echo "This should be the same prefix as passed to meson setup."
+    echo
+    exit 1
+fi
+
+prefix="$1"
+
 #
 # Check for gmp at the given locations
 #   Arg1: path for include file
@@ -45,25 +58,33 @@ find_gmp()
 # main script
 #
 
-if [ ! -f ../configure.ac ]
+if [ ! -f ../AUTHORS ]
 then
-    printf "\nRun this in the developers directory.\n\n"
+    echo
+    echo "Run this in the developers directory."
+    echo
     exit 1
 fi
+if [ ! -d $prefix/include ]
+then
+    echo
+    echo "Did not find directory $prefix/include, is the prefix correct?"
+    echo
+    exit 1
+fi
+if [ ! -d $prefix/lib ]
+then
+    echo
+    echo "Did not find directory $prefix/lib, is the prefix correct?"
+    echo
+    exit 1
+fi
+
 find_gmp
 
-cd ..
-rm -f include/meddly/* lib/*
-if !  make install
-then
-    printf "\nmake install failed in parent directory.\n\n"
-    cd developers
-    exit 1
-fi
-cd developers
 rm -f nqueens
 printf "Rebuilding nqueens\n"
-if g++ -I../include/meddly $gmpincl nqueens.cc -L../lib -lmeddly $gmplink -o nqueens
+if g++ -I$prefix/include $gmpincl nqueens.cc -L$prefix/lib -lmeddly $gmplink -o nqueens
 then
     printf "Build succeeded\n"
 else
@@ -72,4 +93,5 @@ else
 fi
 
 printf "Running, just to test library\n\n"
-env LD_LIBRARY_PATH=../lib ./nqueens
+# env LD_LIBRARY_PATH=../lib ./nqueens
+./nqueens

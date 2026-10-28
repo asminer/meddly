@@ -16,12 +16,12 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "impl_unique_table.h"
-#include "relation_node.h"
+#include "meddly/impl_unique_table.h"
+#include "meddly/relation_node.h"
 
 #define TERMINAL_NODE 1
 
-MEDDLY::impl_unique_table::impl_unique_table(forest* ef)
+MEDDLY::impl_unique_table::impl_unique_table(forest* /*ef*/)
 {
   size = 0;
   num_entries = 0;

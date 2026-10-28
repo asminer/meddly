@@ -16,16 +16,16 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "arith_distmin.h"
+#include "meddly/defines.h"
+#include "meddly/operations/arith_distmin.h"
 
 // #define TRACE
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
-#include "arith_templ.h"
+#include "meddly/operations/arith_templ.h"
 
 namespace MEDDLY {
     class DISTMIN_factory;
@@ -51,8 +51,8 @@ namespace MEDDLY {
             return true;
         }
         inline static void makeEqualResult(int L, unsigned in,
-                const forest* fa, node_handle a,
-                forest* fc, edge_value &cv, node_handle &c,
+                const forest*, node_handle a,
+                forest*, edge_value &cv, node_handle &c,
                 unary_operation* copier)
         {
             // min(a, a) = a; just copy it
@@ -61,15 +61,15 @@ namespace MEDDLY {
             edge_value zero;
             copier->compute(L, in, zero, a, cv, c);
         }
-        inline static bool simplifiesToFirstArg(int L,
-                const forest* fa, node_handle &a,
-                const forest* fb, node_handle b)
+        inline static bool simplifiesToFirstArg(int,
+                const forest*, node_handle &,
+                const forest*, node_handle)
         {
             return false;
         }
-        inline static bool simplifiesToSecondArg(int L,
-                const forest* fa, node_handle a,
-                const forest* fb, node_handle &b)
+        inline static bool simplifiesToSecondArg(int,
+                const forest*, node_handle,
+                const forest*, node_handle &)
         {
             return false;
         }
@@ -99,6 +99,8 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
+            IGNORE_UNUSED(a);
+            IGNORE_UNUSED(b);
             MEDDLY_DCASSERT(a.isVoid());
             MEDDLY_DCASSERT(b.isVoid());
             c.set();

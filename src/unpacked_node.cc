@@ -24,13 +24,13 @@
 // TODO: Testing
 
 #include <map>
-#include "defines.h"
-#include "unpacked_node.h"
-#include "forest.h"
-#include "hash_stream.h"
-#include "terminal.h"
-#include "node_marker.h"
-#include "operators.h"
+#include "meddly/defines.h"
+#include "meddly/unpacked_node.h"
+#include "meddly/forest.h"
+#include "meddly/hash_stream.h"
+#include "meddly/terminal.h"
+#include "meddly/node_marker.h"
+#include "meddly/operators.h"
 
 // #define DEBUG_FORLISTS
 

@@ -16,13 +16,13 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "complement.h"
+#include "meddly/defines.h"
+#include "meddly/operations/complement.h"
 
-#include "../ct_vector.h"
-#include "../compute_table.h"
-#include "../oper_unary.h"
-#include "../forest_levels.h"
+#include "meddly/ct_vector.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_unary.h"
+#include "meddly/forest_levels.h"
 
 namespace MEDDLY {
     class compl_mt;
@@ -34,10 +34,10 @@ namespace MEDDLY {
 // #define TRACE_IC
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 #ifdef TRACE_IC
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 // ******************************************************************
@@ -93,6 +93,10 @@ class MEDDLY::compl_mt : public unary_operation {
                 out << " incount " << resF->getNodeInCount(p);
             }
             out << '\n';
+#else
+            IGNORE_UNUSED(out);
+            IGNORE_UNUSED(w);
+            IGNORE_UNUSED(p);
 #endif
         }
 
@@ -138,6 +142,7 @@ void MEDDLY::compl_mt::compute(int L, unsigned in,
     out.indentation(0);
     out << "Starting top-level compl_mt::compute #" << top_count << "\n";
 #endif
+    IGNORE_UNUSED(av);
     MEDDLY_DCASSERT(av.isVoid());
     cv.set();
     _compute(L, in, ap, cp);

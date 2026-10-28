@@ -16,9 +16,9 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "defines.h"
-#include "variable.h"
-#include "error.h"
+#include "meddly/defines.h"
+#include "meddly/variable.h"
+#include "meddly/error.h"
 
 // ******************************************************************
 // *                        variable methods                        *
@@ -81,7 +81,7 @@ void MEDDLY::variable::enlargeBound(bool prime, int b)
     }
 }
 
-void MEDDLY::variable::shrinkBound(int b, bool force)
+void MEDDLY::variable::shrinkBound(int, bool)
 {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }

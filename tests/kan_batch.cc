@@ -20,8 +20,8 @@
 #include <cstdlib>
 #include <string.h>
 
-#include "../src/meddly.h"
-#include "simple_model.h"
+#include "meddly/meddly.h"
+#include "utils/simple_model.h"
 
 #include "kan_rs1.h"
 #include "kan_rs2.h"

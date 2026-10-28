@@ -16,19 +16,19 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "sat_pregen.h"
+#include "meddly/defines.h"
+#include "meddly/operations/sat_pregen.h"
 #include <typeinfo> // for "bad_cast" exception
 
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
-#include "../oper_unary.h"
-#include "../oper_binary.h"
-#include "../oper_satur.h"
-#include "../ops_builtin.h"
-#include "../sat_relations.h"
-#include "../forest_levels.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
+#include "meddly/oper_satur.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/sat_relations.h"
+#include "meddly/forest_levels.h"
 
 #define DEBUG_FINALIZE
 // #define DEBUG_FINALIZE_SPLIT
@@ -74,7 +74,7 @@ class MEDDLY::saturation_by_events_op : public saturation_operation {
       return 0;
     }
     inline node_handle saveSaturateResult(ct_entry_key* Key,
-      node_handle a, node_handle b)
+      node_handle, node_handle b)
     {
       CTresult[0].reset();
       CTresult[0].writeN(b);
@@ -114,7 +114,7 @@ class MEDDLY::common_dfs_by_events_mt : public saturation_operation {
       return 0;
     }
     inline node_handle saveResult(ct_entry_key* Key,
-      node_handle a, node_handle b, node_handle c)
+      node_handle, node_handle, node_handle c)
     {
       CTresult[0].reset();
       CTresult[0].writeN(c);
@@ -149,25 +149,25 @@ class MEDDLY::common_dfs_by_events_mt : public saturation_operation {
           return NULPTR == head;
         }
         inline void add(unsigned i) {
-            MEDDLY_CHECK_RANGE(0u, i, size);
-          if (NOTINQ != data[i]) return;
-          if (NULPTR == head) {
-            // empty list
-            head = int(i);
-          } else {
-            // not empty list
-              MEDDLY_CHECK_RANGE(0u, (unsigned) tail, size);
-            data[tail] = int(i);
-          }
-          tail = int(i);
-          data[i] = NULPTR;
+            MEDDLY_CHECK_BELOW(i, size);
+            if (NOTINQ != data[i]) return;
+            if (NULPTR == head) {
+                // empty list
+                head = int(i);
+            } else {
+                // not empty list
+                MEDDLY_CHECK_BELOW((unsigned) tail, size);
+                data[tail] = int(i);
+            }
+            tail = int(i);
+            data[i] = NULPTR;
         }
         inline unsigned remove() {
-          MEDDLY_CHECK_RANGE(0u, (unsigned)head, size);
+          MEDDLY_CHECK_BELOW((unsigned)head, size);
           unsigned ans = unsigned(head);
           head = data[head];
           data[ans] = NOTINQ;
-          MEDDLY_CHECK_RANGE(0u, ans, size);
+          MEDDLY_CHECK_BELOW(ans, size);
           return ans;
         }
     };
@@ -539,7 +539,7 @@ void MEDDLY::forwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
     MEDDLY_DCASSERT(nb.down(i));
 
-    for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
+    for (unsigned ei = 0; ei < nEventsAtThisLevel; ei++) {
       if (0 == Ru[ei]->down(i)) continue;  // row i of the event ei is empty
 
       // grab column (TBD: build these ahead of time?)
@@ -589,7 +589,7 @@ void MEDDLY::forwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
   // cleanup
   unpacked_node::Recycle(Rp);
-  for (int ei = 0; ei < nEventsAtThisLevel; ei++) unpacked_node::Recycle(Ru[ei]);
+  for (unsigned ei = 0; ei < nEventsAtThisLevel; ei++) unpacked_node::Recycle(Ru[ei]);
   delete[] Ru;
   recycle(queue);
 }
@@ -778,7 +778,7 @@ void MEDDLY::bckwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
     repeat = false;
 
     // explore all events
-    for (int ei = 0; ei < nEventsAtThisLevel; ei++) {
+    for (unsigned ei = 0; ei < nEventsAtThisLevel; ei++) {
       // explore all rows
       for (unsigned iz=0; iz<Ru[ei]->getSize(); iz++) {
         unsigned i = Ru[ei]->index(iz);
@@ -833,7 +833,7 @@ void MEDDLY::bckwd_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
   // cleanup
   unpacked_node::Recycle(Rp);
-  for (int ei = 0; ei < nEventsAtThisLevel; ei++) unpacked_node::Recycle(Ru[ei]);
+  for (unsigned ei = 0; ei < nEventsAtThisLevel; ei++) unpacked_node::Recycle(Ru[ei]);
   delete[] Ru;
   recycle(expl);
 }

@@ -16,8 +16,8 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "satur_queue.h"
-#include "../io.h"
+#include "meddly/operations/satur_queue.h"
+#include "meddly/io.h"
 
 
 // ******************************************************************

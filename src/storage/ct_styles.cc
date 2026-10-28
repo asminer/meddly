@@ -17,18 +17,18 @@
 */
 
 
-#include "ct_styles.h"
+#include "meddly/storage/ct_styles.h"
 
-#include "../memory.h"
-#include "../hash_stream.h"
-#include "../node_storage.h"
-#include "../compute_table.h"
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../ct_vector.h"
-#include "../ct_generics.h"
-#include "../ct_initializer.h"
-#include "../operators.h"
+#include "meddly/memory.h"
+#include "meddly/hash_stream.h"
+#include "meddly/node_storage.h"
+#include "meddly/compute_table.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/ct_vector.h"
+#include "meddly/ct_generics.h"
+#include "meddly/ct_initializer.h"
+#include "meddly/operators.h"
 
 // #define DEBUG_FIND
 // #define DEBUG_REHASH
@@ -167,16 +167,27 @@ namespace MEDDLY {
             {
                 switch (N) {  // note: cases 12 - 2 fall through
                     case 12:    if (a[11] != b[11]) return false;
+                                /* fallthrough */
                     case 11:    if (a[10] != b[10]) return false;
+                                /* fallthrough */
                     case 10:    if (a[9] != b[9]) return false;
+                                /* fallthrough */
                     case  9:    if (a[8] != b[8]) return false;
+                                /* fallthrough */
                     case  8:    if (a[7] != b[7]) return false;
+                                /* fallthrough */
                     case  7:    if (a[6] != b[6]) return false;
+                                /* fallthrough */
                     case  6:    if (a[5] != b[5]) return false;
+                                /* fallthrough */
                     case  5:    if (a[4] != b[4]) return false;
+                                /* fallthrough */
                     case  4:    if (a[3] != b[3]) return false;
+                                /* fallthrough */
                     case  3:    if (a[2] != b[2]) return false;
+                                /* fallthrough */
                     case  2:    if (a[1] != b[1]) return false;
+                                /* fallthrough */
                     case  1:    return a[0] == b[0];
                     case  0:    return true;
                     default:    return (0==memcmp(a, b, N*sizeof(unsigned)));
@@ -191,16 +202,27 @@ namespace MEDDLY {
             {
                 switch (N) {  // note: cases 12 - 2 fall through
                     case 12:    if (a[11].UL != b[11].UL) return false;
+                                /* fallthrough */
                     case 11:    if (a[10].UL != b[10].UL) return false;
+                                /* fallthrough */
                     case 10:    if (a[9].UL != b[9].UL) return false;
+                                /* fallthrough */
                     case  9:    if (a[8].UL != b[8].UL) return false;
+                                /* fallthrough */
                     case  8:    if (a[7].UL != b[7].UL) return false;
+                                /* fallthrough */
                     case  7:    if (a[6].UL != b[6].UL) return false;
+                                /* fallthrough */
                     case  6:    if (a[5].UL != b[5].UL) return false;
+                                /* fallthrough */
                     case  5:    if (a[4].UL != b[4].UL) return false;
+                                /* fallthrough */
                     case  4:    if (a[3].UL != b[3].UL) return false;
+                                /* fallthrough */
                     case  3:    if (a[2].UL != b[2].UL) return false;
+                                /* fallthrough */
                     case  2:    if (a[1].UL != b[1].UL) return false;
+                                /* fallthrough */
                     case  1:    return a[0].UL == b[0].UL;
                     case  0:    return true;
                     default:    return (0==memcmp(a, b, N*sizeof(ct_entry_item)));

@@ -4,16 +4,20 @@
 # Massive script to run tests
 #
 
-EXDIR=examples
 
-if [ ! -d $EXDIR ]; then
-    EXDIR=../examples
-fi
-if [ ! -d $EXDIR ]; then
-    echo "Can't find examples directory; run this script in"
-    echo "the root directory or within developers/."
-    exit 1
-fi
+#
+# Args: directories to try
+#
+find_kanban()
+{
+    for arg; do
+        if [ -x "$arg/kanban" ]
+        then
+            echo "$arg"
+            return
+        fi
+    done
+}
 
 print_status()
 {
@@ -49,6 +53,18 @@ run_or_exit()
         exit 1
     fi
 }
+
+#
+# figure out path to executables
+#
+EXDIR=`find_kanban examples build-release/examples ../build-release/examples`
+if [ ! "$EXDIR" ]
+then
+    echo "Can't find examples directory; run this script in"
+    echo "the build directory, or within root or developers/"
+    echo "if the build directory is named build-release/"
+    exit 1
+fi
 
 #
 #  Super fast tests

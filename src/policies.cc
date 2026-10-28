@@ -16,7 +16,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "policies.h"
+#include "meddly/policies.h"
 
 // ******************************************************************
 // *                                                                *

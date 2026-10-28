@@ -16,22 +16,22 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "prepost_sets.h"
+#include "meddly/defines.h"
+#include "meddly/operations/prepost_sets.h"
 
-#include "../ops_builtin.h"
-#include "../ct_vector.h"
-#include "../oper_unary.h"
-#include "../oper_binary.h"
-#include "../forest_levels.h"
-#include "../forest_edgerules.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/ct_vector.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
+#include "meddly/forest_levels.h"
+#include "meddly/forest_edgerules.h"
 
-#include "prepost_common.h"
+#include "meddly/operations/prepost_common.h"
 
 // #define TRACE
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 namespace MEDDLY {
@@ -218,7 +218,7 @@ MEDDLY::prepost_set_mtrel<EOP, ATYPE>::~prepost_set_mtrel()
 
 template <class EOP, class ATYPE>
 void MEDDLY::prepost_set_mtrel<EOP, ATYPE>
-    ::compute(int L, unsigned in,
+    ::compute(int L, unsigned /* in */,
         const edge_value &av, node_handle ap,
         const edge_value &bv, node_handle bp,
         edge_value &cv, node_handle &cp)
@@ -595,6 +595,7 @@ namespace MEDDLY {
         /// Does the edge correspond to an unreachable state?
         inline static bool isUnreachable(const edge_value &ev, node_handle p)
         {
+            IGNORE_UNUSED(ev);
             MEDDLY_DCASSERT(ev.isVoid());
             return 0==p;
         }
@@ -677,6 +678,7 @@ MEDDLY::_IMAGE_factory <FWD>::build_new(forest* a, forest* b, forest* c)
                     return new prepost_set_mtrel<EdgeOp_none,
                             mt_distance>(FWD, a, b, c);
                 }
+                /* fallthrough */
 
             default:
                 return nullptr;

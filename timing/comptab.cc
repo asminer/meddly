@@ -19,26 +19,26 @@
 #include <iostream>
 #include <iomanip>
 
-#include "../src/meddly.h"
-#include "timer.h"
-#include "reporting.h"
+#include "meddly/meddly.h"
+#include "utils/timer.h"
+#include "utils/reporting.h"
 
 using namespace MEDDLY;
 
-const unsigned LEVELS = 128;
-const unsigned DOTS = 16;
+const int LEVELS = 128;
+const int DOTS = 16;
 
 #ifdef DEVELOPMENT_CODE
-const unsigned CREATIONS = 16*1024;
-const unsigned RCREATE   = 4*1024;
+const int CREATIONS = 16*1024;
+const int RCREATE   = 4*1024;
 #else
 //
 // We have a new implementation; these constants (725 and 225)
 // were chosen to keep the running times equal due to the
 // change in implementation.
 //
-const unsigned CREATIONS = 725*1024;
-const unsigned RCREATE   = 225*1024;
+const int CREATIONS = 725*1024;
+const int RCREATE   = 225*1024;
 #endif
 
 #define USE_NEW_CT_INTERFACE

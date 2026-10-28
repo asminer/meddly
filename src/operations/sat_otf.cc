@@ -16,22 +16,22 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "sat_otf.h"
+#include "meddly/defines.h"
+#include "meddly/operations/sat_otf.h"
 #include <typeinfo> // for "bad_cast" exception
 #include <set>
 
-#include "../operators.h"
-#include "../minterms.h"
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
-#include "../oper_unary.h"
-#include "../oper_binary.h"
-#include "../oper_satur.h"
-#include "../sat_relations.h"
-#include "../ops_builtin.h"
-#include "../forest_levels.h"
+#include "meddly/operators.h"
+#include "meddly/minterms.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
+#include "meddly/oper_satur.h"
+#include "meddly/sat_relations.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/forest_levels.h"
 
 namespace MEDDLY {
     class otfsat_by_events_op;
@@ -73,7 +73,7 @@ class MEDDLY::otfsat_by_events_op : public saturation_operation {
       return 0;
     }
     inline node_handle saveSaturateResult(ct_entry_key* Key,
-      node_handle a, node_handle b)
+      node_handle, node_handle b)
     {
       CTresult[0].reset();
       CTresult[0].writeN(b);
@@ -113,7 +113,7 @@ class MEDDLY::common_otf_dfs_by_events_mt : public saturation_operation {
       return 0;
     }
     inline node_handle saveResult(ct_entry_key* Key,
-      node_handle a, node_handle b, node_handle c)
+      node_handle, node_handle, node_handle c)
     {
       CTresult[0].reset();
       CTresult[0].writeN(c);
@@ -148,26 +148,26 @@ class MEDDLY::common_otf_dfs_by_events_mt : public saturation_operation {
           return NULPTR == head;
         }
         inline void add(int i) {
-            MEDDLY_CHECK_RANGE(0u, (unsigned)i, size);
-          if (NOTINQ != data[i]) return;
-          if (NULPTR == head) {
-            // empty list
-            head = i;
-          } else {
-            // not empty list
-              MEDDLY_CHECK_RANGE(0u, (unsigned)tail, size);
-            data[tail] = i;
-          }
-          tail = i;
-          data[i] = NULPTR;
+            MEDDLY_CHECK_BELOW((unsigned)i, size);
+            if (NOTINQ != data[i]) return;
+            if (NULPTR == head) {
+                // empty list
+                head = i;
+            } else {
+                // not empty list
+                MEDDLY_CHECK_BELOW((unsigned)tail, size);
+                data[tail] = i;
+            }
+            tail = i;
+            data[i] = NULPTR;
         }
         inline int remove() {
-            MEDDLY_CHECK_RANGE(0u, (unsigned)head, size);
-          int ans = head;
-          head = data[head];
-          data[ans] = NOTINQ;
-          MEDDLY_CHECK_RANGE(0u, (unsigned)ans, size);
-          return ans;
+            MEDDLY_CHECK_BELOW((unsigned)head, size);
+            int ans = head;
+            head = data[head];
+            data[ans] = NOTINQ;
+            MEDDLY_CHECK_BELOW((unsigned)ans, size);
+            return ans;
         }
     };
 
@@ -862,7 +862,7 @@ MEDDLY::SATURATION_OTF_FORWARD(forest* inF, otf_relation* nsf, forest* outF)
 }
 
 MEDDLY::saturation_operation*
-MEDDLY::SATURATION_OTF_BACKWARD(forest* inF, otf_relation* nsf, forest* outf)
+MEDDLY::SATURATION_OTF_BACKWARD(forest*, otf_relation*, forest*)
 {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }

@@ -20,7 +20,7 @@
 #include <iomanip>
 #include <cstdlib>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 
 // using namespace MEDDLY;
 
@@ -247,8 +247,7 @@ void process_args(int argc, const char** argv)
     long L, L2;
 
     // Go through args
-    unsigned i;
-    for (i=1; i<argc; i++) {
+    for (int i=1; i<argc; i++) {
         char sw = ' ';
         const char* arg = argv[i];
         if (('-' == arg[0]) || (0 != arg[1]) || (0 == arg[2])) {

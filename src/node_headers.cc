@@ -17,12 +17,12 @@
 */
 
 
-#include "defines.h"
-#include "node_headers.h"
-#include "io.h"
-#include "operators.h"
-#include "forest.h"
-#include "storage/bytepack.h"
+#include "meddly/defines.h"
+#include "meddly/node_headers.h"
+#include "meddly/io.h"
+#include "meddly/operators.h"
+#include "meddly/forest.h"
+#include "meddly/storage/bytepack.h"
 #include <climits>
 #include <cstdint>
 
@@ -794,7 +794,7 @@ void MEDDLY::node_headers::lastUnlink(node_handle p)
 
 // ******************************************************************
 
-void MEDDLY::node_headers::reviveNode(node_handle p)
+void MEDDLY::node_headers::reviveNode(node_handle)
 {
     // Reclaim an unreachable
     stats.reclaimed_nodes++;

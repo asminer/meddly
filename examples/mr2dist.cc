@@ -17,11 +17,13 @@
 */
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string.h>
+#include <cassert>
 
-#include "../src/meddly.h"
-#include "zstream.h"
+#include "meddly/meddly.h"
+#include "utils/zstream.h"
 
 
 void myConv(const MEDDLY::rangeval &x, MEDDLY::rangeval &y)
@@ -33,6 +35,58 @@ void myConv(const MEDDLY::rangeval &x, MEDDLY::rangeval &y)
         y.setSpecial(range_special::PLUS_INFINITY, range_type::INTEGER);
     }
 }
+
+void show_node_count(std::ostream &sout, long x, const char* desc)
+{
+    sout << "        ";
+    if (x<0) {
+        sout << "-";
+        x = -x;
+    } else {
+        sout << " ";
+    }
+    long grouping = 1000000000000L;
+    char filler = ' ';
+    while (grouping) {
+        if (filler != ' ') {
+            sout << ",";
+        } else {
+            sout << " ";
+        }
+        const long d = x / grouping;
+        if (d) {
+            if (d < 100) {
+                sout << filler;
+            }
+            if (d < 10) {
+                sout << filler;
+            }
+            sout << d;
+            x %= grouping;
+            filler = '0';
+        } else {
+            sout << filler << filler << filler;
+        }
+        grouping /= 1000;
+    }
+    sout << " nodes " << desc << "\n";
+    sout.flush();
+}
+
+void show_forest_memory(std::ostream &sout, long mem, const char* desc)
+{
+    sout << "        ";
+    sout << "                ";
+    unsigned units = 0;
+    while (mem >= 1024) {
+        mem /= 1024;
+        ++units;
+    }
+    const char* uletters = " KMGTPEZYabcdefgh";
+    sout << std::setw(5) << mem << " " << uletters[units] << "bytes " << desc << "\n";
+    sout.flush();
+}
+
 
 // **********************************************************************
 // get distance from a pathname.
@@ -86,13 +140,21 @@ int usage(const char* exe)
     }
 
     cerr << "\n";
-    cerr << "Usage: " << base << " -o outfile -i file file ...\n";
+    cerr << "Usage: " << base << " -o outfile [-d distfile] -i file file ...\n";
     cerr << "\n";
     cerr << "Read in a series of Boolean DDs, one from each input file, and construct\n"
          << "a single distance EV+MDD from them. The input files must have pathname\n"
          << "that ends in .distance.txt, possibly followed by .gz or .xz if\n"
          << "compressed, where distance is an integer. Interpretation is, that the\n"
          << "file contains states reachable in at most 'distance' steps.\n";
+    cerr << "\n";
+    cerr << "Switches:\n";
+    cerr << "    -d dfile:  Start with the given distance function. If omitted,\n"
+         << "               start with infinity.\n";
+    cerr << "\n";
+    cerr << "    -i:        Everything from here on is an input file.\n";
+    cerr << "\n";
+    cerr << "    -o ofile:  Specify the output file.\n";
     cerr << "\n";
 
     return 1;
@@ -108,24 +170,52 @@ int main(int argc, const char** argv)
     using namespace std;
     using namespace MEDDLY;
 
+    const char* outfile = nullptr;
+    const char* distfile = nullptr;
+    std::vector <const char*> inputs;
+
     //
     // Check command line
     //
-    if (argc < 5) {
-        return usage(argv[0]);
+    char status = ' ';
+    for (int i=1; i<argc; i++) {
+        if (0==strcmp("-o", argv[i])) {
+            if (outfile) {
+                cerr << "Error: two -o switches?\n";
+                return usage(argv[0]);
+            }
+            outfile = argv[i+1];
+            i++;
+            continue;
+        }
+        if (0==strcmp("-d", argv[i])) {
+            if (distfile) {
+                cerr << "Error: two -d switches?\n";
+                return usage(argv[0]);
+            }
+            distfile = argv[i+1];
+            i++;
+            continue;
+        }
+        if (0==strcmp("-i", argv[i])) {
+            status = 'i';
+            continue;
+        }
+        if (' ' == status) {
+            cerr << "Expected switch -d, -i, or -o; got " << argv[i] << "\n";
+            return usage(argv[0]);
+        }
+        inputs.push_back(argv[i]);
     }
-    if (strcmp("-o", argv[1])) {
-        cerr << "First switch should be -o\n";
-        return usage(argv[0]);
-    }
-    if (strcmp("-i", argv[3])) {
-        cerr << "Second switch should be -i\n";
+
+    if (!outfile) {
+        cerr << "Unspecified output file (missing -o outfile)\n";
         return usage(argv[0]);
     }
 
     user_unary_factory MyConversion("MyConv", myConv);
 
-    cout << "Output file " << argv[2] << "\n";
+    cout << "Output file " << outfile << "\n";
 
     try {
         MEDDLY::initialize();
@@ -133,62 +223,89 @@ int main(int argc, const char** argv)
         domain* d = nullptr;
         forest* inF = nullptr;
         forest* outF = nullptr;
+        mdd_reader* mddr = nullptr;
         dd_edge outdd;
 
-        for (int i=4; i<argc; i++) {
-            long dist = extract_distance(argv[i]);
+        if (distfile) {
+            cout << "Distance file " << distfile << "\n";
+            compressed_input dreader(distfile);
+            if (!dreader) {
+                cout << "    couldn't read distance file\n";
+                throw "Bad distance file";
+            }
+            d = domain::create(dreader.instream());
+            mddr = new mdd_reader(dreader.instream(), d);
+            outF = mddr->getForest();
+            outdd.attach(outF);
+            outdd = mddr->getRoot(0);
+            cout << "    " << mddr->getFileNodes() << " nodes\n";
+            cout.flush();
+            delete mddr;
+            mddr = nullptr;
+        }
+
+        for (unsigned i=0; i<inputs.size(); i++) {
+            long dist = extract_distance(inputs[i]);
             if (dist<0) {
-                cout << "Input file " << argv[i] << ": cannot determine distance\n";
+                cout << "Input file " << inputs[i] << ": cannot determine distance\n";
                 return 1;
             }
-            cout << "Input file " << argv[i] << ": distance " << dist << "\n";
+            cout << "Input file " << inputs[i] << ": distance " << dist << "\n";
+            cout.flush();
 
-            compressed_input reader(argv[i]);
+            compressed_input reader(inputs[i]);
             if (!reader) {
                 cout << "    couldn't read\n";
                 throw "Bad input file";
             }
 
-            mdd_reader* mddr = nullptr;
-            if (d) {
+            if (inF) {
                 d->verify(reader.instream());
                 mddr = new mdd_reader(reader.instream(), inF);
             } else {
-                d = domain::create(reader.instream());
+                if (d) {
+                    d->verify(reader.instream());
+                    assert(outF);
+                } else {
+                    d = domain::create(reader.instream());
+                    outF = forest::create(d, SET, range_type::INTEGER,
+                            edge_labeling::EVPLUS
+                    );
+                    outdd.attach(outF);
+                    rangeval infty(range_special::PLUS_INFINITY,
+                            range_type::INTEGER
+                    );
+                    outF->createConstant(infty, outdd);
+                }
                 mddr = new mdd_reader(reader.instream(), d);
                 inF = mddr->getForest();
-                outF = forest::create(d, SET, range_type::INTEGER,
-                            edge_labeling::EVPLUS
-                       );
-
-                outdd.attach(outF);
-                rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
-                outF->createConstant(infty, outdd);
             }
+
             cout << "    " << mddr->getFileNodes() << " nodes\n";
+            cout.flush();
 
             dd_edge curr(outF);
             apply(MyConversion, mddr->getRoot(0), curr);
             curr.setEdgeValue(dist);
 
-            /*
-            ostream_output mout(cout);
-
-            cout << "MDD we read in:\n";
-            mddr->getRoot(0).showGraph(mout);
-
-            cout << "EV+MDD converted:\n";
-            curr.showGraph(mout);
-            */
+            cout << "    converted to single ev+mdd\n";
+            cout.flush();
 
             delete mddr;
+            mddr = nullptr;
 
             apply(MINIMUM, outdd, curr, outdd);
+            cout << "    incorporated into distance function\n";
+            show_node_count(cout, outdd.getNodeCount(), " (function)");
+            if (outF) {
+                show_node_count(cout, outF->getCurrentNumNodes(), " (forest)");
+                show_forest_memory(cout, outF->getCurrentMemoryUsed(), "(forest)");
+            }
 
         } // for i
 
-        cout << "Writing to " << argv[2] << "\n";
-        compressed_output writer(argv[2]);
+        cout << "Writing to " << outfile << "\n";
+        compressed_output writer(outfile);
         if (!writer) {
             cout << "    couldn't write\n";
             throw "bad writer";

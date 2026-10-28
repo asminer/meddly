@@ -16,18 +16,18 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "compare.h"
+#include "meddly/defines.h"
+#include "meddly/operations/compare.h"
 
-#include "../oper_binary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
-#include "../forest_edgerules.h"
+#include "meddly/oper_binary.h"
+#include "meddly/ct_vector.h"
+#include "meddly/forest_levels.h"
+#include "meddly/forest_edgerules.h"
 
 // #define TRACE
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 //
@@ -180,6 +180,8 @@ void MEDDLY::compare_mt<CTYPE>::compute(int L, unsigned in,
 #endif
     MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
+    IGNORE_UNUSED(av);
+    IGNORE_UNUSED(bv);
 
     _compute(L, in, ap, bp, cp);
 
@@ -1015,9 +1017,9 @@ namespace MEDDLY {
     template <class EDGETYPE>
     struct eq_evplus : public eq_base {
         inline static bool isSpecialCase(
-                const edge_value& av, node_handle ap,
-                const edge_value& bv, node_handle bp,
-                bool &answer)
+                const edge_value&, node_handle,
+                const edge_value&, node_handle,
+                bool &)
         {
             return false;
         }
@@ -1038,9 +1040,9 @@ namespace MEDDLY {
     template <class EDGETYPE>
     struct eq_evstar : public eq_base {
         inline static bool isSpecialCase(
-                const edge_value& av, node_handle ap,
-                const edge_value& bv, node_handle bp,
-                bool &answer)
+                const edge_value&, node_handle,
+                const edge_value&, node_handle,
+                bool &)
         {
             return false;
         }
@@ -1092,9 +1094,9 @@ namespace MEDDLY {
     template <class EDGETYPE>
     struct ne_evplus : public ne_base {
         inline static bool isSpecialCase(
-                const edge_value& av, node_handle ap,
-                const edge_value& bv, node_handle bp,
-                bool &answer)
+                const edge_value&, node_handle,
+                const edge_value&, node_handle,
+                bool &)
         {
             return false;
         }
@@ -1115,9 +1117,9 @@ namespace MEDDLY {
     template <class EDGETYPE>
     struct ne_evstar : public ne_base {
         inline static bool isSpecialCase(
-                const edge_value& av, node_handle ap,
-                const edge_value& bv, node_handle bp,
-                bool &answer)
+                const edge_value&, node_handle,
+                const edge_value&, node_handle,
+                bool &)
         {
             return false;
         }
@@ -1169,8 +1171,8 @@ namespace MEDDLY {
     template <class EDGETYPE>
     struct gt_evplus : public gt_base {
         inline static bool isSpecialCase(
-                const edge_value& av, node_handle ap,
-                const edge_value& bv, node_handle bp,
+                const edge_value&, node_handle ap,
+                const edge_value&, node_handle bp,
                 bool &answer)
         {
             // We can assume <av, ap> and <bv, bp>
@@ -1178,6 +1180,8 @@ namespace MEDDLY {
             // would have been handled already.
             // But as a sanity check:
             MEDDLY_DCASSERT((OMEGA_INFINITY != ap) || (OMEGA_INFINITY != bp));
+            IGNORE_UNUSED(ap);
+            IGNORE_UNUSED(bp);
 
             //
             // A(...) > infinity  is false regardless of A()
@@ -1210,9 +1214,9 @@ namespace MEDDLY {
     template <class EDGETYPE>
     struct gt_evstar : public gt_base {
         inline static bool isSpecialCase(
-                const edge_value& av, node_handle ap,
-                const edge_value& bv, node_handle bp,
-                bool &answer)
+                const edge_value&, node_handle,
+                const edge_value&, node_handle,
+                bool &)
         {
             return false;
         }
@@ -1267,8 +1271,8 @@ namespace MEDDLY {
     template <class EDGETYPE>
     struct ge_evplus : public ge_base {
         inline static bool isSpecialCase(
-                const edge_value& av, node_handle ap,
-                const edge_value& bv, node_handle bp,
+                const edge_value&, node_handle ap,
+                const edge_value&, node_handle bp,
                 bool &answer)
         {
             // We can assume <av, ap> and <bv, bp>
@@ -1276,6 +1280,8 @@ namespace MEDDLY {
             // would have been handled already.
             // But as a sanity check:
             MEDDLY_DCASSERT((OMEGA_INFINITY != ap) || (OMEGA_INFINITY != bp));
+            IGNORE_UNUSED(ap);
+            IGNORE_UNUSED(bp);
 
             //
             // infinity >= B(...)  is true regardless of B()
@@ -1308,9 +1314,9 @@ namespace MEDDLY {
     template <class EDGETYPE>
     struct ge_evstar : public ge_base {
         inline static bool isSpecialCase(
-                const edge_value& av, node_handle ap,
-                const edge_value& bv, node_handle bp,
-                bool &answer)
+                const edge_value&, node_handle,
+                const edge_value&, node_handle,
+                bool &)
         {
             return false;
         }
@@ -1365,8 +1371,8 @@ namespace MEDDLY {
     template <class EDGETYPE>
     struct lt_evplus : public lt_base {
         inline static bool isSpecialCase(
-                const edge_value& av, node_handle ap,
-                const edge_value& bv, node_handle bp,
+                const edge_value&, node_handle ap,
+                const edge_value&, node_handle bp,
                 bool &answer)
         {
             // We can assume <av, ap> and <bv, bp>
@@ -1374,6 +1380,8 @@ namespace MEDDLY {
             // would have been handled already.
             // But as a sanity check:
             MEDDLY_DCASSERT((OMEGA_INFINITY != ap) || (OMEGA_INFINITY != bp));
+            IGNORE_UNUSED(ap);
+            IGNORE_UNUSED(bp);
 
             //
             // infinity <  B(...)  is false regardless of B()
@@ -1406,9 +1414,9 @@ namespace MEDDLY {
     template <class EDGETYPE>
     struct lt_evstar : public lt_base {
         inline static bool isSpecialCase(
-                const edge_value& av, node_handle ap,
-                const edge_value& bv, node_handle bp,
-                bool &answer)
+                const edge_value&, node_handle,
+                const edge_value&, node_handle,
+                bool &)
         {
             return false;
         }
@@ -1463,8 +1471,8 @@ namespace MEDDLY {
     template <class EDGETYPE>
     struct le_evplus : public le_base {
         inline static bool isSpecialCase(
-                const edge_value& av, node_handle ap,
-                const edge_value& bv, node_handle bp,
+                const edge_value&, node_handle ap,
+                const edge_value&, node_handle bp,
                 bool &answer)
         {
             // We can assume <av, ap> and <bv, bp>
@@ -1472,6 +1480,8 @@ namespace MEDDLY {
             // would have been handled already.
             // But as a sanity check:
             MEDDLY_DCASSERT((OMEGA_INFINITY != ap) || (OMEGA_INFINITY != bp));
+            IGNORE_UNUSED(ap);
+            IGNORE_UNUSED(bp);
 
             //
             // A(...) <= infinity  is true regardless of A()
@@ -1504,9 +1514,9 @@ namespace MEDDLY {
     template <class EDGETYPE>
     struct le_evstar : public le_base {
         inline static bool isSpecialCase(
-                const edge_value& av, node_handle ap,
-                const edge_value& bv, node_handle bp,
-                bool &answer)
+                const edge_value&, node_handle,
+                const edge_value&, node_handle,
+                bool &)
         {
             return false;
         }

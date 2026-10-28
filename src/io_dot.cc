@@ -16,13 +16,13 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "dd_edge.h"
-#include "forest.h"
-#include "node_marker.h"
-#include "terminal.h"
+#include "meddly/dd_edge.h"
+#include "meddly/node_marker.h"
+#include "meddly/forest.h"
+#include "meddly/terminal.h"
 
-#include "io_dot.h"
-#include "operators.h"
+#include "meddly/io_dot.h"
+#include "meddly/operators.h"
 
 #define USE_NEW_WRITE
 

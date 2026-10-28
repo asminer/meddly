@@ -16,12 +16,12 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "mdd2index.h"
+#include "meddly/defines.h"
+#include "meddly/operations/mdd2index.h"
 
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
+#include "meddly/oper_unary.h"
+#include "meddly/ct_vector.h"
+#include "meddly/forest_levels.h"
 
 namespace MEDDLY {
     class mdd2index_operation;
@@ -31,7 +31,7 @@ namespace MEDDLY {
 // #define TRACE
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 // ******************************************************************
@@ -89,12 +89,13 @@ MEDDLY::mdd2index_operation::~mdd2index_operation()
     ct->markForDestroy();
 }
 
-void MEDDLY::mdd2index_operation::compute(int L, unsigned in,
+void MEDDLY::mdd2index_operation::compute(int L, unsigned /*in*/,
         const edge_value &av, node_handle ap, edge_value &cv, node_handle &cp)
 {
 #ifdef TRACE
     out.indentation(0);
 #endif
+    IGNORE_UNUSED(av);
     MEDDLY_DCASSERT(av.isVoid());
     long lcv;
     _compute(L, ap, lcv, cp);

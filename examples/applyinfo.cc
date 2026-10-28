@@ -23,7 +23,7 @@
 
 #include <iostream>
 #include <stdlib.h>
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 
 inline void mytab(unsigned sp)
 {

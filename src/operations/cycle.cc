@@ -16,17 +16,17 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "cycle.h"
+#include "meddly/defines.h"
+#include "meddly/operations/cycle.h"
 
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
+#include "meddly/oper_unary.h"
+#include "meddly/ct_vector.h"
+#include "meddly/forest_levels.h"
 
 /*
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
 */
 
 namespace MEDDLY {
@@ -120,7 +120,7 @@ MEDDLY::cycle_EV2EV::~cycle_EV2EV()
     ct->markForDestroy();
 }
 
-void MEDDLY::cycle_EV2EV::compute(int L, unsigned in,
+void MEDDLY::cycle_EV2EV::compute(int L, unsigned /*in*/,
                 const edge_value &av, node_handle ap,
                 edge_value &cv, node_handle &cp)
 {

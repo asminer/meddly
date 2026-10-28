@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "init_storage.h"
+#include "meddly/defines.h"
+#include "meddly/storage/init_storage.h"
 
-#include "simple.h"
+#include "meddly/storage/simple.h"
 // #include "pattern.h"
 // #include "best.h"
 

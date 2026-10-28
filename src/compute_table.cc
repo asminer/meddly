@@ -17,13 +17,13 @@
 */
 
 
-#include "defines.h"
-#include "error.h"
+#include "meddly/defines.h"
+#include "meddly/error.h"
 
-#include "ct_initializer.h"
-#include "compute_table.h"
-#include "ct_entry_type.h"
-#include "ct_entry_key.h"
+#include "meddly/ct_initializer.h"
+#include "meddly/compute_table.h"
+#include "meddly/ct_entry_type.h"
+#include "meddly/ct_entry_key.h"
 
 // **********************************************************************
 // *                                                                    *
@@ -41,15 +41,15 @@ MEDDLY::compute_table_style::~compute_table_style()
 }
 
 MEDDLY::compute_table*
-MEDDLY::compute_table_style::create(const ct_settings &s) const
+MEDDLY::compute_table_style::create(const ct_settings &) const
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }
 
 
 MEDDLY::compute_table*
-MEDDLY::compute_table_style::create(const ct_settings &s,
-      unsigned etid) const
+MEDDLY::compute_table_style::create(const ct_settings &,
+      unsigned) const
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }

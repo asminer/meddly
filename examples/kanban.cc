@@ -22,10 +22,12 @@
 #include <iomanip>
 #include <string.h>
 
-#include "../src/meddly.h"
-#include "simple_model.h"
-#include "../timing/timer.h"
-#include "../src/log_simple.h"
+#include "meddly/meddly.h"
+#include "utils/simple_model.h"
+#include "utils/timer.h"
+#ifdef ALLOW_DEPRECATED_0_18_1
+#include "meddly/log_simple.h"
+#endif
 
 #include "zstream.h"
 
@@ -100,20 +102,22 @@ int usage(const char* who)
 #endif
     cout << "\t-exp: use explicit (very slow)\n\n";
     cout << "\t--batch b: specify explicit batch size\n\n";
-    cout << "\t-l lfile: Write logging information to specified file\n\n";
 
-    cout << "\t-pdf:    write the MDD representing the reachable states to Kanban.pdf\n";
+#ifdef ALLOW_DEPRECATED_0_18_2
+    cout << "\t -l lfile: Write logging information to specified file\n\n";
+#endif
+    cout << "\t-pdf:    write the MDD representing the reachable states to Kanban.pdf\n\n";
     cout << "\t-show:   write the MDD representing the reachable states\n";
     cout << "\t-o file: write the MDD to the specified file, in an exchange format.\n";
     cout << "\t         If the output filename ends in .gz or .xz, it will be\n";
     cout << "\t         compressed using gzip or xz, respectively.\n";
-    cout << "\n";
 
     cout << "\t-ms: mark and sweep\n";
     cout << "\t-opt: optimistic reference counts\n";
     cout << "\t-pess: pessimistic reference counts\n\n";
 
     cout << "\t-v   : verbose\n";
+    cout << "\n";
     return 1;
 }
 
@@ -151,7 +155,9 @@ int main(int argc, const char** argv)
     int N = -1;
     char method = '1';
     unsigned batchsize = 256;
+#ifdef ALLOW_DEPRECATED_0_18_2
     const char* lfile = 0;
+#endif
     bool build_pdf = false;
     bool show_dd = false;
     const char* outfile = nullptr;
@@ -218,11 +224,13 @@ int main(int argc, const char** argv)
             continue;
         }
 #endif
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (strcmp("-l", argv[i])==0) {
             lfile = argv[i+1];
             i++;
             continue;
         }
+#endif
         if (strcmp("--batch", argv[i])==0) {
             i++;
             if (argv[i]) {
@@ -314,6 +322,7 @@ int main(int argc, const char** argv)
         forest* mdd = forest::create(d, 0, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
         forest* mxd = forest::create(d, 1, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
 
+#ifdef ALLOW_DEPRECATED_0_18_2
         // associate loggers
         FILE_output log;
         logger* LOG = nullptr;
@@ -335,11 +344,12 @@ int main(int argc, const char** argv)
             }
         }
 
+        if (LOG) LOG->newPhase(mdd, "Building initial state");
+#endif
+
         //
         // Build initial state
         //
-        if (LOG) LOG->newPhase(mdd, "Building initial state");
-
         minterm initial(mdd);
         dd_edge init_state(mdd);
         initial.setAllVars(0);
@@ -352,7 +362,9 @@ int main(int argc, const char** argv)
         //
         // Build next-state function
         //
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (LOG) LOG->newPhase(mxd, "Building next-state function");
+#endif
         dd_edge nsf(mxd);
         pregen_relation* ensf = nullptr;
         saturation_operation* sat = nullptr;
@@ -384,7 +396,9 @@ int main(int argc, const char** argv)
             printStats("MxD", mxd);
         }
 
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (LOG) LOG->newPhase(mdd, "Building reachability set");
+#endif
         dd_edge reachable(mdd);
         start.note_time();
         binary_operation* rsgen = nullptr;
@@ -537,12 +551,14 @@ int main(int argc, const char** argv)
         }
 
         // cleanup
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (LOG) {
             LOG->newPhase(mdd, "Cleanup");
             LOG->newPhase(mxd, "Cleanup");
             domain::destroy(d);
             delete LOG;
         }
+#endif
         MEDDLY::cleanup();
         return 0;
     }

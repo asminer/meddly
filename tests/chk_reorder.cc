@@ -16,7 +16,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include <iostream>
 #include <iomanip>
 
@@ -362,7 +362,7 @@ void test_rels(domain *D, range_type r, edge_labeling el)
  *
  */
 
-int main(int argc, const char** argv)
+int main(int, const char** argv)
 {
     using namespace std;
 

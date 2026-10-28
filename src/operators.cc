@@ -16,12 +16,12 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "operators.h"
-#include "oper_unary.h"
-#include "oper_binary.h"
-#include "ops_builtin.h"
-#include "error.h"
-#include "forest.h"
+#include "meddly/operators.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/error.h"
+#include "meddly/forest.h"
 
 namespace MEDDLY {
 

@@ -21,8 +21,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "../src/meddly.h"
-#include "simple_model.h"
+#include "meddly/meddly.h"
+#include "utils/simple_model.h"
 
 #define WRITE_MXD
 #define WRITE_MDD

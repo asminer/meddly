@@ -16,12 +16,12 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "../forest.h"
-#include "../oper_unary.h"
-#include "../oper_binary.h"
-#include "../ops_builtin.h"
-#include "reach_trad.h"
+#include "meddly/defines.h"
+#include "meddly/forest.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/operations/reach_trad.h"
 
 namespace MEDDLY {
     class reachset_frontier;

@@ -16,15 +16,15 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "mm_mult.h"
+#include "meddly/defines.h"
+#include "meddly/operations/mm_mult.h"
 
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
-#include "../oper_binary.h"
-#include "../ops_builtin.h"
-#include "../forest_levels.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_binary.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/forest_levels.h"
 
 // #define TRACE_ALL_OPS
 
@@ -71,7 +71,7 @@ class MEDDLY::mm_mult_op : public binary_operation {
       return 0;
     }
     inline node_handle saveResult(ct_entry_key* Key,
-      node_handle a, node_handle b, node_handle c)
+      node_handle, node_handle, node_handle c)
     {
       CTresult[0].reset();
       CTresult[0].writeN(c);
@@ -106,7 +106,7 @@ MEDDLY::mm_mult_op::mm_mult_op(forest* a1, forest* a2, forest* res,
 }
 
 void MEDDLY::mm_mult_op
-::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
+::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool)
 {
   node_handle cnode;
   cnode = compute(a.getNode(), b.getNode());

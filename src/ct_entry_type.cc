@@ -16,14 +16,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ct_entry_type.h"
-#include "ct_entry_key.h"
-#include "ct_initializer.h"
-#include "error.h"
-#include "forest.h"
+#include "meddly/ct_entry_type.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_initializer.h"
+#include "meddly/error.h"
+#include "meddly/forest.h"
 
-#include "io.h"
-#include "operators.h"
+#include "meddly/io.h"
+#include "meddly/operators.h"
 
 // #define DEBUG_ENTRY_TYPE
 

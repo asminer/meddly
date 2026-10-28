@@ -16,17 +16,17 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "../ct_vector.h"
-#include "../compute_table.h"
-#include "../oper_binary.h"
-#include "../forest_levels.h"
-#include "cross.h"
+#include "meddly/defines.h"
+#include "meddly/ct_vector.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_binary.h"
+#include "meddly/forest_levels.h"
+#include "meddly/operations/cross.h"
 
 // #define TRACE
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 namespace MEDDLY {
@@ -94,6 +94,8 @@ void MEDDLY::cross_bool::compute(int L, unsigned in,
                 const edge_value &bv, node_handle bp,
                 edge_value &cv, node_handle &cp)
 {
+    IGNORE_UNUSED(av);
+    IGNORE_UNUSED(bv);
     MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
 #ifdef TRACE

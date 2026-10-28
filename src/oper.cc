@@ -16,11 +16,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "oper.h"
+#include "meddly/oper.h"
 
-#include "ct_entry_result.h"
-#include "compute_table.h"
-#include "ct_initializer.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/ct_initializer.h"
 
 // ******************************************************************
 // *                       operation  statics                       *
@@ -181,7 +181,7 @@ void MEDDLY::operation::registerInForest(MEDDLY::forest* f)
     FList.push_back(f->FID());
 }
 
-void MEDDLY::operation::unregisterInForest(MEDDLY::forest* f)
+void MEDDLY::operation::unregisterInForest(MEDDLY::forest*)
 {
     //
     // It is safe to NOT update FList
@@ -192,7 +192,7 @@ void MEDDLY::operation::unregisterInForest(MEDDLY::forest* f)
 #ifdef ALLOW_DEPRECATED_0_17_6
 void MEDDLY::operation::registerEntryType(unsigned slot, ct_entry_type* et)
 {
-    MEDDLY_CHECK_RANGE(0, slot, num_etids);
+    MEDDLY_CHECK_BELOW(slot, num_etids);
     MEDDLY_DCASSERT(etype);
     MEDDLY_DCASSERT(0==etype[slot]);
     etype[slot] = et;

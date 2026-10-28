@@ -16,51 +16,50 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
 // TODO: Testing
 
 #include <fstream>
 #include <sstream>
 #include <cmath>  // for round()
 
-#include "defines.h"
-#include "initializer.h"
-#include "unique_table.h"
-#include "relation_node.h"
-#include "impl_unique_table.h"
-#include "hash_stream.h"
-// #include "storage/bytepack.h"
-#include "reordering/reordering_factory.h"
+#include "meddly/defines.h"
+#include "meddly/initializer.h"
+#include "meddly/unique_table.h"
+#include "meddly/relation_node.h"
+#include "meddly/impl_unique_table.h"
+#include "meddly/hash_stream.h"
+#include "meddly/reordering/reordering_factory.h"
 
-#include "oper.h"
-#include "operators.h"
-#include "node_marker.h"
-#include "logger.h"
-#include "compute_table.h"
-#include "ct_entry_type.h"  // for invalidateAllWithForest
+#include "meddly/oper.h"
+#include "meddly/operators.h"
+#include "meddly/node_marker.h"
+#ifdef ALLOW_DEPRECATED_0_19_0
+#include "meddly/logger.h"
+#endif
+#include "meddly/compute_table.h"
+#include "meddly/ct_entry_type.h"  // for invalidateAllWithForest
 
-#include "rel_node.h"
+#include "meddly/rel_node.h"
 
-#include "forest_levels.h"
-#include "forest_edgerules.h"
+#include "meddly/forest_levels.h"
+#include "meddly/forest_edgerules.h"
 
 //
 // For constructing forests.
 //
-#include "forests/mtmddbool.h"
-#include "forests/mtmddint.h"
-#include "forests/mtmddreal.h"
+#include "meddly/forests/mtmddbool.h"
+#include "meddly/forests/mtmddint.h"
+#include "meddly/forests/mtmddreal.h"
 
-#include "forests/mtmxdbool.h"
-#include "forests/mtmxdint.h"
-#include "forests/mtmxdreal.h"
+#include "meddly/forests/mtmxdbool.h"
+#include "meddly/forests/mtmxdint.h"
+#include "meddly/forests/mtmxdreal.h"
 
-#include "forests/evmdd_pluslong.h"
-#include "forests/evmdd_timesreal.h"
+#include "meddly/forests/evmdd_pluslong.h"
+#include "meddly/forests/evmdd_timesreal.h"
 
-#include "forests/evmxd_pluslong.h"
-#include "forests/evmxd_timesreal.h"
+#include "meddly/forests/evmxd_pluslong.h"
+#include "meddly/forests/evmxd_timesreal.h"
 
 
 // #define DEBUG_ADDRESS_RESIZE
@@ -872,9 +871,11 @@ void MEDDLY::forest::createReducedNode(unpacked_node *un, edge_value &ev,
     }
 
     stats.incActive(1);
+#ifdef ALLOW_DEPRECATED_0_19_0
     if (theLogger && theLogger->recordingNodeCounts()) {
         theLogger->addToActiveNodeCount(this, un->getLevel(), 1);
     }
+#endif
 
     //
     // Copy the temp node into long-term node storage
@@ -1024,9 +1025,11 @@ MEDDLY::node_handle MEDDLY::forest
   MEDDLY_DCASSERT(0 == nodeHeaders.getIncomingCount(p));
 
   stats.incActive(1);
+#ifdef ALLOW_DEPRECATED_0_19_0
   if (theLogger && theLogger->recordingNodeCounts()) {
     theLogger->addToActiveNodeCount(this, nb.getLevel(), 1);
   }
+#endif
 
   #if 0
   // All of the work is in satimpl_opname::implicit_relation now :^)
@@ -1984,6 +1987,7 @@ void MEDDLY::forest::validateDownPointers(const unpacked_node &nb) const
                     FAIL(__FILE__, __LINE__);
                 }
             }
+            /* fallthrough */
             // NO break here; we need to fall through to below
 
         case reduction_rule::FULLY_REDUCED:
@@ -2041,13 +2045,15 @@ void MEDDLY::forest::showInfo(output &s, int verb)
   s << long(unique->getNumEntries()) << "\n";
 }
 
+#ifdef ALLOW_DEPRECATED_0_19_0
 void MEDDLY::forest::setLogger(logger* L, const char* name)
 {
     theLogger = L;
     if (theLogger) theLogger->logForestInfo(this, name);
 }
+#endif
 
-void MEDDLY::forest::reportForestStats(output &s, const char* pad) const
+void MEDDLY::forest::reportForestStats(output &, const char*) const
 {
   // default - do nothing
 }
@@ -2128,10 +2134,12 @@ MEDDLY::forest::forest(domain* _d, bool rel, range_type t, edge_labeling ev,
     //
     free_relnodes = nullptr;
 
+#ifdef ALLOW_DEPRECATED_0_19_0
     //
     // Empty logger
     //
     theLogger = nullptr;
+#endif
 
     //
     // Unique table(s)
@@ -2259,7 +2267,7 @@ void MEDDLY::forest::createEdgeForVar(int vh, bool vp, const float* terms, dd_ed
 
 #endif
 
-MEDDLY::node_handle MEDDLY::forest::unionOneMinterm(node_handle a,  int* from,  int* to, int level)
+MEDDLY::node_handle MEDDLY::forest::unionOneMinterm(node_handle,  int*,  int*, int)
 {
     throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);
 }

@@ -19,8 +19,8 @@
 #include <vector>
 #include <unordered_map>
 
-#include "mtmxd.h"
-#include "../unique_table.h"
+#include "meddly/forests/mtmxd.h"
+#include "meddly/unique_table.h"
 
 MEDDLY::mtmxd_forest
 ::mtmxd_forest(domain* d, range_type t, const policies &p)
@@ -48,7 +48,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByVarSwap(int level)
 {
   // Swap VarHigh and VarLow
   MEDDLY_DCASSERT(level >= 1);
-  MEDDLY_DCASSERT(level < getNumVariables());
+  MEDDLY_DCASSERT(level < int(getNumVariables()));
 
   int hvar = getVarByLevel(level+1);
   int lvar = getVarByLevel(level);
@@ -358,7 +358,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByLevelSwap(int level)
 {
   // Swap VarHigh and VarLow
   MEDDLY_DCASSERT(level >= 1);
-  MEDDLY_DCASSERT(level < getNumVariables());
+  MEDDLY_DCASSERT(level < int(getNumVariables()));
 
   if(!isFullyReduced() && !isQuasiReduced()){
     throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
@@ -375,7 +375,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentVariablesByLevelSwap(int level)
   // y > y' > x > x'
 }
 
-void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
+void MEDDLY::mtmxd_forest::swapAdjacentLevels(int)
 {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 
@@ -473,7 +473,7 @@ void MEDDLY::mtmxd_forest::swapAdjacentLevels(int level)
 void MEDDLY::mtmxd_forest::dynamicReorderVariables(int top, int bottom)
 {
   MEDDLY_DCASSERT(top > bottom);
-  MEDDLY_DCASSERT(top <= getNumVariables());
+  MEDDLY_DCASSERT(top <= int(getNumVariables()));
   MEDDLY_DCASSERT(bottom >= 1);
 
   removeAllComputeTableEntries();
@@ -588,12 +588,12 @@ void MEDDLY::mtmxd_forest::sifting(int var, int top, int bottom)
 #endif
 }
 
-void MEDDLY::mtmxd_forest::moveDownVariable(int high, int low)
+void MEDDLY::mtmxd_forest::moveDownVariable(int, int)
 {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-void MEDDLY::mtmxd_forest::moveUpVariable(int low, int high)
+void MEDDLY::mtmxd_forest::moveUpVariable(int, int)
 {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }

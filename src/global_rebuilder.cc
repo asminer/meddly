@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "defines.h"
-#include "hash_stream.h"
-#include "unique_table.h"
-#include "global_rebuilder.h"
+#include "meddly/defines.h"
+#include "meddly/hash_stream.h"
+#include "meddly/unique_table.h"
+#include "meddly/global_rebuilder.h"
 
 #include <unordered_set>
 #include <queue>

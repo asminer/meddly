@@ -31,9 +31,11 @@
 #include <cstdio>
 #include <cassert>
 
-#include "../src/meddly.h"
-#include "../timing/timer.h"
-#include "../src/log_simple.h"
+#include "meddly/meddly.h"
+#include "utils/timer.h"
+#ifdef ALLOW_DEPRECATED_0_18_2
+#include "meddly/log_simple.h"
+#endif
 
 // #define SHOW_ALL_SOLUTIONS
 
@@ -41,7 +43,9 @@ using namespace MEDDLY;
 
 int N;
 rangeval* scratch;
+#ifdef ALLOW_DEPRECATED_0_18_2
 const char* lfile;
+#endif
 bool build_pdf;
 bool pessimistic;
 bool mark_sweep;
@@ -133,7 +137,9 @@ void createQueenNodes(forest* f, int q, dd_edge &col, dd_edge &cp, dd_edge &cm)
 
 bool processArgs(int argc, const char** argv)
 {
+#ifdef ALLOW_DEPRECATED_0_18_2
     lfile = 0;
+#endif
     build_pdf = false;
     mark_sweep = true;
     pessimistic = true;
@@ -172,11 +178,13 @@ bool processArgs(int argc, const char** argv)
                 }
                 continue;
             }
+#ifdef ALLOW_DEPRECATED_0_18_2
             if (strcmp("-l", argv[i])==0) {
                 lfile = argv[i+1];
                 i++;
                 continue;
             }
+#endif
             if (strcmp("-pdf", argv[i])==0) {
                 build_pdf = true;
                 continue;
@@ -207,7 +215,9 @@ int usage(const char* who)
     printf("\t     -ms:  Mark and sweep node deletion (default)\n");
     printf("\t    -opt:  Reference counts and Optimistic node deletion\n");
     printf("\t   -pess:  Reference counts and Pessimistic node deletion\n");
+#ifdef ALLOW_DEPRECATED_0_18_2
     printf("\t-l lfile:  Write logging information to specified file\n");
+#endif
     printf("\t    -pdf:  Write MDD of solutions to out.pdf\n\n");
     return 1;
 }
@@ -276,6 +286,7 @@ int main(int argc, const char** argv)
                 edge_labeling::MULTI_TERMINAL, p);
         assert(fb);
 
+#ifdef ALLOW_DEPRECATED_0_18_2
         FILE_output log;
         logger* LOG = 0;
         if (lfile) {
@@ -294,6 +305,7 @@ int main(int argc, const char** argv)
                 LOG->newPhase(fb, "Initializing");
             }
         }
+#endif
 
         printf("Building nodes for queen column and diagonals\n");
 
@@ -317,7 +329,9 @@ int main(int argc, const char** argv)
             char buffer[80];
             snprintf(buffer, 80, "Building queen %2d constraints\n", i+1);
             printf("%s\n", buffer);
+#ifdef ALLOW_DEPRECATED_0_18_2
             if (LOG) LOG->newPhase(fb, buffer);
+#endif
             for (int j=N-1; j>i; j--) {
                 dd_edge uniq_col(fb);
                 apply(NOT_EQUAL, *col[i], *col[j], uniq_col);
@@ -338,7 +352,9 @@ int main(int argc, const char** argv)
 
         printf("Building solutions\n");
         fflush(stdout);
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (LOG) LOG->newPhase(fb, "Building solutions");
+#endif
         intersect(constr, N);
         assert(constr[0]);
         dd_edge* solutions = constr[0];
@@ -348,7 +364,9 @@ int main(int argc, const char** argv)
         printf("Elapsed time: %lf seconds\n", watch.get_last_seconds());
 
         printf("Cleanup\n");
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (LOG) LOG->newPhase(fb, "Cardinality");
+#endif
         for (int i=0; i<N; i++) {
             delete col[i];
             delete dgp[i];
@@ -407,12 +425,16 @@ int main(int argc, const char** argv)
         delete solutions;
         fb->validateCacheCounts();
         compute_table::showAll(myout, 3);
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (LOG) {
             LOG->newPhase(fb, "Cleanup");
             domain::destroy(d);
         }
+#endif
         cleanup();
+#ifdef ALLOW_DEPRECATED_0_18_2
         delete LOG;
+#endif
         return 0;
     }
     catch (MEDDLY::error e) {

@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "satur_graph.h"
+#include "meddly/operations/satur_graph.h"
 
-#include "../io.h"
-#include "../forest.h"
+#include "meddly/io.h"
+#include "meddly/forest.h"
 
 // #define TRACE
 // #define DEBUG_TRANSPOSE

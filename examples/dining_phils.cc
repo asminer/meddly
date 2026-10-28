@@ -89,14 +89,15 @@
 #include <cassert>
 #include <fstream>
 
-#include "../config.h"
 #if HAVE_LIBGMP
 #include <gmp.h>
 #endif
 
-#include "../src/meddly.h"
-#include "../timing/timer.h"
-#include "../src/log_simple.h"
+#include "meddly/meddly.h"
+#include "utils/timer.h"
+#ifdef ALLOW_DEPRECATED_0_18_2
+#include "meddly/log_simple.h"
+#endif
 
 using namespace MEDDLY;
 
@@ -441,7 +442,11 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
     indexSet.showGraph(mout);
 }
 
+#ifdef ALLOW_DEPRECATED_0_18_2
 domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
+#else
+domain* runWithOptions(int nPhilosophers, const switches &sw)
+#endif
 {
     timer start;
     FILE_output meddlyout(stdout);
@@ -499,20 +504,26 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
     forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
             edge_labeling::MULTI_TERMINAL, pmdd);
     assert(mdd);
+#ifdef ALLOW_DEPRECATED_0_18_2
     mdd->setLogger(LOG, "MDD");
+#endif
 
     // Create a MXD forest in domain (to store transition diagrams)
     forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
             edge_labeling::MULTI_TERMINAL, pmxd);
     assert(mxd);
+#ifdef ALLOW_DEPRECATED_0_18_2
     mxd->setLogger(LOG, "MxD");
+    if (LOG) LOG->newPhase(mdd, "Building initial state");
+#endif
 
     // Set up initial state array based on nPhilosophers
-    if (LOG) LOG->newPhase(mdd, "Building initial state");
     dd_edge initialStates(mdd);
     buildInitialState(initialStates);
 
+#ifdef ALLOW_DEPRECATED_0_18_2
     if (LOG) LOG->newPhase(mxd, "Building next-state function");
+#endif
     printf("Building next-state function for %d dining philosophers\n",
             nPhilosophers);
     fflush(stdout);
@@ -580,7 +591,9 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
     //
     // Build reachable states
     //
+#ifdef ALLOW_DEPRECATED_0_18_2
     if (LOG) LOG->newPhase(mdd, "Building reachability set");
+#endif
     dd_edge reachableStates(initialStates);
     start.note_time();
 
@@ -708,10 +721,12 @@ domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
        Next will be cleanup.
        Log that.
     */
+#ifdef ALLOW_DEPRECATED_0_18_2
     if (LOG) {
         LOG->newPhase(mdd, "Cleanup");
         LOG->newPhase(mxd, "Cleanup");
     }
+#endif
 
     printf("Destroying dd_edges\n");
     fflush(stdout);
@@ -756,7 +771,9 @@ int usage(const char* who)
     printf("\t-sat2:      Saturation v2\n");
     printf("\n");
 
+#ifdef ALLOW_DEPRECATED_0_18_2
     printf("\t-l lfile:   Write logging information to specified file\n");
+#endif
     printf("\t-pdf:       Write MDD for reachable states to out.pdf\n");
     printf("\n");
 
@@ -778,7 +795,9 @@ int main(int argc, char *argv[])
     int nPhilosophers = 0; // number of philosophers
     switches sw;
     int cacheSize = 0;
+#ifdef ALLOW_DEPRECATED_0_18_2
     const char* lfile = 0;
+#endif
     verbose = false;
 
     for (int i=1; i<argc; i++) {
@@ -856,11 +875,13 @@ int main(int argc, char *argv[])
             sw.method = 'k';
             continue;
         }
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (strcmp("-l", argv[i])==0) {
             lfile = argv[i+1];
             i++;
             continue;
         }
+#endif
         if (strcmp("-pdf", argv[i])==0) {
             sw.build_pdf = true;
             continue;
@@ -903,6 +924,7 @@ int main(int argc, char *argv[])
     }
     MEDDLY::initialize(L);
 
+#ifdef ALLOW_DEPRECATED_0_18_2
     //
     // Set up logger, if any
     //
@@ -924,15 +946,22 @@ int main(int argc, char *argv[])
             LOG->addComment(comment);
         }
     }
+#endif
 
     try {
+#ifdef ALLOW_DEPRECATED_0_18_2
         domain* d = runWithOptions(nPhilosophers, sw, LOG);
+#else
+        runWithOptions(nPhilosophers, sw);
+#endif
         printf("Cleaning up\n");
         fflush(stdout);
+#ifdef ALLOW_DEPRECATED_0_18_2
         if (LOG) {
             domain::destroy(d);
             delete LOG;
         }
+#endif
         MEDDLY::cleanup();
         printf("\n\nDONE\n");
         return 0;

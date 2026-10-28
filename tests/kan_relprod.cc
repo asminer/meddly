@@ -20,8 +20,8 @@
 #include <cstdlib>
 #include <string.h>
 
-#include "../src/meddly.h"
-#include "simple_model.h"
+#include "meddly/meddly.h"
+#include "utils/simple_model.h"
 
 #define HAVE_ORACLE
 
@@ -96,7 +96,8 @@ void compare_states(const bool fwd, unsigned dist, const dd_edge &ftr,
 {
     using namespace std;
 
-    cout << "    checking distance " << dist << "\n";
+    cout << "    checking " << (fwd?"forward":"backward")
+         << " distance " << dist << "\n";
     unsigned card = 0;
 
     ostream_output mout(cout);

@@ -19,8 +19,8 @@
 #include <iostream>
 #include <fstream>
 
-#include "../src/meddly.h"
-#include "zstream.h"
+#include "meddly/meddly.h"
+#include "utils/zstream.h"
 
 // **********************************************************************
 // print usage instructions

@@ -17,10 +17,10 @@
 */
 
 
-#include "defines.h"
-#include "log_simple.h"
-#include "forest.h"
-#include "operators.h"
+#include "meddly/defines.h"
+#include "meddly/log_simple.h"
+#include "meddly/forest.h"
+#include "meddly/operators.h"
 
 #define BATCH
 
@@ -95,7 +95,7 @@ void MEDDLY::simple_logger::logForestInfo(const forest* ef, const char* name)
   fixLogger();
 
   /* Allocate space for this forest info */
-  MEDDLY_DCASSERT(batch_forests >= 0);
+  // MEDDLY_DCASSERT(batch_forests >= 0);
   if (ef->FID() >= batch_forests) {
     const unsigned bf = ((ef->FID() / 16) + 1) * 16;
 

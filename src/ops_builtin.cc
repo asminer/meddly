@@ -16,11 +16,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ops_builtin.h"
-#include "oper_unary.h"
-#include "oper_binary.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
 
-#include "initializer.h"
+#include "meddly/initializer.h"
 
 namespace MEDDLY {
     class builtin_init;
@@ -29,51 +29,55 @@ namespace MEDDLY {
 //
 // For initializing unary operations
 //
-#include "operations/copy.h"
-#include "operations/cardinality.h"
-#include "operations/complement.h"
-#include "operations/maxmin_range.h"
-#include "operations/mdd2index.h"
-#include "operations/cycle.h"
+#include "meddly/operations/copy.h"
+#include "meddly/operations/cardinality.h"
+#include "meddly/operations/complement.h"
+#include "meddly/operations/maxmin_range.h"
+#include "meddly/operations/mdd2index.h"
+#include "meddly/operations/cycle.h"
+
+#ifdef ALLOW_DEPRECATED_0_17_8
+#include "meddly/operations/select.h"
+#endif
 
 //
 // For initializing binary operations
 //
-#include "operations/union.h"
-#include "operations/intersection.h"
-#include "operations/difference.h"
-#include "operations/compare.h"
+#include "meddly/operations/union.h"
+#include "meddly/operations/intersection.h"
+#include "meddly/operations/difference.h"
+#include "meddly/operations/compare.h"
 
-#include "operations/arith_max.h"
-#include "operations/arith_min.h"
-#include "operations/arith_distmin.h"
-#include "operations/arith_plus.h"
-#include "operations/arith_minus.h"
-#include "operations/arith_mult.h"
-#include "operations/arith_div.h"
-#include "operations/arith_mod.h"
+#include "meddly/operations/arith_max.h"
+#include "meddly/operations/arith_min.h"
+#include "meddly/operations/arith_distmin.h"
+#include "meddly/operations/arith_plus.h"
+#include "meddly/operations/arith_minus.h"
+#include "meddly/operations/arith_mult.h"
+#include "meddly/operations/arith_div.h"
+#include "meddly/operations/arith_mod.h"
 
-#include "operations/cross.h"
-#include "operations/prepostplus.h"
-#include "operations/prepost_sets.h"
-#include "operations/prepost_rels.h"
-#include "operations/reach_trad.h"
-#include "operations/vect_matr.h"
-#include "operations/mm_mult.h"
+#include "meddly/operations/cross.h"
+#include "meddly/operations/prepostplus.h"
+#include "meddly/operations/prepost_sets.h"
+#include "meddly/operations/prepost_rels.h"
+#include "meddly/operations/reach_trad.h"
+#include "meddly/operations/vect_matr.h"
+#include "meddly/operations/mm_mult.h"
 //
 // For initializing numerical operations
 //
-#include "operations/vect_matr.h"
+#include "meddly/operations/vect_matr.h"
 //
 // For initializing saturation-line operations
 //
-#include "operations/reach_dfs.h"
-#include "operations/sat_pregen.h"
-#include "operations/sat_otf.h"
-#include "operations/sat_impl.h"
-#include "operations/sat_hyb.h"
-#include "operations/constrained.h"
-#include "operations/transitive_closure.h"
+#include "meddly/operations/reach_dfs.h"
+#include "meddly/operations/sat_pregen.h"
+#include "meddly/operations/sat_otf.h"
+#include "meddly/operations/sat_impl.h"
+#include "meddly/operations/sat_hyb.h"
+#include "meddly/operations/constrained.h"
+#include "meddly/operations/transitive_closure.h"
 
 
 

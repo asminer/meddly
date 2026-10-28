@@ -16,14 +16,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "union.h"
+#include "meddly/defines.h"
+#include "meddly/operations/union.h"
 
-#include "../ops_builtin.h" // for COPY
-#include "../oper_binary.h"
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
+#include "meddly/ops_builtin.h" // for COPY
+#include "meddly/oper_binary.h"
+#include "meddly/oper_unary.h"
+#include "meddly/ct_vector.h"
+#include "meddly/forest_levels.h"
 
 namespace MEDDLY {
     class union_mt;
@@ -34,7 +34,7 @@ namespace MEDDLY {
 #define USE_PRIMED_CACHE
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 // ******************************************************************
@@ -216,6 +216,8 @@ void MEDDLY::union_mt::compute(int L, unsigned in,
 {
     MEDDLY_DCASSERT(av.isVoid());
     MEDDLY_DCASSERT(bv.isVoid());
+    IGNORE_UNUSED(av);
+    IGNORE_UNUSED(bv);
 #ifdef TRACE
     out.indentation(0);
     ++top_count;

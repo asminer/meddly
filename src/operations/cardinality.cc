@@ -16,17 +16,17 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "cardinality.h"
+#include "meddly/defines.h"
+#include "meddly/operations/cardinality.h"
 #ifdef HAVE_LIBGMP
 #include <gmp.h>
 #endif
 
-#include "../oper_item.h"
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../ct_generics.h"
-#include "../forest_levels.h"
+#include "meddly/oper_item.h"
+#include "meddly/oper_unary.h"
+#include "meddly/ct_vector.h"
+#include "meddly/ct_generics.h"
+#include "meddly/forest_levels.h"
 
 namespace MEDDLY {
     class intcard;
@@ -39,7 +39,7 @@ namespace MEDDLY {
 // #define TRACE
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 // ******************************************************************
@@ -134,8 +134,8 @@ MEDDLY::card_templ<RTYPE>::~card_templ()
 }
 
 template <class RTYPE>
-void MEDDLY::card_templ<RTYPE>::compute(int L, unsigned in,
-        const edge_value &av, node_handle ap, oper_item &result)
+void MEDDLY::card_templ<RTYPE>::compute(int L, unsigned,
+        const edge_value &, node_handle ap, oper_item &result)
 {
     MEDDLY_DCASSERT(result.hasType(RTYPE::getOpndType()));
 #ifdef TRACE
@@ -275,7 +275,7 @@ class MEDDLY::intcard {
             temp.init(0L);
         }
 
-        static inline void doneTemp(oper_item& temp) {
+        static inline void doneTemp(oper_item&) {
             // nothing to do
         }
 
@@ -324,7 +324,7 @@ class MEDDLY::realcard {
             temp.init(0.0);
         }
 
-        static inline void doneTemp(oper_item& temp) {
+        static inline void doneTemp(oper_item&) {
             // nothing to do
         }
 

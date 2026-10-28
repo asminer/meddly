@@ -23,9 +23,9 @@
 
 #define _MEDDLY_WITHOUT_IOSTREAM_
 
-#include "../src/meddly.h"
-#include "simple_model.h"
-#include "../timing/timer.h"
+#include "meddly/meddly.h"
+#include "utils/simple_model.h"
+#include "utils/timer.h"
 
 // #define TEST_HYB
 // #define DUMP_NSF

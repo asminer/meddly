@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "../error.h"
+#include "meddly/defines.h"
+#include "meddly/error.h"
 
-#include "sccgraph.h"
+#include "meddly/operations/sccgraph.h"
 
 #define DEBUG
 #define DEBUG_SCC
@@ -285,8 +285,8 @@ void MEDDLY::sccgraph::dumpGraph(MEDDLY::output &out) const
 
 void MEDDLY::sccgraph::add_edge(unsigned I, unsigned J, edge_label* L)
 {
-    MEDDLY_CHECK_RANGE(0u, I, graph_vertices_used);
-    MEDDLY_CHECK_RANGE(0u, J, graph_vertices_used);
+    MEDDLY_CHECK_BELOW(I, graph_vertices_used);
+    MEDDLY_CHECK_BELOW(J, graph_vertices_used);
     MEDDLY_DCASSERT(L);
     MEDDLY_DCASSERT(vertex_to_scc);
 
@@ -459,7 +459,7 @@ void MEDDLY::sccgraph::update_SCCs()
     // Update vertex_to_scc mapping
     //
     for (unsigned i=0; i<graph_vertices_used; i++) {
-        MEDDLY_CHECK_RANGE(0u, vertex_to_scc[i], scc_vertices_used);
+        MEDDLY_CHECK_BELOW(vertex_to_scc[i], scc_vertices_used);
         vertex_to_scc[i] = visit_index[ vertex_to_scc[i] ];
     }
 

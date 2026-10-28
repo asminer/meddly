@@ -16,25 +16,25 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "prepost_rels.h"
+#include "meddly/defines.h"
+#include "meddly/operations/prepost_rels.h"
 
-#include "../ops_builtin.h"
-#include "../ct_vector.h"
-#include "../oper_unary.h"
-#include "../oper_binary.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/ct_vector.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
 
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
-#include "../forest_levels.h"
-#include "../forest_edgerules.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/forest_levels.h"
+#include "meddly/forest_edgerules.h"
 
 // #define TRACE_ALL_OPS
 // #define TRACE
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 namespace MEDDLY {
@@ -74,7 +74,7 @@ class MEDDLY::image_op_evplus2 : public binary_operation {
       return 0;
     }
     inline void saveResult(ct_entry_key* Key,
-      long ev, node_handle evmdd, node_handle mxd, long resEv, node_handle resEvmdd)
+      long ev, node_handle, node_handle, long resEv, node_handle resEvmdd)
     {
       CTresult[0].reset();
       CTresult[0].writeL(resEvmdd == 0 ? 0L : resEv - ev);
@@ -116,7 +116,7 @@ MEDDLY::image_op_evplus2::image_op_evplus2(binary_list& oc, forest* a1,
   buildCTs();
 }
 
-void MEDDLY::image_op_evplus2::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool userFlag)
+void MEDDLY::image_op_evplus2::computeDDEdge(const dd_edge &a, const dd_edge &b, dd_edge &c, bool)
 {
   long cev = Inf<long>();
   node_handle cnode = 0;

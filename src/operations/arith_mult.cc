@@ -16,16 +16,16 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "arith_mult.h"
+#include "meddly/defines.h"
+#include "meddly/operations/arith_mult.h"
 
 // #define TRACE
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
-#include "arith_templ.h"
+#include "meddly/operations/arith_templ.h"
 
 namespace MEDDLY {
     class MULT_factory;
@@ -50,15 +50,15 @@ namespace MEDDLY {
         inline static bool stopOnEqualArgs() {
             return false;
         }
-        inline static void makeEqualResult(int L, unsigned in,
-                const forest* fa, node_handle a,
-                forest* fc, edge_value &cv, node_handle &c,
-                unary_operation* copier)
+        inline static void makeEqualResult(int, unsigned,
+                const forest*, node_handle,
+                forest*, edge_value &, node_handle &,
+                unary_operation*)
         {
             FAIL(__FILE__, __LINE__);
         }
-        inline static bool simplifiesToFirstArg(int L,
-                const forest* fa, node_handle &a,
+        inline static bool simplifiesToFirstArg(int,
+                const forest*, node_handle &a,
                 const forest* fb, node_handle b)
         {
             if (0 == a) return true;
@@ -66,9 +66,9 @@ namespace MEDDLY {
             terminal one( RANGE(1) );
             return (one.getHandle() == b);
         }
-        inline static bool simplifiesToSecondArg(int L,
+        inline static bool simplifiesToSecondArg(int,
                 const forest* fa, node_handle a,
-                const forest* fb, node_handle &b)
+                const forest*, node_handle &b)
         {
             if (0 == b) return true;
             if (fa->isIdentityReduced()) return false;
@@ -89,6 +89,8 @@ namespace MEDDLY {
         inline static void apply(const edge_value &a, const edge_value &b,
                                     edge_value &c)
         {
+            IGNORE_UNUSED(a);
+            IGNORE_UNUSED(b);
             MEDDLY_DCASSERT(a.isVoid());
             MEDDLY_DCASSERT(b.isVoid());
             c.set();
@@ -114,14 +116,14 @@ namespace MEDDLY {
         inline static bool stopOnEqualArgs() {
             return false;
         }
-        inline static void makeEqualResult(int L, unsigned in,
-                const edge_value &av, const node_handle &a,
-                forest* fc, edge_value &cv, node_handle &c,
-                unary_operation* copyop)
+        inline static void makeEqualResult(int, unsigned,
+                const edge_value &, const node_handle &,
+                forest*, edge_value &, node_handle &,
+                unary_operation*)
         {
             FAIL(__FILE__, __LINE__);
         }
-        inline static bool simplifiesToFirstArg(int L,
+        inline static bool simplifiesToFirstArg(int,
                 const forest* f1, edge_value &av, node_handle &an,
                 const forest* f2, const edge_value &bv, node_handle bn)
         {
@@ -134,7 +136,7 @@ namespace MEDDLY {
             }
             return false;
         }
-        inline static bool simplifiesToSecondArg(int L,
+        inline static bool simplifiesToSecondArg(int,
                 const forest* f1, edge_value &av, node_handle &an,
                 const forest* f2, const edge_value &bv, node_handle bn)
         {
@@ -185,33 +187,33 @@ namespace MEDDLY {
         inline static bool stopOnEqualArgs() {
             return false;
         }
-        inline static void makeEqualResult(int L, unsigned in,
-                const forest* fa, node_handle a,
-                forest* fc, edge_value &cv, node_handle &c,
-                unary_operation* copier)
+        inline static void makeEqualResult(int, unsigned,
+                const forest*, node_handle,
+                forest*, edge_value &, node_handle &,
+                unary_operation*)
         {
             FAIL(__FILE__, __LINE__);
         }
-        inline static bool simplifiesToFirstArg(int L,
-                const forest* fa, node_handle &a,
+        inline static bool simplifiesToFirstArg(int,
+                const forest*, node_handle &a,
                 const forest* fb, node_handle b)
         {
             if (OMEGA_ZERO == a) return true;
             if (fb->isIdentityReduced()) return false;
             return (OMEGA_NORMAL == b);
         }
-        inline static bool simplifiesToSecondArg(int L,
+        inline static bool simplifiesToSecondArg(int,
                 const forest* fa, node_handle a,
-                const forest* fb, node_handle &b)
+                const forest*, node_handle &b)
         {
             if (OMEGA_ZERO == b) return true;
             if (fa->isIdentityReduced()) return false;
             return (OMEGA_NORMAL == a);
         }
 
-        inline static void apply(const forest* fa, node_handle a,
-                const forest* fb, node_handle b,
-                const forest* fc, node_handle &c)
+        inline static void apply(const forest*, node_handle a,
+                const forest*, node_handle b,
+                const forest*, node_handle &c)
         {
             if ((OMEGA_ZERO == a) || (OMEGA_ZERO == b))
             {

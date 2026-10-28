@@ -16,21 +16,19 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "meddly/defines.h"
+#include "meddly/dd_edge.h"
+#include "meddly/forest.h"
+#include "meddly/forest_levels.h"
+#include "meddly/forest_edgerules.h"
+#include "meddly/minterms.h"
+#include "meddly/io.h"
 
+#include "meddly/node_marker.h"
 
-#include "defines.h"
-#include "dd_edge.h"
-#include "forest.h"
-#include "forest_levels.h"
-#include "forest_edgerules.h"
-#include "minterms.h"
-#include "io.h"
-
-#include "node_marker.h"
-
-#include "oper_binary.h"
-#include "ops_builtin.h"
-#include "operators.h"
+#include "meddly/oper_binary.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/operators.h"
 
 #include <cstdlib>  // for random()
 
@@ -1327,7 +1325,7 @@ unsigned MEDDLY::dd_edge::deflt_RNG(unsigned a)
     X *= a;
     X /= 2147483648u;   // divide by 2**31, X will be less than a
 
-    MEDDLY_CHECK_RANGE(0, X, a);
+    MEDDLY_CHECK_BELOW(X, a);
     return X;
 }
 
@@ -1617,7 +1615,7 @@ bool MEDDLY::dd_edge::getElemInt(long index, minterm &m) const
         //
         // I don't think index sets can skip levels at all
         //
-        MEDDLY_DCASSERT(k == fp->getNodeLevel(p));
+        MEDDLY_DCASSERT(int(k) == fp->getNodeLevel(p));
         U->initFromNode(p);
 
         //
@@ -1674,7 +1672,7 @@ bool MEDDLY::dd_edge::getElemLong(long index, minterm &m) const
         //
         // I don't think index sets can skip levels at all
         //
-        MEDDLY_DCASSERT(k == fp->getNodeLevel(p));
+        MEDDLY_DCASSERT(int(k) == fp->getNodeLevel(p));
         U->initFromNode(p);
 
         //

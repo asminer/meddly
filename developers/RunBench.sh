@@ -27,8 +27,8 @@ statCmd=(
     "#e/libinfo 0 | awk '{print \$3}'"
     "#e/libinfo 5"
     "ls #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc | wc -l"
-    "wc -l #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc | tail -n 1 | awk '{print \$1}'"
-    "wc -c #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc | tail -n 1 | awk '{print \$1}'"
+    "wc -l #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc #i/meddly/*.h #i/meddly/*/*.h | tail -n 1 | awk '{print \$1}'"
+    "wc -c #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc #i/meddly/*.h #i/meddly/*/*.h | tail -n 1 | awk '{print \$1}'"
 )
 statPrint=(
     "%s"
@@ -79,6 +79,20 @@ benchCmd=(
 )
 benchTime=("")
 benchPeak=("")
+
+#
+# Args: directories to try
+#
+find_kanban()
+{
+    for arg; do
+        if [ -x "$arg/kanban" ]
+        then
+            echo "$arg"
+            return
+        fi
+    done
+}
 
 #
 # Show all results
@@ -247,15 +261,39 @@ runWithTimeout()
     done
 }
 
+
 #
-# Check for a valid directory
+# Check for the directory of executables from the list of arguments, in order.
 #
-checkDir() {
-    if [ ! -d $1 ]; then
-        echo "Can't find `basename $1`/ directory; run this script in"
-        echo "the root directory or within developers/."
-        exit 1
-    fi
+checkExeDir()
+{
+    for arg; do
+        if [ -d $arg ]; then
+            if [ -x $arg/kanban ]; then
+                echo "$arg"
+                return 0
+            fi
+        fi
+    done
+    echo "Can't find directory of executables; run this script in" > /dev/stderr
+    echo "the build directory, the root directory, or within developers/." > /dev/stderr
+    exit 1
+}
+
+#
+# Check for a valid directory from the list of arguments, in order.
+#
+checkDir()
+{
+    for arg; do
+        if [ -d $1 ]; then
+            echo "$1"
+            return 0
+        fi
+    done
+    echo "Can't find `basename $1`/ directory; run this script in" > /dev/stderr
+    echo "the build directory, the root directory, or within developers/." > /dev/stderr
+    exit 1
 }
 
 
@@ -286,7 +324,7 @@ trap bailout INT
 # Process switches (these are new!)
 #
 
-MPATH=""
+MPATH="."
 BPATH=""
 HTMLFILE=""
 TEXTFILE=""
@@ -317,17 +355,24 @@ done
 #
 # Find examples and source directories
 #
-
-if [ "$MPATH" ]; then
-    EXDIR="$MPATH/examples"
-    SRCDIR="$MPATH/src"
-elif [ -d "examples" ]; then
-    EXDIR="examples"
-    SRCDIR="src"
-else
-    EXDIR="../examples"
-    SRCDIR="../src"
+EXDIR=`find_kanban examples build-release/examples ../build-release/examples`
+if [ ! "$EXDIR" ]
+then
+    echo
+    echo "Couldn't find examples directory with executables. Run this script in,"
+    echo "or pass using -d, the build directory or the root or developers"
+    echo "directory, if the build directory is build-release/"
+    echo
+    exit 1
 fi
+MPATH="`dirname $EXDIR`/.."
+SRCDIR=`checkDir $MPATH/src`
+if [ -f "$SRCDIR/meddly.h" ]; then
+    INCDIR=""
+else
+    INCDIR=`checkDir $MPATH/include`
+fi
+
 
 if [ "$BPATH" ]; then
     if [ ! -d $BPATH ]; then
@@ -344,9 +389,6 @@ if [ "$BPATH" ]; then
     TEXTFILE=`printf "%s/bench.%03d.txt" "$BPATH" "$counter"`
 fi
 
-checkDir $EXDIR
-checkDir $SRCDIR
-
 if [ ! -f $EXDIR/kanban ]; then
     echo "Didn't find executable $EXDIR/kanban"
     exit 1
@@ -359,12 +401,18 @@ if [ "$HTMLFILE" ]; then
     echo Writing html summary to file: $HTMLFILE
 fi
 
+echo "Using executable directory $EXDIR"
+echo "Using source directory $SRCDIR"
+if [ "$INCDIR" ]; then
+    echo "Using include directory $INCDIR"
+fi
+
 #
 # Determine stats
 #
 
 for i in ${!statName[@]}; do
-    cmd=`sed "s|#e|$EXDIR|g" <<< "${statCmd[$i]}" | sed "s|#s|$SRCDIR|g"`
+    cmd=`sed "s|#e|$EXDIR|g" <<< "${statCmd[$i]}" | sed "s|#s|$SRCDIR|g" | sed "s|#i|$INCDIR|g"`
     statResult[$i]=`echo "$cmd" | bash 2> /dev/null`
 done
 if [ ! "$MPATH" ]; then

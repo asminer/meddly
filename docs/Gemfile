@@ -3,3 +3,6 @@ gem "github-pages", group: :jekyll_plugins
 gem "jekyll-remote-theme"
 gem "jekyll-include-cache"
 gem "webrick"
+gem "csv"
+gem "bigdecimal"
+gem "liquid", "~> 4.0.4"

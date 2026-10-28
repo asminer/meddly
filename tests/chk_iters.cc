@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 #include <iostream>
 
-#include "randomize.h"
+#include "utils/randomize.h"
 
 //
 // Minterm generators :)
@@ -83,7 +83,7 @@ void test_sets(domain* D, char reduction, range_type rt, edge_labeling el,
     //
 
     while (mtcoll.size() < mtcoll.maxsize()) {
-        SG.randomizeMinterm(mtcoll.unused(), rt);
+        SG.randomizeMinterm(mtcoll.unused());
         mtcoll.unused().setValue( vals[mtcoll.size() % vals.size()] );
         mtcoll.pushUnused();
     }
@@ -224,7 +224,7 @@ void test_rels(domain* D, char reduction, range_type rt, edge_labeling el,
     //
 
     while (mtcoll.size() < mtcoll.maxsize()) {
-        RG.randomizeMinterm(mtcoll.unused(), rt);
+        RG.randomizeMinterm(mtcoll.unused());
         mtcoll.unused().setValue( vals[mtcoll.size() % vals.size()] );
         mtcoll.pushUnused();
     }
@@ -291,7 +291,7 @@ void test_rels(domain* D, char reduction, range_type rt, edge_labeling el,
  *
  */
 
-int main(int argc, const char** argv)
+int main(int, const char** argv)
 {
     using namespace std;
 

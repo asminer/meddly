@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "prepostplus.h"
-#include "apply_base.h"
-#include "../forest_levels.h"
+#include "meddly/defines.h"
+#include "meddly/operations/prepostplus.h"
+#include "meddly/operations/apply_base.h"
+#include "meddly/forest_levels.h"
 
 namespace MEDDLY {
     class prepostplus_evplus;
@@ -85,7 +85,7 @@ MEDDLY::ct_entry_key* MEDDLY::prepostplus_evplus::findResult(long aev, node_hand
 }
 
 void MEDDLY::prepostplus_evplus::saveResult(ct_entry_key* Key,
-  long aev, node_handle a, long bev, node_handle b, long cev, node_handle c)
+  long aev, node_handle, long bev, node_handle, long cev, node_handle c)
 {
   CTresult[0].reset();
   CTresult[0].writeL(c == 0 ? 0L : cev - aev - bev);

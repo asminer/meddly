@@ -16,9 +16,9 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "evmdd_pluslong.h"
+#include "meddly/forests/evmdd_pluslong.h"
 
-#include "../unique_table.h"
+#include "meddly/unique_table.h"
 
 // ******************************************************************
 // *                                                                *
@@ -66,7 +66,7 @@ void MEDDLY::evmdd_pluslong
 void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
 {
   MEDDLY_DCASSERT(level >= 1);
-  MEDDLY_DCASSERT(level < getNumVariables());
+  MEDDLY_DCASSERT(level < int(getNumVariables()));
 
   int hvar = getVarByLevel(level + 1);  // The variable at the higher level
   int lvar = getVarByLevel(level);    // The variable at the lower level
@@ -92,7 +92,7 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
     unpacked_node* nr = unpacked_node::newFromNode(this, hnodes[i], FULL_ONLY);
 
     MEDDLY_DCASSERT(nr->getLevel() == level + 1);
-    MEDDLY_DCASSERT(nr->getSize() == hsize);
+    MEDDLY_DCASSERT(int(nr->getSize()) == hsize);
 
     for (int j = 0; j < hsize; j++) {
       if (isLevelAbove(getNodeLevel(nr->down(j)), level - 1)) {
@@ -146,7 +146,7 @@ void MEDDLY::evmdd_pluslong::swapAdjacentVariables(int level)
             unpacked_node::newFromNode(this, high_nr->down(j), FULL_ONLY);
         // unpacked_node* nr = newUnpacked(high_nr->down(j), FULL_ONLY);
 
-        MEDDLY_DCASSERT(nr->getSize() == lsize);
+        MEDDLY_DCASSERT(int(nr->getSize()) == lsize);
         for (int k = 0; k < lsize; k++) {
           children[j][k] = nr->down(k);
 

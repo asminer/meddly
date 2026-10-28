@@ -16,10 +16,10 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "oper_satur.h"
-#include "error.h"
-#include "forest.h"
-#include "dd_edge.h"
+#include "meddly/oper_satur.h"
+#include "meddly/error.h"
+#include "meddly/forest.h"
+#include "meddly/dd_edge.h"
 
 // ******************************************************************
 // *                  saturation_operation methods                  *
@@ -51,7 +51,7 @@ MEDDLY::saturation_operation::checkForestCompatibility() const
 }
 
 bool
-MEDDLY::saturation_operation::isReachable(const dd_edge& a, const dd_edge& c)
+MEDDLY::saturation_operation::isReachable(const dd_edge&, const dd_edge&)
 {
     throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }

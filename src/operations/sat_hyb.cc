@@ -16,27 +16,27 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "relation_node.h"
+#include "meddly/defines.h"
+#include "meddly/relation_node.h"
 //#include "event_ordering.h"
-#include "sat_hyb.h"
+#include "meddly/operations/sat_hyb.h"
 #include <typeinfo> // for "bad_cast" exception
 #include <set>
 #include <map>
 #include <vector>
 #include <algorithm>
 
-#include "../operators.h"
-#include "../minterms.h"
-#include "../ct_entry_key.h"
-#include "../ct_entry_result.h"
-#include "../compute_table.h"
-#include "../oper_unary.h"
-#include "../oper_binary.h"
-#include "../oper_satur.h"
-#include "../ops_builtin.h"
-#include "../sat_relations.h"
-#include "../forest_levels.h"
+#include "meddly/operators.h"
+#include "meddly/minterms.h"
+#include "meddly/ct_entry_key.h"
+#include "meddly/ct_entry_result.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_unary.h"
+#include "meddly/oper_binary.h"
+#include "meddly/oper_satur.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/sat_relations.h"
+#include "meddly/forest_levels.h"
 
    #define OUT_OF_BOUNDS -1
    #define NOT_KNOWN -2
@@ -97,7 +97,7 @@ protected:
     CT0->recycle(CTsrch);
   }
   inline node_handle saveSaturateResult(ct_entry_key* Key,
-                                        node_handle a, node_handle b)
+                                        node_handle, node_handle b)
   {
     CTresult[0].reset();
     CTresult[0].writeN(b);
@@ -142,7 +142,7 @@ protected:
     CT0->recycle(CTsrch);
   }
   inline node_handle saveResult(ct_entry_key* Key,
-                                node_handle a, node_handle* b, int num_se, node_handle c)
+                                node_handle, node_handle*, int, node_handle c)
   {
     CTresult[0].reset();
     CTresult[0].writeN(c);
@@ -179,25 +179,25 @@ protected:
     }
     inline void add(int i) {
         MEDDLY_CHECK_RANGE(0, i, size);
-      if (NOTINQ != data[i]) return;
-      if (NULPTR == head) {
-        // empty list
-        head = i;
-      } else {
-        // not empty list
-          MEDDLY_CHECK_RANGE(0, tail, size);
-        data[tail] = i;
-      }
-      tail = i;
-      data[i] = NULPTR;
+        if (NOTINQ != data[i]) return;
+        if (NULPTR == head) {
+            // empty list
+            head = i;
+        } else {
+            // not empty list
+            MEDDLY_CHECK_RANGE(0, tail, size);
+            data[tail] = i;
+        }
+        tail = i;
+        data[i] = NULPTR;
     }
     inline int remove() {
         MEDDLY_CHECK_RANGE(0, head, size);
-      int ans = head;
-      head = data[head];
-      data[ans] = NOTINQ;
-      MEDDLY_CHECK_RANGE(0, ans, size);
-      return ans;
+        int ans = head;
+        head = data[head];
+        data[ans] = NOTINQ;
+        MEDDLY_CHECK_RANGE(0, ans, size);
+        return ans;
     }
   };
 
@@ -360,7 +360,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
 
   // indexes to explore
   indexq* queue = useIndexQueue(nb.getSize());
-  for (int i = 0; i < nb.getSize(); i++) {
+  for (int i = 0; i < int(nb.getSize()); i++) {
     if (nb.down(i)) {
       queue->add(i);
     }
@@ -437,12 +437,12 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         if(imFlag) {
          j =  Rn[event_Ru_Rn_index[ei]]->nextOf(i);
          if(j==-1) continue; // Not enabled
-         if (j < nb.getSize() && -1==nb.down(j)) continue;
+         if (j < int(nb.getSize()) && -1==nb.down(j)) continue;
          seHandlesForRecursion[0]=Rn[event_Ru_Rn_index[ei]]->getDown();
         } else {
           j = Rp->index(jz);
           if(j==-1) continue; // Not enabled
-          if (j < nb.getSize() && -1==nb.down(j)) continue;
+          if (j < int(nb.getSize()) && -1==nb.down(j)) continue;
           seHandlesForRecursion[which_se+does_rn_exist] = Rp->down(jz);
         }
 
@@ -454,7 +454,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::saturateHelper(unpacked_node& nb)
         if(!rel->isConfirmedState(level,j))
            rel->confirm(level,j);
 
-        if(j>=nb.getSize())
+        if(j>=int(nb.getSize()))
           {
           int new_var_bound = j+1;
           dm->enlargeVariableBound(nb.getLevel(), false, new_var_bound);
@@ -675,7 +675,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
   int j,
   int num_se, int which_se)
 {
-
+  IGNORE_UNUSED(i);
 
   if(!imFlag) {
   if(-rLevel == relF()->getNodeLevel(Ru_i))
@@ -707,7 +707,7 @@ void MEDDLY::forwd_hyb_dfs_by_events_mt::recFireHelper(
       if(!rel->isConfirmedState(rLevel,j)) // if not confirmed before
       {
         rel->confirm(rLevel,j); // confirm and enlarge
-        if (j >= nb->getSize()) {
+        if (j >= int(nb->getSize())) {
           int new_var_bound = j+1;
           domain* dm = resF->getDomain();
           dm->enlargeVariableBound(nb->getLevel(), false, new_var_bound);

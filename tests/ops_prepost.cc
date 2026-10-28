@@ -26,9 +26,9 @@
 #include <iostream>
 #include <iomanip>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 
-#include "randomize.h"
+#include "utils/randomize.h"
 
 // #define SHOW_INITIAL
 // #define SHOW_GRAPH
@@ -450,6 +450,11 @@ void testSets(domain* D, range_type RT, edge_labeling EL, const policies &sp,
 
 void testRels(domain* D, range_type RT, edge_labeling EL, policies sp, policies rp)
 {
+    (void) D;
+    (void) RT;
+    (void) EL;
+    (void) sp;
+    (void) rp;
 }
 
 int main(int argc, const char** argv)

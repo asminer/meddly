@@ -16,13 +16,13 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "copy.h"
+#include "meddly/defines.h"
+#include "meddly/operations/copy.h"
 
-#include "../oper_unary.h"
-#include "../ct_vector.h"
-#include "../forest_levels.h"
-#include "../forest_edgerules.h"
+#include "meddly/oper_unary.h"
+#include "meddly/ct_vector.h"
+#include "meddly/forest_levels.h"
+#include "meddly/forest_edgerules.h"
 
 namespace MEDDLY {
     class copy_inforest;
@@ -36,7 +36,7 @@ namespace MEDDLY {
 // #define NEVER_USE_RELNODES
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 // ******************************************************************
@@ -70,7 +70,7 @@ MEDDLY::copy_inforest::~copy_inforest()
 {
 }
 
-void MEDDLY::copy_inforest::compute(int L, unsigned in,
+void MEDDLY::copy_inforest::compute(int, unsigned,
         const edge_value &av, node_handle ap, edge_value &cv, node_handle &cp)
 {
     cv = av;
@@ -112,6 +112,9 @@ class MEDDLY::copy_MT : public unary_operation {
                 v.show(out);
                 out << ", " << p << ">";
             }
+#else
+            IGNORE_UNUSED(v);
+            IGNORE_UNUSED(p);
 #endif
         }
 
@@ -168,6 +171,7 @@ void MEDDLY::copy_MT::compute(int L, unsigned in,
 #ifdef TRACE
     out.indentation(0);
 #endif
+    IGNORE_UNUSED(av);
     MEDDLY_DCASSERT(av.isVoid());
     cv.set();
     _compute(L, in, ap, cv, cp);
@@ -513,6 +517,9 @@ class MEDDLY::copy_EV_fast : public unary_operation {
                 v.show(out);
                 out << ", " << p << ">";
             }
+#else
+            IGNORE_UNUSED(v);
+            IGNORE_UNUSED(p);
 #endif
         }
 
@@ -746,6 +753,9 @@ namespace MEDDLY {
                     v.show(out);
                     out << ", " << p << ">";
                 }
+#else
+                IGNORE_UNUSED(v);
+                IGNORE_UNUSED(p);
 #endif
             }
 
@@ -1092,6 +1102,7 @@ MEDDLY::COPY_factory::build_new(forest* arg, forest* res)
                 if (res->getRangeType() == range_type::REAL) {
                     return new copy_EV_fast(arg, res);
                 }
+                /* fallthrough */
 
             default:
                 throw error(error::TYPE_MISMATCH, __FILE__, __LINE__);

@@ -16,12 +16,12 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "dd_edge.h"
-#include "forest.h"
-#include "node_marker.h"
+#include "meddly/dd_edge.h"
+#include "meddly/forest.h"
+#include "meddly/node_marker.h"
 
-#include "operators.h"
-#include "io_mdds.h"
+#include "meddly/operators.h"
+#include "meddly/io_mdds.h"
 
 #include <vector>
 #include <string>
@@ -674,5 +674,8 @@ void MEDDLY::mdd_reader::handleError(input &s, error &e) const
     }
     std::cerr << std::endl;
     throw e;
+#else
+    IGNORE_UNUSED(s);
+    IGNORE_UNUSED(e);
 #endif
 }

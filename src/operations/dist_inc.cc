@@ -16,13 +16,13 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../defines.h"
-#include "dist_inc.h"
+#include "meddly/defines.h"
+#include "meddly/operations/dist_inc.h"
 
-#include "../ct_vector.h"
-#include "../compute_table.h"
-#include "../oper_unary.h"
-#include "../forest_levels.h"
+#include "meddly/ct_vector.h"
+#include "meddly/compute_table.h"
+#include "meddly/oper_unary.h"
+#include "meddly/forest_levels.h"
 
 namespace MEDDLY {
     class dist_inc_mt;
@@ -34,10 +34,10 @@ namespace MEDDLY {
 // #define TRACE_IC
 
 #ifdef TRACE
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 #ifdef TRACE_IC
-#include "../operators.h"
+#include "meddly/operators.h"
 #endif
 
 // ******************************************************************
@@ -101,6 +101,7 @@ void MEDDLY::dist_inc_mt::compute(int L, unsigned in,
     out.indentation(0);
     out << "Starting top-level dist_inc_mt::compute #" << top_count << "\n";
 #endif
+    IGNORE_UNUSED(av);
     MEDDLY_DCASSERT(av.isVoid());
     cv.set();
     _compute(L, in, ap, cp);

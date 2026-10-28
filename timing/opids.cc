@@ -20,10 +20,10 @@
 #include <iomanip>
 #include <vector>
 
-#include "../src/meddly.h"
-#include "timer.h"
-#include "reporting.h"
-#include "park_random.h"
+#include "meddly/meddly.h"
+#include "utils/timer.h"
+#include "utils/reporting.h"
+#include "utils/park_random.h"
 
 using namespace MEDDLY;
 

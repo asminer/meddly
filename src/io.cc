@@ -16,14 +16,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
 // TODO: Testing
 
-#include "defines.h"
-
-#include "io.h"
-#include "error.h"
+#include "meddly/defines.h"
+#include "meddly/io.h"
+#include "meddly/error.h"
 
 // ******************************************************************
 // *                                                                *
@@ -156,7 +153,7 @@ int MEDDLY::istream_input::get_char()
     // TBD - how to deal with errors?
 }
 
-void MEDDLY::istream_input::unget(char x)
+void MEDDLY::istream_input::unget(char /*x*/)
 {
     in.unget();
 }

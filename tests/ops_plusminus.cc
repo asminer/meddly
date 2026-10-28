@@ -24,9 +24,9 @@
 #include <cstdlib>
 #include <cassert>
 
-#include "../src/meddly.h"
+#include "meddly/meddly.h"
 
-#include "randomize.h"
+#include "utils/randomize.h"
 
 vectorgen SG(MEDDLY::SET, 5, 4);
 vectorgen RG(MEDDLY::RELATION, 5, 2);

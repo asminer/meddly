@@ -16,7 +16,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "evmdd.h"
+#include "meddly/forests/evmdd.h"
 
 MEDDLY::evmdd_forest
 ::evmdd_forest(domain* d, range_type t, edge_labeling ev,
@@ -24,17 +24,17 @@ MEDDLY::evmdd_forest
 {
 }
 
-void MEDDLY::evmdd_forest::swapAdjacentVariables(int level)
+void MEDDLY::evmdd_forest::swapAdjacentVariables(int)
 {
 	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-void MEDDLY::evmdd_forest::moveDownVariable(int high, int low)
+void MEDDLY::evmdd_forest::moveDownVariable(int, int)
 {
 	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
-void MEDDLY::evmdd_forest::moveUpVariable(int low, int high)
+void MEDDLY::evmdd_forest::moveUpVariable(int, int)
 {
 	throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }

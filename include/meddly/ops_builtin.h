@@ -1,0 +1,307 @@
+/*
+    Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
+    Copyright (C) 2009, Iowa State University Research Foundation, Inc.
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef MEDDLY_OPS_BUILTIN_H
+#define MEDDLY_OPS_BUILTIN_H
+
+#include "oper.h"
+#include "initializer.h"
+
+namespace MEDDLY {
+
+    // ******************************************************************
+    // *                                                                *
+    // *                  "built-in"  unary operations                  *
+    // *                                                                *
+    // ******************************************************************
+
+    class unary_factory;
+
+    /// Bogus unary operation that always fails.
+    /// Useful for defaults or errors.
+    unary_factory& BOGUS_UNARY();
+
+    /// Return the number of variable assignments
+    /// so that the function evaluates to non-zero.
+    unary_factory& CARDINALITY();
+
+    /// For BOOLEAN forests, flip the return values.
+    unary_factory& COMPLEMENT();
+
+    /// Convert MDD to EV+MDD index set.  A special case of COPY, really.
+    unary_factory& CONVERT_TO_INDEX_SET();
+
+    /// Copy a function across forests, with the same domain.
+    unary_factory& COPY();
+
+    /// Extract cycles (EV+MDD) from transitive closure (EV+MxD)
+    unary_factory& CYCLE();
+
+    /// Increment a multi-terminal distance function.
+    unary_factory& DIST_INC();
+
+    /// Find the largest value returned by the function.
+    unary_factory& MAX_RANGE();
+
+    /// Find the smallest value returned by the function.
+    unary_factory& MIN_RANGE();
+
+    // ******************************************************************
+    // *                                                                *
+    // *                  "built-in" binary operations                  *
+    // *                                                                *
+    // ******************************************************************
+
+    class binary_operation; // to be removed
+    class binary_factory;
+
+    /// Bogus unary operation that always fails.
+    /// Useful for defaults or errors.
+    binary_factory& BOGUS_BINARY();
+
+    /// Set difference
+    binary_factory& DIFFERENCE();
+
+    /// Set intersection
+    binary_factory& INTERSECTION();
+
+    /// Set union
+    binary_factory& UNION();
+
+    /// Cross product: operands are sets, result is a relation.
+    binary_factory& CROSS();
+
+    /// The maximum of two functions, with range_type INTEGER or REAL
+    binary_factory& MAXIMUM();
+
+    /// The minimum of two functions, with range_type INTEGER or REAL
+    binary_factory& MINIMUM();
+
+    /// Like minimum, except negatives mean infinity
+    binary_factory& DIST_MIN();
+
+    /// Add two functions, with range type INTEGER and REAL
+    binary_factory& PLUS();
+
+    /// Subtract two functions, with range type INTEGER and REAL
+    binary_factory& MINUS();
+
+    /// Multiply two functions, with range type INTEGER and REAL
+    binary_factory& MULTIPLY();
+
+    /// Divide two functions, with range type INTEGER and REAL
+    binary_factory& DIVIDE();
+
+    /// Take the remainder of two functions, with range type INTEGER
+    binary_factory& MODULO();
+
+    /// Compare for equality, two functions with range type INTEGER or REAL
+    binary_factory& EQUAL();
+
+    /// Compare for inequality, two functions with range type INTEGER or REAL
+    binary_factory& NOT_EQUAL();
+
+    /// Compare for <, two functions with range type INTEGER or REAL
+    binary_factory& LESS_THAN();
+
+    /// Compare for <=, two functions with range type INTEGER or REAL
+    binary_factory& LESS_THAN_EQUAL();
+
+    /// Compare for >, two functions with range type INTEGER or REAL
+    binary_factory& GREATER_THAN();
+
+    /// Compare for >=, two functions with range type INTEGER or REAL
+    binary_factory& GREATER_THAN_EQUAL();
+
+    /// Follow a transition relation, backwards, for one step.
+    binary_factory& PRE_IMAGE();
+
+    /// Follow a transition relation, forwards, for one step.
+    binary_factory& POST_IMAGE();
+
+    /// Vector-matrix multiplication.
+    binary_factory& VM_MULTIPLY();
+
+    /// Matrix-vector multiplication.
+    binary_factory& MV_MULTIPLY();
+
+    /*
+        Forward and backward reachability.
+        Repeated application of PRE_IMAGE or POST_IMAGE, until fixed point.
+
+        These should all take a boolean parameter, for forward (true)
+        or backward (false).
+
+        Names should be REACHABLE_(algorithm description)
+
+    */
+
+    /// Reachability using traditional algorithm, with frontier set.
+    binary_factory& REACHABLE_TRAD_FS(bool fwd);
+
+    /// Reachability using traditional algorithm, without frontier set.
+    binary_factory& REACHABLE_TRAD_NOFS(bool fwd);
+
+    /// Forward reachability using saturation
+    binary_factory& REACHABLE_SATUR(bool fwd, int version=1);
+
+
+#ifdef ALLOW_DEPRECATED_0_18_1
+
+    /// Deprecated; use REACHABLE_TRAD_NOFS(true)
+    binary_factory& REACHABLE_STATES_BFS();
+
+    /// Deprecated; use REACHABLE_TRAD_NOFS(false)
+    binary_factory& REVERSE_REACHABLE_BFS();
+
+    /// Deprecated; use REACHABLE_SATUR(true, 1)
+    binary_operation* REACHABLE_STATES_DFS(forest* a, forest* b, forest* c);
+
+    /// Deprecated; use REACHABLE_SATUR(false, 1)
+    binary_operation* REVERSE_REACHABLE_DFS(forest* a, forest* b, forest* c);
+#endif
+
+    // ======================================================================
+
+    /** Plus operation used to compute transitive closure and further
+        minimum witness. The first operand must be an EV+MxD and the second
+        operand must be an EV+MDD. The result is an EV+MxD.
+    */
+    binary_operation* PRE_PLUS(forest* a, forest* b, forest* c);
+    binary_operation* POST_PLUS(forest* a, forest* b, forest* c);
+
+    /** Image operations on a set-of-states with a transition function.
+        The first operand must be the set-of-states and the second operand
+        must be the transition function. The result is a set-of-states that
+        must be stored in the same forest as the first operand.
+
+        Applies to:
+        PRE_IMAGE, POST_IMAGE,
+        TC_POST_IMAGE,
+        REACHABLE_STATES_DFS, REACHABLE_STATES_BFS,
+        REVERSE_REACHABLE_DFS, REVERSE_REACHABLE_BFS.
+    */
+    binary_operation* TC_POST_IMAGE(forest* a, forest* b, forest* c);
+
+    /** Matrix multiplication, where the first argument is a matrix (MXD),
+        the second argument is a matrix (MXD),
+        and the result is a matrix (MXD),
+        such that, C[m][n] += A[m][i] * B[i][n], for all m, n and i.
+    */
+    binary_operation* MM_MULTIPLY(forest* a, forest* b, forest* c);
+
+
+    // ******************************************************************
+    // *                                                                *
+    // *                "built-in"  numerical operations                *
+    // *                                                                *
+    // ******************************************************************
+
+    class numerical_operation;
+    class dd_edge;
+
+    numerical_operation* EXPLVECT_MATR_MULT(const dd_edge &xind,
+            const dd_edge &A, const dd_edge &yind);
+
+    numerical_operation* MATR_EXPLVECT_MULT(const dd_edge &xind,
+            const dd_edge &A, const dd_edge &yind);
+
+
+    // ******************************************************************
+    // *                                                                *
+    // *                  Named saturation operations                   *
+    // *                                                                *
+    // ******************************************************************
+
+    class saturation_operation;
+    class pregen_relation;
+    class otf_relation;
+    class implicit_relation;
+    class hybrid_relation;
+
+    saturation_operation* SATURATION_FORWARD(forest* inF,
+            pregen_relation* nsf, forest* outf);
+    saturation_operation* SATURATION_BACKWARD(forest* inF,
+            pregen_relation* nsf, forest* outf);
+
+    saturation_operation* SATURATION_OTF_FORWARD(forest* inF,
+            otf_relation* nsf, forest* outf);
+    saturation_operation* SATURATION_OTF_BACKWARD(forest* inF,
+            otf_relation* nsf, forest* outf);
+
+    saturation_operation* SATURATION_IMPL_FORWARD(forest* inF,
+            implicit_relation* nsf, forest* outf);
+
+    saturation_operation* SATURATION_HYB_FORWARD(forest* inF,
+            hybrid_relation* nsf, forest* outf);
+
+
+    // ******************************************************************
+    // *                                                                *
+    // *               Constrained saturation operations                *
+    // *                                                                *
+    // ******************************************************************
+
+    class ternary_operation;
+
+    ternary_operation* CONSTRAINED_BACKWARD_BFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+    ternary_operation* CONSTRAINED_FORWARD_DFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+    ternary_operation* CONSTRAINED_BACKWARD_DFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+    ternary_operation* TRANSITIVE_CLOSURE_DFS(forest* consF, forest* inF,
+            forest* relF, forest* outF);
+
+
+    // ******************************************************************
+    // *                                                                *
+    // *                   Initialization  front-end                    *
+    // *                                                                *
+    // ******************************************************************
+
+    class builtin_init : public initializer_list {
+            std::vector <unary_factory*> all_unary;
+            std::vector <binary_factory*> all_binary;
+        public:
+            builtin_init(initializer_list* p);
+
+            virtual void setup();
+            virtual void cleanup();
+
+            inline unsigned numUnary() const {
+                return all_unary.size();
+            }
+            inline const unary_factory* getUnary(unsigned i) const {
+                MEDDLY_CHECK_BELOW(i, all_unary.size());
+                return all_unary[i];
+            }
+
+            inline unsigned numBinary() const {
+                return all_binary.size();
+            }
+            inline const binary_factory* getBinary(unsigned i) const {
+                MEDDLY_CHECK_BELOW(i, all_binary.size());
+                return all_binary[i];
+            }
+
+    };
+
+};
+
+#endif // #include guard

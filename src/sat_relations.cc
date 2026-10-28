@@ -16,12 +16,12 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "sat_relations.h"
-#include "ops_builtin.h"
-#include "operators.h"
-#include "minterms.h"
-#include "relation_node.h"
-#include "forest_levels.h"
+#include "meddly/sat_relations.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/operators.h"
+#include "meddly/minterms.h"
+#include "meddly/relation_node.h"
+#include "meddly/forest_levels.h"
 
 #include <algorithm>    // for std::sort
 
@@ -229,7 +229,7 @@ void MEDDLY::pregen_relation::splitMxd(splittingOption split)
     for (unsigned i = 0; i < Mu->getSize(); i++) {
       // Initialize column reader
       if (isLevelAbove(-k, mxdF->getNodeLevel(Mu->down(i)))) {
-        Mp->initIdentity(-k, i, Mu->down(i), FULL_ONLY);
+        Mp->initIdentity(-k, i, Mu->down(i));
       } else {
         Mp->initFromNode(Mu->down(i));
       }
@@ -505,7 +505,7 @@ void MEDDLY::otf_subevent::clearMinterms()
 }
 
 
-void MEDDLY::otf_subevent::confirm(otf_relation& rel, int v, int i) {
+void MEDDLY::otf_subevent::confirm(otf_relation&, int, int) {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
@@ -1194,10 +1194,17 @@ void MEDDLY::otf_relation::bindExtensibleVariables() {
   domain* ed = mxdF->getDomain();
   for (int k = 1; k < num_levels; k++) {
     int bound = 0;
+#ifdef DEVELOPMENT_CODE
     int n_confirmed = 0;
+#endif
 
     for (int j = 0; j < size_confirmed[k]; j++) {
-      if (confirmed[k][j]) { bound = j+1; n_confirmed++; }
+      if (confirmed[k][j]) {
+        bound = j+1;
+#ifdef DEVELOPMENT_CODE
+        n_confirmed++;
+#endif
+      }
     }
 
     MEDDLY_DCASSERT(bound > 0);
@@ -1277,7 +1284,7 @@ double MEDDLY::otf_relation::getArcCount(
 }
 
 
-void MEDDLY::otf_relation::getBoundedMonolithicNSF(dd_edge &root) const
+void MEDDLY::otf_relation::getBoundedMonolithicNSF(dd_edge &) const
 {
   fprintf(stderr, "otf_relation::getBoundedMonolithicNSF not implemented yet\n");
   throw 42;
@@ -1673,10 +1680,17 @@ void MEDDLY::implicit_relation::bindExtensibleVariables() {
 
   for (int k = 1; k <= num_levels; k++) {
     int bound = 0;
+#ifdef DEVELOPMENT_CODE
     int n_confirmed = 0;
+#endif
 
     for (int j = 0; j < confirmed_array_size[k]; j++) {
-      if (confirmed[k][j]) { bound = j+1; n_confirmed++; }
+      if (confirmed[k][j]) {
+        bound = j+1;
+#ifdef DEVELOPMENT_CODE
+        n_confirmed++;
+#endif
+      }
     }
 
     MEDDLY_DCASSERT(bound > 0);
@@ -1925,7 +1939,7 @@ void MEDDLY::hybrid_subevent::clearMinterms()
 }
 
 
-void MEDDLY::hybrid_subevent::confirm(hybrid_relation& rel, int v, int i) {
+void MEDDLY::hybrid_subevent::confirm(hybrid_relation&, int, int) {
   throw error(error::NOT_IMPLEMENTED, __FILE__, __LINE__);
 }
 
@@ -3021,10 +3035,17 @@ void MEDDLY::hybrid_relation::bindExtensibleVariables() {
 
   for (int k = 1; k < num_levels; k++) {
     int bound = 0;
+#ifdef DEVELOPMENT_CODE
     int n_confirmed = 0;
+#endif
 
     for (int j = 0; j < confirmed_array_size[k]; j++) {
-      if (confirmed[k][j]) { bound = j+1; n_confirmed++; }
+      if (confirmed[k][j]) {
+        bound = j+1;
+#ifdef DEVELOPMENT_CODE
+        n_confirmed++;
+#endif
+      }
     }
 
     MEDDLY_DCASSERT(bound > 0);

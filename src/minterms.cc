@@ -16,14 +16,14 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "minterms.h"
+#include "meddly/minterms.h"
 
-#include "io.h"
-#include "domain.h"
-#include "forest.h"
-#include "oper_binary.h"
-#include "ops_builtin.h"
-#include "dd_edge.h"
+#include "meddly/io.h"
+#include "meddly/domain.h"
+#include "meddly/forest.h"
+#include "meddly/oper_binary.h"
+#include "meddly/ops_builtin.h"
+#include "meddly/dd_edge.h"
 
 // #define DEBUG_MOVE_VALUES
 // #define DEBUG_MOVE_PAIRS

@@ -16,7 +16,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "rel_node.h"
+#include "meddly/rel_node.h"
 
 // ******************************************************************
 // *                                                                *

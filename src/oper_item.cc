@@ -16,7 +16,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "oper_item.h"
+#include "meddly/oper_item.h"
 
 
 MEDDLY::oper_item::oper_item(opnd_type t)

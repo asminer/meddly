@@ -12,6 +12,20 @@ PID="$$"
 RUNDATE=`date +"%Y %h %d %H:%M:%S"`
 
 #
+# Args: directories to try
+#
+find_kanban()
+{
+    for arg; do
+        if [ -x "$arg/kanban" ]
+        then
+            echo "$arg"
+            return
+        fi
+    done
+}
+
+#
 # Check for a valid directory
 #
 checkDir() {
@@ -45,7 +59,7 @@ trap ctrl_c INT
 #
 
 BPATH=""
-MPATH=""
+MPATH="."
 while [ $# -gt 0 ]; do
     if [ "x$1" == "x-b" ]; then
         BPATH=$2
@@ -63,7 +77,7 @@ while [ $# -gt 0 ]; do
 
     printf "\nUsage: $0 [options]\n\nOptions:\n";
     printf "\t-b <path>   Save benchmark info to the given directory.\n"
-    printf "\t-d <path>   Directory of version to test; otherwise . or ..\n"
+    printf "\t-d <path>   Directory of version to test; otherwise .\n"
     printf "\n"
     exit 1
 done
@@ -72,16 +86,16 @@ done
 # Figure out where things are
 #
 
-if [ "$MPATH" ]; then
-    EXDIR="$MPATH/examples"
-    TDIR="$MPATH/timing"
-elif [ -d "examples" ]; then
-    EXDIR=examples
-    TDIR=timing
-else
-    EXDIR=../examples
-    TDIR=../timing
+EXDIR=`find_kanban $MPATH/examples $MPATH/build-release/examples $MPATH/../build-release/examples`
+if [ ! "$EXDIR" ]
+then
+    echo "Can't find examples directory; run this script in"
+    echo "the build directory, or within root or developers/"
+    echo "if the build directory is named build-release/"
+    exit 1
 fi
+TDIR="`dirname $EXDIR`/timing"
+
 
 if [ "$BPATH" ]; then
     if [ ! -d $BPATH ]; then
