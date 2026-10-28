@@ -26,7 +26,7 @@ statCmd=(
     "date +\"%Y %h %d %H:%M:%S\""
     "#e/libinfo 0 | awk '{print \$3}'"
     "#e/libinfo 5"
-    "ls #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc | wc -l"
+    "ls #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc #i/meddly/*.h #i/meddly/*/*.h | wc -l"
     "wc -l #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc #i/meddly/*.h #i/meddly/*/*.h | tail -n 1 | awk '{print \$1}'"
     "wc -c #s/*.h #s/*.hh #s/*.cc #s/*/*.h #s/*/*.cc #i/meddly/*.h #i/meddly/*/*.h | tail -n 1 | awk '{print \$1}'"
 )
@@ -355,7 +355,7 @@ done
 #
 # Find examples and source directories
 #
-EXDIR=`find_kanban examples build-release/examples ../build-release/examples`
+EXDIR=`find_kanban $MPATH/examples $MPATH/build-release/examples $MPATH/../build-release/examples`
 if [ ! "$EXDIR" ]
 then
     echo
