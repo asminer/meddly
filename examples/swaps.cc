@@ -234,22 +234,23 @@ int usage(const char* who)
     }
     printf("\nUsage: %s nnnn [options]\n\n", name);
     printf("\tnnnn: array size\n\n");
-    printf("\t-front: use traditional iterations with frontier\n");
-    printf("\t-trad:  use traditional iterations, no frontier\n\n");
-    printf("\t-dfs: use default saturation\n");
+    printf("\t-showrel: Show the relation and quit.\n");
+    printf("\t-front:   use traditional iterations with frontier\n");
+    printf("\t-trad:    use traditional iterations, no frontier\n\n");
+    printf("\t-dfs:     use default saturation\n");
 #ifdef ALLOW_DEPRECATED_0_18_1
-    printf("\t-msat: use monolithic saturation\n");
+    printf("\t-msat:    use monolithic saturation\n");
 #endif
-    printf("\t-sat1: use saturation v1, new implementation (default)\n");
-    printf("\t-sat2: use saturation v2\n\n");
+    printf("\t-sat1:    use saturation v1, new implementation (default)\n");
+    printf("\t-sat2:    use saturation v2\n\n");
     //  printf("\t-esat: use saturation by events\n");
     //  printf("\t-ksat: use saturation by levels\n");
-    printf("\t-alt: use alternate description\n\n");
-    printf("\t-v: verbose, show iterations\n");
+    printf("\t-alt:     use alternate description\n\n");
+    printf("\t-v:       verbose, show iterations\n");
     return 1;
 }
 
-void runWithArgs(int N, char method, bool alternate)
+void runWithArgs(int N, char method, bool alternate, bool showrel)
 {
     timer watch;
 
@@ -260,7 +261,7 @@ void runWithArgs(int N, char method, bool alternate)
 
     /*
        Initialize domain
-       */
+    */
     int* sizes = new int[N];
     for (int i=0; i<N; i++) sizes[i] = N;
     domain* D = domain::createBottomUp(sizes, N);
@@ -270,7 +271,7 @@ void runWithArgs(int N, char method, bool alternate)
 
     /*
        Build initial state
-     */
+    */
     minterm initial(mdd);
     for (unsigned i=initial.getNumVars(); i; --i) {
         initial.setVar(i, i-1);
@@ -318,10 +319,12 @@ void runWithArgs(int N, char method, bool alternate)
                 nsf.getNodeCount(), nsf.getEdgeCount());
     }
 
-#ifdef DUMP_NSF
-    printf("Next-state function:\n");
-    nsf.show(meddlyout, 2);
-#endif
+    if (showrel) {
+        printf("Next-state function:\n");
+        FILE_output out(stdout);
+        nsf.showRelation(out);
+        return;
+    }
 
     printStats("MxD", mxd);
 
@@ -423,8 +426,13 @@ int main(int argc, const char** argv)
     char method = '1';
     bool alt = false;
     verbose = false;
+    bool show_relation = false;
 
     for (int i=1; i<argc; i++) {
+        if (0==strcmp("-showrel", argv[i])) {
+            show_relation = true;
+            continue;
+        }
         if (strcmp("-front", argv[i])==0) {
             method = 'f';
             continue;
@@ -478,7 +486,7 @@ int main(int argc, const char** argv)
     MEDDLY::initialize();
 
     try {
-        runWithArgs(N, method, alt);
+        runWithArgs(N, method, alt, show_relation);
         MEDDLY::cleanup();
         return 0;
     }

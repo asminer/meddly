@@ -1,6 +1,11 @@
 
 TO DO list
 
+examples
+    migrate simple_model stuff to rsgen_model
+    and update examples
+
+
 For I/O:
     updates to node_marker:
 

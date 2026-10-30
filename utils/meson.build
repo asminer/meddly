@@ -42,6 +42,20 @@ simple_model_dep = declare_dependency(
 
 ######################################################################
 
+rsgen_model_lib = static_library('rsgen_model',
+    sources: 'rsgen_model.cc',
+    dependencies: [ gmp_dep, meddly_dep ],
+    install: false
+)
+
+rsgen_model_dep = declare_dependency(
+    dependencies: meddly_dep,
+    include_directories: meddly_inc,
+    link_with: rsgen_model_lib
+)
+
+######################################################################
+
 zstream_lib = static_library('zstream',
     sources: 'zstream.cc',
     dependencies: meddly_dep,
