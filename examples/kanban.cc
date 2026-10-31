@@ -398,6 +398,12 @@ int main(int argc, const char** argv)
             }
             cout << "Next-state function construction took "
                  << start.get_last_seconds() << " seconds\n";
+            if (ensf) {
+                // TBD
+            } else {
+                cout << "MXD for relation requires "
+                    << nsf.getNodeCount() << " nodes" << std::endl;
+            }
             printStats("MxD", mxd);
         }
 
@@ -714,16 +720,16 @@ bool kanban::build_model()
     uplist[1].set(4,  -1);
     uplist[2].set(5,  -1);
     uplist[3].set(6,  +1);
-    uplist[3].set(9,  -1);
-    uplist[3].set(10, +1);
+    uplist[4].set(9,  -1);
+    uplist[5].set(10, +1);
     add_event(new simple_event("Ts1_23", uplist));
     // "X....+..-+..--+..",    // Ts23_4
     uplist[0].set(5,  +1);
     uplist[1].set(8,  -1);
     uplist[2].set(9,  +1);
     uplist[3].set(12, -1);
-    uplist[3].set(13, -1);
-    uplist[3].set(14, +1);
+    uplist[4].set(13, -1);
+    uplist[5].set(14, +1);
     add_event(new simple_event("Ts23_4", uplist));
 
     return true;

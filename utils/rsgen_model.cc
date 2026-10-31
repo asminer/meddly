@@ -335,7 +335,6 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
 void rsgen_model::generate()
 {
     using namespace MEDDLY;
-    std::cout << "TBD: generating\n";
 
     //
     // Policies. Might change from command line switches.
@@ -349,6 +348,7 @@ void rsgen_model::generate()
     //
 
     // TBD: distance vs reachable states
+    std::cout << "Building forests\n";
 
     Fset = forest::create(D, SET,
                 range_type::BOOLEAN,
@@ -369,6 +369,7 @@ void rsgen_model::generate()
     //
     // build initial states
     //
+    std::cout << "Building initial\n";
     minterm initial(Fset);
     build_initial(initial);
     initial.setValue(true); // unless distance...
@@ -384,12 +385,15 @@ void rsgen_model::generate()
     watch.note_time();
 
     // tbd - different things based on options
+    std::cout << "Building monolithic\n";
     build_monolithic(nsf);
 
     forest::destroy(Fmtmxd);
     watch.note_time();
     std::cout   << "Next-state function construction took "
                 << watch.get_last_seconds() << " seconds\n";
+    std::cout << "MxD for relation requires "
+              << nsf.getNodeCount() << " nodes" << std::endl;
     printStats("MxD", Fmxd);
 
     //
