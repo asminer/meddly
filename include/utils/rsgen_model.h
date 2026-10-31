@@ -27,14 +27,32 @@
  */
 class rsgen_model {
     public:
-        struct level_delta {
+        struct level_axb {
                 unsigned level;
+                int scale;
                 int delta;
             public:
-                void set(unsigned lvl, int d) {
+                //
+                // Updates the given level using
+                //  x' = a * x + d
+                //
+                void set(unsigned lvl, int a, int d) {
                     MEDDLY_DCASSERT(lvl > 0);
                     level = lvl;
+                    scale = a;
                     delta = d;
+                }
+
+                void swap(level_axb &x) {
+                    unsigned k = level;
+                    level = x.level;
+                    x.level = k;
+                    int t = scale;
+                    scale = x.scale;
+                    x.scale = t;
+                    t = delta;
+                    delta = x.delta;
+                    x.delta = t;
                 }
         };
     public:
@@ -71,10 +89,10 @@ class rsgen_model {
         };
     public:
         class simple_event : public event {
-                std::vector <level_delta> updates;
+                std::vector <level_axb> updates;
             public:
                 simple_event(const char* name,
-                        const std::vector <level_delta> &_upd);
+                        const std::vector <level_axb> &_upd);
 
                 virtual bool fire(const MEDDLY::minterm &curr,
                         MEDDLY::minterm &next);
@@ -145,6 +163,9 @@ class rsgen_model {
             events.push_back(e);
         }
 
+        void show_cardinality(const char* what,
+                const MEDDLY::dd_edge &e);
+
         inline static const char* basename(const char* path) {
             const char* b = path;
             for (; *path; path++) {
@@ -154,6 +175,13 @@ class rsgen_model {
         }
 
         static void printStats(const char* who, const MEDDLY::forest* F);
+
+        inline void set_gen_method(char g) {
+            gen_method = g;
+        }
+        inline void set_garbage(char g) {
+            garbage = g;
+        }
 
     private:
         std::vector <event*> events;    // model events
@@ -165,7 +193,10 @@ class rsgen_model {
         MEDDLY::forest* Fmtmxd; // auxiliary forest for relation, or null
 
         // generation method
-        char method;
+        char gen_method;
+
+        // garbage collection
+        char garbage;
 
         // approximate cardinalities
         bool approx;
