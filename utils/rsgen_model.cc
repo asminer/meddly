@@ -77,7 +77,7 @@ void my_progress(unsigned iter, char st)
     static timer watch;
     if (' ' == st) {
         watch.note_time();
-        std::cerr << "    Iter" << std::setw(5) << iter << ": ";
+        std::cerr << "    Iter" << std::setw(6) << iter << ": ";
         return;
     }
     if (';' == st) {
@@ -365,6 +365,10 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
     }
 #endif
 
+    //
+    // Generation algorithms
+    //
+
     if (0==strcmp(argv[i], "-front")) {
         gen_method = 'f';
         i++;
@@ -391,6 +395,24 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
         return true;
     }
 
+    //
+    // Garbage collection
+    //
+    if (0==strcmp(argv[i], "-ms")) {
+        set_garbage('m');
+        i++;
+        return true;
+    }
+    if (0==strcmp(argv[i], "-opt")) {
+        set_garbage('o');
+        i++;
+        return true;
+    }
+    if (0==strcmp(argv[i], "-pess")) {
+        set_garbage('p');
+        i++;
+        return true;
+    }
 
     return false;
 }
@@ -398,8 +420,9 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
 void rsgen_model::show_usage(std::ostream &out, const char* arg0)
 {
     if (arg0) {
-        out << "\nUsage: " << basename(arg0) << " [options]\n\n";
+        out << "\nUsage: " << basename(arg0) << " [options]\n";
     }
+    out << "\n";
 
 #ifdef HAVE_LIBGMP
     out << "\t-approx: approximate cardinalities";
@@ -414,6 +437,8 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     out << "\n";
 #endif
     out << "\n";
+    out << "    GENERATION METHODS\n";
+    out << "\n";
     out << "\t-front : use traditional iterations, with frontier\n";
     out << "\t-trad  : use traditional iterations, without frontier\n";
     out << "\t-dfs   : use default saturation (currently, -sat1)\n";
@@ -421,6 +446,12 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     out << "\t-sat2  : Saturation v2\n";
     out << "\n";
     out << "\t-vL    : Set verbosity (0..9) for traditional (default 0).\n";
+    out << "\n";
+    out << "    GARBAGE COLLECTION\n";
+    out << "\n";
+    out << "\t-ms   : mark and sweep\n";
+    out << "\t-opt  : optimistic reference counts\n";
+    out << "\t-pess : pessimistic reference counts\n";
     out << "\n";
 }
 
