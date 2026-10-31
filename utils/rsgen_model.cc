@@ -20,6 +20,7 @@
 #include "utils/timer.h"
 
 // #define DEBUG_EVENTS
+// #define DEBUG_EVENT_BUILD
 
 //
 // Add commas to long integer x
@@ -122,14 +123,6 @@ rsgen_model::simple_event::simple_event(const char* n,
         const std::vector <level_delta> &_upd)
         : rsgen_model::event(n), updates(_upd)
 {
-#ifdef DEBUG_EVENTS
-    std::cerr << "Creating event " << get_name() << " [";
-    for (unsigned u=0; u<updates.size(); u++) {
-        if (u) std::cerr << ", ";
-        std::cerr << "(" << updates[u].level << ":" << updates[u].delta << ")";
-    }
-    std::cerr << "]\n";
-#endif
 }
 
 bool rsgen_model::simple_event::fire(const MEDDLY::minterm &curr,
@@ -152,6 +145,17 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::forest* mtmxd,
         MEDDLY::dd_edge &R)
 {
     using namespace MEDDLY;
+
+#ifdef DEBUG_EVENTS
+    ostream_output out(std::cerr);
+    out << "Building nsf for event " << get_name() << " [";
+    for (unsigned u=0; u<updates.size(); u++) {
+        if (u) out << ", ";
+        out << "(" << updates[u].level << ":" << updates[u].delta << ")";
+    }
+    out << "]\n";
+#endif
+
 
     static rangeval* temp = nullptr;
     static unsigned maxBound = 1;
@@ -183,6 +187,11 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::forest* mtmxd,
     }
     mask.buildFunction(false, R);
 
+#ifdef DEBUG_EVENT_BUILD
+    out << "Event mask:\n";
+    R.showGraph(out);
+#endif
+
     //
     // Build a term for each updated variable,
     // AND it with the relations so far.
@@ -203,18 +212,28 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::forest* mtmxd,
         for (unsigned v=0; v<maxBound; v++) {
             temp[v].setInteger(int(v) + updates[u].delta);
         }
-        mtmxd->createEdgeForVar(int(i), false, xun);
+        mtmxd->createEdgeForVar(int(i), false, temp, xun);
 
         //
         // update for this variable is: xi' == xi + delta
         //
         apply(EQUAL, xpr, xun, term);
 
+#ifdef DEBUG_EVENT_BUILD
+        out << "Term at level " << i << ":\n";
+        term.showGraph(out);
+#endif
+
         //
         // AND with relation
         //
         R *= term;
     }
+
+#ifdef DEBUG_EVENTS
+    out << "Overall event:\n";
+    R.showGraph(out);
+#endif
 
     return true;
 }
