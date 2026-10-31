@@ -31,7 +31,7 @@ class rsgen_model {
                 unsigned level;
                 int delta;
             public:
-                level_delta(unsigned lvl, int d) {
+                void set(unsigned lvl, int d) {
                     MEDDLY_DCASSERT(lvl > 0);
                     level = lvl;
                     delta = d;
@@ -99,9 +99,11 @@ class rsgen_model {
 
         /**
             Show all command line switches that we know about.
-            Child class: also show usage information.
+                @param  out     Stream to write to
+                @param  arg0    Executable name to show usage,
+                                or nullptr to not show usage.
         */
-        virtual void show_usage(std::ostream &out);
+        virtual void show_usage(std::ostream &out, const char* arg0 = nullptr);
 
         /**
             Build the model.
@@ -111,14 +113,12 @@ class rsgen_model {
             This should, among other things,
                 build the domain and call set_domain(),
                 build the events and call add_event() on each.
-        */
-        virtual void build_model() = 0;
 
-        /**
-            Build the model.
-            Provided by derived classes.
+            @return true on success, false on error
+                    (assumed to be bad parameters, so
+                    we will then display usage info).
         */
-        virtual void build_events() = 0;
+        virtual bool build_model() = 0;
 
         /// Build the initial state, as a minterm.
         virtual void build_initial(MEDDLY::minterm &init) = 0;
@@ -131,6 +131,8 @@ class rsgen_model {
         */
         void generate();
 
+        /// Build a monolithic relation.
+        void build_monolithic(MEDDLY::dd_edge &R);
 
     protected:
         inline void set_domain(MEDDLY::domain* d) {
@@ -142,6 +144,16 @@ class rsgen_model {
         inline void add_event(event* e) {
             events.push_back(e);
         }
+
+        inline static const char* basename(const char* path) {
+            const char* b = path;
+            for (; *path; path++) {
+                if ('/' == *path) b = path+1;
+            }
+            return b;
+        }
+
+        static void printStats(const char* who, const MEDDLY::forest* F);
 
     private:
         std::vector <event*> events;    // model events

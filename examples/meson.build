@@ -50,7 +50,7 @@ executable(
 executable(
     'kanban',
     'kanban.cc',
-    dependencies: [ gmp_dep, meddly_dep, simple_model_dep, zstream_dep ]
+    dependencies: [ gmp_dep, meddly_dep, simple_model_dep, rsgen_model_dep, zstream_dep ]
 )
 
 ######################################################################

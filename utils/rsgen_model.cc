@@ -19,6 +19,8 @@
 #include "utils/rsgen_model.h"
 #include "utils/timer.h"
 
+// #define DEBUG_EVENTS
+
 //
 // Add commas to long integer x
 //
@@ -120,6 +122,14 @@ rsgen_model::simple_event::simple_event(const char* n,
         const std::vector <level_delta> &_upd)
         : rsgen_model::event(n), updates(_upd)
 {
+#ifdef DEBUG_EVENTS
+    std::cerr << "Creating event " << get_name() << " [";
+    for (unsigned u=0; u<updates.size(); u++) {
+        if (u) std::cerr << ", ";
+        std::cerr << "(" << updates[u].level << ":" << updates[u].delta << ")";
+    }
+    std::cerr << "]\n";
+#endif
 }
 
 bool rsgen_model::simple_event::fire(const MEDDLY::minterm &curr,
@@ -295,8 +305,12 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
     return false;
 }
 
-void rsgen_model::show_usage(std::ostream &out)
+void rsgen_model::show_usage(std::ostream &out, const char* arg0)
 {
+    if (arg0) {
+        out << "\nUsage: " << basename(arg0) << " [options]\n\n";
+    }
+
     out << "\t-approx: approximate cardinalities";
     if (approx) {
         out << " (default)";
@@ -317,3 +331,192 @@ void rsgen_model::show_usage(std::ostream &out)
     out << "\t-vL    : Set verbosity (0..9) for traditional (default 0).\n";
     out << "\n";
 }
+
+void rsgen_model::generate()
+{
+    using namespace MEDDLY;
+    std::cout << "TBD: generating\n";
+
+    //
+    // Policies. Might change from command line switches.
+    //
+    policies pmdd(false), pmxd(true);
+
+    // TBD: policy changes?
+
+    //
+    // build forests, even if we don't need them
+    //
+
+    // TBD: distance vs reachable states
+
+    Fset = forest::create(D, SET,
+                range_type::BOOLEAN,
+                edge_labeling::MULTI_TERMINAL,
+                pmdd
+    );
+    Fmxd = forest::create(D, RELATION,
+                range_type::BOOLEAN,
+                edge_labeling::MULTI_TERMINAL,
+                pmxd
+    );
+    Fmtmxd = forest::create(D, RELATION,
+                range_type::INTEGER,
+                edge_labeling::MULTI_TERMINAL,
+                pmxd
+    );
+
+    //
+    // build initial states
+    //
+    minterm initial(Fset);
+    build_initial(initial);
+    initial.setValue(true); // unless distance...
+
+    dd_edge init_state(Fset);
+    initial.buildFunction(false, init_state);
+
+    //
+    // build transition relation
+    //
+    dd_edge nsf(Fmxd);
+    timer watch;
+    watch.note_time();
+
+    // tbd - different things based on options
+    build_monolithic(nsf);
+
+    forest::destroy(Fmtmxd);
+    watch.note_time();
+    std::cout   << "Next-state function construction took "
+                << watch.get_last_seconds() << " seconds\n";
+    printStats("MxD", Fmxd);
+
+    //
+    // Set progress updates according to verbosity
+    //
+    F_prog = (verb>1) ? Fset : nullptr;
+
+    //
+    // build reachset / distance
+    //
+    dd_edge reachable(Fset);
+    watch.note_time();
+    binary_operation* rsgen = nullptr;
+    switch (method) {
+        case 't':
+            std::cout << "Building reachability set using traditional algorithm (no frontier)" << std::endl;
+            rsgen = build(REACHABLE_TRAD_NOFS(true), Fset, Fmxd, Fset);
+            if (verb) rsgen->setProgressNotifier(my_progress);
+            rsgen->compute(init_state, nsf, reachable);
+            break;
+
+        case 'f':
+            std::cout << "Building reachability set using traditional algorithm (with frontier)" << std::endl;
+            rsgen = build(REACHABLE_TRAD_FS(true), Fset, Fmxd, Fset);
+            if (verb) rsgen->setProgressNotifier(my_progress);
+            rsgen->compute(init_state, nsf, reachable);
+            break;
+
+        case 'd':
+            std::cout << "Building reachability set using default saturation" << std::endl;
+            apply(REACHABLE_SATUR(true), init_state, nsf, reachable);
+            break;
+
+        case '1':
+            std::cout << "Building reachability set using saturation v1, monolithic relation" << std::endl;
+            apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
+            break;
+
+        case '2':
+            std::cout << "Building reachability set using saturation v2, monolithic relation" << std::endl;
+            apply(REACHABLE_SATUR(true, 2), init_state, nsf, reachable);
+            break;
+
+            /*
+            case 'e':
+                cout << "Building reachability set using explicit search\n";
+                cout << "Using batch size: " << batchsize << endl;
+                explicitReachset(kanban, 16, mdd, init_state, reachable, batchsize);
+                break;
+
+            case 'k':
+            case 's':
+                cout << "Building reachability set using saturation, relation";
+                if ('k'==method)  cout << " by levels" << endl;
+                else              cout << " by events" << endl;
+                sat = SATURATION_FORWARD(mdd, ensf, mdd);
+                if (0==sat) {
+                    throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+                }
+                sat->compute(init_state, reachable);
+                break;
+                */
+
+            default:
+                std::cout << "Error - unknown method '" << method << "'\n";
+                exit(2);
+        };
+        watch.note_time();
+        std::cout << "Done\n";
+        std::cout   << "Reachability set construction took "
+                    << watch.get_last_seconds() << " seconds" << std::endl;
+        std::cout   << "Reachability set uses "
+                    << reachable.getNodeCount() << " nodes" << std::endl;
+
+        //
+        // Write to terminal
+        //
+        // if (show_dd) {
+            // cout << "Reachable states MDD:\n";
+            // reachable.showGraph(meddlyout);
+        // }
+
+        //
+        // Write to file
+        //
+        // compressed_output writer(outfile);
+        // if (writer) {
+            // cout << "Writing to " << outfile << "\n";
+            // d->write(writer.outstream());
+            // mdd_writer mywriter(writer.outstream(), mdd);
+            // mywriter.writeRootEdge(reachable);
+            // mywriter.finish();
+        // }
+
+        printStats("MDD", Fset);
+
+
+
+}
+
+void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
+{
+    Fmxd->createConstant(false, R);
+    MEDDLY::dd_edge Re(Fmxd);
+    for (unsigned e=0; e<events.size(); e++) {
+        if (events[e]) {
+            events[e]->build_nsf(Fmtmxd, Re);
+            R += Re;
+        }
+    }
+}
+
+
+void rsgen_model::printStats(const char* who, const MEDDLY::forest* F)
+{
+    using namespace MEDDLY;
+    if (F) {
+        ostream_output meddlyout(std::cout);
+        meddlyout << who << " stats:\n";
+        F->reportStats(meddlyout, "\t",
+            HUMAN_READABLE_MEMORY | BASIC_STATS
+            | EXTRA_STATS
+            | STORAGE_STATS
+            // | STORAGE_DETAILED
+            // | HOLE_MANAGER_STATS
+            // | HOLE_MANAGER_DETAILED
+        );
+    }
+}
+
