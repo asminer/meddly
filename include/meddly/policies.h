@@ -216,8 +216,9 @@ namespace MEDDLY {
     const display_flags SHOW_TERMINALS    = 0x01;
     const display_flags SHOW_INDEX        = 0x02;
     const display_flags SHOW_DETAILS      = 0x04;
-    const display_flags SHOW_UNREACHABLE  = 0x08;
-    const display_flags SHOW_DELETED      = 0x10;
+    const display_flags SHOW_HEADER       = 0x08;
+    const display_flags SHOW_UNREACHABLE  = 0x10;
+    const display_flags SHOW_DELETED      = 0x20;
 
 };
 

@@ -1731,7 +1731,7 @@ bool MEDDLY::forest
   /*
     Ordinary node
   */
-  if (flags & SHOW_DETAILS) {
+  if (flags & SHOW_HEADER) {
     // node: was already written.
     nodeHeaders.showHeader(s, p);
   } else {
