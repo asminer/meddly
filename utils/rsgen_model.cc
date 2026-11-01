@@ -18,6 +18,7 @@
 
 #include "utils/rsgen_model.h"
 #include "utils/timer.h"
+#include "utils/zstream.h"
 
 // #define DEBUG_UPDATE_SORT
 // #define DEBUG_EVENTS
@@ -325,6 +326,9 @@ rsgen_model::rsgen_model()
 #endif
     verb = 0;
     expl_batch = 1024;
+
+    file_rel = nullptr;
+    file_set = nullptr;
 }
 
 rsgen_model::~rsgen_model()
@@ -432,6 +436,22 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
         return true;
     }
 
+    //
+    // File output
+    //
+    if (0==strcmp(argv[i], "-wr")) {
+        i++;
+        file_rel = argv[i];
+        i++;
+        return true;
+    }
+    if (0==strcmp(argv[i], "-ws")) {
+        i++;
+        file_set = argv[i];
+        i++;
+        return true;
+    }
+
     return false;
 }
 
@@ -440,20 +460,6 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     if (arg0) {
         out << "\nUsage: " << basename(arg0) << " [options]\n";
     }
-    out << "\n";
-
-#ifdef HAVE_LIBGMP
-    out << "\t-approx: approximate cardinalities";
-    if (approx) {
-        out << " (default)";
-    }
-    out << "\n";
-    out << "\t-exact : exact cardinalities";
-    if (!approx) {
-        out << " (default)";
-    }
-    out << "\n";
-#endif
     out << "\n";
     out << "    GENERATION METHODS\n";
     out << "\n";
@@ -474,6 +480,28 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     out << "\t-opt  : optimistic reference counts\n";
     out << "\t-pess : pessimistic reference counts\n";
     out << "\n";
+    out << "    FILE OUTPUT\n";
+    out << "\n";
+    out << "\t-wr F : write the transition relation to file F\n";
+    out << "\t-ws F : write the generated set to file F\n";
+    out << "\n";
+    out << "\t        Output filenames ending in .gz or .xz will be compressed.\n";
+    out << "\n";
+#ifdef HAVE_LIBGMP
+    out << "    CARDINALITY\n";
+    out << "\n";
+    out << "\t-approx: approximate cardinalities";
+    if (approx) {
+        out << " (default)";
+    }
+    out << "\n";
+    out << "\t-exact : exact cardinalities";
+    if (!approx) {
+        out << " (default)";
+    }
+    out << "\n";
+    out << "\n";
+#endif
 }
 
 void rsgen_model::generate()
@@ -545,6 +573,7 @@ void rsgen_model::generate()
 
     dd_edge init_state(Fset);
     initial.buildFunction(false, init_state);
+    init_state.setLabel("initial");
 
     //
     // build transition relation
@@ -573,6 +602,8 @@ void rsgen_model::generate()
         std::cout << "MxD for relation requires "
                   << nsf.getNodeCount() << " nodes" << std::endl;
         printStats("MxD", Fmxd);
+
+        write_to_file("relation", nsf, file_rel);
     }
 
     //
@@ -584,6 +615,7 @@ void rsgen_model::generate()
     // build reachset / distance
     //
     dd_edge reachable(Fset);
+    reachable.setLabel("reachset");
     watch.note_time();
     binary_operation* rsgen = nullptr;
     switch (gen_method) {
@@ -647,6 +679,8 @@ void rsgen_model::generate()
                 << reachable.getNodeCount() << " nodes" << std::endl;
 
     show_cardinality("reachable states", reachable);
+
+    write_to_file("reachability set", reachable, file_set);
 
         //
         // Write to terminal
@@ -848,3 +882,18 @@ void rsgen_model::printStats(const char* who, const MEDDLY::forest* F)
     }
 }
 
+void rsgen_model::write_to_file(const char* what,
+        const MEDDLY::dd_edge &who, const char* outfile)
+{
+    if (!outfile) return;
+    compressed_output writer(outfile);
+    if (writer) {
+        std::cout << "Writing " << what << " to " << outfile << "\n";
+        D->write(writer.outstream());
+        MEDDLY::mdd_writer mywriter(writer.outstream(), who.getForest());
+        mywriter.writeRootEdge(who);
+        mywriter.finish();
+    } else {
+        std::cout << "Couldn't write to file " << outfile << " for " << what << "\n";
+    }
+}

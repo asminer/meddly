@@ -1168,6 +1168,12 @@ void MEDDLY::dd_edge::show(output &s) const
     }
     s.put(" forest ");
     s.put(parentFID);
+
+    if ("" != label) {
+        s.put(" (\"");
+        s.put(label);
+        s.put("\")");
+    }
 }
 
 void MEDDLY::dd_edge::showGraph(output &s) const
@@ -1274,6 +1280,8 @@ void MEDDLY::dd_edge::write(output &s, const std::vector <size_t> &map) const
         s.put("n ");
         s.put(map[node]);
     }
+    s.put(" ");
+    s.put(getLabel());
 }
 
 
@@ -1308,6 +1316,32 @@ void MEDDLY::dd_edge::read(input &s, const std::vector <node_handle> &map)
         t.read(s);
         set(t.getHandle());
     }
+
+    //
+    // Node label
+    //
+    const unsigned lbufsize = 128;
+    char lbuf[lbufsize];
+    for (;;) {
+        c = s.get_char();
+        if (' ' == c) continue;
+        break;
+    }
+    unsigned i = 0;
+    while (c != '\n') {
+        if (i < lbufsize) {
+            lbuf[i] = c;
+            i++;
+        }
+        c = s.get_char();
+    }
+    if (i<128) {
+        lbuf[i] = 0;
+    } else {
+        lbuf[lbufsize-1] = 0;
+    }
+    setLabel(lbuf);
+
 #ifdef DEBUG_READ_DD
     std::cerr << "    done dd_edge::read\n";
 #endif

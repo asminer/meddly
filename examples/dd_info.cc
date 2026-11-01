@@ -39,16 +39,36 @@ int usage(const char* exe)
     }
 
     cerr << "\n";
-    cerr << "Usage: " << base << " file file ...\n";
+    cerr << "Usage: " << base << " [options] file file ...\n";
     cerr << "\n";
     cerr << "Read in DDs from each input file, into a single forest. Files with\n"
          << "extensions .gz or .xz are decompressed using gzcat and xzcat, respectively.\n";
     cerr << "Displays information about each DD, and the overall forest.\n";
     cerr << "\n";
-
+    cerr << "Switches:\n";
+    cerr << "\n";
+    cerr << "    -disp: Display the entire forest after it is built.\n";
+    cerr << "\n";
+    cerr << "    -dot file: Produce a dot file for the DDs.\n";
+    cerr << "\n";
     return 1;
 }
 
+// **********************************************************************
+// strip extension
+// **********************************************************************
+char* strip_extension(const char* inpath)
+{
+    unsigned len = strlen(inpath);
+    if (len>4) {
+        const char* end = inpath+len-4;
+        if (0==strcmp(".dot", end))
+            len -= 4;
+    }
+    char* buf = new char[len+1];
+    strncpy(buf, inpath, len);
+    return buf;
+}
 
 // **********************************************************************
 // main
@@ -59,12 +79,8 @@ int main(int argc, const char** argv)
     using namespace std;
     using namespace MEDDLY;
 
-    //
-    // For now: no switches
-    //
-    if (argc < 2) {
-        return usage(argv[0]);
-    }
+    bool disp = false;
+    char* dotfile = nullptr;
 
     try {
         MEDDLY::initialize();
@@ -74,6 +90,16 @@ int main(int argc, const char** argv)
         ostream_output mout(cout);
 
         for (int i=1; i<argc; ++i) {
+            if (0==strcmp("-disp", argv[i])) {
+                disp = true;
+                continue;
+            }
+            if (0==strcmp("-dot", argv[i])) {
+                i++;
+                dotfile = strip_extension(argv[i]);
+                continue;
+            }
+
             mout << "\n======================================================================\n";
             mout.indent_more();
             mout << argv[i] << "\n";
@@ -94,9 +120,15 @@ int main(int argc, const char** argv)
             mout << mddr->getFileNodes() << " nodes, " << mddr->numRoots() << " roots\n\n";
 
             for (unsigned r=0; r<mddr->numRoots(); r++) {
-                mout << "Root #" << r << ": "
-                     << mddr->getRoot(r).getNodeCount() << " nodes "
-                     << mddr->getRoot(r).getEdgeCount() << " edges\n";
+                const dd_edge& re = mddr->getRoot(r);
+                mout << "Root #" << r;
+                if (disp) {
+                    mout << " -> " << re << ":\n    ";
+                } else {
+                    mout << ": ";
+                }
+                mout << re.getNodeCount() << " nodes "
+                     << re.getEdgeCount() << " edges\n";
 
                 all_roots.push_back(mddr->getRoot(r));
             }
@@ -104,14 +136,35 @@ int main(int argc, const char** argv)
             delete mddr;
 
             mout.indent_less();
+        } // for i
+
+        if (!F) {
+            return usage(argv[0]);
         }
 
         mout << "\n======================================================================\n\n";
 
+        if (disp) {
+            F->dump(mout, 0);
+            mout << "\n======================================================================\n\n";
+        }
+
         mout << "Forest stats:\n";
         F->reportStats(mout, "    ",
-            HUMAN_READABLE_MEMORY | BASIC_STATS | EXTRA_STATS
+                HUMAN_READABLE_MEMORY | BASIC_STATS | EXTRA_STATS
         );
+
+        if (dotfile) {
+            mout << "Writing to " << dotfile << ".dot\n";
+            dot_maker dotwrite(F, dotfile); // tbd convert to base
+            for (unsigned i=0; i<all_roots.size(); i++) {
+                dotwrite.addRootEdge(all_roots[i]);
+            }
+            dotwrite.doneGraph();
+            delete[] dotfile;
+            dotfile = nullptr;
+        }
+
 
 
         MEDDLY::cleanup();

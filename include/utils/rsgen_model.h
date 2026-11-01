@@ -190,6 +190,9 @@ class rsgen_model {
             garbage = g;
         }
 
+        void write_to_file(const char* what, const MEDDLY::dd_edge &who,
+                const char* outfile);
+
     private:
         std::vector <event*> events;    // model events
 
@@ -226,6 +229,12 @@ class rsgen_model {
 
         // verbosity level
         int verb;
+
+        // output file: the relation (or null for none)
+        const char* file_rel;
+
+        // output file: the reachability set (or null for none)
+        const char* file_set;
 };
 
 #endif

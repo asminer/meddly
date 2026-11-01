@@ -216,6 +216,12 @@ class MEDDLY::dd_edge {
         inline void setLabel(const char* L) {
             label = L;
         }
+        /** Set the edge's label.
+            @param  L   Label to use; will be copied.
+        */
+        inline void setLabel(const std::string &L) {
+            label = L;
+        }
 
         inline node_handle getNode() const { return node; }
         inline void xferNode(node_handle &h) {

@@ -6,7 +6,7 @@ randomize_lib = static_library('randomize',
 )
 
 randomize_dep = declare_dependency(
-    dependencies: meddly_dep,
+    dependencies: [ gmp_dep, meddly_dep ],
     include_directories: meddly_inc,
     link_with: randomize_lib
 )
@@ -21,7 +21,7 @@ reporting_lib = static_library('reporting',
 )
 
 reporting_dep = declare_dependency(
-    dependencies: meddly_dep,
+    dependencies: [ meddly_dep ],
     include_directories: meddly_inc,
     link_with: reporting_lib
 )
@@ -35,23 +35,9 @@ simple_model_lib = static_library('simple_model',
 )
 
 simple_model_dep = declare_dependency(
-    dependencies: meddly_dep,
+    dependencies: [ gmp_dep, meddly_dep ],
     include_directories: meddly_inc,
     link_with: simple_model_lib
-)
-
-######################################################################
-
-rsgen_model_lib = static_library('rsgen_model',
-    sources: 'rsgen_model.cc',
-    dependencies: [ gmp_dep, meddly_dep ],
-    install: false
-)
-
-rsgen_model_dep = declare_dependency(
-    dependencies: meddly_dep,
-    include_directories: meddly_inc,
-    link_with: rsgen_model_lib
 )
 
 ######################################################################
@@ -66,5 +52,19 @@ zstream_dep = declare_dependency(
     dependencies: meddly_dep,
     include_directories: meddly_inc,
     link_with: zstream_lib
+)
+
+######################################################################
+
+rsgen_model_lib = static_library('rsgen_model',
+    sources: 'rsgen_model.cc',
+    dependencies: [ gmp_dep, zstream_dep, meddly_dep ],
+    install: false
+)
+
+rsgen_model_dep = declare_dependency(
+    dependencies: [ gmp_dep, zstream_dep, meddly_dep ],
+    include_directories: meddly_inc,
+    link_with: rsgen_model_lib
 )
 
