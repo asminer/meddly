@@ -153,6 +153,8 @@ class rsgen_model {
         void build_monolithic(MEDDLY::dd_edge &R);
 
     protected:
+        void gen_explicit(const MEDDLY::dd_edge &init, MEDDLY::dd_edge &RS);
+
         inline void set_domain(MEDDLY::domain* d) {
             MEDDLY_DCASSERT(d);
             MEDDLY_DCASSERT(!D);
@@ -178,6 +180,11 @@ class rsgen_model {
 
         inline void set_gen_method(char g) {
             gen_method = g;
+            if ('x' == g) {
+                reltype = ' ';
+            } else {
+                reltype = 'm';
+            }
         }
         inline void set_garbage(char g) {
             garbage = g;
@@ -192,11 +199,27 @@ class rsgen_model {
         MEDDLY::forest* Fmxd;   // forest for relation, or null
         MEDDLY::forest* Fmtmxd; // auxiliary forest for relation, or null
 
+        unsigned expl_batch;    // batch size for explicit
+
         // generation method
         char gen_method;
+            // 'x': explicit
+            // 'f': traditional with frontier
+            // 't': traditional without frontier
+            // 'd': default saturation
+            // '1': saturation v1
+            // '2': saturation v2
+
+        // relation type
+        char reltype;
+            // ' ': none (for explicit)
+            // 'm': monolithic
 
         // garbage collection
         char garbage;
+            // 'm': mark and sweep
+            // 'o': optimistic ref counts
+            // 'p': pessimistic ref counts
 
         // approximate cardinalities
         bool approx;

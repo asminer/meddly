@@ -257,6 +257,7 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::forest* mtmxd,
     }
     term.set(0);
 #else  // ifdef OLD_SIMPLE
+    IGNORE_UNUSED(mtmxd);
 
     node_handle root = mxd->handleForValue(true);
     unpacked_node* Uun;
@@ -323,6 +324,7 @@ rsgen_model::rsgen_model()
     approx = true;
 #endif
     verb = 0;
+    expl_batch = 1024;
 }
 
 rsgen_model::~rsgen_model()
@@ -369,28 +371,44 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
     // Generation algorithms
     //
 
+    if (0==strcmp(argv[i], "-exp")) {
+        set_gen_method('x');
+        i++;
+        return true;
+    }
+    if (0==strcmp(argv[i], "-eb")) {
+        i++;
+        if (argv[i]) {
+            long x = atol(argv[i]);
+            if (x>0) {
+                expl_batch = unsigned(x);
+            }
+            i++;
+        }
+        return true;
+    }
     if (0==strcmp(argv[i], "-front")) {
-        gen_method = 'f';
+        set_gen_method('f');
         i++;
         return true;
     }
     if (0==strcmp(argv[i], "-trad")) {
-        gen_method = 't';
+        set_gen_method('t');
         i++;
         return true;
     }
     if (0==strcmp(argv[i], "-dfs")) {
-        gen_method = '1';
+        set_gen_method('d');
         i++;
         return true;
     }
     if (0==strcmp(argv[i], "-sat1")) {
-        gen_method = '1';
+        set_gen_method('1');
         i++;
         return true;
     }
     if (0==strcmp(argv[i], "-sat2")) {
-        gen_method = '2';
+        set_gen_method('2');
         i++;
         return true;
     }
@@ -439,12 +457,15 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     out << "\n";
     out << "    GENERATION METHODS\n";
     out << "\n";
+    out << "\t-exp   : use explicit (very slow!) generation\n";
     out << "\t-front : use traditional iterations, with frontier\n";
     out << "\t-trad  : use traditional iterations, without frontier\n";
     out << "\t-dfs   : use default saturation (currently, -sat1)\n";
     out << "\t-sat1  : Saturation v1, new implementation\n";
     out << "\t-sat2  : Saturation v2\n";
     out << "\n";
+    out << "\t-eb N  : Set explicit batch size (default "
+        << expl_batch << ")\n";
     out << "\t-vL    : Set verbosity (0..9) for traditional (default 0).\n";
     out << "\n";
     out << "    GARBAGE COLLECTION\n";
@@ -500,16 +521,19 @@ void rsgen_model::generate()
                 edge_labeling::MULTI_TERMINAL,
                 pmdd
     );
-    Fmxd = forest::create(D, RELATION,
-                range_type::BOOLEAN,
-                edge_labeling::MULTI_TERMINAL,
-                pmxd
-    );
-    Fmtmxd = forest::create(D, RELATION,
-                range_type::INTEGER,
-                edge_labeling::MULTI_TERMINAL,
-                pmxd
-    );
+
+    if (' ' != reltype) {
+        Fmxd = forest::create(D, RELATION,
+                    range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL,
+                    pmxd
+        );
+        Fmtmxd = forest::create(D, RELATION,
+                    range_type::INTEGER,
+                    edge_labeling::MULTI_TERMINAL,
+                    pmxd
+        );
+    }
 
     //
     // build initial states
@@ -525,21 +549,31 @@ void rsgen_model::generate()
     //
     // build transition relation
     //
-    dd_edge nsf(Fmxd);
     timer watch;
+    dd_edge nsf(Fmxd);
     watch.note_time();
+    switch (reltype) {
+        case 'm':   // monolithic
+            std::cout << "Building monolithic relation\n";
+            build_monolithic(nsf);
+            forest::destroy(Fmtmxd);
+            break;
 
-    // tbd - different things based on options
-    std::cout << "Building monolithic\n";
-    build_monolithic(nsf);
+        case ' ':   // no relation
+            break;
 
-    forest::destroy(Fmtmxd);
+        default:
+            std::cout << "Unknown relation type: '" << reltype << "'\n";
+            throw "internal error";
+    };
     watch.note_time();
-    std::cout   << "Next-state function construction took "
-                << watch.get_last_seconds() << " seconds\n";
-    std::cout << "MxD for relation requires "
-              << nsf.getNodeCount() << " nodes" << std::endl;
-    printStats("MxD", Fmxd);
+    if (Fmxd) {
+        std::cout   << "Next-state function construction took "
+                    << watch.get_last_seconds() << " seconds\n";
+        std::cout << "MxD for relation requires "
+                  << nsf.getNodeCount() << " nodes" << std::endl;
+        printStats("MxD", Fmxd);
+    }
 
     //
     // Set progress updates according to verbosity
@@ -573,22 +607,21 @@ void rsgen_model::generate()
             break;
 
         case '1':
-            std::cout << "Building reachability set using saturation v1, monolithic relation" << std::endl;
+            std::cout << "Building reachability set using saturation v1" << std::endl;
             apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
             break;
 
         case '2':
-            std::cout << "Building reachability set using saturation v2, monolithic relation" << std::endl;
+            std::cout << "Building reachability set using saturation v2" << std::endl;
             apply(REACHABLE_SATUR(true, 2), init_state, nsf, reachable);
             break;
 
-            /*
-            case 'e':
-                cout << "Building reachability set using explicit search\n";
-                cout << "Using batch size: " << batchsize << endl;
-                explicitReachset(kanban, 16, mdd, init_state, reachable, batchsize);
-                break;
+        case 'x':
+            std::cout << "Building reachability set explicig generation" << std::endl;
+            gen_explicit(init_state, reachable);
+            break;
 
+            /*
             case 'k':
             case 's':
                 cout << "Building reachability set using saturation, relation";
@@ -667,6 +700,76 @@ void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
     out << "Complete forest:\n";
     Fmxd->dump(out, MEDDLY::SHOW_DETAILS);
 #endif
+}
+
+void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
+        MEDDLY::dd_edge &RS)
+{
+    using namespace MEDDLY;
+
+    std::cout << "    using batch size " << expl_batch << "\n";
+#ifdef DEBUG_GENERATE
+    ostream_output out(std::cerr);
+#endif
+
+    // initialize batch memory
+    minterm_coll minterms(expl_batch, Fset);
+
+    dd_edge unexplored(Fset);
+    dd_edge explored(init);
+    dd_edge batch(Fset);
+    dd_edge::iterator I(explored);
+    for (;;) {
+        Fset->createConstant(false, unexplored);
+        I.restart(explored);
+        if (!I) break;  // done exploring!
+        for (; I; ++I) {
+#ifdef DEBUG_GENERATE
+            out << "Exploring state: ";
+            (*I).show(out);
+            out << "\n";
+#endif
+            // what's enabled
+            for (unsigned e=0; e<events.size(); e++) {
+                if (!events[e]) continue;
+                if (!events[e]->fire(*I, minterms.unused())) continue;
+#ifdef DEBUG_GENERATE
+                if (events[e]->get_name()) {
+                    out << "  -- (event " << events[e]->get_name() << ") --> ";
+                } else {
+                    out << "  -- (event " << e << ") --> ";
+                }
+                minterms.unused().show(out);
+                out << "\n";
+#endif
+
+                // Have we seen this already in the RS
+                rangeval seen;
+                RS.evaluate(minterms.unused(), seen);
+                if (seen) continue;
+
+                minterms.pushUnused();
+                if (minterms.size() >= expl_batch) {
+                    // Buffer is full; flush it
+                    minterms.buildFunctionMax(false, batch);
+                    minterms.clear();
+                    unexplored += batch;
+                    RS += batch;
+                }
+            } // for e
+        } // for I
+
+        // expl is empty.
+        // Flush the buffer
+        if (minterms.size()) {
+            minterms.buildFunctionMax(false, batch);
+            minterms.clear();
+            unexplored += batch;
+            RS += batch;
+        }
+
+        explored = unexplored;
+    } // infinite loop
 }
 
 void rsgen_model::show_cardinality(const char* what,
