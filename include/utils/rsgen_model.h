@@ -235,6 +235,9 @@ class rsgen_model {
 
         // output file: the reachability set (or null for none)
         const char* file_set;
+
+        // checkpoint directory
+        const char* check_dir;
 };
 
 #endif

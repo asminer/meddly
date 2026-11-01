@@ -329,6 +329,7 @@ rsgen_model::rsgen_model()
 
     file_rel = nullptr;
     file_set = nullptr;
+    check_dir = nullptr;
 }
 
 rsgen_model::~rsgen_model()
@@ -394,10 +395,19 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
     if (0==strcmp(argv[i], "-front")) {
         set_gen_method('f');
         i++;
+        check_dir = nullptr;
         return true;
     }
     if (0==strcmp(argv[i], "-trad")) {
         set_gen_method('t');
+        i++;
+        check_dir = nullptr;
+        return true;
+    }
+    if (0==strcmp(argv[i], "-tradc")) {
+        set_gen_method('t');
+        i++;
+        check_dir = argv[i];
         i++;
         return true;
     }
@@ -463,29 +473,30 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     out << "\n";
     out << "    GENERATION METHODS\n";
     out << "\n";
-    out << "\t-exp   : use explicit (very slow!) generation\n";
-    out << "\t-front : use traditional iterations, with frontier\n";
-    out << "\t-trad  : use traditional iterations, without frontier\n";
-    out << "\t-dfs   : use default saturation (currently, -sat1)\n";
-    out << "\t-sat1  : Saturation v1, new implementation\n";
-    out << "\t-sat2  : Saturation v2\n";
+    out << "\t-exp       : use explicit (very slow!) generation\n";
+    out << "\t-front     : use traditional iterations, with frontier\n";
+    out << "\t-trad      : use traditional iterations, without frontier\n";
+    out << "\t-tradc dir : -trad with checkpoints saved in directory dir\n";
+    out << "\t-dfs       : use default saturation (currently, -sat1)\n";
+    out << "\t-sat1      : Saturation v1, new implementation\n";
+    out << "\t-sat2      : Saturation v2\n";
     out << "\n";
-    out << "\t-eb N  : Set explicit batch size (default "
+    out << "\t-eb N      : Set explicit batch size (default "
         << expl_batch << ")\n";
-    out << "\t-vL    : Set verbosity (0..9) for traditional (default 0).\n";
+    out << "\t-vL        : Set verbosity (0..9) for traditional (default 0).\n";
     out << "\n";
     out << "    GARBAGE COLLECTION\n";
     out << "\n";
-    out << "\t-ms   : mark and sweep\n";
-    out << "\t-opt  : optimistic reference counts\n";
-    out << "\t-pess : pessimistic reference counts\n";
+    out << "\t-ms       : mark and sweep\n";
+    out << "\t-opt      : optimistic reference counts\n";
+    out << "\t-pess     : pessimistic reference counts\n";
     out << "\n";
     out << "    FILE OUTPUT\n";
     out << "\n";
-    out << "\t-wr F : write the transition relation to file F\n";
-    out << "\t-ws F : write the generated set to file F\n";
+    out << "\t-wr file  : write the transition relation to file\n";
+    out << "\t-ws file  : write the generated set to file\n";
     out << "\n";
-    out << "\t        Output filenames ending in .gz or .xz will be compressed.\n";
+    out << "\t            Output filenames ending in .gz or .xz will be compressed.\n";
     out << "\n";
 #ifdef HAVE_LIBGMP
     out << "    CARDINALITY\n";
@@ -620,6 +631,10 @@ void rsgen_model::generate()
     binary_operation* rsgen = nullptr;
     switch (gen_method) {
         case 't':
+            if (check_dir) {
+                std::cout << "Sorry, checkpointing not implemented yet!\n";
+            }
+
             std::cout << "Building reachability set using traditional algorithm (no frontier)" << std::endl;
             rsgen = build(REACHABLE_TRAD_NOFS(true), Fset, Fmxd, Fset);
             if (verb) rsgen->setProgressNotifier(my_progress);
@@ -734,6 +749,7 @@ void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
     out << "Complete forest:\n";
     Fmxd->dump(out, MEDDLY::SHOW_DETAILS);
 #endif
+    R.setLabel("nsf-monolithic");
 }
 
 void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
