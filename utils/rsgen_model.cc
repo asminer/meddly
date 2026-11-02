@@ -23,6 +23,7 @@
 // #define DEBUG_UPDATE_SORT
 // #define DEBUG_EVENTS
 // #define DEBUG_EVENT_BUILD
+// #define DEBUG_GENERATE
 // #define SHOW_MXD_FOREST
 // #define WRITE_MXD
 // #define WRITE_EVENTS
@@ -704,9 +705,6 @@ void rsgen_model::generate()
             break;
 
         case 'x':
-            if (distances) {
-                throw "Explicit for distance not implemented yet";
-            }
             std::cout << " using explicit generation" << std::endl;
             gen_explicit(init_state, reachable);
             break;
@@ -814,14 +812,20 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
 #endif
 
     // initialize batch memory
+    rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
     minterm_coll minterms(expl_batch, Fset);
 
     dd_edge unexplored(Fset);
     dd_edge explored(init);
     dd_edge batch(Fset);
     dd_edge::iterator I(explored);
+    RS = init;  // add initial state(s)
     for (;;) {
-        Fset->createConstant(false, unexplored);
+        if (distances) {
+            Fset->createConstant(infty, unexplored);
+        } else {
+            Fset->createConstant(false, unexplored);
+        }
         I.restart(explored);
         if (!I) break;  // done exploring!
         for (; I; ++I) {
@@ -834,6 +838,9 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
             for (unsigned e=0; e<events.size(); e++) {
                 if (!events[e]) continue;
                 if (!events[e]->fire(*I, minterms.unused())) continue;
+                if (distances) {
+                    minterms.unused().setValue(1+int((*I).getValue()));
+                }
 #ifdef DEBUG_GENERATE
                 if (events[e]->get_name()) {
                     out << "  -- (event " << events[e]->get_name() << ") --> ";
@@ -847,26 +854,42 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
                 // Have we seen this already in the RS
                 rangeval seen;
                 RS.evaluate(minterms.unused(), seen);
-                if (seen) continue;
+                if (distances) {
+                    if (!seen.isPlusInfinity()) continue;
+                } else {
+                    if (seen) continue;
+                }
 
                 minterms.pushUnused();
                 if (minterms.size() >= expl_batch) {
                     // Buffer is full; flush it
-                    minterms.buildFunctionMax(false, batch);
+                    if (distances) {
+                        minterms.buildFunctionMin(infty, batch);
+                        apply(MINIMUM, unexplored, batch, unexplored);
+                        apply(MINIMUM, RS, batch, RS);
+                    } else {
+                        minterms.buildFunctionMax(false, batch);
+                        apply(UNION, unexplored, batch, unexplored);
+                        apply(UNION, RS, batch, RS);
+                    }
                     minterms.clear();
-                    unexplored += batch;
-                    RS += batch;
                 }
             } // for e
         } // for I
 
-        // expl is empty.
+        // explored is empty.
         // Flush the buffer
         if (minterms.size()) {
-            minterms.buildFunctionMax(false, batch);
+            if (distances) {
+                minterms.buildFunctionMin(infty, batch);
+                apply(MINIMUM, unexplored, batch, unexplored);
+                apply(MINIMUM, RS, batch, RS);
+            } else {
+                minterms.buildFunctionMax(false, batch);
+                apply(UNION, unexplored, batch, unexplored);
+                apply(UNION, RS, batch, RS);
+            }
             minterms.clear();
-            unexplored += batch;
-            RS += batch;
         }
 
         explored = unexplored;
