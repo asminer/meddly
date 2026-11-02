@@ -752,6 +752,11 @@ int main(int argc, const char** argv)
     unsigned nArgs = (unsigned)argc;
     unsigned i=1;
 
+    if (1 == argc) {
+        K.show_usage(std::cerr, argv[0]);
+        return 1;
+    }
+
     while (i < nArgs) {
         if (!K.process_arg(i, argv)) {
             K.show_usage(std::cerr, argv[0]);

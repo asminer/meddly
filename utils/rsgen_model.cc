@@ -573,13 +573,19 @@ void rsgen_model::generate()
     // build forests, even if we don't need them
     //
 
-    // TBD: distance vs reachable states
-
-    Fset = forest::create(D, SET,
-                range_type::BOOLEAN,
-                edge_labeling::MULTI_TERMINAL,
-                pmdd
-    );
+    if (distances) {
+        Fset =  forest::create(D, SET,
+                    range_type::INTEGER,
+                    edge_labeling::EVPLUS,
+                    pmdd
+                );
+    } else {
+        Fset =  forest::create(D, SET,
+                    range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL,
+                    pmdd
+                );
+    }
 
     if (' ' != reltype) {
         Fmxd = forest::create(D, RELATION,
@@ -600,11 +606,19 @@ void rsgen_model::generate()
     std::cout << "Building initial\n";
     minterm initial(Fset);
     build_initial(initial);
-    initial.setValue(true); // unless distance...
-
     dd_edge init_state(Fset);
-    initial.buildFunction(false, init_state);
     init_state.setLabel("initial");
+
+    if (distances) {
+        initial.setValue(0);
+        rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
+        initial.buildFunction(infty, init_state);
+    } else {
+        initial.setValue(true);
+        initial.buildFunction(false, init_state);
+    }
+    const char* setname = distances ? "distance function" : "reachability set";
+    const char* Setname = distances ? "Distance function" : "Reachability set";
 
     //
     // build transition relation
@@ -646,12 +660,14 @@ void rsgen_model::generate()
     // build reachset / distance
     //
     dd_edge reachable(Fset);
-    reachable.setLabel("reachset");
+    reachable.setLabel(distances ? "distfunc" : "reachset");
     watch.note_time();
     binary_operation* rsgen = nullptr;
+    std::cout << "Building " << setname;
     switch (gen_method) {
         case 't':
-            std::cout << "Building reachability set using traditional algorithm (no frontier)" << std::endl;
+            std::cout << " using traditional algorithm (no frontier)"
+                      << std::endl;
             if (check_dir) {
                 trad_with_checkpoints(nsf, init_state, reachable);
             } else {
@@ -662,29 +678,36 @@ void rsgen_model::generate()
             break;
 
         case 'f':
-            std::cout << "Building reachability set using traditional algorithm (with frontier)" << std::endl;
+            if (distances) {
+                throw "Cannot use traditional with frontier for distance";
+            }
+            std::cout   << " using traditional algorithm (with frontier)"
+                        << std::endl;
             rsgen = build(REACHABLE_TRAD_FS(true), Fset, Fmxd, Fset);
             if (verb) rsgen->setProgressNotifier(my_progress);
             rsgen->compute(init_state, nsf, reachable);
             break;
 
         case 'd':
-            std::cout << "Building reachability set using default saturation" << std::endl;
+            std::cout << " using default saturation" << std::endl;
             apply(REACHABLE_SATUR(true), init_state, nsf, reachable);
             break;
 
         case '1':
-            std::cout << "Building reachability set using saturation v1" << std::endl;
+            std::cout << " using saturation v1" << std::endl;
             apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
             break;
 
         case '2':
-            std::cout << "Building reachability set using saturation v2" << std::endl;
+            std::cout << " using saturation v2" << std::endl;
             apply(REACHABLE_SATUR(true, 2), init_state, nsf, reachable);
             break;
 
         case 'x':
-            std::cout << "Building reachability set explicig generation" << std::endl;
+            if (distances) {
+                throw "Explicit for distance not implemented yet";
+            }
+            std::cout << " using explicit generation" << std::endl;
             gen_explicit(init_state, reachable);
             break;
 
@@ -708,14 +731,16 @@ void rsgen_model::generate()
     };
     watch.note_time();
     std::cout << "Done\n";
-    std::cout   << "Reachability set construction took "
+    std::cout   << Setname << " construction took "
                 << watch.get_last_seconds() << " seconds" << std::endl;
-    std::cout   << "Reachability set uses "
+    std::cout   << Setname << " uses "
                 << reachable.getNodeCount() << " nodes" << std::endl;
 
-    show_cardinality("reachable states", reachable);
+    if (!distances) {
+        show_cardinality("reachable states", reachable);
+    }
 
-    write_to_file("reachability set", reachable, file_set);
+    write_to_file(setname, reachable, file_set);
 
         //
         // Write to terminal
@@ -737,7 +762,7 @@ void rsgen_model::generate()
             // mywriter.finish();
         // }
 
-    printStats("MDD", Fset);
+    printStats(distances ? "EV+MDD" : "MDD", Fset);
 }
 
 void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
