@@ -318,7 +318,7 @@ rsgen_model::rsgen_model()
 
     // default options
 
-    distances = false;
+    set_set_type('b');
     set_gen_method('1');
     set_garbage('o');
 #ifdef HAVE_LIBGMP
@@ -377,13 +377,18 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
     //
     // What are we generating
     //
-    if (0==strcmp(argv[i], "-dist")) {
-        distances = true;
+    if (0==strcmp(argv[i], "-evdist")) {
+        set_set_type('+');
+        i++;
+        return true;
+    }
+    if (0==strcmp(argv[i], "-mtdist")) {
+        set_set_type('i');
         i++;
         return true;
     }
     if (0==strcmp(argv[i], "-reach")) {
-        distances = false;
+        set_set_type('b');
         i++;
         return true;
     }
@@ -489,7 +494,8 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     out << "\n";
     out << "    GENERATION TYPES\n";
     out << "\n";
-    out << "\t-dist      : build the distance function.\n";
+    out << "\t-evdist    : build the distance function using EV+MDDs.\n";
+    out << "\t-mtdist    : build the distance function.using MTMDDs.\n";
     out << "\t-reach     : build the reachability set (default).\n";
     out << "\n";
     out << "    GENERATION METHODS\n";
@@ -574,18 +580,33 @@ void rsgen_model::generate()
     // build forests, even if we don't need them
     //
 
-    if (distances) {
-        Fset =  forest::create(D, SET,
-                    range_type::INTEGER,
-                    edge_labeling::EVPLUS,
-                    pmdd
-                );
-    } else {
-        Fset =  forest::create(D, SET,
+    switch (set_type) {
+        case 'b':
+            Fset =  forest::create(D, SET,
                     range_type::BOOLEAN,
                     edge_labeling::MULTI_TERMINAL,
                     pmdd
                 );
+            break;
+
+        case 'i':
+            Fset =  forest::create(D, SET,
+                    range_type::INTEGER,
+                    edge_labeling::MULTI_TERMINAL,
+                    pmdd
+                );
+            break;
+
+        case '+':
+            Fset =  forest::create(D, SET,
+                    range_type::INTEGER,
+                    edge_labeling::EVPLUS,
+                    pmdd
+                );
+            break;
+
+        default:
+            throw "internal: unknown set_type";
     }
 
     if (' ' != reltype) {
@@ -609,17 +630,29 @@ void rsgen_model::generate()
     build_initial(initial);
     dd_edge init_state(Fset);
     init_state.setLabel("initial");
+    rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
 
-    if (distances) {
-        initial.setValue(0);
-        rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
-        initial.buildFunction(infty, init_state);
-    } else {
-        initial.setValue(true);
-        initial.buildFunction(false, init_state);
+    switch (set_type) {
+        case 'i':
+            initial.setValue(0);
+            initial.buildFunction(-1, init_state);
+            break;
+
+        case '+':
+            initial.setValue(0);
+            initial.buildFunction(infty, init_state);
+            break;
+
+        default:
+            initial.setValue(true);
+            initial.buildFunction(false, init_state);
     }
-    const char* setname = distances ? "distance function" : "reachability set";
-    const char* Setname = distances ? "Distance function" : "Reachability set";
+    const char* setname = (set_type != 'b')
+                                ? "distance function"
+                                : "reachability set";
+    const char* Setname = (set_type != 'b')
+                                ? "Distance function"
+                                : "Reachability set";
 
     //
     // build transition relation
@@ -661,7 +694,7 @@ void rsgen_model::generate()
     // build reachset / distance
     //
     dd_edge reachable(Fset);
-    reachable.setLabel(distances ? "distfunc" : "reachset");
+    reachable.setLabel((set_type != 'b') ? "distfunc" : "reachset");
     watch.note_time();
     binary_operation* rsgen = nullptr;
     std::cout << "Building " << setname;
@@ -679,7 +712,7 @@ void rsgen_model::generate()
             break;
 
         case 'f':
-            if (distances) {
+            if (set_type != 'b') {
                 throw "Cannot use traditional with frontier for distance";
             }
             std::cout   << " using traditional algorithm (with frontier)"
@@ -734,7 +767,7 @@ void rsgen_model::generate()
     std::cout   << Setname << " uses "
                 << reachable.getNodeCount() << " nodes" << std::endl;
 
-    if (!distances) {
+    if ('b' == set_type) {
         show_cardinality("reachable states", reachable);
     }
 
@@ -760,7 +793,19 @@ void rsgen_model::generate()
             // mywriter.finish();
         // }
 
-    printStats(distances ? "EV+MDD" : "MDD", Fset);
+    switch (set_type) {
+        case 'i':
+            printStats("MTMDD", Fset);
+            break;
+
+        case '+':
+            printStats("EV+MDD", Fset);
+            break;
+
+        default:
+            printStats("MDD", Fset);
+            break;
+    }
 }
 
 void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
@@ -821,10 +866,18 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
     dd_edge::iterator I(explored);
     RS = init;  // add initial state(s)
     for (;;) {
-        if (distances) {
-            Fset->createConstant(infty, unexplored);
-        } else {
-            Fset->createConstant(false, unexplored);
+        switch (set_type) {
+            case '+':
+                Fset->createConstant(infty, unexplored);
+                break;
+
+            case 'i':
+                Fset->createConstant(-1, unexplored);
+                break;
+
+            default:
+                Fset->createConstant(false, unexplored);
+                break;
         }
         I.restart(explored);
         if (!I) break;  // done exploring!
@@ -838,7 +891,7 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
             for (unsigned e=0; e<events.size(); e++) {
                 if (!events[e]) continue;
                 if (!events[e]->fire(*I, minterms.unused())) continue;
-                if (distances) {
+                if ('b' != set_type) {
                     minterms.unused().setValue(1+int((*I).getValue()));
                 }
 #ifdef DEBUG_GENERATE
@@ -854,25 +907,41 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
                 // Have we seen this already in the RS
                 rangeval seen;
                 RS.evaluate(minterms.unused(), seen);
-                if (distances) {
-                    if (!seen.isPlusInfinity()) continue;
-                } else {
-                    if (seen) continue;
+                switch (set_type) {
+                    case '+':
+                        if (!seen.isPlusInfinity()) continue;
+                        break;
+
+                    case 'i':
+                        if (long(seen)>=0) continue;
+                        break;
+
+                    default:
+                        if (seen) continue;
                 }
 
                 minterms.pushUnused();
                 if (minterms.size() >= expl_batch) {
                     // Buffer is full; flush it
-                    if (distances) {
-                        minterms.buildFunctionMin(infty, batch);
-                        apply(MINIMUM, unexplored, batch, unexplored);
-                        apply(MINIMUM, RS, batch, RS);
-                    } else {
-                        minterms.buildFunctionMax(false, batch);
-                        apply(UNION, unexplored, batch, unexplored);
-                        apply(UNION, RS, batch, RS);
+                    switch (set_type) {
+                        case '+':
+                            minterms.buildFunctionMin(infty, batch);
+                            apply(MINIMUM, unexplored, batch, unexplored);
+                            apply(MINIMUM, RS, batch, RS);
+                            break;
+
+                        case 'i':
+                            minterms.buildFunctionMin(-1, batch);
+                            // ^ this might be wrong
+                            apply(DIST_MIN, unexplored, batch, unexplored);
+                            apply(DIST_MIN, RS, batch, RS);
+                            break;
+
+                        default:
+                            minterms.buildFunctionMax(false, batch);
+                            apply(UNION, unexplored, batch, unexplored);
+                            apply(UNION, RS, batch, RS);
                     }
-                    minterms.clear();
                 }
             } // for e
         } // for I
@@ -880,14 +949,24 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
         // explored is empty.
         // Flush the buffer
         if (minterms.size()) {
-            if (distances) {
-                minterms.buildFunctionMin(infty, batch);
-                apply(MINIMUM, unexplored, batch, unexplored);
-                apply(MINIMUM, RS, batch, RS);
-            } else {
-                minterms.buildFunctionMax(false, batch);
-                apply(UNION, unexplored, batch, unexplored);
-                apply(UNION, RS, batch, RS);
+            switch (set_type) {
+                case '+':
+                    minterms.buildFunctionMin(infty, batch);
+                    apply(MINIMUM, unexplored, batch, unexplored);
+                    apply(MINIMUM, RS, batch, RS);
+                    break;
+
+                case 'i':
+                    minterms.buildFunctionMin(-1, batch);
+                    // ^ this might be wrong
+                    apply(DIST_MIN, unexplored, batch, unexplored);
+                    apply(DIST_MIN, RS, batch, RS);
+                    break;
+
+                default:
+                    minterms.buildFunctionMax(false, batch);
+                    apply(UNION, unexplored, batch, unexplored);
+                    apply(UNION, RS, batch, RS);
             }
             minterms.clear();
         }
@@ -1027,11 +1106,19 @@ void rsgen_model::trad_with_checkpoints(const MEDDLY::dd_edge &relation,
         //
         // Union with reachable
         //
-        if (distances) {
-            apply(MINIMUM, reachable, step, step);
-        } else {
-            apply(UNION, reachable, step, step);
+        switch (set_type) {
+            case '+':
+                apply(MINIMUM, reachable, step, step);
+                break;
+
+            case 'i':
+                apply(DIST_MIN, reachable, step, step);
+                break;
+
+            default:
+                apply(UNION, reachable, step, step);
         }
+
         if (verb) my_progress(next, ';');
 
         if (step == reachable) break;

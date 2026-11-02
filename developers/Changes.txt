@@ -1,9 +1,13 @@
 
 TO DO list
 
-examples
-    migrate simple_model stuff to rsgen_model
-    and update examples
+rsgen_model:
+    * allow MT integer for distance computation
+
+    * migrate all kanban in tests/ to use rsgen_model
+
+    * migrate other models in examples/ to use rsgen_model
+
 
 
 For I/O:

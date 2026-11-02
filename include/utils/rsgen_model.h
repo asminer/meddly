@@ -178,6 +178,10 @@ class rsgen_model {
 
         static void printStats(const char* who, const MEDDLY::forest* F);
 
+        inline void set_set_type(char t) {
+            set_type = t;
+        }
+
         inline void set_gen_method(char g) {
             gen_method = g;
             if ('x' == g) {
@@ -212,8 +216,11 @@ class rsgen_model {
 
         unsigned expl_batch;    // batch size for explicit
 
-        // Are we computing the distance function?
-        bool distances;
+        // What are we building?
+        char set_type;
+            // '+': distances using ev+
+            // 'i': distances using mt integer
+            // 'b': reachable states using mt boolean
 
         // generation method
         char gen_method;
