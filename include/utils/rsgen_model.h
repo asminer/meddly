@@ -193,6 +193,14 @@ class rsgen_model {
         void write_to_file(const char* what, const MEDDLY::dd_edge &who,
                 const char* outfile);
 
+        void trad_with_checkpoints(const MEDDLY::dd_edge &relation,
+                const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable);
+
+    private:
+        const char* chkpt_path(unsigned iter) const;
+        void write_checkpoint(unsigned iter, const MEDDLY::dd_edge &e) const;
+        void read_checkpoint(unsigned iter, MEDDLY::dd_edge &e) const;
+
     private:
         std::vector <event*> events;    // model events
 
@@ -203,6 +211,9 @@ class rsgen_model {
         MEDDLY::forest* Fmtmxd; // auxiliary forest for relation, or null
 
         unsigned expl_batch;    // batch size for explicit
+
+        // Are we computing the distance function?
+        bool distances;
 
         // generation method
         char gen_method;

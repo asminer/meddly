@@ -305,7 +305,7 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::forest* mtmxd,
 }
 
 // ******************************************************************
-// *                      rsgen_model  methods                      *
+// *                   rsgen_model public methods                   *
 // ******************************************************************
 
 rsgen_model::rsgen_model()
@@ -317,6 +317,7 @@ rsgen_model::rsgen_model()
 
     // default options
 
+    distances = false;
     set_gen_method('1');
     set_garbage('o');
 #ifdef HAVE_LIBGMP
@@ -371,6 +372,20 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
         return true;
     }
 #endif
+
+    //
+    // What are we generating
+    //
+    if (0==strcmp(argv[i], "-dist")) {
+        distances = true;
+        i++;
+        return true;
+    }
+    if (0==strcmp(argv[i], "-reach")) {
+        distances = false;
+        i++;
+        return true;
+    }
 
     //
     // Generation algorithms
@@ -470,6 +485,11 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     if (arg0) {
         out << "\nUsage: " << basename(arg0) << " [options]\n";
     }
+    out << "\n";
+    out << "    GENERATION TYPES\n";
+    out << "\n";
+    out << "\t-dist      : build the distance function.\n";
+    out << "\t-reach     : build the reachability set (default).\n";
     out << "\n";
     out << "    GENERATION METHODS\n";
     out << "\n";
@@ -631,14 +651,14 @@ void rsgen_model::generate()
     binary_operation* rsgen = nullptr;
     switch (gen_method) {
         case 't':
-            if (check_dir) {
-                std::cout << "Sorry, checkpointing not implemented yet!\n";
-            }
-
             std::cout << "Building reachability set using traditional algorithm (no frontier)" << std::endl;
-            rsgen = build(REACHABLE_TRAD_NOFS(true), Fset, Fmxd, Fset);
-            if (verb) rsgen->setProgressNotifier(my_progress);
-            rsgen->compute(init_state, nsf, reachable);
+            if (check_dir) {
+                trad_with_checkpoints(nsf, init_state, reachable);
+            } else {
+                rsgen = build(REACHABLE_TRAD_NOFS(true), Fset, Fmxd, Fset);
+                if (verb) rsgen->setProgressNotifier(my_progress);
+                rsgen->compute(init_state, nsf, reachable);
+            }
             break;
 
         case 'f':
@@ -751,6 +771,12 @@ void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
 #endif
     R.setLabel("nsf-monolithic");
 }
+
+
+// ******************************************************************
+// *                 rsgen_model  protected methods                 *
+// ******************************************************************
+
 
 void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
         MEDDLY::dd_edge &RS)
@@ -913,3 +939,128 @@ void rsgen_model::write_to_file(const char* what,
         std::cout << "Couldn't write to file " << outfile << " for " << what << "\n";
     }
 }
+
+void rsgen_model::trad_with_checkpoints(const MEDDLY::dd_edge &relation,
+        const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable)
+{
+    using namespace MEDDLY;
+
+    //
+    // Determine next checkpoint to compute
+    //
+    unsigned next = 0;
+    for (; ; ++next) {
+        std::ifstream f(chkpt_path(next));
+        if (!f.good()) break;
+    }
+
+    if (0==next) {
+        std::cout << "No checkpoints found\n";
+        apply(COPY, initial, reachable);
+        write_checkpoint(0, reachable);
+    } else {
+        --next;
+        std::cout << "Restoring from checkpoint " << chkpt_path(next) << "\n";
+        read_checkpoint(next, reachable);
+    }
+
+
+    do {
+        ++next;
+        if (verb) my_progress(next, ' ');
+
+        //
+        // Compute next states
+        //
+        dd_edge step(reachable);
+        apply(POST_IMAGE, reachable, relation, step);
+        if (verb) my_progress(next, 'N');
+
+        //
+        // Union with reachable
+        //
+        if (distances) {
+            apply(MINIMUM, reachable, step, step);
+        } else {
+            apply(UNION, reachable, step, step);
+        }
+        if (verb) my_progress(next, ';');
+
+        if (step == reachable) break;
+        reachable = step;
+
+        //
+        // Write to checkpoint file
+        //
+        write_checkpoint(next, reachable);
+
+    } while(true);
+
+}
+
+// ******************************************************************
+// *                  rsgen_model  private methods                  *
+// ******************************************************************
+
+const char* rsgen_model::chkpt_path(unsigned iter) const
+{
+    if (!check_dir) {
+        throw "no checkpoint directory";
+    }
+    static char pathname[512];
+    snprintf(pathname, 512, "%s/chk.%03d.txt.xz", check_dir, iter);
+    return pathname;
+}
+
+void rsgen_model::write_checkpoint(unsigned iter, const MEDDLY::dd_edge &e)
+    const
+{
+    const char* pathname = chkpt_path(iter);
+    if (verb>2) {
+        std::cerr << "            writing checkpoint " << pathname << " ";
+    }
+    compressed_output cpout(pathname);
+    if (!cpout) {
+        if (verb>2) {
+            std::cerr << "couldn't write\n";
+        }
+        return;
+    }
+    if (verb>2) {
+        std::cerr << ".";
+        std::cerr.flush();
+    }
+
+    D->write(cpout.outstream());
+    MEDDLY::mdd_writer mywriter(cpout.outstream(), Fset);
+    mywriter.writeRootEdge(e);
+    if (verb>2) {
+        std::cerr << ".";
+        std::cerr.flush();
+    }
+    mywriter.finish();
+    if (verb>2) {
+        std::cerr << " done" << std::endl;
+    }
+}
+
+void rsgen_model::read_checkpoint(unsigned iter, MEDDLY::dd_edge &e) const
+{
+    const char* pathname = chkpt_path(iter);
+    std::cerr << "    restoring from checkpoint " << pathname << " ";
+    compressed_input cpin(pathname);
+    if (!cpin) {
+        std::cerr << "couldn't read\n";
+        throw "checkpoint restore error: couldn't read";
+    }
+    std::cerr << ".";
+    std::cerr.flush();
+
+    D->verify(cpin.instream());
+    MEDDLY::mdd_reader myreader(cpin.instream(), Fset);
+    std::cerr << ".";
+    std::cerr.flush();
+    e = myreader.getRoot(0);
+    std::cerr << " done\n";
+}
+
