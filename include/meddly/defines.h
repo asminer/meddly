@@ -67,6 +67,7 @@
                       << " failed:\n    min: " << (L) \
                       << "\n    val: " << (X) \
                       << "\n    max: " << (U) << '\n'; \
+            assert(false); \
             exit(1); \
         } \
     } while (0)
@@ -78,6 +79,7 @@
                       << " line " << __LINE__ \
                       << " failed:\n    val: " << (X) \
                       << "\n    max: " << (U) << '\n'; \
+            assert(false); \
             exit(1); \
         } \
     } while (0)

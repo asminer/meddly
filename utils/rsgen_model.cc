@@ -872,6 +872,7 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
                 break;
 
             case 'i':
+                throw "explicit with MT integer distance not working yet";
                 Fset->createConstant(-1, unexplored);
                 break;
 
@@ -882,6 +883,12 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
         I.restart(explored);
         if (!I) break;  // done exploring!
         for (; I; ++I) {
+            //
+            // ^ This is wrong for MT integer, because it will iterate
+            // over states with distances not equal to zero?
+            //
+            // We could store distances plus one in the explored set?
+            //
 #ifdef DEBUG_GENERATE
             out << "Exploring state: ";
             (*I).show(out);
