@@ -863,6 +863,10 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
     dd_edge unexplored(Fset);
     dd_edge explored(init);
     dd_edge batch(Fset);
+    dd_edge one(Fset);
+    if ('i' == set_type) {
+        Fset->createConstant(1, one);
+    }
     dd_edge::iterator I(explored);
     RS = init;  // add initial state(s)
     for (;;) {
@@ -872,8 +876,11 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
                 break;
 
             case 'i':
-                throw "explicit with MT integer distance not working yet";
                 Fset->createConstant(-1, unexplored);
+                apply(PLUS, explored, one, explored);
+                // ^ add one to states to be explored.
+                // -1 for unreachable becomes 0,
+                // so we can iterate quickly over the set.
                 break;
 
             default:
@@ -883,12 +890,6 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
         I.restart(explored);
         if (!I) break;  // done exploring!
         for (; I; ++I) {
-            //
-            // ^ This is wrong for MT integer, because it will iterate
-            // over states with distances not equal to zero?
-            //
-            // We could store distances plus one in the explored set?
-            //
 #ifdef DEBUG_GENERATE
             out << "Exploring state: ";
             (*I).show(out);
@@ -898,8 +899,18 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
             for (unsigned e=0; e<events.size(); e++) {
                 if (!events[e]) continue;
                 if (!events[e]->fire(*I, minterms.unused())) continue;
-                if ('b' != set_type) {
-                    minterms.unused().setValue(1+int((*I).getValue()));
+                switch (set_type) {
+                    case '+':
+                        minterms.unused().setValue(1+int((*I).getValue()));
+                        break;
+
+                    case 'i':
+                        minterms.unused().setValue((*I).getValue());
+                        // Don't add one, we already did
+                        break;
+
+                    default:
+                        minterms.unused().setValue(true);
                 }
 #ifdef DEBUG_GENERATE
                 if (events[e]->get_name()) {
