@@ -399,7 +399,7 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
         i++;
         return true;
     }
-    if (0==strcmp(argv[i], "-back")) {
+    if (0==strcmp(argv[i], "-bwd")) {
         forwd = false;
         i++;
         return true;
@@ -511,7 +511,7 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     out << "\t-reach     : build the reachability set (default).\n";
     out << "\n";
     out << "\t-fwd       : use forward generation (default).\n";
-    out << "\t-back      : use backward generation.\n";
+    out << "\t-bwd       : use backward generation.\n";
 
     out << "\n";
     out << "    GENERATION METHODS\n";
@@ -962,6 +962,7 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
                             apply(UNION, unexplored, batch, unexplored);
                             apply(UNION, RS, batch, RS);
                     }
+                    minterms.clear();
                 }
             } // for e
         } // for I
