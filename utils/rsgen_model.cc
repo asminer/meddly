@@ -321,6 +321,7 @@ rsgen_model::rsgen_model()
     set_set_type('b');
     set_gen_method('1');
     set_garbage('o');
+    forwd = true;
 #ifdef HAVE_LIBGMP
     approx = false;
 #else
@@ -389,6 +390,17 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
     }
     if (0==strcmp(argv[i], "-reach")) {
         set_set_type('b');
+        i++;
+        return true;
+    }
+
+    if (0==strcmp(argv[i], "-fwd")) {
+        forwd = true;
+        i++;
+        return true;
+    }
+    if (0==strcmp(argv[i], "-back")) {
+        forwd = false;
         i++;
         return true;
     }
@@ -498,9 +510,13 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     out << "\t-mtdist    : build the distance function.using MTMDDs.\n";
     out << "\t-reach     : build the reachability set (default).\n";
     out << "\n";
+    out << "\t-fwd       : use forward generation (default).\n";
+    out << "\t-back      : use backward generation.\n";
+
+    out << "\n";
     out << "    GENERATION METHODS\n";
     out << "\n";
-    out << "\t-exp       : use explicit (very slow!) generation\n";
+    out << "\t-exp       : use explicit generation (forward only)\n";
     out << "\t-front     : use traditional iterations, with frontier\n";
     out << "\t-trad      : use traditional iterations, without frontier\n";
     out << "\t-tradc dir : -trad with checkpoints saved in directory dir\n";
@@ -654,6 +670,8 @@ void rsgen_model::generate()
                                 ? "Distance function"
                                 : "Reachability set";
 
+    const char* direction = forwd ? "forward" : "backward";
+
     //
     // build transition relation
     //
@@ -697,7 +715,7 @@ void rsgen_model::generate()
     reachable.setLabel((set_type != 'b') ? "distfunc" : "reachset");
     watch.note_time();
     binary_operation* rsgen = nullptr;
-    std::cout << "Building " << setname;
+    std::cout << "Building " << direction << " " << setname;
     switch (gen_method) {
         case 't':
             std::cout << " using traditional algorithm (no frontier)"
@@ -705,7 +723,7 @@ void rsgen_model::generate()
             if (check_dir) {
                 trad_with_checkpoints(nsf, init_state, reachable);
             } else {
-                rsgen = build(REACHABLE_TRAD_NOFS(true), Fset, Fmxd, Fset);
+                rsgen = build(REACHABLE_TRAD_NOFS(forwd), Fset, Fmxd, Fset);
                 if (verb) rsgen->setProgressNotifier(my_progress);
                 rsgen->compute(init_state, nsf, reachable);
             }
@@ -717,24 +735,24 @@ void rsgen_model::generate()
             }
             std::cout   << " using traditional algorithm (with frontier)"
                         << std::endl;
-            rsgen = build(REACHABLE_TRAD_FS(true), Fset, Fmxd, Fset);
+            rsgen = build(REACHABLE_TRAD_FS(forwd), Fset, Fmxd, Fset);
             if (verb) rsgen->setProgressNotifier(my_progress);
             rsgen->compute(init_state, nsf, reachable);
             break;
 
         case 'd':
             std::cout << " using default saturation" << std::endl;
-            apply(REACHABLE_SATUR(true), init_state, nsf, reachable);
+            apply(REACHABLE_SATUR(forwd), init_state, nsf, reachable);
             break;
 
         case '1':
             std::cout << " using saturation v1" << std::endl;
-            apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
+            apply(REACHABLE_SATUR(forwd, 1), init_state, nsf, reachable);
             break;
 
         case '2':
             std::cout << " using saturation v2" << std::endl;
-            apply(REACHABLE_SATUR(true, 2), init_state, nsf, reachable);
+            apply(REACHABLE_SATUR(forwd, 2), init_state, nsf, reachable);
             break;
 
         case 'x':
@@ -772,26 +790,6 @@ void rsgen_model::generate()
     }
 
     write_to_file(setname, reachable, file_set);
-
-        //
-        // Write to terminal
-        //
-        // if (show_dd) {
-            // cout << "Reachable states MDD:\n";
-            // reachable.showGraph(meddlyout);
-        // }
-
-        //
-        // Write to file
-        //
-        // compressed_output writer(outfile);
-        // if (writer) {
-            // cout << "Writing to " << outfile << "\n";
-            // d->write(writer.outstream());
-            // mdd_writer mywriter(writer.outstream(), mdd);
-            // mywriter.writeRootEdge(reachable);
-            // mywriter.finish();
-        // }
 
     switch (set_type) {
         case 'i':
@@ -850,6 +848,10 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
         MEDDLY::dd_edge &RS)
 {
     using namespace MEDDLY;
+
+    if (!forwd) {
+        throw "can't run explicit generation backwards";
+    }
 
     std::cout << "    using batch size " << expl_batch << "\n";
 #ifdef DEBUG_GENERATE
@@ -1118,7 +1120,11 @@ void rsgen_model::trad_with_checkpoints(const MEDDLY::dd_edge &relation,
         // Compute next states
         //
         dd_edge step(reachable);
-        apply(POST_IMAGE, reachable, relation, step);
+        if (forwd) {
+            apply(POST_IMAGE, reachable, relation, step);
+        } else {
+            apply(PRE_IMAGE, reachable, relation, step);
+        }
         if (verb) my_progress(next, 'N');
 
         //

@@ -242,6 +242,9 @@ class rsgen_model {
             // 'o': optimistic ref counts
             // 'p': pessimistic ref counts
 
+        // forward generation?
+        bool forwd;
+
         // approximate cardinalities
         bool approx;
 

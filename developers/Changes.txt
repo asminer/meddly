@@ -2,7 +2,7 @@
 TO DO list
 
 rsgen_model:
-    * allow MT integer for distance computation
+    * allow forward/backward generation (not for explicit)
 
     * migrate all kanban in tests/ to use rsgen_model
 
