@@ -204,7 +204,7 @@ int main(int argc, const char** argv)
             K.show_usage(std::cerr, argv[0]);
             return 1;
         }
-        K.generate();
+        K.generate(true, true);
 
         MEDDLY::cleanup();
         return 0;

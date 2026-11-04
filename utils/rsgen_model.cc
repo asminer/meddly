@@ -330,6 +330,7 @@ rsgen_model::rsgen_model()
     verb = 0;
     expl_batch = 1024;
 
+    allow_output_files = true;
     file_rel = nullptr;
     file_set = nullptr;
     check_dir = nullptr;
@@ -482,17 +483,19 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
     //
     // File output
     //
-    if (0==strcmp(argv[i], "-wr")) {
-        i++;
-        file_rel = argv[i];
-        i++;
-        return true;
-    }
-    if (0==strcmp(argv[i], "-ws")) {
-        i++;
-        file_set = argv[i];
-        i++;
-        return true;
+    if (allow_output_files) {
+        if (0==strcmp(argv[i], "-wr")) {
+            i++;
+            file_rel = argv[i];
+            i++;
+            return true;
+        }
+        if (0==strcmp(argv[i], "-ws")) {
+            i++;
+            file_set = argv[i];
+            i++;
+            return true;
+        }
     }
 
     return false;
@@ -534,13 +537,15 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     out << "\t-opt      : optimistic reference counts\n";
     out << "\t-pess     : pessimistic reference counts\n";
     out << "\n";
-    out << "    FILE OUTPUT\n";
-    out << "\n";
-    out << "\t-wr file  : write the transition relation to file\n";
-    out << "\t-ws file  : write the generated set to file\n";
-    out << "\n";
-    out << "\t            Output filenames ending in .gz or .xz will be compressed.\n";
-    out << "\n";
+    if (allow_output_files) {
+        out << "    FILE OUTPUT\n";
+        out << "\n";
+        out << "\t-wr file  : write the transition relation to file\n";
+        out << "\t-ws file  : write the generated set to file\n";
+        out << "\n";
+        out << "\t            Output filenames ending in .gz or .xz will be compressed.\n";
+        out << "\n";
+    }
 #ifdef HAVE_LIBGMP
     out << "    CARDINALITY\n";
     out << "\n";
@@ -558,7 +563,7 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
 #endif
 }
 
-void rsgen_model::generate()
+void rsgen_model::generate(bool mxdstats, bool mddstats)
 {
     using namespace MEDDLY;
 
@@ -698,7 +703,9 @@ void rsgen_model::generate()
                     << watch.get_last_seconds() << " seconds\n";
         std::cout << "MxD for relation requires "
                   << nsf.getNodeCount() << " nodes" << std::endl;
-        printStats("MxD", Fmxd);
+        if (mxdstats) {
+            printStats("MxD", Fmxd);
+        }
 
         write_to_file("relation", nsf, file_rel);
     }
@@ -785,24 +792,24 @@ void rsgen_model::generate()
     std::cout   << Setname << " uses "
                 << reachable.getNodeCount() << " nodes" << std::endl;
 
-    if ('b' == set_type) {
-        show_cardinality("reachable states", reachable);
-    }
+    after_generation(setname, reachable);
 
     write_to_file(setname, reachable, file_set);
 
-    switch (set_type) {
-        case 'i':
-            printStats("MTMDD", Fset);
-            break;
+    if (mddstats) {
+        switch (set_type) {
+            case 'i':
+                printStats("MTMDD", Fset);
+                break;
 
-        case '+':
-            printStats("EV+MDD", Fset);
-            break;
+            case '+':
+                printStats("EV+MDD", Fset);
+                break;
 
-        default:
-            printStats("MDD", Fset);
-            break;
+            default:
+                printStats("MDD", Fset);
+                break;
+        }
     }
 }
 
@@ -838,6 +845,12 @@ void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
     R.setLabel("nsf-monolithic");
 }
 
+void rsgen_model::after_generation(const char* what, const MEDDLY::dd_edge &e)
+{
+    if ('b' == get_set_type()) {
+        show_cardinality(what, e);
+    }
+}
 
 // ******************************************************************
 // *                 rsgen_model  protected methods                 *

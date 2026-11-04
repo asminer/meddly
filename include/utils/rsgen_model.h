@@ -146,11 +146,21 @@ class rsgen_model {
             Will generate the state space or distance function,
             using the appropriate methods, as dictated by the
             command line switches.
+
+                @param  mxdstats:   Show MXD stats?
+                @param  mddstats:   Show (EV+)MDD stats?
         */
-        void generate();
+        void generate(bool mxdstats, bool mddstats);
 
         /// Build a monolithic relation.
         void build_monolithic(MEDDLY::dd_edge &R);
+
+        /**
+            Called automatically after generation.
+            Default behavior is to simply show the cardinality.
+        */
+        virtual void after_generation(const char* what,
+                const MEDDLY::dd_edge &e);
 
     protected:
         void gen_explicit(const MEDDLY::dd_edge &init, MEDDLY::dd_edge &RS);
@@ -181,6 +191,9 @@ class rsgen_model {
         inline void set_set_type(char t) {
             set_type = t;
         }
+        inline char get_set_type() const {
+            return set_type;
+        }
 
         inline void set_gen_method(char g) {
             gen_method = g;
@@ -190,8 +203,15 @@ class rsgen_model {
                 reltype = 'm';
             }
         }
+        inline char get_gen_method() const {
+            return gen_method;
+        }
+
         inline void set_garbage(char g) {
             garbage = g;
+        }
+        inline char get_garbage() const {
+            return garbage;
         }
 
         void write_to_file(const char* what, const MEDDLY::dd_edge &who,
@@ -199,6 +219,10 @@ class rsgen_model {
 
         void trad_with_checkpoints(const MEDDLY::dd_edge &relation,
                 const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable);
+
+        inline void disable_output_options() {
+            allow_output_files = false;
+        }
 
     private:
         const char* chkpt_path(unsigned iter) const;
@@ -250,6 +274,9 @@ class rsgen_model {
 
         // verbosity level
         int verb;
+
+        // are output file options enabled?
+        bool allow_output_files;
 
         // output file: the relation (or null for none)
         const char* file_rel;
