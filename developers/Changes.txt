@@ -2,9 +2,8 @@
 TO DO list
 
 rsgen_model:
-    * allow forward/backward generation (not for explicit)
-
     * migrate all kanban in tests/ to use rsgen_model
+        kan_chkgen  will replace many, especially kan_chkrs
 
     * migrate other models in examples/ to use rsgen_model
 

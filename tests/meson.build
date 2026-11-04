@@ -167,6 +167,14 @@ test('kan_batch', kan_batch)
 
 ######################################################################
 
+kan_chkgen = executable(
+    'kan_chkgen',
+    'kan_chkgen.cc',
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
+)
+
+######################################################################
+
 kan_chkrs = executable(
     'kan_chkrs',
     'kan_chkrs.cc',
