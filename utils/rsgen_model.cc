@@ -668,14 +668,6 @@ void rsgen_model::generate(bool mxdstats, bool mddstats)
             initial.setValue(true);
             initial.buildFunction(false, init_state);
     }
-    const char* setname = (set_type != 'b')
-                                ? "distance function"
-                                : "reachability set";
-    const char* Setname = (set_type != 'b')
-                                ? "Distance function"
-                                : "Reachability set";
-
-    const char* direction = forwd ? "forward" : "backward";
 
     //
     // build transition relation
@@ -704,7 +696,7 @@ void rsgen_model::generate(bool mxdstats, bool mddstats)
         std::cout << "MxD for relation requires "
                   << nsf.getNodeCount() << " nodes" << std::endl;
         if (mxdstats) {
-            printStats("MxD", Fmxd);
+            printStats(Fmxd);
         }
 
         write_to_file("relation", nsf, file_rel);
@@ -722,7 +714,7 @@ void rsgen_model::generate(bool mxdstats, bool mddstats)
     reachable.setLabel((set_type != 'b') ? "distfunc" : "reachset");
     watch.note_time();
     binary_operation* rsgen = nullptr;
-    std::cout << "Building " << direction << " " << setname;
+    std::cout << "Building " << get_direction() << " " << get_set_name();
     switch (gen_method) {
         case 't':
             std::cout << " using traditional algorithm (no frontier)"
@@ -787,29 +779,17 @@ void rsgen_model::generate(bool mxdstats, bool mddstats)
     };
     watch.note_time();
     std::cout << "Done\n";
-    std::cout   << Setname << " construction took "
+    std::cout   << get_Set_name() << " construction took "
                 << watch.get_last_seconds() << " seconds" << std::endl;
-    std::cout   << Setname << " uses "
+    std::cout   << get_Set_name() << " uses "
                 << reachable.getNodeCount() << " nodes" << std::endl;
 
-    after_generation(setname, reachable);
+    after_generation(reachable);
 
-    write_to_file(setname, reachable, file_set);
+    write_to_file(get_set_name(), reachable, file_set);
 
     if (mddstats) {
-        switch (set_type) {
-            case 'i':
-                printStats("MTMDD", Fset);
-                break;
-
-            case '+':
-                printStats("EV+MDD", Fset);
-                break;
-
-            default:
-                printStats("MDD", Fset);
-                break;
-        }
+        printStats(Fset);
     }
 }
 
@@ -845,10 +825,10 @@ void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
     R.setLabel("nsf-monolithic");
 }
 
-void rsgen_model::after_generation(const char* what, const MEDDLY::dd_edge &e)
+void rsgen_model::after_generation(const MEDDLY::dd_edge &e)
 {
     if ('b' == get_set_type()) {
-        show_cardinality(what, e);
+        show_cardinality(e);
     }
 }
 
@@ -1009,8 +989,7 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
     } // infinite loop
 }
 
-void rsgen_model::show_cardinality(const char* what,
-        const MEDDLY::dd_edge &e)
+void rsgen_model::show_cardinality(const MEDDLY::dd_edge &e)
 {
     using namespace MEDDLY;
     timer watch;
@@ -1023,7 +1002,7 @@ void rsgen_model::show_cardinality(const char* what,
         std::cout   << "Approximately "
                     << std::scientific
                     << std::setprecision(6)
-                    << card << " " << what << "\n";
+                    << card << " reachable states\n";
     }
 #ifdef HAVE_LIBGMP
     else {
@@ -1055,7 +1034,7 @@ void rsgen_model::show_cardinality(const char* what,
             }
             std::cout << str[i];
         }
-        std::cout << " " << what << std::endl;
+        std::cout << " reachable states" << std::endl;
 
         //
         // Cleanup
@@ -1068,12 +1047,25 @@ void rsgen_model::show_cardinality(const char* what,
               << watch.get_last_seconds() << " seconds" << std::endl;
 }
 
-void rsgen_model::printStats(const char* who, const MEDDLY::forest* F)
+void rsgen_model::printStats(const MEDDLY::forest* F)
 {
     using namespace MEDDLY;
     if (F) {
         ostream_output meddlyout(std::cout);
-        meddlyout << who << " stats:\n";
+        if (F->isEVPlus()) {
+            meddlyout << "EV+";
+        }
+        if (F->isMultiTerminal()) {
+            if (F->isRangeType(range_type::INTEGER)) {
+                meddlyout << "MT";
+            }
+        }
+        if (F->isForRelations()) {
+            meddlyout << "MxD";
+        } else {
+            meddlyout << "MDD";
+        }
+        meddlyout << " stats:\n";
         F->reportStats(meddlyout, "\t",
             HUMAN_READABLE_MEMORY | BASIC_STATS
             | EXTRA_STATS

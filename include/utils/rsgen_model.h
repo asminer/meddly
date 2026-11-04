@@ -159,8 +159,7 @@ class rsgen_model {
             Called automatically after generation.
             Default behavior is to simply show the cardinality.
         */
-        virtual void after_generation(const char* what,
-                const MEDDLY::dd_edge &e);
+        virtual void after_generation(const MEDDLY::dd_edge &e);
 
     protected:
         void gen_explicit(const MEDDLY::dd_edge &init, MEDDLY::dd_edge &RS);
@@ -175,8 +174,7 @@ class rsgen_model {
             events.push_back(e);
         }
 
-        void show_cardinality(const char* what,
-                const MEDDLY::dd_edge &e);
+        void show_cardinality(const MEDDLY::dd_edge &e);
 
         inline static const char* basename(const char* path) {
             const char* b = path;
@@ -186,13 +184,26 @@ class rsgen_model {
             return b;
         }
 
-        static void printStats(const char* who, const MEDDLY::forest* F);
+        static void printStats(const MEDDLY::forest* F);
 
         inline void set_set_type(char t) {
             set_type = t;
         }
         inline char get_set_type() const {
             return set_type;
+        }
+        inline const char* get_set_name() const {
+            return ('b' != set_type)
+                ? "distance function"
+                : "reachability set";
+        }
+        inline const char* get_Set_name() const {
+            return ('b' != set_type)
+                ? "Distance function"
+                : "Reachability set";
+        }
+        inline const char* get_direction() const {
+            return forwd ? "forward" : "backward";
         }
 
         inline void set_gen_method(char g) {
