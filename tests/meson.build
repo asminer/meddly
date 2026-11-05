@@ -179,7 +179,7 @@ foreach gtype: [ '-reach', '-mtdist', '-evdist' ]
     # Explicit batch sizes; forward only
     #
     foreach batch: [ '1', '10', '100', '1000' ]
-        test('kan_chkgen -fwd ' + gtype + '-exp -eb ' + batch,
+        test('kan_chkgen -fwd ' + gtype + ' -exp -eb ' + batch,
             kan_chkgen, args: ['-fwd', gtype, '-exp', '-eb', batch])
     endforeach
 
