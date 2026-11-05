@@ -157,59 +157,44 @@ test('domain_list', domain_list)
 
 ######################################################################
 
-kan_batch = executable(
-    'kan_batch',
-    'kan_batch.cc',
-    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
-)
-
-test('kan_batch', kan_batch)
-
-######################################################################
-
 kan_chkgen = executable(
     'kan_chkgen',
     'kan_chkgen.cc',
     dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
 )
 
-######################################################################
+# Frontier works fine forward and backward,
+# but only for reachability.
+foreach fb: [ '-fwd', '-bwd' ]
+    test('kan_chkgen ' + fb + ' -reach -front', kan_chkgen,
+        args: [fb, '-reach', '-front'])
+endforeach
 
-kan_chkrs = executable(
-    'kan_chkrs',
-    'kan_chkrs.cc',
-    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
-)
+#
+# All others: reachability or distances
+#
+foreach gtype: [ '-reach', '-mtdist', '-evdist' ]
 
-test('kan_chkrs -f --mtb --front', kan_chkrs,
-    args: ['-f', '--mtb', '--front'])
-test('kan_chkrs -f --mtb --trad',  kan_chkrs,
-    args: ['-f', '--mtb', '--trad'])
-test('kan_chkrs -f --mtb --sat1',  kan_chkrs,
-    args: ['-f', '--mtb', '--sat1'])
-test('kan_chkrs -f --mti --trad',  kan_chkrs,
-    args: ['-f', '--mti', '--trad'])
-test('kan_chkrs -f --mti --sat1',  kan_chkrs,
-    args: ['-f', '--mti', '--sat1'])
-test('kan_chkrs -f --ev  --trad',  kan_chkrs,
-    args: ['-f', '--ev', '--trad'])
-test('kan_chkrs -f --ev  --sat1',  kan_chkrs,
-    args: ['-f', '--ev', '--sat1'])
+    #
+    # Explicit batch sizes; forward only
+    #
+    foreach batch: [ '1', '10', '100', '1000' ]
+        test('kan_chkgen -fwd ' + gtype + '-exp -eb ' + batch,
+            kan_chkgen, args: ['-fwd', gtype, '-exp', '-eb', batch])
+    endforeach
 
-test('kan_chkrs -b --mtb --front', kan_chkrs,
-    args: ['-b', '--mtb', '--front'])
-test('kan_chkrs -b --mtb --trad',  kan_chkrs,
-    args: ['-b', '--mtb', '--trad'])
-test('kan_chkrs -b --mtb --sat1',  kan_chkrs,
-    args: ['-b', '--mtb', '--sat1'])
-test('kan_chkrs -b --mti --trad',  kan_chkrs,
-    args: ['-b', '--mti', '--trad'])
-test('kan_chkrs -b --mti --sat1',  kan_chkrs,
-    args: ['-b', '--mti', '--sat1'])
-test('kan_chkrs -b --ev  --trad',  kan_chkrs,
-    args: ['-b', '--ev', '--trad'])
-test('kan_chkrs -b --ev  --sat1',  kan_chkrs,
-    args: ['-b', '--ev', '--sat1'])
+    #
+    # Other algorithms, and forward or backward
+    #
+    foreach alg: [ '-trad', '-sat1' ]
+        foreach fb: [ '-fwd', '-bwd' ]
+            test('kan_chkgen ' + fb + ' ' + gtype + ' ' + alg,
+                kan_chkgen, args: [fb, gtype, alg])
+        endforeach
+    endforeach
+
+endforeach
+
 
 ######################################################################
 
