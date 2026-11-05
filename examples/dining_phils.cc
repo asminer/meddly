@@ -95,7 +95,7 @@
 
 #include "meddly/meddly.h"
 #include "utils/timer.h"
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
 #include "meddly/log_simple.h"
 #endif
 
@@ -442,7 +442,7 @@ void testIndexSet(const dd_edge& mdd, dd_edge& indexSet)
     indexSet.showGraph(mout);
 }
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
 domain* runWithOptions(int nPhilosophers, const switches &sw, logger* LOG)
 #else
 domain* runWithOptions(int nPhilosophers, const switches &sw)
@@ -504,7 +504,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw)
     forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
             edge_labeling::MULTI_TERMINAL, pmdd);
     assert(mdd);
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     mdd->setLogger(LOG, "MDD");
 #endif
 
@@ -512,7 +512,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw)
     forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
             edge_labeling::MULTI_TERMINAL, pmxd);
     assert(mxd);
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     mxd->setLogger(LOG, "MxD");
     if (LOG) LOG->newPhase(mdd, "Building initial state");
 #endif
@@ -521,7 +521,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw)
     dd_edge initialStates(mdd);
     buildInitialState(initialStates);
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     if (LOG) LOG->newPhase(mxd, "Building next-state function");
 #endif
     printf("Building next-state function for %d dining philosophers\n",
@@ -591,7 +591,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw)
     //
     // Build reachable states
     //
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     if (LOG) LOG->newPhase(mdd, "Building reachability set");
 #endif
     dd_edge reachableStates(initialStates);
@@ -721,7 +721,7 @@ domain* runWithOptions(int nPhilosophers, const switches &sw)
        Next will be cleanup.
        Log that.
     */
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     if (LOG) {
         LOG->newPhase(mdd, "Cleanup");
         LOG->newPhase(mxd, "Cleanup");
@@ -771,7 +771,7 @@ int usage(const char* who)
     printf("\t-sat2:      Saturation v2\n");
     printf("\n");
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     printf("\t-l lfile:   Write logging information to specified file\n");
 #endif
     printf("\t-pdf:       Write MDD for reachable states to out.pdf\n");
@@ -795,7 +795,7 @@ int main(int argc, char *argv[])
     int nPhilosophers = 0; // number of philosophers
     switches sw;
     int cacheSize = 0;
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     const char* lfile = 0;
 #endif
     verbose = false;
@@ -875,7 +875,7 @@ int main(int argc, char *argv[])
             sw.method = 'k';
             continue;
         }
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
         if (strcmp("-l", argv[i])==0) {
             lfile = argv[i+1];
             i++;
@@ -924,7 +924,7 @@ int main(int argc, char *argv[])
     }
     MEDDLY::initialize(L);
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     //
     // Set up logger, if any
     //
@@ -949,14 +949,14 @@ int main(int argc, char *argv[])
 #endif
 
     try {
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
         domain* d = runWithOptions(nPhilosophers, sw, LOG);
 #else
         runWithOptions(nPhilosophers, sw);
 #endif
         printf("Cleaning up\n");
         fflush(stdout);
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
         if (LOG) {
             domain::destroy(d);
             delete LOG;

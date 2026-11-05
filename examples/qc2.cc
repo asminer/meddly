@@ -37,7 +37,7 @@
 #include <cstdlib>
 
 #include "meddly/meddly.h"
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
 #include "meddly/log_simple.h"
 #endif
 
@@ -142,7 +142,7 @@ void varorder::ColsRows()
 }
 
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
 logger* buildLogger(const char* lfile, int lagg)
 {
   if (0==lfile) return 0;
@@ -757,7 +757,7 @@ int usage(const char* who)
   printf("                    h - `half square root'.  Collect by N/2.\n");
   printf("                    j - just accumulate, in order\n");
   printf("                    s - `square root'.  Collect by N. (default)\n");
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
   printf("     -l lfile:  Write logging information to specified file\n");
   printf("     -L count:  Aggregate count items per log entry\n");
 #endif
@@ -779,7 +779,7 @@ int main(int argc, const char** argv)
   /* Parse command line */
   policies p(false);
   p.setPessimistic();
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
   const char* lfile = 0;
   int lagg = 16;
 #endif
@@ -796,7 +796,7 @@ int main(int argc, const char** argv)
       if (argv[i][2]!=0) return usage(argv[0]);
       switch (argv[i][1]) {
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
         case 'l': i++;
                   lfile = argv[i];
                   continue;
@@ -880,7 +880,7 @@ int main(int argc, const char** argv)
   }
   printf("Using variable order: %s\n", V.Name());
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
   /*
     Set up forest logging, if desired
   */
@@ -892,7 +892,7 @@ int main(int argc, const char** argv)
   */
   forest* F = buildForest(p, N, V);
   if (0==F) return 1;
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
   F->setLogger(LOG, "qc2 forest");
   if (LOG) LOG->newPhase(F, "Building per square constraints");
 #endif
@@ -940,7 +940,7 @@ int main(int argc, const char** argv)
   }
   delete[] covered;
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
   if (LOG) LOG->newPhase(F, "Accumulating constraints");
 #endif
 
@@ -976,7 +976,7 @@ int main(int argc, const char** argv)
     printf("\nNO SOLUTIONS\n\n");
   } else {
     printf("There are solutions.  Minimizing number of queens.\n");
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     if (LOG) LOG->newPhase(F, "Minimizing");
 #endif
 
@@ -1042,11 +1042,11 @@ int main(int argc, const char** argv)
   }
 
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
   if (LOG) LOG->newPhase(F, "Cleanup");
 #endif
   cleanup();
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
   delete LOG;
 #endif
   return 0;

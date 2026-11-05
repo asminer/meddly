@@ -158,7 +158,7 @@ update_deffile()
 
     if [ "$oldversid" != "$thisversid" ]
     then
-        find ../include ../src | while read fname
+        find ../examples ../include ../src ../tests ../timing ../utils | while read fname
         do
             update_deprecated $oldversid $thisversid $fname
         done

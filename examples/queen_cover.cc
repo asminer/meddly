@@ -37,7 +37,7 @@
 #include <cassert>
 
 #include "meddly/meddly.h"
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
 #include "meddly/log_simple.h"
 #endif
 #include "utils/timer.h"
@@ -46,7 +46,7 @@ using namespace MEDDLY;
 
 int N;
 FILE* outfile;
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
 const char* lfile;
 #endif
 bool build_pdf;
@@ -167,7 +167,7 @@ void queenInDiagM(forest* f, int d, dd_edge &e)
 bool processArgs(int argc, const char** argv)
 {
     build_pdf = false;
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     lfile = 0;
 #endif
     mark_sweep = true;
@@ -198,7 +198,7 @@ bool processArgs(int argc, const char** argv)
             }
             continue;
         }
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
         if (strcmp("-l", argv[i])==0) {
             lfile = argv[i+1];
             i++;
@@ -237,7 +237,7 @@ int usage(const char* who)
     printf("\t      -ms:  Mark and sweep node deletion (default)\n");
     printf("\t     -opt:  Reference counts and Optimistic node deletion\n");
     printf("\t    -pess:  Reference counts and Pessimistic node deletion\n");
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
     printf("\t -l lfile:  Write logging information to specified file\n");
 #endif
     printf("\t     -pdf:  Write MDD of solutions to out.pdf\n\n");
@@ -275,7 +275,7 @@ int main(int argc, const char** argv)
 
         forest* f = buildQueenForest(p);
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
         FILE_output log;
         logger* LOG = 0;
         if (lfile) {
@@ -321,7 +321,7 @@ int main(int argc, const char** argv)
             char buffer[80];
             snprintf(buffer, 80, "Trying to cover with %d queens", q);
             printf("\n%s\n", buffer);
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
             if (LOG) LOG->newPhase(f, buffer);
 #endif
 
@@ -428,11 +428,11 @@ int main(int argc, const char** argv)
             dm.runDot("pdf");
         }
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
         if (LOG) LOG->newPhase(f, "Cleanup");
 #endif
         cleanup();
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
         delete LOG;
 #endif
         return 0;
