@@ -88,82 +88,22 @@ bool kanban::build_model()
     //
     // Make the events
     //
-
-    std::vector <level_axb> uplist;
-    // "X-+..............",    // Tin1
-    uplist.resize(2);
-    uplist[0].set(1, 1, -1);
-    uplist[1].set(2, 1, +1);
-    add_event(new simple_event("Tin1", uplist));
-    // "X.-+.............",    // Tr1
-    uplist[0].set(2, 1, -1);
-    uplist[1].set(3, 1, +1);
-    add_event(new simple_event("Tr1", uplist));
-    // "X.+-.............",    // Tb1
-    uplist[0].set(2, 1, +1);
-    uplist[1].set(3, 1, -1);
-    add_event(new simple_event("Tb1", uplist));
-    // "X.-.+............",    // Tg1
-    uplist[0].set(2, 1, -1);
-    uplist[1].set(4, 1, +1);
-    add_event(new simple_event("Tg1", uplist));
-    // "X.....-+.........",    // Tr2
-    uplist[0].set(6, 1, -1);
-    uplist[1].set(7, 1, +1);
-    add_event(new simple_event("Tr2", uplist));
-    // "X.....+-.........",    // Tb2
-    uplist[0].set(6, 1, +1);
-    uplist[1].set(7, 1, -1);
-    add_event(new simple_event("Tb2", uplist));
-    // "X.....-.+........",    // Tg2
-    uplist[0].set(6, 1, -1);
-    uplist[1].set(8, 1, +1);
-    add_event(new simple_event("Tg2", uplist));
-    // "X.........-+.....",    // Tr3
-    uplist[0].set(10, 1, -1);
-    uplist[1].set(11, 1, +1);
-    add_event(new simple_event("Tr3", uplist));
-    // "X.........+-.....",    // Tb3
-    uplist[0].set(10, 1, +1);
-    uplist[1].set(11, 1, -1);
-    add_event(new simple_event("Tb3", uplist));
-    // "X.........-.+....",    // Tg3
-    uplist[0].set(10, 1, -1);
-    uplist[1].set(12, 1, +1);
-    add_event(new simple_event("Tg3", uplist));
-    // "X.............-+.",    // Tr4
-    uplist[0].set(14, 1, -1);
-    uplist[1].set(15, 1, +1);
-    add_event(new simple_event("Tr4", uplist));
-    // "X.............+-.",    // Tb4
-    uplist[0].set(14, 1, +1);
-    uplist[1].set(15, 1, -1);
-    add_event(new simple_event("Tb4", uplist));
-    // "X............+..-",    // Tout4
-    uplist[0].set(13, 1, +1);
-    uplist[1].set(16, 1, -1);
-    add_event(new simple_event("Tout4", uplist));
-    // "X.............-.+"     // Tg4 TP
-    uplist[0].set(14, 1, -1);
-    uplist[1].set(16, 1, +1);
-    add_event(new simple_event("Tg4", uplist));
-    // "X+..--+..-+......",    // Ts1_23
-    uplist.resize(6);
-    uplist[0].set(1,  1, +1);
-    uplist[1].set(4,  1, -1);
-    uplist[2].set(5,  1, -1);
-    uplist[3].set(6,  1, +1);
-    uplist[4].set(9,  1, -1);
-    uplist[5].set(10, 1, +1);
-    add_event(new simple_event("Ts1_23", uplist));
-    // "X....+..-+..--+..",    // Ts23_4
-    uplist[0].set(5,  1, +1);
-    uplist[1].set(8,  1, -1);
-    uplist[2].set(9,  1, +1);
-    uplist[3].set(12, 1, -1);
-    uplist[4].set(13, 1, -1);
-    uplist[5].set(14, 1, +1);
-    add_event(new simple_event("Ts23_4", uplist));
+    add_event(new simple_event("Tin1",    "X-+.............."));
+    add_event(new simple_event("Tr1",     "X.-+............."));
+    add_event(new simple_event("Tb1",     "X.+-............."));
+    add_event(new simple_event("Tg1",     "X.-.+............"));
+    add_event(new simple_event("Tr2",     "X.....-+........."));
+    add_event(new simple_event("Tb2",     "X.....+-........."));
+    add_event(new simple_event("Tg2",     "X.....-.+........"));
+    add_event(new simple_event("Ts1_23",  "X+..--+..-+......"));
+    add_event(new simple_event("Tr3",     "X.........-+....."));
+    add_event(new simple_event("Tb3",     "X.........+-....."));
+    add_event(new simple_event("Tg3",     "X.........-.+...."));
+    add_event(new simple_event("Ts23_4",  "X....+..-+..--+.."));
+    add_event(new simple_event("Tr4",     "X.............-+."));
+    add_event(new simple_event("Tb4",     "X.............+-."));
+    add_event(new simple_event("Tout4",   "X............+..-"));
+    add_event(new simple_event("Tg4",     "X.............-.+"));
 
     return true;
 }

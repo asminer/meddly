@@ -91,14 +91,39 @@ class rsgen_model {
         class simple_event : public event {
                 std::vector <level_axb> updates;
             public:
+                /**
+                    Create a "simple" event.
+                        @param  name    Event name; used primarily
+                                        for debugging.
+                        @param  _upd    Updates, as a list of
+                                        level_axb objects, with
+                                        all of them applied independently
+                                        at various levels.
+                */
                 simple_event(const char* name,
                         const std::vector <level_axb> &_upd);
+
+                /**
+                    Create a "simple" event.
+                        @param  name    Event name; used primarily
+                                        for debugging.
+                        @param  pmstr   Update string. Element 0 is X.
+                                        Element i tells how variable i
+                                        is updated:
+                                            '.' for no change
+                                            '+' for add one
+                                            '-' for subtract one.
+                */
+                simple_event(const char* name, const char* pmstr);
 
                 virtual bool fire(const MEDDLY::minterm &curr,
                         MEDDLY::minterm &next);
 
                 virtual bool build_nsf(MEDDLY::forest* mtmxd,
                         MEDDLY::dd_edge &R);
+
+            protected:
+                void show() const;
         };
     public:
         rsgen_model();

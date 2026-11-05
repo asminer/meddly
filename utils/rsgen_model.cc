@@ -21,6 +21,7 @@
 #include "utils/zstream.h"
 
 // #define DEBUG_UPDATE_SORT
+// #define DEBUG_UPDATE_STRING
 // #define DEBUG_EVENTS
 // #define DEBUG_EVENT_BUILD
 // #define DEBUG_GENERATE
@@ -142,17 +143,39 @@ rsgen_model::simple_event::simple_event(const char* n,
         }
     }
 #ifdef DEBUG_UPDATE_SORT
-    std::cerr << "Event ";
-    if (n) std::cerr << n << " ";
-    std::cerr << ": [";
-    for (unsigned u=0; u<updates.size(); u++) {
-        if (u) std::cerr << ", ";
-        std::cerr << "(" << updates[u].level << ": *"
-                  << updates[u].scale << " +" << updates[u].delta << ")";
-    }
-    std::cerr << "]\n";
+    show();
 #endif
+}
 
+rsgen_model::simple_event::simple_event(const char* n, const char* pmstr)
+        : rsgen_model::event(n)
+{
+    if (pmstr) {
+        MEDDLY_DCASSERT('X' == pmstr[0]);
+        unsigned u = 0;
+        for (unsigned i=1; pmstr[i]; i++) {
+            if (('+' == pmstr[i]) || ('-' == pmstr[i])) {
+                u++;
+            }
+        }
+        if (u) {
+            updates.resize(u);
+            u = 0;
+            for (unsigned i=1; pmstr[i]; i++) {
+                if ('.' == pmstr[i]) continue;
+                const int delta = ('+' == pmstr[i]) ? 1 : -1;
+#ifdef DEVELOPMENT_CODE
+                updates.at(u).set(i, 1, delta);
+#else
+                updates[u].set(i, 1, delta);
+#endif
+                u++;
+            }
+        }
+    }
+#ifdef DEBUG_UPDATE_STRING
+    show();
+#endif
 }
 
 bool rsgen_model::simple_event::fire(const MEDDLY::minterm &curr,
@@ -303,6 +326,23 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::forest* mtmxd,
 #endif
 
     return true;
+}
+
+void rsgen_model::simple_event::show() const
+{
+    std::cerr << "Event ";
+    if (get_name()) std::cerr << get_name() << " ";
+    std::cerr << ": [";
+    for (unsigned u=0; u<updates.size(); u++) {
+        if (u) std::cerr << ", ";
+        std::cerr << "(" << updates[u].level << ": *" << updates[u].scale;
+        if (updates[u].delta < 0) {
+            std::cerr << " " << updates[u].delta << ")";
+        } else {
+            std::cerr << " +" << updates[u].delta << ")";
+        }
+    }
+    std::cerr << "]\n";
 }
 
 // ******************************************************************
