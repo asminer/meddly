@@ -20,6 +20,8 @@
 #include "utils/timer.h"
 #include "utils/zstream.h"
 
+#include <iomanip>
+
 // #define DEBUG_UPDATE_SORT
 // #define DEBUG_UPDATE_STRING
 // #define DEBUG_EVENTS
