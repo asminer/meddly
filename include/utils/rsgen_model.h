@@ -21,6 +21,11 @@
 
 #include "meddly/meddly.h"
 
+// #define OLD_SIMPLE_MODEL
+
+// ^ Uncomment to make this act like the simple_model implementation
+
+
 /**
     Class for a "model" to help coordinate the various
     reachability set / distance function generation examples.
@@ -76,14 +81,23 @@ class rsgen_model {
                 virtual bool fire(const MEDDLY::minterm &curr,
                         MEDDLY::minterm &) = 0;
 
+#ifdef OLD_SIMPLE_MODEL
                 /**
                     Build the next state function for this event.
-                        @param  mtmxd   Forest for the relation
+                        @param  mtmxd   Auxiliary relation forest
                         @param  R       Edge to store the result
                         @return true,   iff we could build the relation.
                 */
                 virtual bool build_nsf(MEDDLY::forest* mtmxd,
                     MEDDLY::dd_edge &R) = 0;
+#else
+                /**
+                    Build the next state function for this event.
+                        @param  R       Edge to store the result
+                        @return true,   iff we could build the relation.
+                */
+                virtual bool build_nsf(MEDDLY::dd_edge &R) = 0;
+#endif
 
                 // something for implicit relations here?
         };
@@ -119,8 +133,12 @@ class rsgen_model {
                 virtual bool fire(const MEDDLY::minterm &curr,
                         MEDDLY::minterm &next);
 
+#ifdef OLD_SIMPLE_MODEL
                 virtual bool build_nsf(MEDDLY::forest* mtmxd,
                         MEDDLY::dd_edge &R);
+#else
+                virtual bool build_nsf(MEDDLY::dd_edge &R);
+#endif
 
             protected:
                 void show() const;
@@ -157,11 +175,13 @@ class rsgen_model {
                 build the domain and call set_domain(),
                 build the events and call add_event() on each.
 
+            @param  out     Stream to write to
+
             @return true on success, false on error
                     (assumed to be bad parameters, so
                     we will then display usage info).
         */
-        virtual bool build_model() = 0;
+        virtual bool build_model(MEDDLY::output &out) = 0;
 
         /// Build the initial state, as a minterm.
         virtual void build_initial(MEDDLY::minterm &init) = 0;
@@ -172,10 +192,11 @@ class rsgen_model {
             using the appropriate methods, as dictated by the
             command line switches.
 
-                @param  mxdstats:   Show MXD stats?
-                @param  mddstats:   Show (EV+)MDD stats?
+                @param  out         Output stream
+                @param  mxdstats    Show MXD stats?
+                @param  mddstats    Show (EV+)MDD stats?
         */
-        void generate(bool mxdstats, bool mddstats);
+        void generate(MEDDLY::output &out, bool mxdstats, bool mddstats);
 
         /// Build a monolithic relation.
         void build_monolithic(MEDDLY::dd_edge &R);
@@ -184,7 +205,17 @@ class rsgen_model {
             Called automatically after generation.
             Default behavior is to simply show the cardinality.
         */
-        virtual void after_generation(const MEDDLY::dd_edge &e);
+        virtual void after_generation(MEDDLY::output &out,
+                const MEDDLY::dd_edge &e);
+
+        /**
+            Tear down the model.
+            Allows us to then cal build_model() again after
+            adjusting any model instance parameters.
+            Children classes may override this, but should call
+            the parent's method also.
+        */
+        virtual void destroy_model();
 
     protected:
         void gen_explicit(const MEDDLY::dd_edge &init, MEDDLY::dd_edge &RS);
@@ -199,7 +230,7 @@ class rsgen_model {
             events.push_back(e);
         }
 
-        void show_cardinality(const MEDDLY::dd_edge &e);
+        void show_cardinality(MEDDLY::output &out, const MEDDLY::dd_edge &e);
 
         inline static const char* basename(const char* path) {
             const char* b = path;
@@ -209,7 +240,7 @@ class rsgen_model {
             return b;
         }
 
-        static void printStats(const MEDDLY::forest* F);
+        static void printStats(MEDDLY::output &out, const MEDDLY::forest* F);
 
         inline void set_set_type(char t) {
             set_type = t;
@@ -226,6 +257,9 @@ class rsgen_model {
             return ('b' != set_type)
                 ? "Distance function"
                 : "Reachability set";
+        }
+        inline bool is_forward() const {
+            return forwd;
         }
         inline const char* get_direction() const {
             return forwd ? "forward" : "backward";
@@ -272,7 +306,9 @@ class rsgen_model {
 
         MEDDLY::forest* Fset;   // forest for reachset or distances
         MEDDLY::forest* Fmxd;   // forest for relation, or null
+#ifdef OLD_SIMPLE_MODEL
         MEDDLY::forest* Fmtmxd; // auxiliary forest for relation, or null
+#endif
 
         unsigned expl_batch;    // batch size for explicit
 

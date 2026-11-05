@@ -31,7 +31,7 @@ class kanban : public rsgen_model {
         virtual bool process_arg(unsigned &i, const char** argv);
         virtual void show_usage(std::ostream &out, const char* arg0);
 
-        virtual bool build_model();
+        virtual bool build_model(MEDDLY::output &out);
         virtual void build_initial(MEDDLY::minterm &init);
 
     private:
@@ -66,16 +66,18 @@ void kanban::show_usage(std::ostream &out, const char* arg0)
     rsgen_model::show_usage(out);
 }
 
-bool kanban::build_model()
+bool kanban::build_model(MEDDLY::output &out)
 {
     if (N<0) {
         std::cerr << "Missing or bad size.\n";
         return false;
     }
-    std::cout << "+-------------------------------------------+\n";
-    std::cout << "|   Initializing Kanban model for N = "
-              << std::left << std::setw(4) << N << "  |\n";
-    std::cout << "+-------------------------------------------+" << std::endl;
+    out << "+-------------------------------------------+\n";
+    out << "|   Initializing Kanban model for N = ";
+    out.put(N, 4);
+    out << "  |\n";
+    out << "+-------------------------------------------+\n";
+    out.flush();
 
     //
     // Initialize domain
@@ -139,12 +141,13 @@ int main(int argc, const char** argv)
 
     try {
         MEDDLY::initialize();
+        MEDDLY::ostream_output out(std::cout);
 
-        if (!K.build_model()) {
+        if (!K.build_model(out)) {
             K.show_usage(std::cerr, argv[0]);
             return 1;
         }
-        K.generate(true, true);
+        K.generate(out, true, true);
 
         MEDDLY::cleanup();
         return 0;

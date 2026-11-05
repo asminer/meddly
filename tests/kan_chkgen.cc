@@ -24,6 +24,63 @@
 #include "meddly/meddly.h"
 #include "utils/rsgen_model.h"
 
+
+struct statedist {
+    const char* state;
+    unsigned distance;
+};
+
+#define HAVE_ORACLE
+
+#ifdef HAVE_ORACLE
+#include "kan_fwd_df1.h"
+#include "kan_fwd_df2.h"
+#include "kan_fwd_df3.h"
+#include "kan_bwd_df1.h"
+#include "kan_bwd_df2.h"
+#include "kan_bwd_df3.h"
+#endif
+
+// ============================================
+
+// Adjust multi-terminal, integer distance function
+// to be distance plus one, for reachable states,
+// zero for unreachable states.
+
+void distance_adjust(const MEDDLY::rangeval &in, MEDDLY::rangeval &out)
+{
+    long x = long(in);
+    if (x<0) {
+        out = 0;
+    } else {
+        out = x+1;
+    }
+}
+
+// ============================================
+
+bool matches(const long adjust, const statedist &sd, const MEDDLY::minterm &m)
+{
+    if (!sd.state) {
+        throw "not enough reachable markings";
+    }
+
+    for (unsigned k=1; k <= 16; ++k) {
+        if (sd.state[k]-48 != m.from(k)) return false;
+    }
+
+    const MEDDLY::rangeval& oracle = m.getValue();
+    if (oracle.isBoolean()) return true;
+
+    if (oracle.isInteger()) {
+        return long(oracle) == sd.distance + adjust;
+    }
+
+    throw "Unexpected state value type";
+}
+
+// ============================================
+
 class kanban : public rsgen_model {
     public:
         kanban();
@@ -35,19 +92,26 @@ class kanban : public rsgen_model {
         virtual bool process_arg(unsigned &i, const char** argv);
         virtual void show_usage(std::ostream &out, const char* arg0);
 
-        virtual bool build_model();
+        virtual bool build_model(MEDDLY::output &out);
         virtual void build_initial(MEDDLY::minterm &init);
+
+        virtual void after_generation(MEDDLY::output &out,
+                const MEDDLY::dd_edge &e);
 
     private:
         int N;
 
 };
 
+// ============================================
+
 kanban::kanban()
 {
     N = -1;
     disable_output_options();
 }
+
+// ============================================
 
 bool kanban::process_arg(unsigned &i, const char** argv)
 {
@@ -56,6 +120,8 @@ bool kanban::process_arg(unsigned &i, const char** argv)
     // TBD
     return false;
 }
+
+// ============================================
 
 void kanban::show_usage(std::ostream &out, const char* arg0)
 {
@@ -66,13 +132,15 @@ void kanban::show_usage(std::ostream &out, const char* arg0)
     rsgen_model::show_usage(out);
 }
 
-bool kanban::build_model()
+// ============================================
+
+bool kanban::build_model(MEDDLY::output &out)
 {
     if (N<0) {
         std::cerr << "Missing or bad size.\n";
         return false;
     }
-    std::cout << "Checking Kanban " << get_set_name() << ", N=" << N << "\n";
+    out << "Checking Kanban " << get_set_name() << ", N=" << N << "\n";
 
     //
     // Initialize domain
@@ -85,85 +153,27 @@ bool kanban::build_model()
     //
     // Make the events
     //
-
-    std::vector <level_axb> uplist;
-    // "X-+..............",    // Tin1
-    uplist.resize(2);
-    uplist[0].set(1, 1, -1);
-    uplist[1].set(2, 1, +1);
-    add_event(new simple_event("Tin1", uplist));
-    // "X.-+.............",    // Tr1
-    uplist[0].set(2, 1, -1);
-    uplist[1].set(3, 1, +1);
-    add_event(new simple_event("Tr1", uplist));
-    // "X.+-.............",    // Tb1
-    uplist[0].set(2, 1, +1);
-    uplist[1].set(3, 1, -1);
-    add_event(new simple_event("Tb1", uplist));
-    // "X.-.+............",    // Tg1
-    uplist[0].set(2, 1, -1);
-    uplist[1].set(4, 1, +1);
-    add_event(new simple_event("Tg1", uplist));
-    // "X.....-+.........",    // Tr2
-    uplist[0].set(6, 1, -1);
-    uplist[1].set(7, 1, +1);
-    add_event(new simple_event("Tr2", uplist));
-    // "X.....+-.........",    // Tb2
-    uplist[0].set(6, 1, +1);
-    uplist[1].set(7, 1, -1);
-    add_event(new simple_event("Tb2", uplist));
-    // "X.....-.+........",    // Tg2
-    uplist[0].set(6, 1, -1);
-    uplist[1].set(8, 1, +1);
-    add_event(new simple_event("Tg2", uplist));
-    // "X.........-+.....",    // Tr3
-    uplist[0].set(10, 1, -1);
-    uplist[1].set(11, 1, +1);
-    add_event(new simple_event("Tr3", uplist));
-    // "X.........+-.....",    // Tb3
-    uplist[0].set(10, 1, +1);
-    uplist[1].set(11, 1, -1);
-    add_event(new simple_event("Tb3", uplist));
-    // "X.........-.+....",    // Tg3
-    uplist[0].set(10, 1, -1);
-    uplist[1].set(12, 1, +1);
-    add_event(new simple_event("Tg3", uplist));
-    // "X.............-+.",    // Tr4
-    uplist[0].set(14, 1, -1);
-    uplist[1].set(15, 1, +1);
-    add_event(new simple_event("Tr4", uplist));
-    // "X.............+-.",    // Tb4
-    uplist[0].set(14, 1, +1);
-    uplist[1].set(15, 1, -1);
-    add_event(new simple_event("Tb4", uplist));
-    // "X............+..-",    // Tout4
-    uplist[0].set(13, 1, +1);
-    uplist[1].set(16, 1, -1);
-    add_event(new simple_event("Tout4", uplist));
-    // "X.............-.+"     // Tg4 TP
-    uplist[0].set(14, 1, -1);
-    uplist[1].set(16, 1, +1);
-    add_event(new simple_event("Tg4", uplist));
-    // "X+..--+..-+......",    // Ts1_23
-    uplist.resize(6);
-    uplist[0].set(1,  1, +1);
-    uplist[1].set(4,  1, -1);
-    uplist[2].set(5,  1, -1);
-    uplist[3].set(6,  1, +1);
-    uplist[4].set(9,  1, -1);
-    uplist[5].set(10, 1, +1);
-    add_event(new simple_event("Ts1_23", uplist));
-    // "X....+..-+..--+..",    // Ts23_4
-    uplist[0].set(5,  1, +1);
-    uplist[1].set(8,  1, -1);
-    uplist[2].set(9,  1, +1);
-    uplist[3].set(12, 1, -1);
-    uplist[4].set(13, 1, -1);
-    uplist[5].set(14, 1, +1);
-    add_event(new simple_event("Ts23_4", uplist));
+    add_event(new simple_event("Tin1",    "X-+.............."));
+    add_event(new simple_event("Tr1",     "X.-+............."));
+    add_event(new simple_event("Tb1",     "X.+-............."));
+    add_event(new simple_event("Tg1",     "X.-.+............"));
+    add_event(new simple_event("Tr2",     "X.....-+........."));
+    add_event(new simple_event("Tb2",     "X.....+-........."));
+    add_event(new simple_event("Tg2",     "X.....-.+........"));
+    add_event(new simple_event("Ts1_23",  "X+..--+..-+......"));
+    add_event(new simple_event("Tr3",     "X.........-+....."));
+    add_event(new simple_event("Tb3",     "X.........+-....."));
+    add_event(new simple_event("Tg3",     "X.........-.+...."));
+    add_event(new simple_event("Ts23_4",  "X....+..-+..--+.."));
+    add_event(new simple_event("Tr4",     "X.............-+."));
+    add_event(new simple_event("Tb4",     "X.............+-."));
+    add_event(new simple_event("Tout4",   "X............+..-"));
+    add_event(new simple_event("Tg4",     "X.............-.+"));
 
     return true;
 }
+
+// ============================================
 
 void kanban::build_initial(MEDDLY::minterm &init)
 {
@@ -174,6 +184,70 @@ void kanban::build_initial(MEDDLY::minterm &init)
     init.setVar(13, N);
 }
 
+// ============================================
+
+void kanban::after_generation(MEDDLY::output &out,
+                const MEDDLY::dd_edge &e)
+{
+    const statedist* krs = nullptr;
+#ifdef HAVE_ORACLE
+    switch (N) {
+        case 1:
+            krs = is_forward() ? kanban_fwd_rs1 : kanban_bwd_rs1;
+            break;
+
+        case 2:
+            krs = is_forward() ? kanban_fwd_rs2 : kanban_bwd_rs2;
+            break;
+
+        case 3:
+            krs = is_forward() ? kanban_fwd_rs3 : kanban_bwd_rs3;
+            break;
+
+        default:
+            krs = nullptr;
+    }
+#endif
+
+    if (krs) {
+        out << "Verifying against oracle...\n";
+
+        // enumerate states
+        long c = 0;
+
+        long adjust = 0;
+
+        MEDDLY::dd_edge reachable(e);
+        if ('i' == get_set_type()) {
+            // need to add one (for efficient enumeration)
+            // for integer multi-terminal distances
+            MEDDLY::user_unary_factory plus1("distadjust", distance_adjust);
+            apply(plus1, reachable, reachable);
+            adjust = 1;
+        }
+
+        for (MEDDLY::dd_edge::iterator i = reachable.begin(); i; ++i)
+        {
+            if (!matches( adjust, krs[c], *i) ) {
+                out << "Marking " << c << " mismatched\n";
+                out << "Marking was ";
+                (*i).show(out);
+                out << "\n";
+
+                throw "mismatch";
+            }
+            c++;
+        }
+        if (krs[c].state) {
+            throw "not enough markings";
+        }
+
+        out << "\tperfect match!\n";
+    }
+
+}
+
+// ============================================
 
 int main(int argc, const char** argv)
 {
@@ -197,11 +271,31 @@ int main(int argc, const char** argv)
     try {
         MEDDLY::initialize();
 
-        if (!K.build_model()) {
-            K.show_usage(std::cerr, argv[0]);
-            return 1;
-        }
-        K.generate(false, false);
+        MEDDLY::ostream_output out(std::cout);
+
+        out.indent_more();
+        K.setN(1);
+        K.build_model(out);
+        K.generate(out, false, false);
+        K.destroy_model();
+        out.indent_less();
+        out << "\n";
+
+        out.indent_more();
+        K.setN(2);
+        K.build_model(out);
+        K.generate(out, false, false);
+        K.destroy_model();
+        out.indent_less();
+        out << "\n";
+
+        out.indent_more();
+        K.setN(3);
+        K.build_model(out);
+        K.generate(out, false, false);
+        K.destroy_model();
+        out.indent_less();
+        out << "\n";
 
         MEDDLY::cleanup();
         return 0;

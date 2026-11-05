@@ -29,8 +29,6 @@
 // #define WRITE_MXD
 // #define WRITE_EVENTS
 
-// #define OLD_SIMPLE
-
 //
 // Add commas to long integer x
 //
@@ -192,6 +190,8 @@ bool rsgen_model::simple_event::fire(const MEDDLY::minterm &curr,
     return true;
 }
 
+#ifdef OLD_SIMPLE_MODEL
+
 bool rsgen_model::simple_event::build_nsf(MEDDLY::forest* mtmxd,
         MEDDLY::dd_edge &R)
 {
@@ -209,7 +209,6 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::forest* mtmxd,
 
     forest* mxd = R.getForest();
 
-#ifdef OLD_SIMPLE
     static rangeval* temp = nullptr;
     static unsigned maxBound = 1;
 
@@ -281,8 +280,34 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::forest* mtmxd,
         R *= term;
     }
     term.set(0);
-#else  // ifdef OLD_SIMPLE
-    IGNORE_UNUSED(mtmxd);
+
+#ifdef DEBUG_EVENTS
+    out << "Overall event:\n";
+    R.show(out);
+#endif
+
+    return true;
+}
+
+
+#else
+
+
+bool rsgen_model::simple_event::build_nsf(MEDDLY::dd_edge &R)
+{
+    using namespace MEDDLY;
+
+#ifdef DEBUG_EVENTS
+    ostream_output out(std::cerr);
+    out << "Building nsf for event " << get_name() << " [";
+    for (unsigned u=0; u<updates.size(); u++) {
+        if (u) out << ", ";
+        out << "(" << updates[u].level << ":" << updates[u].delta << ")";
+    }
+    out << "]\n";
+#endif
+
+    forest* mxd = R.getForest();
 
     node_handle root = mxd->handleForValue(true);
     unpacked_node* Uun;
@@ -317,8 +342,6 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::forest* mtmxd,
     }
     root = mxd->makeIdentitiesTo(root, K, mxd->getNumVariables(), ~0);
     R.set(root);
-#endif // ifdef OLD_SIMPLE
-
 
 #ifdef DEBUG_EVENTS
     out << "Overall event:\n";
@@ -327,6 +350,8 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::forest* mtmxd,
 
     return true;
 }
+
+#endif // OLD_SIMPLE_MODEL
 
 void rsgen_model::simple_event::show() const
 {
@@ -354,7 +379,9 @@ rsgen_model::rsgen_model()
     D = nullptr;
     Fset = nullptr;
     Fmxd = nullptr;
+#ifdef OLD_SIMPLE_MODEL
     Fmtmxd = nullptr;
+#endif
 
     // default options
 
@@ -378,10 +405,6 @@ rsgen_model::rsgen_model()
 
 rsgen_model::~rsgen_model()
 {
-    // MEDDLY::forest::destroy(Fmtmxd);
-    // MEDDLY::forest::destroy(Fmxd);
-    // MEDDLY::forest::destroy(Fset);
-    // MEDDLY::domain::destroy(D);
 }
 
 bool rsgen_model::process_arg(unsigned &i, const char** argv)
@@ -603,25 +626,25 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
 #endif
 }
 
-void rsgen_model::generate(bool mxdstats, bool mddstats)
+void rsgen_model::generate(MEDDLY::output &out, bool mxdstats, bool mddstats)
 {
     using namespace MEDDLY;
 
     //
     // Policies. Might change from command line switches.
     //
-    std::cout << "Building forests\n";
+    out << "Building forests\n";
     policies pmdd(false), pmxd(true);
 
     switch (garbage) {
         case 'm':
-            std::cout << "    Using mark and sweep\n";
+            out << "    Using mark and sweep\n";
             pmdd.useReferenceCounts = false;
             pmxd.useReferenceCounts = false;
             break;
 
         case 'p':
-            std::cout << "    Using pessimistic node deletion\n";
+            out << "    Using pessimistic node deletion\n";
             pmdd.useReferenceCounts = true;
             pmxd.useReferenceCounts = true;
             pmdd.setPessimistic();
@@ -629,7 +652,7 @@ void rsgen_model::generate(bool mxdstats, bool mddstats)
             break;
 
         default:
-            std::cout << "    Using optimistic node deletion\n";
+            out << "    Using optimistic node deletion\n";
             pmdd.useReferenceCounts = true;
             pmxd.useReferenceCounts = true;
             pmdd.setOptimistic();
@@ -676,17 +699,19 @@ void rsgen_model::generate(bool mxdstats, bool mddstats)
                     edge_labeling::MULTI_TERMINAL,
                     pmxd
         );
+#ifdef OLD_SIMPLE_MODEL
         Fmtmxd = forest::create(D, RELATION,
                     range_type::INTEGER,
                     edge_labeling::MULTI_TERMINAL,
                     pmxd
         );
+#endif
     }
 
     //
     // build initial states
     //
-    std::cout << "Building initial\n";
+    out << "Building initial\n";
     minterm initial(Fset);
     build_initial(initial);
     dd_edge init_state(Fset);
@@ -717,26 +742,28 @@ void rsgen_model::generate(bool mxdstats, bool mddstats)
     watch.note_time();
     switch (reltype) {
         case 'm':   // monolithic
-            std::cout << "Building monolithic relation\n";
+            out << "Building monolithic relation\n";
             build_monolithic(nsf);
+#ifdef OLD_SIMPLE_MODEL
             forest::destroy(Fmtmxd);
+#endif
             break;
 
         case ' ':   // no relation
             break;
 
         default:
-            std::cout << "Unknown relation type: '" << reltype << "'\n";
+            out << "Unknown relation type: '" << reltype << "'\n";
             throw "internal error";
     };
     watch.note_time();
     if (Fmxd) {
-        std::cout   << "Next-state function construction took "
-                    << watch.get_last_seconds() << " seconds\n";
-        std::cout << "MxD for relation requires "
-                  << nsf.getNodeCount() << " nodes" << std::endl;
+        out   << "Next-state function construction took "
+              << watch.get_last_seconds() << " seconds\n";
+        out << "MxD for relation requires "
+            << nsf.getNodeCount() << " nodes\n";
         if (mxdstats) {
-            printStats(Fmxd);
+            printStats(out, Fmxd);
         }
 
         write_to_file("relation", nsf, file_rel);
@@ -754,11 +781,10 @@ void rsgen_model::generate(bool mxdstats, bool mddstats)
     reachable.setLabel((set_type != 'b') ? "distfunc" : "reachset");
     watch.note_time();
     binary_operation* rsgen = nullptr;
-    std::cout << "Building " << get_direction() << " " << get_set_name();
+    out << "Building " << get_direction() << " " << get_set_name();
     switch (gen_method) {
         case 't':
-            std::cout << " using traditional algorithm (no frontier)"
-                      << std::endl;
+            out << " using traditional algorithm (no frontier)\n";
             if (check_dir) {
                 trad_with_checkpoints(nsf, init_state, reachable);
             } else {
@@ -772,30 +798,30 @@ void rsgen_model::generate(bool mxdstats, bool mddstats)
             if (set_type != 'b') {
                 throw "Cannot use traditional with frontier for distance";
             }
-            std::cout   << " using traditional algorithm (with frontier)"
-                        << std::endl;
+            out   << " using traditional algorithm (with frontier)\n";
             rsgen = build(REACHABLE_TRAD_FS(forwd), Fset, Fmxd, Fset);
             if (verb) rsgen->setProgressNotifier(my_progress);
             rsgen->compute(init_state, nsf, reachable);
             break;
 
         case 'd':
-            std::cout << " using default saturation" << std::endl;
+            out << " using default saturation\n";
             apply(REACHABLE_SATUR(forwd), init_state, nsf, reachable);
             break;
 
         case '1':
-            std::cout << " using saturation v1" << std::endl;
+            out << " using saturation v1\n";
             apply(REACHABLE_SATUR(forwd, 1), init_state, nsf, reachable);
             break;
 
         case '2':
-            std::cout << " using saturation v2" << std::endl;
+            out << " using saturation v2\n";
             apply(REACHABLE_SATUR(forwd, 2), init_state, nsf, reachable);
             break;
 
         case 'x':
-            std::cout << " using explicit generation" << std::endl;
+            out << " using explicit generation\n";
+            out << "    using batch size " << expl_batch << "\n";
             gen_explicit(init_state, reachable);
             break;
 
@@ -814,22 +840,23 @@ void rsgen_model::generate(bool mxdstats, bool mddstats)
                 */
 
         default:
-            std::cout << "Error - unknown method '" << gen_method << "'\n";
+            out << "Error - unknown method '" << gen_method << "'\n";
             exit(2);
     };
     watch.note_time();
-    std::cout << "Done\n";
-    std::cout   << get_Set_name() << " construction took "
-                << watch.get_last_seconds() << " seconds" << std::endl;
-    std::cout   << get_Set_name() << " uses "
-                << reachable.getNodeCount() << " nodes" << std::endl;
+    out << "Done\n"
+        << get_Set_name() << " construction took "
+        << watch.get_last_seconds() << " seconds\n"
+        << get_Set_name() << " uses "
+        << reachable.getNodeCount() << " nodes\n";
+    out.flush();
 
-    after_generation(reachable);
+    after_generation(out, reachable);
 
     write_to_file(get_set_name(), reachable, file_set);
 
     if (mddstats) {
-        printStats(Fset);
+        printStats(out, Fset);
     }
 }
 
@@ -844,7 +871,11 @@ void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
     MEDDLY::dd_edge Re(Fmxd);
     for (unsigned e=0; e<events.size(); e++) {
         if (events[e]) {
+#ifdef OLD_SIMPLE_MODEL
             events[e]->build_nsf(Fmtmxd, Re);
+#else
+            events[e]->build_nsf(Re);
+#endif
             R += Re;
 #ifdef WRITE_EVENTS
             mywriter.writeRootEdge(Re);
@@ -865,11 +896,22 @@ void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
     R.setLabel("nsf-monolithic");
 }
 
-void rsgen_model::after_generation(const MEDDLY::dd_edge &e)
+void rsgen_model::after_generation(MEDDLY::output &out,
+        const MEDDLY::dd_edge &e)
 {
     if ('b' == get_set_type()) {
-        show_cardinality(e);
+        show_cardinality(out, e);
     }
+}
+
+void rsgen_model::destroy_model()
+{
+#ifdef OLD_SIMPLE_MODEL
+    MEDDLY::forest::destroy(Fmtmxd);
+#endif
+    MEDDLY::forest::destroy(Fmxd);
+    MEDDLY::forest::destroy(Fset);
+    MEDDLY::domain::destroy(D);
 }
 
 // ******************************************************************
@@ -886,7 +928,6 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
         throw "can't run explicit generation backwards";
     }
 
-    std::cout << "    using batch size " << expl_batch << "\n";
 #ifdef DEBUG_GENERATE
     ostream_output out(std::cerr);
 #endif
@@ -1029,7 +1070,8 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
     } // infinite loop
 }
 
-void rsgen_model::show_cardinality(const MEDDLY::dd_edge &e)
+void rsgen_model::show_cardinality(MEDDLY::output &out,
+        const MEDDLY::dd_edge &e)
 {
     using namespace MEDDLY;
     timer watch;
@@ -1039,10 +1081,9 @@ void rsgen_model::show_cardinality(const MEDDLY::dd_edge &e)
         apply(CARDINALITY, e, card);
         watch.note_time();
 
-        std::cout   << "Approximately "
-                    << std::scientific
-                    << std::setprecision(6)
-                    << card << " reachable states\n";
+        out   << "Approximately ";
+        out.put(card, 10, 6);
+        out << " reachable states\n";
     }
 #ifdef HAVE_LIBGMP
     else {
@@ -1066,15 +1107,15 @@ void rsgen_model::show_cardinality(const MEDDLY::dd_edge &e)
         unsigned actual_digits = strlen(str);
         unsigned next_comma = actual_digits % 3;
         if (0==next_comma) next_comma += 3;
-        std::cout << "Exactly ";
+        out << "Exactly ";
         for (unsigned i=0; i<actual_digits; i++) {
             if (i == next_comma) {
-                std::cout << ',';
+                out << ',';
                 next_comma += 3;
             }
-            std::cout << str[i];
+            out << str[i];
         }
-        std::cout << " reachable states" << std::endl;
+        out << " reachable states\n";
 
         //
         // Cleanup
@@ -1083,30 +1124,30 @@ void rsgen_model::show_cardinality(const MEDDLY::dd_edge &e)
         mpz_clear(card_mpz);
     }
 #endif
-    std::cout << "    cardinality operation took "
-              << watch.get_last_seconds() << " seconds" << std::endl;
+    out << "    cardinality operation took "
+        << watch.get_last_seconds() << " seconds\n";
+    out.flush();
 }
 
-void rsgen_model::printStats(const MEDDLY::forest* F)
+void rsgen_model::printStats(MEDDLY::output &out, const MEDDLY::forest* F)
 {
     using namespace MEDDLY;
     if (F) {
-        ostream_output meddlyout(std::cout);
         if (F->isEVPlus()) {
-            meddlyout << "EV+";
+            out << "EV+";
         }
         if (F->isMultiTerminal()) {
             if (F->isRangeType(range_type::INTEGER)) {
-                meddlyout << "MT";
+                out << "MT";
             }
         }
         if (F->isForRelations()) {
-            meddlyout << "MxD";
+            out << "MxD";
         } else {
-            meddlyout << "MDD";
+            out << "MDD";
         }
-        meddlyout << " stats:\n";
-        F->reportStats(meddlyout, "\t",
+        out << " stats:\n";
+        F->reportStats(out, "\t",
             HUMAN_READABLE_MEMORY | BASIC_STATS
             | EXTRA_STATS
             | STORAGE_STATS
