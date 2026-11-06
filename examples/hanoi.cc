@@ -17,65 +17,113 @@
 */
 
 #include <iostream>
-#include <iomanip>
-#include <vector>
-#include <cassert>
 
 #include "meddly/meddly.h"
-#include "utils/timer.h"
+#include "utils/rsgen_model.h"
 
-// #define SHOW_EVENTS
+class hanoi : public rsgen_model {
+        class move_ring : public rsgen_model::event {
+                const std::vector <int> &ring2level;
+                int ring;
+                int src;
+                int dest;
+                int aux;
+            public:
+                // **********************************************************
+                // build an event to move a ring
+                //    @param ring2level     Mapping from rings to level
+                //    @param ring           Which ring to move
+                //    @param src            Source peg (0, 1, 2)
+                //    @param dest           Destination peg (0, 1, 2)
+                //    @param aux            Unused peg (0, 1, 2)
+                // **********************************************************
+                move_ring(const std::vector <int> &ring2level, int ring,
+                    int src, int dest, int aux);
 
-// Number of rings.
-int N;
+                virtual bool fire(const MEDDLY::minterm &curr,
+                        MEDDLY::minterm &);
 
-// Approximate cardinality.
-bool approx_count;
+                virtual bool build_nsf(MEDDLY::dd_edge &R);
+        };
+    public:
+        hanoi();
 
-// Verbose output: show iteration details
-bool verbose;
+        virtual bool process_arg(unsigned &i, const char** argv);
+        virtual void show_usage(std::ostream &out, const char* arg0);
 
-void my_progress(unsigned iter, char st)
+        virtual bool build_model(MEDDLY::output &out);
+        virtual void build_initial(MEDDLY::minterm &init);
+
+        virtual void after_generation(MEDDLY::output &out,
+                    const MEDDLY::dd_edge &e);
+
+    private:
+        int N;
+        bool reverse_order;
+        std::vector <int> ring2level;
+};
+
+// ******************************************************************
+// *                    hanoi::move_ring methods                    *
+// ******************************************************************
+
+hanoi::move_ring::move_ring(const std::vector <int> &r2lev,
+        int _ring, int _src, int _dest, int _aux)
+    : event("move"), ring2level(r2lev)
 {
-    if (' ' == st) {
-        std::cerr << "    Iteration " << std::setw(10) << iter << ": ";
-        return;
-    }
-    if (';' == st) {
-        std::cerr << std::endl;
-        return;
-    }
-    std::cerr << st << " ";
-}
+    ring = _ring;
+    src = _src;
+    dest = _dest;
+    aux = _aux;
 
-// **********************************************************************
-// build an event to move a ring
-//    @param ring2level     Mapping from rings to level
-//    @param ring           Which ring to move
-//    @param src            Source peg (0, 1, 2)
-//    @param dest           Destination peg (0, 1, 2)
-//    @param aux            Unused peg (0, 1, 2)
-//
-//    @param E              in:  blank dd_edge attached to relation forest
-//                          out: dd_edge holding the event
-// **********************************************************************
-
-void moveRing(std::vector <int> &ring2level, int ring,
-        int src, int dest, int aux, MEDDLY::dd_edge &E)
-{
     assert(src != dest);
     assert(src != aux);
     assert(dest != aux);
 
-    MEDDLY::minterm delta(E.getForest());
+    assert(ring > 0);
+    assert(src >= 0);
+    assert(dest >= 0);
+    assert(aux >= 0);
+    assert(src < 3);
+    assert(dest < 3);
+    assert(aux < 3);
+}
 
-    for (int i=N; i>0; i--) {
+// ******************************************************************
+
+bool hanoi::move_ring::fire(const MEDDLY::minterm &curr,
+        MEDDLY::minterm &next)
+{
+    for (unsigned i = curr.getNumVars(); i; --i) {
         const int k = ring2level[i];
-        if (i > ring) {
+        if (i > unsigned(ring)) {
+            next.setVar(k, curr.getVar(k));
+            continue;
+        }
+        if (i < unsigned(ring)) {
+            if (curr.getVar(k) != aux) return false;
+            next.setVar(k, aux);
+            continue;
+        }
+        if (curr.getVar(k) != src) return false;
+        next.setVar(k, dest);
+    }
+    return true;
+}
+
+// ******************************************************************
+
+bool hanoi::move_ring::build_nsf(MEDDLY::dd_edge &R)
+{
+    MEDDLY::minterm delta(R.getForest());
+
+    for (unsigned i = delta.getNumVars(); i; --i) {
+        const int k = ring2level[i];
+        if (i > unsigned(ring)) {
             delta.setVars(k, MEDDLY::DONT_CARE, MEDDLY::DONT_CHANGE);
             continue;
         }
-        if (i < ring) {
+        if (i < unsigned(ring)) {
             delta.setVars(k, aux, aux);
             continue;
         }
@@ -83,443 +131,93 @@ void moveRing(std::vector <int> &ring2level, int ring,
     }
 
     delta.setValue(true);
-    /*
-    MEDDLY::ostream_output merr(std::cerr);
-    delta.show(merr);
-    */
-    delta.buildFunction(false, E);
+    delta.buildFunction(false, R);
+    return true;
 }
 
-// **********************************************************************
-// build overall (partitioned) transition relation
-//    @param ring2level     Mapping from rings to level
-//    @param prel           Partitioned pre-generated transition relation
-// **********************************************************************
+// ******************************************************************
+// *                         hanoi  methods                         *
+// ******************************************************************
 
-void buildRelation(std::vector <int> &ring2level, MEDDLY::pregen_relation& prel)
+hanoi::hanoi()
 {
-    using namespace MEDDLY;
-
-    timer stopwatch;
-    std::cout << "Building transition relation (events grouped by top level)..." << std::endl;
-    stopwatch.note_time();
-    dd_edge event(prel.getRelForest());
-
-    for (int ring=1; ring<=N; ring++) {
-        moveRing(ring2level, ring, 0, 1, 2, event);
-        prel.addToRelation(event);
-        moveRing(ring2level, ring, 0, 2, 1, event);
-        prel.addToRelation(event);
-        moveRing(ring2level, ring, 1, 0, 2, event);
-        prel.addToRelation(event);
-        moveRing(ring2level, ring, 1, 2, 0, event);
-        prel.addToRelation(event);
-        moveRing(ring2level, ring, 2, 0, 1, event);
-        prel.addToRelation(event);
-        moveRing(ring2level, ring, 2, 1, 0, event);
-        prel.addToRelation(event);
-    } // for ring
-    prel.finalize();
-
-    stopwatch.note_time();
-    std::cout << "    transition relation construction took "
-              << stopwatch.get_last_seconds() << " seconds" << std::endl;
-
-#ifdef SHOW_EVENTS
-    ostream_output merr(std::cerr);
-
-    for (int k=1; k<=N; k++) {
-        merr.indent_more();
-        merr << "Events with top level=" << k << ":\n";
-        for (unsigned i=0; i<prel.lengthForLevel(k); i++) {
-            merr.indent_more();
-            merr << "event " << i << ":\n";
-            prel.arrayForLevel(k)[i].showGraph(merr);
-            merr.indent_less();
-        }
-        merr.indent_less();
-        merr << "\n";
-    }
-#endif
-}
-
-// **********************************************************************
-// build reachable states or whatever was asked for
-//    @param method         What to do:
-//                              'k': saturation, partitioned by level
-//                              'm': saturation, monolithic
-//                              '1': saturation new version 1
-//
-//                              'f': BFS with frontier
-//                              'b': BFS without frontier
-//
-//    @param prel           Partitioned pre-generated transition relation
-//    @param initial        Initial state
-//    @param reachable      (output) reachable states
-// **********************************************************************
-
-void buildReachable(char method, MEDDLY::pregen_relation* prel,
-        MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable)
-{
-    using namespace MEDDLY;
-    timer watch;
-
-    dd_edge monolithic(prel->getRelForest());
-    prel->getRelForest()->createConstant(false, monolithic);
-
-    if ('k' != method) {
-        std::cout << "Building monolithic relation..." << std::endl;
-        watch.note_time();
-
-        for (int k=1; k<=N; k++) {
-            for (unsigned i=0; i<prel->lengthForLevel(k); i++) {
-                apply(UNION, monolithic, prel->arrayForLevel(k)[i], monolithic);
-            }
-        }
-
-        watch.note_time();
-        std::cout << "    monolithic relation construction took "
-                  << watch.get_last_seconds() << " seconds" << std::endl;
-    }
-
-    //
-    // TBD: do different things based on command line switches
-    //
-
-    const char* what = ('d' == method) ? "state distances" : "reachability set";
-
-    watch.note_time();
-
-    saturation_operation* sat = nullptr;
-    binary_operation* bfs = nullptr;
-    ostream_output merr(std::cerr);
-    merr.indent_more();
-
-    forest* arg1F = initial.getForest();
-    forest* arg2F = prel->getRelForest();
-    forest* resF  = reachable.getForest();
-
-    switch (method) {
-        case 'k':
-                    std::cout << "Building " << what << " using saturation..." << std::endl;
-                    sat = SATURATION_FORWARD(arg1F, prel, resF);
-                    if (!sat) {
-                        throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
-                    }
-                    sat->compute(initial, reachable);
-                    break;
-
-#ifdef ALLOW_DEPRECATED_0_18_1
-        case 'm':
-                    std::cout << "Building " << what << " using saturation..." << std::endl;
-                    apply(REACHABLE_STATES_DFS, initial, monolithic, reachable);
-                    break;
-#endif
-        case 'd':
-                    std::cout << "Building " << what << " using default saturation..." << std::endl;
-                    apply(REACHABLE_SATUR(true), initial, monolithic, reachable);
-                    break;
-
-        case '1':
-                    std::cout << "Building " << what << " using saturation (new v1)..." << std::endl;
-                    apply(REACHABLE_SATUR(true, 1), initial, monolithic, reachable);
-                    break;
-
-        case 't':
-                    std::cout << "Building " << what << " using (new) traditional without frontier..." << std::endl;
-                    bfs = build(REACHABLE_TRAD_NOFS(true), arg1F, arg2F, resF);
-                    if (!bfs) throw "null bfs";
-                    if (verbose) bfs->setProgressNotifier(my_progress);
-                    bfs->compute(initial, monolithic, reachable);
-                    break;
-
-        case 'F':
-                    std::cout << "Building " << what << " using (new) traditional with frontier..." << std::endl;
-                    bfs = build(REACHABLE_TRAD_FS(true), arg1F, arg2F, resF);
-                    if (!bfs) throw "null bfs";
-                    if (verbose) bfs->setProgressNotifier(my_progress);
-                    bfs->compute(initial, monolithic, reachable);
-                    break;
-
-
-        default:
-                    throw "unknown method";
-    }
-
-    watch.note_time();
-    std::cout << "    " << what << " construction took "
-              << watch.get_last_seconds() << " seconds" << std::endl;
-
-
-    std::cout << "MDD for " << what << " requires "
-              << reachable.getNodeCount() << " nodes" << std::endl;
-}
-
-// **********************************************************************
-// Add comma separators to a large integer
-// **********************************************************************
-#ifdef HAVE_LIBGMP
-void showNumber(mpz_t x)
-{
-    unsigned digits = mpz_sizeinbase(x, 10)+2;
-    char* str = new char[digits];
-    mpz_get_str(str, 10, x);
-    unsigned nextcomma = strlen(str) % 3;
-    if (0==nextcomma) {
-        nextcomma = 3;
-    }
-    for (unsigned i=0; str[i]; i++) {
-        if (i == nextcomma) {
-            std::cout << ",";
-            nextcomma += 3;
-        }
-        std::cout << str[i];
-    }
-    delete[] str;
-}
-#endif
-
-// **********************************************************************
-// compute and show cardinality
-//    @param reachable      reachable states
-// **********************************************************************
-void showCardinality(const MEDDLY::dd_edge &reachable)
-{
-    using namespace std;
-    using namespace MEDDLY;
-
-#ifdef HAVE_LIBGMP
-    mpz_t ns_mpz;
-#endif
-
-    cout << "Counting states..." << endl;
-
-    oper_item numstates;
-    if (approx_count) {
-        numstates.init(0.0);
-    } else {
-#ifdef HAVE_LIBGMP
-        mpz_init(ns_mpz);
-        numstates.init(ns_mpz);
-#endif
-    }
-    timer watch;
-    watch.note_time();
-    apply(CARDINALITY, reachable, numstates);
-    watch.note_time();
-    cout << "    counting took " << watch.get_last_seconds()
-         << " seconds" << endl;
-
-    if (approx_count) {
-        cout << "Approx. " << numstates.getReal()
-             << " reachable states" << endl;
-
-        double theory = 1.0;
-        for (int i=0; i<N; i++) {
-            theory *= 3.0;
-        }
-        cout << "Theory: " << theory << " reachable states" << endl;
-    } else {
-#ifdef HAVE_LIBGMP
-        cout << "Exactly ";
-        showNumber(numstates.getHugeint());
-        cout << " reachable states" << endl;
-
-        mpz_t theory;
-        mpz_init_set_ui(theory, 1);
-        for (int i=0; i<N; i++) {
-            mpz_mul_ui(theory, theory, 3);
-        }
-        cout << "Theory: ";
-        showNumber(theory);
-        cout << " reachable states" << endl;
-#endif
-    }
-
-}
-
-// **********************************************************************
-// print usage instructions
-// **********************************************************************
-
-int usage(const char* exe)
-{
-    using namespace std;
-    const char* base = exe;
-    for (; *exe; ++exe)
-    {
-        if ('/' == *exe)
-        {
-            base = exe+1;
-        }
-    }
-
-    cerr << "\n";
-    cerr << "Usage: " << base << " [switches] #rings\n";
-    cerr << "\n";
-    cerr << "Generate reachable states for the Towers of Hanoi puzzle.\n";
-    cerr << "The number of rings given should be a natural number.\n";
-    cerr << "\n";
-    cerr << "Switches:\n";
-    cerr << "    -h:    This help\n\n";
-
-#ifdef HAVE_LIBGMP
-    cerr << "    -a:    Approximate count for number of states (default).\n";
-    cerr << "    -e:    Exact count for number of states.\n\n";
-#endif
-
-    cerr << "    -o:    Order the variables so that the smallest ring is the bottom-most\n";
-    cerr << "           variable in the MDD. (Default)\n";
-    cerr << "    -O:    Order the variables so that the largest ring is the bottom-most\n";
-    cerr << "           variable in the MDD.\n";
-    cerr << "\n";
-    cerr << "    -q:    Quiet. Do not show BFS iteration details (default).\n";
-    cerr << "    -v:    Verbose. Show BFS iteration details.\n";
-    cerr << "\n";
-
-    cerr << "    --dist     Build distance function\n";
-    cerr << "    --reach    Build reachable states (default)\n";
-    cerr << "\n";
-    cerr << "    --ksat     Saturation, relation partitioned by levels (default)\n";
-
-#ifdef ALLOW_DEPRECATED_0_18_1
-    cerr << "    --msat     Saturation, monolithic relation\n";
-#endif
-    cerr << "\n";
-
-    cerr << "    --dfs      Use default saturation\n";
-    cout << "    --sat1     Saturation v1 (new implementation)\n";
-    cerr << "    --trad     Traditional BFS without frontier set\n";
-    cerr << "    --front    Traditional BFS with frontier set\n";
-    cerr << "\n";
-    return 1;
-}
-
-inline int naturalArg(const char* arg)
-{
-    if (0==arg) return -1;
-    return atol(arg);
-}
-
-// **********************************************************************
-// main
-// **********************************************************************
-
-int main(int argc, const char** argv)
-{
-    using namespace std;
-    using namespace MEDDLY;
-
     N = -1;
-    approx_count = true;
-    verbose = false;
-    bool reverse_order = false;
-    char satmethod = 'k';
-    bool distances = false;
-    //
-    // Process command line
-    //
-    for (int i=1; i<argc; i++)
-    {
-        const char *arg = argv[i];
-        if ('-' == arg[0])
-        {
-            // single character switches
-            if (arg[1] && 0==arg[2]) {
-                switch (arg[1])
-                {
-#ifdef HAVE_LIBGMP
-                    case 'a':   approx_count = true;
-                                continue;
+    reverse_order = false;
+    default_approx();
+}
 
-                    case 'e':   approx_count = false;
-                                continue;
-#endif
-                    case 'o':
-                                reverse_order = false;
-                                continue;
+// ******************************************************************
 
-                    case 'O':
-                                reverse_order = true;
-                                continue;
+bool hanoi::process_arg(unsigned &i, const char** argv)
+{
+    if (rsgen_model::process_arg(i, argv)) return true;
 
-                    case 'q':
-                                verbose = false;
-                                continue;
-
-                    case 'v':
-                                verbose = true;
-                                continue;
-
-                    default:
-                                if (arg[1] != 'h') {
-                                    cerr << "Unknown switch \"-" << arg[1] << "\"\n";
-                                }
-                                return usage(argv[0]);
-                }
-            }
-            // double dash switches
-            if ('-' == arg[1]) {
-                if (0==strcmp("--dist", arg)) {
-                    distances = true;
-                    continue;
-                }
-                if (0==strcmp("--reach", arg)) {
-                    distances = false;
-                    continue;
-                }
-                if (0==strcmp("--ksat", arg)) {
-                    satmethod = 'k';
-                    continue;
-                }
-#ifdef ALLOW_DEPRECATED_0_18_1
-                if (0==strcmp("--msat", arg)) {
-                    satmethod = 'm';
-                    continue;
-                }
-#endif
-                if (0==strcmp("--dfs", arg)) {
-                    satmethod = 'd';
-                    continue;
-                }
-                if (0==strcmp("--sat1", arg)) {
-                    satmethod = '1';
-                    continue;
-                }
-                if (0==strcmp("--trad", arg)) {
-                    satmethod = 't';
-                    continue;
-                }
-                if (0==strcmp("--front", arg)) {
-                    satmethod = 'F';
-                    continue;
-                }
-            }
-            cerr << "Unknown switch \"" << arg << "\"\n";
-            return usage(argv[0]);
-        }
-        if (N>=0) {
-            cerr << "More than one #rings specified?\n";
-            return usage(argv[0]);
-        }
-        N = naturalArg(arg);
-        if (N<0) {
-            return usage(argv[0]);
-        }
+    if (0 == strcmp("-o", argv[i])) {
+        reverse_order = false;
+        ++i;
+        return true;
     }
-    if (N<0) {
-        cerr << "#rings not specified\n";
-        return usage(argv[0]);
+    if (0 == strcmp("-O", argv[i])) {
+        reverse_order = true;
+        ++i;
+        return true;
     }
 
-    //
-    // Build ring to level mappings
-    //
-    cout << "Towers of Hanoi with " << N << " rings.\n";
-    if (0==N) return 0;
+    if ('-' == argv[i][0])  return false;
 
-    vector <int> ring2level(N+1);
-    vector <int> level2ring(N+1);
+    // assume this is the size
+    N = atoi(argv[i]);
+    ++i;
+    return true;
+}
+
+// ******************************************************************
+
+void hanoi::show_usage(std::ostream &out, const char* arg0)
+{
+    if (arg0) {
+        out << "\nUsage: " << basename(arg0) << " [options] rings\n\n";
+    }
+    out << "\trings  : number of rings\n";
+    out << "\n";
+    out << "    ORDERING OPTIONS\n";
+    out << "\n";
+    out << "        -o         : Order the variables so that the smallest ring is the\n";
+    out << "                     bottom-most variable in the MDD (default).\n";
+    out << "        -O         : Order the variables so that the largest ring is the\n";
+    out << "                     bottom-most variable in the MDD.\n";
+
+    rsgen_model::show_usage(out);
+}
+
+// ******************************************************************
+
+bool hanoi::build_model(MEDDLY::output &out)
+{
+    if (N<=0) {
+        std::cerr << "Missing or bad size.\n";
+        return false;
+    }
+
+    out << "+-------------------------------------------+\n";
+    out << "|      Towers of Hanoi with ";
+    out.put(N, 4);
+    out << " rings      |\n";
+    out << "+-------------------------------------------+\n";
+
+    //
+    // Initialize domain
+    //
+    int* sizes = new int[N];
+    for (int i=N-1; i>=0; i--) sizes[i] = 3;
+    set_domain(MEDDLY::domain::createBottomUp(sizes, N));
+    delete[] sizes;
+
+    //
+    // Initialize level mappings
+    //
+    ring2level.resize(N+1);
+    std::vector <int> level2ring(N+1);
     ring2level[0] = 0;
     level2ring[0] = 0;
     if (reverse_order) {
@@ -534,103 +232,119 @@ int main(int argc, const char** argv)
         }
     }
 
-    cout << "Variable order is TOP, ";
+    out << "Variable order is TOP, ";
     for (unsigned i=N; i>0; i--) {
-        cout << "ring " << level2ring[i] << ", ";
+        out << "ring " << level2ring[i] << ", ";
         if (i>3) {
-            cout << "..., ";
+            out << "..., ";
             i = 3;
         }
     }
-    cout << "BOTTOM\n";
+    out << "BOTTOM\n";
+
+
+    //
+    // Make the events
+    //
+    for (int ring=1; ring<=N; ring++) {
+        add_event(new move_ring(ring2level, ring, 0, 1, 2));
+        add_event(new move_ring(ring2level, ring, 0, 2, 1));
+        add_event(new move_ring(ring2level, ring, 1, 0, 2));
+        add_event(new move_ring(ring2level, ring, 1, 2, 0));
+        add_event(new move_ring(ring2level, ring, 2, 0, 1));
+        add_event(new move_ring(ring2level, ring, 2, 1, 0));
+    } // for ring
+    return true;
+}
+
+// ******************************************************************
+
+void hanoi::build_initial(MEDDLY::minterm &init)
+{
+    init.setAllVars(0);
+}
+
+// ******************************************************************
+
+void hanoi::after_generation(MEDDLY::output &out,
+        const MEDDLY::dd_edge &e)
+{
+    if ('b' != get_set_type()) return;
+
+    show_cardinality(out, e, false);
+
+    if (approx_cardinality()) {
+        double theory = 1.0;
+        for (int i=0; i<N; i++) {
+            theory *= 3.0;
+        }
+        out << "(Expecting    ";
+        out.put(theory, 10, 6);
+        out << " states)\n";
+    } else {
+#ifdef HAVE_LIBGMP
+        mpz_t theory;
+        mpz_init_set_ui(theory, 1);
+        for (int i=0; i<N; i++) {
+            mpz_mul_ui(theory, theory, 3);
+        }
+
+        out << "(expect ";
+        out.put_huge(theory, true);
+        out << " states)\n";
+
+        mpz_clear(theory);
+#endif
+    }
+}
+
+
+// ******************************************************************
+// *                          main program                          *
+// ******************************************************************
+
+int main(int argc, const char** argv)
+{
+    hanoi H;
+
+    unsigned nArgs = (unsigned)argc;
+    unsigned i=1;
+
+    if (1 == argc) {
+        H.show_usage(std::cerr, argv[0]);
+        return 1;
+    }
+
+    while (i < nArgs) {
+        if (!H.process_arg(i, argv)) {
+            H.show_usage(std::cerr, argv[0]);
+            return 1;
+        }
+    }
 
     try {
-        //
-        // Bring up MDD library
-        //
         MEDDLY::initialize();
+        MEDDLY::ostream_output out(std::cout);
 
-        //
-        // Build domain, forests
-        //
-        int* sizes = new int[N];
-        for (int i=N-1; i>=0; i--) sizes[i] = 3;
-        domain* d = domain::createBottomUp(sizes, N);
-        delete[] sizes;
-
-        policies pmdd(false), pmxd(true);
-        // any policy changes?
-        forest* mdd = nullptr;
-
-        if (distances) {
-            mdd = forest::create(d, false, range_type::INTEGER, edge_labeling::EVPLUS, pmdd);
-        } else {
-            mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
+        if (!H.build_model(out)) {
+            H.show_usage(std::cerr, argv[0]);
+            return 1;
         }
-        forest* mxd = forest::create(d, true,  range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
+        H.generate(out, true, true);
 
-
-        //
-        // Build initial state
-        //
-        minterm init_minterm(mdd);
-        init_minterm.setAllVars(0);
-        dd_edge initial(mdd);
-        if (distances) {
-            init_minterm.setValue(0);
-            init_minterm.buildFunction(rangeval(range_special::PLUS_INFINITY, range_type::INTEGER), initial);
-        } else {
-            init_minterm.setValue(true);
-            init_minterm.buildFunction(false, initial);
-        }
-
-
-        //
-        // Build transition relation
-        //
-        pregen_relation* lnsf = new pregen_relation(mxd);
-        buildRelation(ring2level, *lnsf);
-
-        //
-        // Build reachable states
-        //
-        dd_edge reachable(mdd);
-        buildReachable(satmethod, lnsf, initial, reachable);
-        showCardinality(reachable);
-
-        //
-        // Reporting
-        //
-        ostream_output meddlyout(cout);
-        meddlyout << "\n======================================================================\n\n";
-        meddlyout << "MxD stats:\n";
-        mxd->reportStats(meddlyout, "    ",
-                HUMAN_READABLE_MEMORY | BASIC_STATS
-        );
-        if (distances) {
-            meddlyout << "EV+MDD stats:\n";
-        } else {
-            meddlyout << "MDD stats:\n";
-        }
-        mdd->reportStats(meddlyout, "    ",
-            HUMAN_READABLE_MEMORY | BASIC_STATS | EXTRA_STATS
-        );
-
-        compute_table::showAll(meddlyout, 2);
-
-        cout << "Done!\n";
+        MEDDLY::cleanup();
         return 0;
     }
     catch (MEDDLY::error e) {
-        cerr    << "\nCaught meddly error '" << e.getName()
-                << "'\n    thrown in " << e.getFile()
-                << " line " << e.getLine() << "\n";
-        return 2;
+        std::cerr   << "\nCaught meddly error '" << e.getName()
+                    << "'\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
     }
     catch (const char* e) {
-        cerr    << "\nCaught our own error: " << e << "\n";
-        return 4;
+        std::cerr   << "\nCaught our own error: " << e << "\n";
+        return 2;
     }
-    cerr << "\nSome other error?\n";
-    return 6;
+    std::cerr << "\nSome other error?\n";
+    return 4;
 }

@@ -16,10 +16,7 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <cstdlib>
 #include <iostream>
-#include <iomanip>
-#include <string.h>
 
 #include "meddly/meddly.h"
 #include "utils/rsgen_model.h"
@@ -36,13 +33,18 @@ class kanban : public rsgen_model {
 
     private:
         int N;
-
 };
+
+// ******************************************************************
+// *                         kanban methods                         *
+// ******************************************************************
 
 kanban::kanban()
 {
     N = -1;
 }
+
+// ******************************************************************
 
 bool kanban::process_arg(unsigned &i, const char** argv)
 {
@@ -56,6 +58,8 @@ bool kanban::process_arg(unsigned &i, const char** argv)
     return true;
 }
 
+// ******************************************************************
+
 void kanban::show_usage(std::ostream &out, const char* arg0)
 {
     if (arg0) {
@@ -65,6 +69,8 @@ void kanban::show_usage(std::ostream &out, const char* arg0)
 
     rsgen_model::show_usage(out);
 }
+
+// ******************************************************************
 
 bool kanban::build_model(MEDDLY::output &out)
 {
@@ -110,6 +116,8 @@ bool kanban::build_model(MEDDLY::output &out)
     return true;
 }
 
+// ******************************************************************
+
 void kanban::build_initial(MEDDLY::minterm &init)
 {
     init.setAllVars(0);
@@ -119,6 +127,9 @@ void kanban::build_initial(MEDDLY::minterm &init)
     init.setVar(13, N);
 }
 
+// ******************************************************************
+// *                          main program                          *
+// ******************************************************************
 
 int main(int argc, const char** argv)
 {

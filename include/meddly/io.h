@@ -29,6 +29,10 @@
 #include <iostream>
 #endif
 
+#ifdef HAVE_LIBGMP
+#include <gmp.h>
+#endif
+
 namespace MEDDLY {
     class input;
     class FILE_input;
@@ -314,6 +318,11 @@ class MEDDLY::output {
                                 is betwen one and 1000.
         */
         void put_mem(size_t m, bool human);
+
+#ifdef HAVE_LIBGMP
+        /// Write an GMP (non-negative) integer
+        void put_huge(mpz_t x, bool commas);
+#endif
 
 };  // end of output class
 

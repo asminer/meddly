@@ -227,6 +227,38 @@ void MEDDLY::output::put_mem(size_t m, bool human)
     put(" Tbytes");
 }
 
+#ifdef HAVE_LIBGMP
+void MEDDLY::output::put_huge(mpz_t x, bool commas)
+{
+    //
+    // Build the string for x
+    //
+    unsigned digits = mpz_sizeinbase(x, 10)+2;
+    char* str = new char[digits];
+    mpz_get_str(str, 10, x);
+
+    if (!commas) {
+        put(str);
+    } else {
+        //
+        // display with commas
+        //
+        unsigned actual_digits = strlen(str);
+        unsigned next_comma = actual_digits % 3;
+        if (0==next_comma) next_comma += 3;
+        for (unsigned i=0; i<actual_digits; i++) {
+            if (i == next_comma) {
+                put(',');
+                next_comma += 3;
+            }
+            put(str[i]);
+        }
+    }
+
+    delete[] str;
+}
+#endif
+
 // ******************************************************************
 // *                                                                *
 // *                      FILE_output  methods                      *
@@ -431,4 +463,5 @@ void MEDDLY::ostream_output::flush()
 {
     out.flush();
 }
+
 

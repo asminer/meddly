@@ -182,12 +182,14 @@ bool rsgen_model::simple_event::fire(const MEDDLY::minterm &curr,
         MEDDLY::minterm &next)
 {
     for (unsigned i=next.getNumVars(); i; i--) {
-        next.from(i) = curr.from(i);
+        next.setVar(i, curr.getVar(i));
     }
     for (unsigned u=0; u<updates.size(); u++) {
         const unsigned i = updates[u].level;
-        next.from(i) = updates[u].scale * curr.from(i) + updates[u].delta;
-        if (next.from(i) < 0) return false;
+        next.setVar(i,
+            updates[u].scale * curr.getVar(i) + updates[u].delta
+        );
+        if (next.getVar(i) < 0) return false;
     }
     return true;
 }
@@ -1073,12 +1075,13 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
 }
 
 void rsgen_model::show_cardinality(MEDDLY::output &out,
-        const MEDDLY::dd_edge &e)
+        const MEDDLY::dd_edge &e, bool with_timing)
 {
     using namespace MEDDLY;
     timer watch;
     if (approx) {
         double card;
+
         watch.note_time();
         apply(CARDINALITY, e, card);
         watch.note_time();
@@ -1089,45 +1092,23 @@ void rsgen_model::show_cardinality(MEDDLY::output &out,
     }
 #ifdef HAVE_LIBGMP
     else {
-        //
-        // Calculate cardinality
-        //
         mpz_t card_mpz;
         mpz_init(card_mpz);
         watch.note_time();
         apply(CARDINALITY, e, card_mpz);
         watch.note_time();
-        //
-        // Build the string for it
-        //
-        unsigned digits = mpz_sizeinbase(card_mpz, 10)+2;
-        char* str = new char[digits];
-        mpz_get_str(str, 10, card_mpz);
-        //
-        // Display, with commas :)
-        //
-        unsigned actual_digits = strlen(str);
-        unsigned next_comma = actual_digits % 3;
-        if (0==next_comma) next_comma += 3;
+
         out << "Exactly ";
-        for (unsigned i=0; i<actual_digits; i++) {
-            if (i == next_comma) {
-                out << ',';
-                next_comma += 3;
-            }
-            out << str[i];
-        }
+        out.put_huge(card_mpz, true);
         out << " reachable states\n";
 
-        //
-        // Cleanup
-        //
-        delete[] str;
         mpz_clear(card_mpz);
     }
 #endif
-    out << "    cardinality operation took "
-        << watch.get_last_seconds() << " seconds\n";
+    if (with_timing) {
+        out << "    cardinality operation took "
+            << watch.get_last_seconds() << " seconds\n";
+    }
     out.flush();
 }
 

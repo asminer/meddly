@@ -44,7 +44,7 @@ simple_model_dep = declare_dependency(
 
 zstream_lib = static_library('zstream',
     sources: 'zstream.cc',
-    dependencies: meddly_dep,
+    dependencies: [ gmp_dep, meddly_dep ],
     install: false
 )
 

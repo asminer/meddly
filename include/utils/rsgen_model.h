@@ -230,7 +230,12 @@ class rsgen_model {
             events.push_back(e);
         }
 
-        void show_cardinality(MEDDLY::output &out, const MEDDLY::dd_edge &e);
+#ifdef HAVE_LIBGMP
+        static void showNumber(mpz_t x);
+#endif
+
+        void show_cardinality(MEDDLY::output &out, const MEDDLY::dd_edge &e,
+                bool with_timing=true);
 
         inline static const char* basename(const char* path) {
             const char* b = path;
@@ -292,6 +297,15 @@ class rsgen_model {
 
         inline void disable_output_options() {
             allow_output_files = false;
+        }
+        inline void default_approx() {
+            approx = true;
+        }
+        inline void default_exact() {
+            approx = false;
+        }
+        inline bool approx_cardinality() const {
+            return approx;
         }
 
     private:

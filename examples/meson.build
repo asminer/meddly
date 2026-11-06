@@ -42,7 +42,15 @@ executable(
 executable(
     'hanoi',
     'hanoi.cc',
-    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep, zstream_dep ]
+)
+
+######################################################################
+
+executable(
+    'hanoi_old',
+    'hanoi_old.cc',
+    dependencies: [ gmp_dep, meddly_dep ]
 )
 
 ######################################################################
@@ -50,7 +58,7 @@ executable(
 executable(
     'kanban',
     'kanban.cc',
-    dependencies: [ gmp_dep, meddly_dep, simple_model_dep, rsgen_model_dep, zstream_dep ]
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep, zstream_dep ]
 )
 
 ######################################################################
