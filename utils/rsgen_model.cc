@@ -766,10 +766,6 @@ void rsgen_model::generate(MEDDLY::output &out, bool mxdstats, bool mddstats)
               << watch.get_last_seconds() << " seconds\n";
         out << "MxD for relation requires "
             << nsf.getNodeCount() << " nodes\n";
-        if (mxdstats) {
-            printStats(out, Fmxd);
-        }
-
         write_to_file("relation", nsf, file_rel);
     }
 
@@ -859,6 +855,13 @@ void rsgen_model::generate(MEDDLY::output &out, bool mxdstats, bool mddstats)
 
     write_to_file(get_set_name(), reachable, file_set);
 
+    if (mxdstats || mddstats) {
+        out << "\n============================================================\n\n";
+    }
+
+    if (mxdstats) {
+        printStats(out, Fmxd);
+    }
     if (mddstats) {
         printStats(out, Fset);
     }
@@ -1138,6 +1141,8 @@ void rsgen_model::printStats(MEDDLY::output &out, const MEDDLY::forest* F)
             // | HOLE_MANAGER_STATS
             // | HOLE_MANAGER_DETAILED
         );
+        out << "\n";
+        out.flush();
     }
 }
 
