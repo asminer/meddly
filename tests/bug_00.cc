@@ -18,7 +18,8 @@
 
 
 #include "meddly/meddly.h"
-#include "utils/simple_model.h"
+// #include "utils/simple_model.h"
+#include "utils/rsgen_model.h"
 
 #include <assert.h>
 
@@ -26,7 +27,7 @@
 
 using namespace MEDDLY;
 
-const char* mdl[] = { "X-+." };
+// const char* mdl[] = { "X-+." };
 
 int main()
 {
@@ -54,7 +55,9 @@ int main()
 
         // build next-state function
         dd_edge nsf(mxd);
-        buildNextStateFunction(mdl, 1, mxd, nsf);
+        rsgen_model::simple_event mdl("e", "X-+.");
+        mdl.build_nsf(nsf);
+        // buildNextStateFunction(mdl, 1, mxd, nsf);
 
         minterm mask_mt(mxd);
         dd_edge mask(mxd);

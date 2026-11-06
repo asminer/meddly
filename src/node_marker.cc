@@ -77,9 +77,9 @@ void MEDDLY::node_marker::writing_style::show_node(output &s, node_handle p)
     s.put('\n');
 }
 
-void MEDDLY::node_marker::writing_style::end_level(output &s, int)
+void MEDDLY::node_marker::writing_style::end_level(output &, int)
 {
-    s << "\n";
+    // s << "\n";
 }
 
 // ******************************************************************

@@ -2,7 +2,7 @@
 bug_00 = executable(
     'bug_00',
     'bug_00.cc',
-    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
 )
 
 test('bug_00', bug_00)
