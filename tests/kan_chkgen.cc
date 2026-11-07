@@ -24,23 +24,6 @@
 #include "meddly/meddly.h"
 #include "utils/rsgen_model.h"
 
-
-struct statedist {
-    const char* state;
-    unsigned distance;
-};
-
-#define HAVE_ORACLE
-
-#ifdef HAVE_ORACLE
-#include "kan_fwd_df1.h"
-#include "kan_fwd_df2.h"
-#include "kan_fwd_df3.h"
-#include "kan_bwd_df1.h"
-#include "kan_bwd_df2.h"
-#include "kan_bwd_df3.h"
-#endif
-
 // ============================================
 
 // Adjust multi-terminal, integer distance function
@@ -72,28 +55,6 @@ bool matches(const long adjust, const MEDDLY::minterm &morc,
     if (mv.isInteger()) {
         return long(morc.getValue()) + adjust == long(mv);
     }
-    throw "Unexpected state value type";
-}
-
-// ============================================
-
-bool matches(const long adjust, const statedist &sd, const MEDDLY::minterm &m)
-{
-    if (!sd.state) {
-        throw "not enough reachable markings";
-    }
-
-    for (unsigned k=1; k <= 16; ++k) {
-        if (sd.state[k]-48 != m.from(k)) return false;
-    }
-
-    const MEDDLY::rangeval& oracle = m.getValue();
-    if (oracle.isBoolean()) return true;
-
-    if (oracle.isInteger()) {
-        return long(oracle) == sd.distance + adjust;
-    }
-
     throw "Unexpected state value type";
 }
 
@@ -305,67 +266,6 @@ void kanban::after_generation(MEDDLY::output &out,
     }
 
     out << "\tperfect match!\n";
-
-    /*
-    out << "Using old oracle...\n";
-
-    const statedist* krs = nullptr;
-#ifdef HAVE_ORACLE
-    switch (N) {
-        case 1:
-            krs = is_forward() ? kanban_fwd_rs1 : kanban_bwd_rs1;
-            break;
-
-        case 2:
-            krs = is_forward() ? kanban_fwd_rs2 : kanban_bwd_rs2;
-            break;
-
-        case 3:
-            krs = is_forward() ? kanban_fwd_rs3 : kanban_bwd_rs3;
-            break;
-
-        default:
-            krs = nullptr;
-    }
-#endif
-
-    if (krs) {
-        out << "Verifying against oracle...\n";
-
-        // enumerate states
-        long c = 0;
-
-        long adjust = 0;
-
-        MEDDLY::dd_edge reachable(e);
-        if ('i' == get_set_type()) {
-            // need to add one (for efficient enumeration)
-            // for integer multi-terminal distances
-            MEDDLY::user_unary_factory plus1("distadjust", distance_adjust);
-            apply(plus1, reachable, reachable);
-            adjust = 1;
-        }
-
-        for (MEDDLY::dd_edge::iterator i = reachable.begin(); i; ++i)
-        {
-            if (!matches( adjust, krs[c], *i) ) {
-                out << "Marking " << c << " mismatched\n";
-                out << "Marking was ";
-                (*i).show(out);
-                out << "\n";
-
-                throw "mismatch";
-            }
-            c++;
-        }
-        if (krs[c].state) {
-            throw "not enough markings";
-        }
-
-        out << "\tperfect match!\n";
-    }
-    */
-
 }
 
 // ============================================
