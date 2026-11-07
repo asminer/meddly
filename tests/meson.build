@@ -228,16 +228,6 @@ test('kan_relprod', kan_relprod)
 
 ######################################################################
 
-kan_show = executable(
-    'kan_show',
-    'kan_show.cc',
-    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
-)
-
-test('kan_show', kan_show)
-
-######################################################################
-
 kanban = executable(
     'kanban',
     'kanban.cc',
