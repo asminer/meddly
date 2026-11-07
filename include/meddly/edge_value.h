@@ -568,7 +568,7 @@ class MEDDLY::edge_value {
         /**
             Display an edge value for human consumption.
         */
-        void show(output &s) const;
+        void show(output &s, bool with_type) const;
 
     private:
         union {

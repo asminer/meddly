@@ -1481,7 +1481,7 @@ void MEDDLY::forest::showEdge(output &s, const edge_value &ev, node_handle d)
         }
     } else {
         s.put('<');
-        ev.show(s);
+        ev.show(s, true);
         s.put(", ");
         if (d < 0) {
             s.put('w');
