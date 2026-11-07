@@ -70,7 +70,7 @@ bool matches(const long adjust, const MEDDLY::minterm &morc,
         return true;
     }
     if (mv.isInteger()) {
-        return long(morc.getValue()) == long(mv) + adjust;
+        return long(morc.getValue()) + adjust == long(mv);
     }
     throw "Unexpected state value type";
 }
