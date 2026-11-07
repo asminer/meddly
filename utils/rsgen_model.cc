@@ -147,6 +147,8 @@ rsgen_model::simple_event::simple_event(const char* n,
 #endif
 }
 
+// ******************************************************************
+
 rsgen_model::simple_event::simple_event(const char* n, const char* pmstr)
         : rsgen_model::event(n)
 {
@@ -178,6 +180,8 @@ rsgen_model::simple_event::simple_event(const char* n, const char* pmstr)
 #endif
 }
 
+// ******************************************************************
+
 bool rsgen_model::simple_event::fire(const MEDDLY::minterm &curr,
         MEDDLY::minterm &next)
 {
@@ -193,6 +197,8 @@ bool rsgen_model::simple_event::fire(const MEDDLY::minterm &curr,
     }
     return true;
 }
+
+// ******************************************************************
 
 #ifdef OLD_SIMPLE_MODEL
 
@@ -357,6 +363,8 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::dd_edge &R)
 
 #endif // OLD_SIMPLE_MODEL
 
+// ******************************************************************
+
 void rsgen_model::simple_event::show() const
 {
     std::cerr << "Event ";
@@ -407,9 +415,13 @@ rsgen_model::rsgen_model()
     check_dir = nullptr;
 }
 
+// ******************************************************************
+
 rsgen_model::~rsgen_model()
 {
 }
+
+// ******************************************************************
 
 bool rsgen_model::process_arg(unsigned &i, const char** argv)
 {
@@ -568,6 +580,8 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
     return false;
 }
 
+// ******************************************************************
+
 void rsgen_model::show_usage(std::ostream &out, const char* arg0)
 {
     if (arg0) {
@@ -629,6 +643,8 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     out << "\n";
 #endif
 }
+
+// ******************************************************************
 
 void rsgen_model::generate(MEDDLY::output &out, bool mxdstats, bool mddstats)
 {
@@ -867,6 +883,8 @@ void rsgen_model::generate(MEDDLY::output &out, bool mxdstats, bool mddstats)
     }
 }
 
+// ******************************************************************
+
 void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
 {
 #ifdef WRITE_MXD
@@ -903,6 +921,8 @@ void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
     R.setLabel("nsf-monolithic");
 }
 
+// ******************************************************************
+
 void rsgen_model::after_generation(MEDDLY::output &out,
         const MEDDLY::dd_edge &e)
 {
@@ -910,6 +930,8 @@ void rsgen_model::after_generation(MEDDLY::output &out,
         show_cardinality(out, e);
     }
 }
+
+// ******************************************************************
 
 void rsgen_model::destroy_model()
 {
@@ -1077,6 +1099,8 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
     } // infinite loop
 }
 
+// ******************************************************************
+
 void rsgen_model::show_cardinality(MEDDLY::output &out,
         const MEDDLY::dd_edge &e, bool with_timing)
 {
@@ -1115,6 +1139,8 @@ void rsgen_model::show_cardinality(MEDDLY::output &out,
     out.flush();
 }
 
+// ******************************************************************
+
 void rsgen_model::printStats(MEDDLY::output &out, const MEDDLY::forest* F)
 {
     using namespace MEDDLY;
@@ -1146,6 +1172,8 @@ void rsgen_model::printStats(MEDDLY::output &out, const MEDDLY::forest* F)
     }
 }
 
+// ******************************************************************
+
 void rsgen_model::write_to_file(const char* what,
         const MEDDLY::dd_edge &who, const char* outfile)
 {
@@ -1161,6 +1189,8 @@ void rsgen_model::write_to_file(const char* what,
         std::cout << "Couldn't write to file " << outfile << " for " << what << "\n";
     }
 }
+
+// ******************************************************************
 
 void rsgen_model::trad_with_checkpoints(const MEDDLY::dd_edge &relation,
         const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable)
@@ -1233,6 +1263,57 @@ void rsgen_model::trad_with_checkpoints(const MEDDLY::dd_edge &relation,
 }
 
 // ******************************************************************
+
+void rsgen_model::write_oracle(MEDDLY::output &out, const MEDDLY::dd_edge &e)
+    const
+{
+    out << "oracle\n";
+    write_oracle_header(out);
+    for (MEDDLY::dd_edge::iterator i = e.begin(); i; ++i)
+    {
+        (*i).write(out);
+        out.put('\n');
+    }
+    out << "elcaro\n";
+}
+
+// ******************************************************************
+
+void rsgen_model::read_oracle(MEDDLY::input &inf, MEDDLY::minterm_coll &mtc)
+    const
+{
+    inf.stripWS();
+    inf.consumeKeyword("oracle");
+    read_oracle_header(inf);
+    for (;;) {
+        inf.stripWS();
+        if ('[' != inf.next_char()) break;
+
+        mtc.unused().read(inf);
+        mtc.pushUnused();
+        mtc.expandIfNecessary();
+    }
+    inf.consumeKeyword("elcaro");
+}
+
+// ******************************************************************
+
+void rsgen_model::write_oracle_header(MEDDLY::output &out) const
+{
+    if (forwd)  out << "forward\n";
+    else        out << "backward\n";
+}
+
+// ******************************************************************
+
+void rsgen_model::read_oracle_header(MEDDLY::input &inf) const
+{
+    inf.stripWS();
+    if (forwd)  inf.consumeKeyword("forward");
+    else        inf.consumeKeyword("backward");
+}
+
+// ******************************************************************
 // *                  rsgen_model  private methods                  *
 // ******************************************************************
 
@@ -1245,6 +1326,8 @@ const char* rsgen_model::chkpt_path(unsigned iter) const
     snprintf(pathname, 512, "%s/chk.%03d.txt.xz", check_dir, iter);
     return pathname;
 }
+
+// ******************************************************************
 
 void rsgen_model::write_checkpoint(unsigned iter, const MEDDLY::dd_edge &e)
     const
@@ -1277,6 +1360,8 @@ void rsgen_model::write_checkpoint(unsigned iter, const MEDDLY::dd_edge &e)
         std::cerr << " done" << std::endl;
     }
 }
+
+// ******************************************************************
 
 void rsgen_model::read_checkpoint(unsigned iter, MEDDLY::dd_edge &e) const
 {

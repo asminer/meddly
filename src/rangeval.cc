@@ -56,3 +56,48 @@ void MEDDLY::rangeval::write(output &s) const
     s.put(' ');
 }
 
+void MEDDLY::rangeval::read(input &s)
+{
+    s.stripWS();
+    char T = s.get_char();
+    char C;
+
+    switch (T) {
+        case 'b':
+            // Boolean.
+            s.stripWS();
+            C = s.get_char();
+            if ('T' == C) {
+                setBoolean(true);
+                return;
+            }
+            if ('F' == C) {
+                setBoolean(false);
+                return;
+            }
+            throw error(error::INVALID_FILE, __FILE__, __LINE__);
+
+        case 'i':
+            // Integer.
+            // Check for infinity.
+            s.stripWS();
+            if ('o' == s.next_char()) {
+                s.consumeKeyword("oo");
+                setSpecial(
+                    range_special::PLUS_INFINITY,
+                    range_type::INTEGER
+                );
+                return;
+            }
+            setInteger(s.get_integer());
+            return;
+
+        case 'r':
+            setReal(s.get_real());
+            return;
+
+        default:
+            throw error(error::INVALID_FILE, __FILE__, __LINE__);
+    }
+}
+

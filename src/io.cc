@@ -89,6 +89,14 @@ bool MEDDLY::FILE_input::eof() const
     return feof(inf);
 }
 
+int MEDDLY::FILE_input::next_char()
+{
+    int c = fgetc(inf);
+    if (EOF != c) {
+        ungetc(c, inf);
+    }
+}
+
 int MEDDLY::FILE_input::get_char()
 {
     // TBD - deal with errors
@@ -145,6 +153,11 @@ MEDDLY::istream_input::~istream_input()
 bool MEDDLY::istream_input::eof() const
 {
     return in.eof();
+}
+
+int MEDDLY::istream_input::next_char()
+{
+    return in.peek();
 }
 
 int MEDDLY::istream_input::get_char()

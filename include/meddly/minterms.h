@@ -51,6 +51,7 @@ namespace MEDDLY {
     const int DONT_CHANGE = -2;
 
     class domain;
+    class input;
     class output;
     class dd_edge;
 
@@ -250,6 +251,12 @@ class MEDDLY::minterm {
         // For convenience and debugging
         void show(output &s) const;
 
+        /// Write a minterm to a file in a convenient format.
+        void write(output &s) const;
+
+        /// Read a minterm from a file in a convenient format.
+        void read(input &s);
+
         /** Create an edge from this minterm.
 
                 @param  deflt   Value for the function to return
@@ -333,6 +340,8 @@ class MEDDLY::minterm_coll {
         inline bool isFull() const {
             return size() == maxsize();
         }
+
+        /* TBD: add resize method */
 
         /// Clear the collection
         inline void clear() { first_unused = 0; }

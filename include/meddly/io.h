@@ -71,6 +71,13 @@ class MEDDLY::input {
         virtual bool eof() const = 0;
 
         /**
+            What is the next character on the input stream.
+            Does not consume the character.
+                @return   The character consumed, or EOF.
+        */
+        virtual int next_char() = 0;
+
+        /**
             Read exactly one character from the input stream.
                 @return   The character consumed, or EOF.
                 @throws   an appropriate error
@@ -155,6 +162,7 @@ class MEDDLY::FILE_input : public MEDDLY::input {
         }
 
         virtual bool eof() const;
+        virtual int next_char();
         virtual int get_char();
         virtual void unget(char);
         virtual long get_integer();
@@ -185,6 +193,7 @@ class MEDDLY::istream_input : public MEDDLY::input {
         virtual ~istream_input();
 
         virtual bool eof() const;
+        virtual int next_char();
         virtual int get_char();
         virtual void unget(char);
         virtual long get_integer();

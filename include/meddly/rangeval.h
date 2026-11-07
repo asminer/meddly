@@ -25,6 +25,7 @@
 namespace MEDDLY {
     class rangeval;
     class forest;
+    class input;
     class output;
 
     /// Types of return values allowed for functions.
@@ -214,11 +215,11 @@ class MEDDLY::rangeval {
             return !equals(t);
         }
 
-        //
-        // Helpful for debugging
-        //
-
+        /// Write to a file in a convenient format
         void write(output &s) const;
+
+        /// Read back from a file in a convenient format
+        void read(input &s);
 
     private:
         inline bool equals(const rangeval &t) const

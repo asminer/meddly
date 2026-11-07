@@ -308,6 +308,28 @@ class rsgen_model {
             return approx;
         }
 
+        /**
+            Generate an "oracle" file of minterms from an edge.
+         */
+        void write_oracle(MEDDLY::output &out, const MEDDLY::dd_edge &e) const;
+
+        /**
+            Read in all minterms from an "oracle", into a minterm collection.
+        */
+        void read_oracle(MEDDLY::input &inf, MEDDLY::minterm_coll &mtc) const;
+
+        /**
+            Override in derived classes, to add header information
+            to an oracle.
+        */
+        virtual void write_oracle_header(MEDDLY::output &out) const;
+
+        /**
+            Override in derived classes, to read header information
+            from an oracle (and then probably verify it?)
+        */
+        virtual void read_oracle_header(MEDDLY::input &inf) const;
+
     private:
         const char* chkpt_path(unsigned iter) const;
         void write_checkpoint(unsigned iter, const MEDDLY::dd_edge &e) const;

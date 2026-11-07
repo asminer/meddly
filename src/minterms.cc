@@ -574,6 +574,34 @@ void MEDDLY::minterm::show(output &s) const
     value.write(s);
 }
 
+void MEDDLY::minterm::write(output &s) const
+{
+    s.put("[T");
+    for (unsigned i=num_vars; i; i--) {
+        s.put(' ');
+        s.put(_from[i]);
+        if (isForSets()) continue;
+        s.put(':');
+        s.put(_to[i]);
+    }
+    s.put(" B] ");
+    value.write(s);
+}
+
+void MEDDLY::minterm::read(input &s)
+{
+    s.stripWS();
+    s.consumeKeyword("[T");
+    for (unsigned i=num_vars; i; i--) {
+        _from[i] = s.get_integer();
+        if (isForSets()) continue;
+        s.consumeKeyword(":");
+        _to[i] = s.get_integer();
+    }
+    s.stripWS();
+    s.consumeKeyword("B]");
+    value.read(s);
+}
 
 void MEDDLY::minterm::buildFunction(rangeval def, dd_edge &e) const
 {
