@@ -2,11 +2,22 @@
 TO DO list
 
 rsgen_model:
+    * fix MT distance
+        +   use 0 for unreachable b/c it works much better
+            with sparse nodes and set enumeration.
+
+        +   update explicit gen in rsgen_model
+
+        +   update pre/post image
+
+        +   update saturation
+
+
     * migrate all kanban in tests/ to use rsgen_model
-        kan_chkgen  will replace many, especially kan_chkrs
 
     * migrate other models in examples/ to use rsgen_model
 
+    * make other model_gen tests?
 
 
 For I/O:

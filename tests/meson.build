@@ -228,6 +228,18 @@ test('kan_relprod', kan_relprod)
 
 ######################################################################
 
+kan_size = executable(
+    'kan_size',
+    'kan_size.cc',
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
+)
+
+foreach alg: [ '-front', '-trad', '-sat1' ]
+    test('kan_size ' + alg, kan_size, args: alg)
+endforeach
+
+######################################################################
+
 kanban = executable(
     'kanban',
     'kanban.cc',

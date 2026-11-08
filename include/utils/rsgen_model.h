@@ -247,6 +247,10 @@ class rsgen_model {
 
         static void printStats(MEDDLY::output &out, const MEDDLY::forest* F);
 
+        //
+        // Set / get various options
+        //
+
         inline void set_set_type(char t) {
             set_type = t;
         }
@@ -295,9 +299,6 @@ class rsgen_model {
         void trad_with_checkpoints(const MEDDLY::dd_edge &relation,
                 const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable);
 
-        inline void disable_output_options() {
-            allow_output_files = false;
-        }
         inline void default_approx() {
             approx = true;
         }
@@ -306,6 +307,16 @@ class rsgen_model {
         }
         inline bool approx_cardinality() const {
             return approx;
+        }
+
+        //
+        // Enable / disable command-line switches for options
+        //
+        inline void disable_generation_types() {
+            allow_generation_types = false;
+        }
+        inline void disable_output_options() {
+            allow_output_files = false;
         }
 
         /**
@@ -383,9 +394,6 @@ class rsgen_model {
         // verbosity level
         int verb;
 
-        // are output file options enabled?
-        bool allow_output_files;
-
         // output file: the relation (or null for none)
         const char* file_rel;
 
@@ -394,6 +402,15 @@ class rsgen_model {
 
         // checkpoint directory
         const char* check_dir;
+
+        // ==========================================================
+
+        // are generation type options enabled?
+        bool allow_generation_types;
+
+        // are output file options enabled?
+        bool allow_output_files;
+
 };
 
 #endif

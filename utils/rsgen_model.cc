@@ -409,10 +409,12 @@ rsgen_model::rsgen_model()
     verb = 0;
     expl_batch = 1024;
 
-    allow_output_files = true;
     file_rel = nullptr;
     file_set = nullptr;
     check_dir = nullptr;
+
+    allow_generation_types = true;
+    allow_output_files = true;
 }
 
 // ******************************************************************
@@ -455,34 +457,36 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
     }
 #endif
 
-    //
-    // What are we generating
-    //
-    if (0==strcmp(argv[i], "-evdist")) {
-        set_set_type('+');
-        i++;
-        return true;
-    }
-    if (0==strcmp(argv[i], "-mtdist")) {
-        set_set_type('i');
-        i++;
-        return true;
-    }
-    if (0==strcmp(argv[i], "-reach")) {
-        set_set_type('b');
-        i++;
-        return true;
-    }
+    if (allow_generation_types) {
+        //
+        // What are we generating
+        //
+        if (0==strcmp(argv[i], "-evdist")) {
+            set_set_type('+');
+            i++;
+            return true;
+        }
+        if (0==strcmp(argv[i], "-mtdist")) {
+            set_set_type('i');
+            i++;
+            return true;
+        }
+        if (0==strcmp(argv[i], "-reach")) {
+            set_set_type('b');
+            i++;
+            return true;
+        }
 
-    if (0==strcmp(argv[i], "-fwd")) {
-        forwd = true;
-        i++;
-        return true;
-    }
-    if (0==strcmp(argv[i], "-bwd")) {
-        forwd = false;
-        i++;
-        return true;
+        if (0==strcmp(argv[i], "-fwd")) {
+            forwd = true;
+            i++;
+            return true;
+        }
+        if (0==strcmp(argv[i], "-bwd")) {
+            forwd = false;
+            i++;
+            return true;
+        }
     }
 
     //
@@ -587,15 +591,18 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     if (arg0) {
         out << "\nUsage: " << basename(arg0) << " [options]\n";
     }
-    out << "\n";
-    out << "    GENERATION TYPES\n";
-    out << "\n";
-    out << "\t-evdist    : build the distance function using EV+MDDs.\n";
-    out << "\t-mtdist    : build the distance function.using MTMDDs.\n";
-    out << "\t-reach     : build the reachability set (default).\n";
-    out << "\n";
-    out << "\t-fwd       : use forward generation (default).\n";
-    out << "\t-bwd       : use backward generation.\n";
+
+    if (allow_generation_types) {
+        out << "\n";
+        out << "    GENERATION TYPES\n";
+        out << "\n";
+        out << "\t-evdist    : build the distance function using EV+MDDs.\n";
+        out << "\t-mtdist    : build the distance function.using MTMDDs.\n";
+        out << "\t-reach     : build the reachability set (default).\n";
+        out << "\n";
+        out << "\t-fwd       : use forward generation (default).\n";
+        out << "\t-bwd       : use backward generation.\n";
+    }
 
     out << "\n";
     out << "    GENERATION METHODS\n";
