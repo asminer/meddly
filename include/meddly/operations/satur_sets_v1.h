@@ -313,6 +313,10 @@ void MEDDLY::saturation1_set_mtrel<EOP, ATYPE>
     out.indentation(0);
     ++top_count;
     out << opName() << " #" << top_count << " begin\n";
+    dd_edge a(arg1F);
+    a.set(av, ap);
+    out << "Initial states: " << a << "\n";
+    a.showGraph(out);
 #endif
 #ifdef COUNT_CALLS
     sat_calls = 0;
