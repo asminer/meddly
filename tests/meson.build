@@ -240,16 +240,6 @@ endforeach
 
 ######################################################################
 
-kanban = executable(
-    'kanban',
-    'kanban.cc',
-    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
-)
-
-test('kanban', kanban)
-
-######################################################################
-
 nodestor = executable(
     'nodestor',
     'nodestor.cc',
