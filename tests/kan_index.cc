@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
@@ -20,40 +19,11 @@
 #include <cstdlib>
 #include <string.h>
 
-#include "meddly/meddly.h"
-#include "utils/simple_model.h"
+#include "kan_base.h"
 
-// #define SHOW_INDEXES
+// ============================================
 
-const char* kanban[] = {
-  "X-+..............",  // Tin1
-  "X.-+.............",  // Tr1
-  "X.+-.............",  // Tb1
-  "X.-.+............",  // Tg1
-  "X.....-+.........",  // Tr2
-  "X.....+-.........",  // Tb2
-  "X.....-.+........",  // Tg2
-  "X+..--+..-+......",  // Ts1_23
-  "X.........-+.....",  // Tr3
-  "X.........+-.....",  // Tb3
-  "X.........-.+....",  // Tg3
-  "X....+..-+..--+..",  // Ts23_4
-  "X.............-+.",  // Tr4
-  "X.............+-.",  // Tb4
-  "X............+..-",  // Tout4
-  "X.............-.+"   // Tg4
-};
-
-using namespace MEDDLY;
-
-bool equal(const int* a, const int* b, int N)
-{
-    for (int i=1; i<=N; i++)
-        if (a[i] != b[i]) return false;
-    return true;
-}
-
-bool equal(const minterm &a, const minterm &b)
+bool equal(const MEDDLY::minterm &a, const MEDDLY::minterm &b)
 {
     if (a.getNumVars() != b.getNumVars()) return false;
     for (unsigned k = a.getNumVars(); k; --k)
@@ -63,148 +33,148 @@ bool equal(const minterm &a, const minterm &b)
     return true;
 }
 
+// ============================================
 
-bool checkReachset(int N)
+class kanban : public kanban_base {
+    public:
+        kanban();
+
+        inline void setN(int n) {
+            N = n;
+        }
+
+        virtual void after_generation(MEDDLY::output &out,
+                const MEDDLY::dd_edge &e);
+};
+
+// ============================================
+
+kanban::kanban()
 {
-    printf("Running test for N=%d...\n", N);
+    set_gen_method('t');
+}
 
-    int sizes[16];
+// ============================================
 
-    for (int i=15; i>=0; i--) sizes[i] = N+1;
-    domain* dom = domain::createBottomUp(sizes, 16);
-    forest* mdd = forest::create(dom, SET, range_type::BOOLEAN,
-                        edge_labeling::MULTI_TERMINAL);
-    forest* mxd = forest::create(dom, RELATION, range_type::BOOLEAN,
-                        edge_labeling::MULTI_TERMINAL);
-    forest* evmdd = forest::create(dom, SET, range_type::INTEGER,
-                        edge_labeling::INDEX_SET);
+void kanban::after_generation(MEDDLY::output &out,
+                const MEDDLY::dd_edge &reachable)
+{
+    using namespace MEDDLY;
 
-    //
-    // Build initial state
-    //
-    minterm initial(mdd);
-    dd_edge init_state(mdd);
-    initial.setAllVars(0);
-    initial.setVar(1, N);
-    initial.setVar(5, N);
-    initial.setVar(9, N);
-    initial.setVar(13, N);
-    initial.buildFunction(false, init_state);
-    printf("\tbuilt initial state\n");
-    fflush(stdout);
-
-    //
-    // Build next-state function
-    //
-    dd_edge nsf(mxd);
-    buildNextStateFunction(kanban, 16, mxd, nsf);
-    printf("\tbuilt next-state function\n");
-    fflush(stdout);
-
-    //
-    // Build reachable states
-    //
-    dd_edge reachable(mdd);
-    apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
-    printf("\tbuilt reachable states\n");
-    fflush(stdout);
-
+    out << "Running test for N=" << N << "\n";
     //
     // Build index set for reachable states
     //
+    forest* evmdd = forest::create(get_domain(), SET, range_type::INTEGER,
+                        edge_labeling::INDEX_SET);
+
     dd_edge reach_index(evmdd);
-    apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
-#ifdef SHOW_INDEXES
-    FILE_output out(stdout);
-    printf("\tbuilt index set:\n");
-    reach_index.showGraph(out);
-#else
-    printf("\tbuilt index set\n");
-#endif
-    fflush(stdout);
+    apply(MEDDLY::CONVERT_TO_INDEX_SET, reachable, reach_index);
+    out << "\tbuilt index set\n";
+    out.flush();
 
     //
     // Iterate through reachable states, and make sure
     // the reach_index matches.
     //
     long c = 0;
-    minterm assign(mdd);
     for (dd_edge::iterator s = reachable.begin(); s; ++s)
     {
         long index;
         reach_index.evaluate(*s, index);
         if (c != index) {
-            FILE_output out(stdout);
             out << "\nState number " << c << " has index " << index << "\n";
             out << "  state: ";
             (*s).show(out);
             out << "\n";
-            return false;
+            throw "mismatch";
         }
         c++;
     }
-    printf("\tverified `forward'\n");
-    fflush(stdout);
+    out << "\tverified set -> index\n";
+    out.flush();
 
     //
     // Iterate through reach_index, and make sure all indexed
     // states are in fact reachable.
     //
-
     c = 0;
     for (dd_edge::iterator s = reach_index.begin(); s; ++s)
     {
         long index = (*s).getValue();
         if (index != c) {
-            printf("\nState number %ld has index %ld\n", c, index);
-            return false;
+            out << "\nState number " << c << " has index " << index << "\n";
+            throw "mismatch";
         }
         bool ok;
         reachable.evaluate(*s, ok);
         if (!ok) {
-            printf("\nIndex number %ld does not appear in reachability set\n", c);
-            return false;
+            out << "\nIndex number " << c
+                << "does not appear in reachability set\n";
+            throw "mismatch";
         }
         c++;
     }
-    printf("\tverified `backward'\n");
-    fflush(stdout);
+    out << "\tverified index -> set\n";
+    out.flush();
 
+    //
     // Verify index search
+    //
     c = 0;
+    minterm assign(get_domain(), MEDDLY::SET);
     for (dd_edge::iterator s = reachable.begin(); s; ++s)
     {
         bool ok = reach_index.getElement(c, assign);
         if (!ok) {
-            printf("\nCan't find state with index %ld\n", c);
-            return false;
+            out << "\nCan't find state with index " << c << "\n";
+            throw "not found";
         }
         if (!equal(*s, assign)) {
-            printf("\nFetch index %ld got wrong state\n", c);
-            return false;
+            out << "\nFetch index " << c << " got wrong state\n";
+            throw "mismatch";
         }
         c++;
     }
-    printf("\tverified `getElement'\n");
-    fflush(stdout);
-
-
-
-  domain::destroy(dom);
-
-  return true;
+    out << "\tverified index search\n";
+    out << "\tdone verifying " << c << " state indexes\n";
+    out.flush();
 }
+
+// ============================================
 
 int main()
 {
-    MEDDLY::initialize();
+    kanban K;
 
-    for (int n=1; n<4; n++) {
-        if (!checkReachset(n)) return 1;
+    try {
+        MEDDLY::initialize();
+
+        MEDDLY::ostream_output out(std::cout);
+
+        for (unsigned n=1; n<5; n++) {
+            out.indent_more();
+            K.setN(n);
+            K.build_model(out);
+            K.generate(out, false, false);
+            K.destroy_model();
+            out.indent_less();
+            out << "\n";
+        }
+
+        MEDDLY::cleanup();
+        return 0;
     }
-
-    MEDDLY::cleanup();
-    printf("Done\n");
-    return 0;
+    catch (MEDDLY::error e) {
+        std::cerr   << "\nCaught meddly error '" << e.getName()
+                    << "'\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
+    }
+    catch (const char* e) {
+        std::cerr   << "\nCaught our own error: " << e << "\n";
+        return 2;
+    }
+    std::cerr << "\nSome other error?\n";
+    return 4;
 }
-

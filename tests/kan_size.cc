@@ -21,8 +21,7 @@
 #include <iomanip>
 #include <string.h>
 
-#include "meddly/meddly.h"
-#include "utils/rsgen_model.h"
+#include "kan_base.h"
 
 // ============================================
 
@@ -36,7 +35,7 @@ const int nstop = 10;
 
 // ============================================
 
-class kanban : public rsgen_model {
+class kanban : public kanban_base {
     public:
         kanban();
 
@@ -44,75 +43,16 @@ class kanban : public rsgen_model {
             N = n;
         }
 
-        virtual bool build_model(MEDDLY::output &out);
-        virtual void build_initial(MEDDLY::minterm &init);
-
         virtual void after_generation(MEDDLY::output &out,
                 const MEDDLY::dd_edge &e);
-
-    private:
-        int N;
 };
 
 // ============================================
 
 kanban::kanban()
 {
-    N = -1;
     disable_generation_types();
     disable_output_options();
-}
-
-// ============================================
-
-bool kanban::build_model(MEDDLY::output &out)
-{
-    if (N<0) {
-        std::cerr << "Missing or bad size.\n";
-        return false;
-    }
-    out << "Checking Kanban " << get_set_name() << ", N=" << N << "\n";
-
-    //
-    // Initialize domain
-    //
-    int* sizes = new int[16];
-    for (int i=15; i>=0; i--) sizes[i] = N+1;
-    set_domain(MEDDLY::domain::createBottomUp(sizes, 16));
-    delete[] sizes;
-
-    //
-    // Make the events
-    //
-    add_event(new simple_event("Tin1",    "X-+.............."));
-    add_event(new simple_event("Tr1",     "X.-+............."));
-    add_event(new simple_event("Tb1",     "X.+-............."));
-    add_event(new simple_event("Tg1",     "X.-.+............"));
-    add_event(new simple_event("Tr2",     "X.....-+........."));
-    add_event(new simple_event("Tb2",     "X.....+-........."));
-    add_event(new simple_event("Tg2",     "X.....-.+........"));
-    add_event(new simple_event("Ts1_23",  "X+..--+..-+......"));
-    add_event(new simple_event("Tr3",     "X.........-+....."));
-    add_event(new simple_event("Tb3",     "X.........+-....."));
-    add_event(new simple_event("Tg3",     "X.........-.+...."));
-    add_event(new simple_event("Ts23_4",  "X....+..-+..--+.."));
-    add_event(new simple_event("Tr4",     "X.............-+."));
-    add_event(new simple_event("Tb4",     "X.............+-."));
-    add_event(new simple_event("Tout4",   "X............+..-"));
-    add_event(new simple_event("Tg4",     "X.............-.+"));
-
-    return true;
-}
-
-// ============================================
-
-void kanban::build_initial(MEDDLY::minterm &init)
-{
-    init.setAllVars(0);
-    init.setVar(1, N);
-    init.setVar(5, N);
-    init.setVar(9, N);
-    init.setVar(13, N);
 }
 
 // ============================================

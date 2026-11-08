@@ -159,7 +159,7 @@ test('domain_list', domain_list)
 
 kan_chkgen = executable(
     'kan_chkgen',
-    'kan_chkgen.cc',
+    [ 'kan_base.cc', 'kan_chkgen.cc' ],
     dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
 )
 
@@ -200,8 +200,8 @@ endforeach
 
 kan_index = executable(
     'kan_index',
-    'kan_index.cc',
-    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
+    [ 'kan_base.cc', 'kan_index.cc' ],
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
 )
 
 test('kan_index', kan_index)
@@ -230,7 +230,7 @@ test('kan_relprod', kan_relprod)
 
 kan_size = executable(
     'kan_size',
-    'kan_size.cc',
+    [ 'kan_base.cc', 'kan_size.cc' ],
     dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
 )
 

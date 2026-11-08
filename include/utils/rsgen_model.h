@@ -226,6 +226,10 @@ class rsgen_model {
             D = d;
         }
 
+        inline MEDDLY::domain* get_domain() const {
+            return D;
+        }
+
         inline void add_event(event* e) {
             events.push_back(e);
         }
