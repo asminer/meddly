@@ -153,6 +153,7 @@ hanoi::hanoi()
     N = -1;
     default_approx();
     disable_output_options();
+    generate_oracle = false;
 }
 
 // ******************************************************************

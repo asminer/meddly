@@ -53,6 +53,7 @@ class kanban : public kanban_base {
 kanban::kanban()
 {
     disable_output_options();
+    generate_oracle = false;
 }
 
 // ============================================

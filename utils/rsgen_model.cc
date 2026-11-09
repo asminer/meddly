@@ -1009,7 +1009,7 @@ void rsgen_model::show_cardinality(MEDDLY::output &out,
     using namespace MEDDLY;
     timer watch;
     if (approx) {
-        double card;
+        double card = 0;
 
         watch.note_time();
         apply(CARDINALITY, e, card);
