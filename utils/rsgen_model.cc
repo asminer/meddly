@@ -30,24 +30,7 @@
 // #define SHOW_MXD_FOREST
 // #define WRITE_MXD
 // #define WRITE_EVENTS
-
-// ******************************************************************
-//
-// Adjust multi-terminal, integer distance function
-// to be distance plus one, for reachable states,
-// zero for unreachable states.
-
-/*
-void distance_adjust(const MEDDLY::rangeval &in, MEDDLY::rangeval &out)
-{
-    long x = long(in);
-    if (x<0) {
-        out = 0;
-    } else {
-        out = x+1;
-    }
-}
-*/
+// #define VALIDATE_CHECKPOINTS
 
 // ******************************************************************
 
@@ -1177,6 +1160,10 @@ void rsgen_model::trad_with_checkpoints(const MEDDLY::dd_edge &relation,
         //
         write_checkpoint(next, reachable);
 
+#ifdef VALIDATE_CHECKPOINTS
+        validate_checkpoint(next, reachable);
+#endif
+
     } while(true);
 
 }
@@ -1297,7 +1284,7 @@ void rsgen_model::write_checkpoint(unsigned iter, const MEDDLY::dd_edge &e)
 {
     const char* pathname = chkpt_path(iter);
     if (verb>2) {
-        std::cerr << "            writing checkpoint " << pathname << " ";
+        std::cerr << "            writing    checkpoint " << pathname << " ";
     }
     compressed_output cpout(pathname);
     if (!cpout) {
@@ -1329,20 +1316,65 @@ void rsgen_model::write_checkpoint(unsigned iter, const MEDDLY::dd_edge &e)
 void rsgen_model::read_checkpoint(unsigned iter, MEDDLY::dd_edge &e) const
 {
     const char* pathname = chkpt_path(iter);
-    std::cerr << "    restoring from checkpoint " << pathname << " ";
+    if (verb>2) {
+        std::cerr << "            restoring  checkpoint " << pathname << " ";
+    }
     compressed_input cpin(pathname);
     if (!cpin) {
         std::cerr << "couldn't read\n";
         throw "checkpoint restore error: couldn't read";
     }
-    std::cerr << ".";
-    std::cerr.flush();
+    if (verb>2) {
+        std::cerr << ".";
+        std::cerr.flush();
+    }
 
     D->verify(cpin.instream());
     MEDDLY::mdd_reader myreader(cpin.instream(), Fset);
-    std::cerr << ".";
-    std::cerr.flush();
+    if (verb>2) {
+        std::cerr << ".";
+        std::cerr.flush();
+    }
     e = myreader.getRoot(0);
-    std::cerr << " done\n";
+    if (verb>2) {
+        std::cerr << " done\n";
+    }
+}
+
+// ******************************************************************
+
+void rsgen_model::validate_checkpoint(unsigned iter, const MEDDLY::dd_edge &e)
+    const
+{
+    const char* pathname = chkpt_path(iter);
+    if (verb>2) {
+        std::cerr << "            validating checkpoint " << pathname << " ";
+    }
+    compressed_input cpin(pathname);
+    if (!cpin) {
+        std::cerr << "couldn't read\n";
+        throw "checkpoint restore error: couldn't read";
+    }
+    if (verb>2) {
+        std::cerr << ".";
+        std::cerr.flush();
+    }
+
+    D->verify(cpin.instream());
+    MEDDLY::mdd_reader myreader(cpin.instream(), Fset);
+    if (verb>2) {
+        std::cerr << ".";
+        std::cerr.flush();
+    }
+    if (myreader.getRoot(0) != e) {
+        if (verb>2) {
+            std::cerr << " MISMATCH!\n";
+        }
+        throw "checkpoint mismatch";
+    } else {
+        if (verb>2) {
+            std::cerr << " done\n";
+        }
+    }
 }
 

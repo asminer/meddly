@@ -337,6 +337,7 @@ class rsgen_model {
         const char* chkpt_path(unsigned iter) const;
         void write_checkpoint(unsigned iter, const MEDDLY::dd_edge &e) const;
         void read_checkpoint(unsigned iter, MEDDLY::dd_edge &e) const;
+        void validate_checkpoint(unsigned iter, const MEDDLY::dd_edge &e) const;
 
     private:
         std::vector <event*> events;    // model events
