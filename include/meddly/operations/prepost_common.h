@@ -110,9 +110,7 @@ namespace MEDDLY {
         {
             IGNORE_UNUSED(ev);
             MEDDLY_DCASSERT(ev.isVoid());
-            if (p >= 0) return false;
-            terminal t(terminal_type::INTEGER, p);
-            return t.getInteger() < 0;
+            return 0==p;
         }
 
         /// Does the edge correspond to everything is reachable?
@@ -120,24 +118,23 @@ namespace MEDDLY {
         {
             IGNORE_UNUSED(ev);
             MEDDLY_DCASSERT(ev.isVoid());
-            return 0==p;
+            if (p >= 0) return false;
+            terminal t(terminal_type::INTEGER, p);
+            return t.getInteger() == 1; // minimum distance
         }
 
         /// Set edge to be unreachable states
         inline static void setUnreachable(edge_value &v, node_handle &p)
         {
             v.set();
-            terminal t = -1;
-            p = t.getIntegerHandle();
+            p = 0;
         }
 
         /// Set all edges to unreachable
         inline static void setAllUnreachable(unpacked_node *U)
         {
-            terminal t = -1;
-            node_handle neg1 = t.getIntegerHandle();
             for (unsigned i=0; i<U->getSize(); i++) {
-                U->setFull(i, neg1);
+                U->setFull(i, 0);
             }
         }
 

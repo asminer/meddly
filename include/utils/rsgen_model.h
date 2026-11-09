@@ -21,11 +21,6 @@
 
 #include "meddly/meddly.h"
 
-// #define OLD_SIMPLE_MODEL
-
-// ^ Uncomment to make this act like the simple_model implementation
-
-
 /**
     Class for a "model" to help coordinate the various
     reachability set / distance function generation examples.
@@ -81,23 +76,12 @@ class rsgen_model {
                 virtual bool fire(const MEDDLY::minterm &curr,
                         MEDDLY::minterm &) = 0;
 
-#ifdef OLD_SIMPLE_MODEL
-                /**
-                    Build the next state function for this event.
-                        @param  mtmxd   Auxiliary relation forest
-                        @param  R       Edge to store the result
-                        @return true,   iff we could build the relation.
-                */
-                virtual bool build_nsf(MEDDLY::forest* mtmxd,
-                    MEDDLY::dd_edge &R) = 0;
-#else
                 /**
                     Build the next state function for this event.
                         @param  R       Edge to store the result
                         @return true,   iff we could build the relation.
                 */
                 virtual bool build_nsf(MEDDLY::dd_edge &R) = 0;
-#endif
 
                 // something for implicit relations here?
         };
@@ -133,12 +117,7 @@ class rsgen_model {
                 virtual bool fire(const MEDDLY::minterm &curr,
                         MEDDLY::minterm &next);
 
-#ifdef OLD_SIMPLE_MODEL
-                virtual bool build_nsf(MEDDLY::forest* mtmxd,
-                        MEDDLY::dd_edge &R);
-#else
                 virtual bool build_nsf(MEDDLY::dd_edge &R);
-#endif
 
             protected:
                 void show() const;
@@ -366,9 +345,6 @@ class rsgen_model {
 
         MEDDLY::forest* Fset;   // forest for reachset or distances
         MEDDLY::forest* Fmxd;   // forest for relation, or null
-#ifdef OLD_SIMPLE_MODEL
-        MEDDLY::forest* Fmtmxd; // auxiliary forest for relation, or null
-#endif
 
         unsigned expl_batch;    // batch size for explicit
 

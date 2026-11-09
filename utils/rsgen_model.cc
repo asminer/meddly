@@ -37,6 +37,7 @@
 // to be distance plus one, for reachable states,
 // zero for unreachable states.
 
+/*
 void distance_adjust(const MEDDLY::rangeval &in, MEDDLY::rangeval &out)
 {
     long x = long(in);
@@ -46,6 +47,7 @@ void distance_adjust(const MEDDLY::rangeval &in, MEDDLY::rangeval &out)
         out = x+1;
     }
 }
+*/
 
 // ******************************************************************
 
@@ -236,109 +238,6 @@ bool rsgen_model::simple_event::fire(const MEDDLY::minterm &curr,
 
 // ******************************************************************
 
-#ifdef OLD_SIMPLE_MODEL
-
-bool rsgen_model::simple_event::build_nsf(MEDDLY::forest* mtmxd,
-        MEDDLY::dd_edge &R)
-{
-    using namespace MEDDLY;
-
-#ifdef DEBUG_EVENTS
-    ostream_output out(std::cerr);
-    out << "Building nsf for event " << get_name() << " [";
-    for (unsigned u=0; u<updates.size(); u++) {
-        if (u) out << ", ";
-        out << "(" << updates[u].level << ":" << updates[u].delta << ")";
-    }
-    out << "]\n";
-#endif
-
-    forest* mxd = R.getForest();
-
-    static rangeval* temp = nullptr;
-    static unsigned maxBound = 1;
-
-    const domain* d = mtmxd->getDomain();
-    const unsigned nVars = d->getNumVariables();
-    if (!temp) {
-        // build a temporary array, of dimension largest variable
-        for (unsigned i=1; i<=nVars; i++) {
-            const unsigned xib = d->getVariableBound(i, false);
-            if (xib > maxBound) maxBound = xib;
-        }
-        temp = new rangeval[maxBound];
-    }
-
-    //
-    // Build mask for this event.
-    // Levels not in the updates vector: don't change
-    // Levels in the updates vector: don't care
-    //
-    minterm mask(mtmxd);
-    for (unsigned i=1; i<=nVars; i++) {
-        mask.setVars(i, DONT_CARE, DONT_CHANGE);
-    }
-    for (unsigned u=0; u<updates.size(); u++) {
-        mask.setVars(updates[u].level, DONT_CARE, DONT_CARE);
-    }
-    mask.buildFunction(false, R);
-
-#ifdef DEBUG_EVENT_BUILD
-    out << "Event mask:\n";
-    R.showGraph(out);
-#endif
-
-    //
-    // Build a term for each updated variable,
-    // AND it with the relations so far.
-    //
-    dd_edge xun(mtmxd);
-    dd_edge xpr(mtmxd);
-    dd_edge term(mxd);
-    for (unsigned u=0; u<updates.size(); u++) {
-        const unsigned i = updates[u].level;
-        //
-        // Build xi'
-        //
-        mtmxd->createEdgeForVar(int(i), true, xpr);
-
-        //
-        // Build xi + delta
-        //
-        for (unsigned v=0; v<maxBound; v++) {
-            temp[v].setInteger(updates[u].scale * int(v) + updates[u].delta);
-        }
-        mtmxd->createEdgeForVar(int(i), false, temp, xun);
-
-        //
-        // update for this variable is: xi' == xi + delta
-        //
-        apply(EQUAL, xpr, xun, term);
-
-#ifdef DEBUG_EVENT_BUILD
-        out << "Term at level " << i << ":\n";
-        term.showGraph(out);
-#endif
-
-        //
-        // AND with relation
-        //
-        R *= term;
-    }
-    term.set(0);
-
-#ifdef DEBUG_EVENTS
-    out << "Overall event:\n";
-    R.show(out);
-#endif
-
-    return true;
-}
-
-
-#else
-
-
 bool rsgen_model::simple_event::build_nsf(MEDDLY::dd_edge &R)
 {
     using namespace MEDDLY;
@@ -397,8 +296,6 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::dd_edge &R)
     return true;
 }
 
-#endif // OLD_SIMPLE_MODEL
-
 // ******************************************************************
 
 void rsgen_model::simple_event::show() const
@@ -427,9 +324,6 @@ rsgen_model::rsgen_model()
     D = nullptr;
     Fset = nullptr;
     Fmxd = nullptr;
-#ifdef OLD_SIMPLE_MODEL
-    Fmtmxd = nullptr;
-#endif
 
     // default options
 
@@ -762,13 +656,6 @@ void rsgen_model::generate(MEDDLY::output &out, bool mxdstats, bool mddstats)
                     edge_labeling::MULTI_TERMINAL,
                     pmxd
         );
-#ifdef OLD_SIMPLE_MODEL
-        Fmtmxd = forest::create(D, RELATION,
-                    range_type::INTEGER,
-                    edge_labeling::MULTI_TERMINAL,
-                    pmxd
-        );
-#endif
     }
 
     //
@@ -783,8 +670,8 @@ void rsgen_model::generate(MEDDLY::output &out, bool mxdstats, bool mddstats)
 
     switch (set_type) {
         case 'i':
-            initial.setValue(0);
-            initial.buildFunction(-1, init_state);
+            initial.setValue(1);
+            initial.buildFunction(0, init_state);
             break;
 
         case '+':
@@ -807,9 +694,6 @@ void rsgen_model::generate(MEDDLY::output &out, bool mxdstats, bool mddstats)
         case 'm':   // monolithic
             out << "Building monolithic relation\n";
             build_monolithic(nsf);
-#ifdef OLD_SIMPLE_MODEL
-            forest::destroy(Fmtmxd);
-#endif
             break;
 
         case ' ':   // no relation
@@ -939,11 +823,7 @@ void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
     MEDDLY::dd_edge Re(Fmxd);
     for (unsigned e=0; e<events.size(); e++) {
         if (events[e]) {
-#ifdef OLD_SIMPLE_MODEL
-            events[e]->build_nsf(Fmtmxd, Re);
-#else
             events[e]->build_nsf(Re);
-#endif
             R += Re;
 #ifdef WRITE_EVENTS
             mywriter.writeRootEdge(Re);
@@ -978,9 +858,6 @@ void rsgen_model::after_generation(MEDDLY::output &out,
 
 void rsgen_model::destroy_model()
 {
-#ifdef OLD_SIMPLE_MODEL
-    MEDDLY::forest::destroy(Fmtmxd);
-#endif
     MEDDLY::forest::destroy(Fmxd);
     MEDDLY::forest::destroy(Fset);
     MEDDLY::domain::destroy(D);
@@ -1024,17 +901,17 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
                 break;
 
             case 'i':
-                Fset->createConstant(-1, unexplored);
-                apply(PLUS, explored, one, explored);
-                // ^ add one to states to be explored.
-                // -1 for unreachable becomes 0,
-                // so we can iterate quickly over the set.
+                Fset->createConstant(0, unexplored);
                 break;
 
             default:
                 Fset->createConstant(false, unexplored);
                 break;
         }
+#ifdef DEBUG_GENERATE
+        // out << "Explore batch:\n";
+        // explored.showGraph(out);
+#endif
         I.restart(explored);
         if (!I) break;  // done exploring!
         for (; I; ++I) {
@@ -1053,8 +930,7 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
                         break;
 
                     case 'i':
-                        minterms.unused().setValue((*I).getValue());
-                        // Don't add one, we already did
+                        minterms.unused().setValue(1+int((*I).getValue()));
                         break;
 
                     default:
@@ -1079,7 +955,7 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
                         break;
 
                     case 'i':
-                        if (long(seen)>=0) continue;
+                        if (long(seen)>0) continue;
                         break;
 
                     default:
@@ -1097,8 +973,8 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
                             break;
 
                         case 'i':
-                            minterms.buildFunctionMin(-1, batch);
-                            // ^ this might be wrong
+                            minterms.buildFunctionMin(0, batch);
+                            // ^ not sure about Max or Min here
                             apply(DIST_MIN, unexplored, batch, unexplored);
                             apply(DIST_MIN, RS, batch, RS);
                             break;
@@ -1124,8 +1000,8 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
                     break;
 
                 case 'i':
-                    minterms.buildFunctionMin(-1, batch);
-                    // ^ this might be wrong
+                    minterms.buildFunctionMin(0, batch);
+                    // ^ not sure about Max or Min here
                     apply(DIST_MIN, unexplored, batch, unexplored);
                     apply(DIST_MIN, RS, batch, RS);
                     break;
@@ -1342,22 +1218,21 @@ void rsgen_model::read_oracle(MEDDLY::input &inf, MEDDLY::minterm_coll &mtc)
 // ******************************************************************
 
 void rsgen_model::verify_oracle(MEDDLY::output &out, std::istream &inf,
-        const MEDDLY::dd_edge &e)
+        const MEDDLY::dd_edge &reachable)
 {
     MEDDLY::istream_input minf(inf);
-    MEDDLY::minterm_coll MC(16, e.getForest());
+    MEDDLY::minterm_coll MC(16, reachable.getForest());
     read_oracle(minf, MC);
 
     out << "Verifying against oracle\n";
 
     long c = 0; // state counter
     long adjust = 0;
-    MEDDLY::dd_edge reachable(e);
     if ('i' == get_set_type()) {
         // need to add one (for efficient enumeration)
         // for integer multi-terminal distances
-        MEDDLY::user_unary_factory plus1("distadjust", distance_adjust);
-        apply(plus1, reachable, reachable);
+        // MEDDLY::user_unary_factory plus1("distadjust", distance_adjust);
+        // apply(plus1, reachable, reachable);
         adjust = 1;
     }
 

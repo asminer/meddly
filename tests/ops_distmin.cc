@@ -60,14 +60,14 @@ void DistMin(const std::vector <MEDDLY::rangeval> &A,
     for (unsigned i=0; i<C.size(); i++) {
         T av(A[i]);
         T bv(B[i]);
-        if (av < 0) {
-            if (bv < 0) {
+        if (av <= 0) {
+            if (bv <= 0) {
                 C[i] = MIN(av, bv);
             } else {
                 C[i] = bv;
             }
         } else {
-            if (bv < 0) {
+            if (bv <= 0) {
                 C[i] = av;
             } else {
                 C[i] = MIN(av, bv);

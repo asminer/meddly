@@ -81,14 +81,14 @@ namespace MEDDLY {
             RANGE av, bv;
             fa->getValueFromHandle(a, av);
             fb->getValueFromHandle(b, bv);
-            if (av < 0) {
-                if (bv < 0) {
+            if (av <= 0) {
+                if (bv <= 0) {
                     c = fc->handleForValue( MIN(av, bv) );
                 } else {
                     c = fc->handleForValue(bv);
                 }
             } else {
-                if (bv < 0) {
+                if (bv <= 0) {
                     c = fc->handleForValue(av);
                 } else {
                     c = fc->handleForValue( MIN(av, bv) );
@@ -125,7 +125,7 @@ class MEDDLY::DISTMIN_factory : public binary_factory {
 
 void MEDDLY::DISTMIN_factory::setup()
 {
-    _setup(__FILE__, "DIST_MIN", "Element-wise minimum value, except negatives are treated as infinity. For two negative values, or two non-negative values, DIST_MIN returns the smallest value; otherwise, DIST_MIN returns the non-negative value. Forest ranges must be integer or real. Forests must be multi-terminal, and over the same domain.");
+    _setup(__FILE__, "DIST_MIN", "Element-wise minimum value, except values less or equal zero are treated as infinity. For two positive values, or two non-positive values, DIST_MIN returns the smallest value; otherwise, DIST_MIN returns the positive value. Forest ranges must be integer or real. Forests must be multi-terminal, and over the same domain.");
 }
 
 MEDDLY::binary_operation*

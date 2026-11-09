@@ -142,11 +142,7 @@ void showExplicitGraph(const std::vector <intlist*> &elist)
 
 inline void dist_update(MEDDLY::rangeval &x, long d)
 {
-    if (x.isPlusInfinity()) {
-        x = d;
-        return;
-    }
-    if (long(x) < 0) {
+    if (x == unreachable) {
         x = d;
         return;
     }
@@ -369,12 +365,18 @@ void setTestsOnForests(unsigned scard, forest* Fset,
         values.resize(2);
         values[0] = unreachable;
         values[1] = true;
-    } else {
+    } else if (Fset->isEVPlus()) {
         values.resize(4);
         values[0] = unreachable;
         values[1] = 0;
         values[2] = 1;
         values[3] = 2;
+    } else {
+        values.resize(4);
+        values[0] = unreachable;
+        values[1] = 1;
+        values[2] = 2;
+        values[3] = 3;
     }
 
     const unsigned N = 8;
@@ -544,7 +546,7 @@ int main(int argc, const char** argv)
             break;
 
         case 'i':
-            unreachable = -1;
+            unreachable = 0;
             break;
 
         default:

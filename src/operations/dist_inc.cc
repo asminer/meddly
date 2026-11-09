@@ -123,7 +123,7 @@ void MEDDLY::dist_inc_mt::_compute(int L, unsigned in,
     if (argF->isTerminalNode(A)) {
         long ta;
         argF->getValueFromHandle(A, ta);
-        const long tc = (ta < 0) ? ta : (ta+1);
+        const long tc = (ta <= 0) ? ta : (ta+1);
         cp = resF->handleForValue(tc);
 
         //
@@ -173,6 +173,8 @@ void MEDDLY::dist_inc_mt::_compute(int L, unsigned in,
 
         //
         // Initialize unpacked nodes
+        //
+        // TBD: use sparse here?
         //
         unpacked_node* Au = unpacked_node::newFromNode(argF, A, FULL_ONLY);
         unpacked_node* Cu = unpacked_node::newWritable(resF, Alevel, FULL_ONLY);
@@ -285,7 +287,7 @@ class MEDDLY::DIST_INC_factory : public unary_factory {
 
 void MEDDLY::DIST_INC_factory::setup()
 {
-    _setup(__FILE__, "DIST_INC", "Distance increment. Builds a new function g(x) from input function f(x) such that g(x) = { f(x)+1, if f(x) >= 0; g(x), otherwise. Used for adding one to a distance function, encoded as a multi-terminal MDD/MXD where negative values indicate unreachable or infinite distance. The input and output forests must be over the same domain, and must have integer range.");
+    _setup(__FILE__, "DIST_INC", "Distance increment. Builds a new function g(x) from input function f(x) such that g(x) = { f(x)+1, if f(x) > 0; f(x), otherwise. Used for adding one to a distance function, encoded as a multi-terminal MDD/MXD where zero values indicate unreachable or infinite distance. The input and output forests must be over the same domain, and must have integer range.");
 }
 
 MEDDLY::unary_operation*
