@@ -22,6 +22,8 @@
 #include "meddly/io.h"
 #include "meddly/error.h"
 
+#include <cstring>
+
 // ******************************************************************
 // *                                                                *
 // *                         input  methods                         *
@@ -95,6 +97,7 @@ int MEDDLY::FILE_input::next_char()
     if (EOF != c) {
         ungetc(c, inf);
     }
+    return c;
 }
 
 int MEDDLY::FILE_input::get_char()
