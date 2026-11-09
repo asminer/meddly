@@ -25,40 +25,6 @@
 
 // ============================================
 
-// Adjust multi-terminal, integer distance function
-// to be distance plus one, for reachable states,
-// zero for unreachable states.
-
-void distance_adjust(const MEDDLY::rangeval &in, MEDDLY::rangeval &out)
-{
-    long x = long(in);
-    if (x<0) {
-        out = 0;
-    } else {
-        out = x+1;
-    }
-}
-
-// ============================================
-
-bool matches(const long adjust, const MEDDLY::minterm &morc,
-        const MEDDLY::minterm &m)
-{
-    for (unsigned k=1; k <= m.getNumVars(); ++k) {
-        if (morc.from(k) != m.from(k)) return false;
-    }
-    const MEDDLY::rangeval& mv = m.getValue();
-    if (mv.isBoolean()) {
-        return true;
-    }
-    if (mv.isInteger()) {
-        return long(morc.getValue()) + adjust == long(mv);
-    }
-    throw "Unexpected state value type";
-}
-
-// ============================================
-
 class kanban : public kanban_base {
     public:
         kanban();
@@ -105,7 +71,6 @@ bool kanban::process_arg(unsigned &i, const char** argv)
         ++i;
         return true;
     }
-
 
     return false;
 }
@@ -170,44 +135,8 @@ void kanban::after_generation(MEDDLY::output &out,
         out << "    Generate using -evdist -g, and move into the oracles directory\n";
         throw "Missing oracle";
     }
-    MEDDLY::istream_input minf(inf);
-    MEDDLY::minterm_coll MC(16, e.getForest());
-    read_oracle(minf, MC);
 
-    out << "Verifying against oracle\n";
-
-    long c = 0; // state counter
-    long adjust = 0;
-    MEDDLY::dd_edge reachable(e);
-    if ('i' == get_set_type()) {
-        // need to add one (for efficient enumeration)
-        // for integer multi-terminal distances
-        MEDDLY::user_unary_factory plus1("distadjust", distance_adjust);
-        apply(plus1, reachable, reachable);
-        adjust = 1;
-    }
-
-    for (MEDDLY::dd_edge::iterator i = reachable.begin(); i; ++i)
-    {
-        if (!matches( adjust, MC.at(c), *i)) {
-            out << "\tMarking #" << c << " mismatched\n";
-            out << "\tOracle: ";
-            MC.at(c).show(out);
-            out << "\n";
-            out << "\tOurs  : ";
-            (*i).show(out);
-            out << "\n";
-            throw "mismatch";
-        }
-        c++;
-    } // for loop
-
-    if (c < MC.size()) {
-        out << "\tNot enough markings!\n";
-        throw "mismatch";
-    }
-
-    out << "\tperfect match!\n";
+    verify_oracle(out, inf, e);
 }
 
 // ============================================

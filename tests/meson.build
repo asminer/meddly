@@ -157,16 +157,30 @@ test('domain_list', domain_list)
 
 ######################################################################
 
+hanoi_chkgen = executable(
+    'hanoi_chkgen',
+    'hanoi_chkgen.cc',
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
+)
+
+######################################################################
+
 kan_chkgen = executable(
     'kan_chkgen',
     [ 'kan_base.cc', 'kan_chkgen.cc' ],
     dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
 )
 
+######################################################################
+# ALL generation tests
+#
+
 # Frontier works fine forward and backward,
 # but only for reachability.
 foreach fb: [ '-fwd', '-bwd' ]
     test('kan_chkgen ' + fb + ' -reach -front', kan_chkgen,
+        args: [fb, '-reach', '-front'])
+    test('hanoi_chkgen ' + fb + ' -reach -front', hanoi_chkgen,
         args: [fb, '-reach', '-front'])
 endforeach
 
@@ -181,6 +195,8 @@ foreach gtype: [ '-reach', '-mtdist', '-evdist' ]
     foreach batch: [ '1', '10', '100', '1000' ]
         test('kan_chkgen -fwd ' + gtype + ' -exp -eb ' + batch,
             kan_chkgen, args: ['-fwd', gtype, '-exp', '-eb', batch])
+        test('hanoi_chkgen -fwd ' + gtype + ' -exp -eb ' + batch,
+            hanoi_chkgen, args: ['-fwd', gtype, '-exp', '-eb', batch])
     endforeach
 
     #
@@ -190,6 +206,8 @@ foreach gtype: [ '-reach', '-mtdist', '-evdist' ]
         foreach fb: [ '-fwd', '-bwd' ]
             test('kan_chkgen ' + fb + ' ' + gtype + ' ' + alg,
                 kan_chkgen, args: [fb, gtype, alg])
+            test('hanoi_chkgen ' + fb + ' ' + gtype + ' ' + alg,
+                hanoi_chkgen, args: [fb, gtype, alg])
         endforeach
     endforeach
 
@@ -475,25 +493,14 @@ ops_vmmult = executable(
     dependencies: [ gmp_dep, meddly_dep, randomize_dep ]
 )
 
-test('ops_vmmult --int --vF --mF', ops_vmmult, args: ['--int', '--vF', '--mF'])
-test('ops_vmmult --int --vF --mI', ops_vmmult, args: ['--int', '--vF', '--mI'])
-test('ops_vmmult --int --vF --mQ', ops_vmmult, args: ['--int', '--vF', '--mQ'])
-test('ops_vmmult --int --vQ --mF', ops_vmmult, args: ['--int', '--vQ', '--mF'])
-test('ops_vmmult --int --vQ --mI', ops_vmmult, args: ['--int', '--vQ', '--mI'])
-test('ops_vmmult --int --vQ --mQ', ops_vmmult, args: ['--int', '--vQ', '--mQ'])
-
-test('ops_vmmult --real --vF --mF', ops_vmmult,
-    args: ['--real', '--vF', '--mF'])
-test('ops_vmmult --real --vF --mI', ops_vmmult,
-    args: ['--real', '--vF', '--mI'])
-test('ops_vmmult --real --vF --mQ', ops_vmmult,
-    args: ['--real', '--vF', '--mQ'])
-test('ops_vmmult --real --vQ --mF', ops_vmmult,
-    args: ['--real', '--vQ', '--mF'])
-test('ops_vmmult --real --vQ --mI', ops_vmmult,
-    args: ['--real', '--vQ', '--mI'])
-test('ops_vmmult --real --vQ --mQ', ops_vmmult,
-    args: ['--real', '--vQ', '--mQ'])
+foreach type: [ '--int', '--real' ]
+    foreach vred: [ '--vF', '--vQ' ]
+        foreach mred: [ '--mF', '--mI', '--mQ' ]
+            test('ops_vmmult ' + type + ' ' + vred + ' ' + mred,
+                ops_vmmult, args: [type, vred, mred])
+        endforeach
+    endforeach
+endforeach
 
 ######################################################################
 

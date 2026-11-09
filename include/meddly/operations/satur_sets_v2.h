@@ -295,6 +295,7 @@ void MEDDLY::saturation2_set_mtrel<EOP, ATYPE>
         edge_value &cv, node_handle &cp)
 {
     MEDDLY_DCASSERT(bv.isVoid());
+    IGNORE_UNUSED(bv);
 
 #ifdef TRACE
     out.indentation(0);

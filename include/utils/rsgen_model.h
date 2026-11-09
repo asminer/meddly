@@ -334,6 +334,15 @@ class rsgen_model {
         void read_oracle(MEDDLY::input &inf, MEDDLY::minterm_coll &mtc) const;
 
         /**
+            Verify reachset / distance function edge
+                @param  out     Output stream for progress / feedback
+                @param  inf     File stream for the oracle
+                @param  e       Edge to check
+         */
+        void verify_oracle(MEDDLY::output &out, std::istream &inf,
+                const MEDDLY::dd_edge &e);
+
+        /**
             Override in derived classes, to add header information
             to an oracle.
         */
