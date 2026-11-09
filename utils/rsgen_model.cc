@@ -510,7 +510,7 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
         out << "    GENERATION TYPES\n";
         out << "\n";
         out << "\t-evdist    : build the distance function using EV+MDDs.\n";
-        out << "\t-mtdist    : build the distance function.using MTMDDs.\n";
+        out << "\t-mtdist    : build the distance function using MTMDDs.\n";
         out << "\t-reach     : build the reachability set (default).\n";
         out << "\n";
         out << "\t-fwd       : use forward generation (default).\n";
