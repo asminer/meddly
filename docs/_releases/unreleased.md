@@ -14,3 +14,6 @@ In class ```dd_edge```:
 ### Implementation
 
 * Better node marking and displaying as needed for showRelation.
+
+* Multi-terminal distance function change: unreachable states
+  now have distance 0. Initial states now have distance 1.
