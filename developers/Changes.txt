@@ -2,15 +2,11 @@
 TO DO list
 
 rsgen_model:
-    * fix MT distance
-        +   use 0 for unreachable b/c it works much better
-            with sparse nodes and set enumeration.
+    * migrate tiles to use rsgen_model
 
-        +   update explicit gen in rsgen_model
-
-        +   update pre/post image
-
-        +   update saturation
+    * Add a "node handle shift" for debugging purposes
+        - effectively, reserve a block of nonterminal nodes
+        - then we can debug large node handles quickly?
 
 
     * migrate all kanban in tests/ to use rsgen_model

@@ -202,7 +202,7 @@ executable(
 executable(
     'tiles',
     'tiles.cc',
-    dependencies: [ gmp_dep, meddly_dep, zstream_dep, simple_model_dep ]
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep, zstream_dep ]
 )
 
 ######################################################################

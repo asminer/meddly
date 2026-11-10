@@ -17,138 +17,212 @@
 */
 
 #include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <vector>
-#include <cassert>
-#include <dirent.h>
 
 #include "meddly/meddly.h"
-#include "utils/timer.h"
-#include "utils/zstream.h"
+#include "utils/rsgen_model.h"
 
-// #define SHOW_EVENTS
+class tilemodel : public rsgen_model {
+        template <bool FEPWT>   // for each position which tile?
+        class move_tile : public rsgen_model::event {
+                int T;      // tile to move
+                int p_old;  // tile's current position
+                int p_new;  // tile's new position
+            public:
+                /**
+                    Build an event to move a tile.
+                        @param T    Tile number, from 1 to R*C-1.
+                        @param po   Position currently containing tile T,
+                                    from 0 to R*C-1.
+                        @param pn   New position for tile, from 0 to R*C-1;
+                                    must currently contain nothing (0)
+                */
+                move_tile(int T, int po, int pn);
 
-// Number of rows.
-int R;
+                virtual bool fire(const MEDDLY::minterm &curr,
+                        MEDDLY::minterm &);
 
-// Number of columns.
-int C;
+                virtual bool build_nsf(MEDDLY::dd_edge &R);
+        };
+    public:
+        tilemodel();
 
-// Approximate cardinality.
-bool approx_count;
+        bool has_dimensions() const {
+            return (R>0) && (C>0);
+        }
 
-// Verbose output: show iteration details
-bool verbose;
+        inline int get_R() const {
+            return R;
+        }
+        inline int get_C() const {
+            return C;
+        }
 
-// Compute distances?
-bool distances = false;
+        virtual bool process_arg(unsigned &i, const char** argv);
+        virtual void show_usage(std::ostream &out, const char* arg0);
 
-// #define DEBUG_EVENTS
+        virtual bool build_model(MEDDLY::output &out);
+        virtual void build_initial(MEDDLY::minterm &init);
 
-// There are two encodings.
-// If this variable is true, then the state encoding is,
-//     "for each position, which tile is currently there."
-// Otherwise, the state encoding is,
-//     "for each tile, where is it."
-//
-bool for_each_position_which_tile;
+    private:
+        int R;
+        int C;
+        bool for_each_position_which_tile;
+};
 
-//
-// Forest for progress reports
-//
-MEDDLY::forest* fprog = nullptr;
+// ******************************************************************
+// *                  tilemodel::move_tile methods                  *
+// ******************************************************************
 
-//
-// Directory for checkpoints.
-// If null, use the current directory.
-//
-const char* chk_dir = nullptr;
-
-inline void show_node_count(long x)
+template <bool FEPWT>
+tilemodel::move_tile<FEPWT>::move_tile(int t, int po, int pn)
 {
-    if (x<0) {
-        std::cerr << "-";
-        x = -x;
+    T = t;
+    p_old = po;
+    p_new = pn;
+
+    assert(T>0);
+    assert(p_old != p_new);
+    assert(p_old >= 0);
+    assert(p_new >= 0);
+}
+
+// ******************************************************************
+// *                       tilemodel  methods                       *
+// ******************************************************************
+
+tilemodel::tilemodel()
+{
+    R = -1;
+    C = -1;
+    for_each_position_which_tile = false;
+}
+
+// ******************************************************************
+
+bool tilemodel::process_arg(unsigned &i, const char** argv)
+{
+    if (rsgen_model::process_arg(i, argv)) return true;
+
+    if (0==strcmp("-pos", argv[i])) {
+        ++i;
+        for_each_position_which_tile = true;
+        return true;
+    }
+    if (0==strcmp("-tile", argv[i])) {
+        ++i;
+        for_each_position_which_tile = false;
+        return true;
+    }
+
+    //
+    // Should be the size in format RxC
+    // where R,C are characters '1' .. '9'.
+    //
+
+    if (3 != strlen(argv[i])) {
+        return false;
+    }
+    if ('x' != argv[i][1]) {
+        return false;
+    }
+    if ( ('1' > argv[i][0]) || ('9' < argv[i][0]) ||
+         ('1' > argv[i][2]) || ('9' < argv[i][2]) )
+    {
+        return false;
+    }
+
+    R = argv[i][0] - '0';
+    C = argv[i][2] - '0';
+    i++;
+    return true;
+}
+
+// ******************************************************************
+
+void tilemodel::show_usage(std::ostream &out, const char* arg0)
+{
+    if (arg0) {
+        out << "\nUsage: " << basename(arg0) << " [options] RxC\n\n";
+    }
+    out << "\tR          : number of rows, from 1 to 9\n";
+    out << "\tC          : number of columns, from 1 to 9\n";
+
+    out << "\n";
+    out << "    ENCODING OPTIONS\n";
+    out << "\n";
+
+    out << "        -pos       : Use a position-based encoding: for each position,\n";
+    out << "                     which tile is there. Position #0 is the bottom DD\n";
+    out << "                     variable, and position #rc-1 is the top DD variable.\n";
+
+    out << "        -tile      : Use a tile-based encoding: for each tile,\n";
+    out << "                     where is it (default). The empty tile is the bottom\n";
+    out << "                     DD variable, tile 1 is next, ..., tile rc-1 is the top\n";
+    out << "                     DD variable.\n";
+
+    rsgen_model::show_usage(out);
+}
+
+// ******************************************************************
+
+bool tilemodel::build_model(MEDDLY::output &out)
+{
+    if ((R<0) || (C<0)) {
+        std::cerr << "Missing or bad size.\n";
+        return false;
+    }
+    out << "Sliding tile puzzle, board has " << R << " rows and "
+        << C << " columns.\n";
+    if (for_each_position_which_tile) {
+        out << "Encoding using 'for each position, which tile is there'\n";
     } else {
-        std::cerr << " ";
+        out << "Encoding using 'for each tile, where is it'\n";
     }
-    long grouping = 1000000000000L;
-    char filler = ' ';
-    while (grouping) {
-        if (filler != ' ') {
-            std::cerr << ",";
-        } else {
-            std::cerr << " ";
-        }
-        const long d = x / grouping;
-        if (d) {
-            if (d < 100) {
-                std::cerr << filler;
-            }
-            if (d < 10) {
-                std::cerr << filler;
-            }
-            std::cerr << d;
-            x %= grouping;
-            filler = '0';
-        } else {
-            std::cerr << filler << filler << filler;
-        }
-        grouping /= 1000;
-    }
+    out.flush();
+
+    //
+    // Initialize domain
+    //
+    int* sizes = new int[R*C];
+    for (int i=R*C-1; i>=0; i--) sizes[i] = R*C;
+    set_domain(MEDDLY::domain::createBottomUp(sizes, R*C));
+    delete[] sizes;
+
+    // TBD FROM HERE
+
+    /*
+
+    //
+    // Make the events
+    //
+    add_event(new simple_event("Tin1",    "X-+.............."));
+    add_event(new simple_event("Tr1",     "X.-+............."));
+    add_event(new simple_event("Tb1",     "X.+-............."));
+    add_event(new simple_event("Tg1",     "X.-.+............"));
+    add_event(new simple_event("Tr2",     "X.....-+........."));
+    add_event(new simple_event("Tb2",     "X.....+-........."));
+    add_event(new simple_event("Tg2",     "X.....-.+........"));
+    add_event(new simple_event("Ts1_23",  "X+..--+..-+......"));
+    add_event(new simple_event("Tr3",     "X.........-+....."));
+    add_event(new simple_event("Tb3",     "X.........+-....."));
+    add_event(new simple_event("Tg3",     "X.........-.+...."));
+    add_event(new simple_event("Ts23_4",  "X....+..-+..--+.."));
+    add_event(new simple_event("Tr4",     "X.............-+."));
+    add_event(new simple_event("Tb4",     "X.............+-."));
+    add_event(new simple_event("Tout4",   "X............+..-"));
+    add_event(new simple_event("Tg4",     "X.............-.+"));
+
+    return true;
+    */
+
+    out << "Not implemented\n";
+    return false;
 }
 
-void my_progress(unsigned iter, char st)
+// ******************************************************************
+
+void tilemodel::build_initial(MEDDLY::minterm &init)
 {
-    static timer watch;
-    if (' ' == st) {
-        watch.note_time();
-        std::cerr << "    Iter" << std::setw(5) << iter << ": ";
-        return;
-    }
-    if (';' == st) {
-        watch.note_time();
-        std::cerr   << std::fixed
-                    << std::setprecision(4)
-                    << std::setw(12)
-                    << watch.get_last_seconds()
-                    << " sec";
-
-        if (fprog) {
-            show_node_count(fprog->getCurrentNumNodes());
-            std::cerr << " nodes";
-
-            unsigned long mem = fprog->getCurrentMemoryUsed();
-            unsigned units = 0;
-            while (mem >= 1024) {
-                mem /= 1024;
-                ++units;
-            }
-            const char* uletters = " KMGTPEZYabcdefgh";
-            std::cerr << std::setw(5) << mem << " " << uletters[units] << "bytes";
-        }
-
-        std::cerr << std::endl;
-        return;
-    }
-    std::cerr << st << " ";
-}
-
-
-// **********************************************************************
-// build the initial state, as a minterm
-// **********************************************************************
-
-void buildInitial(MEDDLY::minterm &init)
-{
-    //
-    // The initial state:
-    //      starting from the upper left, reading from left to right,
-    //      the tiles are 1, 2, 3, ...
-    //      and the bottom right corner is empty.
-    //
-
     if (for_each_position_which_tile) {
         // p0: 1, p1: 2, ..., plast-1: R*C-1, plast: 0
         for (int p=0; p<R*C-1; p++) {
@@ -178,6 +252,8 @@ void buildInitial(MEDDLY::minterm &init)
 //    @return true, iff this is a valid move
 //
 // **********************************************************************
+
+/*
 
 bool moveTile(const int T, const int p, const int q, MEDDLY::minterm &m)
 {
@@ -218,460 +294,7 @@ bool moveTile(const int T, const int p, const int q, MEDDLY::minterm &m)
 #endif
     return true;
 }
-
-// **********************************************************************
-// build overall, monolithic, transition relation
-//    @param trel           Transition relation, on output
-// **********************************************************************
-
-void buildRelation(MEDDLY::dd_edge& trel)
-{
-    using namespace MEDDLY;
-
-    timer stopwatch;
-    std::cout << "Building minterm collection..." << std::endl;
-    stopwatch.note_time();
-
-    // Lazy bound: number of tiles, squared, times 4 events
-    minterm_coll mtc(R*C*R*C*4, trel.getForest());
-
-    for (int p=0; p<R*C; p++) {
-        for (int t=1; t<R*C; t++) {
-            // Move to the left, if we can
-            if (0 != p%C) {
-                if (moveTile(t, p, p-1, mtc.unused())) {
-                    mtc.pushUnused();
-                }
-            }
-            // Move to the right, if we can
-            if (C-1 != p%C) {
-                if (moveTile(t, p, p+1, mtc.unused())) {
-                    mtc.pushUnused();
-                }
-            }
-            // Move up
-            if (moveTile(t, p, p-C, mtc.unused())) {
-                mtc.pushUnused();
-            }
-
-            // Move down
-            if (moveTile(t, p, p+C, mtc.unused())) {
-                mtc.pushUnused();
-            }
-        }
-    }
-
-    stopwatch.note_time();
-    std::cout << "    minterm collection construction took "
-              << stopwatch.get_last_seconds() << " seconds" << std::endl;
-
-    std::cout << "    there are " << mtc.size() << " events\n";
-
-    std::cout << "Building relation from minterms..." << std::endl;
-    stopwatch.note_time();
-
-    mtc.buildFunctionMax(false, trel);
-
-    stopwatch.note_time();
-    std::cout << "    relation construction took "
-              << stopwatch.get_last_seconds() << " seconds" << std::endl;
-
-    std::cout << "MXD for relation requires "
-              << trel.getNodeCount() << " nodes" << std::endl;
-}
-
-// **********************************************************************
-// checkpoint file name
-//
-const char* chkpt_path(unsigned iter)
-{
-    static char pathname[512];
-    if (chk_dir) {
-        snprintf(pathname, 512, "%s/chk.%03d.txt.xz", chk_dir, iter);
-    } else {
-        snprintf(pathname, 512, "chk.%03d.txt.xz", iter);
-    }
-    return pathname;
-}
-
-// **********************************************************************
-// write checkpoint
-//
-void write_checkpoint(unsigned iter, const MEDDLY::dd_edge &e)
-{
-    using namespace MEDDLY;
-
-    const char* pathname = chkpt_path(iter);
-    std::cout << "            writing checkpoint " << pathname << " ";
-    compressed_output cpout(pathname);
-    if (!cpout) {
-        std::cout << "couldn't write\n";
-        return;
-    }
-    std::cout << ".";
-    std::cout.flush();
-
-    forest* F = e.getForest();
-    domain* D = F->getDomain();
-    D->write(cpout.outstream());
-    mdd_writer mywriter(cpout.outstream(), F);
-    mywriter.writeRootEdge(e);
-    std::cout << ".";
-    std::cout.flush();
-    mywriter.finish();
-    std::cout << " done\n";
-}
-
-// **********************************************************************
-// read checkpoint
-//
-void read_checkpoint(unsigned iter, MEDDLY::dd_edge &e)
-{
-    using namespace MEDDLY;
-
-    const char* pathname = chkpt_path(iter);
-    std::cout << "    restoring from checkpoint " << pathname << " ";
-    compressed_input cpin(pathname);
-    if (!cpin) {
-        std::cout << "couldn't read\n";
-        throw "checkpoint restore error: couldn't read";
-    }
-    std::cout << ".";
-    std::cout.flush();
-
-    forest* F = e.getForest();
-    domain* D = F->getDomain();
-    D->verify(cpin.instream());
-    mdd_reader myreader(cpin.instream(), F);
-    std::cout << ".";
-    std::cout.flush();
-    e = myreader.getRoot(0);
-    std::cout << " done\n";
-}
-
-// **********************************************************************
-// traditional iteration with checkpoints
-//      @param relation     Transition relation
-//      @param initial      Initial state
-//      @param reachable    (output) reachable states
-//
-// **********************************************************************
-void myTraditional(const MEDDLY::dd_edge &relation,
-        const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable)
-{
-    using namespace MEDDLY;
-
-    //
-    // Determine next checkpoint to compute
-    //
-    unsigned next = 0;
-    for (; ; ++next) {
-        FILE* f = fopen(chkpt_path(next), "r");
-        if (NULL == f) break;
-        fclose(f);
-    }
-
-    if (0==next) {
-        std::cout << "No checkpoints found\n";
-        apply(COPY, initial, reachable);
-        write_checkpoint(0, reachable);
-    } else {
-        --next;
-        std::cout << "Restoring from checkpoint " << chkpt_path(next) << "\n";
-        read_checkpoint(next, reachable);
-    }
-
-
-    do {
-        ++next;
-        my_progress(next, ' ');
-
-        //
-        // Compute next states
-        //
-        dd_edge step(reachable);
-        apply(POST_IMAGE, reachable, relation, step);
-        my_progress(next, 'N');
-
-        //
-        // Union with reachable
-        //
-        if (distances) {
-            apply(MINIMUM, reachable, step, step);
-        } else {
-            apply(UNION, reachable, step, step);
-        }
-        my_progress(next, ';');
-
-        if (step == reachable) break;
-        reachable = step;
-
-        //
-        // Write to checkpoint file
-        //
-        write_checkpoint(next, reachable);
-
-    } while(true);
-
-}
-
-
-// **********************************************************************
-// build reachable states or whatever was asked for
-//    @param method         What to do:
-//                              'm': saturation, monolithic
-//                              'f': BFS with frontier
-//                              't': BFS without frontier
-//                              'c': Hand-written BFS with checkpoints
-//
-//    @param relation       Transition relation
-//    @param initial        Initial state
-//    @param reachable      (output) reachable states
-// **********************************************************************
-
-void buildReachable(bool dist, char method, const MEDDLY::dd_edge &relation,
-        const MEDDLY::dd_edge &initial, MEDDLY::dd_edge &reachable)
-{
-    using namespace MEDDLY;
-    timer watch;
-
-    watch.note_time();
-
-    if (dist) {
-        std::cout << "Building distance function using ";
-    } else {
-        std::cout << "Building reachable states using ";
-    }
-
-    binary_operation* bfs = nullptr;
-    forest* initF = initial.getForest();
-    forest* relF = relation.getForest();
-
-    switch (method) {
-        case 'd':
-                    std::cout << "default saturation..." << std::endl;
-                    apply(REACHABLE_SATUR(true), initial, relation, reachable);
-                    break;
-
-        case '1':
-                    std::cout << "saturation v1..." << std::endl;
-                    apply(REACHABLE_SATUR(true, 1), initial, relation, reachable);
-                    break;
-
-        case '2':
-                    std::cout << "saturation v2..." << std::endl;
-                    apply(REACHABLE_SATUR(true, 2), initial, relation, reachable);
-                    break;
-
-#ifdef ALLOW_DEPRECATED_0_18_1
-        case 'm':
-                    std::cout << "saturation..." << std::endl;
-                    apply(REACHABLE_STATES_DFS, initial, relation, reachable);
-                    break;
-#endif
-
-        case 'f':
-                    std::cout << "traditional with frontier..." << std::endl;
-                    bfs = build(REACHABLE_TRAD_FS(true), initF, relF, initF);
-                    if (!bfs) throw "null bfs";
-                    if (verbose) bfs->setProgressNotifier(my_progress);
-                    bfs->compute(initial, relation, reachable);
-                    break;
-
-        case 't':
-                    std::cout << "traditional without frontier..." << std::endl;
-                    bfs = build(REACHABLE_TRAD_NOFS(true), initF, relF, initF);
-                    if (!bfs) throw "null bfs";
-                    if (verbose) bfs->setProgressNotifier(my_progress);
-                    bfs->compute(initial, relation, reachable);
-                    break;
-
-        case 'c':
-                    std::cout << "traditional without frontier..." << std::endl;
-                    myTraditional(relation, initial, reachable);
-                    break;
-
-        default:
-                    throw "unknown method";
-    }
-
-    watch.note_time();
-    std::cout << "    reachable states construction took "
-              << watch.get_last_seconds() << " seconds" << std::endl;
-
-    if (dist) {
-        std::cout << "EV+MDD for distance function requires ";
-    } else {
-        std::cout << "MDD for reachable states requires ";
-    }
-    std::cout << reachable.getNodeCount() << " nodes" << std::endl;
-}
-
-// **********************************************************************
-// Add comma separators to a large integer
-// **********************************************************************
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
-void showNumber(mpz_t x)
-{
-    unsigned digits = mpz_sizeinbase(x, 10)+2;
-    char* str = new char[digits];
-    mpz_get_str(str, 10, x);
-    unsigned nextcomma = strlen(str) % 3;
-    if (0==nextcomma) {
-        nextcomma = 3;
-    }
-    for (unsigned i=0; str[i]; i++) {
-        if (i == nextcomma) {
-            std::cout << ",";
-            nextcomma += 3;
-        }
-        std::cout << str[i];
-    }
-    delete[] str;
-}
-#endif
-
-// **********************************************************************
-// compute and show cardinality
-//    @param reachable      reachable states
-// **********************************************************************
-void showCardinality(const MEDDLY::dd_edge &reachable)
-{
-    using namespace std;
-    using namespace MEDDLY;
-
-#ifdef HAVE_LIBGMP
-    mpz_t ns_mpz;
-#endif
-
-    cout << "Counting states..." << endl;
-
-    oper_item numstates;
-    if (approx_count) {
-        numstates.init(0.0);
-    } else {
-#ifdef HAVE_LIBGMP
-        mpz_init(ns_mpz);
-        numstates.init(ns_mpz);
-#endif
-    }
-    timer watch;
-    watch.note_time();
-    apply(CARDINALITY, reachable, numstates);
-    watch.note_time();
-    cout << "    counting took " << watch.get_last_seconds()
-         << " seconds" << endl;
-
-    if (approx_count) {
-        cout << "Approx. " << numstates.getReal()
-             << " reachable states" << endl;
-
-        double theory = 1.0;
-        for (int i=2; i<=R*C; i++) {
-            theory *= i;
-        }
-        theory /= 2.0;
-        cout << "Theory: " << theory << " reachable states" << endl;
-    } else {
-#ifdef HAVE_LIBGMP
-        cout << "Exactly ";
-        showNumber(numstates.getHugeint());
-        cout << " reachable states" << endl;
-
-        mpz_t theory;
-        mpz_init_set_ui(theory, 1);
-        for (int i=2; i<=R*C; i++) {
-            mpz_mul_ui(theory, theory, i);
-        }
-        mpz_div_ui(theory, theory, 2);
-        cout << "Theory: ";
-        showNumber(theory);
-        cout << " reachable states" << endl;
-#endif
-    }
-
-}
-
-// **********************************************************************
-// print usage instructions
-// **********************************************************************
-
-int usage(const char* exe)
-{
-    using namespace std;
-    const char* base = exe;
-    for (; *exe; ++exe)
-    {
-        if ('/' == *exe)
-        {
-            base = exe+1;
-        }
-    }
-
-    cerr << "\n";
-    cerr << "Usage: " << base << " [switches] #rows #cols\n";
-    cerr << "\n";
-    cerr << "Generate reachable states for a 2-d sliding puzzle.\n";
-    cerr << "The number of rows and columns given should be natural numbers.\n";
-    cerr << "The standard \"16 puzzle\" uses 4 rows and 4 columns.\n";
-    cerr << "\n";
-    cerr << "Tiles are numbered 1 .. rc-1, with 0 meaning empty.\n";
-    cerr << "Position (1,1) is #0, position (1,2) is #1, ..., position (r,c) is #rc-1\n";
-    cerr << "\n";
-    cerr << "Switches:\n";
-    cerr << "    -h:    This help\n\n";
-
-#ifdef HAVE_LIBGMP
-    cerr << "    -a:    Approximate count for number of states (default).\n";
-    cerr << "    -e:    Exact count for number of states.\n\n";
-#endif
-
-    cerr << "    -q:    Quiet. Do not show BFS iteration details (default).\n";
-    cerr << "    -v:    Verbose. Show BFS iteration details.\n";
-    cerr << "\n";
-
-    cerr << "    --pos:     Use a position-based encoding: for each position,\n";
-    cerr << "               which tile is there. Position #0 is the bottom DD\n";
-    cerr << "               variable, and position #rc-1 is the top DD variable.\n";
-
-    cerr << "    --tile:    Use a tile-based encoding: for each tile,\n";
-    cerr << "               where is it (default). The empty tile is the bottom\n";
-    cerr << "               DD variable, tile 1 is next, ..., tile rc-1 is the top\n";
-    cerr << "               DD variable.\n";
-    cerr << "\n";
-
-    cerr << "    --reach:   Build the reachability set (default).\n";
-    cerr << "    --dist:    Build the distance function.\n";
-    cerr << "    --showrel: Show the relation and quit.\n";
-    cerr << "\n";
-
-    cerr << "    --dfs      Use default saturation\n";
-    cerr << "    --sat1     Saturation v1 (new), monolithic relation (default)\n";
-    cerr << "    --sat2     Saturation v2, monolithic relation\n";
-#ifdef ALLOW_DEPRECATED_0_18_1
-    cerr << "    --msat     Saturation, monolithic relation\n";
-#endif
-    cerr << "    --trad     Traditional BFS without frontier set\n";
-    cerr << "    --tradc    Traditional BFS without frontier set, using checkpoints\n";
-    cerr << "    --front    Traditional BFS with frontier set (RS only)\n";
-    cerr << "\n";
-    cerr << "    -o file    Write the MDD to the specified file, in an exchange format\n";
-    cerr << "               If the output filename ends in .gz or .xz, it will be\n";
-    cerr << "               compressed using gzip or xz, respectively.\n";
-    cerr << "\n";
-    cerr << "    -d dir     Directory to use for checkpoint files. Only used with\n";
-    cerr << "               the --tradc option.\n";
-    cerr << "\n";
-
-    return 1;
-}
-
-inline int naturalArg(const char* arg)
-{
-    if (0==arg) return -1;
-    return atol(arg);
-}
+*/
 
 // **********************************************************************
 // main
@@ -679,266 +302,47 @@ inline int naturalArg(const char* arg)
 
 int main(int argc, const char** argv)
 {
-    using namespace std;
-    using namespace MEDDLY;
+    tilemodel T;
 
-    R = -1;
-    C = -1;
-    approx_count = true;
-    verbose = false;
-    char satmethod = '1';
-    for_each_position_which_tile = false;
-    distances = false;
-    const char* outfile = nullptr;
-    DIR* thedir = nullptr;
-    bool show_relation = false;
+    unsigned nArgs = (unsigned)argc;
+    unsigned i=1;
 
-    //
-    // Process command line
-    //
-    int i;
-    for (i=1; i<argc; i++)
-    {
-        const char *arg = argv[i];
-        if ('-' == arg[0])
-        {
-            // single character switches
-            if (arg[1] && 0==arg[2]) {
-                switch (arg[1])
-                {
-#ifdef HAVE_LIBGMP
-                    case 'a':   approx_count = true;
-                                continue;
-
-                    case 'e':   approx_count = false;
-                                continue;
-#endif
-                    case 'o':
-                                outfile = argv[i+1];
-                                ++i;
-                                continue;
-
-                    case 'd':
-                                if (argv[i+1]) {
-                                    thedir = opendir(argv[i+1]);
-                                    if (thedir) {
-                                        chk_dir = argv[i+1];
-                                        closedir(thedir);
-                                    } else {
-                                        cerr << "Bad directory '" << argv[i+1] << "' in -d switch\n";
-                                        return 1;
-                                    }
-                                    ++i;
-                                }
-                                continue;
-
-                    case 'q':
-                                verbose = false;
-                                continue;
-
-                    case 'v':
-                                verbose = true;
-                                continue;
-
-                    default:
-                                if (arg[1] != 'h') {
-                                    cerr << "Unknown switch \"-" << arg[1] << "\"\n";
-                                }
-                                return usage(argv[0]);
-                }
-            }
-            // double dash switches
-            if ('-' == arg[1]) {
-                if (0==strcmp("--pos", arg)) {
-                    for_each_position_which_tile = true;
-                    continue;
-                }
-                if (0==strcmp("--tile", arg)) {
-                    for_each_position_which_tile = false;
-                    continue;
-                }
-
-                if (0==strcmp("--reach", arg)) {
-                    distances = false;
-                    show_relation = false;
-                    continue;
-                }
-                if (0==strcmp("--dist", arg)) {
-                    distances = true;
-                    show_relation = false;
-                    continue;
-                }
-                if (0==strcmp("--showrel", arg)) {
-                    show_relation = true;
-                    continue;
-                }
-
-                if (0==strcmp("--sat1", arg)) {
-                    satmethod = '1';
-                    continue;
-                }
-                if (0==strcmp("--sat2", arg)) {
-                    satmethod = '2';
-                    continue;
-                }
-#ifdef ALLOW_DEPRECATED_0_18_1
-                if (0==strcmp("--msat", arg)) {
-                    satmethod = 'm';
-                    continue;
-                }
-#endif
-                if (0==strcmp("--dfs", arg)) {
-                    satmethod = 'd';
-                    continue;
-                }
-                if (0==strcmp("--trad", arg)) {
-                    satmethod = 't';
-                    continue;
-                }
-                if (0==strcmp("--tradc", arg)) {
-                    satmethod = 'c';
-                    continue;
-                }
-                if (0==strcmp("--front", arg)) {
-                    satmethod = 'f';
-                    continue;
-                }
-            }
-            cerr << "Unknown switch \"" << arg << "\"\n";
-            return usage(argv[0]);
+    while (i < nArgs) {
+        if (!T.process_arg(i, argv)) {
+            T.show_usage(std::cerr, argv[0]);
+            return 1;
         }
-        break;
     }
-    if (i < argc) {
-        R = naturalArg(argv[i]);
-        i++;
+    if (!T.has_dimensions()) {
+        T.show_usage(std::cerr, argv[0]);
+        return 1;
     }
-    if (i < argc) {
-        C = naturalArg(argv[i]);
-        i++;
-    }
-    if ((i != argc) || (R<0) || (C<0)) {
-        return usage(argv[0]);
-    }
-
-    if (0==R) return 0;
-    if (0==C) return 0;
 
     try {
-        //
-        // Bring up MDD library
-        //
         MEDDLY::initialize();
+        MEDDLY::ostream_output out(std::cout);
 
-        //
-        // Build domain, forests
-        //
-        int* sizes = new int[R*C];
-        for (int i=R*C-1; i>=0; i--) sizes[i] = R*C;
-        domain* d = domain::createBottomUp(sizes, R*C);
-        delete[] sizes;
-
-        policies pmdd(false), pmxd(true);
-        // any policy changes?
-        forest* mdd = nullptr;
-
-        if (distances) {
-            mdd = forest::create(d, false, range_type::INTEGER, edge_labeling::EVPLUS, pmdd);
-        } else {
-            mdd = forest::create(d, false, range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmdd);
+        if (!T.build_model(out)) {
+            T.show_usage(std::cerr, argv[0]);
+            return 1;
         }
-        fprog = mdd;
+        T.generate(out, true, true);
 
-        forest* mxd = forest::create(d, true,  range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL, pmxd);
-
-        cout << "Sliding tile puzzle, board has " << R << " rows and "
-             << C << " columns.\n";
-        if (for_each_position_which_tile) {
-            cout << "Encoding using 'for each position, which tile is there'\n";
-        } else {
-            cout << "Encoding using 'for each tile, where is it'\n";
-        }
-
-        //
-        // Build initial state
-        //
-        dd_edge initial(mdd);
-        minterm init_minterm(mdd);
-        buildInitial(init_minterm);
-
-        if (distances) {
-            init_minterm.setValue(0);
-            rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
-            init_minterm.buildFunction(infty, initial);
-        } else {
-            init_minterm.setValue(true);
-            init_minterm.buildFunction(false, initial);
-        }
-
-        //
-        // Build transition relation
-        //
-        dd_edge rel(mxd);
-        buildRelation(rel);
-
-        if (show_relation) {
-            ostream_output out(cout);
-            rel.showRelation(out);
-            return 0;
-        }
-
-        //
-        // Build reachable states
-        //
-        dd_edge reachable(mdd);
-        buildReachable(distances, satmethod, rel, initial, reachable);
-        showCardinality(reachable);
-
-        //
-        // Write to file
-        //
-        compressed_output writer(outfile);
-        if (writer) {
-            cout << "Writing to " << outfile << "\n";
-            d->write(writer.outstream());
-            mdd_writer mywriter(writer.outstream(), mdd);
-            mywriter.writeRootEdge(reachable);
-            mywriter.finish();
-        }
-
-        //
-        // Reporting
-        //
-        ostream_output meddlyout(cout);
-        meddlyout << "\n======================================================================\n\n";
-        meddlyout << "MxD stats:\n";
-        mxd->reportStats(meddlyout, "    ",
-                HUMAN_READABLE_MEMORY | BASIC_STATS
-        );
-        if (distances) {
-            meddlyout << "EV+MDD stats:\n";
-        } else {
-            meddlyout << "MDD stats:\n";
-        }
-        mdd->reportStats(meddlyout, "    ",
-            HUMAN_READABLE_MEMORY | BASIC_STATS | EXTRA_STATS
-        );
-
-        compute_table::showAll(meddlyout, 2);
-
-        cout << "Done!\n";
+        MEDDLY::cleanup();
         return 0;
     }
     catch (MEDDLY::error e) {
-        cerr    << "\nCaught meddly error '" << e.getName()
-                << "'\n    thrown in " << e.getFile()
-                << " line " << e.getLine() << "\n";
-        return 2;
+        std::cerr   << "\nCaught meddly error '" << e.getName()
+                    << "'\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
     }
     catch (const char* e) {
-        cerr    << "\nCaught our own error: " << e << "\n";
-        return 4;
+        std::cerr   << "\nCaught our own error: " << e << "\n";
+        return 2;
     }
-    cerr << "\nSome other error?\n";
-    return 6;
+    std::cerr << "\nSome other error?\n";
+    return 4;
+
 }
+
