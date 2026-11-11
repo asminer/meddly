@@ -17,6 +17,7 @@
 */
 
 #include <iostream>
+#include <cassert>
 
 #include "meddly/meddly.h"
 #include "utils/rsgen_model.h"
