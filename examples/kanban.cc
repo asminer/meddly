@@ -31,6 +31,19 @@ class kanban : public rsgen_model {
         virtual bool build_model(MEDDLY::output &out);
         virtual void build_initial(MEDDLY::minterm &init);
 
+    protected:
+        virtual bool known_cardinality(double &card) const;
+#ifdef HAVE_LIBGMP
+        virtual bool known_cardinality(mpz_t card) const;
+
+        inline void axn(mpz_t item, unsigned a, unsigned pow) const {
+            mpz_set_ui(item, a);
+            for (unsigned i=0; i<pow; i++) {
+                mpz_mul_ui(item, item, N);
+            }
+        }
+#endif
+
     private:
         int N;
 };
@@ -126,6 +139,68 @@ void kanban::build_initial(MEDDLY::minterm &init)
     init.setVar(9, N);
     init.setVar(13, N);
 }
+
+// ******************************************************************
+
+bool kanban::known_cardinality(double &card) const
+{
+    double n = N;
+    double n2 = n*n;
+    double n3 = n2*n;
+    double n4 = n3*n;
+    double n5 = n4*n;
+
+    double p1 = (n3 + 6*n2 + 11*n + 6) / 6;
+    double p2 = (3*n5 + 30*n4 + 115*n3 + 210*n2 + 182*n + 60) / 60;
+
+    card = p1*p1*p2;
+    return true;
+}
+
+// ******************************************************************
+
+#ifdef HAVE_LIBGMP
+
+bool kanban::known_cardinality(mpz_t card) const
+{
+    mpz_t term;
+    mpz_t p1;
+    mpz_t p2;
+
+    mpz_init(term);
+    mpz_init(p1);
+    mpz_init(p2);
+
+    // p1 = (N^3 + 6 N^2 + 11 N + 6) / 6
+    axn(p1, 1, 3);
+    axn(term, 6, 2);
+    mpz_add(p1, p1, term);
+    axn(term, 11, 1);
+    mpz_add(p1, p1, term);
+    axn(term, 6, 0);
+    mpz_add(p1, p1, term);
+    mpz_div_ui(p1, p1, 6);
+
+    // p2 = (3 N^5 + 30 N^4 + 115 N^3 + 210 N^2 + 182 N + 60) / 60;
+    axn(p2, 3, 5);
+    axn(term, 30, 4);
+    mpz_add(p2, p2, term);
+    axn(term, 115, 3);
+    mpz_add(p2, p2, term);
+    axn(term, 210, 2);
+    mpz_add(p2, p2, term);
+    axn(term, 182, 1);
+    mpz_add(p2, p2, term);
+    axn(term, 60, 0);
+    mpz_add(p2, p2, term);
+    mpz_div_ui(p2, p2, 60);
+
+    mpz_mul(p1, p1, p1);
+    mpz_mul(card, p1, p2);
+    return true;
+}
+
+#endif
 
 // ******************************************************************
 // *                          main program                          *

@@ -16,26 +16,6 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
-    For each position, which tile.
-    Event for 'swap tile at position i, with blank at position j':
-
-    level i:    t != 0  -->  0
-
-    level j:    for every t != 0, one node for 0 --> t
-
-
-    For each tile, where is it.
-    Event for 'swap tile at position i, with blank at position j':
-
-    all levels except blank: for every row r != i,  r --> r
-                             for row       r == i,  r --> j
-                             for row       r == j,  empty
-
-    blank level:  j --> i
-
-*/
-
 #include <iostream>
 
 #include "meddly/meddly.h"
@@ -331,25 +311,21 @@ bool tilemodel::build_model(MEDDLY::output &out)
     // Add events
     //
     for (int p=0; p<R*C; p++) {
-        //
+
         // Move left
-        //
         if (0 != p%C) {
             add_event(move_tile(p, p-1));
         }
-        //
+
         // Move right
-        //
         if (C-1 != p%C) {
             add_event(move_tile(p, p+1));
         }
-        //
+
         // Move up
-        //
         add_event(move_tile(p, p-C));
-        //
+
         // Move down
-        //
         add_event(move_tile(p, p+C));
     }
 
