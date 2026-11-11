@@ -55,8 +55,12 @@ class hanoi : public rsgen_model {
         virtual bool build_model(MEDDLY::output &out);
         virtual void build_initial(MEDDLY::minterm &init);
 
-        virtual void after_generation(MEDDLY::output &out,
-                    const MEDDLY::dd_edge &e);
+    protected:
+        virtual bool known_cardinality(double &card) const;
+#ifdef HAVE_LIBGMP
+        virtual bool known_cardinality(mpz_t card) const;
+#endif
+
 
     private:
         int N;
@@ -267,37 +271,29 @@ void hanoi::build_initial(MEDDLY::minterm &init)
 
 // ******************************************************************
 
-void hanoi::after_generation(MEDDLY::output &out,
-        const MEDDLY::dd_edge &e)
+bool hanoi::known_cardinality(double &theory) const
 {
-    if ('b' != get_set_type()) return;
-
-    show_cardinality(out, e, false);
-
-    if (approx_cardinality()) {
-        double theory = 1.0;
-        for (int i=0; i<N; i++) {
-            theory *= 3.0;
-        }
-        out << "(Expecting    ";
-        out.put(theory, 10, 6);
-        out << " states)\n";
-    } else {
-#ifdef HAVE_LIBGMP
-        mpz_t theory;
-        mpz_init_set_ui(theory, 1);
-        for (int i=0; i<N; i++) {
-            mpz_mul_ui(theory, theory, 3);
-        }
-
-        out << "(expect ";
-        out.put_huge(theory, true);
-        out << " states)\n";
-
-        mpz_clear(theory);
-#endif
+    theory = 1.0;
+    for (int i=0; i<N; i++) {
+        theory *= 3.0;
     }
+    return true;
 }
+
+// ******************************************************************
+
+#ifdef HAVE_LIBGMP
+
+bool hanoi::known_cardinality(mpz_t theory) const
+{
+    mpz_set_ui(theory, 1);
+    for (int i=0; i<N; i++) {
+        mpz_mul_ui(theory, theory, 3);
+    }
+    return true;
+}
+
+#endif
 
 
 // ******************************************************************

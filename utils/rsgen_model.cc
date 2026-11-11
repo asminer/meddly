@@ -1003,6 +1003,24 @@ void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
 
 // ******************************************************************
 
+bool rsgen_model::known_cardinality(double &) const
+{
+    return false;
+}
+
+// ******************************************************************
+
+#ifdef HAVE_LIBGMP
+
+bool rsgen_model::known_cardinality(mpz_t) const
+{
+    return false;
+}
+
+#endif
+
+// ******************************************************************
+
 void rsgen_model::show_cardinality(MEDDLY::output &out,
         const MEDDLY::dd_edge &e, bool with_timing)
 {
@@ -1018,6 +1036,12 @@ void rsgen_model::show_cardinality(MEDDLY::output &out,
         out   << "Approximately ";
         out.put(card, 10, 6);
         out << " reachable states\n";
+
+        if (known_cardinality(card)) {
+            out   << "(Expecting    ";
+            out.put(card, 10, 6);
+            out << " states)\n";
+        }
     }
 #ifdef HAVE_LIBGMP
     else {
@@ -1027,9 +1051,15 @@ void rsgen_model::show_cardinality(MEDDLY::output &out,
         apply(CARDINALITY, e, card_mpz);
         watch.note_time();
 
-        out << "Exactly ";
+        out << "Exactly    ";
         out.put_huge(card_mpz, true);
         out << " reachable states\n";
+
+        if (known_cardinality(card_mpz)) {
+            out << "(Expecting ";
+            out.put_huge(card_mpz, true);
+            out << " states)\n";
+        }
 
         mpz_clear(card_mpz);
     }

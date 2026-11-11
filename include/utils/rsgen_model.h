@@ -210,11 +210,19 @@ class rsgen_model {
         }
 
         inline void add_event(event* e) {
-            events.push_back(e);
+            if (e) events.push_back(e);
         }
 
+        /**
+            Get the theoretical number of reachable states.
+                @param  card    Store the result here
+                @return true    IFF we can determine this.
+            The default behavior is to simply return false.
+        */
+        virtual bool known_cardinality(double &card) const;
+
 #ifdef HAVE_LIBGMP
-        static void showNumber(mpz_t x);
+        virtual bool known_cardinality(mpz_t card) const;
 #endif
 
         void show_cardinality(MEDDLY::output &out, const MEDDLY::dd_edge &e,

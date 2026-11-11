@@ -16,27 +16,49 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
+    For each position, which tile.
+    Event for 'swap tile at position i, with blank at position j':
+
+    level i:    t != 0  -->  0
+
+    level j:    for every t != 0, one node for 0 --> t
+
+
+    For each tile, where is it.
+    Event for 'swap tile at position i, with blank at position j':
+
+    all levels except blank: for every row r != i,  r --> r
+                             for row       r == i,  r --> j
+                             for row       r == j,  empty
+
+    blank level:  j --> i
+
+*/
+
 #include <iostream>
 
 #include "meddly/meddly.h"
 #include "utils/rsgen_model.h"
 
+// ******************************************************************
+
 class tilemodel : public rsgen_model {
         template <bool FEPWT>   // for each position which tile?
-        class move_tile : public rsgen_model::event {
-                int T;      // tile to move
+        class move_tile_event : public rsgen_model::event {
+                int RxC;    // number of board squares
                 int p_old;  // tile's current position
                 int p_new;  // tile's new position
             public:
                 /**
-                    Build an event to move a tile.
-                        @param T    Tile number, from 1 to R*C-1.
-                        @param po   Position currently containing tile T,
-                                    from 0 to R*C-1.
-                        @param pn   New position for tile, from 0 to R*C-1;
+                    An event to move the tile from one position to another.
+                        @param RC   Rows times columns
+                        @param po   Position currently containing tile,
+                                    from 0 to RC-1.
+                        @param pn   New position for tile, from 0 to RC-1;
                                     must currently contain nothing (0)
                 */
-                move_tile(int T, int po, int pn);
+                move_tile_event(int RC, int po, int pn);
 
                 virtual bool fire(const MEDDLY::minterm &curr,
                         MEDDLY::minterm &);
@@ -63,6 +85,28 @@ class tilemodel : public rsgen_model {
         virtual bool build_model(MEDDLY::output &out);
         virtual void build_initial(MEDDLY::minterm &init);
 
+    protected:
+
+        virtual bool known_cardinality(double &card) const;
+#ifdef HAVE_LIBGMP
+        virtual bool known_cardinality(mpz_t card) const;
+#endif
+
+        rsgen_model::event* move_tile(int po, int pn) {
+            const int RxC = R*C;
+            if (po == pn)   return nullptr;
+            if (po<0)       return nullptr;
+            if (po>= RxC)   return nullptr;
+            if (pn<0)       return nullptr;
+            if (pn>= RxC)   return nullptr;
+            if (for_each_position_which_tile) {
+                return new move_tile_event<true>(RxC, po, pn);
+            } else {
+                return new move_tile_event<false>(RxC, po, pn);
+            }
+        }
+
+
     private:
         int R;
         int C;
@@ -74,16 +118,111 @@ class tilemodel : public rsgen_model {
 // ******************************************************************
 
 template <bool FEPWT>
-tilemodel::move_tile<FEPWT>::move_tile(int t, int po, int pn)
+tilemodel::move_tile_event<FEPWT>::move_tile_event(int RC, int po, int pn)
 {
-    T = t;
-    p_old = po;
-    p_new = pn;
+    assert(po != pn);
+    assert(po >= 0);
+    assert(po < RC);
+    assert(pn >= 0);
+    assert(pn < RC);
 
-    assert(T>0);
-    assert(p_old != p_new);
-    assert(p_old >= 0);
-    assert(p_new >= 0);
+    RxC = RC;
+    if (FEPWT) {
+        p_old = po+1;
+        p_new = pn+1;
+    } else {
+        p_old = po;
+        p_new = pn;
+    }
+
+}
+
+// ******************************************************************
+
+template <bool FEPWT>
+bool tilemodel::move_tile_event<FEPWT>::fire(const MEDDLY::minterm &curr,
+        MEDDLY::minterm &next)
+{
+    if (FEPWT) {
+        /*
+            For each position which tile.
+
+            Element p_old:  cannot be zero; becomes zero
+            Element p_new:  must be zero, becomes current[p_old].
+
+        */
+        if (curr.getVar(p_old) == 0) return false;
+        if (curr.getVar(p_new) != 0) return false;
+        for (unsigned i=next.getNumVars(); i; i--) {
+            next.setVar(i, curr.getVar(i));
+        }
+        next.setVar(p_old, 0);
+        next.setVar(p_new, curr.getVar(p_old));
+        return true;
+
+    } else {
+        /*
+            For each tile, where is it.
+
+            Check all tiles except blank (level 1):
+                If in position p_new, disabled.
+                If in position p_old, change position to p_new.
+                Otherwise, no change.
+
+            Check blank tile (level 1):
+                If not in position p_new, disabled.
+                Change to position p_old.
+        */
+        for (unsigned i=next.getNumVars(); i>1; i--) {
+            if (curr.getVar(i) == p_new) return false;
+            next.setVar(i,
+                    (curr.getVar(i) == p_old)
+                    ? p_new
+                    : curr.getVar(i)
+            );
+        }
+        if (curr.getVar(1) != p_new) return false;
+        next.setVar(1, p_old);
+        return true;
+
+    }
+}
+
+// ******************************************************************
+
+template <bool FEPWT>
+bool tilemodel::move_tile_event<FEPWT>::build_nsf(MEDDLY::dd_edge &R)
+{
+    using namespace MEDDLY;
+    minterm_coll mtc(RxC, R.getForest());
+
+    if (FEPWT) {
+        //  For each position, which tile
+        //  p_old: T -> 0
+        //  p_new: 0 -> T
+        for (int T=1; T<RxC; T++) {
+            minterm &m = mtc.unused();
+            m.setAllVars(DONT_CARE, DONT_CHANGE);
+            m.setVars(p_old, T, 0);
+            m.setVars(p_new, 0, T);
+            m.setValue(true);
+            mtc.pushUnused();
+        }
+    } else {
+        //  For each tile, where is it
+        //  x_T: p_old -> p_new
+        //  x_1: p_new -> p_old
+        for (int T=2; T<=RxC; T++) {
+            minterm &m = mtc.unused();
+            m.setAllVars(DONT_CARE, DONT_CHANGE);
+            m.setVars(T, p_old, p_new);
+            m.setVars(1, p_new, p_old);
+            m.setValue(true);
+            mtc.pushUnused();
+        }
+    }
+    mtc.buildFunctionMax(false, R);
+    return true;
 }
 
 // ******************************************************************
@@ -188,35 +327,33 @@ bool tilemodel::build_model(MEDDLY::output &out)
     set_domain(MEDDLY::domain::createBottomUp(sizes, R*C));
     delete[] sizes;
 
-    // TBD FROM HERE
-
-    /*
-
     //
-    // Make the events
+    // Add events
     //
-    add_event(new simple_event("Tin1",    "X-+.............."));
-    add_event(new simple_event("Tr1",     "X.-+............."));
-    add_event(new simple_event("Tb1",     "X.+-............."));
-    add_event(new simple_event("Tg1",     "X.-.+............"));
-    add_event(new simple_event("Tr2",     "X.....-+........."));
-    add_event(new simple_event("Tb2",     "X.....+-........."));
-    add_event(new simple_event("Tg2",     "X.....-.+........"));
-    add_event(new simple_event("Ts1_23",  "X+..--+..-+......"));
-    add_event(new simple_event("Tr3",     "X.........-+....."));
-    add_event(new simple_event("Tb3",     "X.........+-....."));
-    add_event(new simple_event("Tg3",     "X.........-.+...."));
-    add_event(new simple_event("Ts23_4",  "X....+..-+..--+.."));
-    add_event(new simple_event("Tr4",     "X.............-+."));
-    add_event(new simple_event("Tb4",     "X.............+-."));
-    add_event(new simple_event("Tout4",   "X............+..-"));
-    add_event(new simple_event("Tg4",     "X.............-.+"));
+    for (int p=0; p<R*C; p++) {
+        //
+        // Move left
+        //
+        if (0 != p%C) {
+            add_event(move_tile(p, p-1));
+        }
+        //
+        // Move right
+        //
+        if (C-1 != p%C) {
+            add_event(move_tile(p, p+1));
+        }
+        //
+        // Move up
+        //
+        add_event(move_tile(p, p-C));
+        //
+        // Move down
+        //
+        add_event(move_tile(p, p+C));
+    }
 
     return true;
-    */
-
-    out << "Not implemented\n";
-    return false;
 }
 
 // ******************************************************************
@@ -238,63 +375,37 @@ void tilemodel::build_initial(MEDDLY::minterm &init)
     }
 }
 
+// ******************************************************************
 
-// **********************************************************************
-// build a minterm to move a tile
-//
-//    @param T              Tile number, from 1 to R*C-1.
-//    @param p              Position currently containing tile T,
-//                              from 0 to R*C-1.
-//    @param q              Neighboring position containing nothing (0),
-//                              from 0 to R*C-1.
-//    @param m              Minterm to fill
-//
-//    @return true, iff this is a valid move
-//
-// **********************************************************************
-
-/*
-
-bool moveTile(const int T, const int p, const int q, MEDDLY::minterm &m)
+bool tilemodel::known_cardinality(double &theory) const
 {
-    if (p == q)     return false;
-    if (T<=0)       return false;
-    if (T>= R*C)    return false;
-    if (p<0)        return false;
-    if (p>= R*C)    return false;
-    if (q<0)        return false;
-    if (q>= R*C)    return false;
-
-    m.setAllVars(MEDDLY::DONT_CARE, MEDDLY::DONT_CHANGE);
-
-    if (for_each_position_which_tile) {
-
-        // x_p: T -> 0
-        //
-        m.setVars(p+1, T, 0);
-
-        // x_q: 0 -> T
-        //
-        m.setVars(q+1, 0, T);
-
-    } else {
-
-        // x_T: p -> q
-        //
-        m.setVars(T+1, p, q);
-
-        // x_0: q -> p
-        //
-        m.setVars(1, q, p);
+    //
+    // (R*C) ! / 2
+    //
+    theory = 1.0;
+    for (int i=3; i<=R*C; i++) {
+        theory *= i;
     }
-
-    m.setValue(true);
-#ifdef DEBUG_EVENTS
-    std::cerr << "   move tile " << T << " from " << p << " to " << q << "\n";
-#endif
     return true;
 }
-*/
+
+// ******************************************************************
+
+#ifdef HAVE_LIBGMP
+
+bool tilemodel::known_cardinality(mpz_t theory) const
+{
+    //
+    // (R*C) ! / 2
+    //
+    mpz_set_ui(theory, 1);
+    for (int i=3; i<=R*C; i++) {
+        mpz_mul_ui(theory, theory, i);
+    }
+    return true;
+}
+
+#endif
 
 // **********************************************************************
 // main
