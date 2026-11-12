@@ -205,11 +205,3 @@ executable(
     dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep, zstream_dep ]
 )
 
-######################################################################
-
-executable(
-    'tiles-old',
-    'tiles-old.cc',
-    dependencies: [ gmp_dep, meddly_dep, zstream_dep, simple_model_dep ]
-)
-

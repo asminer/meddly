@@ -2,18 +2,25 @@
 TO DO list
 
 rsgen_model:
-    * migrate tiles to use rsgen_model
-
-    * Add a "node handle shift" for debugging purposes
-        - effectively, reserve a block of nonterminal nodes
-        - then we can debug large node handles quickly?
-
 
     * migrate all kanban in tests/ to use rsgen_model
+        - kan_io
+        - kan_relprod
 
     * migrate other models in examples/ to use rsgen_model
+        - swaps
+        - slot
+        - dining philosophers
 
     * make other model_gen tests?
+
+
+large integer node handle debugging:
+
+* Add a "node handle shift" for debugging purposes
+    - effectively, reserve a block of nonterminal nodes
+    - then we can debug large node handles quickly?
+
 
 
 For I/O:
