@@ -1,0 +1,499 @@
+
+/*
+    Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
+    Copyright (C) 2009, Iowa State University Research Foundation, Inc.
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+    Simple model of an array of (unique) integers,
+    with operations to swap neighboring elements.
+*/
+
+#include "meddly/meddly.h"
+#include "utils/timer.h"
+
+using namespace MEDDLY;
+
+FILE_output meddlyout(stdout);
+
+// #define DUMP_NSF
+// #define DUMP_REACHABLE
+
+// Helpers
+
+inline double factorial(int n)
+{
+    double f = 1.0;
+    for (int i=2; i<=n; i++) {
+        f *= i;
+    }
+    return f;
+}
+
+// Verbose output: show iteration details
+bool verbose;
+
+void my_progress(unsigned iter, char st)
+{
+    if (' ' == st) {
+        fprintf(stderr, "    Iteration %u: ", iter);
+        return;
+    }
+    if (';' == st) {
+        fputc('\n', stderr);
+        return;
+    }
+    fputc(st, stderr);
+    fputc(' ', stderr);
+}
+
+
+
+//
+//
+// Encoding based on the obvious: each state variable is
+// one of the array elements.
+//
+//
+
+/*
+    Builds a next-state relation for exchanging two variables.
+    The forest must be IDENTITY REDUCED.
+*/
+void Exchange(int va, int vb, int N, dd_edge &answer)
+{
+    forest* EF = answer.getForest();
+
+    /* We're doing this BY HAND which means a 4 levels of nodes */
+
+    unpacked_node* na = unpacked_node::newWritable(EF, va, N, FULL_ONLY);
+    for (int ia=0; ia<N; ia++) {
+        unpacked_node* nap = unpacked_node::newWritable(EF, -va, N, FULL_ONLY);
+        for (int ja=0; ja<N; ja++) {
+
+            // WANT vb == va' and vb' == va, so...
+
+            // Make a singleton for vb' == va (index ia)
+            unpacked_node* nbp = unpacked_node::newWritable(EF, -vb, 1, SPARSE_ONLY);
+            nbp->setSparse(0, ia, EF->handleForValue(1));
+
+            // Make a singleton for vb == va' (index ja)
+            unpacked_node* nb = unpacked_node::newWritable(EF, vb, 1, SPARSE_ONLY);
+            nb->setSparse(0, ja, EF->createReducedNode(ja, nbp));
+
+            nap->setFull(ja, EF->createReducedNode(-1, nb));
+        } // for ja
+        na->setFull(ia, EF->createReducedNode(ia, nap));
+    } // for ia
+
+    answer.set(EF->createReducedNode(-1, na));
+}
+
+/*
+    Build monolithic next-state relation, using "array values"
+    state variables.  The forest must be IDENTITY REDUCED.
+*/
+void ValueNSF(int N, dd_edge &answer)
+{
+    dd_edge temp(answer);
+    answer.set(0);
+
+    for (int i=1; i<N; i++) {
+        Exchange(i+1, i, N, temp);
+        answer += temp;
+    }
+}
+
+/*
+    Build partitioned next-state relation, using "array values"
+    state variables.  The forest must be IDENTITY REDUCED.
+*/
+void ValueNSF(int N, pregen_relation* nsf)
+{
+    dd_edge temp(nsf->getRelForest());
+    for (int i=1; i<N; i++) {
+        Exchange(i+1, i, N, temp);
+        nsf->addToRelation(temp);
+    }
+}
+
+//
+//
+// Alternate encoding: each state variable is one of the unique integers,
+// and we store its position in the array.
+//
+//
+
+/*
+    Builds a next-state relation for exchanging two positions.
+    The forest must be IDENTITY REDUCED.
+*/
+void AltExchange(int pa, int pb, int N, int K, dd_edge &answer)
+{
+    forest* EF = answer.getForest();
+
+    /*
+       Do the same thing at every level:
+       if the position is pa, change it to pb.
+       if the position is pb, change it to pa.
+       otherwise, no change.
+       */
+    node_handle bottom = EF->handleForValue(1);
+
+    for (int k=1; k<=K; k++) {
+        unpacked_node* nk = unpacked_node::newWritable(EF, k, N, FULL_ONLY);
+
+        for (int i=0; i<N; i++) {
+            if (pa == i) {
+                unpacked_node* nkp = unpacked_node::newWritable(EF, -k, 1, SPARSE_ONLY);
+                nkp->setSparse(0, pb, bottom);
+                nk->setFull(i, EF->createReducedNode(i, nkp));
+                continue;
+            }
+            if (pb == i) {
+                unpacked_node* nkp = unpacked_node::newWritable(EF, -k, 1, SPARSE_ONLY);
+                nkp->setSparse(0, pa, bottom);
+                nk->setFull(i, EF->createReducedNode(i, nkp));
+                continue;
+            }
+            nk->setFull(i, bottom);
+        } // for i
+
+        bottom = EF->createReducedNode(-1, nk);
+    }
+
+    answer.set(bottom);
+}
+
+/*
+    Build monolithic next-state relation, using "array positions"
+    state variables.  The forest must be IDENTITY REDUCED.
+*/
+void PositionNSF(int N, dd_edge &answer)
+{
+    dd_edge temp(answer);
+    answer.set(0);
+
+    for (int i=1; i<N; i++) {
+        AltExchange(i-1, i, N, N, temp);
+        answer += temp;
+    }
+}
+
+/*
+    Build partitioned next-state relation, using "array positions"
+    state variables.  The forest must be IDENTITY REDUCED.
+*/
+void PositionNSF(int N, pregen_relation* nsf)
+{
+    dd_edge temp(nsf->getRelForest());
+    for (int i=1; i<N; i++) {
+        AltExchange(i-1, i, N, N, temp);
+        nsf->addToRelation(temp);
+    }
+}
+
+
+//
+//
+// I/O crud
+//
+//
+
+void printStats(const char* who, const forest* f)
+{
+    printf("%s stats:\n", who);
+    f->reportStats(meddlyout, "\t",
+            HUMAN_READABLE_MEMORY  |
+            BASIC_STATS | EXTRA_STATS |
+            STORAGE_STATS | HOLE_MANAGER_STATS |
+            HOLE_MANAGER_DETAILED
+    );
+    meddlyout.flush();
+}
+
+int usage(const char* who)
+{
+    /* Strip leading directory, if any: */
+    const char* name = who;
+    for (const char* ptr=who; *ptr; ptr++) {
+        if ('/' == *ptr) name = ptr+1;
+    }
+    printf("\nUsage: %s nnnn [options]\n\n", name);
+    printf("\tnnnn: array size\n\n");
+    printf("\t-showrel: Show the relation and quit.\n");
+    printf("\t-front:   use traditional iterations with frontier\n");
+    printf("\t-trad:    use traditional iterations, no frontier\n\n");
+    printf("\t-dfs:     use default saturation\n");
+#ifdef ALLOW_DEPRECATED_0_18_1
+    printf("\t-msat:    use monolithic saturation\n");
+#endif
+    printf("\t-sat1:    use saturation v1, new implementation (default)\n");
+    printf("\t-sat2:    use saturation v2\n\n");
+    //  printf("\t-esat: use saturation by events\n");
+    //  printf("\t-ksat: use saturation by levels\n");
+    printf("\t-alt:     use alternate description\n\n");
+    printf("\t-v:       verbose, show iterations\n");
+    return 1;
+}
+
+void runWithArgs(int N, char method, bool alternate, bool showrel)
+{
+    timer watch;
+
+    printf("+-------------------------------------------+\n");
+    printf("|   Initializing swaps model for N = %-4d   |\n", N);
+    printf("+-------------------------------------------+\n");
+    fflush(stdout);
+
+    /*
+       Initialize domain
+    */
+    int* sizes = new int[N];
+    for (int i=0; i<N; i++) sizes[i] = N;
+    domain* D = domain::createBottomUp(sizes, N);
+    delete[] sizes;
+    forest* mdd = forest::create(D, SET, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL);
+
+    /*
+       Build initial state
+    */
+    minterm initial(mdd);
+    for (unsigned i=initial.getNumVars(); i; --i) {
+        initial.setVar(i, i-1);
+    }
+    dd_edge init_state(mdd);
+    initial.buildFunction(false, init_state);
+
+
+    /*
+       Build next-state function
+     */
+    forest* mxd = forest::create(D, RELATION, range_type::BOOLEAN,
+                    edge_labeling::MULTI_TERMINAL);
+    dd_edge nsf(mxd);
+    pregen_relation* ensf = nullptr;
+    saturation_operation* sat = nullptr;
+
+    if ('s' == method) {
+        ensf = new pregen_relation(mxd, 16);
+    }
+    if ('k' == method) {
+        ensf = new pregen_relation(mxd);
+    }
+
+    watch.note_time();
+    if (ensf) {
+        if (alternate) {
+            PositionNSF(N, ensf);
+        } else {
+            ValueNSF(N, ensf);
+        }
+    } else {
+        if (alternate) {
+            PositionNSF(N, nsf);
+        } else {
+            ValueNSF(N, nsf);
+        }
+    }
+    watch.note_time();
+
+    printf("Next-state function construction took %.4f seconds\n",
+            watch.get_last_seconds());
+    if (0==ensf) {
+        printf("Next-state function MxD has\n\t%lu nodes\n\t%lu edges\n",
+                nsf.getNodeCount(), nsf.getEdgeCount());
+    }
+
+    if (showrel) {
+        printf("Next-state function:\n");
+        FILE_output out(stdout);
+        nsf.showRelation(out);
+        return;
+    }
+
+    printStats("MxD", mxd);
+
+    /*
+       Build reachable states
+       */
+    watch.note_time();
+    dd_edge reachable(mdd);
+    binary_operation* rsgen = nullptr;
+    switch (method) {
+        case 'f':
+            printf("Building reachability set using traditional algorithm with frontier\n");
+            fflush(stdout);
+            rsgen = build(REACHABLE_TRAD_FS(true), mdd, mxd, mdd);
+            if (verbose) rsgen->setProgressNotifier(my_progress);
+            rsgen->compute(init_state, nsf, reachable);
+            break;
+
+        case 't':
+            printf("Building reachability set using traditional algorithm (no frontier)\n");
+            fflush(stdout);
+            rsgen = build(REACHABLE_TRAD_NOFS(true), mdd, mxd, mdd);
+            if (verbose) rsgen->setProgressNotifier(my_progress);
+            rsgen->compute(init_state, nsf, reachable);
+            break;
+
+
+#ifdef ALLOW_DEPRECATED_0_18_1
+        case 'm':
+            printf("Building reachability set using saturation\n");
+            fflush(stdout);
+            apply(REACHABLE_STATES_DFS, init_state, nsf, reachable);
+            break;
+#endif
+        case 'd':
+            printf("Building reachability set using default saturation\n");
+            fflush(stdout);
+            apply(REACHABLE_SATUR(true), init_state, nsf, reachable);
+            break;
+
+        case '1':
+            printf("Building reachability set using saturation v1\n");
+            fflush(stdout);
+            apply(REACHABLE_SATUR(true, 1), init_state, nsf, reachable);
+            break;
+
+        case '2':
+            printf("Building reachability set using saturation v2\n");
+            fflush(stdout);
+            apply(REACHABLE_SATUR(true, 2), init_state, nsf, reachable);
+            break;
+
+        case 'k':
+        case 's':
+            printf("Building reachability set using saturation, relation");
+            if ('k'==method)  printf(" by levels\n");
+            else              printf(" by events\n");
+            fflush(stdout);
+            sat = SATURATION_FORWARD(mdd, ensf, mdd);
+            if (!sat) {
+                throw error(error::INVALID_OPERATION, __FILE__, __LINE__);
+            }
+            sat->compute(init_state, reachable);
+            break;
+
+        default:
+            printf("Error - unknown method\n");
+            exit(2);
+    };
+    watch.note_time();
+    printf("Reachability set construction took %.4f seconds\n",
+            watch.get_last_seconds());
+    printf("Reachability set MDD has\n\t%lu nodes\n\t%lu edges\n",
+            reachable.getNodeCount(), reachable.getEdgeCount());
+    fflush(stdout);
+    //  mdd->garbageCollect();
+
+#ifdef DUMP_REACHABLE
+    printf("Reachable states:\n");
+    reachable.show(meddlyout, 2);
+#endif
+
+    printStats("MDD", mdd);
+    compute_table::showAll(meddlyout, 3);
+    meddlyout.flush();
+
+    /*
+       Determine cardinality
+       */
+    double c = 0;
+    apply(CARDINALITY, reachable, c);
+    printf("Counted (approx) %g reachable states\n", c);
+    printf("(There should be %g states)\n", factorial(N));
+}
+
+int main(int argc, const char** argv)
+{
+    int N = -1;
+    char method = '1';
+    bool alt = false;
+    verbose = false;
+    bool show_relation = false;
+
+    for (int i=1; i<argc; i++) {
+        if (0==strcmp("-showrel", argv[i])) {
+            show_relation = true;
+            continue;
+        }
+        if (strcmp("-front", argv[i])==0) {
+            method = 'f';
+            continue;
+        }
+        if (strcmp("-trad", argv[i])==0) {
+            method = 't';
+            continue;
+        }
+        if (strcmp("-dfs", argv[i])==0) {
+            method = 'd';
+            continue;
+        }
+        if (strcmp("-sat1", argv[i])==0) {
+            method = '1';
+            continue;
+        }
+        if (strcmp("-sat2", argv[i])==0) {
+            method = '2';
+            continue;
+        }
+#ifdef ALLOW_DEPRECATED_0_18_1
+        if (strcmp("-msat", argv[i])==0) {
+            method = 'm';
+            continue;
+        }
+#endif
+        if (strcmp("-esat", argv[i])==0) {
+            method = 's';
+            continue;
+        }
+        if (strcmp("-ksat", argv[i])==0) {
+            method = 'k';
+            continue;
+        }
+        if (strcmp("-alt", argv[i])==0) {
+            alt = true;
+            continue;
+        }
+        if (strcmp("-v", argv[i])==0) {
+            verbose = true;
+            continue;
+        }
+        if ('-' == argv[i][0]) {
+            return usage(argv[0]);
+        }
+        N = atoi(argv[i]);
+    }
+
+    if (N<0) return usage(argv[0]);
+
+    MEDDLY::initialize();
+
+    try {
+        runWithArgs(N, method, alt, show_relation);
+        MEDDLY::cleanup();
+        return 0;
+    }
+    catch (MEDDLY::error e) {
+        printf("Caught MEDDLY error: %s\n", e.getName());
+        return 1;
+    }
+
+}
+
