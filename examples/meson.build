@@ -144,14 +144,6 @@ executable(
 ######################################################################
 
 executable(
-    'swaps-old',
-    'swaps-old.cc',
-    dependencies: [ gmp_dep, meddly_dep]
-)
-
-######################################################################
-
-executable(
     'rebuild_mdd',
     'rebuild_mdd.cc',
     dependencies: [ gmp_dep, meddly_dep]

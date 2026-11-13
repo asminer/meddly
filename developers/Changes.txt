@@ -8,7 +8,6 @@ rsgen_model:
         - kan_relprod
 
     * migrate other models in examples/ to use rsgen_model
-        - swaps
         - slot
         - dining philosophers
 
