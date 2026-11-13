@@ -22,6 +22,8 @@
 #include "meddly/meddly.h"
 #include "utils/rsgen_model.h"
 
+// #define CHECK_SWAP_EVENT
+
 // ******************************************************************
 
 class swapmodel : public rsgen_model {
@@ -127,7 +129,138 @@ bool swapmodel::swap_adjacent<FESWN>::fire(const MEDDLY::minterm &curr,
 template <bool FESWN>
 bool swapmodel::swap_adjacent<FESWN>::build_nsf(MEDDLY::dd_edge &R)
 {
-    return false;
+    using namespace MEDDLY;
+
+    forest* F = R.getForest();
+
+    edge_value v;
+    node_handle p;
+
+    if (FESWN) {
+        /*
+            All levels are identity, except top_slot and top_slot-1,
+            and their primed counterparts.
+            There we need to exchange values.
+
+            We can build this bottom-up in one go:
+                for i
+                    (x_top_slot == i)
+                    for j
+                        x'_top_slot = j
+                        x_top_slot-1 = j
+                        x'_top_slot-1 = i
+        */
+        node_handle one = F->makeIdentitiesTo(
+            F->handleForValue(1), 0, top_slot-2, ~0
+        );
+
+        //
+        // node at level x_t
+        //
+        unpacked_node* Utu = unpacked_node::newWritable(F,
+                top_slot, num_slots, FULL_ONLY);
+        for (int i=0; i<num_slots; i++) {
+            //
+            // node at level x'_t
+            //
+            unpacked_node* Utp = unpacked_node::newWritable(F,
+                    -top_slot, num_slots, FULL_ONLY);
+            for (int j=0; j<num_slots; j++) {
+                if (j==i) {
+                    Utp->setFull(j, 0);
+                    continue;
+                }
+                //
+                // singleton node at level x'_s  (s = t-1)
+                //
+                unpacked_node* Usp = unpacked_node::newWritable(F,
+                        -(top_slot-1), 1, SPARSE_ONLY);
+                Usp->setSparse(0, i, F->linkNode(one));
+                F->createReducedNode(Usp, v, p);
+                assert(v.isVoid());
+
+                //
+                // singleton node at level x_s
+                //
+                unpacked_node* Usu = unpacked_node::newWritable(F,
+                        top_slot-1, 1, SPARSE_ONLY);
+                Usu->setSparse(0, j, p);
+                F->createReducedNode(Usu, v, p);
+                assert(v.isVoid());
+
+                // attach to x'_t node
+                Utp->setFull(j, p);
+            }
+            F->createReducedNode(Utp, v, p);
+            assert(v.isVoid());
+            Utu->setFull(i, p);
+        } // for i
+
+        F->createReducedNode(Utu, v, p);
+        assert(v.isVoid());
+        p = F->makeIdentitiesTo(p, top_slot, num_slots, ~0);
+
+        R.set(p);
+        F->unlinkNode(one);
+        return true;
+    } else {
+        /*
+            All levels are the same:
+                value top_slot becomes top_slot-1
+                value top_slot-1 becomes top_slot
+                all other values remain unchanged
+        */
+        node_handle down = F->handleForValue(1);
+        F->linkNode(down);
+
+        for (int k=1; k<=num_slots; k++) {
+            unpacked_node* nk = unpacked_node::newWritable(F,
+                    k, num_slots, FULL_ONLY);
+
+            for (int i=0; i<num_slots; i++) {
+                if (i == top_slot) {
+                    unpacked_node* nkp = unpacked_node::newWritable(F,
+                            -k, 1, SPARSE_ONLY);
+                    nkp->setSparse(0, top_slot-1, F->linkNode(down));
+                    F->createReducedNode(nkp, v, p);
+                    assert(v.isVoid());
+
+                    nk->setFull(i, p);
+                    continue;
+                }
+                if (i == top_slot-1) {
+                    unpacked_node* nkp = unpacked_node::newWritable(F,
+                            -k, 1, SPARSE_ONLY);
+                    nkp->setSparse(0, top_slot, F->linkNode(down));
+                    F->createReducedNode(nkp, v, p);
+                    assert(v.isVoid());
+
+                    nk->setFull(i, p);
+                    continue;
+                }
+                // no change
+                if (F->isIdentityReduced()) {
+                    nk->setFull(i, F->linkNode(down));
+                } else {
+                    unpacked_node* nkp = unpacked_node::newWritable(F,
+                            -k, 1, SPARSE_ONLY);
+                    nkp->setSparse(0, i, F->linkNode(down));
+                    F->createReducedNode(nkp, v, p);
+                    assert(v.isVoid());
+
+                    nk->setFull(i, p);
+                }
+            } // for i
+
+            F->createReducedNode(nk, v, p);
+            assert(v.isVoid());
+            F->unlinkNode(down);
+            down = p;
+        } // for k
+
+        R.set(down);
+        return true;
+    }
 }
 
 // ******************************************************************
@@ -216,6 +349,29 @@ bool swapmodel::build_model(MEDDLY::output &out)
     //
     // Add events
     //
+
+#ifdef CHECK_SWAP_EVENT
+    using namespace MEDDLY;
+
+    rsgen_model::event* e = nullptr;
+    if (for_each_slot_which_number) {
+        e = new swap_adjacent<true>(N, N-1);
+    } else {
+        e = new swap_adjacent<false>(N, N-1);
+    }
+
+    forest* F = forest::create(get_domain(), RELATION, range_type::BOOLEAN,
+            edge_labeling::MULTI_TERMINAL);
+
+    dd_edge R(F);
+
+    e->build_nsf(R);
+
+    out << "Event edge is " << R << "\n";
+    F->dump(out, ~0);
+
+    return false;
+#else
     if (for_each_slot_which_number) {
         for (int k=1; k<N; k++) {
             add_event(new swap_adjacent<true>(N, k));
@@ -225,6 +381,7 @@ bool swapmodel::build_model(MEDDLY::output &out)
             add_event(new swap_adjacent<false>(N, k));
         }
     }
+#endif
 
     return true;
 }
