@@ -22,7 +22,7 @@
 
 #include <iomanip>
 
-// #define DEBUG_UPDATE_SORT
+#define DEBUG_UPDATE_SORT
 // #define DEBUG_UPDATE_STRING
 // #define DEBUG_EVENTS
 // #define DEBUG_EVENT_BUILD
@@ -164,7 +164,7 @@ rsgen_model::simple_event::simple_event(const char* n,
     for (unsigned i=1; i<updates.size(); i++) {
         for (unsigned j=i; j; ) {
             --j;
-            if (updates[j].level < updates[j+1].level) break;
+            if (updates[j].before(updates[j+1])) break;
             updates[j].swap(updates[j+1]);
         }
     }
@@ -325,7 +325,7 @@ rsgen_model::kron_event::kron_event(const char* n,
     for (unsigned i=1; i<updates.size(); i++) {
         for (unsigned j=i; j; ) {
             --j;
-            if (updates[j].level < updates[j+1].level) break;
+            if (updates[j].before(updates[j+1])) break;
             updates[j].swap(updates[j+1]);
         }
     }

@@ -54,6 +54,10 @@ class rsgen_model {
                     delta = x.delta;
                     x.delta = t;
                 }
+
+                inline bool before(const level_axb &x) {
+                    return level < x.level;
+                }
         };
     public:
         struct level_delta {
@@ -84,6 +88,12 @@ class rsgen_model {
                     tmp = to_val;
                     to_val = x.to_val;
                     x.to_val = tmp;
+                }
+
+                inline bool before(const level_delta &x) {
+                    if (level < x.level) return true;
+                    if (level > x.level) return false;
+                    return fr_val < x.fr_val;
                 }
         };
     public:
@@ -172,10 +182,12 @@ class rsgen_model {
                     Create a "Kronekcer" event.
                         @param  name    Event name; used primarily
                                         for debugging.
-                        @param  _upd    Updates, as a list of
-                                        level_delta objects, with
-                                        all of them applied independently
-                                        at various levels.
+                        @param  _upd    Updates, as a list of level_delta
+                                        objects, with all of them applied
+                                        independently ("and"ed) at various
+                                        levels. If there is more than one
+                                        object at the same level, we "or"
+                                        them.
                 */
                 kron_event(const char* name,
                         const std::vector <level_delta> &_upd);

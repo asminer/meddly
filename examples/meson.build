@@ -104,6 +104,14 @@ executable(
 ######################################################################
 
 executable(
+    'phils',
+    'phils.cc',
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
+)
+
+######################################################################
+
+executable(
     'queen_cover',
     'queen_cover.cc',
     dependencies: [ gmp_dep, meddly_dep]
