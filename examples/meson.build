@@ -128,14 +128,6 @@ executable(
 ######################################################################
 
 executable(
-    'slot-old',
-    'slot-old.cc',
-    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
-)
-
-######################################################################
-
-executable(
     'swaps',
     'swaps.cc',
     dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
