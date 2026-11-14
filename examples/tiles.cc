@@ -261,24 +261,32 @@ bool tilemodel::process_arg(unsigned &i, const char** argv)
 
 void tilemodel::show_usage(std::ostream &out, const char* arg0)
 {
-    if (arg0) {
-        out << "\nUsage: " << basename(arg0) << " [options] RxC\n\n";
-    }
-    out << "\tR          : number of rows, from 1 to 9\n";
-    out << "\tC          : number of columns, from 1 to 9\n";
+    show_synopsis(out, arg0, "[options] RxC");
 
+    show_model_info(out, "Sliding tile puzzle. We have a RxC grid of numbered tiles with one empty space, and we can slide tiles into the empty space. Initially, the tiles are in order, and the empty slot is at the bottom right corner. For a 3x4 grid:");
     out << "\n";
-    out << "    ENCODING OPTIONS\n";
+    out << "        +----+----+----+----+\n";
+    out << "        |    |    |    |    |\n";
+    out << "        | 01 | 02 | 03 | 04 |\n";
+    out << "        |    |    |    |    |\n";
+    out << "        +----+----+----+----+\n";
+    out << "        |    |    |    |    |\n";
+    out << "        | 05 | 06 | 07 | 08 |\n";
+    out << "        |    |    |    |    |\n";
+    out << "        +----+----+----+----+\n";
+    out << "        |    |    |    |    |\n";
+    out << "        | 09 | 10 | 11 |    |\n";
+    out << "        |    |    |    |    |\n";
+    out << "        +----+----+----+----+\n";
     out << "\n";
 
-    out << "        -pos       : Use a position-based encoding: for each position,\n";
-    out << "                     which tile is there. Position #0 is the bottom DD\n";
-    out << "                     variable, and position #rc-1 is the top DD variable.\n";
+    show_section(out, "SIZE PARAMETERS");
+    show_switch(out, "R", "Number of rows, from 1 to 9");
+    show_switch(out, "C", "Number of columns, from 1 to 9");
 
-    out << "        -tile      : Use a tile-based encoding: for each tile,\n";
-    out << "                     where is it (default). The empty tile is the bottom\n";
-    out << "                     DD variable, tile 1 is next, ..., tile rc-1 is the top\n";
-    out << "                     DD variable.\n";
+    show_section(out, "ENCODING OPTIONS");
+    show_switch(out, "-pos", "Use a position-based encoding: for each position, which tile is there. Position #0 is the bottom DD variable, and position #RC-1 is the top DD variable.");
+    show_switch(out, "-tile", "Use a tile-based encoding: for each tile, where is it (default). The empty tile is the bottom DD variable, tile 1 is next, ..., tile RC-1 is the top DD variable.");
 
     rsgen_model::show_usage(out);
 }

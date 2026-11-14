@@ -302,22 +302,16 @@ bool swapmodel::process_arg(unsigned &i, const char** argv)
 
 void swapmodel::show_usage(std::ostream &out, const char* arg0)
 {
-    if (arg0) {
-        out << "\nUsage: " << basename(arg0) << " [options] N\n\n";
-    }
-    out << "\tN          : number of array slots and unique numbers\n";
+    show_synopsis(out, arg0, "[options] N");
 
-    out << "\n";
-    out << "    ENCODING OPTIONS\n";
-    out << "\n";
+    show_model_info(out, "An array of N unique integers, with operations to swap adjacent integers. Initially, the integers are in order.");
 
-    out << "        -array     : The array is the state: for each array slot,\n";
-    out << "                     which number is there. Slot #0 is the bottom DD\n";
-    out << "                     variable, and slot #N-1 is the top DD variable.\n";
+    show_section(out, "SIZE PARAMETERS");
+    show_switch(out, "N", "number of array slots and unique numbers");
 
-    out << "        -number    : Inverted encoding: for each number, which array\n";
-    out << "                     slot is it in. Number 0 is the bottom DD variable,\n";
-    out << "                     and number N-1 is the top DD variable.\n";
+    show_section(out, "ENCODING OPTIONS");
+    show_switch(out, "-array", "System state is, for each array slot, which number is there. Slot #0 is the bottom DD variable, and slot #N-1 is the top DD variable.");
+    show_switch(out, "-number", "System state is, for each number, which array slot contains it. Number 0 is the bottom DD variable, and number N-1 is the top DD variable.");
 
     rsgen_model::show_usage(out);
 }
