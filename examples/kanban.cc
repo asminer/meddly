@@ -75,10 +75,25 @@ bool kanban::process_arg(unsigned &i, const char** argv)
 
 void kanban::show_usage(std::ostream &out, const char* arg0)
 {
-    if (arg0) {
-        out << "\nUsage: " << basename(arg0) << " [options] size\n\n";
-    }
-    out << "\tsize   : number of parts\n";
+    show_synopsis(out, arg0, "[options] N");
+
+    show_model_info(out, "Petri net model of a small Kanban manufacturing system,");
+    out << "\n";
+    out << "                                v------------[] \n";
+    out << "                          []-->(_)->[]->(_)->[] \n";
+    out << "                          []     \\ \n";
+    out << "          v------------[] []<-(N) +->[]-->(_)-->[]    v------------[] \n";
+    out << "    []-->(_)->[]->(_)->[] []   ^----------------[]-->(_)->[]->(_)->[] \n";
+    out << "    []     \\              []                    []     \\ \n";
+    out << "    []<-(N) +->[]-->(_)-->[]    v------------[] []<-(N) +->[]-->(_)-->[] \n";
+    out << "         ^----------------[]-->(_)->[]->(_)->[] []   ^----------------[] \n";
+    out << "                          []     \\              [] \n";
+    out << "                          []<-(N) +->[]-->(_)-->[] \n";
+    out << "                               ^----------------[] \n";
+    out << "\n";
+
+    show_section(out, "SIZE PARAMETERS");
+    show_switch(out, "N", "number of parts");
 
     rsgen_model::show_usage(out);
 }
