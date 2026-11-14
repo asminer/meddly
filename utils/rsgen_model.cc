@@ -133,12 +133,15 @@ void my_progress(unsigned iter, char st)
 }
 
 // ******************************************************************
+// *                                                                *
 // *                   rsgen_model::event methods                   *
+// *                                                                *
 // ******************************************************************
 
 rsgen_model::event::event(const char* n)
 {
     name = n;
+    top_level = 0;
 }
 
 rsgen_model::event::~event()
@@ -146,7 +149,9 @@ rsgen_model::event::~event()
 }
 
 // ******************************************************************
+// *                                                                *
 // *               rsgen_model::simple_event  methods               *
+// *                                                                *
 // ******************************************************************
 
 rsgen_model::simple_event::simple_event(const char* n,
@@ -166,6 +171,9 @@ rsgen_model::simple_event::simple_event(const char* n,
 #ifdef DEBUG_UPDATE_SORT
     show();
 #endif
+    if (updates.size() > 0) {
+        set_top(updates[updates.size()-1].level);
+    }
 }
 
 // ******************************************************************
@@ -199,6 +207,9 @@ rsgen_model::simple_event::simple_event(const char* n, const char* pmstr)
 #ifdef DEBUG_UPDATE_STRING
     show();
 #endif
+    if (updates.size() > 0) {
+        set_top(updates[updates.size()-1].level);
+    }
 }
 
 // ******************************************************************
@@ -299,7 +310,71 @@ void rsgen_model::simple_event::show() const
 }
 
 // ******************************************************************
+// *                                                                *
+// *                rsgen_model::kron_event  methods                *
+// *                                                                *
+// ******************************************************************
+
+rsgen_model::kron_event::kron_event(const char* n,
+        const std::vector <level_delta> &_upd)
+        : rsgen_model::event(n), updates(_upd)
+{
+    //
+    // put update vector in order. using something like insertion sort
+    //
+    for (unsigned i=1; i<updates.size(); i++) {
+        for (unsigned j=i; j; ) {
+            --j;
+            if (updates[j].level < updates[j+1].level) break;
+            updates[j].swap(updates[j+1]);
+        }
+    }
+#ifdef DEBUG_UPDATE_SORT
+    show();
+#endif
+    if (updates.size() > 0) {
+        set_top(updates[updates.size()-1].level);
+    }
+}
+
+// ******************************************************************
+
+bool rsgen_model::kron_event::fire(const MEDDLY::minterm &curr,
+        MEDDLY::minterm &next)
+{
+    // TBD
+    return false;
+}
+
+// ******************************************************************
+
+bool rsgen_model::kron_event::build_nsf(MEDDLY::dd_edge &R)
+{
+    using namespace MEDDLY;
+
+    // TBD
+    return false;
+}
+
+// ******************************************************************
+
+void rsgen_model::kron_event::show() const
+{
+    std::cerr << "Event ";
+    if (get_name()) std::cerr << get_name() << " ";
+    std::cerr << ": [";
+    for (unsigned u=0; u<updates.size(); u++) {
+        if (u) std::cerr << ", ";
+        std::cerr << "(" << updates[u].level << ": " << updates[u].fr_val
+                  << " -> " << updates[u].to_val << ")";
+    }
+    std::cerr << "]\n";
+}
+
+// ******************************************************************
+// *                                                                *
 // *                   rsgen_model public methods                   *
+// *                                                                *
 // ******************************************************************
 
 rsgen_model::rsgen_model()
@@ -834,7 +909,9 @@ void rsgen_model::destroy_model()
 }
 
 // ******************************************************************
+// *                                                                *
 // *                 rsgen_model  protected methods                 *
+// *                                                                *
 // ******************************************************************
 
 void rsgen_model::show_section(std::ostream &out, const char* sec) const
@@ -1359,7 +1436,9 @@ void rsgen_model::read_oracle_header(MEDDLY::input &inf) const
 }
 
 // ******************************************************************
+// *                                                                *
 // *                  rsgen_model  private methods                  *
+// *                                                                *
 // ******************************************************************
 
 const char* rsgen_model::chkpt_path(unsigned iter) const

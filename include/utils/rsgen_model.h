@@ -56,13 +56,49 @@ class rsgen_model {
                 }
         };
     public:
+        struct level_delta {
+                unsigned level;
+                int fr_val;
+                int to_val;
+            public:
+                //
+                // Updates the given level using
+                // if (x == f) then x' == t
+                //
+                void set(unsigned lvl, int f, int t) {
+                    MEDDLY_DCASSERT(lvl > 0);
+                    MEDDLY_DCASSERT(f>=0);
+                    MEDDLY_DCASSERT(t>=0);
+                    level = lvl;
+                    fr_val = f;
+                    to_val = t;
+                }
+
+                void swap(level_delta &x) {
+                    unsigned k = level;
+                    level = x.level;
+                    x.level = k;
+                    int tmp = fr_val;
+                    fr_val = x.fr_val;
+                    x.fr_val = tmp;
+                    tmp = to_val;
+                    to_val = x.to_val;
+                    x.to_val = tmp;
+                }
+        };
+    public:
         class event {
                 const char* name;
+                int top_level;
             public:
                 event(const char* name=nullptr);
                 virtual ~event();
 
                 inline const char* get_name() const { return name; }
+                inline int get_top() const {
+                    MEDDLY_DCASSERT(top_level > 0);
+                    return top_level;
+                }
 
                 /**
                     Explicitly fire an event.
@@ -84,6 +120,12 @@ class rsgen_model {
                 virtual bool build_nsf(MEDDLY::dd_edge &R) = 0;
 
                 // something for implicit relations here?
+
+            protected:
+                void set_top(int tl) {
+                    MEDDLY_DCASSERT(tl > 0);
+                    top_level = tl;
+                }
         };
     public:
         class simple_event : public event {
@@ -113,6 +155,30 @@ class rsgen_model {
                                             '-' for subtract one.
                 */
                 simple_event(const char* name, const char* pmstr);
+
+                virtual bool fire(const MEDDLY::minterm &curr,
+                        MEDDLY::minterm &next);
+
+                virtual bool build_nsf(MEDDLY::dd_edge &R);
+
+            protected:
+                void show() const;
+        };
+    public:
+        class kron_event : public event {
+                std::vector <level_delta> updates;
+            public:
+                /**
+                    Create a "Kronekcer" event.
+                        @param  name    Event name; used primarily
+                                        for debugging.
+                        @param  _upd    Updates, as a list of
+                                        level_delta objects, with
+                                        all of them applied independently
+                                        at various levels.
+                */
+                kron_event(const char* name,
+                        const std::vector <level_delta> &_upd);
 
                 virtual bool fire(const MEDDLY::minterm &curr,
                         MEDDLY::minterm &next);
