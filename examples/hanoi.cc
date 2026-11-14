@@ -180,17 +180,15 @@ bool hanoi::process_arg(unsigned &i, const char** argv)
 
 void hanoi::show_usage(std::ostream &out, const char* arg0)
 {
-    if (arg0) {
-        out << "\nUsage: " << basename(arg0) << " [options] rings\n\n";
-    }
-    out << "\trings  : number of rings\n";
-    out << "\n";
-    out << "    ORDERING OPTIONS\n";
-    out << "\n";
-    out << "        -o         : Order the variables so that the smallest ring is the\n";
-    out << "                     bottom-most variable in the MDD (default).\n";
-    out << "        -O         : Order the variables so that the largest ring is the\n";
-    out << "                     bottom-most variable in the MDD.\n";
+    show_synopsis(out, arg0, "[options] rings");
+    show_model_info(out, "The classic Towers of Hanoi puzzle. There are three pegs, and a number of rings of different sizes. The rings are stacked on pegs, with the restriction that a larger ring may never be put on top of a smaller one. Initially, all rings are on one peg.");
+
+    show_section(out, "SIZE PARAMETERS");
+    show_switch(out, "rings", "number of rings");
+
+    show_section(out, "ORDERING OPTIONS");
+    show_switch(out, "-o", "Order the variables so that the smallest ring is the bottom-most variable in the MDD (default).");
+    show_switch(out, "-O", "Order the variables so that the largest ring is the bottom-most variable in the MDD.");
 
     rsgen_model::show_usage(out);
 }

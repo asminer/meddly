@@ -506,62 +506,49 @@ void rsgen_model::show_usage(std::ostream &out, const char* arg0)
     }
 
     if (allow_generation_types) {
+        show_section(out, "GENERATION TYPES");
+        show_switch(out, "-evdist", "build the distance function using EV+MDDs.");
+        show_switch(out, "-mtdist", "build the distance function using MTMDDs.");
+        show_switch(out, "-reach", "build the reachability set (default).");
         out << "\n";
-        out << "    GENERATION TYPES\n";
-        out << "\n";
-        out << "\t-evdist    : build the distance function using EV+MDDs.\n";
-        out << "\t-mtdist    : build the distance function using MTMDDs.\n";
-        out << "\t-reach     : build the reachability set (default).\n";
-        out << "\n";
-        out << "\t-fwd       : use forward generation (default).\n";
-        out << "\t-bwd       : use backward generation.\n";
+        show_switch(out, "-fwd", "use forward generation (default).");
+        show_switch(out, "-bwd", "use backward generation.");
     }
 
+    show_section(out, "GENERATION METHODS");
+    show_switch(out, "-exp", "use explicit generation (forward only)");
+    show_switch(out, "-front", "use traditional iterations, with frontier");
+    show_switch(out, "-trad", "use traditional iterations, without frontier");
+    show_switch(out, "-tradc dir", "-trad with checkpoints saved in directory dir");
+    show_switch(out, "-dfs", "use default saturation (currently, -sat1)");
+    show_switch(out, "-sat1", "Saturation v1, new implementation");
+    show_switch(out, "-sat2", "Saturation v2");
     out << "\n";
-    out << "    GENERATION METHODS\n";
-    out << "\n";
-    out << "\t-exp       : use explicit generation (forward only)\n";
-    out << "\t-front     : use traditional iterations, with frontier\n";
-    out << "\t-trad      : use traditional iterations, without frontier\n";
-    out << "\t-tradc dir : -trad with checkpoints saved in directory dir\n";
-    out << "\t-dfs       : use default saturation (currently, -sat1)\n";
-    out << "\t-sat1      : Saturation v1, new implementation\n";
-    out << "\t-sat2      : Saturation v2\n";
-    out << "\n";
-    out << "\t-eb N      : Set explicit batch size (default "
-        << expl_batch << ")\n";
-    out << "\t-vL        : Set verbosity (0..9) for traditional (default 0).\n";
-    out << "\n";
-    out << "    GARBAGE COLLECTION\n";
-    out << "\n";
-    out << "\t-ms       : mark and sweep\n";
-    out << "\t-opt      : optimistic reference counts\n";
-    out << "\t-pess     : pessimistic reference counts\n";
-    out << "\n";
+    show_switch(out, "-eb N", "Set explicit batch size (default 1024)");
+    show_switch(out, "-vL", "Set verbosity (0..9) for traditional (default 0).");
+
+    show_section(out, "GARBAGE COLLECTION");
+    show_switch(out, "-ms", "mark and sweep");
+    show_switch(out, "-opt", "optimistic reference counts");
+    show_switch(out, "-pess", "pessimistic reference counts");
     if (allow_output_files) {
-        out << "    FILE OUTPUT\n";
+        show_section(out, "FILE OUTPUT");
+        show_switch(out, "-wr file", "write the transition relation to file");
+        show_switch(out, "-ws file", "write the generated set to file");
         out << "\n";
-        out << "\t-wr file  : write the transition relation to file\n";
-        out << "\t-ws file  : write the generated set to file\n";
-        out << "\n";
-        out << "\t            Output filenames ending in .gz or .xz will be compressed.\n";
-        out << "\n";
+        show_switch(out, nullptr, "Output filenames ending in .gz or .xz will be compressed.");
     }
 #ifdef HAVE_LIBGMP
-    out << "    CARDINALITY\n";
-    out << "\n";
-    out << "\t-approx: approximate cardinalities";
+    show_section(out, "CARDINALITY");
     if (approx) {
-        out << " (default)";
+        show_switch(out, "-approx", "approximate cardinalities (default)");
+        show_switch(out, "-exact", "exact cardinalities");
+    } else {
+        show_switch(out, "-approx", "approximate cardinalities");
+        show_switch(out, "-exact", "exact cardinalities (default)");
     }
-    out << "\n";
-    out << "\t-exact : exact cardinalities";
-    if (!approx) {
-        out << " (default)";
-    }
-    out << "\n";
-    out << "\n";
 #endif
+    out << "\n";
 }
 
 // ******************************************************************
@@ -850,6 +837,84 @@ void rsgen_model::destroy_model()
 // *                 rsgen_model  protected methods                 *
 // ******************************************************************
 
+void rsgen_model::show_section(std::ostream &out, const char* sec) const
+{
+    out << "\n";
+    out << sec << "\n";
+    out << "\n";
+}
+
+void rsgen_model::show_synopsis(std::ostream &out, const char* arg0,
+        const char* usage) const
+{
+    show_section(out, "SYNOPSIS");
+    out << "    " << basename(arg0) << " " << usage << "\n";
+}
+
+void rsgen_model::show_model_info(std::ostream &out, const char* para) const
+{
+    show_section(out, "MODEL DESCRIPTION");
+    char word[40];  // overkill
+    int c = 0;
+    for (;;) {
+        para = copy_next_word(para, word, 40);
+        if (!para) break;
+        unsigned lw = strlen(word);
+        if (c + lw + 1 > 75) {
+            out << "\n";
+            c = 0;
+        }
+        if (0==c) {
+            out << "    " << word;
+            c = 4 + lw;
+        } else {
+            out << " " << word;
+            c += lw + 1;
+        }
+    }
+    if (c) out << "\n";
+}
+
+void rsgen_model::show_switch(std::ostream &out, const char* sw,
+        const char* para) const
+{
+    if (sw) {
+        char swbuf[11];
+        for (unsigned i=0; i<10; i++) {
+            if (*sw) {
+                swbuf[i] = *sw;
+                ++sw;
+            } else {
+                swbuf[i] = ' ';
+            }
+        }
+        swbuf[10] = 0;
+        out << "    " << swbuf << " : ";
+    } else {
+        out << "                 ";
+    }
+    char word[40];
+    int c = 0;
+    for (;;) {
+        para = copy_next_word(para, word, 40);
+        if (!para) break;
+        unsigned lw = strlen(word);
+        if (c + lw + 1 > 58) {
+            out << "\n                 ";
+            c = 0;
+        }
+        if (0==c) {
+            out << word;
+            c = lw;
+        } else {
+            out << " " << word;
+            c += lw + 1;
+        }
+    }
+    out << "\n";
+}
+
+//--------------------------------------------------
 
 void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
         MEDDLY::dd_edge &RS)

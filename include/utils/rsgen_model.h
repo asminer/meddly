@@ -197,6 +197,23 @@ class rsgen_model {
         virtual void destroy_model();
 
     protected:
+        /// Options helper: section name
+        void show_section(std::ostream &out, const char* secname) const;
+
+        /// Options helper: synopsis
+        void show_synopsis(std::ostream &out, const char* arg0,
+                const char* usage) const;
+
+        /// Options helper: show model information
+        void show_model_info(std::ostream &out, const char* para) const;
+
+        /// Options helper: show a switch and description
+        /// (description lines are automatically split).
+        /// switches should be 10 chars or fewer.
+        void show_switch(std::ostream &out, const char* sw, const char* desc)
+            const;
+
+
         void gen_explicit(const MEDDLY::dd_edge &init, MEDDLY::dd_edge &RS);
 
         inline void set_domain(MEDDLY::domain* d) {
@@ -234,6 +251,32 @@ class rsgen_model {
                 if ('/' == *path) b = path+1;
             }
             return b;
+        }
+        inline static const char* copy_next_word(const char* line,
+                char* w, unsigned maxw)
+        {
+            maxw--;
+            unsigned i = 0;
+            bool leading = true;
+            for (;; ++line) {
+                if (*line == 0) {
+                    w[i] = 0;
+                    break;
+                }
+                if (' ' == *line) {
+                    if (leading) continue;
+                    w[i] = 0;
+                    break;
+                }
+                leading = false;
+                w[i] = *line;
+                i++;
+                if (i >= maxw) {
+                    w[i] = 0;
+                    break;
+                }
+            }
+            return w[0] ? line : nullptr;
         }
 
         static void printStats(MEDDLY::output &out, const MEDDLY::forest* F);

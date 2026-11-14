@@ -48,14 +48,6 @@ executable(
 ######################################################################
 
 executable(
-    'hanoi_old',
-    'hanoi_old.cc',
-    dependencies: [ gmp_dep, meddly_dep ]
-)
-
-######################################################################
-
-executable(
     'kanban',
     'kanban.cc',
     dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
@@ -130,6 +122,14 @@ executable(
 executable(
     'slot',
     'slot.cc',
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
+)
+
+######################################################################
+
+executable(
+    'slot-old',
+    'slot-old.cc',
     dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
 )
 
