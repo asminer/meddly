@@ -30,22 +30,72 @@ int main(int argc, const char** argv)
     // test new kronecker events :)
     //
 
-    std::vector <rsgen_model::level_delta> update;
+    using namespace MEDDLY;
 
-    update.resize(10);
+    try {
+        MEDDLY::initialize();
 
-    update[ 0].set(3, 1, 4);
-    update[ 1].set(1, 5, 9);
-    update[ 2].set(2, 6, 5);
-    update[ 3].set(3, 5, 8);
-    update[ 4].set(9, 7, 9);
-    update[ 5].set(3, 2, 3);
-    update[ 6].set(8, 4, 6);
-    update[ 7].set(6, 4, 2);
-    update[ 8].set(3, 3, 8);
-    update[ 9].set(2, 7, 3);
+        std::vector <rsgen_model::level_delta> update;
 
-    rsgen_model::kron_event E("test", update);
+        update.resize(10);
 
-    return 0;
+        update[ 0].set(3, 1, 4);
+        update[ 1].set(1, 5, 9);
+        update[ 2].set(2, 6, 5);
+        update[ 3].set(3, 5, 8);
+        update[ 4].set(9, 7, 9);
+        update[ 5].set(3, 2, 3);
+        update[ 6].set(8, 4, 6);
+        update[ 7].set(6, 4, 2);
+        update[ 8].set(3, 3, 8);
+        update[ 9].set(2, 7, 3);
+
+        rsgen_model::kron_event E("test", update);
+
+        int* sizes = new int[10];
+        for (int i=9; i>=0; i--) sizes[i] = 9;
+        domain* D = domain::createBottomUp(sizes, 10);
+        delete[] sizes;
+
+        minterm curr(D, SET), next(D, SET);
+
+        curr.setAllVars(0);
+        curr.setVar(1, 5);
+        curr.setVar(2, 7);
+        curr.setVar(3, 5);
+        curr.setVar(6, 4);
+        curr.setVar(8, 4);
+        curr.setVar(9, 7);
+
+        ostream_output OUT(std::cout);
+        OUT << "Starting state: ";
+        curr.show(OUT);
+        OUT << "\n";
+
+        if (E.fire(curr, next)) {
+            std::cout << "Fired!\n";
+            OUT << "Reached state: ";
+            next.show(OUT);
+            OUT << "\n";
+        } else {
+            std::cout << "Not enabled\n";
+        }
+
+        MEDDLY::cleanup();
+        return 0;
+    }
+    catch (MEDDLY::error e) {
+        std::cerr   << "\nCaught meddly error '" << e.getName()
+                    << "'\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
+    }
+    catch (const char* e) {
+        std::cerr   << "\nCaught our own error: " << e << "\n";
+        return 2;
+    }
+    std::cerr << "\nSome other error?\n";
+    return 4;
+
+
 }

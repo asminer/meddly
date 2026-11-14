@@ -31,6 +31,7 @@
 // #define WRITE_MXD
 // #define WRITE_EVENTS
 // #define VALIDATE_CHECKPOINTS
+#define DEBUG_KRON_FIRE
 
 // ******************************************************************
 
@@ -237,13 +238,8 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::dd_edge &R)
     using namespace MEDDLY;
 
 #ifdef DEBUG_EVENTS
-    ostream_output out(std::cerr);
-    out << "Building nsf for event " << get_name() << " [";
-    for (unsigned u=0; u<updates.size(); u++) {
-        if (u) out << ", ";
-        out << "(" << updates[u].level << ":" << updates[u].delta << ")";
-    }
-    out << "]\n";
+    std::cerr << "Building nsf for ";
+    show();
 #endif
 
     forest* mxd = R.getForest();
@@ -283,6 +279,7 @@ bool rsgen_model::simple_event::build_nsf(MEDDLY::dd_edge &R)
     R.set(root);
 
 #ifdef DEBUG_EVENTS
+    ostream_output out(std::cerr);
     out << "Overall event:\n";
     R.show(out);
 #endif
@@ -342,8 +339,43 @@ rsgen_model::kron_event::kron_event(const char* n,
 bool rsgen_model::kron_event::fire(const MEDDLY::minterm &curr,
         MEDDLY::minterm &next)
 {
-    // TBD
-    return false;
+    for (unsigned i=next.getNumVars(); i; i--) {
+        next.setVar(i, curr.getVar(i));
+    }
+    unsigned u=0;
+    while (u < updates.size()) {
+        // process the next block of updates at the same level
+        int k = updates[u].level;
+        bool updated = false;
+#ifdef DEBUG_KRON_FIRE
+        std::cerr << "    processing level " << k << " updates\n";
+#endif
+        for ( ; u < updates.size(); u++) {
+            if (updates[u].level != k) break;
+#ifdef DEBUG_KRON_FIRE
+            std::cerr << "        from " << updates[u].fr_val << " ...";
+#endif
+            if (curr.getVar(k) == updates[u].fr_val) {
+#ifdef DEBUG_KRON_FIRE
+                std::cerr << "match!\n";
+#endif
+                next.setVar(k, updates[u].to_val);
+                updated = true;
+            }
+#ifdef DEBUG_KRON_FIRE
+            else {
+                std::cerr << "no match\n";
+            }
+#endif
+        }
+        if (!updated) {
+#ifdef DEBUG_KRON_FIRE
+            std::cerr << "    no matches, disabled event\n";
+#endif
+            return false;
+        }
+    } // while
+    return true;
 }
 
 // ******************************************************************
