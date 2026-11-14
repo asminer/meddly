@@ -32,6 +32,17 @@ class slotted : public rsgen_model {
         virtual void build_initial(MEDDLY::minterm &init);
 
     private:
+        rsgen_model::simple_event* Get(int i);
+        rsgen_model::simple_event* Put(int i);
+        rsgen_model::simple_event* Free(int i);
+        rsgen_model::simple_event* Used(int i);
+        rsgen_model::simple_event* Other(int i);
+        rsgen_model::simple_event* Owner(int i);
+        rsgen_model::simple_event* Write(int i);
+        rsgen_model::simple_event* Go(int i);
+
+    private:
+        std::vector <rsgen_model::level_axb> delta;
         int N;
 };
 
@@ -99,8 +110,16 @@ bool slotted::build_model(MEDDLY::output &out)
     //
     // Make the events
     //
-
-    // TBD
+    for (int i=0; i<N; i++) {
+        add_event(Other(i));
+        add_event(Owner(i));
+        add_event(Write(i));
+        add_event(Go(i));
+        add_event(Get(i));
+        add_event(Put(i));
+        add_event(Used(i));
+        add_event(Free(i));
+    }
 
     return true;
 }
@@ -114,6 +133,97 @@ void slotted::build_initial(MEDDLY::minterm &init)
         init.setVar(i*8+3, 1);
         init.setVar(i*8+5, 1);
     }
+}
+
+// ******************************************************************
+
+rsgen_model::simple_event* slotted::Get(int i)
+{
+    delta.resize(4);
+    delta[0].set(8*i+3, 1, +1);
+    delta[1].set(8*i+5, 1, +1);
+    delta[2].set(8*i+6, 1, -1);
+    delta[3].set(8*i+8, 1, -1);
+    return new rsgen_model::simple_event("Get", delta);
+}
+
+// ******************************************************************
+
+rsgen_model::simple_event* slotted::Put(int i)
+{
+    delta.resize(4);
+    delta[0].set(8*i+3, 1, +1);
+    delta[1].set(8*i+4, 1, -1);
+    delta[2].set(8*i+6, 1, -1);
+    delta[3].set(8*i+7, 1, +1);
+    return new rsgen_model::simple_event("Put", delta);
+}
+
+// ******************************************************************
+
+rsgen_model::simple_event* slotted::Free(int i)
+{
+    delta.resize(4);
+    delta[0].set(8*i+5, 1, -1);
+    delta[1].set(8*i+6, 1, +1);
+    int im1 = i ? (i-1) : (N-1);
+    delta[2].set(8*im1+2, 1, +1);
+    delta[3].set(8*im1+3, 1, -1);
+    return new rsgen_model::simple_event("Free", delta);
+}
+
+// ******************************************************************
+
+rsgen_model::simple_event* slotted::Used(int i)
+{
+    delta.resize(4);
+    delta[0].set(8*i+7, 1, -1);
+    delta[1].set(8*i+6, 1, +1);
+    int im1 = i ? (i-1) : (N-1);
+    delta[2].set(8*im1+3, 1, -1);
+    delta[3].set(8*im1+1, 1, +1);
+    return new rsgen_model::simple_event("Used", delta);
+}
+
+// ******************************************************************
+
+rsgen_model::simple_event* slotted::Other(int i)
+{
+    delta.resize(2);
+    delta[0].set(8*i+1, 1, -1);
+    delta[1].set(8*i+4, 1, +1);
+    return new rsgen_model::simple_event("Other", delta);
+}
+
+// ******************************************************************
+
+rsgen_model::simple_event* slotted::Owner(int i)
+{
+    delta.resize(2);
+    delta[0].set(8*i+1, 1, -1);
+    delta[1].set(8*i+2, 1, +1);
+    return new rsgen_model::simple_event("Owner", delta);
+}
+
+// ******************************************************************
+
+rsgen_model::simple_event* slotted::Write(int i)
+{
+    delta.resize(2);
+    delta[0].set(8*i+2, 1, -1);
+    delta[1].set(8*i+4, 1, +1);
+    return new rsgen_model::simple_event("Write", delta);
+}
+
+
+// ******************************************************************
+
+rsgen_model::simple_event* slotted::Go(int i)
+{
+    delta.resize(2);
+    delta[0].set(8*i+2, 1, -1);
+    delta[1].set(8*i+8, 1, +1);
+    return new rsgen_model::simple_event("Go", delta);
 }
 
 // ******************************************************************
