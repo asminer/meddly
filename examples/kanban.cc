@@ -93,7 +93,7 @@ void kanban::show_usage(std::ostream &out, const char* arg0)
     out << "\n";
 
     show_section(out, "SIZE PARAMETERS");
-    show_switch(out, "N", "number of parts");
+    show_switch(out, "N", "number of parts (initial tokens in certain places)");
 
     rsgen_model::show_usage(out);
 }

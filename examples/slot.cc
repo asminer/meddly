@@ -62,10 +62,13 @@ bool slotted::process_arg(unsigned &i, const char** argv)
 
 void slotted::show_usage(std::ostream &out, const char* arg0)
 {
-    if (arg0) {
-        out << "\nUsage: " << basename(arg0) << " [options] size\n\n";
-    }
-    out << "\tsize   : number of network nodes\n";
+    show_synopsis(out, arg0, "[options] N");
+
+    show_model_info(out, "(Safe) Petri net model of a slotted ring network protocol. See E. Pastor, O. Roig, J. Cortadella, and R. Badia, \"Petri net analysis using boolean manipulation\", 1994.");
+
+
+    show_section(out, "SIZE PARAMETERS");
+    show_switch(out, "N", "Number of network nodes. The overall Petri net has 8N places and 8N transitions.");
 
     rsgen_model::show_usage(out);
 }
