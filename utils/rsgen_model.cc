@@ -22,7 +22,7 @@
 
 #include <iomanip>
 
-#define DEBUG_UPDATE_SORT
+// #define DEBUG_UPDATE_SORT
 // #define DEBUG_UPDATE_STRING
 // #define DEBUG_EVENTS
 // #define DEBUG_EVENT_BUILD
@@ -31,7 +31,7 @@
 // #define WRITE_MXD
 // #define WRITE_EVENTS
 // #define VALIDATE_CHECKPOINTS
-#define DEBUG_KRON_FIRE
+// #define DEBUG_KRON_FIRE
 
 // ******************************************************************
 
@@ -345,7 +345,7 @@ bool rsgen_model::kron_event::fire(const MEDDLY::minterm &curr,
     unsigned u=0;
     while (u < updates.size()) {
         // process the next block of updates at the same level
-        int k = updates[u].level;
+        unsigned k = updates[u].level;
         bool updated = false;
 #ifdef DEBUG_KRON_FIRE
         std::cerr << "    processing level " << k << " updates\n";
@@ -384,8 +384,64 @@ bool rsgen_model::kron_event::build_nsf(MEDDLY::dd_edge &R)
 {
     using namespace MEDDLY;
 
-    // TBD
-    return false;
+#ifdef DEBUG_EVENTS
+    std::cerr << "Building nsf for ";
+    show();
+#endif
+
+    forest* mxd = R.getForest();
+
+    node_handle root = mxd->handleForValue(true);
+    unpacked_node* Uun;
+    unpacked_node* Upr;
+    edge_value ev;
+    node_handle p;
+    const bool IR = mxd->isIdentityReduced();
+    int K = 0;
+
+    unsigned u=0;
+    while (u < updates.size()) {
+        unsigned ul = updates[u].level;
+        int L = int(ul);
+        root = mxd->makeIdentitiesTo(root, K, L-1, ~0);
+        Uun = unpacked_node::newWritable(mxd, L, FULL_ONLY);
+        for (unsigned i=0; i<Uun->getSize(); i++) {
+            Uun->setFull(i, 0);
+        }
+        // deal with all updates at this level
+        for ( ; u < updates.size(); u++) {
+            if (updates[u].level != ul) break;
+            const int i = updates[u].fr_val;
+            const int j = updates[u].to_val;
+            if (IR && (i==j)) {
+                // identity
+                Uun->setFull(i, mxd->linkNode(root));
+            } else {
+                // build singleton
+                Upr = unpacked_node::newWritable(mxd, -L, 1, SPARSE_ONLY);
+                Upr->setSparse(0, j, mxd->linkNode(root));
+                mxd->createReducedNode(Upr, ev, p);
+                MEDDLY_DCASSERT(ev.isVoid());
+                Uun->setFull(i, p);
+            }
+        } // for
+        mxd->createReducedNode(Uun, ev, p);
+        MEDDLY_DCASSERT(ev.isVoid());
+        mxd->unlinkNode(root);
+        root = p;
+        K = L;
+    } // while
+    root = mxd->makeIdentitiesTo(root, K, mxd->getNumVariables(), ~0);
+    R.set(root);
+
+#ifdef DEBUG_EVENTS
+    ostream_output out(std::cerr);
+    out << "Overall event:\n";
+    R.showGraph(out);
+    out << "\n";
+#endif
+
+    return true;
 }
 
 // ******************************************************************
