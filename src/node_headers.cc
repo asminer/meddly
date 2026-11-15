@@ -36,6 +36,8 @@
 // #define DEBUG_SWEEP_DETAIL
 // #define DEBUG_SWEEP_DETAIL_CT
 
+// #define RESERVE_HANDLES 100000
+
 // ******************************************************************
 // *                                                                *
 // *                        Helper functions                        *
@@ -182,6 +184,10 @@ MEDDLY::node_headers::node_headers(forest &P, memstats &ms, statset &ss)
     a_lowest_index = 8;
     a_sweep = SIZE_MAX;
     h_bits = 0;
+
+#ifdef RESERVE_HANDLES
+    a_last = RESERVE_HANDLES;
+#endif
 
 }
 
