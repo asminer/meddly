@@ -282,8 +282,8 @@ class rsgen_model {
         void show_synopsis(std::ostream &out, const char* arg0,
                 const char* usage) const;
 
-        /// Options helper: show model information
-        void show_model_info(std::ostream &out, const char* para) const;
+        /// Options helper: show program description
+        void show_description(std::ostream &out, const char* sec, const char* para) const;
 
         /// Options helper: show a switch and description
         /// (description lines are automatically split).

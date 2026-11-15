@@ -304,7 +304,7 @@ void swapmodel::show_usage(std::ostream &out, const char* arg0)
 {
     show_synopsis(out, arg0, "[options] N");
 
-    show_model_info(out, "An array of N unique integers, with operations to swap adjacent integers. Initially, the integers are in order.");
+    show_description(out, "MODEL DESCRIPTION", "An array of N unique integers, with operations to swap adjacent integers. Initially, the integers are in order.");
 
     show_section(out, "SIZE PARAMETERS");
     show_switch(out, "N", "number of array slots and unique numbers");

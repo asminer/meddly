@@ -7,11 +7,10 @@ rsgen_model:
         - kan_io
         - kan_relprod
 
-    * migrate other models in examples/ to use rsgen_model
-        - slot
-        - dining philosophers
-
-    * make other model_gen tests?
+    * Other examples using rsgen_model?
+        - knight's tour
+        - nqueens
+        - rubiks 2x2
 
 
 large integer node handle debugging:

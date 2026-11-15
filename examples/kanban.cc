@@ -77,7 +77,7 @@ void kanban::show_usage(std::ostream &out, const char* arg0)
 {
     show_synopsis(out, arg0, "[options] N");
 
-    show_model_info(out, "Petri net model of a small Kanban manufacturing system,");
+    show_description(out, "MODEL DESCRIPTION", "Petri net model of a small Kanban manufacturing system,");
     out << "\n";
     out << "                                v------------[] \n";
     out << "                          []-->(_)->[]->(_)->[] \n";

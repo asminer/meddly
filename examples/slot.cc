@@ -75,7 +75,7 @@ void slotted::show_usage(std::ostream &out, const char* arg0)
 {
     show_synopsis(out, arg0, "[options] N");
 
-    show_model_info(out, "(Safe) Petri net model of a slotted ring network protocol. See E. Pastor, O. Roig, J. Cortadella, and R. Badia, \"Petri net analysis using boolean manipulation\", 1994.");
+    show_description(out, "MODEL DESCRIPTION", "(Safe) Petri net model of a slotted ring network protocol. See E. Pastor, O. Roig, J. Cortadella, and R. Badia, \"Petri net analysis using boolean manipulation\", 1994.");
 
 
     show_section(out, "SIZE PARAMETERS");

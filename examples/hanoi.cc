@@ -181,7 +181,7 @@ bool hanoi::process_arg(unsigned &i, const char** argv)
 void hanoi::show_usage(std::ostream &out, const char* arg0)
 {
     show_synopsis(out, arg0, "[options] rings");
-    show_model_info(out, "The classic Towers of Hanoi puzzle. There are three pegs, and a number of rings of different sizes. The rings are stacked on pegs, with the restriction that a larger ring may never be put on top of a smaller one. Initially, all rings are on one peg.");
+    show_description(out, "MODEL DESCRIPTION", "The classic Towers of Hanoi puzzle. There are three pegs, and a number of rings of different sizes. The rings are stacked on pegs, with the restriction that a larger ring may never be put on top of a smaller one. Initially, all rings are on one peg.");
 
     show_section(out, "SIZE PARAMETERS");
     show_switch(out, "rings", "number of rings");

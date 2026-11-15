@@ -180,14 +180,12 @@ bool hanoi::process_arg(unsigned &i, const char** argv)
 
 void hanoi::show_usage(std::ostream &out, const char* arg0)
 {
-    if (arg0) {
-        out << "\nUsage: " << basename(arg0) << " [options]\n";
-    }
-    out << "\n";
-    out << "    MAIN OPTIONS\n";
-    out << "\n";
-    out << "        -c         : Check answer against an oracle (default).\n";
-    out << "        -g         : Generate an oracle.\n";
+    show_synopsis(out, arg0, "[options]");
+    show_description(out, "TEST DESCRIPTION", "Generate reachable states for small instances of Tower of Hanoi, enumerate them and compare against an oracle.");
+
+    show_section(out, "MAIN OPTIONS");
+    show_switch(out, "-c", "Check answer against an oracle (default).");
+    show_switch(out, "-g", "Generate an oracle.");
 
     rsgen_model::show_usage(out);
 }

@@ -663,9 +663,7 @@ bool rsgen_model::process_arg(unsigned &i, const char** argv)
 
 void rsgen_model::show_usage(std::ostream &out, const char* arg0)
 {
-    if (arg0) {
-        out << "\nUsage: " << basename(arg0) << " [options]\n";
-    }
+    show_synopsis(out, arg0, "[options]");
 
     if (allow_generation_types) {
         show_section(out, "GENERATION TYPES");
@@ -1004,13 +1002,16 @@ void rsgen_model::show_section(std::ostream &out, const char* sec) const
 void rsgen_model::show_synopsis(std::ostream &out, const char* arg0,
         const char* usage) const
 {
-    show_section(out, "SYNOPSIS");
-    out << "    " << basename(arg0) << " " << usage << "\n";
+    if (arg0) {
+        show_section(out, "SYNOPSIS");
+        out << "    " << basename(arg0) << " " << usage << "\n";
+    }
 }
 
-void rsgen_model::show_model_info(std::ostream &out, const char* para) const
+void rsgen_model::show_description(std::ostream &out, const char* sec,
+        const char* para) const
 {
-    show_section(out, "MODEL DESCRIPTION");
+    show_section(out, sec);
     char word[40];  // overkill
     int c = 0;
     for (;;) {

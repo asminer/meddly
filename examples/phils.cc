@@ -103,7 +103,7 @@ void phils::show_usage(std::ostream &out, const char* arg0)
 {
     show_synopsis(out, arg0, "[options] N");
 
-    show_model_info(out, "Dining philosophers model.");
+    show_description(out, "MODEL DESCRIPTION", "Classic dining philosophers model. Each philosopher may be in one of five states: Thinking, Hungry with no forks, Hungry with their left fork, Hungry with their right fork, and Eating.");
 
     show_section(out, "SIZE PARAMETERS");
     show_switch(out, "N", "Number of philosophers.");

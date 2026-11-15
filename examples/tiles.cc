@@ -263,7 +263,7 @@ void tilemodel::show_usage(std::ostream &out, const char* arg0)
 {
     show_synopsis(out, arg0, "[options] RxC");
 
-    show_model_info(out, "Sliding tile puzzle. We have a RxC grid of numbered tiles with one empty space, and we can slide tiles into the empty space. Initially, the tiles are in order, and the empty slot is at the bottom right corner. For a 3x4 grid:");
+    show_description(out, "MODEL DESCRIPTION", "Sliding tile puzzle. We have a RxC grid of numbered tiles with one empty space, and we can slide tiles into the empty space. Initially, the tiles are in order, and the empty slot is at the bottom right corner. For a 3x4 grid:");
     out << "\n";
     out << "        +----+----+----+----+\n";
     out << "        |    |    |    |    |\n";
