@@ -28,7 +28,6 @@
 // #define DEBUG_EVENT_BUILD
 // #define DEBUG_GENERATE
 // #define SHOW_MXD_FOREST
-// #define WRITE_MXD
 // #define WRITE_EVENTS
 // #define VALIDATE_CHECKPOINTS
 // #define DEBUG_KRON_FIRE
@@ -947,32 +946,25 @@ void rsgen_model::generate(MEDDLY::output &out, bool mxdstats, bool mddstats)
 
 void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
 {
-#ifdef WRITE_MXD
-    MEDDLY::FILE_output myout(fopen("mxd.txt", "w"));
-    D->write(myout);
-    MEDDLY::mdd_writer mywriter(myout, Fmxd);
+#ifdef SHOW_MXD_FOREST
+    MEDDLY::ostream_output out(std::cerr);
 #endif
     Fmxd->createConstant(false, R);
     MEDDLY::dd_edge Re(Fmxd);
     for (unsigned e=0; e<events.size(); e++) {
         if (events[e]) {
             events[e]->build_nsf(Re);
-            R += Re;
-#ifdef WRITE_EVENTS
-            mywriter.writeRootEdge(Re);
+#ifdef SHOW_MXD_FOREST
+            out << "Event #" << e << ": " << Re << "\n";
 #endif
+            R += Re;
         }
     }
     Re.set(0);
-#ifdef WRITE_MXD
-    mywriter.writeRootEdge(R);
-    mywriter.finish();
-#endif
 #ifdef SHOW_MXD_FOREST
-    MEDDLY::ostream_output out(std::cerr);
     out << "Monolithic relation: " << R << "\n";
     out << "Complete forest:\n";
-    Fmxd->dump(out, MEDDLY::SHOW_DETAILS);
+    Fmxd->dump(out, ~0);
 #endif
     R.setLabel("nsf-monolithic");
 }
