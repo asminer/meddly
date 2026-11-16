@@ -33,6 +33,7 @@
 #include "meddly/operators.h"
 
 // #define DEBUG_FORLISTS
+// #define DEBUG_TILES
 
 // ******************************************************************
 // *                     unpacked_lists  struct                     *
@@ -482,11 +483,11 @@ void MEDDLY::unpacked_node::write(output &s, const std::vector <size_t> &map)
         const node_handle d = down(z);
         if (d <= 0) {
             // terminal
-            /*
+#ifdef DEBUG_TILES
             if (d<-1) {
                 std::cerr << "Error d is " << d << std::endl;
             }
-            */
+#endif
             terminal t(parent->getTerminalType(), d);
             t.write(s);
         } else {
@@ -567,6 +568,11 @@ void MEDDLY::unpacked_node::read(input &s, const std::vector<node_handle> &map)
             terminal t;
             t.read(s);
             _down[z] = t.getHandle();
+#ifdef DEBUG_TILES
+            if (_down[z] < -1) {
+                std::cerr << "Error d is " << _down[z] << std::endl;
+            }
+#endif
         }
     }
 
