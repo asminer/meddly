@@ -29,7 +29,7 @@
 // #define DEBUG_GENERATE
 // #define SHOW_MXD_FOREST
 // #define WRITE_EVENTS
-// #define VALIDATE_CHECKPOINTS
+#define VALIDATE_CHECKPOINTS
 // #define DEBUG_KRON_FIRE
 
 // ******************************************************************
@@ -1365,6 +1365,10 @@ void rsgen_model::trad_with_checkpoints(const MEDDLY::dd_edge &relation,
         std::cout << "No checkpoints found\n";
         apply(COPY, initial, reachable);
         write_checkpoint(0, reachable);
+#ifdef VALIDATE_CHECKPOINTS
+        validate_checkpoint(0, reachable);
+#endif
+
     } else {
         --next;
         std::cout << "Restoring from checkpoint " << chkpt_path(next) << "\n";

@@ -27,7 +27,8 @@
 #include <string>
 
 // #define DEBUG_READ
-#define USE_NEW_WRITE
+#define DEBUG_READ_DD
+#define DEBUG_WRITE_DD
 
 // ******************************************************************
 // *                                                                *
@@ -261,8 +262,6 @@ MEDDLY::mdd_writer::~mdd_writer()
     finish();
 }
 
-#ifdef USE_NEW_WRITE
-
 void MEDDLY::mdd_writer::finish()
 {
     if (finished) return;
@@ -288,14 +287,23 @@ void MEDDLY::mdd_writer::finish()
     const size_t num_nodes = M.countMarked();
     out << block << " " << num_nodes << "\n";
     out.flush();
+#ifdef DEBUG_WRITE_DD
+    std::cerr << "\n\t\tWriting " << num_nodes << " nodes in " << block << " forest\n";
+#endif
     style WS(For, M);
     M.showByLevelsBottomUp(out, &WS);
     MEDDLY_DCASSERT(num_nodes == WS.numWritten());
     out << revblock << "\n";
+#ifdef DEBUG_WRITE_DD
+    std::cerr << "\t\tDone writing nodes\n";
+#endif
 
     //
     // Write the actual edge pointers
     //
+#ifdef DEBUG_WRITE_DD
+    std::cerr << "\t\tWriting " << roots.size() << " pointers\n";
+#endif
     out << "ptrs " << roots.size() << "\n";
     for (unsigned i=0; i<roots.size(); i++) {
         out.put('\t');
@@ -304,105 +312,10 @@ void MEDDLY::mdd_writer::finish()
     }
     out << "srtp\n";
     out.flush();
-}
-
-// ======================================================================
-#else
-// ======================================================================
-
-void MEDDLY::mdd_writer::finish()
-{
-    if (finished) return;
-    finished = true;
-
-    //
-    // Mark all reachable nodes
-    //
-    node_marker M(For);
-    for (unsigned i=0; i<roots.size(); i++) {
-        M.mark(roots[i].getNode());
-    }
-
-    //
-    // Build list of nodes to write, in bottom-up order.
-    // When finished, output2handle[i] gives the handle
-    // of the ith node to write.
-    //
-    std::vector <node_handle> output2handle;
-    for (int k=1; k <= (int) For->getNumVariables(); k++) {
-        if (For->isForRelations()) {
-            M.getNodesAtLevel(-k, output2handle);
-        }
-
-        M.getNodesAtLevel(k, output2handle);
-    } // for k
-    const size_t num_nodes = output2handle.size();
-
-    //
-    // Build the inverse list.
-    // When finished, handle2output[h] gives 0 if the node with handle h
-    // will not be written; otherwise it gives the order it appears in
-    // the output file.
-    //
-    node_handle maxnode = 0;
-    for (size_t i=0; i<output2handle.size(); i++) {
-        UPDATEMAX(maxnode, output2handle[i]);
-    }
-    std::vector <size_t> handle2output (1+maxnode);
-    for (size_t i=0; i<output2handle.size(); i++) {
-        MEDDLY_CHECK_RANGE(1, output2handle[i], maxnode+1);
-        handle2output[output2handle[i]] = i+1;
-    }
-
-#ifdef DEBUG_WRITE
-    std::cerr << "Got list of nodes:\n";
-    for (size_t i=0; output2handle[i]; i++) {
-        if (i) std::cerr << ", ";
-        std::cerr << output2handle[i];
-    }
-    std::cerr << "\n";
-    std::cerr << "Got inverse list:\n";
-    for (node_handle i=0; i<=maxnode; i++) {
-        if (i) std::cerr << ", ";
-        std::cerr << handle2output[i];
-    }
-    std::cerr << "\n";
+#ifdef DEBUG_WRITE_DD
+    std::cerr << "\t\tDone writing pointers\n";
 #endif
-
-    //
-    // Generate code char sequence
-    //
-    char block[CODELEN], revblock[CODELEN];
-    buildCodeChars(For, block, revblock);
-
-    //
-    // Write the nodes
-    //
-    out << block << " " << num_nodes << "\n";
-    unpacked_node* un = unpacked_node::New(For, FULL_OR_SPARSE);
-    for (size_t i=0; i<output2handle.size(); i++) {
-        out << For->getNodeLevel(output2handle[i]) << " ";
-        un->initFromNode(output2handle[i]);
-        // For->unpackNode(un, output2handle[i], FULL_OR_SPARSE);
-        un->write(out, handle2output);
-    }
-    unpacked_node::Recycle(un);
-    out << revblock << "\n";
-
-    //
-    // Write the actual edge pointers
-    //
-    out << "ptrs " << roots.size() << "\n";
-    for (unsigned i=0; i<roots.size(); i++) {
-        out.put('\t');
-        roots[i].write(out, handle2output);
-        out.put('\n');
-    }
-    out << "srtp\n";
-    out.flush();
 }
-
-#endif
 
 // ******************************************************************
 // *                                                                *
@@ -517,7 +430,7 @@ void MEDDLY::mdd_reader::readAfterForest(input &s, output* prog)
         s.stripWS();
         file_nodes = size_t(s.get_integer());
 #ifdef DEBUG_READ_DD
-        std::cerr << "Reading " << file_nodes << " nodes in " << block << " forest\n";
+        std::cerr << "\n\t\tReading " << file_nodes << " nodes in " << block << " forest\n";
 #endif
 #ifdef DEBUG_READ
         std::cerr << "Reading " << file_nodes << " nodes in forest " << block << "\n";
@@ -585,6 +498,9 @@ void MEDDLY::mdd_reader::readAfterForest(input &s, output* prog)
 #endif
 
         } // for node_index
+#ifdef DEBUG_READ_DD
+        std::cerr << "\t\tDone reading nodes\n";
+#endif
 
 #ifdef DEBUG_READ
         std::cerr << "Done reading, expecting " << revblock << " keyword\n";
@@ -597,9 +513,6 @@ void MEDDLY::mdd_reader::readAfterForest(input &s, output* prog)
         s.consumeKeyword(revblock);
 #ifdef DEBUG_READ
         std::cerr << "  got " << revblock << "\n";
-#endif
-#ifdef DEBUG_READ_DD
-        std::cerr << "Finished " << block << " forest\n";
 #endif
         if (prog) {
             (*prog) << "Finished " << block << " forest\n";
@@ -620,7 +533,7 @@ void MEDDLY::mdd_reader::readAfterForest(input &s, output* prog)
         std::cerr << "Reading " << num_ptrs << " pointers\n";
 #endif
 #ifdef DEBUG_READ_DD
-        std::cerr << "Reading " << num_ptrs << " pointers\n";
+        std::cerr << "\t\tReading " << num_ptrs << " pointers\n";
 #endif
         if (prog) {
             (*prog) << "Reading " << num_ptrs << " pointers\n";
@@ -635,7 +548,7 @@ void MEDDLY::mdd_reader::readAfterForest(input &s, output* prog)
         s.consumeKeyword("srtp");
 
 #ifdef DEBUG_READ_DD
-        std::cerr << "Done reading pointers\n";
+        std::cerr << "\t\tDone reading pointers\n";
 #endif
         if (prog) {
             (*prog) << "Done reading pointers\n";

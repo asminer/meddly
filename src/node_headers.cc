@@ -36,7 +36,7 @@
 // #define DEBUG_SWEEP_DETAIL
 // #define DEBUG_SWEEP_DETAIL_CT
 
-// #define RESERVE_HANDLES 4567890123
+// #define RESERVE_HANDLES 2147483000
 
 // ******************************************************************
 // *                                                                *
