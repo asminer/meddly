@@ -1597,6 +1597,7 @@ void rsgen_model::read_checkpoint(unsigned iter, MEDDLY::dd_edge &e) const
     e = myreader.getRoot(0);
     if (verb>2) {
         std::cerr << " done\n";
+        std::cerr << "\t\troot pointer to " << e.getNodeCount() << " nodes\n";
     }
 }
 
