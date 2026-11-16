@@ -263,9 +263,14 @@ void hanoi::after_generation(MEDDLY::output &out,
     if (N>9) {
         throw "N is too large for an oracle";
     }
-    char fname[32];
-    snprintf(fname, sizeof(fname), "oracle_hanoi_%c_d_%d.txt",
-            is_forward() ? 'f' : 'b', N);
+    std::string fname = "oracle_hanoi_";
+    if (is_forward()) {
+        fname += "f_d_";
+    } else {
+        fname += "b_d_";
+    }
+    fname += '0' + N;
+    fname += ".txt";
 
     if (generate_oracle) {
         if ('+' != get_set_type()) {
@@ -285,9 +290,7 @@ void hanoi::after_generation(MEDDLY::output &out,
         return;
     }
 
-    char pname[48];
-    strlcpy(pname, "../oracles/", sizeof(pname));
-    strlcat(pname, fname, sizeof(pname));
+    std::string pname = "../oracles/" + fname;
 
     out << "Reading oracle file " << pname << "\n";
     std::ifstream inf(pname);
