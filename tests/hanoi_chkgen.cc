@@ -264,11 +264,8 @@ void hanoi::after_generation(MEDDLY::output &out,
         throw "N is too large for an oracle";
     }
     char fname[32];
-    strlcpy(fname, "oracle_hanoi_x_d_N.txt", sizeof(fname));
-    // replace x
-    fname[13] = is_forward() ? 'f' : 'b';
-    // replace N
-    fname[17] = '0' + N;
+    snprintf(fname, sizeof(fname), "oracle_hanoi_%c_d_%d.txt",
+            is_forward() ? 'f' : 'b', N);
 
     if (generate_oracle) {
         if ('+' != get_set_type()) {

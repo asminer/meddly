@@ -99,11 +99,8 @@ void kanban::after_generation(MEDDLY::output &out,
         throw "N is too large for an oracle";
     }
     char fname[32];
-    strlcpy(fname, "oracle_kanban_x_d_N.txt", sizeof(fname));
-    // replace x
-    fname[14] = is_forward() ? 'f' : 'b';
-    // replace N
-    fname[18] = '0' + N;
+    snprintf(fname, sizeof(fname), "oracle_kanban_%c_d_%d.txt",
+            is_forward() ? 'f' : 'b', N);
 
     if (generate_oracle) {
         if ('+' != get_set_type()) {
