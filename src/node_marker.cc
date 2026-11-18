@@ -25,12 +25,12 @@
 
 // ******************************************************************
 // *                                                                *
-// *               node_marker::writing_style methods               *
+// *                 node_marker::io_style  methods                 *
 // *                                                                *
 // ******************************************************************
 
-MEDDLY::node_marker::writing_style::
-    writing_style(const forest* F, node_storage_flags fs)
+MEDDLY::node_marker::io_style::
+    io_style(const forest* F, node_storage_flags fs)
     :   level_width(digits(F->getNumVariables())),
         node_width(digits(F->getCurrentNumNodes()))
 {
@@ -38,12 +38,12 @@ MEDDLY::node_marker::writing_style::
     U = unpacked_node::New(F, fs);
 }
 
-MEDDLY::node_marker::writing_style::~writing_style()
+MEDDLY::node_marker::io_style::~io_style()
 {
     unpacked_node::Recycle(U);
 }
 
-void MEDDLY::node_marker::writing_style::begin_level(output &s, int k)
+void MEDDLY::node_marker::io_style::write_begin_level(output &s, int k)
 {
     //
     // Show level name
@@ -62,7 +62,7 @@ void MEDDLY::node_marker::writing_style::begin_level(output &s, int k)
     }
 }
 
-void MEDDLY::node_marker::writing_style::show_node(output &s, node_handle p)
+void MEDDLY::node_marker::io_style::write_node(output &s, node_handle p)
 {
     //
     // Show the node
@@ -77,10 +77,26 @@ void MEDDLY::node_marker::writing_style::show_node(output &s, node_handle p)
     s.put('\n');
 }
 
-void MEDDLY::node_marker::writing_style::end_level(output &, int)
+void MEDDLY::node_marker::io_style::write_end_level(output &, int)
 {
     // s << "\n";
 }
+
+void MEDDLY::node_marker::io_style::verify_begin_level(input &, int)
+{
+    // default is do nothing
+}
+
+void MEDDLY::node_marker::io_style::verify_node(input &, node_handle)
+{
+    // default is do nothing
+}
+
+void MEDDLY::node_marker::io_style::verify_end_level(input &, int)
+{
+    // default is do nothing
+}
+
 
 // ******************************************************************
 // *                                                                *
@@ -154,13 +170,13 @@ size_t MEDDLY::node_marker::countNonzeroEdges() const
     return ec;
 }
 
-void MEDDLY::node_marker::showByLevelsTopDown(output &s, writing_style *st)
+void MEDDLY::node_marker::showByLevelsTopDown(output &s, io_style *st)
     const
 {
     const bool use_default = !st;
     if (use_default) {
         MEDDLY_DCASSERT(nullptr == st);
-        st = new writing_style(getParent(), FULL_OR_SPARSE);
+        st = new io_style(getParent(), FULL_OR_SPARSE);
     }
 
     //
@@ -169,13 +185,13 @@ void MEDDLY::node_marker::showByLevelsTopDown(output &s, writing_style *st)
     for (int k=int(For->getNumVariables()); k; k = MXD_levels::downLevel(k)) {
         if (k<0 && !For->isForRelations()) continue;
         size_t p=0;
-        st->begin_level(s, k);
+        st->write_begin_level(s, k);
         while( (p=marked.firstOne(p+1)) < marked.getSize() )
         {
             if (For->getNodeLevel(p) != k) continue;
-            st->show_node(s, p);
+            st->write_node(s, p);
         } // for p
-        st->end_level(s, k);
+        st->write_end_level(s, k);
     } // for k
 
     // cleanup
@@ -184,13 +200,13 @@ void MEDDLY::node_marker::showByLevelsTopDown(output &s, writing_style *st)
     }
 }
 
-void MEDDLY::node_marker::showByLevelsBottomUp(output &s, writing_style *st)
+void MEDDLY::node_marker::showByLevelsBottomUp(output &s, io_style *st)
     const
 {
     const bool use_default = !st;
     if (use_default) {
         MEDDLY_DCASSERT(nullptr == st);
-        st = new writing_style(getParent(), FULL_OR_SPARSE);
+        st = new io_style(getParent(), FULL_OR_SPARSE);
     }
 
     //
@@ -202,13 +218,13 @@ void MEDDLY::node_marker::showByLevelsBottomUp(output &s, writing_style *st)
     {
         if (k<0 && !For->isForRelations()) continue;
         size_t p=0;
-        st->begin_level(s, k);
+        st->write_begin_level(s, k);
         while( (p=marked.firstOne(p+1)) < marked.getSize() )
         {
             if (For->getNodeLevel(p) != k) continue;
-            st->show_node(s, p);
+            st->write_node(s, p);
         } // for p
-        st->end_level(s, k);
+        st->write_end_level(s, k);
     } // for k
 
     // cleanup
@@ -216,6 +232,40 @@ void MEDDLY::node_marker::showByLevelsBottomUp(output &s, writing_style *st)
         delete st;
     }
 }
+
+void MEDDLY::node_marker::verifyByLevelsBottomUp(input &s, io_style *st)
+    const
+{
+    const bool use_default = !st;
+    if (use_default) {
+        MEDDLY_DCASSERT(nullptr == st);
+        st = new io_style(getParent(), FULL_OR_SPARSE);
+    }
+
+    //
+    // visit levels from top down
+    //
+    for (int k=-1;
+            unsigned(ABS(k)) <= For->getNumVariables();
+            k = MXD_levels::upLevel(k))
+    {
+        if (k<0 && !For->isForRelations()) continue;
+        size_t p=0;
+        st->verify_begin_level(s, k);
+        while( (p=marked.firstOne(p+1)) < marked.getSize() )
+        {
+            if (For->getNodeLevel(p) != k) continue;
+            st->verify_node(s, p);
+        } // for p
+        st->verify_end_level(s, k);
+    } // for k
+
+    // cleanup
+    if (use_default) {
+        delete st;
+    }
+}
+
 
 void MEDDLY::node_marker::showAsMatrixTopDown(output &s) const
 {

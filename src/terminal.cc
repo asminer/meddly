@@ -133,6 +133,110 @@ void MEDDLY::terminal::write(output &s) const
     s.put(' ');
 }
 
+void MEDDLY::terminal::verify(input &s) const
+{
+    s.stripWS();
+    int t = s.get_char();
+    if (EOF == t) {
+        throw error(error::INVALID_FILE, __FILE__, __LINE__);
+    }
+    node_handle fomega;
+    int fbool;
+    long finteger;
+    float freal;
+
+    switch (mytype) {
+        case terminal_type::OMEGA:
+            if (t != 'w') {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in terminal\n";
+                std::cerr << "\texpected  type 'w'\n";
+                std::cerr << "\tfile says type '" << char(t) << "'\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            fomega = s.get_integer();
+            if (fomega != t_omega) {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in terminal\n";
+                std::cerr << "\texpected  omega: " << t_omega << "\n";
+                std::cerr << "\tfile says omega: " << fomega << "\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            break;
+
+        case terminal_type::BOOLEAN:
+            if (t != 'b') {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in terminal\n";
+                std::cerr << "\texpected  type 'b'\n";
+                std::cerr << "\tfile says type '" << char(t) << "'\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            s.stripWS();
+            fbool = s.get_char();
+            if (EOF == fbool) {
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            if (t_boolean != ('T' == fbool)) {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in terminal\n";
+                std::cerr << "\texpected  bool: " << (t_boolean ? 'T' : 'F') << "\n";
+                std::cerr << "\tfile says bool: " << char(fbool) << "\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            break;
+
+        case terminal_type::INTEGER:
+            if (t != 'i') {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in terminal\n";
+                std::cerr << "\texpected  type 'i'\n";
+                std::cerr << "\tfile says type '" << char(t) << "'\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            finteger = s.get_integer();
+            if (t_integer != finteger) {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in terminal\n";
+                std::cerr << "\texpected  integer: " << t_integer << "\n";
+                std::cerr << "\tfile says integer: " << finteger << "\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            break;
+
+        case terminal_type::REAL:
+            if (t != 'r') {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in terminal\n";
+                std::cerr << "\texpected  type 'r'\n";
+                std::cerr << "\tfile says type '" << char(t) << "'\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            freal = s.get_real();
+            // probably need to do within epsilon comparison
+            if (t_real != freal) {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in terminal\n";
+                std::cerr << "\texpected  real: " << t_real << "\n";
+                std::cerr << "\tfile says real: " << freal << "\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            break;
+
+        default:
+            FAIL(__FILE__, __LINE__, "Unknown terminal type");
+    }
+}
+
+
 void MEDDLY::terminal::show(output &s) const
 {
     switch (mytype) {

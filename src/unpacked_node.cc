@@ -516,6 +516,101 @@ void MEDDLY::unpacked_node::write(output &s, const std::vector <size_t> &map)
 }
 
 
+void MEDDLY::unpacked_node::verify(input &s, size_t nno,
+        const std::vector <size_t> &map) const
+{
+    MEDDLY_DCASSERT(parent);
+
+    long szx = 0;
+    if (isSparse()) {
+        szx = -long(getSize());
+    } else {
+        szx = long(getSize());
+    }
+    const long szf = s.get_integer();
+    if (szf != szx) {
+#ifdef VERBOSE_VERIFY_FAIL
+        std::cerr << "\nVerify error in node# " << nno << "\n";
+        std::cerr << "\texpected  size " << szx << "\n";
+        std::cerr << "\tfile says size " << szf << "\n";
+#endif
+        throw error(error::INVALID_FILE, __FILE__, __LINE__);
+    }
+
+    //
+    // write indexes (sparse only)
+    //
+    if (isSparse()) {
+        for (unsigned z=0; z<getSize(); z++) {
+            const unsigned long fndx = s.get_unsigned();
+            if (fndx != (unsigned long) index(z)) {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in node# " << nno << " index# " << z << "\n";
+                std::cerr << "\texpected  " << (unsigned long) index(z) << "\n";
+                std::cerr << "\tfile says " << fndx << "\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+        }
+    }
+
+    //
+    // write down pointers
+    //
+    for (unsigned z=0; z<getSize(); z++) {
+        const node_handle d = down(z);
+        if (d <= 0) {
+            // terminal
+#ifdef DEBUG_TILES
+            if (d<-1) {
+                std::cerr << "Error d is " << d << std::endl;
+            }
+#endif
+            terminal t(parent->getTerminalType(), d);
+            t.verify(s);
+        } else {
+            // non-terminal
+            s.stripWS();
+            int ft = s.get_char();
+            if ('n' != ft) {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in node# " << nno << " down# " << z << "\n";
+                std::cerr << "\texpected  type 'n'\n";
+                if (EOF == ft) {
+                    std::cerr << "\tfile says EOF\n";
+                } else {
+                    std::cerr << "\tfile says '" << char(ft) << "'\n";
+                }
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            const size_t fd = s.get_unsigned();
+            if (fd != map[(size_t) d]) {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in node# " << nno << " down# " << z << "\n";
+                std::cerr << "\texpected  down " << map[(size_t) d] << "\n";
+                std::cerr << "\tfile says down " << fd << "\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+        }
+    }
+
+    //
+    // write edge values, if any
+    //
+    if (hasEdges()) {
+        for (unsigned z=0; z<getSize(); z++) {
+            edgeval(z).verify(s);
+        }
+    }
+
+
+    // write extra header stuff, should no-op if there isn't any
+    // parent->writeHeaderInfo(s, *this);
+}
+
+
 void MEDDLY::unpacked_node::read(input &s, const std::vector<node_handle> &map)
 {
 #ifdef DEBUG_READ_DD

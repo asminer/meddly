@@ -47,18 +47,18 @@ inline void dot_edge_label(MEDDLY::output &s, const MEDDLY::edge_value &e)
 
 // ******************************************************************
 // *                                                                *
-// *                 dot_maker::writing_style class                 *
+// *                     dot_maker::style class                     *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::dot_maker::style : public node_marker::writing_style {
+class MEDDLY::dot_maker::style : public node_marker::io_style {
     public:
         style(const forest* F, node_marker &nm);
         virtual ~style();
 
-        virtual void begin_level(output &s, int k);
-        virtual void show_node(output &s, node_handle p);
-        virtual void end_level(output &s, int k);
+        virtual void write_begin_level(output &s, int k);
+        virtual void write_node(output &s, node_handle p);
+        virtual void write_end_level(output &s, int k);
 
     private:
         std::vector <node_handle> nodes_at_this_level;
@@ -68,7 +68,7 @@ class MEDDLY::dot_maker::style : public node_marker::writing_style {
 // ******************************************************************
 
 MEDDLY::dot_maker::style::style(const forest* F, node_marker &)
-    : node_marker::writing_style(F, SPARSE_ONLY)
+    : node_marker::io_style(F, SPARSE_ONLY)
 {
     prev_level = 0;
 }
@@ -77,7 +77,7 @@ MEDDLY::dot_maker::style::~style()
 {
 }
 
-void MEDDLY::dot_maker::style::begin_level(output &s, int k)
+void MEDDLY::dot_maker::style::write_begin_level(output &s, int k)
 {
     nodes_at_this_level.clear();
 
@@ -107,7 +107,7 @@ void MEDDLY::dot_maker::style::begin_level(output &s, int k)
     s << "    edge [color=" << edgecolor << "];\n";
 }
 
-void MEDDLY::dot_maker::style::show_node(output &s, node_handle p)
+void MEDDLY::dot_maker::style::write_node(output &s, node_handle p)
 {
     MEDDLY_DCASSERT(p>0);
 
@@ -147,7 +147,7 @@ void MEDDLY::dot_maker::style::show_node(output &s, node_handle p)
     }
 }
 
-void MEDDLY::dot_maker::style::end_level(output &s, int k)
+void MEDDLY::dot_maker::style::write_end_level(output &s, int k)
 {
     const int k_rank = (k<0) ? (-k*2) -1 : k*2;
     MEDDLY_DCASSERT(k_rank > 0);

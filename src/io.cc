@@ -124,6 +124,15 @@ long MEDDLY::FILE_input::get_integer()
     return data;
 }
 
+unsigned long MEDDLY::FILE_input::get_unsigned()
+{
+    long data;
+    if (fscanf(inf, "%lu", &data) != 1) {
+        throw error(error::INVALID_FILE, __FILE__, __LINE__);
+    }
+    return data;
+}
+
 double MEDDLY::FILE_input::get_real()
 {
     double data;
@@ -177,6 +186,14 @@ void MEDDLY::istream_input::unget(char /*x*/)
 long MEDDLY::istream_input::get_integer()
 {
     long data;
+    in >> data;
+    // TBD - how to deal with errors?
+    return data;
+}
+
+unsigned long MEDDLY::istream_input::get_unsigned()
+{
+    unsigned long data;
     in >> data;
     // TBD - how to deal with errors?
     return data;

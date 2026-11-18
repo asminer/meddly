@@ -31,17 +31,18 @@ namespace MEDDLY {
     class dd_edge;
 
     class mdd_writer;
+    class mdd_verifier;
     class mdd_reader;
 };
 
 
 /**
-        Object for writing MDDs to an exchange file.
-        After construction, call writeRootEdge() for all
-        root edges to be included in the file, in order.
-        Call finish() to write the file to the stream.
-        A second call to finish() will do nothing.
-        Note the the destructor calls finish().
+    Object for writing MDDs to an exchange file.
+    After construction, call writeRootEdge() for all
+    root edges to be included in the file, in order.
+    Call finish() to write the file to the stream.
+    A second call to finish() will do nothing.
+    Note the the destructor calls finish().
 */
 class MEDDLY::mdd_writer {
     public:
@@ -64,12 +65,40 @@ class MEDDLY::mdd_writer {
 };
 
 /**
-        Object for reading MDDs from an exchange file.
-        The file is read during object construction;
-        after that we can pull off the root edges from
-        the file by calling readRootEdge(),
-        in the same order that writeRootEdge() was called
-        when writing the file.
+    Object for verifying MDDs already written to an exchange file.
+    Works like mdd_writer. After construction, call verifyRootEdge()
+    for all root edges to be included in the file, in order.
+    Call finish() to write the file to the stream.
+    A second call to finish() will do nothing.
+    Note the the destructor calls finish().
+*/
+class MEDDLY::mdd_verifier {
+    public:
+        mdd_verifier(input &s, forest* F);
+        ~mdd_verifier();
+        inline void verifyRootEdge(const dd_edge &E) {
+            MEDDLY_DCASSERT(!finished);
+            roots.push_back(E);
+        }
+        void finish();
+
+    private:
+        input &inf;
+        std::vector <dd_edge> roots;
+        forest* For;
+        bool finished;
+
+    private:
+        class style;
+};
+
+/**
+    Object for reading MDDs from an exchange file.
+    The file is read during object construction;
+    after that we can pull off the root edges from
+    the file by calling readRootEdge(),
+    in the same order that writeRootEdge() was called
+    when writing the file.
 */
 class MEDDLY::mdd_reader {
     public:

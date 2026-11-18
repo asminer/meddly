@@ -35,6 +35,10 @@
 // Reference counts on for now
 #define REFCOUNTS_ON
 
+// Make a lot of noise when file verification fails
+#define VERBOSE_VERIFY_FAIL
+
+
 /*
 
     There are now two modes of code generation:

@@ -301,6 +301,13 @@ class MEDDLY::dd_edge {
         void write(output &s, const std::vector <size_t> &map) const;
 
         /**
+            Verify the edge information to a file (stream).
+                @param  s       Stream to verify
+                @param  map     Translation from node handle to file node#
+        */
+        void verify(input &s, const std::vector <size_t> &map) const;
+
+        /**
             Read the edge information from a file (stream).
                 @param  s       Stream to read from
                 @param  map     Translation from file node# to node handle

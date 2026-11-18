@@ -566,6 +566,11 @@ class MEDDLY::edge_value {
         void write(output &s) const;
 
         /**
+            Verify an edge value against an input file (stream).
+        */
+        void verify(input &s) const;
+
+        /**
             Display an edge value for human consumption.
         */
         void show(output &s, bool with_type) const;

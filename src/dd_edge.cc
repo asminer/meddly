@@ -1284,6 +1284,44 @@ void MEDDLY::dd_edge::write(output &s, const std::vector <size_t> &map) const
     s.put(getLabel());
 }
 
+void MEDDLY::dd_edge::verify(input &s, const std::vector <size_t> &map) const
+{
+    //
+    // Edge info
+    //
+    edgeval.verify(s);
+    s.stripWS();
+
+    //
+    // Node info
+    //
+    if (node <= 0) {
+        //
+        // terminal
+        //
+        forest* efp = forest::getForestWithID(parentFID);
+        terminal t;
+        t.setFromHandle(efp->getTerminalType(), node);
+        t.verify(s);
+    } else {
+        //
+        // non-terminal
+        //
+        s.consumeKeyword("n");
+        const size_t fmn = s.get_unsigned();
+        if (fmn != map[node]) {
+#ifdef VERBOSE_VERIFY_FAIL
+            std::cerr << "\nVerify error in dd_edge\n";
+            std::cerr << "\texpected  node: " << map[node] << "\n";
+            std::cerr << "\tfile says node: " << fmn << "\n";
+#endif
+            throw error(error::INVALID_FILE, __FILE__, __LINE__);
+        }
+    }
+    s.stripWS();
+    s.consumeKeyword(getLabel());
+}
+
 
 void MEDDLY::dd_edge::read(input &s, const std::vector <node_handle> &map)
 {

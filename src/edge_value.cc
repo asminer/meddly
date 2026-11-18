@@ -182,6 +182,115 @@ void MEDDLY::edge_value::write(output &s) const
     }
 }
 
+void MEDDLY::edge_value::verify(input &s) const
+{
+    s.stripWS();
+    int ftype;
+    int fint;
+    long flong;
+    float ffloat;
+    double fdouble;
+    ftype = s.get_char();
+    if (EOF == ftype) {
+        throw error(error::INVALID_FILE, __FILE__, __LINE__);
+    }
+    switch (mytype) {
+        case edge_type::VOID:
+            if (ftype != 'v') {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in edge value\n";
+                std::cerr << "\texpected  type 'v'\n";
+                std::cerr << "\tfile says type '" << char(ftype) << "'\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            return;
+
+        case edge_type::INT:
+            if (ftype != 'i') {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in edge value\n";
+                std::cerr << "\texpected  type 'i'\n";
+                std::cerr << "\tfile says type '" << char(ftype) << "'\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            fint = s.get_integer();
+            if (ev_int != fint) {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in edge value\n";
+                std::cerr << "\texpected  int: " << ev_int << "\n";
+                std::cerr << "\tfile says int: " << fint << "\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            return;
+
+        case edge_type::LONG:
+            if (ftype != 'l') {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in edge value\n";
+                std::cerr << "\texpected  type 'l'\n";
+                std::cerr << "\tfile says type '" << char(ftype) << "'\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            flong = s.get_integer();
+            if (ev_long != flong) {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in edge value\n";
+                std::cerr << "\texpected  long: " << ev_long << "\n";
+                std::cerr << "\tfile says long: " << flong << "\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            return;
+
+        case edge_type::FLOAT:
+            if (ftype != 'f') {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in edge value\n";
+                std::cerr << "\texpected  type 'f'\n";
+                std::cerr << "\tfile says type '" << char(ftype) << "'\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            ffloat = s.get_real();
+            if (ev_float != ffloat) {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in edge value\n";
+                std::cerr << "\texpected  float: " << ev_float << "\n";
+                std::cerr << "\tfile says float: " << ffloat << "\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            return;
+
+        case edge_type::DOUBLE:
+            if (ftype != 'd') {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in edge value\n";
+                std::cerr << "\texpected  type 'd'\n";
+                std::cerr << "\tfile says type '" << char(ftype) << "'\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            fdouble = s.get_real();
+            if (ev_double != fdouble) {
+#ifdef VERBOSE_VERIFY_FAIL
+                std::cerr << "\nVerify error in edge value\n";
+                std::cerr << "\texpected  double: " << ev_double << "\n";
+                std::cerr << "\tfile says double: " << fdouble << "\n";
+#endif
+                throw error(error::INVALID_FILE, __FILE__, __LINE__);
+            }
+            return;
+
+        default:
+            FAIL(__FILE__, __LINE__, "Unknown edge type");
+    }
+}
+
 void MEDDLY::edge_value::show(output &s, bool with_type) const
 {
     switch (mytype) {

@@ -275,6 +275,15 @@ class MEDDLY::unpacked_node {
         */
         void write(output &s, const std::vector <size_t> &map) const;
 
+        /** Verify a node written in machine-readable format.
+
+            @param  s       Input stream.
+            @param  num     Node number, for error messages
+            @param  map     Translation to use from node handle to file node#.
+                            Allows us to renumber nodes as we write them.
+        */
+        void verify(input &s, size_t num, const std::vector <size_t> &map) const;
+
 
         /** Read a node in machine-readable format.
 

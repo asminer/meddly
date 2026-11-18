@@ -430,6 +430,11 @@ class MEDDLY::terminal {
         void write(output &s) const;
 
         /**
+            Verify a terminal node against an input file (stream).
+        */
+        void verify(input &s) const;
+
+        /**
             Show (for human consumption) a terminal node to an output stream.
         */
         void show(output &s) const;

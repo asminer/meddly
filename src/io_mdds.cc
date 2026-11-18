@@ -29,6 +29,7 @@
 // #define DEBUG_READ
 #define DEBUG_READ_DD
 #define DEBUG_WRITE_DD
+#define DEBUG_VERIFY_DD
 
 // ******************************************************************
 // *                                                                *
@@ -186,18 +187,18 @@ namespace MEDDLY {
 
 // ******************************************************************
 // *                                                                *
-// *                mdd_writer::writing_style  class                *
+// *                    mdd_writer::style  class                    *
 // *                                                                *
 // ******************************************************************
 
-class MEDDLY::mdd_writer::style : public node_marker::writing_style {
+class MEDDLY::mdd_writer::style : public node_marker::io_style {
     public:
         style(const forest* F, node_marker &nm);
         virtual ~style();
 
-        virtual void begin_level(output &s, int k);
-        virtual void show_node(output &s, node_handle p);
-        virtual void end_level(output &s, int k);
+        virtual void write_begin_level(output &s, int k);
+        virtual void write_node(output &s, node_handle p);
+        virtual void write_end_level(output &s, int k);
 
         inline size_t numWritten() const {
             return written;
@@ -214,7 +215,7 @@ class MEDDLY::mdd_writer::style : public node_marker::writing_style {
 // ******************************************************************
 
 MEDDLY::mdd_writer::style::style(const forest* F, node_marker &nm)
-    : node_marker::writing_style(F, FULL_OR_SPARSE)
+    : node_marker::io_style(F, FULL_OR_SPARSE)
 {
     handle2output.resize(1+nm.lastMarked(), 0);
     written = 0;
@@ -224,11 +225,11 @@ MEDDLY::mdd_writer::style::~style()
 {
 }
 
-void MEDDLY::mdd_writer::style::begin_level(output &, int)
+void MEDDLY::mdd_writer::style::write_begin_level(output &, int)
 {
 }
 
-void MEDDLY::mdd_writer::style::show_node(output &s, node_handle p)
+void MEDDLY::mdd_writer::style::write_node(output &s, node_handle p)
 {
     MEDDLY_DCASSERT(p>0);
     MEDDLY_DCASSERT(0 == handle2output.at(p));
@@ -239,7 +240,7 @@ void MEDDLY::mdd_writer::style::show_node(output &s, node_handle p)
     U->write(s, handle2output);
 }
 
-void MEDDLY::mdd_writer::style::end_level(output &, int)
+void MEDDLY::mdd_writer::style::write_end_level(output &, int)
 {
 }
 
@@ -314,6 +315,176 @@ void MEDDLY::mdd_writer::finish()
     out.flush();
 #ifdef DEBUG_WRITE_DD
     std::cerr << "\t\tDone writing pointers\n";
+#endif
+}
+
+// ******************************************************************
+// *                                                                *
+// *                   mdd_verifier::style  class                   *
+// *                                                                *
+// ******************************************************************
+
+class MEDDLY::mdd_verifier::style : public node_marker::io_style {
+    public:
+        style(const forest* F, node_marker &nm);
+        virtual ~style();
+
+        virtual void verify_begin_level(input &s, int k);
+        virtual void verify_node(input &s, node_handle p);
+        virtual void verify_end_level(input &s, int k);
+
+        inline size_t numVerified() const {
+            return verified;
+        }
+        const std::vector <size_t>& getH2O() const {
+            return handle2output;
+        }
+
+    private:
+        std::vector <size_t> handle2output;
+        size_t verified;
+};
+
+// ******************************************************************
+
+MEDDLY::mdd_verifier::style::style(const forest* F, node_marker &nm)
+    : node_marker::io_style(F, FULL_OR_SPARSE)
+{
+    handle2output.resize(1+nm.lastMarked(), 0);
+    verified = 0;
+}
+
+MEDDLY::mdd_verifier::style::~style()
+{
+}
+
+void MEDDLY::mdd_verifier::style::verify_begin_level(input &, int)
+{
+}
+
+void MEDDLY::mdd_verifier::style::verify_node(input &s, node_handle p)
+{
+    MEDDLY_DCASSERT(p>0);
+    MEDDLY_DCASSERT(0 == handle2output.at(p));
+    handle2output[p] = ++verified;
+
+    long plvl = s.get_integer();
+    if (plvl != For->getNodeLevel(p)) {
+#ifdef VERBOSE_VERIFY_FAIL
+        std::cerr << "\nVerify error on node# " << verified << "\n";
+        std::cerr << "\texpected  level: " << For->getNodeLevel(p) << "\n";
+        std::cerr << "\tfile says level: " << plvl << "\n";
+#endif
+        throw error(error::INVALID_FILE, __FILE__, __LINE__);
+
+    }
+    U->initFromNode(p);
+    U->verify(s, verified, handle2output);
+}
+
+void MEDDLY::mdd_verifier::style::verify_end_level(input &, int)
+{
+}
+
+// ******************************************************************
+// *                                                                *
+// *                      mdd_verifier methods                      *
+// *                                                                *
+// ******************************************************************
+
+MEDDLY::mdd_verifier::mdd_verifier(input &s, forest* F)
+    : inf(s)
+{
+    MEDDLY_DCASSERT(F);
+    For = F;
+    finished = false;
+}
+
+MEDDLY::mdd_verifier::~mdd_verifier()
+{
+    finish();
+}
+
+void MEDDLY::mdd_verifier::finish()
+{
+    if (finished) return;
+    finished = true;
+
+    //
+    // Mark all reachable nodes
+    //
+    node_marker M(For);
+    for (unsigned i=0; i<roots.size(); i++) {
+        M.mark(roots[i].getNode());
+    }
+
+    //
+    // Generate code char sequence
+    //
+    char block[CODELEN], revblock[CODELEN];
+    buildCodeChars(For, block, revblock);
+
+    //
+    // Verify the nodes
+    //
+    const size_t num_nodes = M.countMarked();
+    inf.stripWS();
+    inf.consumeKeyword(block);
+
+    const size_t fnn = inf.get_unsigned();
+    if (fnn != num_nodes) {
+#ifdef VERBOSE_VERIFY_FAIL
+        std::cerr << "\nVerify error: number of nodes.\n";
+        std::cerr << "\texpected : " << num_nodes << "\n";
+        std::cerr << "\tfile says: " << fnn << "\n";
+#endif
+        throw error(error::INVALID_FILE, __FILE__, __LINE__);
+    }
+#ifdef DEBUG_VERIFY_DD
+    std::cerr << "\n\t\tVerifying " << num_nodes << " nodes in " << block << " forest\n";
+#endif
+    style WS(For, M);
+    M.verifyByLevelsBottomUp(inf, &WS);
+    if (WS.numVerified() != num_nodes) {
+#ifdef VERBOSE_VERIFY_FAIL
+        std::cerr << "\nVerify error: number of nodes actually in file.\n";
+        std::cerr << "\texpected: " << num_nodes << "\n";
+        std::cerr << "\tfile has: " << WS.numVerified() << "\n";
+#endif
+        throw error(error::INVALID_FILE, __FILE__, __LINE__);
+    }
+    inf.stripWS();
+    inf.consumeKeyword(revblock);
+#ifdef DEBUG_VERIFY_DD
+    std::cerr << "\t\tDone verifying nodes\n";
+#endif
+
+    //
+    // Verify the actual edge pointers
+    //
+#ifdef DEBUG_VERIFY_DD
+    std::cerr << "\t\tVerifying " << roots.size() << " pointers\n";
+#endif
+    inf.stripWS();
+    inf.consumeKeyword("ptrs");
+    const unsigned rsz = inf.get_unsigned();
+    if (rsz != roots.size()) {
+#ifdef VERBOSE_VERIFY_FAIL
+        std::cerr << "\nVerify error: number of root edges.\n";
+        std::cerr << "\texpected : " << roots.size() << "\n";
+        std::cerr << "\tfile says: " << rsz << "\n";
+#endif
+        throw error(error::INVALID_FILE, __FILE__, __LINE__);
+    }
+
+    for (unsigned i=0; i<roots.size(); i++) {
+        inf.stripWS();
+        roots[i].verify(inf, WS.getH2O());
+    }
+    inf.stripWS();
+    inf.consumeKeyword("srtp");
+#ifdef DEBUG_VERIFY_DD
+    std::cerr << "\t\tDone verifying pointers\n";
 #endif
 }
 

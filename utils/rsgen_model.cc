@@ -1566,7 +1566,7 @@ void rsgen_model::write_checkpoint(unsigned iter, const MEDDLY::dd_edge &e)
     }
     mywriter.finish();
     if (verb>2) {
-        std::cerr << " done" << std::endl;
+        std::cerr << " written!" << std::endl;
     }
 }
 
@@ -1596,7 +1596,7 @@ void rsgen_model::read_checkpoint(unsigned iter, MEDDLY::dd_edge &e) const
     }
     e = myreader.getRoot(0);
     if (verb>2) {
-        std::cerr << " done\n";
+        std::cerr << " restored!\n";
         std::cerr << "\t\troot pointer to " << e.getNodeCount() << " nodes\n";
     }
 }
@@ -1621,11 +1621,37 @@ void rsgen_model::validate_checkpoint(unsigned iter, const MEDDLY::dd_edge &e)
     }
 
     D->verify(cpin.instream());
-    MEDDLY::mdd_reader myreader(cpin.instream(), Fset);
+    MEDDLY::mdd_verifier myverify(cpin.instream(), Fset);
+    myverify.verifyRootEdge(e);
     if (verb>2) {
         std::cerr << ".";
         std::cerr.flush();
     }
+    myverify.finish();
+    if (verb>2) {
+        std::cerr << " validated!" << std::endl;
+    }
+
+    if (verb>2) {
+        std::cerr << "            confirming checkpoint " << pathname << " ";
+    }
+    compressed_input cpin2(pathname);
+    if (!cpin) {
+        std::cerr << "couldn't read\n";
+        throw "checkpoint restore error: couldn't read";
+    }
+    if (verb>2) {
+        std::cerr << ".";
+        std::cerr.flush();
+    }
+
+    D->verify(cpin2.instream());
+    MEDDLY::mdd_reader myreader(cpin2.instream(), Fset);
+    if (verb>2) {
+        std::cerr << ".";
+        std::cerr.flush();
+    }
+
     if (myreader.getRoot(0) != e) {
         if (verb>2) {
             std::cerr << " MISMATCH!\n";
@@ -1633,7 +1659,7 @@ void rsgen_model::validate_checkpoint(unsigned iter, const MEDDLY::dd_edge &e)
         throw "checkpoint mismatch";
     } else {
         if (verb>2) {
-            std::cerr << " done\n";
+            std::cerr << " confirmed!\n";
         }
     }
 }

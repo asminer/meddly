@@ -102,6 +102,14 @@ class MEDDLY::input {
         virtual long get_integer() = 0;
 
         /**
+            Read an unsigned integer in signed decimal notation.
+            TBD - integer is terminated by whitespace, or any character?
+                @return   The integer consumed
+                @throws   an appropriate error
+        */
+        virtual unsigned long get_unsigned() = 0;
+
+        /**
             Read a floating point value in signed decimal notation.
             TBD - value is terminated by whitespace, or any character?
                 @return   The value consumed
@@ -166,6 +174,7 @@ class MEDDLY::FILE_input : public MEDDLY::input {
         virtual int get_char();
         virtual void unget(char);
         virtual long get_integer();
+        virtual unsigned long get_unsigned();
         virtual double get_real();
         virtual size_t read(size_t bytes, unsigned char* buffer);
 
@@ -197,6 +206,7 @@ class MEDDLY::istream_input : public MEDDLY::input {
         virtual int get_char();
         virtual void unget(char);
         virtual long get_integer();
+        virtual unsigned long get_unsigned();
         virtual double get_real();
         virtual size_t read(size_t bytes, unsigned char* buffer);
 

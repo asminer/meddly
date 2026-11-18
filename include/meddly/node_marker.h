@@ -42,14 +42,22 @@ namespace MEDDLY {
 */
 class MEDDLY::node_marker {
     public:
-        class writing_style {
+        class io_style {
             public:
-                writing_style(const forest* F, node_storage_flags fs);
-                virtual ~writing_style();
+                io_style(const forest* F, node_storage_flags fs);
+                virtual ~io_style();
 
-                virtual void begin_level(output &s, int k);
-                virtual void show_node(output &s, node_handle p);
-                virtual void end_level(output &s, int k);
+                // for showByLevels methods
+
+                virtual void write_begin_level(output &s, int k);
+                virtual void write_node(output &s, node_handle p);
+                virtual void write_end_level(output &s, int k);
+
+                // for verifyByLevels methods
+
+                virtual void verify_begin_level(input &s, int k);
+                virtual void verify_node(input &s, node_handle p);
+                virtual void verify_end_level(input &s, int k);
 
             protected:
                 const forest* For;
@@ -131,10 +139,13 @@ class MEDDLY::node_marker {
         size_t countNonzeroEdges() const;
 
         /// Display all marked nodes, by levels, from top to bottom.
-        void showByLevelsTopDown(output &s, writing_style *st = nullptr) const;
+        void showByLevelsTopDown(output &s, io_style *st = nullptr) const;
 
         /// Display all marked nodes, by levels, from bottom to top.
-        void showByLevelsBottomUp(output &s, writing_style *st = nullptr) const;
+        void showByLevelsBottomUp(output &s, io_style *st = nullptr) const;
+
+        /// Verify all marked nodes, by levels, from bottom to top.
+        void verifyByLevelsBottomUp(input &s, io_style *st = nullptr) const;
 
 #ifdef ALLOW_DEPRECATED_0_18_2
         /// Display all marked nodes, by levels.
