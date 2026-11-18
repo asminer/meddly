@@ -1,4 +1,12 @@
 
+add_test_setup(
+    'default',
+    is_default: true,
+    timeout_multiplier: 3
+)
+
+######################################################################
+
 bug_00 = executable(
     'bug_00',
     'bug_00.cc',
@@ -289,13 +297,13 @@ test('ops_comp --set --EVp --long', ops_comp,
     args: ['--set', '--EVp', '--long'])
 
 test('ops_comp --rel --MT --int', ops_comp,
-    args: ['--rel', '--MT', '--int'], timeout: 60)
+    args: ['--rel', '--MT', '--int'])
 test('ops_comp --rel --MT --float', ops_comp,
-    args: ['--rel', '--MT', '--float'], timeout: 60)
+    args: ['--rel', '--MT', '--float'])
 test('ops_comp --rel --EVp --long', ops_comp,
-    args: ['--rel', '--EVp', '--long'], timeout: 60)
+    args: ['--rel', '--EVp', '--long'])
 test('ops_comp --rel --EVs --float', ops_comp,
-    args: ['--rel', '--EVs', '--float'], timeout: 60)
+    args: ['--rel', '--EVs', '--float'])
 
 ######################################################################
 
