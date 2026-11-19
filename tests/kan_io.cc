@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
@@ -17,80 +16,78 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <cstdlib>
-#include <string.h>
-#include <unistd.h>
+// #include <cstdlib>
+#include <iostream>
+// #include <iomanip>
+// #include <string.h>
 
-#include "meddly/meddly.h"
-#include "utils/simple_model.h"
+#include "kan_base.h"
 
-#define WRITE_MXD
-#define WRITE_MDD
-#define WRITE_EVMDD
-// #define DEBUG_FILE
-#define PROGRESS
-
-const char* kanban[] = {
-  "X-+..............",  // Tin1
-  "X.-+.............",  // Tr1
-  "X.+-.............",  // Tb1
-  "X.-.+............",  // Tg1
-  "X.....-+.........",  // Tr2
-  "X.....+-.........",  // Tb2
-  "X.....-.+........",  // Tg2
-  "X+..--+..-+......",  // Ts1_23
-  "X.........-+.....",  // Tr3
-  "X.........+-.....",  // Tb3
-  "X.........-.+....",  // Tg3
-  "X....+..-+..--+..",  // Ts23_4
-  "X.............-+.",  // Tr4
-  "X.............+-.",  // Tb4
-  "X............+..-",  // Tout4
-  "X.............-.+"   // Tg4
-};
+// ============================================
 
 long expected[] = {
-  1, 160, 4600, 58400, 454475, 2546432, 11261376,
-  41644800, 133865325, 384392800, 1005927208
+    1, 160, 4600, 58400, 454475, 2546432, 11261376,
+    41644800, 133865325, 384392800, 1005927208
 };
 
-using namespace MEDDLY;
+const int nstart = 1;
+const int nstop = 10;
 
+// ============================================
 
-// Build the domain
-inline domain* buildKanbanDomain(int N)
+class kanban : public kanban_base {
+    public:
+        kanban();
+
+        inline void setN(int n) {
+            N = n;
+        }
+        inline void fill_initial(MEDDLY::dd_edge &init_state)
+        {
+            MEDDLY::minterm init(mdd);
+            build_initial(init);
+            init.buildFunction(false, init_state);
+        }
+
+        long writeReachset(FILE* s);
+        bool generateAndRead(FILE* s);
+        bool readAndGenerate(FILE* s);
+
+    protected:
+        void make_forests();
+        void done_forests();
+
+    private:
+        MEDDLY::forest* mdd;
+        MEDDLY::forest* mxd;
+        MEDDLY::forest* evmdd;
+};
+
+// ============================================
+
+kanban::kanban()
 {
-    int sizes[16];
-    for (int i=15; i>=0; i--) sizes[i] = N+1;
-    return domain::createBottomUp(sizes, 16);
+    disable_output_options();
+    mdd = nullptr;
+    mxd = nullptr;
+    evmdd = nullptr;
 }
 
-// Build the initial state
-inline void buildInitial(int N, forest* mdd, dd_edge &init_state)
-{
-    minterm initial(mdd);
-    initial.setAllVars(0);
-    initial.setVar(1, N);
-    initial.setVar(5, N);
-    initial.setVar(9, N);
-    initial.setVar(13, N);
-    initial.buildFunction(false, init_state);
-}
+// ============================================
 
 /*
     Generate transition relation, reachability set for given N,
     and write them to a file.
 */
-long writeReachset(FILE* s, int N)
+long kanban::writeReachset(FILE* s)
 {
-    // Build domain
-    domain* d = buildKanbanDomain(N);
+    using namespace MEDDLY;
+
+    make_forests();
 
     // Build initial state
-    forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL);
     dd_edge init_state(mdd);
-    buildInitial(N, mdd, init_state);
+    fill_initial(init_state);
 
 #ifdef PROGRESS
     fputc('i', stdout);
@@ -98,10 +95,8 @@ long writeReachset(FILE* s, int N)
 #endif
 
     // Build next-state function
-    forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL);
     dd_edge nsf(mxd);
-    buildNextStateFunction(kanban, 16, mxd, nsf);
+    build_monolithic(nsf);
 
 #ifdef PROGRESS
     fputc('n', stdout);
@@ -118,8 +113,6 @@ long writeReachset(FILE* s, int N)
 #endif
 
     // Build index set for reachable states
-    forest* evmdd = forest::create(d, SET, range_type::INTEGER,
-                        edge_labeling::INDEX_SET);
     dd_edge reach_index(evmdd);
     apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 
@@ -137,7 +130,7 @@ long writeReachset(FILE* s, int N)
 #endif
 
     FILE_output mys(s);
-    d->write(mys);
+    get_domain()->write(mys);
 
 #ifdef WRITE_MXD
     mdd_writer wmxd(mys, mxd);
@@ -159,46 +152,44 @@ long writeReachset(FILE* s, int N)
     wevmdd.finish();
 #endif
 
-    domain::destroy(d);
-
+    //
+    // clean up forests
+    //
+    done_forests();
     return c;
 }
 
+// ============================================
 
 /*
     Generate transition relation, reachability set for given N,
     then read from a file and check for equality.
 */
-bool generateAndRead(FILE* s, int N)
+bool kanban::generateAndRead(FILE* s)
 {
-    // Build domain
-    domain* d = buildKanbanDomain(N);
+    using namespace MEDDLY;
+
+    make_forests();
 
     // Build initial state
-    forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
-                            edge_labeling::MULTI_TERMINAL);
     dd_edge init_state(mdd);
-    buildInitial(N, mdd, init_state);
+    fill_initial(init_state);
 
     // Build next-state function
-    forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
-                            edge_labeling::MULTI_TERMINAL);
     dd_edge nsf(mxd);
-    buildNextStateFunction(kanban, 16, mxd, nsf);
+    build_monolithic(nsf);
 
     // Build reachable states
     dd_edge reachable(mdd);
     apply(REACHABLE_TRAD_NOFS(true), init_state, nsf, reachable);
 
     // Build index set for reachable states
-    forest* evmdd = forest::create(d, SET, range_type::INTEGER,
-                                edge_labeling::INDEX_SET);
     dd_edge reach_index(evmdd);
     apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
 
     // Now, read from the file and verify
     FILE_input mys(s);
-    d->verify(mys);
+    get_domain()->verify(mys);
 
     dd_edge list[2];
 #ifdef WRITE_MXD
@@ -243,27 +234,22 @@ bool generateAndRead(FILE* s, int N)
     }
 #endif
 
-    domain::destroy(d);
+    done_forests();
     return true;
 }
 
+// ============================================
 
 /*
     Read the transition relation, reachability set from a file,
     then generate them for a given N and check for equality.
 */
-bool readAndGenerate(FILE* s, int N)
+bool kanban::readAndGenerate(FILE* s)
 {
-    // Build domain
-    domain* d = buildKanbanDomain(N);
+    using namespace MEDDLY;
 
     // Build (empty) forests
-    forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
-                            edge_labeling::MULTI_TERMINAL);
-    forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
-                            edge_labeling::MULTI_TERMINAL);
-    forest* evmdd = forest::create(d, SET, range_type::INTEGER,
-                            edge_labeling::INDEX_SET);
+    make_forests();
 
     dd_edge mxdfile;
     dd_edge mddfile0, mddfile1;
@@ -271,7 +257,7 @@ bool readAndGenerate(FILE* s, int N)
 
     // Read from the file
     FILE_input mys(s);
-    d->verify(mys);
+    get_domain()->verify(mys);
 
 #ifdef WRITE_MXD
     mdd_reader R_mxd(mys, mxd);
@@ -289,11 +275,11 @@ bool readAndGenerate(FILE* s, int N)
 
     // Build initial state
     dd_edge init_state(mdd);
-    buildInitial(N, mdd, init_state);
+    fill_initial(init_state);
 
     // Build next-state function
     dd_edge nsf(mxd);
-    buildNextStateFunction(kanban, 16, mxd, nsf);
+    build_monolithic(nsf);
 
     // Build reachable states
     dd_edge reachable(mdd);
@@ -302,6 +288,7 @@ bool readAndGenerate(FILE* s, int N)
     // Build index set for reachable states
     dd_edge reach_index(evmdd);
     apply(CONVERT_TO_INDEX_SET, reachable, reach_index);
+
 
     // Verify
 #ifdef WRITE_MXD
@@ -327,11 +314,34 @@ bool readAndGenerate(FILE* s, int N)
     }
 #endif
 
-    domain::destroy(d);
+    done_forests();
     return true;
 }
 
+// ============================================
 
+void kanban::make_forests()
+{
+    using namespace MEDDLY;
+    mdd = forest::create(get_domain(), SET, range_type::BOOLEAN,
+                            edge_labeling::MULTI_TERMINAL);
+    mxd = forest::create(get_domain(), RELATION, range_type::BOOLEAN,
+                            edge_labeling::MULTI_TERMINAL);
+    evmdd = forest::create(get_domain(), SET, range_type::INTEGER,
+                            edge_labeling::INDEX_SET);
+}
+
+// ============================================
+
+void kanban::done_forests()
+{
+    using namespace MEDDLY;
+    forest::destroy(evmdd);
+    forest::destroy(mxd);
+    forest::destroy(mdd);
+}
+
+// ============================================
 
 /*
     Main program, of course
