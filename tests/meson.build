@@ -1,4 +1,12 @@
 
+add_test_setup(
+    'default',
+    is_default: true,
+    timeout_multiplier: 3
+)
+
+######################################################################
+
 bug_00 = executable(
     'bug_00',
     'bug_00.cc',

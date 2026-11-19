@@ -30,9 +30,6 @@ long expected[] = {
     41644800, 133865325, 384392800, 1005927208
 };
 
-const int nstart = 1;
-const int nstop = 10;
-
 // ============================================
 
 class kanban : public kanban_base {
