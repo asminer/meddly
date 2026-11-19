@@ -354,75 +354,72 @@ int main()
     const int N = 11;
 #endif
     MEDDLY::initialize();
+    kanban K;
 
     char filename[20];
     strcpy(filename, "kan_io.data.XXXXXX");
     mkstemp(filename);
-#ifdef DEBUG_FILE
-    printf("Creating file %s\n", filename);
-#endif
 
-    FILE* s = fopen(filename, "w");
-    if (0==s) {
-        printf("Couldn't open file %s for writing\n", filename);
-        return 2;
-    }
+    MEDDLY::FILE_output out(stdout);
 
     try {
-        printf("Saving dds to file...\n");
         for (int n=1; n<N; n++) {
-            printf("N=%2d:  ", n);
-            fflush(stdout);
-            long c = writeReachset(s, n);
-            printf("%12ld states\n", c);
+            out.indent_more();
+            out << "N=" << n << "\n";
+            out << "Building model...\n";
+            K.setN(n);
+            K.build_model(out);
+
+            out << "Saving dds to file " << filename << "... ";
+            FILE* s = fopen(filename, "w");
+            if (!s) {
+                out << "    Couldn't open for writing\n";
+                return 2;
+            }
+
+            long c = K.writeReachset(s);
+            out << "\n" << c << " states\n";
             if (c !=expected[n]) {
-                printf("Wrong number of states!\n");
+                out << "    wrong number of states!\n";
                 throw 1;
             }
-        }
-        fclose(s);
+            fclose(s);
 
-        // read back the file into already built forest
+            // read back the file into already built forest
 
-        s = fopen(filename, "r");
-        if (0==s) {
-            printf("Couldn't open file %s for reading\n", filename);
-            throw 2;
-        }
+            out << "Generate and read... ";
+            s = fopen(filename, "r");
+            if (!s) {
+                out << "    Couldn't open for reading\n";
+                throw 2;
+            }
 
-        printf("Generate and read...\n");
-        for (int n=1; n<N; n++) {
-            printf("N=%2d:  ", n);
-            fflush(stdout);
-            if (!generateAndRead(s, n)) throw 3;
-            printf("%19s\n", "verified");
-        }
-        fclose(s);
+            if (!K.generateAndRead(s)) throw 3;
+            out << "    verified\n";
+            fclose(s);
 
-        // read back the file and then build up forest
+            // read back the file and then build up forest
 
-        s = fopen(filename, "r");
-        if (0==s) {
-            printf("Couldn't open file %s for reading\n", filename);
-            throw 2;
-        }
+            out << "Read and generate... ";
+            s = fopen(filename, "r");
+            if (!s) {
+                out << "    Couldn't open for reading\n";
+                throw 2;
+            }
+            if (!K.readAndGenerate(s)) throw 4;
+            out << "    verified\n";
+            fclose(s);
 
-        printf("Read and generate...\n");
-        for (int n=1; n<N; n++) {
-            printf("N=%2d:  ", n);
-            fflush(stdout);
-            if (!readAndGenerate(s, n)) throw 4;
-            printf("%19s\n", "verified");
-        }
-        fclose(s);
+            // cleanup before next iteration
 
+            K.destroy_model();
+            remove(filename);
 
-        // Cleanup
-#ifndef DEBUG_FILE
-        remove(filename);
-#endif
+            out.indent_less();
+            out << "\n";
+        } // for n
+        out << "Done\n";
         MEDDLY::cleanup();
-        printf("Done\n");
         return 0;
     }
     catch (int e) {

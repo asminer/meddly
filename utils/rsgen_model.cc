@@ -947,8 +947,9 @@ void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
 #ifdef SHOW_MXD_FOREST
     MEDDLY::ostream_output out(std::cerr);
 #endif
-    Fmxd->createConstant(false, R);
-    MEDDLY::dd_edge Re(Fmxd);
+    MEDDLY::forest* mxd = R.getForest();
+    mxd->createConstant(false, R);
+    MEDDLY::dd_edge Re(mxd);
     for (unsigned e=0; e<events.size(); e++) {
         if (events[e]) {
             events[e]->build_nsf(Re);
@@ -962,7 +963,7 @@ void rsgen_model::build_monolithic(MEDDLY::dd_edge &R)
 #ifdef SHOW_MXD_FOREST
     out << "Monolithic relation: " << R << "\n";
     out << "Complete forest:\n";
-    Fmxd->dump(out, ~0);
+    mxd->dump(out, ~0);
 #endif
     R.setLabel("nsf-monolithic");
 }

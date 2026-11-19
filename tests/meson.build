@@ -228,8 +228,8 @@ test('kan_index', kan_index)
 
 kan_io = executable(
     'kan_io',
-    'kan_io.cc',
-    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
+    [ 'kan_base.cc', 'kan_io.cc' ],
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
 )
 
 test('kan_io', kan_io)
