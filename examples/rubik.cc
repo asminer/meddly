@@ -193,12 +193,14 @@ const unsigned var_DB_orient    = 39;
 
 
 class rubik : public rsgen_model {
+    public:
         /// Rotation event base class
         class rotate : public rsgen_model::event {
             protected:
                 const std::vector <int> &order;
                 char face;  // U, D, F, B, L, R
                 int turns;  // 1: clockwise, 2: flip, 3: counter clockwise
+                char face_axis; // 'x', 'y', or 'z'
             public:
                 rotate(const char* name, char face, int turns,
                         const std::vector <int> &ord);
@@ -222,18 +224,30 @@ class rubik : public rsgen_model {
                     Intended for changing piece orientations.
                         @param  xp_lvl      Level for x'
                         @param  y_lvl       Level for y
-                        @param  rotdir      For each variable k, rotdir[k]
-                                            gives the direction of rotation as
-                                            follows:
-                                               'i': no change
-                                               'x': swap y,z
-                                               'y': swap x,z
-                                               'z': swap x,y
-                                            anything else is no constraint.
+                        @param  nochange    If nochange[k] then assume
+                                            x'_k = x_k; otherwise no
+                                            constraints on x'_k or x_k.
                         @param  r           Edge to store the relation.
                 */
                 void xp_rotate_y(int xp_lvl, int y_lvl,
-                        const std::vector <char> &rotdir, dd_edge &r) const;
+                        const std::vector <bool> &nochange, dd_edge &r) const;
+
+
+                inline int reorient(int v) const {
+                    switch (face_axis) {
+                        case 'x':
+                            return (0==v) ? 0 : 3-v;    // swap 2,3
+
+                        case 'y':
+                            return (1==v) ? 1 : 2-v;    // swap 0,2
+
+                        case 'z':
+                            return (2==v) ? 2 : 1-v;    // swap 0,1
+
+                        default:
+                            assert(false);
+                    }
+                }
 
         };  // class rotate
 
@@ -259,6 +273,21 @@ class rubik : public rsgen_model {
                         MEDDLY::minterm &);
 
                 virtual bool build_nsf(MEDDLY::dd_edge &R);
+
+            private:
+                static void rotate_pieces(int A, int B, int C, int D,
+                        minterm &x);
+                void rotate_orientations(int A, int B, int C, int D,
+                        minterm &x);
+
+                static inline void rotate_levels(int &A, int &B, int &C, int &D)
+                {
+                    int t = D;
+                    D = C;
+                    C = B;
+                    B = A;
+                    A = t;
+                }
         };
 
 
@@ -275,6 +304,26 @@ rubik::rotate::rotate(const char* name, char _face, int _turns,
     turns = _turns;
     assert(turns>0);
     assert(turns<4);
+
+    switch (face) {
+        case 'F':
+        case 'B':
+                    face_axis = 'x';
+                    break;
+
+        case 'L':
+        case 'R':
+                    face_axis = 'y';
+                    break;
+
+        case 'U':
+        case 'D':
+                    face_axis = 'z';
+                    break;
+
+        default:
+            face_axis = 0;
+    }
 }
 
 // *************************************************************
@@ -329,7 +378,7 @@ void rubik::rotate::xp_equals_y(int xp_lvl, int y_lvl,
 // *************************************************************
 
 void rubik::rotate::xp_rotate_y(int xp_lvl, int y_lvl,
-        const std::vector <char> &rotdir, dd_edge &r) const
+        const std::vector <bool> &nochange, dd_edge &r) const
 {
     assert(xp_lvl < 0);
     assert(y_lvl > 0);
@@ -347,19 +396,7 @@ void rubik::rotate::xp_rotate_y(int xp_lvl, int y_lvl,
         minterm &m = mtc.unused();
         for (unsigned k=1; k<mtc.getNumVars(); k++) {
             if (u_x_lvl == k) {
-                if ('x' == rotdir[k]) {
-                    m.setVars(k, DONT_CARE, (0==y) ? 0 : 3-y);  // swap 2,3
-                    continue;
-                }
-                if ('y' == rotdir[k]) {
-                    m.setVars(k, DONT_CARE, (1==y) ? 1 : 2-y);  // swap 0,2
-                    continue;
-                }
-                if ('z' == rotdir[k]) {
-                    m.setVars(k, DONT_CARE, (2==y) ? 2 : 1-y);  // swap 0,1
-                    continue;
-                }
-                assert(false);
+                m.setVars(k, DONT_CARE, reorient(y));
                 continue;
             } // u_x_lvl == k
 
@@ -368,7 +405,7 @@ void rubik::rotate::xp_rotate_y(int xp_lvl, int y_lvl,
                 continue;
             }
 
-            if ('i' == rotdir[k]) {
+            if (nochange[k]) {
                 m.setVars(k, DONT_CARE, DONT_CHANGE);
             } else {
                 m.setVars(k, DONT_CARE, DONT_CARE);
@@ -533,16 +570,149 @@ rubik::pos_rotate::pos_rotate(const char* name, char _face, int _turns,
 }
 
 // *************************************************************
+
 bool rubik::pos_rotate::fire(const MEDDLY::minterm &curr,
                         MEDDLY::minterm &next)
 {
-    return false;
+    next.setFrom(curr);
+    for (int t=0; t<turns; t++) {
+        rotate_pieces(cpA, cpB, cpC, cpD, next);
+        rotate_pieces(epA, epB, epC, epD, next);
+        rotate_orientations(coA, coB, coC, coD, next);
+        rotate_orientations(eoA, eoB, eoC, eoD, next);
+    }
+    return true;
 }
 
 // *************************************************************
+
 bool rubik::pos_rotate::build_nsf(MEDDLY::dd_edge &R)
 {
-    return false;
+    int ncpA = -cpA;
+    int ncpB = -cpB;
+    int ncpC = -cpC;
+    int ncpD = -cpD;
+    int ncoA = -coA;
+    int ncoB = -coB;
+    int ncoC = -coC;
+    int ncoD = -coD;
+    int nepA = -epA;
+    int nepB = -epB;
+    int nepC = -epC;
+    int nepD = -epD;
+    int neoA = -eoA;
+    int neoB = -eoB;
+    int neoC = -eoC;
+    int neoD = -eoD;
+    for (int t=0; t<turns; t++) {
+        rotate_levels(ncpA, ncpB, ncpC, ncpD);
+        rotate_levels(ncoA, ncoB, ncoC, ncoD);
+        rotate_levels(nepA, nepB, nepC, nepD);
+        rotate_levels(neoA, neoB, neoC, neoD);
+    }
+
+    //
+    // build don't change set
+    //
+    std::vector <bool> identity(41);
+    for (unsigned i=0; i<identity.size(); i++) {
+        identity[i] = true;
+    }
+    identity[cpA] = false;
+    identity[cpB] = false;
+    identity[cpC] = false;
+    identity[cpD] = false;
+    identity[coA] = false;
+    identity[coB] = false;
+    identity[coC] = false;
+    identity[coD] = false;
+    identity[epA] = false;
+    identity[epB] = false;
+    identity[epC] = false;
+    identity[epD] = false;
+    identity[eoA] = false;
+    identity[eoB] = false;
+    identity[eoC] = false;
+    identity[eoD] = false;
+
+    //
+    // Build portions of the relation, AND them together
+    //
+    dd_edge r(R);
+    R.getForest()->createConstant(true, R);
+
+    if (cpA && cpB && cpC && cpD)
+    {
+        xp_equals_y(ncpA, cpA, identity, r);
+        R *= r;
+        xp_equals_y(ncpB, cpB, identity, r);
+        R *= r;
+        xp_equals_y(ncpC, cpC, identity, r);
+        R *= r;
+        xp_equals_y(ncpD, cpD, identity, r);
+        R *= r;
+    }
+
+    if (coA && coB && coC && coD)
+    {
+        xp_rotate_y(ncoA, coA, identity, r);
+        R *= r;
+        xp_rotate_y(ncoB, coB, identity, r);
+        R *= r;
+        xp_rotate_y(ncoC, coC, identity, r);
+        R *= r;
+        xp_rotate_y(ncoD, coD, identity, r);
+        R *= r;
+    }
+
+    if (epA && epB && epC && epD)
+    {
+        xp_equals_y(nepA, epA, identity, r);
+        R *= r;
+        xp_equals_y(nepB, epB, identity, r);
+        R *= r;
+        xp_equals_y(nepC, epC, identity, r);
+        R *= r;
+        xp_equals_y(nepD, epD, identity, r);
+        R *= r;
+    }
+
+    if (eoA && eoB && eoC && eoD)
+    {
+        xp_rotate_y(neoA, eoA, identity, r);
+        R *= r;
+        xp_rotate_y(neoB, eoB, identity, r);
+        R *= r;
+        xp_rotate_y(neoC, eoC, identity, r);
+        R *= r;
+        xp_rotate_y(neoD, eoD, identity, r);
+        R *= r;
+    }
+
+    return true;
+}
+
+// *************************************************************
+
+void rubik::pos_rotate::rotate_pieces(int A, int B, int C, int D, minterm &x)
+{
+    int tD = x.getVar(D);
+    x.setVar(D, x.getVar(C));
+    x.setVar(C, x.getVar(B));
+    x.setVar(B, x.getVar(A));
+    x.setVar(A, tD);
+}
+
+// *************************************************************
+
+void rubik::pos_rotate::rotate_orientations(int A, int B, int C, int D,
+        minterm &x)
+{
+    int tD = x.getVar(D);
+    x.setVar(D, reorient(x.getVar(C)));
+    x.setVar(C, reorient(x.getVar(B)));
+    x.setVar(B, reorient(x.getVar(A)));
+    x.setVar(A, reorient(tD));
 }
 
 // ******************************************************************
@@ -551,6 +721,52 @@ bool rubik::pos_rotate::build_nsf(MEDDLY::dd_edge &R)
 
 int main()
 {
+    try {
+
+        std::vector <int> varorder(40);
+        for (int i=0; i<40; i++) {
+            varorder[i] = (i<8) ? i+1 : 0;
+        }
+
+        rubik::pos_rotate R("U", 'U', 3, varorder);
+
+        MEDDLY::initialize();
+
+        int sizes[40];
+        for (int i=0; i<8; i++) sizes[i] = 8;
+        for (int i=8; i<20; i++) sizes[i] = 12;
+        for (int i=20; i<40; i++) sizes[i] = 3;
+        domain* D = domain::createBottomUp(sizes, 40);
+
+        forest* mxd = forest::create(D, RELATION, range_type::BOOLEAN,
+                        edge_labeling::MULTI_TERMINAL);
+
+        dd_edge e(mxd);
+        R.build_nsf(e);
+
+
+        ostream_output out(std::cout);
+        out << "Build NSF for event " << R.get_name() << ":\n";
+        e.showRelation(out);
+
+
+        MEDDLY::cleanup();
+        return 0;
+    }
+    catch (MEDDLY::error e) {
+        std::cerr   << "\nCaught meddly error '" << e.getName()
+                    << "'\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
+    }
+    catch (const char* e) {
+        std::cerr   << "\nCaught our own error: " << e << "\n";
+        return 2;
+    }
+    std::cerr << "\nSome other error?\n";
+    return 4;
+
+
     return 0;
 }
 
