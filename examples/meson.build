@@ -128,6 +128,14 @@ executable(
 ######################################################################
 
 executable(
+    'rubik',
+    'rubik.cc',
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
+)
+
+######################################################################
+
+executable(
     'slot',
     'slot.cc',
     dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
