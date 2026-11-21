@@ -1000,6 +1000,8 @@ void rsgen_model::show_section(std::ostream &out, const char* sec) const
     out << "\n";
 }
 
+// ******************************************************************
+
 void rsgen_model::show_synopsis(std::ostream &out, const char* arg0,
         const char* usage) const
 {
@@ -1008,6 +1010,8 @@ void rsgen_model::show_synopsis(std::ostream &out, const char* arg0,
         out << "    " << basename(arg0) << " " << usage << "\n";
     }
 }
+
+// ******************************************************************
 
 void rsgen_model::show_description(std::ostream &out, const char* sec,
         const char* para) const
@@ -1033,6 +1037,8 @@ void rsgen_model::show_description(std::ostream &out, const char* sec,
     }
     if (c) out << "\n";
 }
+
+// ******************************************************************
 
 void rsgen_model::show_switch(std::ostream &out, const char* sw,
         const char* para) const
@@ -1073,7 +1079,7 @@ void rsgen_model::show_switch(std::ostream &out, const char* sw,
     out << "\n";
 }
 
-//--------------------------------------------------
+// ******************************************************************
 
 void rsgen_model::gen_explicit(const MEDDLY::dd_edge &init,
         MEDDLY::dd_edge &RS)

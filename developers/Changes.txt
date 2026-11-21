@@ -299,43 +299,9 @@ Mark and sweep stuff
     * Sweep CTs: remove any entry with an unmarked node in key or result
     * Sweep nodes: remove unmarked nodes; decrement mark for all others
 
-======================================================================
-Completely reimplemented operations
-======================================================================
-
-arith_max.cc
-arith_min.cc
-arith_plus.cc
-arith_minus.cc
-arith_mult.cc
-arith_div.cc
-arith_mod.cc
-
-cardinality.cc
-cross.cc
-compare.cc
-complement.cc
-copy.cc
-
-difference.cc
-intersection.cc
-maxmin_range.cc
-
-reach_bfs.cc
-union.cc
-
-mdd2index.cc
 
 ======================================================================
-Operations with no need for updating
-======================================================================
-
-select.cc       -> DEPRECATED
-
-vect_matr.cc
-
-======================================================================
-Operations that need updating
+Operations that need updating (and test cases)
 ======================================================================
 
 constrained.cc
