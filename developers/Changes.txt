@@ -3,9 +3,6 @@ TO DO list
 
 rsgen_model:
 
-    * migrate all kanban in tests/ to use rsgen_model
-        - kan_relprod
-
     * Other examples using rsgen_model?
         - knight's tour
         - nqueens

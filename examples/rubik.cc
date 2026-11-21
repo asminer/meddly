@@ -110,6 +110,8 @@
 #include "meddly/meddly.h"
 #include "utils/rsgen_model.h"
 
+#include <cassert>
+
 using namespace MEDDLY;
 
 /*
