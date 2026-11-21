@@ -1537,8 +1537,6 @@ void rsgen_model::verify_oracle(MEDDLY::output &out, std::istream &inf,
 void rsgen_model::verify_set(MEDDLY::output &out,
         const MEDDLY::minterm_coll &MC, const MEDDLY::dd_edge &reachable) const
 {
-    out << "Verifying against oracle\n";
-
     long c = 0; // state counter
 
     for (MEDDLY::dd_edge::iterator i = reachable.begin(); i; ++i)
@@ -1560,8 +1558,6 @@ void rsgen_model::verify_set(MEDDLY::output &out,
         out << "\tNot enough markings!\n";
         throw "mismatch";
     }
-
-    out << "\tperfect match!\n";
 }
 
 // ******************************************************************

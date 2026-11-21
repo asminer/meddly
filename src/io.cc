@@ -65,8 +65,10 @@ void MEDDLY::input::stripWS()
 void MEDDLY::input::consumeKeyword(const char* keyword)
 {
     for ( ; *keyword; keyword++) {
-      int c = get_char();
-      if (c != *keyword) throw error(error::INVALID_FILE, __FILE__, __LINE__);
+        int c = get_char();
+        if (c != *keyword) {
+            throw error(error::INVALID_FILE, __FILE__, __LINE__);
+        }
     }
 }
 

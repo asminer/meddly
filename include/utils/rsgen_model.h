@@ -382,6 +382,9 @@ class rsgen_model {
         inline bool is_forward() const {
             return forwd;
         }
+        inline void set_forward(bool f) {
+            forwd = f;
+        }
         inline const char* get_direction() const {
             return forwd ? "forward" : "backward";
         }

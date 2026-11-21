@@ -1,4 +1,3 @@
-
 /*
     Meddly: Multi-terminal and Edge-valued Decision Diagram LibrarY.
     Copyright (C) 2011, Iowa State University Research Foundation, Inc.
@@ -41,8 +40,8 @@ class kanban : public kanban_base {
         void make_forests();
         void done_forests();
 
-        void compare_states(MEDDLY::output &out, const bool fwd,
-                int dist, const MEDDLY::dd_edge &ftr) const;
+        void compare_states(MEDDLY::output &out, int dist,
+                const MEDDLY::dd_edge &ftr) const;
 
         //
         // Build next forward or backward step.
@@ -55,13 +54,13 @@ class kanban : public kanban_base {
         //      reachable: all states reachable up to distance d+1
         //      frontier:  states at distance d+1
         //
-        static inline void next_step(const bool fwd, MEDDLY::dd_edge &reachable,
-            const MEDDLY::dd_edge &nsf, MEDDLY::dd_edge &frontier)
+        inline void next_step(MEDDLY::dd_edge &reachable,
+            const MEDDLY::dd_edge &nsf, MEDDLY::dd_edge &frontier) const
         {
             using namespace MEDDLY;
             dd_edge s_x_R(reachable);
 
-            if (fwd) {
+            if (is_forward()) {
                 apply(POST_IMAGE, reachable, nsf, s_x_R);
             } else {
                 apply(PRE_IMAGE, reachable, nsf, s_x_R);
@@ -104,21 +103,32 @@ void kanban::check_states(MEDDLY::output &out)
     //
     // Build initial state, frontier sets
     //
-    dd_edge reachset(mdd);
-    fill_initial(reachset);
-    dd_edge frontier(reachset);
+    dd_edge reachset(mdd), frontier(mdd);
 
-    // Classic BFS-style iteration
-    int dist = 0;
-    do {
+    // Classic BFS-style iteration, forward
+
+    for (int iter=1; iter >= 0; --iter) {
+        fill_initial(reachset);
+        fill_initial(frontier);
         out.indent_more();
-        out << "Distance " << dist << "\n";
-        compare_states(out, true, dist, frontier);
-        next_step(true, reachset, nsf, frontier);
-        ++dist;
+        set_forward(iter);
+        out << ( is_forward() ? "Forward\n" : "Backward\n" );
+        int dist = 0;
+        do {
+            out << "Verifying distance ";
+            out.put(dist, 3);
+            out << " ... ";
+            out.flush();
+            compare_states(out, dist, frontier);
+            next_step(reachset, nsf, frontier);
+            out << " match!\n";
+            ++dist;
+        } while (frontier.getNode());
         out.indent_less();
         out << "\n";
-    } while (frontier.getNode());
+    }
+
+    done_forests();
 }
 
 // ============================================
@@ -158,11 +168,11 @@ void kanban::done_forests()
 
 // ============================================
 
-void kanban::compare_states(MEDDLY::output &out, const bool fwd,
-                int dist, const MEDDLY::dd_edge &ftr) const
+void kanban::compare_states(MEDDLY::output &out, int dist,
+        const MEDDLY::dd_edge &ftr) const
 {
     std::string pname = "../oracles/oracle_kanban_";
-    if (fwd) {
+    if (is_forward()) {
         pname += "f_d_";
     } else {
         pname += "b_d_";
@@ -172,6 +182,7 @@ void kanban::compare_states(MEDDLY::output &out, const bool fwd,
 
     std::ifstream inf(pname);
     if (!inf) {
+        out << "\n";
         out << "    Missing oracle file!\n";
         out << "    Use kan_chkgen -evdist -g to generate\n";
         throw "Missing oracle";
