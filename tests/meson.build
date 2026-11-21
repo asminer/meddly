@@ -254,16 +254,6 @@ test('kan_relprod', kan_relprod)
 
 ######################################################################
 
-kan_relprod_old = executable(
-    'kan_relprod-old',
-    'kan_relprod-old.cc',
-    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
-)
-
-test('kan_relprod', kan_relprod)
-
-######################################################################
-
 kan_size = executable(
     'kan_size',
     [ 'kan_base.cc', 'kan_size.cc' ],
