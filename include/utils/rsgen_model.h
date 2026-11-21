@@ -442,6 +442,16 @@ class rsgen_model {
         void read_oracle(MEDDLY::input &inf, MEDDLY::minterm_coll &mtc) const;
 
         /**
+            Read in selected minterms from an "oracle",
+            into a minterm collection.
+                @param  inf     File to read from
+                @param  mtc     Collection to read into
+                @param  val     Value to match
+        */
+        void read_oracle(MEDDLY::input &inf, MEDDLY::minterm_coll &mtc,
+                MEDDLY::rangeval val) const;
+
+        /**
             Verify reachset / distance function edge
                 @param  out     Output stream for progress / feedback
                 @param  inf     File stream for the oracle
@@ -449,6 +459,16 @@ class rsgen_model {
          */
         void verify_oracle(MEDDLY::output &out, std::istream &inf,
                 const MEDDLY::dd_edge &e);
+
+        /**
+            Verify a set against a collection of minterms.
+            Throws "mismatch" on mismatch.
+                @param  out     Output stream for progress / feedback
+                @param  mtc     Collection of minterms to compare against
+                @param  e       Edge encoding a set
+        */
+        void verify_set(MEDDLY::output &out, const MEDDLY::minterm_coll &mtc,
+                const MEDDLY::dd_edge &e) const;
 
         /**
             Override in derived classes, to add header information

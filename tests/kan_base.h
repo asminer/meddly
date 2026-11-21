@@ -28,6 +28,10 @@ class kanban_base : public rsgen_model {
     public:
         kanban_base();
 
+        inline void setN(int n) {
+            N = n;
+        }
+
         virtual bool build_model(MEDDLY::output &out);
         virtual void build_initial(MEDDLY::minterm &init);
 

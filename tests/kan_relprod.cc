@@ -17,6 +17,11 @@
     along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <iostream>
+#include "kan_base.h"
+
+// ===
+
 #include <cstdlib>
 #include <string.h>
 

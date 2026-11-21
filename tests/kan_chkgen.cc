@@ -29,10 +29,6 @@ class kanban : public kanban_base {
     public:
         kanban();
 
-        inline void setN(int n) {
-            N = n;
-        }
-
         virtual bool process_arg(unsigned &i, const char** argv);
         virtual void show_usage(std::ostream &out, const char* arg0);
 

@@ -1468,6 +1468,28 @@ void rsgen_model::read_oracle(MEDDLY::input &inf, MEDDLY::minterm_coll &mtc)
 
 // ******************************************************************
 
+void rsgen_model::read_oracle(MEDDLY::input &inf, MEDDLY::minterm_coll &mtc,
+        MEDDLY::rangeval val) const
+{
+    inf.stripWS();
+    inf.consumeKeyword("oracle");
+    read_oracle_header(inf);
+    for (;;) {
+        inf.stripWS();
+        if ('[' != inf.next_char()) break;
+
+        mtc.unused().read(inf);
+
+        if (val == mtc.unused().getValue()) {
+            mtc.pushUnused();
+            mtc.expandIfNecessary();
+        }
+    }
+    inf.consumeKeyword("elcaro");
+}
+
+// ******************************************************************
+
 void rsgen_model::verify_oracle(MEDDLY::output &out, std::istream &inf,
         const MEDDLY::dd_edge &reachable)
 {
@@ -1490,6 +1512,38 @@ void rsgen_model::verify_oracle(MEDDLY::output &out, std::istream &inf,
     for (MEDDLY::dd_edge::iterator i = reachable.begin(); i; ++i)
     {
         if (!matches( adjust, MC.at(c), *i)) {
+            out << "\tMarking #" << c << " mismatched\n";
+            out << "\tOracle: ";
+            MC.at(c).show(out);
+            out << "\n";
+            out << "\tOurs  : ";
+            (*i).show(out);
+            out << "\n";
+            throw "mismatch";
+        }
+        c++;
+    } // for loop
+
+    if (c < MC.size()) {
+        out << "\tNot enough markings!\n";
+        throw "mismatch";
+    }
+
+    out << "\tperfect match!\n";
+}
+
+// ******************************************************************
+
+void rsgen_model::verify_set(MEDDLY::output &out,
+        const MEDDLY::minterm_coll &MC, const MEDDLY::dd_edge &reachable) const
+{
+    out << "Verifying against oracle\n";
+
+    long c = 0; // state counter
+
+    for (MEDDLY::dd_edge::iterator i = reachable.begin(); i; ++i)
+    {
+        if (!matches( 0, MC.at(c), *i)) {
             out << "\tMarking #" << c << " mismatched\n";
             out << "\tOracle: ";
             MC.at(c).show(out);

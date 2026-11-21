@@ -36,9 +36,6 @@ class kanban : public kanban_base {
     public:
         kanban();
 
-        inline void setN(int n) {
-            N = n;
-        }
         inline void fill_initial(MEDDLY::dd_edge &init_state)
         {
             MEDDLY::minterm init(mdd);

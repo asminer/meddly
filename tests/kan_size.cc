@@ -39,10 +39,6 @@ class kanban : public kanban_base {
     public:
         kanban();
 
-        inline void setN(int n) {
-            N = n;
-        }
-
         virtual void after_generation(MEDDLY::output &out,
                 const MEDDLY::dd_edge &e);
 };
