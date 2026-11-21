@@ -471,6 +471,16 @@ test('ops_rel --rel', ops_set, args: ['--rel'])
 
 ######################################################################
 
+ops_tc = executable(
+    'ops_tc',
+    'ops_tc.cc',
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
+)
+
+test('ops_tc', ops_tc)
+
+######################################################################
+
 ops_user_un = executable(
     'ops_user_un',
     'ops_user_un.cc',

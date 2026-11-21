@@ -259,8 +259,6 @@ namespace MEDDLY {
 
     class ternary_operation;
 
-    ternary_operation* CONSTRAINED_BACKWARD_BFS(forest* consF, forest* inF,
-            forest* relF, forest* outF);
     ternary_operation* CONSTRAINED_FORWARD_DFS(forest* consF, forest* inF,
             forest* relF, forest* outF);
     ternary_operation* CONSTRAINED_BACKWARD_DFS(forest* consF, forest* inF,
