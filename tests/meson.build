@@ -246,8 +246,8 @@ test('kan_io', kan_io)
 
 kan_relprod = executable(
     'kan_relprod',
-    'kan_relprod.cc',
-    dependencies: [ gmp_dep, meddly_dep, simple_model_dep ]
+    [ 'kan_base.cc', 'kan_relprod.cc' ],
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
 )
 
 test('kan_relprod', kan_relprod)

@@ -20,301 +20,214 @@
 #include <iostream>
 #include "kan_base.h"
 
-// ===
+// ============================================
 
-#include <cstdlib>
-#include <string.h>
+class kanban : public kanban_base {
+    public:
+        kanban();
 
-#include "meddly/meddly.h"
-#include "utils/simple_model.h"
+        inline void fill_initial(MEDDLY::dd_edge &init_state)
+        {
+            MEDDLY::minterm init(mdd);
+            build_initial(init);
+            init.buildFunction(false, init_state);
+        }
 
-#define HAVE_ORACLE
+        void check_states(MEDDLY::output &out);
 
-#ifdef HAVE_ORACLE
-#include "kan_dist1.h"
-#endif
+    protected:
+        virtual void read_oracle_header(MEDDLY::input &inf) const;
 
-const char* kanban[] = {
-    "X-+..............",  // Tin1
-    "X.-+.............",  // Tr1
-    "X.+-.............",  // Tb1
-    "X.-.+............",  // Tg1
-    "X.....-+.........",  // Tr2
-    "X.....+-.........",  // Tb2
-    "X.....-.+........",  // Tg2
-    "X+..--+..-+......",  // Ts1_23
-    "X.........-+.....",  // Tr3
-    "X.........+-.....",  // Tb3
-    "X.........-.+....",  // Tg3
-    "X....+..-+..--+..",  // Ts23_4
-    "X.............-+.",  // Tr4
-    "X.............+-.",  // Tb4
-    "X............+..-",  // Tout4
-    "X.............-.+"   // Tg4
+        void make_forests();
+        void done_forests();
+
+        void compare_states(MEDDLY::output &out, const bool fwd,
+                int dist, const MEDDLY::dd_edge &ftr) const;
+
+        //
+        // Build next forward or backward step.
+        //
+        // On input:
+        //     reachable: all states reachable up to current distance d
+        //     frontier:  ignored
+        //
+        // On output:
+        //      reachable: all states reachable up to distance d+1
+        //      frontier:  states at distance d+1
+        //
+        static inline void next_step(const bool fwd, MEDDLY::dd_edge &reachable,
+            const MEDDLY::dd_edge &nsf, MEDDLY::dd_edge &frontier)
+        {
+            using namespace MEDDLY;
+            dd_edge s_x_R(reachable);
+
+            if (fwd) {
+                apply(POST_IMAGE, reachable, nsf, s_x_R);
+            } else {
+                apply(PRE_IMAGE, reachable, nsf, s_x_R);
+            }
+            apply(DIFFERENCE, s_x_R, reachable, frontier);
+            apply(UNION, reachable, s_x_R, reachable);
+        }
+
+
+
+    private:
+        MEDDLY::forest* mdd;
+        MEDDLY::forest* mxd;
+        MEDDLY::forest* evmdd;
 };
 
-using namespace MEDDLY;
+// ============================================
 
-void show_states(const bool fwd, unsigned dist, const dd_edge &ftr)
+kanban::kanban()
 {
-    using namespace std;
-    if (fwd) {
-        cout << "//\n// States at distance " << dist << "\n//\n";
-        cout << "\nconst char* kanban_fwd_" << dist << "[] = {\n";
-    } else {
-        cout << "//\n// States at reverse distance " << dist << "\n//\n";
-        cout << "\nconst char* kanban_bwd_" << dist << "[] = {\n";
-    }
-    for (dd_edge::iterator i = ftr.begin(); i; ++i)
-    {
-        cout << "    \"b";
-        for (unsigned k=1; k <= 16; ++k) {
-            cout << (*i).from(k);
-        }
-        cout << "\",\n";
-    }
-    cout << "    nullptr\n};\n\n";
+    disable_output_options();
+    mdd = nullptr;
+    mxd = nullptr;
+    evmdd = nullptr;
 }
 
-void show_collection(const bool fwd, unsigned dist)
+// ============================================
+
+void kanban::check_states(MEDDLY::output &out)
 {
-    using namespace std;
-    const char* name = fwd ? "fwd" : "bwd";
-    cout << "\nconst char** kanban_" << name << "[] = {\n";
-    for (unsigned i=0; i<dist; i++) {
-        cout << "    kanban_" << name << "_" << i << ",\n";
-    }
-    cout << "    nullptr\n};\n\n";
-}
+    using namespace MEDDLY;
 
-
-bool matches(const char* mark, const minterm &m)
-{
-    for (unsigned i=m.getNumVars(); i; --i) {
-        if (mark[i]-48 != m.from(i)) return false;
-    }
-    return true;
-}
-
-void compare_states(const bool fwd, unsigned dist, const dd_edge &ftr,
-        const char** oracle)
-{
-    using namespace std;
-
-    cout << "    checking " << (fwd?"forward":"backward")
-         << " distance " << dist << "\n";
-    unsigned card = 0;
-
-    ostream_output mout(cout);
-
-    for (dd_edge::iterator i = ftr.begin(); i; ++i)
-    {
-        if (!oracle[card]) {
-            cout << "        more states than expected\n";
-            throw "too large set";
-        }
-        if (!matches(oracle[card], *i))
-        {
-            cout << "        marking " << card << " mismatched\n";
-            throw "mismatched set";
-        }
-        ++card;
-    }
-    if (oracle[card]) {
-        cout << "        fewer states than expected";
-        throw "too small set";
-    }
-
-    cout << "        " << card << " markings matched\n";
-}
-
-//
-// Build next forward or backward step.
-//
-// On input:
-//     reachable: all states reachable up to current distance d
-//     frontier:  ignored
-//
-// On output:
-//      reachable: all states reachable up to distance d+1
-//      frontier:  states at distance d+1
-//
-void next_step(const bool fwd, dd_edge &reachable,
-        const dd_edge &nsf, dd_edge &frontier)
-{
-    dd_edge s_x_R(reachable);
-
-    if (fwd) {
-        apply(POST_IMAGE, reachable, nsf, s_x_R);
-    } else {
-        apply(PRE_IMAGE, reachable, nsf, s_x_R);
-    }
-    apply(DIFFERENCE, s_x_R, reachable, frontier);
-    apply(UNION, reachable, s_x_R, reachable);
-}
-
-//
-// Generate forward/backward distance sets
-//
-void genStates(const bool fwd)
-{
-    int sizes[16];
-
-    for (int i=15; i>=0; i--) sizes[i] = 2;
-
-    domain* d = domain::createBottomUp(sizes, 16);
-    forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
-            edge_labeling::MULTI_TERMINAL);
-    forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
-            edge_labeling::MULTI_TERMINAL);
-
+    make_forests();
+    //
     // Build next-state function
+    //
     dd_edge nsf(mxd);
-    buildNextStateFunction(kanban, 16, mxd, nsf);
+    build_monolithic(nsf);
 
-    // Build initial state
+    //
+    // Build initial state, frontier sets
+    //
     dd_edge reachset(mdd);
-    minterm initial(mdd);
-    initial.setAllVars(0);
-    initial.setVar(1, 1);
-    initial.setVar(5, 1);
-    initial.setVar(9, 1);
-    initial.setVar(13, 1);
-    initial.buildFunction(false, reachset);
+    fill_initial(reachset);
     dd_edge frontier(reachset);
 
     // Classic BFS-style iteration
-    unsigned dist = 0;
+    int dist = 0;
     do {
-        show_states(fwd, dist, frontier);
-        next_step(fwd, reachset, nsf, frontier);
+        out.indent_more();
+        out << "Distance " << dist << "\n";
+        compare_states(out, true, dist, frontier);
+        next_step(true, reachset, nsf, frontier);
         ++dist;
-    } while (frontier.getNode());
-    show_collection(fwd, dist);
-}
-
-//
-// Generate and Check forward/backward distance sets
-//
-void checkStates(const bool fwd, range_type rt, edge_labeling el)
-{
-    std::cout   << "Checking " << (fwd ? "forward" : "backward")
-                << " with " << nameOf(el) << ", " << nameOf(rt)
-                << " 'states'\n";
-
-    int sizes[16];
-
-    for (int i=15; i>=0; i--) sizes[i] = 2;
-
-    domain* d = domain::createBottomUp(sizes, 16);
-    forest* mdd = forest::create(d, SET, rt, el);
-    /*
-    forest* mdd = forest::create(d, SET, range_type::BOOLEAN,
-            edge_labeling::MULTI_TERMINAL);
-            */
-    forest* mxd = forest::create(d, RELATION, range_type::BOOLEAN,
-            edge_labeling::MULTI_TERMINAL);
-
-    // Build next-state function
-    dd_edge nsf(mxd);
-    buildNextStateFunction(kanban, 16, mxd, nsf);
-
-    // Build initial state
-    dd_edge reachset(mdd);
-    minterm initial(mdd);
-    initial.setAllVars(0);
-    initial.setVar(1, 1);
-    initial.setVar(5, 1);
-    initial.setVar(9, 1);
-    initial.setVar(13, 1);
-    initial.buildFunction(false, reachset);
-    dd_edge frontier(reachset);
-
-    // Classic BFS-style iteration
-#ifdef HAVE_ORACLE
-    const char*** oracle = fwd ? kanban_fwd : kanban_bwd;
-#endif
-    unsigned dist = 0;
-    do {
-#ifdef HAVE_ORACLE
-        if (!oracle[dist]) {
-            throw "distance mismatch";
-        }
-        compare_states(fwd, dist, frontier, oracle[dist]);
-#endif
-        next_step(fwd, reachset, nsf, frontier);
-        ++dist;
+        out.indent_less();
+        out << "\n";
     } while (frontier.getNode());
 }
 
 // ============================================
 
-int Usage(const char* exe)
+void kanban::read_oracle_header(MEDDLY::input &inf) const
 {
-    using namespace std;
-
-    cerr << "\n";
-    cerr << "Usage: " << exe << " [ switches ]\n";
-    cerr << "\n";
-    cerr << "Check pre- and post-image computations on Kanban N=1.\n";
-    cerr << "\n";
-    cerr << "Switches:\n";
-    cerr << "    -c: check against expected states (default)\n";
-    cerr << "    -g: generate header for checking states; do not perform check\n";
-    cerr << "\n";
-
-    return 1;
+    inf.stripWS();
+    inf.consumeKeyword("kanban");
+    if (inf.get_integer() != N) {
+        throw "oracle file mismatch";
+    }
+    rsgen_model::read_oracle_header(inf);
 }
 
 // ============================================
 
-
-int main(int argc, const char** argv)
+void kanban::make_forests()
 {
-    bool generate = false;
-    for (int i=1; i<argc; i++) {
+    using namespace MEDDLY;
+    mdd = forest::create(get_domain(), SET, range_type::BOOLEAN,
+                            edge_labeling::MULTI_TERMINAL);
+    mxd = forest::create(get_domain(), RELATION, range_type::BOOLEAN,
+                            edge_labeling::MULTI_TERMINAL);
+    evmdd = forest::create(get_domain(), SET, range_type::INTEGER,
+                            edge_labeling::INDEX_SET);
+}
 
-        if (0==strcmp("-c", argv[i])) {
-            generate = false;
-            continue;
-        }
+// ============================================
 
-        if (0==strcmp("-g", argv[i])) {
-            generate = true;
-            continue;
-        }
+void kanban::done_forests()
+{
+    using namespace MEDDLY;
+    forest::destroy(evmdd);
+    forest::destroy(mxd);
+    forest::destroy(mdd);
+}
 
-        return Usage(argv[0]);
+// ============================================
+
+void kanban::compare_states(MEDDLY::output &out, const bool fwd,
+                int dist, const MEDDLY::dd_edge &ftr) const
+{
+    std::string pname = "../oracles/oracle_kanban_";
+    if (fwd) {
+        pname += "f_d_";
+    } else {
+        pname += "b_d_";
+    }
+    pname += '0' + N;
+    pname += ".txt";
+
+    std::ifstream inf(pname);
+    if (!inf) {
+        out << "    Missing oracle file!\n";
+        out << "    Use kan_chkgen -evdist -g to generate\n";
+        throw "Missing oracle";
     }
 
-    using namespace std;
+    //
+    // Load oracle but just states with given distance
+    //
+    MEDDLY::istream_input minf(inf);
+    MEDDLY::minterm_coll MC(16, mdd);
+    read_oracle(minf, MC, dist);
+
+    //
+    // Compare with ftr
+    //
+    verify_set(out, MC, ftr);
+}
+
+// ============================================
+
+/*
+    Main program, of course
+*/
+int main()
+{
+    MEDDLY::initialize();
+    kanban K;
+
+    MEDDLY::ostream_output out(std::cout);
 
     try {
-        MEDDLY::initialize();
-
-        if (generate) {
-            genStates(true);
-            genStates(false);
-        } else {
-            checkStates(true,   range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
-            checkStates(false,  range_type::BOOLEAN, edge_labeling::MULTI_TERMINAL);
+        for (unsigned n=1; n<4; n++) {
+            out.indent_more();
+            K.setN(n);
+            K.build_model(out);
+            K.check_states(out);
+            K.destroy_model();
+            out.indent_less();
+            out << "\n";
         }
-
+        out << "Done\n";
         MEDDLY::cleanup();
         return 0;
     }
-
     catch (MEDDLY::error e) {
-        cerr << "\nCaught Meddly error '" << e.getName() << "'\n"
-             << "    thrown in " << e.getFile()
-             << " line " << e.getLine() << "\n";
+        std::cerr   << "\nCaught meddly error '" << e.getName()
+                    << "'\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
         return 1;
     }
     catch (const char* e) {
-        cerr << "\nCaught our own error: " << e << "\n";
+        std::cerr   << "\nCaught our own error: " << e << "\n";
         return 2;
     }
-    cerr << "\nSome other error?\n";
+    std::cerr << "\nSome other error?\n";
     return 4;
+
 }
 
