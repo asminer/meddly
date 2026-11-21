@@ -116,10 +116,10 @@ void smallPN::test_tc(MEDDLY::output &out)
     dd_edge nsf(mxd), tc(mxd);
     build_monolithic(nsf);
 
-    // apply(TRANSITIVE_CLOSURE_DFS, constr, nsf, nsf, tc);
+    apply(TRANSITIVE_CLOSURE_DFS, constr, nsf, nsf, tc);
 
-    // out << "Transitive closure:\n";
-    // tc.showRelation(out);
+    out << "Transitive closure:\n";
+    tc.showRelation(out);
 
     // TBD: test it
 

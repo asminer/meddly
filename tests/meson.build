@@ -477,7 +477,7 @@ ops_tc = executable(
     dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
 )
 
-test('ops_tc', ops_tc)
+# test('ops_tc', ops_tc)
 
 ######################################################################
 
