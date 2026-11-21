@@ -301,6 +301,18 @@ Mark and sweep stuff
 Operations that need updating (and test cases)
 ======================================================================
 
+difference.cc
+        EV+ as a special case
+            A - B:  return a copy of A except any place where
+                    B is NOT infinity, the result is infinity.
+
+                    Set difference in the sense that infinity means
+                    "not in the set", and non-infinity means "in the set".
+
+                    Needed for the situation where infinity distance
+                    means not in the set / relation.
+
+
 constrained.cc
         NO      constrained_forwd_dfs_mt
         NO      constrained_bckwd_dfs_mt

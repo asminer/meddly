@@ -124,7 +124,6 @@ namespace MEDDLY {
                 const forest* fa, node_handle &a,
                 const forest*, node_handle b)
         {
-            IGNORE_UNUSED(b);
             MEDDLY_DCASSERT(OMEGA_INFINITY != b);
             if (fa->isIdentityReduced()) return false;
             return (OMEGA_INFINITY == a) || (OMEGA_NORMAL == b);

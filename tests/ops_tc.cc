@@ -104,19 +104,31 @@ void smallPN::test_tc(MEDDLY::output &out)
 {
     using namespace MEDDLY;
 
-    forest* mdd = forest::create(get_domain(), SET, range_type::BOOLEAN,
-                        edge_labeling::MULTI_TERMINAL);
+    forest* evmdd = forest::create(get_domain(), SET, range_type::INTEGER,
+                        edge_labeling::EVPLUS);
 
     forest* mxd = forest::create(get_domain(), RELATION, range_type::BOOLEAN,
                         edge_labeling::MULTI_TERMINAL);
 
-    dd_edge constr(mdd);
-    mdd->createConstant(true, constr);
+    forest* evmxd = forest::create(get_domain(), RELATION, range_type::INTEGER,
+                        edge_labeling::EVPLUS);
 
-    dd_edge nsf(mxd), tc(mxd);
+    dd_edge constr(evmdd);
+    evmdd->createConstant(0, constr);
+
+    dd_edge nsf(mxd);
     build_monolithic(nsf);
 
-    apply(TRANSITIVE_CLOSURE_DFS, constr, nsf, nsf, tc);
+    out << "Next state function\n";
+    nsf.showRelation(out);
+
+    dd_edge tc(evmxd);
+    apply(COPY, nsf, tc);
+
+    out << "EV+ next state function\n";
+    tc.showRelation(out);
+
+    apply(TRANSITIVE_CLOSURE_DFS, constr, tc, tc,  tc);
 
     out << "Transitive closure:\n";
     tc.showRelation(out);
@@ -126,8 +138,9 @@ void smallPN::test_tc(MEDDLY::output &out)
     out << "Done\n";
 
     // cleanup
-    forest::destroy(mdd);
+    forest::destroy(evmdd);
     forest::destroy(mxd);
+    forest::destroy(evmxd);
 }
 
 // =============================================================
