@@ -42,7 +42,7 @@ class smallPN : public rsgen_model {
         smallPN(int N, bool t5, bool t6);
 
         virtual bool build_model(MEDDLY::output &out);
-        virtual void build_initial(MEDDLY::minterm &init);
+        virtual void build_initial(MEDDLY::minterm_coll &init);
 
         void test_tc(MEDDLY::output &out);
 };
@@ -91,10 +91,11 @@ bool smallPN::build_model(MEDDLY::output &out)
 
 // =============================================================
 
-void smallPN::build_initial(MEDDLY::minterm &init)
+void smallPN::build_initial(MEDDLY::minterm_coll &init)
 {
-    init.setAllVars(0);
-    init.setVar(1, N);
+    init.unused().setAllVars(0);
+    init.unused().setVar(1, N);
+    init.pushUnused();
 }
 
 

@@ -240,8 +240,8 @@ class rsgen_model {
         */
         virtual bool build_model(MEDDLY::output &out) = 0;
 
-        /// Build the initial state, as a minterm.
-        virtual void build_initial(MEDDLY::minterm &init) = 0;
+        /// Build the initial states, as a collection of minterms.
+        virtual void build_initial(MEDDLY::minterm_coll &init) = 0;
 
         /**
             Generate.

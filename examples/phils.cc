@@ -29,7 +29,7 @@ class phils : public rsgen_model {
         virtual void show_usage(std::ostream &out, const char* arg0);
 
         virtual bool build_model(MEDDLY::output &out);
-        virtual void build_initial(MEDDLY::minterm &init);
+        virtual void build_initial(MEDDLY::minterm_coll &init);
 
     private:
         /*
@@ -153,12 +153,13 @@ bool phils::build_model(MEDDLY::output &out)
 
 // ******************************************************************
 
-void phils::build_initial(MEDDLY::minterm &init)
+void phils::build_initial(MEDDLY::minterm_coll &init)
 {
     for (int i=0; i<N; i++) {
-        init.setVar( Philosopher(i), 0 );
-        init.setVar( Fork(i), 1 );
+        init.unused().setVar( Philosopher(i), 0 );
+        init.unused().setVar( Fork(i), 1 );
     }
+    init.pushUnused();
 }
 
 // ******************************************************************

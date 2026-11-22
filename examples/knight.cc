@@ -58,7 +58,7 @@ class knight_tour : public rsgen_model {
         virtual void show_usage(std::ostream &out, const char* arg0);
 
         virtual bool build_model(MEDDLY::output &out);
-        virtual void build_initial(MEDDLY::minterm &init);
+        virtual void build_initial(MEDDLY::minterm_coll &init);
 
         virtual void after_generation(MEDDLY::output &out,
                 const MEDDLY::dd_edge &e);
@@ -191,10 +191,11 @@ bool knight_tour::build_model(MEDDLY::output &out)
 
 // ******************************************************************
 
-void knight_tour::build_initial(MEDDLY::minterm &init)
+void knight_tour::build_initial(MEDDLY::minterm_coll &init)
 {
-    init.setAllVars(1);
-    init.setVar(pos2level(0,0), 3);
+    init.unused().setAllVars(1);
+    init.unused().setVar(pos2level(0,0), 3);
+    init.pushUnused();
 }
 
 // ******************************************************************

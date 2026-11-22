@@ -792,7 +792,7 @@ void rsgen_model::generate(MEDDLY::output &out, bool mxdstats, bool mddstats)
     // build initial states
     //
     out << "Building initial\n";
-    minterm initial(Fset);
+    minterm_coll initial(1, Fset);
     build_initial(initial);
     dd_edge init_state(Fset);
     init_state.setLabel("initial");
@@ -800,18 +800,24 @@ void rsgen_model::generate(MEDDLY::output &out, bool mxdstats, bool mddstats)
 
     switch (set_type) {
         case 'i':
-            initial.setValue(1);
-            initial.buildFunction(0, init_state);
+            for (unsigned i=0; i<initial.size(); i++) {
+                initial.at(i).setValue(1);
+            }
+            initial.buildFunctionMax(0, init_state);
             break;
 
         case '+':
-            initial.setValue(0);
-            initial.buildFunction(infty, init_state);
+            for (unsigned i=0; i<initial.size(); i++) {
+                initial.at(i).setValue(0);
+            }
+            initial.buildFunctionMin(infty, init_state);
             break;
 
         default:
-            initial.setValue(true);
-            initial.buildFunction(false, init_state);
+            for (unsigned i=0; i<initial.size(); i++) {
+                initial.at(i).setValue(true);
+            }
+            initial.buildFunctionMax(false, init_state);
     }
 
     //

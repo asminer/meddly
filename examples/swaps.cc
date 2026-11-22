@@ -51,7 +51,7 @@ class swapmodel : public rsgen_model {
         virtual void show_usage(std::ostream &out, const char* arg0);
 
         virtual bool build_model(MEDDLY::output &out);
-        virtual void build_initial(MEDDLY::minterm &init);
+        virtual void build_initial(MEDDLY::minterm_coll &init);
 
         inline bool has_dimensions() const {
             return N>0;
@@ -382,11 +382,12 @@ bool swapmodel::build_model(MEDDLY::output &out)
 
 // ******************************************************************
 
-void swapmodel::build_initial(MEDDLY::minterm &init)
+void swapmodel::build_initial(MEDDLY::minterm_coll &init)
 {
     for (int k=0; k<N; k++) {
-        init.setVar(k+1, k);
+        init.unused().setVar(k+1, k);
     }
+    init.pushUnused();
 }
 
 // ******************************************************************

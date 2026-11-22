@@ -29,7 +29,7 @@ class kanban : public rsgen_model {
         virtual void show_usage(std::ostream &out, const char* arg0);
 
         virtual bool build_model(MEDDLY::output &out);
-        virtual void build_initial(MEDDLY::minterm &init);
+        virtual void build_initial(MEDDLY::minterm_coll &init);
 
     protected:
         virtual bool known_cardinality(double &card) const;
@@ -146,13 +146,14 @@ bool kanban::build_model(MEDDLY::output &out)
 
 // ******************************************************************
 
-void kanban::build_initial(MEDDLY::minterm &init)
+void kanban::build_initial(MEDDLY::minterm_coll &init)
 {
-    init.setAllVars(0);
-    init.setVar(1, N);
-    init.setVar(5, N);
-    init.setVar(9, N);
-    init.setVar(13, N);
+    init.unused().setAllVars(0);
+    init.unused().setVar(1, N);
+    init.unused().setVar(5, N);
+    init.unused().setVar(9, N);
+    init.unused().setVar(13, N);
+    init.pushUnused();
 }
 
 // ******************************************************************

@@ -64,7 +64,7 @@ class tilemodel : public rsgen_model {
         virtual void show_usage(std::ostream &out, const char* arg0);
 
         virtual bool build_model(MEDDLY::output &out);
-        virtual void build_initial(MEDDLY::minterm &init);
+        virtual void build_initial(MEDDLY::minterm_coll &init);
 
     protected:
 
@@ -343,21 +343,22 @@ bool tilemodel::build_model(MEDDLY::output &out)
 
 // ******************************************************************
 
-void tilemodel::build_initial(MEDDLY::minterm &init)
+void tilemodel::build_initial(MEDDLY::minterm_coll &init)
 {
     if (for_each_position_which_tile) {
         // p0: 1, p1: 2, ..., plast-1: R*C-1, plast: 0
         for (int p=0; p<R*C-1; p++) {
-            init.setVar(p+1, p+1);
+            init.unused().setVar(p+1, p+1);
         }
-        init.setVar(R*C, 0);
+        init.unused().setVar(R*C, 0);
     } else {
         // t0: R*C-1, t1: 0, t2: 1, ...
         for (int t=1; t<R*C; t++) {
-            init.setVar(t+1, t-1);
+            init.unused().setVar(t+1, t-1);
         }
-        init.setVar(1, R*C-1);
+        init.unused().setVar(1, R*C-1);
     }
+    init.pushUnused();
 }
 
 // ******************************************************************

@@ -33,7 +33,7 @@ class kanban_base : public rsgen_model {
         }
 
         virtual bool build_model(MEDDLY::output &out);
-        virtual void build_initial(MEDDLY::minterm &init);
+        virtual void build_initial(MEDDLY::minterm_coll &init);
 
     protected:
         int N;

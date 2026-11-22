@@ -38,9 +38,9 @@ class kanban : public kanban_base {
 
         inline void fill_initial(MEDDLY::dd_edge &init_state)
         {
-            MEDDLY::minterm init(mdd);
+            MEDDLY::minterm_coll init(1, mdd);
             build_initial(init);
-            init.buildFunction(false, init_state);
+            init.buildFunctionMax(false, init_state);
         }
 
         long writeReachset(FILE* s);

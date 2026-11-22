@@ -68,12 +68,13 @@ bool kanban_base::build_model(MEDDLY::output &out)
 
 // ============================================
 
-void kanban_base::build_initial(MEDDLY::minterm &init)
+void kanban_base::build_initial(MEDDLY::minterm_coll &init)
 {
-    init.setAllVars(0);
-    init.setVar(1, N);
-    init.setVar(5, N);
-    init.setVar(9, N);
-    init.setVar(13, N);
+    init.unused().setAllVars(0);
+    init.unused().setVar(1, N);
+    init.unused().setVar(5, N);
+    init.unused().setVar(9, N);
+    init.unused().setVar(13, N);
+    init.pushUnused();
 }
 

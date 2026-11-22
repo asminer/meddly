@@ -29,7 +29,7 @@ class slotted : public rsgen_model {
         virtual void show_usage(std::ostream &out, const char* arg0);
 
         virtual bool build_model(MEDDLY::output &out);
-        virtual void build_initial(MEDDLY::minterm &init);
+        virtual void build_initial(MEDDLY::minterm_coll &init);
 
     private:
         rsgen_model::simple_event* Get(int i);
@@ -126,13 +126,14 @@ bool slotted::build_model(MEDDLY::output &out)
 
 // ******************************************************************
 
-void slotted::build_initial(MEDDLY::minterm &init)
+void slotted::build_initial(MEDDLY::minterm_coll &init)
 {
-    init.setAllVars(0);
+    init.unused().setAllVars(0);
     for (int i=0; i<N; i++) {
-        init.setVar(i*8+3, 1);
-        init.setVar(i*8+5, 1);
+        init.unused().setVar(i*8+3, 1);
+        init.unused().setVar(i*8+5, 1);
     }
+    init.pushUnused();
 }
 
 // ******************************************************************
