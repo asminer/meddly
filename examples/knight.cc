@@ -88,6 +88,17 @@ bool knight_tour::process_arg(unsigned &i, const char** argv)
 {
     if (rsgen_model::process_arg(i, argv)) return true;
 
+    if (0==strcmp("-closed", argv[i])) {
+        closed = true;
+        ++i;
+        return true;
+    }
+    if (0==strcmp("-open", argv[i])) {
+        closed = false;
+        ++i;
+        return true;
+    }
+
     //
     // Should be the size in format RxC
     // We allow more than one digit for R and C
@@ -193,9 +204,20 @@ bool knight_tour::build_model(MEDDLY::output &out)
 
 void knight_tour::build_initial(MEDDLY::minterm_coll &init)
 {
-    init.unused().setAllVars(1);
-    init.unused().setVar(pos2level(0,0), 3);
-    init.pushUnused();
+    if (closed) {
+        init.unused().setAllVars(1);
+        init.unused().setVar(pos2level(0,0), 3);
+        init.pushUnused();
+        return;
+    }
+    for (unsigned r=0; r<R; r++) {
+        for (unsigned c=0; c<C; c++) {
+            init.unused().setAllVars(1);
+            init.unused().setVar(pos2level(r, c), 2);
+            init.pushUnused();
+            init.expandIfNecessary();
+        }
+    }
 }
 
 // ******************************************************************
@@ -209,29 +231,68 @@ void knight_tour::after_generation(MEDDLY::output &out,
 
     if (!mdd) return;
 
-    minterm finish(mdd);
-    finish.setAllVars(0);
-    finish.setVar(pos2level(0,0), 2);
-    rangeval ans;
-    rs.evaluate(finish, ans);
-
     if ('b' == get_set_type()) {
         show_cardinality(out, rs);
+    }
 
-        if (ans) {
-            out << "There is at least one closed tour.\n";
+    out << "Building set of completed "
+        << (closed ? "closed" : "open or closed")
+        << " tours...\n";
+    out.flush();
+
+    minterm_coll finish(1, mdd);
+    if (closed) {
+        finish.unused().setAllVars(0);
+        finish.unused().setVar(pos2level(0,0), 2);
+        if ('b' == get_set_type()) {
+            finish.unused().setValue(true);
         } else {
-            out << "There are no closed tours.\n";
+            finish.unused().setValue(0);
         }
+        finish.pushUnused();
     } else {
-        if (ans.isNormal()) {
-            out << "There is at least one closed tour.\n";
-
-            out << "TBD: show one!\n";
-        } else {
-            out << "There are no closed tours.\n";
+        for (unsigned r=0; r<R; r++) {
+            for (unsigned c=0; c<C; c++) {
+                finish.unused().setAllVars(0);
+                finish.unused().setVar(pos2level(r,c), 2);
+                if ('b' == get_set_type()) {
+                    finish.unused().setValue(true);
+                } else {
+                    finish.unused().setValue(0);
+                }
+                finish.pushUnused();
+                finish.expandIfNecessary();
+            }
         }
     }
+
+    dd_edge completed(mdd);
+    /*
+        not sure what to do about 'i'
+    */
+    if ('b' == get_set_type()) {
+        finish.buildFunctionMax(false, completed);
+        apply(INTERSECTION, rs, completed, completed);
+        long c;
+        apply(CARDINALITY, completed, c);
+        out << "There are " << c << " possible final positions\n";
+        if (c) {
+            out << "There is at least one ";
+        } else {
+            out << "There are no ";
+        }
+        out << (closed ? "closed" : "open or closed")
+            << " tour";
+        if (0==c) out << "s";
+        out << "\n";
+    } else {
+        // this should be correct for '+'
+        rangeval infty(range_special::PLUS_INFINITY, range_type::INTEGER);
+        finish.buildFunctionMin(infty, completed);
+        apply(MAXIMUM, rs, completed, completed);
+    }
+
+
 }
 
 // ******************************************************************
