@@ -58,7 +58,7 @@ executable(
 executable(
     'knight',
     'knight.cc',
-    dependencies: [ gmp_dep, meddly_dep]
+    dependencies: [ gmp_dep, meddly_dep, rsgen_model_dep ]
 )
 
 ######################################################################

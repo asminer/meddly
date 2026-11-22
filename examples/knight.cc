@@ -17,538 +17,295 @@
 */
 
 #include <iostream>
-#include <iomanip>
-#include <cstdlib>
+#include <cassert>
 
 #include "meddly/meddly.h"
+#include "utils/rsgen_model.h"
 
-// using namespace MEDDLY;
+/*
+    Model for knight's tour on a RxC chess board.
+    Model state is, for each square on the board:
+        3,  if there's a knight present, and we can return to this square
+            (reserved for initial state only)
+        2,  if there's a knight present, and we cannot return to this square
+        1,  if we can move a knight to this square
+        0,  if we cannot move a knight to this square.
 
-// Board dimensions
+    To get a solution, we must generate the distance function,
+    and find a backwards path from state [2, 0, 0, ...]
+    to initial state [3, 1, 1, ...].
+*/
+class knight_tour : public rsgen_model {
+    public:
+        knight_tour();
 
-#define MAXDIM 10
-#define SHOWSOLS 10
-
-bool topdown, reverse, verbose, debug;
-int N, M;
-long maxsols;
-long start_n, start_m;
-
-
-// Forest for multi-terminal MDDs
-MEDDLY::forest* mtF;
-// Forest for boolean constraints
-MEDDLY::forest* boolF;
-
-const char* with_sign(long delta)
-{
-    static char buffer[3];
-    buffer[2] = 0;
-    if (delta<0) {
-        buffer[0] = '-';
-        buffer[1] = '0' - delta;
-    } else {
-        buffer[0] = '+';
-        buffer[1] = '0' + delta;
-    }
-    return buffer;
-}
-
-void setStart(int moveno, MEDDLY::dd_edge& constr)
-{
-    using namespace std;
-    using namespace MEDDLY;
-
-    if (verbose) {
-        cout << "--------------------------------------\n";
-        cout << "Constraint for starting position\n";
-    }
-    const int thisrow = moveno*2;
-    const int thiscol = thisrow-1;
-    dd_edge xtrow(mtF), xtcol(mtF), strow(mtF), stcol(mtF);
-
-    if (verbose) {
-        cout << "    (x_" << thiscol << " == " << start_m << ") ^ ";
-        cout << "(x_" << thisrow << " == " << start_n << ")\n";
-    }
-
-    mtF->createEdgeForVar(thisrow, false, xtrow);
-    mtF->createEdgeForVar(thiscol, false, xtcol);
-
-    mtF->createConstant(start_n, strow);
-    mtF->createConstant(start_m, stcol);
-
-    dd_edge term2(boolF);
-
-    apply(EQUAL, xtrow, strow, constr);
-    apply(EQUAL, xtcol, stcol, term2);
-    constr *= term2;
-
-    if (debug) {
-        cout << "Forest for start\n";
-        ostream_output myout(cout);
-        constr.showGraph(myout);
-    }
-
-}
-
-void buildConstraint(int movea, int moveb, MEDDLY::dd_edge& constr)
-{
-    using namespace std;
-    using namespace MEDDLY;
-
-    if (verbose) {
-        cout << "--------------------------------------\n";
-        cout << "Constraints for move from position " << movea << "->" << moveb << "\n";
-        cout << "Disjunction of:\n";
-    }
-
-    const int thisrow = movea*2;
-    const int thiscol = thisrow-1;
-    const int nextrow = moveb*2;
-    const int nextcol = nextrow-1;
-
-    const long drow[] = {  1,  1, -1, -1,  2,  2, -2, -2, 0 };
-    const long dcol[] = {  2, -2,  2, -2,  1, -1,  1, -1, 0 };
-
-    boolF->createConstant(false, constr);
-
-    for (unsigned i=0; drow[i]; i++) {
-        if (verbose) {
-            cout << "    (x_" << thiscol << with_sign(dcol[i]) << " == x_" << nextcol << ") ^ ";
-            cout << "(x_" << thisrow << with_sign(drow[i]) << " == x_" << nextrow << ")\n";
+        inline bool has_dimensions() const {
+            return (R>0) && (C>0);
+        }
+        inline unsigned get_R() const {
+            return R;
+        }
+        inline unsigned get_C() const {
+            return C;
+        }
+        inline unsigned pos2level(unsigned r, unsigned c) const {
+            assert(r<R);
+            assert(c<C);
+            return 1 + r + c*R;
         }
 
-        dd_edge move(boolF);
-        dd_edge rowch(boolF), colch(boolF);
+        virtual bool process_arg(unsigned &i, const char** argv);
+        virtual void show_usage(std::ostream &out, const char* arg0);
 
-        dd_edge xtrow(mtF), xtcol(mtF), xnrow(mtF), xncol(mtF);
-        dd_edge dr(mtF), dc(mtF);
+        virtual bool build_model(MEDDLY::output &out);
+        virtual void build_initial(MEDDLY::minterm &init);
 
-        mtF->createEdgeForVar(thisrow, false, xtrow);
-        mtF->createEdgeForVar(thiscol, false, xtcol);
-        mtF->createEdgeForVar(nextrow, false, xnrow);
-        mtF->createEdgeForVar(nextcol, false, xncol);
+        virtual void after_generation(MEDDLY::output &out,
+                const MEDDLY::dd_edge &e);
 
-        mtF->createConstant(drow[i], dr);
-        mtF->createConstant(dcol[i], dc);
+    protected:
+        kron_event* make_move(unsigned r, unsigned c, int dr, int dc);
 
-        xtrow += dr;
-        xtcol += dc;
+    private:
+        unsigned R;
+        unsigned C;
+        bool closed;
 
-        apply(EQUAL, xtrow, xnrow, rowch);
-        apply(EQUAL, xtcol, xncol, colch);
-        apply(INTERSECTION, rowch, colch, move);
+        std::vector <level_delta> updates;
+};
 
-        constr += move;
-    }
+// ******************************************************************
 
-    if (debug) {
-        cout << "Forest for move\n";
-        ostream_output myout(cout);
-        constr.showGraph(myout);
-    }
+knight_tour::knight_tour()
+{
+    R = C = 0;
+    closed = true;
 }
 
-void uniqueDown(int pnum, MEDDLY::dd_edge &constr)
+// ******************************************************************
+
+bool knight_tour::process_arg(unsigned &i, const char** argv)
 {
-    using namespace std;
-    using namespace MEDDLY;
+    if (rsgen_model::process_arg(i, argv)) return true;
 
-    if (verbose) {
-        cout << "\n--------------------------------------\n";
-        cout << "Position " << pnum << " different from all previous\n";
-        cout << "Conjunction of:\n";
-    }
+    //
+    // Should be the size in format RxC
+    // We allow more than one digit for R and C
+    // because we are optimists.
+    //
 
-    const int rowa = pnum*2;
-    const int cola = rowa-1;
+    bool saw_x = false;
+    R = 0;
+    C = 0;
+    for (const char* arg = argv[i]; *arg; ++arg) {
 
-    dd_edge xrowa(mtF), xcola(mtF), xrowb(mtF), xcolb(mtF);
-    dd_edge disj1(boolF), disj2(boolF);
-
-    mtF->createEdgeForVar(rowa, false, xrowa);
-    mtF->createEdgeForVar(cola, false, xcola);
-
-    boolF->createConstant(true, constr);
-
-    for (int i=pnum-1; i>0; i--) {
-        const int rowb = i*2;
-        const int colb = rowb-1;
-
-        if (verbose) {
-            cout << "    (x_" << rowa << " != x_" << rowb << ") v ";
-            cout << "(x_" << cola << " != x_" << colb << ")\n";
+        if (('x' == *arg) || ('X' == *arg)) {
+            if (saw_x) return false;
+            saw_x = true;
+            continue;
         }
 
-        mtF->createEdgeForVar(rowb, false, xrowb);
-        mtF->createEdgeForVar(colb, false, xcolb);
-
-        apply(NOT_EQUAL, xrowa, xrowb, disj1);
-        apply(NOT_EQUAL, xcola, xcolb, disj2);
-        disj1 += disj2;
-
-
-        constr *= disj1;
-    }
-
-    if (debug) {
-        cout << "Forest for constraint:\n";
-        ostream_output myout(cout);
-        constr.showGraph(myout);
-    }
-}
-
-void usage(const char* arg)
-{
-    using namespace std;
-    cout << "\nUsage: " << arg << " [switches]\n\n";
-    cout << "Build and count solutions to the Knight's tour on an NxM chessboard.\n";
-    cout << "\nLegal switches:\n";
-    cout << "\t-h:\tThis help\n\n";
-    cout << "\t-a t\tAccumulate/remove from top down\n";
-    cout << "\t-a b\tAccumulate/remove from bottom up (default)\n";
-    cout << "\t-b n m\tBeginning position (default is 0 0)\n";
-    cout << "\t-d:\tToggle debugging (default: off)\n";
-    cout << "\t-n N\tSet number of rows\n";
-    cout << "\t-m M\tSet number of columns\n";
-    cout << "\t-r:\tReverse variable order\n";
-    cout << "\t-s #\tMax number of solutions to display\n";
-    cout << "\t-v:\tToggle verbosity (default: off)\n";
-    cout << "\n";
-    exit(1);
-}
-
-inline long intFrom(const char* arg)
-{
-    if (0==arg) return 0;
-    return atol(arg);
-}
-
-inline char charFrom(const char* arg)
-{
-    if (0==arg) return 0;
-    return arg[0];
-}
-
-
-void process_args(int argc, const char** argv)
-{
-    // Set defaults for everything
-    N = 4;
-    M = 4;
-    start_n = 0;
-    start_m = 0;
-    reverse = false;
-    verbose = false;
-    debug = false;
-    topdown = false;
-    maxsols = 1;
-    long L, L2;
-
-    // Go through args
-    for (int i=1; i<argc; i++) {
-        char sw = ' ';
-        const char* arg = argv[i];
-        if (('-' == arg[0]) || (0 != arg[1]) || (0 == arg[2])) {
-            sw = arg[1];
+        if ((*arg < '0') || (*arg > '9')) {
+            return false;
         }
 
-        switch (sw) {
-            case 'h':   usage(argv[0]);
-                        continue;
-
-            case 'a':   if (i+1<argc) {
-                            sw = charFrom(argv[++i]);
-                            if ('t' == sw) {
-                                topdown = true;
-                                continue;
-                            }
-                            if ('b' == sw) {
-                                topdown = false;
-                                continue;
-                            }
-                            std::cerr << "Invalid argument " << sw << " for -a\n";
-                            exit(2);
-                        } else {
-                            std::cerr << "Switch -a requires an argument\n";
-                            exit(2);
-                        }
-                        continue;
-
-            case 'b':   if (i+2<argc) {
-                            L = intFrom(argv[++i]);
-                            L2 = intFrom(argv[++i]);
-                            if (L<1 || L>MAXDIM || L2<1 || L2>MAXDIM) {
-                                std::cerr << "Value for -b out of range; ignoring\n";
-                            } else {
-                                start_n = L;
-                                start_m = L2;
-                            }
-                        } else {
-                            std::cerr << "Switch -b requires two arguments\n";
-                            exit(2);
-                        }
-                        continue;
-
-            case 'd':   debug = !debug;
-                        continue;
-
-            case 'n':   if (i+1<argc) {
-                            L = intFrom(argv[++i]);
-                            if (L<0 || L>=MAXDIM) {
-                                std::cerr << "Value " << L << " for -n out of range; ignoring\n";
-                            } else {
-                                N = L;
-                            }
-                        } else {
-                            std::cerr << "Switch -n requires an argument\n";
-                            exit(2);
-                        }
-                        continue;
-
-            case 'm':   if (i+1<argc) {
-                            L = intFrom(argv[++i]);
-                            if (L<0 || L>=MAXDIM) {
-                                std::cerr << "Value " << L << " for -m out of range; ignoring\n";
-                            } else {
-                                M = L;
-                            }
-                        } else {
-                            std::cerr << "Switch -m requires an argument\n";
-                            exit(2);
-                        }
-                        continue;
-
-            case 'r':   reverse = !reverse;
-                        continue;
-
-            case 's':   if (i+1<argc) {
-                            L = intFrom(argv[++i]);
-                            if (L<0) {
-                                L=0;
-                            }
-                            maxsols = L;
-                        } else {
-                            std::cerr << "Switch -s requires an argument\n";
-                            exit(2);
-                        }
-                        continue;
-
-            case 'v':   verbose = !verbose;
-                        continue;
-
-            default:    std::cerr << "\nUnknown option: " << arg << "\n";
-                        std::cerr << "Run with -h for help\n\n";
-                        exit(2);
-        }
-    }
-
-    if (start_n<0 || start_n>=N || start_m<0 || start_m>=M) {
-        std::cerr << "Starting position " << start_n << "," << start_m
-                  << " is not on the board\n";
-        exit(2);
-    }
-
-}
-
-void showSolution(std::ostream& s, const MEDDLY::minterm &m, const char* sep=nullptr)
-{
-    using namespace std;
-    bool first = true;
-    for (int i=N*M; i; i--) {
-        if (!first) {
-            if (sep) s << sep;
-            else s << endl;
+        if (saw_x) {
+            // next digit of C
+            C *= 10;
+            C += *arg - '0';
         } else {
-            first = false;
+            // next digit of R
+            R *= 10;
+            R += *arg - '0';
         }
-        s << '(' << setfill(' ') << setw(2) << m.from(i*2);
-        s << ',' << setfill(' ') << setw(2) << m.from(i*2-1) << ')';
     }
+
+    ++i;
+    return true;
 }
 
-void showAtMost(std::ostream& s, const MEDDLY::dd_edge &sols, long count)
+// ******************************************************************
+
+void knight_tour::show_usage(std::ostream &out, const char* arg0)
 {
-    long c = 0;
-    for (auto iter = sols.begin(); iter; ++iter) {
-        ++c;
-        if (c>count) return;
-        s << "#" << c << ":  ";
-        showSolution(s, *iter, " -> ");
-        s << std::endl;
-    }
+    show_synopsis(out, arg0, "[options] RxC");
+
+    show_description(out, "MODEL DESCRIPTION", "Knight's tour model. We start with a knight in one corner of the chess board. We can use the standard knight moves in chess except we remember if a square has been visited before or not (with slight exception for the starting position). If reachable states are generated, we show the cardinality, and indicate if a complete tour is possible. If distances are generated, we can construct a tour if one is possible.");
+
+    show_section(out, "SIZE PARAMETERS");
+    show_switch(out, "R", "Number of rows in the chess board");
+    show_switch(out, "C", "Number of columns in the chess board");
+
+    show_section(out, "TOUR TYPES");
+    show_switch(out, "-closed", "Only consider closed tours (end at the starting position). Default.");
+    show_switch(out, "-open", "Allow open tours starting from anywhere.");
+
+    rsgen_model::show_usage(out);
 }
 
-void generate()
+// ******************************************************************
+
+bool knight_tour::build_model(MEDDLY::output &out)
+{
+    if ((R<=0) || (C<=0)) {
+        std::cerr << "Missing or bad size.\n";
+        return false;
+    }
+    out << "Knight's tour model, chess board has " << R << " rows and "
+        << C << " columns.\n";
+    if (closed) {
+        out << "Considering only closed tours.\n";
+    } else {
+        out << "Considering open and closed tours.\n";
+    }
+
+    //
+    // Initialize domain
+    //
+    int* sizes = new int[R*C];
+    for (int i=R*C-1; i>=0; i--) sizes[i] = 3;
+    if (closed) {
+        sizes[0] = 4;
+    }
+    set_domain(MEDDLY::domain::createBottomUp(sizes, R*C));
+    delete[] sizes;
+
+    //
+    // Add possible moves
+    //
+    for (unsigned r=0; r<R; r++) {
+        for (unsigned c=0; c<C; c++) {
+            add_event(make_move(r, c, +1, +2));
+            add_event(make_move(r, c, +1, -2));
+            add_event(make_move(r, c, +2, +1));
+            add_event(make_move(r, c, +2, -1));
+            add_event(make_move(r, c, -1, +2));
+            add_event(make_move(r, c, -1, -2));
+            add_event(make_move(r, c, -2, +1));
+            add_event(make_move(r, c, -2, -1));
+        } // for c
+    } // for r
+
+    return true;
+}
+
+// ******************************************************************
+
+void knight_tour::build_initial(MEDDLY::minterm &init)
+{
+    init.setAllVars(1);
+    init.setVar(pos2level(0,0), 3);
+}
+
+// ******************************************************************
+
+void knight_tour::after_generation(MEDDLY::output &out,
+                const MEDDLY::dd_edge &rs)
 {
     using namespace MEDDLY;
 
-    const int numvars = N * M * 2;
-    int* bounds = new int[numvars];
-    for (int i=0; i<numvars; i++) {
-        bounds[i] = (i%2) ? M : N;
-    }
+    forest* mdd = rs.getForest();
 
-    //
-    // Set up forests.
-    //
-    // Variables are, from the bottom up,
-    //      col of first (or last if reversed) position
-    //      row of first position
-    //      col of second position
-    //      row of second position
-    //      ...
-    //      col of last position
-    //      row of last position
-    //
+    if (!mdd) return;
 
-    domain* D = domain::createBottomUp(bounds, (unsigned) numvars);
+    minterm finish(mdd);
+    finish.setAllVars(0);
+    finish.setVar(pos2level(0,0), 2);
+    rangeval ans;
+    rs.evaluate(finish, ans);
 
-    policies p;
-    p.useDefaults(false);
-    // p.useReferenceCounts = false;
-    p.setPessimistic();
+    if ('b' == get_set_type()) {
+        show_cardinality(out, rs);
 
-    mtF = forest::create(D, false, range_type::INTEGER,
-                    edge_labeling::MULTI_TERMINAL, p);
-
-    boolF = forest::create(D, false, range_type::BOOLEAN,
-                    edge_labeling::MULTI_TERMINAL, p);
-
-
-    dd_edge* moves = new dd_edge[N*M+1];
-    for (int i=1; i<N*M; i++) {
-        moves[i].attach(boolF);
-        buildConstraint(i, i+1, moves[i]);
-    }
-
-    moves[0].attach(boolF);
-    moves[N*M].attach(boolF);
-
-    if (reverse) {
-        boolF->createConstant(true, moves[0]);
-        setStart(N*M, moves[N*M]);
-    } else {
-        boolF->createConstant(true, moves[N*M]);
-        setStart(1, moves[0]);
-    }
-
-    dd_edge tours(boolF);
-    boolF->createConstant(true, tours);
-
-    std::cout << "\nDetermining all " << N*M-1 << " knight moves\n";
-    if (topdown) {
-        for (int i=N*M; i>=0; i--) {
-            std::cout << "  " << i;
-            std::cout.flush();
-            tours *= moves[i];
+        if (ans) {
+            out << "There is at least one closed tour.\n";
+        } else {
+            out << "There are no closed tours.\n";
         }
     } else {
-        for (int i=0; i<=N*M; i++) {
-            std::cout << "  " << i;
-            std::cout.flush();
-            tours *= moves[i];
+        if (ans.isNormal()) {
+            out << "There is at least one closed tour.\n";
+
+            out << "TBD: show one!\n";
+        } else {
+            out << "There are no closed tours.\n";
         }
     }
-    delete[] moves;
-    moves = nullptr;
-    std::cout << "\n";
-
-    double card = 0;
-    apply(CARDINALITY, tours, card);
-    std::cout << "Approx. " << card << " total moves\n";
-
-    std::cout << "\nRestricting to tours\n";
-    std::cout << "\tBuilding unique constraint\n";
-
-    dd_edge unique(boolF), nodup(boolF);
-    boolF->createConstant(true, unique);
-    if (topdown) {
-        for (int i=N*M; i>0; i--) {
-            std::cout << "    " << i;
-            std::cout.flush();
-            uniqueDown(i, nodup);
-            std::cout << "..1";
-            std::cout.flush();
-            unique *= nodup;
-
-            std::cout << " \t(" << boolF->getCurrentNumNodes()
-                      << " forest nodes)"
-                      << std::endl;
-        }
-    } else {
-        for (int i=1; i<=N*M; i++) {
-            std::cout << "    " << i;
-            std::cout.flush();
-            uniqueDown(i, nodup);
-            std::cout << "..1";
-            std::cout.flush();
-            unique *= nodup;
-
-            std::cout << " \t(" << boolF->getCurrentNumNodes()
-                      << " forest nodes)"
-                      << std::endl;
-        }
-    }
-
-    std::cout << "\tApplying unique constraint\n";
-    tours *= unique;
-
-    apply(CARDINALITY, tours, card);
-    std::cout << "Approx. " << card << " tours (no repeated squares)\n";
-
-    dd_edge hamil(boolF);
-    buildConstraint(1, N*M, hamil);
-    hamil *= tours;
-
-    apply(CARDINALITY, hamil, card);
-    std::cout << "Approx. " << card << " Hamiltonian tours\n";
-
-    dd_edge unsat(boolF);
-    boolF->createConstant(false, unsat);
-
-    if (maxsols) {
-        //
-        // Display some solutions
-        //
-
-        if (hamil != unsat) {
-            std::cout << "First " << maxsols << " Hamiltonian tours:\n";
-            showAtMost(std::cout, hamil, maxsols);
-        } else if (tours != unsat) {
-            std::cout << "First " << maxsols << " tours:\n";
-            showAtMost(std::cout, tours, maxsols);
-        }
-    }
-
-    // Memory stats
-    std::cout << "Forest stats:\n";
-    ostream_output myout(std::cout);
-    boolF->reportStats(myout, "\t",
-            HUMAN_READABLE_MEMORY  |
-            BASIC_STATS | EXTRA_STATS |
-            STORAGE_STATS | STORAGE_DETAILED |
-            HOLE_MANAGER_STATS | HOLE_MANAGER_DETAILED
-    );
-
-//    boolF->showInfo(myout, 1);
 }
+
+// ******************************************************************
+
+rsgen_model::kron_event*
+knight_tour::make_move(unsigned r, unsigned c, int dr, int dc)
+{
+    const int newr = int(r) + dr;
+    if (newr<0) return nullptr;
+    const unsigned rp = unsigned(newr);
+    if (rp >= R) return nullptr;
+
+    const int newc = int(c) + dc;
+    if (newc<0) return nullptr;
+    const unsigned cp = unsigned(newc);
+    if (cp >= C) return nullptr;
+
+    updates.clear();
+    level_delta LD;
+    if (closed && (0==r) && (0==c)) {
+        LD.set(pos2level(r, c), 3, 1);
+        updates.push_back(LD);
+    }
+    LD.set(pos2level(r, c), 2, 0);
+    updates.push_back(LD);
+    LD.set(pos2level(rp, cp), 1, 2);
+    updates.push_back(LD);
+
+    return new kron_event("move", updates);
+}
+
+// ******************************************************************
 
 int main(int argc, const char** argv)
 {
-    process_args(argc, argv);
+    knight_tour T;
+
+    unsigned nArgs = (unsigned)argc;
+    unsigned i=1;
+
+    while (i < nArgs) {
+        if (!T.process_arg(i, argv)) {
+            T.show_usage(std::cerr, argv[0]);
+            return 1;
+        }
+    }
+    if (!T.has_dimensions()) {
+        T.show_usage(std::cerr, argv[0]);
+        return 1;
+    }
 
     try {
         MEDDLY::initialize();
-        generate();
+        MEDDLY::ostream_output out(std::cout);
+
+        if (!T.build_model(out)) {
+            T.show_usage(std::cerr, argv[0]);
+            return 1;
+        }
+        T.generate(out, true, true);
+
         MEDDLY::cleanup();
         return 0;
     }
     catch (MEDDLY::error e) {
-        std::cerr << "\n\nCaught MEDDLY error: " << e.getName() << "\n";
-        std::cerr << "    thrown at " << e.getFile() << " line " << e.getLine() << "\n";
+        std::cerr   << "\nCaught meddly error '" << e.getName()
+                    << "'\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
         return 1;
     }
-
+    catch (const char* e) {
+        std::cerr   << "\nCaught our own error: " << e << "\n";
+        return 2;
+    }
+    std::cerr << "\nSome other error?\n";
+    return 4;
 }
+
