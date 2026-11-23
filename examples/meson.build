@@ -72,6 +72,14 @@ executable(
 ######################################################################
 
 executable(
+    'knight_csp',
+    'knight_csp.cc',
+    dependencies: [ gmp_dep, meddly_dep]
+)
+
+######################################################################
+
+executable(
     'libinfo',
     'libinfo.cc',
     dependencies: [ gmp_dep, meddly_dep]
