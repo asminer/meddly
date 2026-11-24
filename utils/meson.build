@@ -68,3 +68,17 @@ rsgen_model_dep = declare_dependency(
     link_with: rsgen_model_lib
 )
 
+######################################################################
+
+cnstr_model_lib = static_library('cnstr_model',
+    sources: 'cnstr_model.cc',
+    dependencies: [ gmp_dep, meddly_dep ],
+    install: false
+)
+
+cnstr_model_dep = declare_dependency(
+    dependencies: [ gmp_dep, meddly_dep ],
+    include_directories: meddly_inc,
+    link_with: cnstr_model_lib
+)
+

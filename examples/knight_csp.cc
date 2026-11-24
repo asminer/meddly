@@ -17,12 +17,117 @@
 */
 
 #include <iostream>
+#include <iomanip>
 #include <cassert>
 
 #include "meddly/meddly.h"
 
+// ******************************************************************
+
+struct constraint {
+        MEDDLY::dd_edge edge;
+        std::vector <bool> depends;
+        unsigned dcount;
+    public:
+        constraint(MEDDLY::forest* f);
+        void show_depends(std::ostream &s) const;
+        void count_depends();
+};
+
+// ******************************************************************
+
+constraint::constraint(MEDDLY::forest* f) : edge(f)
+{
+    depends.resize(1+f->getNumVariables());
+    dcount = 0;
+}
+
+// ******************************************************************
+
+void constraint::show_depends(std::ostream &s) const
+{
+    for (unsigned i=1; i<depends.size(); i++) {
+        s << ( depends[i] ? 'X' : '.' );
+    }
+}
+
+// ******************************************************************
+
+void constraint::count_depends()
+{
+    dcount = 0;
+    for (unsigned i=1; i<depends.size(); i++) {
+        if (depends[i]) {
+            ++dcount;
+        }
+    }
+}
+
+// ******************************************************************
+
+bool less_than(const constraint* c1, const constraint* c2)
+{
+    assert(c1->depends.size() == c2->depends.size());
+    for (unsigned i=c1->depends.size(); i; ) {
+        --i;
+        if (c1->depends[i]) {
+            if (c2->depends[i]) continue;
+            else                return false;
+        }
+        if (c2->depends[i])     return true;
+    }
+    // equal
+    return false;
+}
+
+// ******************************************************************
+
+void sort_by_depends(std::vector <constraint*> &A)
+{
+    for (unsigned i=0; i+1<A.size(); i++) {
+        // put smallest constraint in i..end, at position i
+        unsigned min = i;
+        for (unsigned j=i+1; j<A.size(); j++) {
+            if (less_than(A[j], A[min])) {
+                min = j;
+            }
+        }
+        if (min != i) {
+            constraint* t = A[i];
+            A[i] = A[min];
+            A[min] = t;
+        }
+    }
+}
+
+// ******************************************************************
+
+void sort_by_dcount(std::vector <constraint*> &A)
+{
+    for (unsigned i=0; i<A.size(); i++) {
+        A[i]->count_depends();
+    }
+    for (unsigned i=0; i+1<A.size(); i++) {
+        // put smallest constraint in i..end, at position i
+        unsigned min = i;
+        for (unsigned j=i+1; j<A.size(); j++) {
+            if (A[j]->dcount < A[min]->dcount) {
+                min = j;
+            }
+        }
+        if (min != i) {
+            constraint* t = A[i];
+            A[i] = A[min];
+            A[min] = t;
+        }
+    }
+}
+
+// ******************************************************************
+
 class knight_csp {
-        int N, M;
+        const int N;
+        const int M;
 
         bool for_each_square_when;
 
@@ -32,11 +137,7 @@ class knight_csp {
         MEDDLY::forest* mdd;
         MEDDLY::minterm_coll* MC;
 
-    public:
-        struct constraint {
-            MEDDLY::dd_edge edge;
-            std::vector <bool> depends;
-        };
+        std::vector <int> level4pos;
 
     public:
         knight_csp(int _N, int _M, bool square, char v);
@@ -50,26 +151,49 @@ class knight_csp {
 
             return n + m*N;
         }
+        inline void getpos(int num, int &n, int &m) const
+        {
+            if ((num<0) || (num >= N*M)) {
+                n=-1;
+                m=-1;
+                return;
+            }
+            n = num % N;
+            m = num / N;
+        }
+
+        void var_order_by_rows();
+        void var_order_by_moves();
+        void show_var_order(std::ostream &s) const;
 
         void fill_movelist(int n, int m, std::vector <int> &moves) const;
 
         void make_forest();
+        void done_forest();
 
-        void constraint_for_square(int n, int m, constraint &C);
+        // for each square, when
 
+        constraint* constraint_for_square(int n, int m);
+        constraint* open_tour_squares();
+        constraint* closed_tour_squares();
+
+        // for each time, which square
+
+        // generic solver
+        void gen_and_solve();
     protected:
         void a_equals_b_plus_one(int va, int vb, MEDDLY::dd_edge &e);
+        void a_equals_n(int va, unsigned n, MEDDLY::dd_edge &e);
 };
 
 // ******************************************************************
 
 knight_csp::knight_csp(int _N, int _M, bool square, char v)
+    : N(_N), M(_M)
 {
     assert(_N>0);
     assert(_M>0);
 
-    N = _N;
-    M = _M;
     for_each_square_when = square;
     verbosity = v;
 
@@ -88,6 +212,69 @@ knight_csp::knight_csp(int _N, int _M, bool square, char v)
     D = nullptr;
     mdd = nullptr;
     MC = nullptr;
+}
+
+// ******************************************************************
+
+void knight_csp::var_order_by_rows()
+{
+    level4pos.resize(N*M);
+    int lvl=1;
+    for (int n=0; n<N; n++) {
+        for (int m=0; m<M; m++) {
+            level4pos[ posnum(n, m) ] = lvl;
+            ++lvl;
+        }
+    } // for n
+}
+
+// ******************************************************************
+
+void knight_csp::var_order_by_moves()
+{
+    level4pos.resize(N*M);
+    unsigned i;
+    for (i=0; i<level4pos.size(); i++) {
+        level4pos[i] = 0;
+    }
+
+    std::vector <int> queue;
+    std::vector <int> movelist;
+
+    int lvl = 1;
+    level4pos[0] = lvl;
+    ++lvl;
+    queue.push_back(0);
+    i=0;
+    while (i<queue.size()) {
+        int n, m;
+        getpos(queue[i], n, m);
+        fill_movelist(n, m, movelist);
+
+        for (unsigned j=0; j<movelist.size(); j++) {
+            const int mv = movelist[j];
+            if (level4pos[mv]) continue;
+            queue.push_back(mv);
+            level4pos[mv] = lvl;
+            ++lvl;
+        }
+
+        ++i;
+    }
+}
+
+// ******************************************************************
+
+void knight_csp::show_var_order(std::ostream &s) const
+{
+    if (!for_each_square_when) return;
+    s << "Using variable order:\n";
+    for (int n=0; n<N; n++) {
+        for (int m=0; m<M; m++) {
+            s << std::setw(3) << level4pos[ posnum(n, m) ] << " ";
+        }
+        s << "\n";
+    } // for n
 }
 
 // ******************************************************************
@@ -154,23 +341,48 @@ void knight_csp::make_forest()
 
 // ******************************************************************
 
-void knight_csp::constraint_for_square(int n, int m, constraint &C)
+void knight_csp::done_forest()
 {
-    const int pa = posnum(n, m);
+    using namespace MEDDLY;
+    if (!mdd) return;
+    ostream_output out(std::cout);
+
+    out << "\n";
+    out << "======================================================================\n";
+    out << "\n";
+    out << "MDD stats:\n";
+    mdd->reportStats(out, "\t",
+            HUMAN_READABLE_MEMORY | BASIC_STATS
+            | EXTRA_STATS
+            | STORAGE_STATS
+            // | STORAGE_DETAILED
+            // | HOLE_MANAGER_STATS
+            // | HOLE_MANAGER_DETAILED
+    );
+    out << "\n";
+    out.flush();
+
+    forest::destroy(mdd);
+}
+
+// ******************************************************************
+
+constraint* knight_csp::constraint_for_square(int n, int m)
+{
+    const int pa = level4pos[posnum(n, m)];
     assert(pa>=0);
 
     if (verbosity>0) {
-        std::cout << "Building constraint for square ("
+        std::cout << "    Building constraint for square ("
                   << n << ", " << m << ") = #" << pa << "\n";
     }
 
     //
     // Set up C
     //
-    C.edge.attach(mdd);
-    C.depends.resize(N*M+1);
-    for (unsigned i=0; i<C.depends.size(); i++) {
-        C.depends[i] = false;
+    constraint* C = new constraint(mdd);
+    for (unsigned i=0; i<C->depends.size(); i++) {
+        C->depends[i] = false;
     }
 
     //
@@ -185,26 +397,27 @@ void knight_csp::constraint_for_square(int n, int m, constraint &C)
     //      one plus the sequence number of some square reachable from us
     //
     if (verbosity > 2) {
-        std::cout << "    constraints (OR'd):\n";
+        std::cout << "\tconstraints (OR'd):\n";
     }
 
     MEDDLY::minterm mt(mdd);
     mt.setAllVars(MEDDLY::DONT_CARE);
-    mt.setVar(1+pa, 0);
+    mt.setVar(pa, 0);
     mt.setValue(true);
-    mt.buildFunction(false, C.edge);
-    C.depends[1+pa] = true;
+    mt.buildFunction(false, C->edge);
+    C->depends[pa] = true;
     if (verbosity>2) {
-        std::cout << "\t x_" << (1+pa) << " == 0\n";
+        std::cout << "\t x_" << pa << " == 0\n";
     }
 
     MEDDLY::dd_edge ab(mdd);
     for (unsigned i=0; i<moves.size(); i++) {
-        C.depends[1+moves[i]] = true;
-        a_equals_b_plus_one(1+pa, 1+moves[i], ab);
-        MEDDLY::apply(MEDDLY::UNION, C.edge, ab, C.edge);
+        const int pb = level4pos[moves[i]];
+        C->depends[pb] = true;
+        a_equals_b_plus_one(pa, pb, ab);
+        MEDDLY::apply(MEDDLY::UNION, C->edge, ab, C->edge);
         if (verbosity>2) {
-            std::cout << "\t x_" << (1+pa) << " == 1+x_" << (1+moves[i]) << "\n";
+            std::cout << "\t x_" << pa << " == 1+x_" << pb << "\n";
         }
     }
 
@@ -212,13 +425,179 @@ void knight_csp::constraint_for_square(int n, int m, constraint &C)
     // done
     //
     if (verbosity>1) {
-        std::cout << "Dependencies for square ("
-                  << n << ", " << m << ") = #" << pa << "\n";
-        for (unsigned i=1; i<N*M+1; i++) {
-            std::cout << ( C.depends[i] ? 'X' : '.' );
-        }
+        std::cout << "\tDependencies for square ("
+                  << n << ", " << m << ") = #" << pa << "\n\t    ";
+        C->show_depends(std::cout);
         std::cout << "\n";
     }
+
+    return C;
+}
+
+// ******************************************************************
+
+constraint* knight_csp::open_tour_squares()
+{
+    if (verbosity>0) {
+        std::cout << "Building open tour constraint\n";
+        std::cout.flush();
+    }
+
+    //
+    // Set up C
+    //
+    constraint* C = new constraint(mdd);
+    C->depends[0] = false;
+    for (unsigned i=1; i<C->depends.size(); i++) {
+        C->depends[i] = true;
+    }
+    const unsigned NxM = unsigned(N*M);
+    a_equals_n(1, NxM, C->edge);
+    MEDDLY::dd_edge an(mdd);
+    for (int va=2; va<=N*M; va++) {
+        a_equals_n(va, NxM, an);
+        MEDDLY::apply(MEDDLY::UNION, C->edge, an, C->edge);
+    }
+    if (verbosity>0) {
+        std::cout << "   some square has sequence# " << NxM << "\n";
+    }
+    return C;
+}
+
+// ******************************************************************
+
+constraint* knight_csp::closed_tour_squares()
+{
+    if (verbosity>0) {
+        std::cout << "Building closed tour constraint\n";
+        std::cout.flush();
+    }
+    //
+    // Set up C
+    //
+    constraint* C = new constraint(mdd);
+    for (unsigned i=0; i<C->depends.size(); i++) {
+        C->depends[i] = false;
+    }
+
+    //
+    // What's reachable from 0,0
+    //
+    std::vector <int> moves;
+    fill_movelist(0, 0, moves);
+
+    if (verbosity > 2) {
+        std::cout << "    final position (OR'd):\n";
+    }
+
+    const unsigned NxM = unsigned(N*M);
+    MEDDLY::dd_edge an(mdd);
+    for (unsigned i=0; i<moves.size(); i++) {
+        const int pb = level4pos[moves[i]];
+        C->depends[pb] = true;
+        if (i) {
+            a_equals_n(pb, NxM, an);
+            MEDDLY::apply(MEDDLY::UNION, C->edge, an, C->edge);
+        } else {
+            a_equals_n(pb, NxM, C->edge);
+        }
+        if (verbosity>2) {
+            std::cout << "\t x_" << pb << " == " << NxM << "\n";
+        }
+    }
+
+    const int pa = level4pos[posnum(0, 0)];
+
+    if (verbosity > 2) {
+        std::cout << "    starting position:\n";
+    }
+    C->depends[pa] = true;
+    a_equals_n(pa, 0, an);
+    MEDDLY::apply(MEDDLY::INTERSECTION, C->edge, an, C->edge);
+    if (verbosity > 2) {
+        std::cout << "\t x_" << pa << " == 0\n";
+    }
+    return C;
+}
+
+// ******************************************************************
+
+void knight_csp::gen_and_solve()
+{
+    std::vector <constraint*> the_constraints;
+
+    std::cout << "Building constraints\n";
+
+    if (for_each_square_when) {
+        for (int n=0; n<N; n++) {
+            for (int m=0; m<M; m++) {
+                constraint* C = constraint_for_square(n, m);
+                if (C) the_constraints.push_back(C);
+            } // for m
+        } // for n
+    } else {
+        std::cout << "Sequence encoding not implemented yet\n";
+    }
+
+    std::cout << "Sorting constraints\n";
+    // sort_by_dcount(the_constraints);
+    sort_by_depends(the_constraints);
+
+    if (verbosity>2) {
+        for (unsigned i=0; i<the_constraints.size(); i++) {
+            std::cout << "\t" << std::setw(2) << i << " : ";
+            the_constraints[i]->show_depends(std::cout);
+            std::cout << "\n";
+        }
+    }
+
+    std::cout << "Accumulating constraints in order\n";
+    for (unsigned i=1; i<the_constraints.size(); i++) {
+        std::cout << "    0 := 0 AND " << std::setw(2) << i;
+        std::cout.flush();
+
+        MEDDLY::apply(MEDDLY::INTERSECTION,
+                the_constraints[0]->edge, the_constraints[i]->edge,
+                the_constraints[0]->edge);
+        delete the_constraints[i];
+        the_constraints[i] = nullptr;
+
+        std::cout << "\t(" << mdd->getCurrentNumNodes() << " nodes)" << std::endl;
+    }
+
+    /*
+    std::cout << "Accumulating constraints in pairs\n";
+    for (;;) {
+        unsigned fi=0;
+        bool have_fi = false;
+        for (unsigned i=0; i<the_constraints.size(); i++) {
+            if (!the_constraints[i]) continue;
+            if (!have_fi) {
+                fi = i;
+                have_fi = true;
+                continue;
+            }
+            std::cout   << "    " << std::setw(2) << fi << " : "
+                        << std::setw(2) << fi << " AND "
+                        << std::setw(2) << i;
+            std::cout.flush();
+
+            MEDDLY::apply(MEDDLY::INTERSECTION,
+                the_constraints[fi]->edge, the_constraints[i]->edge,
+                the_constraints[fi]->edge);
+            delete the_constraints[i];
+            the_constraints[i] = nullptr;
+
+            have_fi = false;
+            std::cout   << "\t(" << mdd->getCurrentNumNodes()
+                        << " nodes)" << std::endl;
+        } // for
+
+        if ((have_fi) && (fi==0)) break;
+
+        std::cout << "    ------------------------------\n";
+    }
+    */
 
 }
 
@@ -238,3 +617,170 @@ void knight_csp::a_equals_b_plus_one(int va, int vb, MEDDLY::dd_edge &e)
     MC->buildFunctionMax(false, e);
 }
 
+// ******************************************************************
+
+void knight_csp::a_equals_n(int va, unsigned n, MEDDLY::dd_edge &e)
+{
+    MEDDLY::minterm mt(mdd);
+    mt.setAllVars(MEDDLY::DONT_CARE);
+    mt.setVar(va, n);
+    mt.setValue(true);
+    mt.buildFunction(false, e);
+}
+
+// ******************************************************************
+
+knight_csp* usage(const char* arg)
+{
+    const char* a = arg;
+    for (; *arg; ++arg) {
+        if ('/' == *arg) {
+            a = arg+1;
+        }
+    }
+
+    std::cout
+        << "\nUsage: " << a << " [switches] NxM\n"
+        << "\n"
+        << "Build and count solutions to the Knight's tour on an NxM chessboard.\n"
+        << "\nLegal switches:\n"
+        << "\t-h:\tThis help\n"
+        << "\n"
+        << "\t-closed:\tConsider closed tours (start/stop at the same position)\n"
+        << "\t-open:\tConsider open and closed tours\n"
+        << "\n"
+        << "\t-Omove:\tVariable order based on moves\n"
+        << "\t-Orow:\tVariable order based on rows\n"
+        << "\n"
+        << "\t-pos:\tUse encoding: for each position, when to visit\n"
+        << "\t-seq:\tUse encoding: for each sequence#, which position\n"
+        << "\t-vL:\tSet verbosity level (default 0)\n"
+        << "\n";
+
+    return nullptr;
+}
+
+// ******************************************************************
+
+knight_csp* process_args(int argc, const char** argv, bool &closed)
+{
+    bool pos = true;
+    char verb = 0;
+    unsigned N=0;
+    unsigned M=0;
+    bool moveorder = true;
+
+    for (int i=1; i<argc; i++) {
+        // easy switches
+        if ('-' == argv[i][0]) {
+            if (0==strcmp("-h", argv[i])) {
+                return usage(argv[0]);
+            }
+            if (0==strcmp("-closed", argv[i])) {
+                closed = true;
+                continue;
+            }
+            if (0==strcmp("-open", argv[i])) {
+                closed = false;
+                continue;
+            }
+            if (0==strcmp("-pos", argv[i])) {
+                pos = true;
+                continue;
+            }
+            if (0==strcmp("-seq", argv[i])) {
+                pos = false;
+                continue;
+            }
+            if (0==strcmp("-Omove", argv[i])) {
+                moveorder = true;
+                continue;
+            }
+            if (0==strcmp("-Orow", argv[i])) {
+                moveorder = false;
+                continue;
+            }
+            if ( ('v' == argv[i][1]) &&
+                 ('9' >= argv[i][2]) && ('0' <= argv[i][2]) &&
+                 (0==argv[i][3]) )
+            {
+                verb = argv[i][2] - '0';
+                continue;
+            }
+            std::cout << "Unknown switch: '" << argv[i] << "'\n";
+            return usage(argv[0]);
+        }
+
+        // must be NxM
+        bool sawx = false;
+        for (const char* arg = argv[i]; *arg; ++arg) {
+
+            if (('x' == *arg) || ('X' == *arg)) {
+                if (sawx) return usage(argv[0]);
+                sawx = true;
+                continue;
+            }
+
+            if ((*arg < '0') || (*arg > '9')) {
+                return usage(argv[0]);
+            }
+
+            if (sawx) {
+                // next digit of M
+                M *= 10;
+                M += *arg - '0';
+            } else {
+                // next digit of N
+                N *= 10;
+                N += *arg - '0';
+            }
+        } // for arg
+    }
+
+    if ((0==M) || (0==N)) {
+        std::cout << "Missing board dimension NxM\n";
+        return usage(argv[0]);
+    }
+
+    knight_csp* K = new knight_csp(N, M, pos, verb);
+    if (pos) {
+        if (moveorder) {
+            K->var_order_by_moves();
+        } else {
+            K->var_order_by_rows();
+        }
+    }
+    return K;
+}
+
+// ******************************************************************
+
+int main(int argc, const char** argv)
+{
+    bool closed = true;
+    knight_csp* K = process_args(argc, argv, closed);
+
+    if (!K) return 2;
+
+    try {
+        MEDDLY::initialize();
+        K->show_var_order(std::cout);
+        K->make_forest();
+        K->gen_and_solve();
+        K->done_forest();
+        MEDDLY::cleanup();
+        return 0;
+    }
+    catch (MEDDLY::error e) {
+        std::cerr   << "\nCaught meddly error '" << e.getName()
+                    << "'\n    thrown in " << e.getFile()
+                    << " line " << e.getLine() << "\n";
+        return 1;
+    }
+    catch (const char* e) {
+        std::cerr   << "\nCaught our own error: " << e << "\n";
+        return 2;
+    }
+    std::cerr << "\nSome other error?\n";
+    return 4;
+}

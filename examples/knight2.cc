@@ -28,6 +28,8 @@
 
 #define MAXDIM 10
 
+#define UNIQUE_BAKED_IN
+
 struct coord {
     signed char n, m;
     inline void set(int _n, int _m) {
@@ -317,10 +319,15 @@ void buildConstraints(const coord &sq, constraint* C)
         dd_edge ands(boolF);
         boolF->createConstant(true, ands);
         if (verbose) cout << "\t";
+#ifdef UNIQUE_BAKED_IN
         for (j=0; j<moves.length(); j++) {
             if (verbose) {
                 if (j) cout << " ^ ";
             }
+#else
+        // ugly hack
+            j=i;
+#endif
             if (verbose || debug) {
                 cout << "(1+";
                 showVarOf(cout, sq);
@@ -351,7 +358,9 @@ void buildConstraints(const coord &sq, constraint* C)
                 term.showGraph(sout);
             }
             ands *= term;
+#ifdef UNIQUE_BAKED_IN
         }
+#endif
         if (verbose) cout << "\n";
         if (debug) {
             cout << "\nANDS:\n\n";

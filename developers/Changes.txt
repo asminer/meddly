@@ -1,12 +1,151 @@
 
 TO DO list
 
+cnstr_model:
+
+    New model for constraint problems!
+
+    Stuff we should allow:
+
+        constraints of the form x_i >< x_j + delta
+            for any comparison ><:
+                ==, !=, <, <=, >, >=
+
+        constraints of the form x_i == a_1 OR a_j == a_2 OR ...
+            (allowing the same variable twice)
+            (allow arbitrary comparisons?)
+
+        user-defined on a pair of variables x_i, x_j:
+            provides function f, where f(x_i, x_j) is true/false
+
+        linear sum
+                x_i + x_j + x_k + ... >< c
+            for any comparison ><:
+                ==, !=, <, <=, >, >=
+
+        weighted linear sum
+                a_i x_i + a_j x_j + a_k x_k + ...  >< c
+            for any comparison ><:
+                ==, !=, <, <=, >, >=
+            this subsumes x_i >< x_j + delta
+
+
+        OR of a list of constraints
+
+        AND of a list of constraints
+
+
+
+    current models and what they use
+
+        nqueens:
+            x_i != x_j
+            x_i != x_j + d
+            x_i != x_j - d
+
+        queen cover (for each square, is there a queen):
+            is there a queen in a given row/col/diag
+            OR( qin_i, qin_j, qin_k )
+            could use also
+            MAX( qin_i, qin_j, qin_k ) == 1
+            or
+            qin_i + qin_j + qik_k > 0
+
+            exactly Q queens:
+            (qin_1 + qin_2 + ...) == Q
+
+
+        qc2 (for each queen, where is it):
+            is there a queen in a given row/col/diag
+                qpos1 == a1 or qpos1 == a2 or ... or
+                qpos2 == a1 or qpos2 == a2 or ... or
+                qpos3 == a1 or qpos3 == a2 or ...
+            could make one huge list of positions and ask if any queen
+            is there, to determine if a square is being attacked
+
+        life (reverse):
+            (n1+n2+...+n9) == 3     if this square needs to be alive
+            (n1+n2+...+n9) != 3     if this square needs to be dead
+
+        knight's tour (for each square, when to visit it):
+            a==16 OR
+            ( a==b1-1 AND a!=b2-1 AND a!=b3-1 ) OR
+            ( a!=b1-1 AND a==b2-1 AND a!=b3-1 ) OR
+            ( a!=b1-1 AND a!=b2-1 AND a==b3-1 )
+
+        knight's tour (for each visit, which square):
+            loc_i+1 == a and (loc_i == b1 or loc_i == b2 or ...)
+            or ...
+
+            to encode loc_i+1 is reachable from loc_i
+                reachable(loc_i+1, loc_i): user-defined function
+
+            if we do row, col positions then maybe:
+                row_i+1 - row_i == 1  AND  col_i+1 - col_i == 2
+            OR
+                row_i+1 - row_i == 1  AND  col_i+1 - col_i == -2
+            OR ...
+
+            unique positions (easier to not use row/col):
+                we sometime visited position p:
+                    loc_1 == p or loc_2 == p or ...
+
+
 rsgen_model:
 
     * Other examples using rsgen_model?
         - knight's tour
         - nqueens
         - rubiks 2x2
+
+    * new knight's tour encodings
+        - for each square, its sequence number
+            sequencing constraint:
+                for square a,
+                    it must be zero, or one plus the sequence number
+                    of some square one move away from it
+                    e.g. (a==0) or (a == 1+b1) or (a == 1+b2) or ...
+                        for all bi reachable in one move from a
+
+                    this might be easier as the OR of
+                        (a==0)
+                        (a==1) AND [ (b1==0) or (b2==0) or ... ]
+                        (a==2) AND [ (b1==1) or (b2==1) or ... ]
+                        ...
+
+
+                And these together for all squares
+
+
+            for the last sequence number n,
+                some square equals it
+                    (a1 == n) or (a2 == n) or ...
+                for all squares ai.
+
+                closed tours: restrict this to
+                    (a1 == n) or (a2 == n) or ...
+                for all squares ai reachable in one move from
+                the starting location (which is irrelevant, so fix it)
+
+
+        - for each sequence number, knight position
+
+            sequencing constraint:
+                loc_i+1 is one move reachable from loc_i
+
+                And these together for all i
+
+
+            unique position constraint:
+                position p is visited at least once
+                    loc_0 == p or loc_1 == p or ...
+
+                And these together for all p
+
+
+            closed tours:
+                have one extra sequence number and require
+                loc_0 == loc_(nxm)
 
 
 
