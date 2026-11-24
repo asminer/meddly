@@ -109,6 +109,202 @@ class cnstr_model {
                 virtual void build_edge(MEDDLY::dd_edge &r);
                 virtual void show(MEDDLY::output &out) const;
         };
+    public:
+        cnstr_model();
+        virtual ~cnstr_model();
+
+        /**
+            Process command line argument i,
+            including any parameters that it takes.
+                @param  i       Argument to process. Will be updated.
+                @param  argv    Entire argument list.
+
+                @return true,   if we processed the argument
+                        false,  if we don't know how to process the argument.
+        */
+        virtual bool process_arg(unsigned &i, const char** argv);
+
+        /**
+            Show all command line switches that we know about.
+                @param  out     Stream to write to
+                @param  arg0    Executable name to show usage,
+                                or nullptr to not show usage.
+        */
+        virtual void show_usage(std::ostream &out, const char* arg0 = nullptr);
+
+        /**
+            Build the model.
+            This will be called after we have processed all
+            command line arguments with process_arg.
+
+            This should, among other things,
+                build the domain and call set_domain(),
+                build the constraints and call add_constraint() on each.
+
+            @param  out     Stream to write to
+            @param  verb    Verbosity level (0 for quiet).
+
+            @return true on success, false on error
+                    (assumed to be bad parameters, so
+                    we will then display usage info).
+        */
+        virtual bool build_model(MEDDLY::output &out) = 0;
+
+        // TBD, more here?
+
+        /**
+            Tear down the model.
+            Allows us to then cal build_model() again after
+            adjusting any model instance parameters.
+            Children classes may override this, but should call
+            the parent's method also.
+        */
+        virtual void destroy_model();
+
+    protected:
+        /// Options helper: section name
+        void show_section(std::ostream &out, const char* secname) const;
+
+        /// Options helper: synopsis
+        void show_synopsis(std::ostream &out, const char* arg0,
+                const char* usage) const;
+
+        /// Options helper: show program description
+        void show_description(std::ostream &out, const char* sec, const char* para) const;
+
+        /// Options helper: show a switch and description
+        /// (description lines are automatically split).
+        /// switches should be 10 chars or fewer.
+        void show_switch(std::ostream &out, const char* sw, const char* desc)
+            const;
+
+        inline void set_domain(MEDDLY::domain* d) {
+            MEDDLY_DCASSERT(d);
+            MEDDLY_DCASSERT(!D);
+            D = d;
+        }
+
+        inline MEDDLY::domain* get_domain() const {
+            return D;
+        }
+
+        inline void add_constraint(constraint* c) {
+            if (c) constraints.push_back(c);
+        }
+
+        /**
+            Get the theoretical number of solutions.
+                @param  card    Store the result here
+                @return true    IFF we can determine this.
+            The default behavior is to simply return false.
+        */
+        virtual bool known_cardinality(double &card) const;
+
+#ifdef HAVE_LIBGMP
+        virtual bool known_cardinality(mpz_t card) const;
+#endif
+
+        void show_cardinality(MEDDLY::output &out, const MEDDLY::dd_edge &e,
+                bool with_timing=true);
+
+        inline static const char* basename(const char* path) {
+            const char* b = path;
+            for (; *path; path++) {
+                if ('/' == *path) b = path+1;
+            }
+            return b;
+        }
+        inline static const char* copy_next_word(const char* line,
+                char* w, unsigned maxw)
+        {
+            maxw--;
+            unsigned i = 0;
+            bool leading = true;
+            for (;; ++line) {
+                if (*line == 0) {
+                    w[i] = 0;
+                    break;
+                }
+                if (' ' == *line) {
+                    if (leading) continue;
+                    w[i] = 0;
+                    break;
+                }
+                leading = false;
+                w[i] = *line;
+                i++;
+                if (i >= maxw) {
+                    w[i] = 0;
+                    break;
+                }
+            }
+            return w[0] ? line : nullptr;
+        }
+
+        static void printStats(MEDDLY::output &out, const MEDDLY::forest* F);
+
+    protected:  // set defaults for command-line switches
+        inline char get_solve_method() const {
+            return howsolve;
+        }
+        inline void set_solve_method(char hs) {
+            howsolve = hs;
+        }
+        inline char get_garbage() const {
+            return garbage;
+        }
+        inline void set_garbage(char g) {
+            garbage = g;
+        }
+
+        inline void default_approx() {
+            approx = true;
+        }
+        inline void default_exact() {
+            approx = false;
+        }
+        inline bool approx_cardinality() const {
+            return approx;
+        }
+
+
+    private:
+        std::vector <constraint*> constraints;    // model constraints
+
+        MEDDLY::domain* D;      // domain for the forests
+        MEDDLY::forest* Fset;   // boolean forest for constraints + solutions
+
+    private:    // various command-line switches
+
+        // how to solve constraints
+        char howsolve;
+            // 'a': accumulate in depend order
+            // 'f': fold (accumulate in pairs)
+            // 'r': accumulate in reverse depend order
+            // '<': smallest size (#nodes) first
+            // '>': largest size (#nodes) first
+
+        // garbage collection
+        char garbage;
+            // 'm': mark and sweep
+            // 'o': optimistic ref counts
+            // 'p': pessimistic ref counts
+
+        // number of solutions to display
+        char displaysols;
+            // '0': none
+            // '1': pick one and show it
+            // 'a': show all solutions
+
+        // approximate cardinalities
+        bool approx;
+
+        // verbosity level
+        int verb;
+
+        // output file: the solutions (or null for none)
+        const char* file_set;
+
 };
 
 #endif
