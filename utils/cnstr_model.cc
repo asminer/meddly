@@ -106,7 +106,53 @@ void cnstr_model::compare_two_vars::build_edge(MEDDLY::dd_edge &r)
     using namespace MEDDLY;
     forest* mdd = r.getForest();
 
-    // TBD
+    if (v1 == v2) {
+        //
+        // Trivial case; probably shouldn't happen
+        //
+        if (delta) {
+            mdd->createConstant(false, r);
+        } else {
+            mdd->createConstant(true, r);
+        }
+        return;
+    }
+
+    //
+    // This assumes the MDD is fully reduced.
+    //
+    MEDDLY_DCASSERT(mdd->isFullyReduced());
+
+    node_handle root;
+    edge_value ev;
+
+    if (v1 < v2) {
+        unpacked_node* U2 = unpacked_node::newWritable(mdd, v2, FULL_ONLY);
+        for (unsigned i2=0; i2<U2->getSize(); i2++) {
+            unpacked_node* U1 = unpacked_node::newWritable(mdd, v1, FULL_ONLY);
+            for (unsigned i1=0; i1<U1->getSize(); i1++) {
+                U1->setFull(i1, mdd->handleForValue(eval(i1, i2)));
+            } // for i1
+            mdd->createReducedNode(U1, ev, root);
+            MEDDLY_DCASSERT(ev.isVoid());
+            U2->setFull(i2, root);
+        } // for i2
+        mdd->createReducedNode(U2, ev, root);
+    } else {
+        unpacked_node* U1 = unpacked_node::newWritable(mdd, v1, FULL_ONLY);
+        for (unsigned i1=0; i1<U1->getSize(); i1++) {
+            unpacked_node* U2 = unpacked_node::newWritable(mdd, v2, FULL_ONLY);
+            for (unsigned i2=0; i2<U2->getSize(); i2++) {
+                U2->setFull(i2, mdd->handleForValue(eval(i1, i2)));
+            } // for i2
+            mdd->createReducedNode(U2, ev, root);
+            MEDDLY_DCASSERT(ev.isVoid());
+            U1->setFull(i1, root);
+        } // for i1
+        mdd->createReducedNode(U1, ev, root);
+    }
+    MEDDLY_DCASSERT(ev.isVoid());
+    r.set(root);
 }
 
 // ******************************************************************
