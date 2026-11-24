@@ -147,7 +147,7 @@ class MEDDLY::node_marker {
         /// Verify all marked nodes, by levels, from bottom to top.
         void verifyByLevelsBottomUp(input &s, io_style *st = nullptr) const;
 
-#ifdef ALLOW_DEPRECATED_0_18_2
+#ifdef ALLOW_DEPRECATED_0_19_0
         /// Display all marked nodes, by levels.
         inline void showByLevels(output &s) const {
             showByLevelsTopDown(s);
